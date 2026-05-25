@@ -34,7 +34,7 @@ cli_version: ">=1.0.15"
 | `doc`             | 钉钉文档：搜索/浏览/读写/块级编辑/评论/文件创建/复制/移动/重命名                | [doc.md](./references/products/doc.md)                         |
 | `drive`           | 钉钉云盘：文件列表/元数据/文件夹/上传(两步)/下载                        | [drive.md](./references/products/drive.md)                     |
 | `minutes`         | AI听记：听记列表/摘要/关键词/转写/待办/思维导图/发言人/热词/上传                | [minutes.md](./references/products/minutes.md)                 |
-| `oa`              | OA审批：待办/我发起的/表单模板/详情/审批流水/同意/拒绝/撤销                   | [oa.md](./references/products/oa.md)                           |
+| `oa`              | OA审批：待处理/详情/同意/拒绝/撤销/记录/已发起/任务/转交/评论/抄送              | [oa.md](./references/products/oa.md)                           |
 | `report`          | 日志：按模版创建/收件箱/已发送/模版查看/详情/已读统计                         | [report.md](./references/products/report.md)                   |
 | `mail`            | 邮箱：邮箱地址查询/邮件搜索(KQL)/邮件详情/发送邮件                        | [mail.md](./references/products/mail.md)                       |
 | `sheet`           | 在线电子表格(axls)：工作表 CRUD/区域读写/行列增删/合并/查找替换/筛选视图/导出(两步)/图片 | [sheet.md](./references/products/sheet.md)                     |
