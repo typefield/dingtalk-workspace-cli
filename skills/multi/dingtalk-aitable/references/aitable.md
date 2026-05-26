@@ -10,7 +10,7 @@
 | 模板预览 | `https://docs.dingtalk.com/table/template/{templateId}` |
 
 > **操作后请返回文档 URI**：每次执行 base list/search/create/get 操作后，从返回数据中提取 `baseId`，拼接为 `https://alidocs.dingtalk.com/i/nodes/{baseId}` 返回给用户。
-> 补充：如果 URL 不是来自 `aitable` 命令返回，而是用户直接贴的原始 `alidocs` URL，先按 root `dws` skill `references/url-patterns.md` 的「alidocs URL 类型探测流程」probe，确认是 `able` 后再按 AI 表格处理。
+> 补充：如果 URL 不是来自 `aitable` 命令返回，而是用户直接贴的原始 `alidocs` URL，先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe，确认是 `able` 后再按 AI 表格处理。
 
 ## 命令索引表
 
@@ -24,8 +24,6 @@
 | `base create` | 创建 Base | `--name` | 创建后直接用返回的 baseId |
 | `base update` | 更新 Base 名称 | `--base-id` `--name` | — |
 | `base delete` | 删除 Base | `--base-id` | 不可逆 |
-| `base get-primary-doc-id` | 获取主键文档 ID | `--base-id` `--table-id` `--record-id` | 文档类型主键字段场景 |
-| `base copy` | 复制 Base | `--base-id` | — |
 
 ### table (数据表管理)
 
@@ -50,6 +48,7 @@
 | 命令 | 用途 | 必读 reference | 路由提醒 |
 |------|------|----------------|----------|
 | `record query` | 查询/搜索记录 | [aitable-record-query.md](./aitable/aitable-record-query.md) | 先 `table get` 拿 fieldId；`--all` 自动翻页；filters 结构见 reference |
+| `record get` | 按 ID 取记录（`record query --record-ids` 的窄别名） | [aitable-record-query.md](./aitable/aitable-record-query.md) | 已知 recordId 时首选；必填 `--record-ids`（单次最多 100 条）；未暴露 filters/sort/query/cursor/limit |
 | `record create` | 新增记录 | [aitable-record-create.md](./aitable/aitable-record-create.md) | cells key 必须是 fieldId 不是字段名；单次最多 100 条 |
 | `record update` | 更新记录 | [aitable-record-update.md](./aitable/aitable-record-update.md) | 需先 query 拿 recordId；只传需改字段；**没有** `--record-id` `--cells` flag |
 | `record delete` | 删除记录 | [aitable-record-delete.md](./aitable/aitable-record-delete.md) | 不可逆，需先 query 确认 |
@@ -64,6 +63,15 @@
 | `view delete` | 删除视图 | `--base-id` `--table-id` `--view-id` | 不可删最后一个/锁定视图 |
 
 > **"移动字段/调整字段顺序"** 在 AI 表格里没有 `field reorder` 命令，必须通过 `view update --config '{"visibleFieldIds":[...]}'` 完成。
+
+> **view update --config 支持的 key 白名单**（传入其他 key 会报错）：
+> - `visibleFieldIds` — 视图可见字段列表及顺序（首列字段必须保留在第一位）
+> - `filter` — 筛选规则列表
+> - `sort` — 排序规则列表
+> - `group` — 分组规则列表
+> - `fieldWidths` — 列宽映射（仅 Grid 视图有效）
+>
+> 不支持 `formInfo`、`requiredFields`、`conditionalRules` 等 FormDesigner 高级配置，这些 key 会被服务端忽略。
 
 ### dashboard & chart → 详见 [aitable-dashboard-chart.md](./aitable/aitable-dashboard-chart.md)
 
@@ -117,6 +125,7 @@
 
 用户说"记录/行/数据/row":
 - 查看/搜索 → `record query`（读 [aitable-record-query.md](./aitable/aitable-record-query.md)）
+- 已知 recordId 反查字段值 → `record get`（按 ID 取专用，等价 `record query --record-ids`）
 - 添加/写入 → `record create`（读 [aitable-record-create.md](./aitable/aitable-record-create.md)）
 - 修改/更新 → `record update`（读 [aitable-record-update.md](./aitable/aitable-record-update.md)）
 - 删除 → `record delete`
@@ -169,7 +178,7 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 | `base create` | `baseId` | 后续命令 + 文档 URI |
 | `base get` | `tables[].tableId` | --table-id |
 | `table get` | `fields[].fieldId` | record 操作的 cells key, field get/update/delete |
-| `record query` | `recordId` | record update/delete |
+| `record query` | `recordId` | record update/delete；按 ID 反查字段值用 `record get` |
 | `template search` | `templateId` | base create --template-id，拼接模板预览 URI |
 
 ## URL → baseId 提取
@@ -180,7 +189,7 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 3. 传入 `--base-id` 参数
 
 > 如果该 URL 来自 `dws aitable` 返回或已在当前链路 probe 过，可直接复用；
-> 如果是用户直接提供的原始 `alidocs` URL，则先按 root `dws` skill `references/url-patterns.md` 的「alidocs URL 类型探测流程」probe，确认 `extension=able` 后再继续。
+> 如果是用户直接提供的原始 `alidocs` URL，则先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe，确认 `extension=able` 后再继续。
 
 ## 注意事项
 
@@ -193,11 +202,11 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 
 | 脚本 | 场景 |
 |------|------|
-| [bulk_add_fields.py](../scripts/bulk_add_fields.py) | 批量添加字段 |
-| [import_records.py](../scripts/import_records.py) | 从 JSON/CSV 批量导入记录 |
-| [aitable_export_via_task.py](../scripts/aitable_export_via_task.py) | 文件导出（export_data 轮询 + 下载） |
-| [upload_attachment.py](../scripts/upload_attachment.py) | 上传附件到 AI 表格记录 |
+| [bulk_add_fields.py](../../scripts/bulk_add_fields.py) | 批量添加字段 |
+| [import_records.py](../../scripts/import_records.py) | 从 JSON/CSV 批量导入记录 |
+| [aitable_export_via_task.py](../../scripts/aitable_export_via_task.py) | 文件导出（export_data 轮询 + 下载） |
+| [upload_attachment.py](../../scripts/upload_attachment.py) | 上传附件到 AI 表格记录 |
 
 ## 相关产品
 
-- `dingtalk-doc` — 富文本文档编辑，不是结构化数据表格
+- [doc](./doc.md) — 富文本文档编辑，不是结构化数据表格

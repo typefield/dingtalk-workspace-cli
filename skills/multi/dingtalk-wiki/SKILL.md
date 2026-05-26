@@ -34,8 +34,8 @@ metadata:
 
 ## 评测高频硬约束
 
-- `space search` 用 `--keyword`，不要用 `--query`；`search` 没有 `--type` flag，按类型筛选请走 `space list --type myWikiSpace/orgWikiSpace`。
-- 用户说"我的文档/个人空间/my workspace"时必须用 `dws wiki space list --type myWikiSpace --format json`；不要往 `search` 里拼 `--type`。
+- `space search` 用 `--keyword`，不要用 `--query`；`search` 支持 `--type myWikiSpace` 查询个人知识库，但按类型列出空间优先走 `space list --type myWikiSpace/orgWikiSpace`。
+- 用户说"我的文档/个人空间/my workspace"时优先用 `dws wiki space list --type myWikiSpace --format json`。
 - 用户给空关键词时，不要构造空 `--keyword ""`；若语义是我的文档则走 `space list --type myWikiSpace`，否则请用户补关键词。
 - 搜到空间后复用返回的 `workspaceId/id`，知识库内具体文档的创建、搜索、读写切到 `dingtalk-doc`，不要在 `wiki` 下编造 doc 子命令。
 - 所有 `dws wiki` 命令加 `--format json`。

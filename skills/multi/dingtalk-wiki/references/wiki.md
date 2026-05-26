@@ -42,8 +42,8 @@ Flags:
 Usage:
   dws wiki space get [flags]
 Example:
-  dws wiki space get --id <workspaceId> --format json
-  dws wiki space get --id "https://alidocs.dingtalk.com/i/spaces/xxx/overview" --format json
+  dws wiki space get --workspace <workspaceId> --format json
+  dws wiki space get --workspace "https://alidocs.dingtalk.com/i/spaces/xxx/overview" --format json
 Flags:
       --workspace string   知识库 ID 或 URL (必填)
 ```
@@ -93,8 +93,8 @@ Example:
   dws wiki member add --workspace <WS_ID> --user uid1,uid2 --role EDITOR
   dws wiki member add --workspace "https://alidocs.dingtalk.com/i/spaces/<WS_ID>/overview" --user uid1 --role MANAGER
 Flags:
-      --workspace string    目标知识库 ID 或 URL (必填)
-      --user strings    被加入的用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
+      --workspace string 目标知识库 ID 或 URL (必填)
+      --user string     被加入的用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
       --role string     授予的角色 (必填，大小写敏感，必须全大写): MANAGER (管理者) / EDITOR (可编辑) / DOWNLOADER (可下载) / READER (可阅读)
 ```
 
@@ -112,8 +112,8 @@ Example:
   dws wiki member update --workspace <WS_ID> --user uid1 --role EDITOR
   dws wiki member update --workspace <WS_ID> --user uid1,uid2 --role READER
 Flags:
-      --workspace string    目标知识库 ID 或 URL (必填)
-      --user strings    目标用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
+      --workspace string 目标知识库 ID 或 URL (必填)
+      --user string     目标用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
       --role string     新角色 (必填，大小写敏感，必须全大写): MANAGER / EDITOR / DOWNLOADER / READER
 ```
 
@@ -123,15 +123,15 @@ Usage:
   dws wiki member list [flags]
 Example:
   dws wiki member list --workspace <WS_ID>
-  dws wiki member list --workspace <WS_ID> --max-results 100
+  dws wiki member list --workspace <WS_ID> --limit 100
   dws wiki member list --workspace <WS_ID> --filter-role EDITOR
 Flags:
-      --workspace string         目标知识库 ID 或 URL (必填)
-      --max-results int      返回数量上限，最大 200 (默认 50)
-      --filter-role string   按角色过滤: MANAGER / EDITOR / DOWNLOADER / READER (选填)
+      --workspace string     目标知识库 ID 或 URL (必填)
+      --limit int            返回成员数上限
+      --filter-role string   按角色过滤，逗号分隔: MANAGER / EDITOR / DOWNLOADER / READER (选填)
 ```
 
-> 接口不支持游标分页，使用 `--max-results` 一次性拉取。
+> 接口不支持游标分页，使用 `--limit` 一次性拉取。
 
 ## 意图判断
 
@@ -143,6 +143,12 @@ Flags:
 - 用户说"把知识库分享给某人/给某人加入知识库/邀请进知识库" → `member add`（需 `--workspace` + `--user` + `--role`）
 - 用户说"修改某人在知识库的权限/调整成员角色" → `member update`
 - 用户说"知识库有哪些成员/查看知识库成员" → `member list`
+
+> **跨产品路由（重要）**：`dws wiki` 只管知识库容器（space/member），**不提供查看知识库文件/文档的能力**。以下意图必须走 `dws doc`，不要在 wiki 下尝试 `node`/`file`/`list` 等子命令：
+> - 用户说"知识库下的文件/知识库里有哪些文档/浏览知识库内容" → 先用 `dws wiki space list` 或 `space search` 拿到 `workspaceId`，再走 **`dws doc list --workspace <workspaceId>`**
+> - 用户说"读某个知识库里的某篇文档" → 先通过上面的方式找到 nodeId，再走 **`dws doc read --node <nodeId>`**
+> - 用户说"在知识库里搜文档" → 走 **`dws doc search --workspace-ids <workspaceId>`**
+> - 用户说"在知识库里创建文档" → 走 **`dws doc create --workspace <workspaceId>`**
 
 关键区分：
 - wiki(知识库空间级管理：创建/查询/列出/搜索/成员管理) vs doc(文档内容级操作：搜索/读写/编辑/节点级权限)
@@ -169,7 +175,7 @@ dws wiki space list --type myWikiSpace --format json
 dws wiki space create --name "新项目文档" --description "项目相关文档归档" --format json
 
 # 查看知识库详情
-dws wiki space get --id <workspaceId> --format json
+dws wiki space get --workspace <workspaceId> --format json
 
 # ── 工作流: 给知识库加成员 ──
 
@@ -195,5 +201,5 @@ dws wiki member list --workspace <WS_ID> --format json
 
 ## 相关产品
 
-- `dingtalk-doc` (`references/doc.md`) — 文档内容级操作（搜索/读写/编辑文档、知识库内文档管理）
-- `dingtalk-drive` (`references/drive.md`) — 钉盘文件存储/上传/下载
+- [doc](./doc.md) — 文档内容级操作（搜索/读写/编辑文档、知识库内文档管理）
+- [drive](./drive.md) — 钉盘文件存储/上传/下载
