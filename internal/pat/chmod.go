@@ -218,7 +218,7 @@ grantType 规则:
 					if err != nil {
 						return fmt.Errorf("pat chmod plan failed: %w", err)
 					}
-					return handleToolResult(result)
+					return handleToolResult(cmd, c, result)
 				}
 				bold := color.New(color.FgYellow, color.Bold)
 				bold.Println("[DRY-RUN] Preview only, not executed:")
@@ -254,7 +254,7 @@ grantType 规则:
 					return err
 				}
 				if len(scopes) == 0 {
-					return handleToolResult(planResult)
+					return handleToolResult(cmd, c, planResult)
 				}
 			}
 			batchArgs := map[string]any{
@@ -297,7 +297,7 @@ grantType 规则:
 				return fmt.Errorf("pat chmod failed: %w", err)
 			}
 
-			return handleToolResult(result)
+			return handleToolResult(cmd, c, result)
 		},
 	}
 
@@ -639,7 +639,7 @@ func containsAny(msg string, needles ...string) bool {
 }
 
 // handleToolResult processes a ToolResult and writes output to stdout.
-func handleToolResult(result *edition.ToolResult) error {
+func handleToolResult(cmd *cobra.Command, caller edition.ToolCaller, result *edition.ToolResult) error {
 	if result == nil {
 		return fmt.Errorf("empty tool result")
 	}
@@ -650,9 +650,153 @@ func handleToolResult(result *edition.ToolResult) error {
 		if respErr := apperrors.ClassifyMCPResponseText(c.Text); respErr != nil {
 			return respErr
 		}
+		if !shouldEmitRawPATResult(cmd) {
+			if summary := formatPATAuthorizationSummary(c.Text, caller); summary != "" {
+				fmt.Print(summary)
+				return nil
+			}
+		}
 		fmt.Println(c.Text)
 		return nil
 	}
 	data, _ := json.Marshal(result)
 	return fmt.Errorf("empty PAT authorization result: %s", string(data))
+}
+
+func shouldEmitRawPATResult(cmd *cobra.Command) bool {
+	if commandBoolFlag(cmd, "verbose") {
+		return true
+	}
+	if !commandFlagChanged(cmd, "format") {
+		return false
+	}
+	format := strings.ToLower(strings.TrimSpace(commandStringFlag(cmd, "format")))
+	return format == "json" || format == "raw"
+}
+
+func commandBoolFlag(cmd *cobra.Command, name string) bool {
+	if cmd == nil {
+		return false
+	}
+	if flag := cmd.Flags().Lookup(name); flag != nil {
+		value, err := cmd.Flags().GetBool(name)
+		return err == nil && value
+	}
+	root := cmd.Root()
+	if root == nil {
+		return false
+	}
+	value, err := root.PersistentFlags().GetBool(name)
+	return err == nil && value
+}
+
+func commandFlagChanged(cmd *cobra.Command, name string) bool {
+	if cmd == nil {
+		return false
+	}
+	if flag := cmd.Flags().Lookup(name); flag != nil && flag.Changed {
+		return true
+	}
+	root := cmd.Root()
+	if root == nil {
+		return false
+	}
+	flag := root.PersistentFlags().Lookup(name)
+	return flag != nil && flag.Changed
+}
+
+func commandStringFlag(cmd *cobra.Command, name string) string {
+	if cmd == nil {
+		return ""
+	}
+	if flag := cmd.Flags().Lookup(name); flag != nil {
+		value, _ := cmd.Flags().GetString(name)
+		return value
+	}
+	root := cmd.Root()
+	if root == nil {
+		return ""
+	}
+	value, _ := root.PersistentFlags().GetString(name)
+	return value
+}
+
+func formatPATAuthorizationSummary(text string, caller edition.ToolCaller) string {
+	var body map[string]any
+	if err := json.Unmarshal([]byte(text), &body); err != nil {
+		return ""
+	}
+	data, _ := body["data"].(map[string]any)
+	if data == nil {
+		return ""
+	}
+
+	lines := []string{"PAT authorization"}
+	if code := stringField(body, "code"); code != "" {
+		lines = append(lines, "status: "+code)
+	} else if success, ok := body["success"].(bool); ok {
+		lines = append(lines, fmt.Sprintf("success: %v", success))
+	}
+	if agentCode := stringField(data, "agentCode"); agentCode != "" {
+		lines = append(lines, "agentCode: "+agentCode)
+	}
+	if grantType := stringField(data, "grantType"); grantType != "" {
+		lines = append(lines, "grantType: "+grantType)
+	}
+	if allGranted, ok := data["allGranted"].(bool); ok {
+		lines = append(lines, fmt.Sprintf("allGranted: %v", allGranted))
+	}
+
+	appendCountLine := func(label, key string) {
+		if count, ok := countField(data, key); ok {
+			lines = append(lines, fmt.Sprintf("%s: %d", label, count))
+		}
+	}
+	appendCountLine("items", "items")
+	appendCountLine("selected", "selectedScopes")
+	appendCountLine("granted", "grantedScopes")
+	appendCountLine("alreadyGranted", "alreadyGrantedScopes")
+	appendCountLine("skipped", "skippedScopes")
+	appendCountLine("pending", "pendingScopes")
+
+	lines = append(lines, "suggestion: "+patAuthorizationSuggestion(data, caller))
+	lines = append(lines, "hint: use --format json or --verbose for full scope details")
+	return strings.Join(lines, "\n") + "\n"
+}
+
+func patAuthorizationSuggestion(data map[string]any, caller edition.ToolCaller) string {
+	if allGranted, ok := data["allGranted"].(bool); ok && allGranted {
+		return "no action needed"
+	}
+	if count, ok := countField(data, "selectedScopes"); ok && count > 0 {
+		if caller != nil && caller.DryRun() {
+			return "rerun this command without --dry-run to grant selected scopes"
+		}
+		return "selected scopes are ready to grant"
+	}
+	if count, ok := countField(data, "pendingScopes"); ok && count > 0 {
+		return "complete authorization, then retry the command"
+	}
+	return "check auth status or rerun with --format json for details"
+}
+
+func countField(data map[string]any, key string) (int, bool) {
+	raw, ok := data[key]
+	if !ok {
+		return 0, false
+	}
+	switch v := raw.(type) {
+	case []any:
+		return len(v), true
+	case []string:
+		return len(v), true
+	}
+	return 0, false
+}
+
+func stringField(data map[string]any, key string) string {
+	if value, ok := data[key].(string); ok {
+		return strings.TrimSpace(value)
+	}
+	return ""
 }

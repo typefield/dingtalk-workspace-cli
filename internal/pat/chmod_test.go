@@ -672,12 +672,106 @@ func TestIsToolNotRegisteredError_ChineseGatewayDiagnostics(t *testing.T) {
 }
 
 func TestHandleToolResult_emptyResultReturnsError(t *testing.T) {
-	err := handleToolResult(&edition.ToolResult{})
+	err := handleToolResult(nil, nil, &edition.ToolResult{})
 	if err == nil {
 		t.Fatal("handleToolResult error = nil, want empty PAT authorization result error")
 	}
 	if !strings.Contains(err.Error(), "empty PAT authorization result") {
 		t.Fatalf("handleToolResult error = %q, want empty PAT authorization result", err.Error())
+	}
+}
+
+func TestHandleToolResult_defaultSummarizesBatchPlan(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	root.PersistentFlags().String("format", "json", "")
+	cmd := &cobra.Command{Use: "chmod"}
+	root.AddCommand(cmd)
+	result := &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{
+		"success": true,
+		"code": "OK",
+		"data": {
+			"agentCode": "ding-agent",
+			"allGranted": false,
+			"items": [
+				{"scope": "calendar.event:list"},
+				{"scope": "calendar.event:create"}
+			],
+			"selectedScopes": ["calendar.event:create"],
+			"skippedScopes": ["calendar.event:list"],
+			"pendingScopes": []
+		}
+	}`}}}
+
+	output, err := captureStdout(t, func() error {
+		return handleToolResult(cmd, &sequenceToolCaller{dryRun: true}, result)
+	})
+	if err != nil {
+		t.Fatalf("handleToolResult error = %v", err)
+	}
+	for _, want := range []string{
+		"PAT authorization",
+		"status: OK",
+		"agentCode: ding-agent",
+		"allGranted: false",
+		"items: 2",
+		"selected: 1",
+		"skipped: 1",
+		"pending: 0",
+		"suggestion: rerun this command without --dry-run to grant selected scopes",
+	} {
+		if !strings.Contains(output, want) {
+			t.Fatalf("summary output missing %q: %s", want, output)
+		}
+	}
+	if strings.Contains(output, "calendar.event:create") || strings.Contains(output, `"items"`) {
+		t.Fatalf("summary output leaked raw item details: %s", output)
+	}
+}
+
+func TestHandleToolResult_explicitJSONKeepsRawPayload(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	root.PersistentFlags().String("format", "json", "")
+	cmd := &cobra.Command{Use: "chmod"}
+	root.AddCommand(cmd)
+	if err := root.PersistentFlags().Set("format", "json"); err != nil {
+		t.Fatalf("set format error = %v", err)
+	}
+	text := `{"success":true,"code":"OK","data":{"items":[{"scope":"calendar.event:create"}],"selectedScopes":["calendar.event:create"]}}`
+	result := &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: text}}}
+
+	output, err := captureStdout(t, func() error {
+		return handleToolResult(cmd, &sequenceToolCaller{dryRun: true}, result)
+	})
+	if err != nil {
+		t.Fatalf("handleToolResult error = %v", err)
+	}
+	if !strings.Contains(output, `"items"`) || !strings.Contains(output, "calendar.event:create") {
+		t.Fatalf("explicit json output did not preserve raw payload: %s", output)
+	}
+	if strings.Contains(output, "PAT authorization") {
+		t.Fatalf("explicit json output must not be summarized: %s", output)
+	}
+}
+
+func TestHandleToolResult_verboseKeepsRawPayload(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	root.PersistentFlags().Bool("verbose", false, "")
+	cmd := &cobra.Command{Use: "chmod"}
+	root.AddCommand(cmd)
+	if err := root.PersistentFlags().Set("verbose", "true"); err != nil {
+		t.Fatalf("set verbose error = %v", err)
+	}
+	text := `{"success":true,"code":"OK","data":{"items":[{"scope":"calendar.event:create"}]}}`
+	result := &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: text}}}
+
+	output, err := captureStdout(t, func() error {
+		return handleToolResult(cmd, &sequenceToolCaller{}, result)
+	})
+	if err != nil {
+		t.Fatalf("handleToolResult error = %v", err)
+	}
+	if !strings.Contains(output, `"items"`) || !strings.Contains(output, "calendar.event:create") {
+		t.Fatalf("verbose output did not preserve raw payload: %s", output)
 	}
 }
 
