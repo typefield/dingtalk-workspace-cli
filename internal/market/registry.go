@@ -352,6 +352,46 @@ type CLIFlagOverride struct {
 	PipelineLocal bool `json:"pipelineLocal,omitempty"`
 }
 
+// UnmarshalJSON tolerates discovery overlays that encode a flag's "default" as
+// a bool or number (e.g. the sheet server publishes `"default": false`) rather
+// than a string. Default is typed as string, and Go's strict decode would fail
+// the ENTIRE discovery list on a single mistyped default in ANY product's
+// overlay — silently breaking `dws cache refresh` for every product, not just
+// the offending one. Coerce scalar defaults to their literal string form so one
+// bad envelope can no longer take down discovery.
+func (o *CLIFlagOverride) UnmarshalJSON(data []byte) error {
+	type alias CLIFlagOverride
+	aux := &struct {
+		Default json.RawMessage `json:"default,omitempty"`
+		*alias
+	}{alias: (*alias)(o)}
+	if err := json.Unmarshal(data, aux); err != nil {
+		return err
+	}
+	o.Default = coerceScalarToString(aux.Default)
+	return nil
+}
+
+// coerceScalarToString renders a JSON scalar (string / bool / number) as a
+// plain string; objects, arrays and null collapse to "".
+func coerceScalarToString(raw json.RawMessage) string {
+	s := strings.TrimSpace(string(raw))
+	if s == "" || s == "null" {
+		return ""
+	}
+	if strings.HasPrefix(s, `"`) {
+		var str string
+		if json.Unmarshal(raw, &str) == nil {
+			return str
+		}
+		return ""
+	}
+	if strings.HasPrefix(s, "{") || strings.HasPrefix(s, "[") {
+		return ""
+	}
+	return s
+}
+
 type CLITool struct {
 	Name        string                 `json:"name"`
 	CLIName     string                 `json:"cliName"`
