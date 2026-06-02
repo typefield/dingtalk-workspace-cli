@@ -265,6 +265,51 @@ func TestBuildCatalogCarriesDingTalkAuthMetadata(t *testing.T) {
 	}
 }
 
+func TestBuildCatalogCarriesGrantOnlyAuthMetadata(t *testing.T) {
+	t.Parallel()
+
+	catalog := BuildCatalog([]discovery.RuntimeServer{
+		{
+			Server: market.ServerDescriptor{
+				Key:         "calendar-key",
+				DisplayName: "日历",
+				Endpoint:    "https://example.com/server/calendar",
+			},
+			Tools: []transport.ToolDescriptor{
+				{
+					Name: "createEvent",
+					InputSchema: map[string]any{
+						"type": "object",
+						"x-dingtalk-auth": map[string]any{
+							"grantProductCodes":    []any{"calendar"},
+							"recommendedScopes":    []any{"calendar.event:create"},
+							"riskAction":           "high-risk-write",
+							"confirmationRequired": true,
+						},
+					},
+				},
+			},
+		},
+	})
+
+	tool, ok := catalog.Products[0].FindTool("createEvent")
+	if !ok {
+		t.Fatalf("FindTool(createEvent) = not found")
+	}
+	if tool.Auth == nil {
+		t.Fatal("tool.Auth = nil")
+	}
+	if got := tool.Auth.GrantProductCodes; len(got) != 1 || got[0] != "calendar" {
+		t.Fatalf("GrantProductCodes = %#v, want calendar", got)
+	}
+	if got := tool.Auth.RecommendedScopes; len(got) != 1 || got[0] != "calendar.event:create" {
+		t.Fatalf("RecommendedScopes = %#v, want calendar.event:create", got)
+	}
+	if !tool.Auth.ConfirmationRequired {
+		t.Fatal("ConfirmationRequired = false, want true")
+	}
+}
+
 func TestBuildCatalogFallsBackToProductGrantAuthMetadata(t *testing.T) {
 	t.Parallel()
 

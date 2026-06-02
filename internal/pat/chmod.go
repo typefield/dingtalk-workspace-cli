@@ -213,7 +213,7 @@ grantType 规则:
 
 			if c != nil && c.DryRun() {
 				if usesPlan {
-					planArgs := buildBatchPlanArgs(scopes, productCodes, recommend, grantType, true)
+					planArgs := buildBatchPlanArgs(scopes, productCodes, recommend, grantType, sessionID, true)
 					result, err := callPATBatchPlan(cmd.Context(), c, agentCode, sessionID, planArgs)
 					if err != nil {
 						return fmt.Errorf("pat chmod plan failed: %w", err)
@@ -244,7 +244,7 @@ grantType 规则:
 				sessionID = resolveSessionIDFromEnv()
 			}
 			if usesPlan {
-				planArgs := buildBatchPlanArgs(scopes, productCodes, recommend, grantType, true)
+				planArgs := buildBatchPlanArgs(scopes, productCodes, recommend, grantType, sessionID, true)
 				planResult, err := callPATBatchPlan(cmd.Context(), c, agentCode, sessionID, planArgs)
 				if err != nil {
 					return fmt.Errorf("pat chmod plan failed: %w", err)
@@ -269,6 +269,7 @@ grantType 规则:
 				toolArgs["agentCode"] = agentCode
 			}
 			if sessionID != "" {
+				batchArgs["sessionId"] = sessionID
 				toolArgs["sessionId"] = sessionID
 			}
 			// Legacy server schema accepted singular "scope"; clone the
@@ -405,14 +406,18 @@ func callPATBatchPlan(ctx context.Context, c edition.ToolCaller, agentCode, sess
 	})
 }
 
-func buildBatchPlanArgs(scopes []string, productCodes []string, recommend bool, grantType string, dryRun bool) map[string]any {
-	return map[string]any{
+func buildBatchPlanArgs(scopes []string, productCodes []string, recommend bool, grantType string, sessionID string, dryRun bool) map[string]any {
+	args := map[string]any{
 		"scopes":       scopes,
 		"productCodes": productCodes,
 		"recommend":    recommend,
 		"grantType":    grantType,
 		"dryRun":       dryRun,
 	}
+	if sessionID != "" {
+		args["sessionId"] = sessionID
+	}
+	return args
 }
 
 func extractSelectedScopes(result *edition.ToolResult) ([]string, error) {

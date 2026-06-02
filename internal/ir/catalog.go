@@ -341,11 +341,29 @@ func extractToolAuthMetadata(schema map[string]any, productID string) *ToolAuthM
 	if err := json.Unmarshal(data, &metadata); err != nil {
 		return nil
 	}
-	if len(metadata.RequiredScopes) == 0 && len(metadata.RequiredPermissions) == 0 &&
-		len(metadata.ClientObservedScopes) == 0 && metadata.AuthMetaHash == "" {
+	if !hasMeaningfulToolAuthMetadata(metadata) {
 		return nil
 	}
 	return &metadata
+}
+
+func hasMeaningfulToolAuthMetadata(metadata ToolAuthMetadata) bool {
+	return strings.TrimSpace(metadata.Version) != "" ||
+		strings.TrimSpace(metadata.ProductCode) != "" ||
+		strings.TrimSpace(metadata.Domain) != "" ||
+		len(metadata.ClientObservedScopes) > 0 ||
+		len(metadata.RequiredScopes) > 0 ||
+		len(metadata.RequiredPermissions) > 0 ||
+		len(metadata.RecommendedScopes) > 0 ||
+		len(metadata.ExcludedScopes) > 0 ||
+		len(metadata.GrantProductCodes) > 0 ||
+		strings.TrimSpace(metadata.RiskHint) != "" ||
+		strings.TrimSpace(metadata.RiskAction) != "" ||
+		metadata.ConfirmationRequired ||
+		len(metadata.Identities) > 0 ||
+		strings.TrimSpace(metadata.Source) != "" ||
+		strings.TrimSpace(metadata.AuthMetaVersion) != "" ||
+		strings.TrimSpace(metadata.AuthMetaHash) != ""
 }
 
 func productGrantAuthMetadata(productID string) *ToolAuthMetadata {

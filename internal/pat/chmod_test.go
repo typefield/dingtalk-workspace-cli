@@ -314,6 +314,37 @@ func TestChmod_productsFlagPlansThenGrantsSelectedScopes(t *testing.T) {
 	}
 }
 
+func TestChmod_productsSessionModePassesSessionIDToPlanAndGrant(t *testing.T) {
+	t.Setenv(agentCodeEnv, "qoderwork")
+	fake := &sequenceToolCaller{responses: []string{
+		`{"success":true,"data":{"selectedScopes":["calendar.event:read"]}}`,
+		`{"success":true,"data":{"grantedScopes":["calendar.event:read"]}}`,
+	}}
+	cmd := newChmodCommand(fake)
+	_ = cmd.Flags().Set("products", "calendar")
+	_ = cmd.Flags().Set("session-id", "session-123")
+
+	if err := cmd.RunE(cmd, nil); err != nil {
+		t.Fatalf("chmod RunE error = %v", err)
+	}
+
+	if len(fake.calls) != 2 {
+		t.Fatalf("CallTool count = %d, want 2", len(fake.calls))
+	}
+	if got := fake.calls[0].args["grantType"]; got != "session" {
+		t.Fatalf("plan grantType = %#v, want session", got)
+	}
+	if got := fake.calls[0].args["sessionId"]; got != "session-123" {
+		t.Fatalf("plan sessionId = %#v, want session-123", got)
+	}
+	if got := fake.calls[1].args["grantType"]; got != "session" {
+		t.Fatalf("grant grantType = %#v, want session", got)
+	}
+	if got := fake.calls[1].args["sessionId"]; got != "session-123" {
+		t.Fatalf("grant sessionId = %#v, want session-123", got)
+	}
+}
+
 func TestChmod_recommendFlagPlansThenGrantsWithoutPositionalScopes(t *testing.T) {
 	t.Setenv(agentCodeEnv, "qoderwork")
 	fake := &sequenceToolCaller{responses: []string{
