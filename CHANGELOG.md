@@ -6,6 +6,12 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+## [1.0.34] - 2026-06-03
+
+### Changed
+
+- **Service discovery path now carries a version-coded segment** (`internal/market/registry.go`) — the server-list endpoint moves from `/cli/discovery/apis` to `/cli/discovery/apis/bamboo`. The path is now a single `discoveryAPIPath` constant so future version bumps touch one place. Only the path changes; the MCP base host stays on production `https://mcp.dingtalk.com` and the auth / skill / doctor endpoints are untouched. Discovery via the edition `DiscoveryURL` hook (full-URL `FetchServersFromURL`) is unaffected. Server side must serve the new path.
+
 ## [1.0.33] - 2026-06-02
 
 This release merges the multi-contributor `pre-mcp-discovery` feature branch into `main` as a single squash (#391), bringing a large batch of new product surface — full DingTalk **docs** (`doc`), **knowledge base** (`wiki`), **AI app** (`aiapp`), AI-table **forms** + **import/export**, and reworked **mail** / **todo** / **report** command trees — while keeping service discovery pinned to production `https://mcp.dingtalk.com` (the branch's `pre-mcp.dingtalk.com` endpoint change was deliberately excluded; the four host constants in `skill_command.go` / `auth/endpoints.go` / `cli/loader.go` / `market/registry.go` stay on prod). It also folds in the portable auth bundle (`dws auth export` / `import`, #357) and PAT batch authorization (#389).
