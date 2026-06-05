@@ -2,8 +2,8 @@
 
 ## Summary
 
-- **Total Test Cases**: 202
-- **Passed**: 202
+- **Total Test Cases**: 223
+- **Passed**: 223
 - **Failed**: 0
 - **Pass Rate**: 100.0%
 
@@ -16,6 +16,7 @@
 | calendar | 30 | 30 | 0 | 100.0% |
 | chat | 31 | 31 | 0 | 100.0% |
 | contact | 14 | 14 | 0 | 100.0% |
+| devapp | 21 | 21 | 0 | 100.0% |
 | devdoc | 5 | 5 | 0 | 100.0% |
 | ding | 5 | 5 | 0 | 100.0% |
 | report | 26 | 26 | 0 | 100.0% |
@@ -1090,6 +1091,176 @@
 - Skill Reference: references/products/contact.md
 - Command path: PASS (contact user search-mobile)
 - Flags: PASS (1 flags validated)
+
+### devapp
+
+**devapp_devapp_list_001** ✅ PASS
+
+- Prompt: 搜索开放平台应用，应用名是 DemoApp
+- Expected: `dws devapp list --name DemoApp --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp list)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_list_002** ✅ PASS
+
+- Prompt: 分页查询开放平台应用，第 2 页，每页 10 条，按修改时间倒序
+- Expected: `dws devapp list --page 2 --page-size 10 --sort gmt_modified --order desc --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp list)
+- Flags: PASS (4 flags validated)
+
+**devapp_devapp_list_003** ✅ PASS
+
+- Prompt: 在开发者后台搜索企业内部应用 DemoApp
+- Expected: `dws devapp list --name DemoApp --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp list)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_get_001** ✅ PASS
+
+- Prompt: 查看统一应用 UNIFIED_APP_ID 的应用详情
+- Expected: `dws devapp get --unified-app-id UNIFIED_APP_ID --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp get)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_get_002** ✅ PASS
+
+- Prompt: agentId 为 123456 的开放平台应用是哪个
+- Expected: `dws devapp get --agent-id 123456 --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp get)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_get_003** ✅ PASS
+
+- Prompt: 查开放平台应用 DemoApp 的 appKey、clientId 和 agentId
+- Expected: `dws devapp get --name DemoApp --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp get)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_create_001** ✅ PASS
+
+- Prompt: 创建一个企业内部应用，名称 DemoApp，描述是内部应用
+- Expected: `dws devapp create --name DemoApp --desc "内部应用" --type internal --dry-run --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp create)
+- Flags: PASS (3 flags validated)
+
+**devapp_devapp_create_002** ✅ PASS
+
+- Prompt: 已确认创建企业内部应用 DemoApp
+- Expected: `dws devapp create --name DemoApp --type internal --yes --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp create)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_update_001** ✅ PASS
+
+- Prompt: 把应用 UNIFIED_APP_ID 的描述改成 新描述
+- Expected: `dws devapp update --unified-app-id UNIFIED_APP_ID --desc "新描述" --dry-run --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp update)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_delete_001** ✅ PASS
+
+- Prompt: 删除开放平台应用 UNIFIED_APP_ID，先给我预览
+- Expected: `dws devapp delete --unified-app-id UNIFIED_APP_ID --dry-run --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp delete)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_credentials_get_001** ✅ PASS
+
+- Prompt: 查询应用 UNIFIED_APP_ID 的 clientId 和脱敏 appSecret
+- Expected: `dws devapp credentials get --unified-app-id UNIFIED_APP_ID --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp credentials get)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_credentials_get_002** ✅ PASS
+
+- Prompt: 我已经确认，需要读取应用 UNIFIED_APP_ID 的完整 clientSecret
+- Expected: `dws devapp credentials get --unified-app-id UNIFIED_APP_ID --show-secret --yes --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp credentials get)
+- Flags: PASS (3 flags validated)
+
+**devapp_devapp_permission_list_001** ✅ PASS
+
+- Prompt: 查询应用 UNIFIED_APP_ID 已开通和未开通的全部 APP、SNS 权限
+- Expected: `dws devapp permission list --unified-app-id UNIFIED_APP_ID --status all --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission list)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_permission_list_002** ✅ PASS
+
+- Prompt: 搜索应用 UNIFIED_APP_ID 里机器人发送消息相关的未开通权限
+- Expected: `dws devapp permission list --unified-app-id UNIFIED_APP_ID --keyword "机器人发送消息" --status unauthed --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission list)
+- Flags: PASS (3 flags validated)
+
+**devapp_devapp_permission_list_003** ✅ PASS
+
+- Prompt: 看一下权限 qyapi_robot_sendmsg 覆盖哪些 API
+- Expected: `dws devapp permission list --unified-app-id UNIFIED_APP_ID --scope qyapi_robot_sendmsg --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission list)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_permission_list_004** ✅ PASS
+
+- Prompt: 给开放平台应用 UNIFIED_APP_ID 搜索手机号权限，应用权限和个人权限都要展示
+- Expected: `dws devapp permission list --unified-app-id UNIFIED_APP_ID --keyword "手机号" --status all --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission list)
+- Flags: PASS (3 flags validated)
+
+**devapp_devapp_permission_add_001** ✅ PASS
+
+- Prompt: 给应用 UNIFIED_APP_ID 申请 qyapi_robot_sendmsg 权限，先预览
+- Expected: `dws devapp permission add --unified-app-id UNIFIED_APP_ID --permissions qyapi_robot_sendmsg --dry-run --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission add)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_permission_add_002** ✅ PASS
+
+- Prompt: 已确认，给应用 UNIFIED_APP_ID 申请 Contact.User.mobile 权限
+- Expected: `dws devapp permission add --unified-app-id UNIFIED_APP_ID --permissions Contact.User.mobile --yes --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission add)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_permission_remove_001** ✅ PASS
+
+- Prompt: 从应用 UNIFIED_APP_ID 移除 qyapi_robot_sendmsg 权限，先预览
+- Expected: `dws devapp permission remove --unified-app-id UNIFIED_APP_ID --permission qyapi_robot_sendmsg --dry-run --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp permission remove)
+- Flags: PASS (2 flags validated)
+
+**devapp_devapp_event_list_001** ✅ PASS
+
+- Prompt: 查询应用 UNIFIED_APP_ID 的事件订阅配置
+- Expected: `dws devapp event list --unified-app-id UNIFIED_APP_ID --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp event list)
+- Flags: PASS (1 flags validated)
+
+**devapp_devapp_version_publish_001** ✅ PASS
+
+- Prompt: 已确认，发布应用 UNIFIED_APP_ID 的版本 VERSION_ID，审批人是 USERID
+- Expected: `dws devapp version publish --unified-app-id UNIFIED_APP_ID --version-id VERSION_ID --approver USERID --yes --format json`
+- Skill Reference: references/products/devapp.md
+- Command path: PASS (devapp version publish)
+- Flags: PASS (3 flags validated)
 
 ### devdoc
 
