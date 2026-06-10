@@ -291,6 +291,18 @@ grantType 规则:
 				return fmt.Errorf("internal error: tool runtime not initialized")
 			}
 
+			if usesPlan && !batchAuthorizationConfirmed(cmd) {
+				return apperrors.NewValidation(
+					"batch PAT authorization requires explicit --yes before granting",
+					apperrors.WithReason("batch_auth_requires_yes"),
+					apperrors.WithHint("rerun with --dry-run to preview scopes, then add --yes to grant"),
+					apperrors.WithActions(
+						"dws pat chmod --recommend --product <product> --grant-type <type> --dry-run",
+						"dws pat chmod --recommend --product <product> --grant-type <type> --yes",
+					),
+				)
+			}
+
 			if usesPlan {
 				planArgs := buildBatchPlanArgs(scopes, productCodes, recommend, grantType, agentCode, sessionID, true)
 				planResult, err := callPATBatchPlan(cmd.Context(), c, agentCode, sessionID, planArgs)
@@ -368,6 +380,22 @@ grantType 规则:
 	chmodCmd.Flags().BoolVar(&recommend, "recommend", false, "使用推荐 scope 集合批量授权")
 
 	return chmodCmd
+}
+
+// batchAuthorizationConfirmed reads the inherited root --yes flag without
+// making chmod own that flag. Only batch/product grants use this gate; explicit
+// single-scope chmod keeps the historical non-interactive behavior.
+func batchAuthorizationConfirmed(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
+	}
+	if yes, err := cmd.Flags().GetBool("yes"); err == nil {
+		return yes
+	}
+	if yes, err := cmd.InheritedFlags().GetBool("yes"); err == nil {
+		return yes
+	}
+	return false
 }
 
 func collectChmodProductCodes(groups ...[]string) []string {

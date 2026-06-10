@@ -267,6 +267,14 @@ func buildChmod(t *testing.T, fake *fakeToolCaller) *cobra.Command {
 	return newChmodCommand(fake)
 }
 
+func setBatchYesForTest(t *testing.T, cmd *cobra.Command) {
+	t.Helper()
+	cmd.Flags().BoolP("yes", "y", false, "test-only root confirmation flag")
+	if err := cmd.Flags().Set("yes", "true"); err != nil {
+		t.Fatalf("set --yes: %v", err)
+	}
+}
+
 func TestRegisterCommands_OnlyExposesChmodForAuthorization(t *testing.T) {
 	root := &cobra.Command{Use: "dws"}
 	RegisterCommands(root, &fakeToolCaller{})
@@ -298,6 +306,7 @@ func TestChmod_productsFlagPlansThenGrantsSelectedScopes(t *testing.T) {
 	cmd := newChmodCommand(fake)
 	_ = cmd.Flags().Set("grant-type", "once")
 	_ = cmd.Flags().Set("products", "calendar,aitable")
+	setBatchYesForTest(t, cmd)
 
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("chmod RunE error = %v", err)
@@ -335,6 +344,27 @@ func TestChmod_productsFlagPlansThenGrantsSelectedScopes(t *testing.T) {
 	}
 }
 
+func TestChmod_productsFlagRequiresYesBeforeGranting(t *testing.T) {
+	t.Setenv(agentCodeEnv, "qoderwork")
+	fake := &sequenceToolCaller{responses: []string{
+		`{"success":true,"data":{"selectedScopes":["calendar.event:read"]}}`,
+	}}
+	cmd := newChmodCommand(fake)
+	_ = cmd.Flags().Set("grant-type", "once")
+	_ = cmd.Flags().Set("products", "calendar")
+
+	err := cmd.RunE(cmd, nil)
+	if err == nil {
+		t.Fatal("chmod RunE error = nil, want --yes validation error")
+	}
+	if !strings.Contains(err.Error(), "requires explicit --yes") {
+		t.Fatalf("chmod RunE error = %v, want --yes requirement", err)
+	}
+	if len(fake.calls) != 0 {
+		t.Fatalf("CallTool count = %d, want 0 before explicit --yes", len(fake.calls))
+	}
+}
+
 func TestChmod_productsSessionModePassesIdentityArgsAndCompatEnv(t *testing.T) {
 	t.Setenv(agentCodeEnv, "qoderwork")
 	fake := &sequenceToolCaller{responses: []string{
@@ -344,6 +374,7 @@ func TestChmod_productsSessionModePassesIdentityArgsAndCompatEnv(t *testing.T) {
 	cmd := newChmodCommand(fake)
 	_ = cmd.Flags().Set("products", "calendar")
 	_ = cmd.Flags().Set("session-id", "session-123")
+	setBatchYesForTest(t, cmd)
 
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("chmod RunE error = %v", err)
@@ -441,6 +472,7 @@ func TestChmod_batchPlanRetriesWithoutIdentityArgsForCompat(t *testing.T) {
 	cmd := newChmodCommand(fake)
 	_ = cmd.Flags().Set("grant-type", "once")
 	_ = cmd.Flags().Set("products", "calendar")
+	setBatchYesForTest(t, cmd)
 
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("chmod RunE error = %v", err)
@@ -583,6 +615,7 @@ func TestChmod_recommendFlagPlansThenGrantsWithoutPositionalScopes(t *testing.T)
 	cmd := newChmodCommand(fake)
 	_ = cmd.Flags().Set("grant-type", "once")
 	_ = cmd.Flags().Set("recommend", "true")
+	setBatchYesForTest(t, cmd)
 
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("chmod RunE error = %v", err)
@@ -610,6 +643,7 @@ func TestChmod_productsAllGrantedStopsAfterPlan(t *testing.T) {
 	cmd := newChmodCommand(fake)
 	_ = cmd.Flags().Set("grant-type", "once")
 	_ = cmd.Flags().Set("products", "calendar")
+	setBatchYesForTest(t, cmd)
 
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatalf("chmod RunE error = %v", err)
