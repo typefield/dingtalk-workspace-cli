@@ -81,10 +81,13 @@ type aiCardClient struct {
 	tokenExp time.Time
 }
 
+// newAICardClient builds the reply-UX client. With an empty templateID the
+// client does emotions only (Thinking/Done chips) and no cards — mirroring
+// hermes, where cards are an opt-in enabled by configuring a template ID and
+// replies stay plain text otherwise. This avoids the silent-failure trap:
+// card APIs all succeed even when the client cannot render the template.
 func newAICardClient(clientID, clientSecret, templateID string) *aiCardClient {
-	if strings.TrimSpace(templateID) == "" {
-		templateID = defaultAICardTemplateID
-	}
+	templateID = strings.TrimSpace(templateID)
 	return &aiCardClient{
 		clientID:     clientID,
 		clientSecret: clientSecret,
@@ -92,6 +95,10 @@ func newAICardClient(clientID, clientSecret, templateID string) *aiCardClient {
 		httpClient:   &http.Client{Timeout: 15 * time.Second},
 	}
 }
+
+// hasTemplate reports whether card replies are enabled (a template is
+// configured); without one the client is used for emotions only.
+func (c *aiCardClient) hasTemplate() bool { return c.templateID != "" }
 
 // aiCardInstance is one delivered card, identified by its outTrackId.
 type aiCardInstance struct {

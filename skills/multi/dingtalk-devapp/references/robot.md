@@ -122,7 +122,7 @@ dws devapp robot connect --robot-client-id <clientId> --robot-client-secret <cli
 | `--agent-memory` | 按会话续聊（默认开）：同一群/单聊共享 agent 会话，追问保留上下文。仅 claudecode/codebuddy/workbuddy（CLI 有 `--session-id`/`--resume`）；qoder 系/codex/gemini/opencode 无寻址会话，自动保持无状态。`--agent-memory=false` 关闭 |
 | `--agent-model` | 覆盖本地 agent 模型（如 claudecode 默认锁 haiku 求快，可改 `claude-sonnet-4-6` 换聪明）。env: `DWS_AGENT_MODEL` |
 | `--agent-workdir` | agent 运行目录：放知识文件（如 CLAUDE.md）可给机器人企业上下文。默认空白临时目录（冷启动快 ~4s vs 大目录 ~29s，慢了会错过钉钉响应窗口）。env: `DWS_AGENT_WORKDIR` |
-| `--reply-card` | AI 卡片回复（默认开）：思考中→完成状态，同 hermes/openclaw 官方渠道体验；卡片任一步失败自动回退普通 text/markdown；env `DWS_REPLY_CARD=0` 关闭 |
+| `--reply-card` | 富回复（默认开）：🤔Thinking/🥳Done 表态永远生效；**卡片需配 `--card-template` 才启用**（同 hermes：没配模板=纯文字回复），失败自动回退文字；env `DWS_REPLY_CARD=0` 全关 |
 | `--card-template` | AI 卡片模板 ID。**模板按应用授权**：去开发者后台→你的应用→AI 卡片设置注册/获取模板 ID（同 hermes 的配置方式），可去掉公共模板的第三方角标；默认用公共模板 best-effort。env `DWS_CARD_TEMPLATE` |
 
 #### 建联前的依赖预检（agent 必做）

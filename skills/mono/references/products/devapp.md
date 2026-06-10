@@ -223,7 +223,7 @@ dws devapp robot connect --robot-client-id CLIENT_ID --robot-client-secret CLIEN
 - **会话记忆 `--agent-memory`**（默认开）：同一群/单聊共享 agent 会话，追问保留上下文。仅 claudecode/codebuddy/workbuddy 支持（CLI 有 `--session-id/--resume`）；其余渠道自动无状态。`--agent-memory=false` 关闭。
 - **模型覆盖 `--agent-model`**：claudecode 默认锁 haiku 求快，可改 sonnet/opus 换聪明（env `DWS_AGENT_MODEL`）。
 - **运行目录 `--agent-workdir`**：放知识文件给机器人企业上下文；默认空白临时目录求快（env `DWS_AGENT_WORKDIR`）。
-- **AI 卡片回复 `--reply-card`**（默认开）：思考中→完成状态卡片，同官方渠道体验；失败自动回退普通消息（env `DWS_REPLY_CARD=0` 关闭）。
+- **富回复 `--reply-card`**（默认开）：Thinking/Done 表态永远生效；**卡片需配 `--card-template` 才启用**（同 hermes 语义：没配模板=纯文字回复+表态），失败自动回退文字（env `DWS_REPLY_CARD=0` 全关）。
 - **卡片模板 `--card-template`**：模板按应用授权，建议在开发者后台为自己应用注册 AI 卡片模板并填其 ID（env `DWS_CARD_TEMPLATE`）；默认公共模板 best-effort。
 - **依赖预检（agent 必做）**：建联前先 `--dry-run` 看输出的 `cli` 字段——`installed:false` 且 `autoInstall:true`（npm 系）告知用户会自动安装；`autoInstall:false`（桌面 App/官方渠道）**先引导用户按 `installHint` 安装**，不要直接起连接。
 - **stream-bridge 渠道**（qoder/qoderwork/claudecode/workbuddy/codex/gemini/opencode）：Go 原生进程内 Stream 转发器，订阅 `TOPIC_ROBOT`，每条 @机器人消息起一个无头 CLI 实例（如 `claude -p`）→ stdout 回钉钉，可 7×24 无人值守。

@@ -631,7 +631,7 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			var cardInst *aiCardInstance
 			var onDelta func(string)
 			ef, _ := fwd.(*execForwarder)
-			if cardCli != nil && ef != nil && ef.canStream() {
+			if cardCli != nil && cardCli.hasTemplate() && ef != nil && ef.canStream() {
 				if ci, cerr := cardCli.createAndDeliver(context.Background(), callbackData); cerr != nil {
 					fmt.Fprintf(os.Stderr, "[connect][card] 预投卡片失败，降级一次性回复: %v\n", cerr)
 				} else {
@@ -659,7 +659,7 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			}
 
 			delivered := false
-			if cardCli != nil {
+			if cardCli != nil && cardCli.hasTemplate() {
 				if cardInst == nil {
 					// One-shot path: card only appears with the final content.
 					if ci, cerr := cardCli.createAndDeliver(context.Background(), callbackData); cerr != nil {

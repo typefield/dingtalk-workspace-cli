@@ -192,7 +192,11 @@ func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string,
 		replyStyle := "text/markdown"
 		if opts.ReplyCard {
 			cardCli = newAICardClient(clientID, clientSecret, opts.CardTemplate)
-			replyStyle = "ai-card(thinking→done, 失败回退普通消息)"
+			if cardCli.hasTemplate() {
+				replyStyle = "ai-card(thinking→done, 失败回退普通消息)"
+			} else {
+				replyStyle = "text/markdown + thinking/done表态（配 --card-template 升级为卡片）"
+			}
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s Go 原生 Stream 建联，转发到 %s，回复样式=%s（Ctrl-C 退出）\n", channel, fwd.label(), replyStyle)
 		return runStreamConnector(cmd.Context(), channel, clientID, clientSecret, fwd, cardCli)
@@ -351,6 +355,11 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 	if cardTemplate == "" {
 		cardTemplate = strings.TrimSpace(os.Getenv("DWS_CARD_TEMPLATE"))
 	}
+	// "public" opts into the openclaw shared template explicitly — best-effort
+	// only, since shared templates may not render for every app.
+	if strings.EqualFold(cardTemplate, "public") {
+		cardTemplate = defaultAICardTemplateID
+	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
 		ReplyCard: replyCard, CardTemplate: cardTemplate}
 }
@@ -379,7 +388,11 @@ func connectAgentOptionsPayload(channel string, opts connectAgentOptions) map[st
 	}
 	replyStyle := "text/markdown"
 	if opts.ReplyCard {
-		replyStyle = "ai-card"
+		if opts.CardTemplate != "" {
+			replyStyle = "ai-card"
+		} else {
+			replyStyle = "text/markdown + thinking/done表态（配 --card-template 升级为卡片）"
+		}
 	}
 	return map[string]any{"model": model, "workdir": workDir, "memory": memory, "replyStyle": replyStyle}
 }

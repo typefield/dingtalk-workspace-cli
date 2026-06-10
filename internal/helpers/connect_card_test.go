@@ -95,7 +95,7 @@ func TestAICardCreateFinalizeSequence(t *testing.T) {
 	rec, srv := newCardAPIServer(t)
 	withCardAPIBase(t, srv.URL)
 
-	c := newAICardClient("ding-client", "ding-secret", "")
+	c := newAICardClient("ding-client", "ding-secret", defaultAICardTemplateID)
 	card, err := c.createAndDeliver(context.Background(), groupCallback())
 	if err != nil {
 		t.Fatalf("createAndDeliver: %v", err)
@@ -164,7 +164,7 @@ func TestAICardDeliverOneToOne(t *testing.T) {
 	rec, srv := newCardAPIServer(t)
 	withCardAPIBase(t, srv.URL)
 
-	c := newAICardClient("ding-client", "ding-secret", "")
+	c := newAICardClient("ding-client", "ding-secret", defaultAICardTemplateID)
 	data := &chatbot.BotCallbackDataModel{ConversationType: "1", SenderStaffId: "staff-9"}
 	if _, err := c.createAndDeliver(context.Background(), data); err != nil {
 		t.Fatalf("createAndDeliver: %v", err)
@@ -186,7 +186,7 @@ func TestAICardCreateFailure(t *testing.T) {
 	withCardAPIBase(t, srv.URL)
 	rec.fail["POST /v1.0/card/instances"] = 500
 
-	c := newAICardClient("ding-client", "ding-secret", "")
+	c := newAICardClient("ding-client", "ding-secret", defaultAICardTemplateID)
 	if _, err := c.createAndDeliver(context.Background(), groupCallback()); err == nil {
 		t.Fatal("want error when card create fails")
 	}
@@ -204,7 +204,7 @@ func TestAICardMarkFailed(t *testing.T) {
 	rec, srv := newCardAPIServer(t)
 	withCardAPIBase(t, srv.URL)
 
-	c := newAICardClient("ding-client", "ding-secret", "")
+	c := newAICardClient("ding-client", "ding-secret", defaultAICardTemplateID)
 	c.markFailed(context.Background(), &aiCardInstance{outTrackID: "dws_x"})
 	last := rec.bodies[len(rec.bodies)-1]
 	pm := last["cardData"].(map[string]any)["cardParamMap"].(map[string]any)
@@ -220,7 +220,9 @@ func TestRobotConnectReplyCardFlag(t *testing.T) {
 		args []string
 		want string
 	}{
-		{"default on", nil, `"replyStyle": "ai-card"`},
+		{"default: no template -> text + emotions", nil, "thinking/done表态"},
+		{"template configured -> ai-card", []string{"--card-template", "tpl-1.schema"}, `"replyStyle": "ai-card"`},
+		{"public alias -> ai-card", []string{"--card-template", "public"}, `"replyStyle": "ai-card"`},
 		{"explicit off", []string{"--reply-card=false"}, `"replyStyle": "text/markdown"`},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
@@ -248,7 +250,7 @@ func TestAICardEmotions(t *testing.T) {
 	rec, srv := newCardAPIServer(t)
 	withCardAPIBase(t, srv.URL)
 
-	c := newAICardClient("ding-client", "ding-secret", "")
+	c := newAICardClient("ding-client", "ding-secret", defaultAICardTemplateID)
 	if err := c.markThinking(context.Background(), "cid-1", "msg-1"); err != nil {
 		t.Fatalf("markThinking: %v", err)
 	}
