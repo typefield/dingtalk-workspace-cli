@@ -171,6 +171,7 @@ func newDevAppCommand(runner executor.Runner) *cobra.Command {
 		newDevAppRobotConfigCommand(runner, "update", "更新现有应用机器人配置", devAppRobotConfigUpdateTool),
 		newDevAppRobotConfigCommand(runner, "enable", "启用现有应用机器人能力", devAppRobotEnableTool),
 		newDevAppRobotOfflineCommand(runner),
+		newDevAppRobotConnectCommand(runner),
 	)
 
 	version := &cobra.Command{

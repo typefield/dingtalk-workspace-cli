@@ -99,6 +99,31 @@ dws devapp robot offline --unified-app-id <unifiedAppId> --yes --format json
 
 MCP tool: `offline_open_dev_app_robot`
 
+### 建联（把机器人接到本地 agent）
+
+```bash
+# 用现成机器人凭证起 Stream，接到当前渠道的本地 agent（前台运行，Ctrl-C 退出）
+dws devapp robot connect --channel auto --robot-client-id <clientId> --robot-client-secret <clientSecret>
+
+# 用统一应用 ID，复用 credentials get 自动取凭证
+dws devapp robot connect --unified-app-id <unifiedAppId> --channel qoderwork
+
+# 预览建联方案不实际起连接
+dws devapp robot connect --robot-client-id <clientId> --robot-client-secret <clientSecret> --dry-run --format json
+```
+
+只建联、不建号：缺凭证先用 `robot create` / `robot submit` 建号拿 clientId/clientSecret。
+
+| flag | 说明 |
+|------|------|
+| `--channel` | `auto`(默认,运行时信号自动识别) / openclaw / qoder / qoderwork / hermes / workbuddy / claudecode / codebuddy / codex / gemini / opencode |
+| `--robot-client-id` / `--robot-client-secret` | 现成机器人凭证（clientId=AppKey, clientSecret=AppSecret）。命名带 `robot-` 前缀以避开全局 OAuth `--client-id` flag |
+| `--unified-app-id` | 统一应用 ID，内部调 `get_open_dev_app_credentials` 自动取凭证。⚠️ 字段名待预发真机验证；clientSecret 仅建号时返回一次、未必可取，必要时回退手填 |
+
+- **stream-bridge 渠道**：Go 原生进程内 Stream 转发器，订阅 `TOPIC_ROBOT`，每条 @机器人消息起一个无头 CLI 实例 → stdout 回钉钉，可 7×24 无人值守。
+- **官方渠道**（openclaw/hermes）：dws 不代建机器人，输出官方 onboarding 指引。
+- 环境覆盖：`DWS_AGENT_CMD` / `DWS_CONNECT_CMD` / `DWS_CONNECT_NO_INSTALL=1` / `DWS_AGENT_TIMEOUT_MS`。
+
 ## 错误处理
 
 | 情况 | 处理 |

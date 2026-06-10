@@ -203,6 +203,27 @@ MCP tools: `get_open_dev_app_robot_config` / `create_open_dev_app_robot_config` 
 
 配置字段：`--name/--brief/--description/--icon/--outgoing-url(outgoingUrl)/--event-url(chatBotEventUrl)/--mode/--skills(skillList)/--add-scope/--disable-ssl-verify/--i18n-name/--i18n-brief/--i18n-description`。应用未配机器人时 `get` 返回 `robot info is not exist`。
 
+### 建联（把机器人接到本地 agent）
+
+```bash
+# 用现成机器人凭证起 Stream，接到当前渠道的本地 agent（前台运行，Ctrl-C 退出）
+dws devapp robot connect --channel auto --robot-client-id CLIENT_ID --robot-client-secret CLIENT_SECRET
+
+# 用统一应用 ID，复用 credentials get 自动取凭证（省得手填）
+dws devapp robot connect --unified-app-id UNIFIED_APP_ID --channel qoderwork
+
+# 预览建联方案不实际起连接
+dws devapp robot connect --robot-client-id CLIENT_ID --robot-client-secret CLIENT_SECRET --dry-run --format json
+```
+
+- **不建号**：connect 只建联。缺凭证先用 `robot create/submit` 建号拿 clientId/clientSecret。
+- **凭证用 `--robot-client-id/--robot-client-secret`**（不叫 `--client-id`，那是全局 OAuth 客户端覆盖 flag，会撞名）。
+- **两种来源**：① 直接 `--robot-client-id/--robot-client-secret`；② `--unified-app-id`（内部调 `get_open_dev_app_credentials` 自动取）。⚠️ 来源②**字段名待预发真机验证**，且 clientSecret 一般仅建号时返回一次、该接口未必能返回，取不到时回退手填。
+- **渠道 `--channel`**：`auto`(默认，按运行时信号自动识别当前宿主) | `openclaw` | `qoder` | `qoderwork` | `hermes` | `workbuddy` | `claudecode` | `codebuddy` | `codex` | `gemini` | `opencode`。
+- **stream-bridge 渠道**（qoder/qoderwork/claudecode/workbuddy/codex/gemini/opencode）：Go 原生进程内 Stream 转发器，订阅 `TOPIC_ROBOT`，每条 @机器人消息起一个无头 CLI 实例（如 `claude -p`）→ stdout 回钉钉，可 7×24 无人值守。
+- **官方渠道**（openclaw/hermes）：dws 不代建机器人，输出官方 onboarding 指引（连接器自带建号 + AI 卡片回复）。
+- 覆盖项：`DWS_AGENT_CMD`(指定 agent 可执行命令) / `DWS_CONNECT_CMD`(指定外部连接器) / `DWS_CONNECT_NO_INSTALL=1`(关闭缺包自动安装) / `DWS_AGENT_TIMEOUT_MS`。
+
 ---
 
 ## 六、版本发布
