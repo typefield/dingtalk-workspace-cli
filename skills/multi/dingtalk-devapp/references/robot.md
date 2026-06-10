@@ -108,11 +108,23 @@ dws devapp robot connect --channel auto --robot-client-id <clientId> --robot-cli
 # 用统一应用 ID，复用 credentials get 自动取凭证
 dws devapp robot connect --unified-app-id <unifiedAppId> --channel qoderwork
 
+# Codex 渠道推荐显式覆盖 agent 命令；否则默认空白工作目录可能触发
+# "Not inside a trusted directory and --skip-git-repo-check was not specified"
+CODEX_BIN="$(command -v codex || echo /Applications/Codex.app/Contents/Resources/codex)"
+DWS_AGENT_CMD="$CODEX_BIN exec --skip-git-repo-check" \
+  dws devapp robot connect --unified-app-id <unifiedAppId> --channel codex --format json
+
 # 预览建联方案不实际起连接
 dws devapp robot connect --robot-client-id <clientId> --robot-client-secret <clientSecret> --dry-run --format json
 ```
 
 只建联、不建号：缺凭证先用 `robot create` / `robot submit` 建号拿 clientId/clientSecret。
+
+Codex 渠道注意：
+
+- `--channel codex` 真实建联时，优先使用上面的 `DWS_AGENT_CMD="$CODEX_BIN exec --skip-git-repo-check"` 形式，避免 Codex CLI 在默认临时目录内因非可信 Git 目录拒绝执行。
+- 如需给 Codex 固定知识/项目上下文，可把可信目录直接写进覆盖命令：`DWS_AGENT_CMD="$CODEX_BIN exec --skip-git-repo-check -C /path/to/repo"`。路径不要包含空格。
+- 设置 `DWS_AGENT_CMD` 后，DWS 不再自动拼接 `--agent-model` / `--agent-workdir` / 会话参数；需要的参数要一起写进 `DWS_AGENT_CMD`。
 
 | flag | 说明 |
 |------|------|
@@ -152,5 +164,6 @@ dws devapp robot connect --channel <ch> --robot-client-id x --robot-client-secre
 |------|------|
 | `robot info is not exist` | 应用未配置机器人，先用 `robot config` 创建 |
 | 应用名重复 | `app-name` 企业内需唯一，换个名字 |
+| 本地 Codex agent 返回 `Not inside a trusted directory and --skip-git-repo-check was not specified` | 用 `DWS_AGENT_CMD="$CODEX_BIN exec --skip-git-repo-check"` 重启 `robot connect --channel codex` |
 | `ServiceResult.success=false` | 透传 `errorCode/errorMsg` |
 | 创建任务 `EXPIRED` | 任务过期，重新 `submit`（可带原 taskId 重试） |

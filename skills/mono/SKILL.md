@@ -28,6 +28,13 @@ cli_version: ">=1.0.15"
 - **业务域最佳实践优先**：文档类多步任务先读 [04-document.md](./references/best_practices/04-document.md)；AI 表格读取/统计/写入/导入导出先读 [06-data-analytics.md](./references/best_practices/06-data-analytics.md)。本仓库只迁入这些业务域 best practices，不引入其它产品行动指南。
 - 知识库容器只用 `dws wiki space/member`；知识库内文件/文档的浏览、搜索、读取、创建、移动、复制统一切到 `dws doc`。`workspaceId` 只能传给 `wiki --workspace`、`doc --workspace` 或 `doc search --workspace-ids`，禁止传给 `doc list --folder`，也不要使用不存在的 `--space-id`。
 
+## 开放平台文档 RAG / 错误码排查
+
+- 任何产品执行中，只要用户问开放平台 API、接口参数、字段含义、权限点、回调、SDK、配额、错误码，或命令返回上游 OpenAPI/SDK 错误，必须先用 `dws devdoc article search --query "<关键词>" --format json` 做官方文档 RAG。
+- 查询词优先保留原始 API 名、能力名、权限点、完整错误码和 message；首轮形如 `errcode <code> <message>`，无结果再换 `<产品/场景> <错误码>`、`<接口名> 参数`。
+- 本地 CLI 错误（如 `unknown command` / `unknown flag` / 认证 / recovery）仍按本文件「错误处理」执行；`devdoc` 用于开放平台业务错误码和接口语义排查。
+- `devdoc` 只查钉钉开放平台开发者文档，不查业务数据；排查结论必须基于命中条目的标题、摘要或链接，不能编造错误原因或不存在的命令。
+
 
 ## 产品总览
 
