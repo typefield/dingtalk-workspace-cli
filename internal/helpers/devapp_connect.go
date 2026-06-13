@@ -427,9 +427,9 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
 		ReplyCard: replyCard, CardTemplate: cardTemplate,
-		KnowledgeDir: knowledgeDir,
+		KnowledgeDir:    knowledgeDir,
 		KnowledgeSource: knowledgeSource,
-		AllowedUsers: splitCommaList(users), AllowedGroups: splitCommaList(groups),
+		AllowedUsers:    splitCommaList(users), AllowedGroups: splitCommaList(groups),
 		UserRateLimit: rateLimit}
 }
 

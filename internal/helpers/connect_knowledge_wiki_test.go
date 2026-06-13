@@ -204,8 +204,8 @@ func TestCollectWikiNodesTolerant(t *testing.T) {
 
 func TestSanitizeWikiStem(t *testing.T) {
 	cases := map[string]string{
-		"SPACE123":              "SPACE123",
-		"a/b/../c":              "a_b_.._c",
+		"SPACE123":               "SPACE123",
+		"a/b/../c":               "a_b_.._c",
 		"https://x/nodes/N9?q=1": "https___x_nodes_N9_q_1",
 		"":                       "doc",
 		"...":                    "doc",
