@@ -28,6 +28,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/google/uuid"
+	"github.com/open-dingtalk/dingtalk-stream-sdk-go/card"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
 	sdklogger "github.com/open-dingtalk/dingtalk-stream-sdk-go/logger"
@@ -121,6 +122,16 @@ type connectAgentOptions struct {
 	// UserRateLimit caps messages per sender per minute
 	// (--user-rate-limit / DWS_USER_RATE_LIMIT); 0 = unlimited.
 	UserRateLimit int
+	// OwnerUserID is the digital-twin owner's staffId (--owner-user-id /
+	// DWS_OWNER_USER_ID). When set together with an interactive-card template
+	// (ApprovalCardTemplate), the confirmation gate is active: action requests
+	// are routed to this user for [Approve]/[Reject] before executing. Empty =
+	// gate off (plain Q&A).
+	OwnerUserID string
+	// ApprovalCardTemplate is the interactive-card template ID for the approval
+	// card (--approval-card-template / DWS_APPROVAL_CARD_TEMPLATE). Required for
+	// the gate to render [Approve]/[Reject] buttons; empty = gate off.
+	ApprovalCardTemplate string
 }
 
 // isStreamBridgeChannel reports whether a channel is wired through the Go-native
@@ -750,8 +761,9 @@ func (d *msgDedup) first(id string) bool {
 // connectExtras carries the optional Q&A hardening features into the stream
 // connector; nil/zero fields are off.
 type connectExtras struct {
-	gate *connectGate
-	kb   *knowledgeBase
+	gate     *connectGate
+	kb       *knowledgeBase
+	approval *approvalOrchestrator
 }
 
 func runStreamConnector(ctx context.Context, channel, clientID, clientSecret string, fwd forwarder, cardCli *aiCardClient, extras *connectExtras) error {
@@ -859,6 +871,14 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			if extras.kb != nil {
 				prompt = extras.kb.augment(prompt)
 			}
+			// Confirmation gate: when active, ask the agent to declare any
+			// action it would take via a structured [[ACTION:...]] marker
+			// instead of executing it, so the orchestrator can route the
+			// action through the owner's approval card (see handleReply).
+			gateOn := extras.approval.enabled()
+			if gateOn {
+				prompt = extras.approval.decorateForActionDetection(prompt)
+			}
 			// hermes-UX reply sequence (gateway/platforms/dingtalk.py):
 			//   ① on receive: "🤔Thinking" reaction chip on the user's message
 			//      (no card yet — the thinking phase is the chip, not a card);
@@ -880,7 +900,7 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			var cardInst *aiCardInstance
 			var onDelta func(string)
 			sf, streamable := fwd.(streamingForwarder)
-			if cardCli != nil && cardCli.hasTemplate() && streamable && sf.canStream() {
+			if cardCli != nil && cardCli.hasTemplate() && streamable && sf.canStream() && !gateOn {
 				if ci, cerr := cardCli.createAndDeliver(context.Background(), callbackData); cerr != nil {
 					fmt.Fprintf(os.Stderr, "[connect][card] 预投卡片失败，降级一次性回复: %v\n", cerr)
 				} else {
@@ -905,6 +925,28 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 				reply = fmt.Sprintf("（%s 调用失败：%v）", channel, err)
 			} else {
 				fmt.Fprintf(os.Stderr, "[connect] agent 已生成回复 (%s, 耗时 %s): %s\n", channel, time.Since(started).Round(time.Millisecond), truncateRunes(reply, 80))
+			}
+
+			// Confirmation gate orchestration: if the agent's reply declared
+			// an action, this submits it, sends the owner an approval card,
+			// blocks for the decision, executes on approve (or declines), and
+			// posts the outcome into the group itself. handled==true means the
+			// gate owns the reply and the normal delivery below is skipped.
+			if err == nil && gateOn {
+				groupReply := func(ctx context.Context, _, text string) error {
+					if len([]rune(text)) > 200 {
+						return replier.SimpleReplyMarkdown(ctx, webhook, []byte(channel), []byte(text))
+					}
+					return replier.SimpleReplyText(ctx, webhook, []byte(text))
+				}
+				out, handled := extras.approval.handleReply(context.Background(), strings.TrimSpace(callbackData.SenderStaffId), convID, reply, groupReply)
+				if handled {
+					if thinking {
+						cardCli.swapThinkingToDone(context.Background(), callbackData.ConversationId, msgID)
+					}
+					return
+				}
+				reply = out
 			}
 
 			delivered := false
@@ -956,6 +998,16 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		})
 		return []byte(""), nil
 	})
+
+	// Confirmation gate: button taps on the owner's approval card arrive on the
+	// same Stream long-connection (no public webhook). Register the card callback
+	// router only when the gate is active; it routes [Approve]/[Reject] into
+	// gate.Decide, which wakes the blocked Await in the forward goroutine.
+	if extras.approval.enabled() {
+		cli.RegisterCardCallbackRouter(func(ctx context.Context, creq *card.CardRequest) (*card.CardResponse, error) {
+			return extras.approval.handleCardCallback(ctx, creq)
+		})
+	}
 
 	if err := cli.Start(ctx); err != nil {
 		return apperrors.NewInternal("stream 建连失败：" + err.Error())

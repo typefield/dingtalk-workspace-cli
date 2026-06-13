@@ -234,6 +234,18 @@ func launchConnector(cmd *cobra.Command, runner executor.Runner, channel, client
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 访问控制：用户白名单 %d、群白名单 %d、限流 %d 条/分钟/人\n",
 				len(opts.AllowedUsers), len(opts.AllowedGroups), opts.UserRateLimit)
 		}
+		// Confirmation gate ("digital twin"): when an owner + an interactive-card
+		// template are configured, action requests route to the owner for approval
+		// before executing. Needs a runner to run the approved command directly.
+		if opts.OwnerUserID != "" {
+			if sender := newDingtalkApprovalCardSender(clientID, clientSecret, opts.ApprovalCardTemplate); sender != nil {
+				gate := newApprovalGate(clientID)
+				extras.approval = newApprovalOrchestrator(gate, sender, runner, opts.OwnerUserID)
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（执行类请求先卡片审批）\n", opts.OwnerUserID)
+			} else {
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 已配置 --owner-user-id 但缺 --approval-card-template，确认闸未开启（无审批卡片模板无法渲染按钮）\n")
+			}
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s Go 原生 Stream 建联，转发到 %s，回复样式=%s（Ctrl-C 退出）\n", channel, fwd.label(), replyStyle)
 		return runStreamConnector(cmd.Context(), channel, clientID, clientSecret, fwd, cardCli, extras)
 	}
@@ -397,6 +409,8 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("allowed-users", "", "用户白名单 staffId（逗号分隔），配置后仅名单内用户可触发；env: DWS_ALLOWED_USERS")
 	cmd.Flags().String("allowed-groups", "", "群白名单 openConversationId（逗号分隔），配置后仅名单内群可触发；env: DWS_ALLOWED_GROUPS")
 	cmd.Flags().Int("user-rate-limit", 20, "单用户每分钟消息上限（防刷；每条消息都是一次 LLM 调用），0 关闭；env: DWS_USER_RATE_LIMIT")
+	cmd.Flags().String("owner-user-id", "", "数字分身主人 staffId：开启确认闸后，执行类请求先发卡片给主人审批，同意才执行；env: DWS_OWNER_USER_ID")
+	cmd.Flags().String("approval-card-template", "", "确认闸交互卡片模板 ID（带[同意][拒绝]按钮）；与 --owner-user-id 同时配置才开启确认闸；env: DWS_APPROVAL_CARD_TEMPLATE")
 	return cmd
 }
 
@@ -452,12 +466,22 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 			}
 		}
 	}
+	owner := devAppStringFlag(cmd, "owner-user-id")
+	if owner == "" {
+		owner = strings.TrimSpace(os.Getenv("DWS_OWNER_USER_ID"))
+	}
+	approvalTemplate := devAppStringFlag(cmd, "approval-card-template")
+	if approvalTemplate == "" {
+		approvalTemplate = strings.TrimSpace(os.Getenv("DWS_APPROVAL_CARD_TEMPLATE"))
+	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
 		ReplyCard: replyCard, CardTemplate: cardTemplate,
 		KnowledgeDir:    knowledgeDir,
 		KnowledgeSource: knowledgeSource,
 		AllowedUsers:    splitCommaList(users), AllowedGroups: splitCommaList(groups),
-		UserRateLimit: rateLimit}
+		UserRateLimit:        rateLimit,
+		OwnerUserID:          owner,
+		ApprovalCardTemplate: approvalTemplate}
 }
 
 // connectAgentOptionsPayload renders the effective agent tuning for the
