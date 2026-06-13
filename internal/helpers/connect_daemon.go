@@ -45,8 +45,9 @@ import (
 //     processAlive from connect_lock.go), and signal a graceful stop.
 //
 // Two hidden internal flags select the mode of a re-exec:
-//   --daemon-supervise : run the supervisor loop (set by the --daemon parent)
-//   --daemon-worker    : run a single foreground connector (set by the supervisor)
+//
+//	--daemon-supervise : run the supervisor loop (set by the --daemon parent)
+//	--daemon-worker    : run a single foreground connector (set by the supervisor)
 const (
 	daemonSuperviseFlag = "daemon-supervise"
 	daemonWorkerFlag    = "daemon-worker"

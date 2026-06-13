@@ -36,7 +36,7 @@ func TestBackoffDelay(t *testing.T) {
 		{4, 8 * time.Second},
 		{5, 16 * time.Second},
 		{6, 32 * time.Second},
-		{7, cap},  // 64s capped to 60s
+		{7, cap}, // 64s capped to 60s
 		{8, cap},
 		{100, cap},
 	}
