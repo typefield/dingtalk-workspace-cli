@@ -283,6 +283,14 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Daemon dispatch (see connect_daemon.go). --daemon-supervise runs the
+			// restart supervisor; --daemon (parent) re-execs into a detached
+			// supervisor; --daemon-worker falls through to the normal foreground
+			// connector below (it IS the connector, just spawned by the supervisor).
+			supervise, _ := cmd.Flags().GetBool(daemonSuperviseFlag)
+			if supervise {
+				return runSupervisor(cmd)
+			}
 			channelFlag := devAppStringFlag(cmd, "channel")
 			channel, detectedBy := resolveConnectChannel(channelFlag)
 			if channel == "" {
@@ -341,11 +349,30 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 				})
 			}
 
+			// --daemon: detach into a background supervisor that keeps the
+			// connector alive 7x24. We resolve credentials/channel first (above) so
+			// the parent fails fast on bad input before forking, then re-exec.
+			if daemonMode, _ := cmd.Flags().GetBool(daemonFlag); daemonMode {
+				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID)
+			}
+
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s（%s）凭证来源=%s\n", channel, detectedBy, resolvedBy)
 			return launchConnector(cmd, channel, clientID, clientSecret, opts)
 		},
 	}
 	preferLegacyLeaf(cmd)
+	// Daemon mode (see connect_daemon.go). --daemon detaches the connector into a
+	// self-restarting background supervisor; status/stop are sibling subcommands.
+	cmd.Flags().Bool(daemonFlag, false, "守护进程模式：把连接器放到后台常驻（脱离终端、崩溃自拉起），父进程打印 pid/日志路径后退出（Windows 暂不支持）")
+	// Internal re-exec mode flags, hidden from help.
+	cmd.Flags().Bool(daemonSuperviseFlag, false, "internal: run the daemon supervisor (set automatically by --daemon)")
+	cmd.Flags().Bool(daemonWorkerFlag, false, "internal: run a single supervised connector worker (set automatically by the supervisor)")
+	_ = cmd.Flags().MarkHidden(daemonSuperviseFlag)
+	_ = cmd.Flags().MarkHidden(daemonWorkerFlag)
+	cmd.AddCommand(
+		newDevAppRobotConnectStatusCommand(),
+		newDevAppRobotConnectStopCommand(),
+	)
 	cmd.Flags().String("channel", "auto", "渠道：auto(默认,自动探测)|openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode")
 	// 用 robot-client-* 而非 client-id/client-secret：后者是全局 OAuth 客户端覆盖
 	// 持久 flag（见 internal/app/flags.go），同名会 shadow 全局 flag。这里是要建联的
