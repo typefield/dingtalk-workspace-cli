@@ -20,6 +20,7 @@ import (
 	"os"
 	"path/filepath"
 	"regexp"
+	"sort"
 	"strings"
 	"sync"
 	"time"
@@ -51,6 +52,12 @@ const (
 	approvalRejected approvalState = "rejected"
 	approvalExecuted approvalState = "executed"
 	approvalFailed   approvalState = "failed"
+	// approvalDeferred is an approved request whose execution could not complete
+	// right now — typically because the connector's dws login is not (yet) the
+	// bot's owner, so an owner-scoped action can't run. The request is NOT lost:
+	// it stays on disk in this state, the owner is told to recover (log in), and
+	// a later "retry" flushes it. Distinct from Failed, which is terminal.
+	approvalDeferred approvalState = "deferred"
 )
 
 // plannedAction is the structured command the gate will run once approved. It
@@ -96,16 +103,18 @@ type ApprovalRequest struct {
 // regardless of any later execution outcome.
 func (r *ApprovalRequest) decided() bool {
 	switch r.State {
-	case approvalApproved, approvalRejected, approvalExecuted, approvalFailed:
+	case approvalApproved, approvalRejected, approvalExecuted, approvalFailed, approvalDeferred:
 		return true
 	}
 	return false
 }
 
-// approved reports whether the owner approved (in any post-approval state).
+// approved reports whether the owner approved (in any post-approval state,
+// including deferred — a deferred request WAS approved, its execution just
+// hasn't completed yet).
 func (r *ApprovalRequest) approved() bool {
 	switch r.State {
-	case approvalApproved, approvalExecuted, approvalFailed:
+	case approvalApproved, approvalExecuted, approvalFailed, approvalDeferred:
 		return true
 	}
 	return false
@@ -302,6 +311,36 @@ func (g *approvalGate) markFailed(id string, cause string) {
 		r.ExecErr = truncateRunes(strings.TrimSpace(cause), 500)
 		g.persist(r)
 	}
+}
+
+// markDeferred records that an approved request could not execute now and is
+// being held for a later retry (it is NOT lost). The cause is kept so the owner
+// and the audit trail can see why. Persisted so a connector restart still
+// remembers the backlog.
+func (g *approvalGate) markDeferred(id string, cause string) {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	if r, ok := g.reqs[id]; ok && r.approved() {
+		r.State = approvalDeferred
+		r.ExecErr = truncateRunes(strings.TrimSpace(cause), 500)
+		g.persist(r)
+	}
+}
+
+// allDeferred returns snapshots of every request awaiting retry, oldest first
+// (so a flush replays them in the order they were asked).
+func (g *approvalGate) allDeferred() []*ApprovalRequest {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	out := make([]*ApprovalRequest, 0)
+	for _, r := range g.reqs {
+		if r.State == approvalDeferred {
+			cp := *r
+			out = append(out, &cp)
+		}
+	}
+	sort.Slice(out, func(i, j int) bool { return out[i].CreatedAt.Before(out[j].CreatedAt) })
+	return out
 }
 
 // Get returns a snapshot copy of a request, or nil if unknown.
@@ -553,6 +592,21 @@ var (
 		"reject": {}, "no": {}, "n": {},
 	}
 )
+
+// retryWords are the whole-message replies that flush the deferred backlog
+// (the owner has recovered — e.g. logged dws in as themselves — and wants the
+// held requests replayed).
+var retryWords = map[string]struct{}{
+	"重试": {}, "恢复": {}, "补做": {}, "重新执行": {}, "继续": {},
+	"retry": {}, "resume": {},
+}
+
+// isRetryWord reports whether a whole message is a bare "flush the backlog"
+// command.
+func isRetryWord(msg string) bool {
+	_, ok := retryWords[strings.ToLower(strings.TrimSpace(msg))]
+	return ok
+}
 
 // parseDecisionWord classifies a whole message as an approve/reject decision.
 // It returns (approve, ok): ok is false when the message is not a bare decision

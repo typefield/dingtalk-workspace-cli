@@ -299,10 +299,14 @@ func (o *approvalOrchestrator) autoApproveAndExecute(ctx context.Context, req *A
 		decided.ID, o.ownerUserID, decided.Summary)
 	out, execErr := o.execute(ctx, decided)
 	if execErr != nil {
-		o.gate.markFailed(decided.ID, execErr.Error())
+		// Do not lose it: hold for retry and tell the owner to recover. Most
+		// likely the connector's dws login is not the bot owner, so an
+		// owner-scoped action can't run yet.
+		o.gate.markDeferred(decided.ID, execErr.Error())
 		o.recordAudit(ctx, decided.ID)
+		o.notifyOwnerDeferred(ctx, decided, execErr)
 		if reply != nil {
-			_ = reply(ctx, convID, "执行失败："+execErr.Error())
+			_ = reply(ctx, convID, "收到，但现在没能直接完成（已记下，稍后会补做）。")
 		}
 		return "", true
 	}
@@ -312,6 +316,23 @@ func (o *approvalOrchestrator) autoApproveAndExecute(ctx context.Context, req *A
 		_ = reply(ctx, convID, "已为你完成："+decided.Summary+"\n"+out)
 	}
 	return "", true
+}
+
+// notifyOwnerDeferred privately tells the owner that an action could not run now
+// and is being held, with the likely cause and how to recover (log dws in as the
+// bot owner, then reply "重试"). Best-effort.
+func (o *approvalOrchestrator) notifyOwnerDeferred(ctx context.Context, req *ApprovalRequest, execErr error) {
+	if o.notifier == nil {
+		return
+	}
+	who := strings.TrimSpace(req.Requester)
+	if who == "" || who == o.ownerUserID {
+		who = "你"
+	}
+	msg := fmt.Sprintf("⚠️ %s 请求执行：%s\n但我现在没能以你的身份完成（很可能这台连接器的 dws 没有登录成你本人的账号）。\n"+
+		"请确认 dws 登录的是机器人主人账号，然后回复「重试」，我会把积压的请求补做。\n（错误：%s）",
+		who, req.Summary, truncateRunes(execErr.Error(), 120))
+	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, msg)
 }
 
 // handleReplyText privately DMs the OWNER the approval request and hands control
@@ -351,6 +372,10 @@ func (o *approvalOrchestrator) handleOwnerDecision(ctx context.Context, senderSt
 	if senderStaffID == "" || senderStaffID != o.ownerUserID {
 		return false
 	}
+	// "重试/恢复": the owner has recovered — flush the deferred backlog.
+	if isRetryWord(text) {
+		return o.flushDeferred(ctx)
+	}
 	approve, ok := parseDecisionWord(text)
 	if !ok {
 		return false
@@ -373,16 +398,49 @@ func (o *approvalOrchestrator) handleOwnerDecision(ctx context.Context, senderSt
 	}
 	out, execErr := o.execute(ctx, decided)
 	if execErr != nil {
-		o.gate.markFailed(decided.ID, execErr.Error())
+		// Approved but could not run now → hold for retry, tell the owner how to
+		// recover. The requester is NOT told it failed (their task is not lost).
+		o.gate.markDeferred(decided.ID, execErr.Error())
 		o.recordAudit(ctx, decided.ID)
-		_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "已同意，但执行失败："+execErr.Error())
-		o.notifyRequester(ctx, decided, "你的请求已获批准，但执行失败："+execErr.Error())
+		o.notifyOwnerDeferred(ctx, decided, execErr)
 		return true
 	}
 	o.gate.markExecuted(decided.ID)
 	o.recordAudit(ctx, decided.ID)
 	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "已同意并执行完成："+decided.Summary)
 	o.notifyRequester(ctx, decided, "已为你完成："+decided.Summary+"\n"+out)
+	return true
+}
+
+// flushDeferred replays the deferred backlog after the owner recovers. Each
+// request is re-executed; on success it is marked executed and the original
+// requester gets the outcome, on failure it stays deferred (still not lost).
+// The owner gets a summary. Returns true (the "重试" message is always consumed).
+func (o *approvalOrchestrator) flushDeferred(ctx context.Context) bool {
+	pending := o.gate.allDeferred()
+	if len(pending) == 0 {
+		_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "当前没有积压的请求。")
+		return true
+	}
+	done, stuck := 0, 0
+	for _, req := range pending {
+		out, execErr := o.execute(ctx, req)
+		if execErr != nil {
+			o.gate.markDeferred(req.ID, execErr.Error())
+			o.recordAudit(ctx, req.ID)
+			stuck++
+			continue
+		}
+		o.gate.markExecuted(req.ID)
+		o.recordAudit(ctx, req.ID)
+		o.notifyRequester(ctx, req, "（已恢复）已为你完成："+req.Summary+"\n"+out)
+		done++
+	}
+	summary := fmt.Sprintf("已补做 %d 个积压请求。", done)
+	if stuck > 0 {
+		summary += fmt.Sprintf("仍有 %d 个未成功（身份可能还没对上，确认 dws 登录后再回复「重试」）。", stuck)
+	}
+	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, summary)
 	return true
 }
 

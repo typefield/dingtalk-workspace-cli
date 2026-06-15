@@ -58,15 +58,21 @@ func (f *fakeCardSender) UpdateApprovalCard(_ context.Context, _, text string) e
 type fakeRunner struct {
 	mu   sync.Mutex
 	runs []executor.Invocation
+	fail bool // when true, Run returns an error (simulates identity not ready)
 }
 
 func (r *fakeRunner) Run(_ context.Context, inv executor.Invocation) (executor.Result, error) {
 	r.mu.Lock()
 	defer r.mu.Unlock()
 	r.runs = append(r.runs, inv)
+	if r.fail {
+		return executor.Result{}, context.DeadlineExceeded
+	}
 	inv.Implemented = true
 	return executor.Result{Invocation: inv}, nil
 }
+
+func (r *fakeRunner) setFail(v bool) { r.mu.Lock(); defer r.mu.Unlock(); r.fail = v }
 
 func (r *fakeRunner) count() int { r.mu.Lock(); defer r.mu.Unlock(); return len(r.runs) }
 
@@ -504,6 +510,66 @@ func TestAudit_RecordsTerminalOutcomes(t *testing.T) {
 	}
 	if audit.recs[1].State != approvalExecuted || audit.recs[1].DecidedBy != "owner" {
 		t.Fatalf("approved audit record: state=%s decidedBy=%s", audit.recs[1].State, audit.recs[1].DecidedBy)
+	}
+}
+
+// TestDeferredExecution_HoldsAndRetries is the graceful-degradation path: when
+// execution fails (identity not ready), the request is DEFERRED (not lost, not
+// failed), the owner is privately notified; after the owner recovers and replies
+// "重试", the backlog is replayed, executes, and the requester gets the result.
+func TestDeferredExecution_HoldsAndRetries(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	gate := newApprovalGate("ctdef")
+	runner := &fakeRunner{fail: true} // identity not ready → execution fails
+	notifier := &fakeNotifier{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", notifier)
+
+	// A non-owner request, approved by the owner, but execution fails → deferred.
+	o.handleReply(context.Background(), "requester", "conv-g", `[[ACTION:todo.create title="待恢复"]]`, nil)
+	if !o.handleOwnerDecision(context.Background(), "owner", "同意") {
+		t.Fatal("owner approval must be consumed")
+	}
+	rec := gate.list()[0]
+	if rec.State != approvalDeferred {
+		t.Fatalf("failed execution must DEFER (not fail), got state=%s", rec.State)
+	}
+	// Owner was told to recover; requester was NOT told it failed (task not lost).
+	if !notifier.toUser("owner") {
+		t.Fatal("owner should be notified of the deferred action")
+	}
+	if notifier.toUser("requester") {
+		t.Fatal("requester must NOT be told it failed — their task is held, not lost")
+	}
+
+	// A bare non-retry word from the owner should pass through (not consumed).
+	if o.handleOwnerDecision(context.Background(), "owner", "在吗") {
+		t.Fatal("ordinary owner message must not be consumed")
+	}
+
+	// Owner recovers (identity now works) and replies "重试" → backlog flushes.
+	runner.setFail(false)
+	if !o.handleOwnerDecision(context.Background(), "owner", "重试") {
+		t.Fatal("retry word must be consumed")
+	}
+	if gate.list()[0].State != approvalExecuted {
+		t.Fatalf("after retry the deferred request must execute, got %s", gate.list()[0].State)
+	}
+	if !notifier.toUser("requester") {
+		t.Fatal("requester should get the outcome after the backlog is flushed")
+	}
+}
+
+// TestIsRetryWord checks whole-message retry-keyword matching.
+func TestIsRetryWord(t *testing.T) {
+	for _, w := range []string{"重试", " 恢复 ", "retry", "继续"} {
+		if !isRetryWord(w) {
+			t.Fatalf("%q should be a retry word", w)
+		}
+	}
+	for _, w := range []string{"重试一下他的方案", "", "你好"} {
+		if isRetryWord(w) {
+			t.Fatalf("%q should NOT be a retry word", w)
+		}
 	}
 }
 
