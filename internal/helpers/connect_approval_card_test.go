@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"context"
+	"fmt"
 	"strings"
 	"sync"
 	"testing"
@@ -556,6 +557,51 @@ func TestDeferredExecution_HoldsAndRetries(t *testing.T) {
 	}
 	if !notifier.toUser("requester") {
 		t.Fatal("requester should get the outcome after the backlog is flushed")
+	}
+}
+
+// TestIsTransientSheetErr distinguishes retryable throttles from permanent errors.
+func TestIsTransientSheetErr(t *testing.T) {
+	for _, e := range []string{"system error: THREADPOOL_BUSY", "server busy", "request timeout", "HTTP 429 too many requests"} {
+		if !isTransientSheetErr(fmt.Errorf("%s", e)) {
+			t.Fatalf("%q should be transient", e)
+		}
+	}
+	for _, e := range []string{"invalid nodeId", "permission denied", "not found"} {
+		if isTransientSheetErr(fmt.Errorf("%s", e)) {
+			t.Fatalf("%q should NOT be transient", e)
+		}
+	}
+	if isTransientSheetErr(nil) {
+		t.Fatal("nil is not transient")
+	}
+}
+
+// TestFlushDeferred_ReportsCompletedItems verifies the owner gets a per-item
+// completion list (not just a count) when the backlog is flushed.
+func TestFlushDeferred_ReportsCompletedItems(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	gate := newApprovalGate("ctflush")
+	runner := &fakeRunner{fail: true}
+	notifier := &fakeNotifier{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", notifier)
+
+	o.handleReply(context.Background(), "owner", "conv-o", `[[ACTION:todo.create title="我的待办"]]`, func(_ context.Context, _, _ string) error { return nil })
+	if gate.list()[0].State != approvalDeferred {
+		t.Fatalf("want deferred, got %s", gate.list()[0].State)
+	}
+
+	runner.setFail(false)
+	o.handleOwnerDecision(context.Background(), "owner", "重试")
+
+	notifier.mu.Lock()
+	var last string
+	if len(notifier.sent) > 0 {
+		last = notifier.sent[len(notifier.sent)-1].text
+	}
+	notifier.mu.Unlock()
+	if !strings.Contains(last, "已补做 1 个") || !strings.Contains(last, "创建待办：我的待办") {
+		t.Fatalf("flush summary should list the completed item, got %q", last)
 	}
 }
 
