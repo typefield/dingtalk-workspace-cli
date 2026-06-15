@@ -16,13 +16,12 @@ MCP tool: `list_open_dev_app_permissions`
 | CLI | MCP | 说明 |
 |-----|-----|------|
 | `--unified-app-id` | `unifiedAppId` | 应用定位 |
-| `--agent-id` | `agentId` | 应用定位 |
 | `--keyword` | `keyword` | 权限名/API 名关键词 |
 | `--status` | `authStatus` | `ALL` / `AUTHED` / `UNAUTHED` |
-| `--scope-type` | `firstLevelType` | `APP` / `SNS`，为空返回两者 |
+| `--scope-type` | `scopeType` | `APP` / `SNS`，为空返回两者 |
 | `--scope` | `scopeValue` | 单权限详情模式 |
-| `--limit` | `limit` | 每页返回数量，默认 20，建议不超过 50 |
-| `--offset` | `offset` | 翻页偏移量，默认 0 |
+| `--page-size` | `pageSize` | 每页返回数量，默认 20，建议不超过 50 |
+| `--cursor` | `cursor` | 游标，首次为空，用上一页 `nextCursor` 继续 |
 
 **状态判断：**
 
@@ -47,15 +46,14 @@ MCP tool: `list_open_dev_app_permissions`
 
 **翻页：**
 
-权限列表支持 `--limit` + `--offset` 分页。一个应用可能有 150+ 个权限点，一次查不完时用 offset 翻页：
+权限列表支持 `--page-size` + `--cursor` 分页。一个应用可能有 150+ 个权限点，一次查不完时用返回的 `nextCursor` 继续：
 
 ```bash
-dws devapp permission list --unified-app-id ID --limit 50 --format json              # 第 1 页
-dws devapp permission list --unified-app-id ID --limit 50 --offset 50 --format json   # 第 2 页
-dws devapp permission list --unified-app-id ID --limit 50 --offset 100 --format json  # 第 3 页
+dws devapp permission list --unified-app-id ID --page-size 50 --format json
+dws devapp permission list --unified-app-id ID --page-size 50 --cursor NEXT_CURSOR --format json
 ```
 
-当返回条数 < limit 时表示已到末尾。
+当返回无 `nextCursor` 或返回条数小于 `pageSize` 时表示已到末尾。
 
 **规则：**
 - `permission search` 和 `permission detail` 是 `list` 的 CLI 别名，不是独立 MCP tool。

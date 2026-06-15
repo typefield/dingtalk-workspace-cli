@@ -28,6 +28,15 @@ import (
 const (
 	devAppProduct = "devapp"
 
+	devAppListTool       = "list_open_dev_app"
+	devAppGetTool        = "get_dev_app"
+	devAppCreateTool     = "create_dev_app"
+	devAppUpdateTool     = "update_dev_app"
+	devAppDeleteTool     = "delete_dev_app"
+	devAppDisableTool    = "disable_dev_app"
+	devAppEnableTool     = "enable_dev_app"
+	devAppCredentialsGet = "get_open_dev_app_credentials"
+
 	devAppMemberListTool     = "list_open_dev_app_members"
 	devAppMemberAddTool      = "add_open_dev_app_members"
 	devAppMemberRemoveTool   = "remove_open_dev_app_members"
@@ -217,9 +226,9 @@ func newDevAppCommand(runner executor.Runner) *cobra.Command {
 		newDevAppGetCommand(runner),
 		newDevAppCreateCommand(runner),
 		newDevAppUpdateCommand(runner),
-		newDevAppLifecycleCommand(runner, "delete", "删除开放平台企业内部应用", "delete_inner_app"),
-		newDevAppLifecycleCommand(runner, "inactive", "停用开放平台企业内部应用", "inactive_inner_app"),
-		newDevAppLifecycleCommand(runner, "active", "启用开放平台企业内部应用", "active_inner_app"),
+		newDevAppLifecycleCommand(runner, "delete", "删除开放平台企业内部应用", devAppDeleteTool),
+		newDevAppLifecycleCommand(runner, "inactive", "停用开放平台企业内部应用", devAppDisableTool),
+		newDevAppLifecycleCommand(runner, "active", "启用开放平台企业内部应用", devAppEnableTool),
 		credentials,
 		webapp,
 		permission,
@@ -236,42 +245,25 @@ func newDevAppListCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "list",
 		Short:             "查询开放平台企业内部应用列表",
-		Example:           "  dws devapp list --name DemoApp --page 1 --page-size 20 --format json",
+		Example:           "  dws devapp list --name DemoApp --page-size 20 --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			params := map[string]any{
-				"currentPage": devAppIntFlag(cmd, "page"),
-				"pageSize":    devAppIntFlag(cmd, "page-size"),
+				"pageSize": devAppIntFlag(cmd, "page-size"),
 			}
-			devAppPutString(params, "appName", devAppFlagOrFallback(cmd, "name", "keyword"))
-			devAppPutInt(params, "agentId", devAppIntFlag(cmd, "agent-id"))
-			devAppPutInt(params, "appId", devAppIntFlag(cmd, "app-id"))
+			devAppPutString(params, "cursor", devAppStringFlag(cmd, "cursor"))
+			devAppPutString(params, "name", devAppFlagOrFallback(cmd, "name", "keyword"))
 			devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
-			devAppPutString(params, "customKey", devAppStringFlag(cmd, "custom-key"))
-			devAppPutInt(params, "appGroupId", devAppIntFlag(cmd, "app-group-id"))
-			devAppPutString(params, "creator", devAppStringFlag(cmd, "creator"))
-			devAppPutString(params, "robotName", devAppStringFlag(cmd, "robot-name"))
-			devAppPutInt(params, "developType", devAppIntFlag(cmd, "develop-type"))
-			devAppPutInt(params, "filterCoolApp", devAppIntFlag(cmd, "filter-cool-app"))
-			devAppPutString(params, "sortType", devAppStringFlag(cmd, "sort"))
-			devAppPutString(params, "sortOrder", devAppStringFlag(cmd, "order"))
-			return runDevAppTool(runner, cmd, "list_open_dev_apps_by_condition", params)
+			return runDevAppTool(runner, cmd, devAppListTool, params)
 		},
 	}
-	cmd.Flags().Int("page", 1, "分页页码，从 1 开始")
 	cmd.Flags().Int("page-size", 20, "分页大小")
+	cmd.Flags().String("cursor", "", "游标分页 cursor，首次查询为空")
 	cmd.Flags().String("name", "", "应用名称关键词")
 	cmd.Flags().String("keyword", "", "--name 的兼容别名")
 	_ = cmd.Flags().MarkHidden("keyword")
-	addDevAppLocatorFlagsWithoutName(cmd)
-	cmd.Flags().Int("app-group-id", 0, "应用分组 ID")
-	cmd.Flags().String("creator", "", "创建人名称关键词")
-	cmd.Flags().String("robot-name", "", "机器人名称关键词")
-	cmd.Flags().Int("develop-type", 0, "开发类型枚举；不确定时不要传")
-	cmd.Flags().Int("filter-cool-app", 0, "酷应用过滤枚举；不确定时不要传")
-	cmd.Flags().String("sort", "", "排序字段，如 gmt_modified")
-	cmd.Flags().String("order", "", "排序方向 asc 或 desc")
+	cmd.Flags().String("app-key", "", "appKey/clientId")
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -280,18 +272,18 @@ func newDevAppGetCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get",
 		Short:             "查询开放平台企业内部应用详情",
-		Example:           "  dws devapp get --agent-id 123456 --format json",
+		Example:           "  dws devapp get --unified-app-id UNIFIED_APP_ID --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			params := devAppLocatorParams(cmd, true)
+			params := devAppMcpLocatorParams(cmd, true)
 			if len(params) == 0 {
-				return devAppLocatorRequired(true)
+				return devAppMcpLocatorRequired(true)
 			}
-			return runDevAppTool(runner, cmd, "get_open_dev_app_detail", params)
+			return runDevAppTool(runner, cmd, devAppGetTool, params)
 		},
 	}
-	addDevAppLocatorFlags(cmd)
+	addDevAppMcpLocatorFlags(cmd, true)
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -318,7 +310,7 @@ func newDevAppCreateCommand(runner executor.Runner) *cobra.Command {
 			params := map[string]any{"appName": name}
 			devAppPutString(params, "appDesc", devAppStringFlag(cmd, "desc"))
 			devAppPutString(params, "appIcon", devAppStringFlag(cmd, "icon"))
-			return runDevAppTool(runner, cmd, "create_inner_app", params)
+			return runDevAppTool(runner, cmd, devAppCreateTool, params)
 		},
 	}
 	cmd.Flags().String("name", "", "应用名称 (必填)")
@@ -333,16 +325,16 @@ func newDevAppUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "update",
 		Short:             "修改开放平台企业内部应用基础信息",
-		Example:           "  dws devapp update --agent-id 123456 --name DemoApp2 --dry-run --format json",
+		Example:           "  dws devapp update --unified-app-id UNIFIED_APP_ID --name DemoApp2 --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := devAppRequireWriteGuard(cmd, "update"); err != nil {
 				return err
 			}
-			params := devAppLocatorParams(cmd, false)
+			params := devAppMcpLocatorParams(cmd, false)
 			if len(params) == 0 {
-				return devAppLocatorRequired(false)
+				return devAppMcpLocatorRequired(false)
 			}
 			updates := 0
 			if v := devAppStringFlag(cmd, "name"); v != "" {
@@ -360,10 +352,10 @@ func newDevAppUpdateCommand(runner executor.Runner) *cobra.Command {
 			if updates == 0 {
 				return apperrors.NewValidation("at least one update field is required: --name, --desc, or --icon")
 			}
-			return runDevAppTool(runner, cmd, "update_inner_app", params)
+			return runDevAppTool(runner, cmd, devAppUpdateTool, params)
 		},
 	}
-	addDevAppLocatorFlagsWithoutName(cmd)
+	addDevAppMcpLocatorFlags(cmd, false)
 	cmd.Flags().String("name", "", "新的应用名称")
 	cmd.Flags().String("desc", "", "新的应用描述")
 	cmd.Flags().String("icon", "", "新的应用图标 mediaId")
@@ -375,18 +367,18 @@ func newDevAppCredentialsGetCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get",
 		Short:             "读取开放平台应用凭证",
-		Example:           "  dws devapp credentials get --agent-id 123456 --format json",
+		Example:           "  dws devapp credentials get --unified-app-id UNIFIED_APP_ID --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			params := devAppLocatorParams(cmd, false)
+			params := devAppCredentialsLocatorParams(cmd)
 			if len(params) == 0 {
-				return devAppLocatorRequired(false)
+				return devAppCredentialsLocatorRequired()
 			}
-			return runDevAppTool(runner, cmd, "get_open_dev_app_credentials", params)
+			return runDevAppTool(runner, cmd, devAppCredentialsGet, params)
 		},
 	}
-	addDevAppLocatorFlagsWithoutName(cmd)
+	addDevAppCredentialsLocatorFlags(cmd)
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -401,14 +393,14 @@ func newDevAppLifecycleCommand(runner executor.Runner, use, short, tool string) 
 			if err := devAppRequireWriteGuard(cmd, use); err != nil {
 				return err
 			}
-			params := devAppLocatorParams(cmd, false)
+			params := devAppMcpLocatorParams(cmd, true)
 			if len(params) == 0 {
-				return devAppLocatorRequired(false)
+				return devAppMcpLocatorRequired(true)
 			}
 			return runDevAppTool(runner, cmd, tool, params)
 		},
 	}
-	addDevAppLocatorFlagsWithoutName(cmd)
+	addDevAppMcpLocatorFlags(cmd, true)
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -417,18 +409,18 @@ func newDevAppWebappGetCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get",
 		Short:             "查询网页应用配置",
-		Example:           "  dws devapp webapp get --agent-id 123456 --format json",
+		Example:           "  dws devapp webapp get --unified-app-id UNIFIED_APP_ID --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			params := devAppAppLocatorParams(cmd)
+			params := devAppMcpLocatorParams(cmd, false)
 			if len(params) == 0 {
-				return devAppAppLocatorRequired()
+				return devAppMcpLocatorRequired(false)
 			}
 			return runDevAppTool(runner, cmd, "get_webapp_config", params)
 		},
 	}
-	addDevAppAppLocatorFlags(cmd)
+	addDevAppMcpLocatorFlags(cmd, false)
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -437,45 +429,51 @@ func newDevAppWebappConfigCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "config",
 		Short:             "配置网页应用能力",
-		Example:           "  dws devapp webapp config --agent-id 123456 --homepage-link https://example.com --dry-run --format json",
+		Example:           "  dws devapp webapp config --unified-app-id UNIFIED_APP_ID --homepage-url https://example.com --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := devAppRequireWriteGuard(cmd, "webapp config"); err != nil {
 				return err
 			}
-			params := devAppAppLocatorParams(cmd)
+			params := devAppMcpLocatorParams(cmd, true)
 			if len(params) == 0 {
-				return devAppAppLocatorRequired()
+				return devAppMcpLocatorRequired(true)
 			}
 			updates := 0
 			if v := devAppStringFlag(cmd, "h5-page-type"); v != "" {
 				params["h5PageType"] = v
 				updates++
 			}
-			if v := devAppStringFlag(cmd, "homepage-link"); v != "" {
-				params["homepageLink"] = v
+			if v := devAppFlagOrFallback(cmd, "homepage-url", "homepage-link"); v != "" {
+				params["homepageUrl"] = v
 				updates++
 			}
-			if v := devAppStringFlag(cmd, "pc-homepage-link"); v != "" {
-				params["pcHomepageLink"] = v
+			if v := devAppFlagOrFallback(cmd, "pc-homepage-url", "pc-homepage-link"); v != "" {
+				params["pcHomepageUrl"] = v
 				updates++
 			}
-			if v := devAppStringFlag(cmd, "omp-link"); v != "" {
-				params["ompLink"] = v
+			if v := devAppFlagOrFallback(cmd, "omp-url", "omp-link"); v != "" {
+				params["ompUrl"] = v
 				updates++
 			}
 			if updates == 0 {
-				return apperrors.NewValidation("at least one webapp field is required: --h5-page-type, --homepage-link, --pc-homepage-link, or --omp-link")
+				return apperrors.NewValidation("at least one webapp field is required: --h5-page-type, --homepage-url, --pc-homepage-url, or --omp-url")
 			}
 			return runDevAppTool(runner, cmd, "set_webapp_config", params)
 		},
 	}
-	addDevAppAppLocatorFlags(cmd)
+	addDevAppMcpLocatorFlags(cmd, true)
 	cmd.Flags().String("h5-page-type", "", "网页应用生效端/页面类型")
-	cmd.Flags().String("homepage-link", "", "移动端首页地址")
-	cmd.Flags().String("pc-homepage-link", "", "PC 端首页地址")
-	cmd.Flags().String("omp-link", "", "管理后台地址")
+	cmd.Flags().String("homepage-url", "", "移动端首页地址")
+	cmd.Flags().String("homepage-link", "", "--homepage-url 的兼容别名")
+	_ = cmd.Flags().MarkHidden("homepage-link")
+	cmd.Flags().String("pc-homepage-url", "", "PC 端首页地址")
+	cmd.Flags().String("pc-homepage-link", "", "--pc-homepage-url 的兼容别名")
+	_ = cmd.Flags().MarkHidden("pc-homepage-link")
+	cmd.Flags().String("omp-url", "", "管理后台地址")
+	cmd.Flags().String("omp-link", "", "--omp-url 的兼容别名")
+	_ = cmd.Flags().MarkHidden("omp-link")
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -485,25 +483,25 @@ func newDevAppPermissionListCommand(runner executor.Runner) *cobra.Command {
 		Use:               "list",
 		Aliases:           []string{"search", "detail"},
 		Short:             "查询开放平台应用权限列表",
-		Example:           "  dws devapp permission list --agent-id 123456 --keyword 通讯录 --limit 20 --format json",
+		Example:           "  dws devapp permission list --unified-app-id UNIFIED_APP_ID --keyword 通讯录 --page-size 20 --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			params := devAppAppLocatorParams(cmd)
+			params := devAppPermissionLocatorParams(cmd)
 			if len(params) == 0 {
-				return devAppAppLocatorRequired()
+				return devAppPermissionLocatorRequired()
 			}
 			devAppPutString(params, "keyword", devAppStringFlag(cmd, "keyword"))
 			devAppPutString(params, "scopeValue", devAppFlagOrFallback(cmd, "scope", "permission"))
 			devAppPutString(params, "authStatus", strings.ToUpper(devAppStringFlag(cmd, "status")))
-			devAppPutString(params, "firstLevelType", strings.ToUpper(devAppStringFlag(cmd, "scope-type")))
+			devAppPutString(params, "scopeType", strings.ToUpper(devAppStringFlag(cmd, "scope-type")))
 			devAppPutString(params, "apiStatus", devAppStringFlag(cmd, "api-status"))
-			devAppPutInt(params, "limit", devAppIntFlag(cmd, "limit"))
-			devAppPutInt(params, "offset", devAppIntFlag(cmd, "offset"))
+			devAppPutString(params, "cursor", devAppStringFlag(cmd, "cursor"))
+			devAppPutInt(params, "pageSize", devAppIntFlag(cmd, "page-size"))
 			return runDevAppTool(runner, cmd, "list_open_dev_app_permissions", params)
 		},
 	}
-	addDevAppAppLocatorFlags(cmd)
+	addDevAppPermissionLocatorFlags(cmd)
 	cmd.Flags().String("keyword", "", "权限名、权限点、接口名关键词")
 	cmd.Flags().String("scope", "", "精确权限点 scopeValue")
 	cmd.Flags().String("permission", "", "--scope 的兼容别名")
@@ -511,8 +509,8 @@ func newDevAppPermissionListCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("status", "ALL", "权限状态：ALL、AUTHED、UNAUTHED")
 	cmd.Flags().String("scope-type", "", "权限一级类型：APP 或 SNS")
 	cmd.Flags().String("api-status", "", "开发者后台 apiStatus 过滤")
-	cmd.Flags().Int("limit", 20, "返回数量上限")
-	cmd.Flags().Int("offset", 0, "返回偏移量")
+	cmd.Flags().Int("page-size", 20, "返回数量上限")
+	cmd.Flags().String("cursor", "", "游标分页 cursor，首次查询为空")
 	preferLegacyLeaf(cmd)
 	return cmd
 }
@@ -521,16 +519,16 @@ func newDevAppPermissionAddCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "add",
 		Short:             "申请开放平台应用权限点",
-		Example:           "  dws devapp permission add --agent-id 123456 --permissions Contact.User.mobile --dry-run --format json",
+		Example:           "  dws devapp permission add --unified-app-id UNIFIED_APP_ID --permissions Contact.User.mobile --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := devAppRequireWriteGuard(cmd, "permission add"); err != nil {
 				return err
 			}
-			params := devAppAppLocatorParams(cmd)
+			params := devAppPermissionLocatorParams(cmd)
 			if len(params) == 0 {
-				return devAppAppLocatorRequired()
+				return devAppPermissionLocatorRequired()
 			}
 			scopes := devAppPermissionScopes(cmd)
 			if len(scopes) == 0 {
@@ -540,7 +538,7 @@ func newDevAppPermissionAddCommand(runner executor.Runner) *cobra.Command {
 			return runDevAppTool(runner, cmd, "apply_open_dev_app_permissions", params)
 		},
 	}
-	addDevAppAppLocatorFlags(cmd)
+	addDevAppPermissionLocatorFlags(cmd)
 	cmd.Flags().StringSlice("permissions", nil, "权限点 scopeValue，多个用逗号分隔")
 	cmd.Flags().String("scope", "", "--permissions 的兼容别名，单个权限点 scopeValue")
 	cmd.Flags().String("permission", "", "--permissions 的兼容别名，单个权限点 scopeValue")
@@ -554,16 +552,16 @@ func newDevAppPermissionRemoveCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "remove",
 		Short:             "取消开放平台应用权限点",
-		Example:           "  dws devapp permission remove --agent-id 123456 --permission Contact.User.mobile --dry-run --format json",
+		Example:           "  dws devapp permission remove --unified-app-id UNIFIED_APP_ID --permission Contact.User.mobile --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := devAppRequireWriteGuard(cmd, "permission remove"); err != nil {
 				return err
 			}
-			params := devAppAppLocatorParams(cmd)
+			params := devAppPermissionLocatorParams(cmd)
 			if len(params) == 0 {
-				return devAppAppLocatorRequired()
+				return devAppPermissionLocatorRequired()
 			}
 			scope := devAppFlagOrFallback(cmd, "permission", "scope")
 			if scope == "" {
@@ -573,7 +571,7 @@ func newDevAppPermissionRemoveCommand(runner executor.Runner) *cobra.Command {
 			return runDevAppTool(runner, cmd, "remove_open_dev_app_permission", params)
 		},
 	}
-	addDevAppAppLocatorFlags(cmd)
+	addDevAppPermissionLocatorFlags(cmd)
 	cmd.Flags().String("permission", "", "待取消权限点 scopeValue")
 	cmd.Flags().String("scope", "", "--permission 的兼容别名")
 	_ = cmd.Flags().MarkHidden("scope")
@@ -1259,50 +1257,61 @@ func splitDevAppList(raw string) []string {
 	return values
 }
 
-func addDevAppLocatorFlags(cmd *cobra.Command) {
-	addDevAppLocatorFlagsWithoutName(cmd)
-	cmd.Flags().String("name", "", "应用名称关键词；写操作前必须唯一命中")
-}
-
-func addDevAppLocatorFlagsWithoutName(cmd *cobra.Command) {
-	addDevAppAppLocatorFlags(cmd)
-	cmd.Flags().Int("app-id", 0, "兼容 appId")
-	cmd.Flags().String("app-key", "", "appKey/clientId")
-	cmd.Flags().String("custom-key", "", "customKey")
-}
-
-func addDevAppAppLocatorFlags(cmd *cobra.Command) {
+func addDevAppMcpLocatorFlags(cmd *cobra.Command, includeName bool) {
 	cmd.Flags().String("unified-app-id", "", "统一应用 ID")
-	cmd.Flags().Int("agent-id", 0, "应用 agentId")
-}
-
-func devAppLocatorParams(cmd *cobra.Command, includeName bool) map[string]any {
-	params := devAppAppLocatorParams(cmd)
-	devAppPutInt(params, "appId", devAppIntFlag(cmd, "app-id"))
-	devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
-	devAppPutString(params, "customKey", devAppStringFlag(cmd, "custom-key"))
+	cmd.Flags().String("app-key", "", "appKey/clientId")
 	if includeName {
-		devAppPutString(params, "appName", devAppStringFlag(cmd, "name"))
+		cmd.Flags().String("name", "", "应用名称关键词；写操作前必须唯一命中")
 	}
-	return params
 }
 
-func devAppAppLocatorParams(cmd *cobra.Command) map[string]any {
+func devAppMcpLocatorParams(cmd *cobra.Command, includeName bool) map[string]any {
 	params := map[string]any{}
 	devAppPutString(params, "unifiedAppId", devAppStringFlag(cmd, "unified-app-id"))
-	devAppPutInt(params, "agentId", devAppIntFlag(cmd, "agent-id"))
+	devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
+	if includeName {
+		devAppPutString(params, "name", devAppStringFlag(cmd, "name"))
+	}
 	return params
 }
 
-func devAppLocatorRequired(includeName bool) error {
-	if includeName {
-		return apperrors.NewValidation("one app locator is required: --agent-id, --unified-app-id, --app-key, --custom-key, --app-id, or --name")
-	}
-	return apperrors.NewValidation("one app locator is required: --agent-id, --unified-app-id, --app-key, --custom-key, or --app-id")
+func addDevAppCredentialsLocatorFlags(cmd *cobra.Command) {
+	cmd.Flags().String("unified-app-id", "", "统一应用 ID")
+	cmd.Flags().String("app-key", "", "appKey/clientId")
+	cmd.Flags().String("name", "", "应用名称关键词；必须唯一命中")
 }
 
-func devAppAppLocatorRequired() error {
-	return apperrors.NewValidation("one app locator is required: --agent-id or --unified-app-id")
+func devAppCredentialsLocatorParams(cmd *cobra.Command) map[string]any {
+	params := map[string]any{}
+	devAppPutString(params, "unifiedAppId", devAppStringFlag(cmd, "unified-app-id"))
+	devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
+	devAppPutString(params, "appName", devAppStringFlag(cmd, "name"))
+	return params
+}
+
+func devAppCredentialsLocatorRequired() error {
+	return apperrors.NewValidation("one app locator is required: --unified-app-id, --app-key, or --name")
+}
+
+func devAppMcpLocatorRequired(includeName bool) error {
+	if includeName {
+		return apperrors.NewValidation("one app locator is required: --unified-app-id, --app-key, or --name")
+	}
+	return apperrors.NewValidation("one app locator is required: --unified-app-id or --app-key")
+}
+
+func addDevAppPermissionLocatorFlags(cmd *cobra.Command) {
+	cmd.Flags().String("unified-app-id", "", "统一应用 ID")
+}
+
+func devAppPermissionLocatorParams(cmd *cobra.Command) map[string]any {
+	params := map[string]any{}
+	devAppPutString(params, "unifiedAppId", devAppStringFlag(cmd, "unified-app-id"))
+	return params
+}
+
+func devAppPermissionLocatorRequired() error {
+	return apperrors.NewValidation("one app locator is required: --unified-app-id")
 }
 
 func devAppRequireWriteGuard(cmd *cobra.Command, operation string) error {

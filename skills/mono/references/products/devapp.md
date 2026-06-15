@@ -8,7 +8,7 @@
 
 1. 所有命令加 `--format json`。
 2. 写操作先 `--dry-run`，确认后才加 `--yes`。
-3. 应用名/appKey/customKey 命中多条时展示候选，不取第一条。
+3. 应用名/appKey 命中多条时展示候选，不取第一条。
 4. 权限申请/取消只接受 `scopeValue`，不传 API 名或分组名。
 5. 主动读取密钥走 `credentials get`；任何 `devapp get`/详情返回里的 `clientSecret/appSecret` 都按敏感凭证脱敏，不向用户展开。
 
@@ -17,9 +17,8 @@
 | 优先级 | 标识 | 处理 |
 |--------|------|------|
 | 1 | `--unified-app-id` | 直接使用 |
-| 2 | `--agent-id` / `--app-id` | 直接使用 |
-| 3 | `--app-key` / `--custom-key` | 先查询，唯一命中才继续 |
-| 4 | `--name` | 模糊搜索，写操作必须唯一命中 |
+| 2 | `--app-key` | appKey/clientId，唯一命中才继续 |
+| 3 | `--name` | 应用名称关键词，写操作必须唯一命中 |
 
 ---
 
@@ -30,21 +29,17 @@
 ```bash
 dws devapp list --format json
 dws devapp list --name DemoApp --format json
-dws devapp list --agent-id 123456 --format json
+dws devapp list --app-key dingxxx --format json
 ```
 
-MCP tool: `list_open_dev_apps_by_condition`
+MCP tool: `list_open_dev_app`
 
 | CLI | MCP | 说明 |
 |-----|-----|------|
-| `--page` | `currentPage` | 1-based，默认 1 |
 | `--page-size` | `pageSize` | 默认 20 |
-| `--name` / `--keyword` | `appName` | 应用名搜索 |
-| `--agent-id` | `agentId` | 精确定位 |
+| `--cursor` | `cursor` | 游标，首次为空 |
+| `--name` / `--keyword` | `name` | 应用名搜索 |
 | `--app-key` | `appKey` | appKey/clientId |
-| `--creator` | `creator` | 创建人关键词 |
-| `--sort` | `sortType` | 如 `gmt_modified` |
-| `--order` | `sortOrder` | `asc` / `desc` |
 
 应用状态字段：列表/详情原始字段里如果出现 `status` / `appStatus`，`0=IN_ACTIVE` 已停用、`1=ACTIVE` 已激活、`2=WAIT_ACTIVE` 待激活、`3=EXPIRED` 已过期。执行 `inactive/active` 后必须回读 `get` 或 `list`：看到 `status=0` 才算停用完成，看到 `status=1` 才算启用完成。`versionStatus` 是版本状态，不要和应用启停状态混用。
 
@@ -54,7 +49,7 @@ MCP tool: `list_open_dev_apps_by_condition`
 dws devapp get --unified-app-id UNIFIED_APP_ID --format json
 ```
 
-MCP tool: `get_open_dev_app_detail`
+MCP tool: `get_dev_app`
 
 详情主要用于定位和核验应用。若上游偶尔随详情返回 `clientSecret/appSecret`，必须脱敏处理，不要复制到回答里；主动读取凭证仍走 `credentials get`。
 
@@ -65,7 +60,7 @@ dws devapp create --name DemoApp --desc "内部应用" --type internal --dry-run
 dws devapp create --name DemoApp --desc "内部应用" --type internal --yes --format json
 ```
 
-MCP tool: `create_inner_app`。`--type` 只做 CLI 校验，当前仅支持 `internal`。
+MCP tool: `create_dev_app`。`--type` 只做 CLI 校验，当前仅支持 `internal`。
 
 ### 修改
 
@@ -73,7 +68,7 @@ MCP tool: `create_inner_app`。`--type` 只做 CLI 校验，当前仅支持 `int
 dws devapp update --unified-app-id ID --name DemoApp2 --desc "新描述" --dry-run --format json
 ```
 
-MCP tool: `update_inner_app`。至少一个更新字段：`--name` / `--desc` / `--icon`。
+MCP tool: `update_dev_app`。至少一个更新字段：`--name` / `--desc` / `--icon`。
 
 ### 停用 / 启用
 
@@ -82,7 +77,7 @@ dws devapp inactive --unified-app-id ID --dry-run --format json
 dws devapp active --unified-app-id ID --dry-run --format json
 ```
 
-MCP tools: `inactive_inner_app` / `active_inner_app`
+MCP tools: `disable_dev_app` / `enable_dev_app`
 
 ### 删除
 
@@ -90,7 +85,7 @@ MCP tools: `inactive_inner_app` / `active_inner_app`
 dws devapp delete --unified-app-id ID --dry-run --format json
 ```
 
-MCP tool: `delete_inner_app`。删除前必须展示应用摘要，异步生效。
+MCP tool: `delete_dev_app`。删除前必须展示应用摘要，异步生效。
 
 ---
 
@@ -107,8 +102,8 @@ MCP tool: `get_open_dev_app_credentials`。返回含 `clientSecret/appSecret`，
 ### 网页应用
 
 ```bash
-dws devapp webapp get --agent-id AGENT_ID --format json
-dws devapp webapp config --agent-id AGENT_ID --homepage-link https://example.com --dry-run --format json
+dws devapp webapp get --unified-app-id UNIFIED_APP_ID --format json
+dws devapp webapp config --unified-app-id UNIFIED_APP_ID --homepage-url https://example.com --dry-run --format json
 ```
 
 MCP tools: `get_webapp_config` / `set_webapp_config`
@@ -133,10 +128,10 @@ MCP tool: `list_open_dev_app_permissions`
 |-----|-----|------|
 | `--keyword` | `keyword` | 关键词搜索 |
 | `--status` | `authStatus` | `ALL/AUTHED/UNAUTHED` |
-| `--scope-type` | `firstLevelType` | `APP/SNS`，空返回两者 |
+| `--scope-type` | `scopeType` | `APP/SNS`，空返回两者 |
 | `--scope` | `scopeValue` | 单权限详情模式 |
-| `--limit` | `limit` | 每页数量，默认 20，建议不超过 50 |
-| `--offset` | `offset` | 翻页偏移量，默认 0 |
+| `--page-size` | `pageSize` | 每页数量，默认 20，建议不超过 50 |
+| `--cursor` | `cursor` | 游标，首次为空，用上一页 `nextCursor` 继续 |
 
 权限状态判断：
 
@@ -148,7 +143,7 @@ MCP tool: `list_open_dev_app_permissions`
 - `status=3` 停止申请，展示 `applyDisabledReason/displayMessage`。
 - `authedStatusDesc` 细分展示：`OPENED`/`APPLIED`/`TO_BE_PUBLISHED` 表示已开通、已申请或待发布；`NOT_OPEN`/`NOT_APPLIED` 表示未开通/未申请；`AUDIT_PROCESSING` 表示审批中；`AUDIT_REFUSE` 表示审批未通过。能否操作仍以 `status`、`canEdit`、`canApplyDirectly`、`allowedActions` 为准。
 
-翻页：`--limit 50 --offset 0`（第1页）、`--offset 50`（第2页）、`--offset 100`（第3页），返回条数 < limit 表示末尾。
+翻页：首次传 `--page-size 50`，后续传 `--cursor NEXT_CURSOR`。无 `nextCursor` 或返回条数小于 `pageSize` 表示末尾。
 
 ### 申请权限
 

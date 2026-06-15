@@ -484,20 +484,19 @@ func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"list", "--name", "Waker", "--page", "2", "--page-size", "5", "--sort", "gmt_modified", "--order", "desc"})
+	root.SetArgs([]string{"list", "--name", "Waker", "--app-key", "dingxxx", "--page-size", "5", "--cursor", "next-1"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
 	}
-	if got := runner.last.Tool; got != "list_open_dev_apps_by_condition" {
-		t.Fatalf("Tool = %q, want list_open_dev_apps_by_condition", got)
+	if got := runner.last.Tool; got != "list_open_dev_app" {
+		t.Fatalf("Tool = %q, want list_open_dev_app", got)
 	}
 	want := map[string]any{
-		"currentPage": 2,
-		"pageSize":    5,
-		"appName":     "Waker",
-		"sortType":    "gmt_modified",
-		"sortOrder":   "desc",
+		"pageSize": 5,
+		"cursor":   "next-1",
+		"name":     "Waker",
+		"appKey":   "dingxxx",
 	}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
@@ -515,8 +514,8 @@ func TestDevAppGetBuildsDetailParams(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
 	}
-	if got := runner.last.Tool; got != "get_open_dev_app_detail" {
-		t.Fatalf("Tool = %q, want get_open_dev_app_detail", got)
+	if got := runner.last.Tool; got != "get_dev_app" {
+		t.Fatalf("Tool = %q, want get_dev_app", got)
 	}
 	want := map[string]any{"unifiedAppId": "u-1"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
@@ -545,8 +544,8 @@ func TestDevAppCreateUsesCurrentInnerToolAndWriteGuard(t *testing.T) {
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
 	}
-	if got := runner.last.Tool; got != "create_inner_app" {
-		t.Fatalf("Tool = %q, want create_inner_app", got)
+	if got := runner.last.Tool; got != "create_dev_app" {
+		t.Fatalf("Tool = %q, want create_dev_app", got)
 	}
 
 	want := map[string]any{"appName": "Demo", "appDesc": "internal app"}
@@ -561,15 +560,15 @@ func TestDevAppUpdateUsesCurrentInnerTool(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"devapp", "update", "--agent-id", "123", "--desc", "new desc", "--yes"})
+	root.SetArgs([]string{"devapp", "update", "--unified-app-id", "u-1", "--desc", "new desc", "--yes"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
 	}
-	if got := runner.last.Tool; got != "update_inner_app" {
-		t.Fatalf("Tool = %q, want update_inner_app", got)
+	if got := runner.last.Tool; got != "update_dev_app" {
+		t.Fatalf("Tool = %q, want update_dev_app", got)
 	}
-	want := map[string]any{"agentId": 123, "appDesc": "new desc"}
+	want := map[string]any{"unifiedAppId": "u-1", "appDesc": "new desc"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -583,21 +582,21 @@ func TestDevAppLifecycleBuildsLocatorParams(t *testing.T) {
 		wantParams map[string]any
 	}{
 		{
-			name:       "delete by agent id",
-			args:       []string{"delete", "--agent-id", "123", "--yes"},
-			wantTool:   "delete_inner_app",
-			wantParams: map[string]any{"agentId": 123},
+			name:       "delete by name",
+			args:       []string{"delete", "--name", "Demo", "--yes"},
+			wantTool:   "delete_dev_app",
+			wantParams: map[string]any{"name": "Demo"},
 		},
 		{
 			name:       "inactive by unified app id",
 			args:       []string{"inactive", "--unified-app-id", "u-1", "--yes"},
-			wantTool:   "inactive_inner_app",
+			wantTool:   "disable_dev_app",
 			wantParams: map[string]any{"unifiedAppId": "u-1"},
 		},
 		{
 			name:       "active by app key",
 			args:       []string{"active", "--app-key", "dingxxx", "--yes"},
-			wantTool:   "active_inner_app",
+			wantTool:   "enable_dev_app",
 			wantParams: map[string]any{"appKey": "dingxxx"},
 		},
 	}
@@ -639,12 +638,12 @@ func TestDevAppWebappCommandsBuildParams(t *testing.T) {
 		},
 		{
 			name:     "config",
-			args:     []string{"webapp", "config", "--unified-app-id", "u-1", "--homepage-link", "https://example.com", "--pc-homepage-link", "https://pc.example.com", "--yes"},
+			args:     []string{"webapp", "config", "--unified-app-id", "u-1", "--homepage-url", "https://example.com", "--pc-homepage-url", "https://pc.example.com", "--yes"},
 			wantTool: "set_webapp_config",
 			wantParams: map[string]any{
-				"unifiedAppId":   "u-1",
-				"homepageLink":   "https://example.com",
-				"pcHomepageLink": "https://pc.example.com",
+				"unifiedAppId":  "u-1",
+				"homepageUrl":   "https://example.com",
+				"pcHomepageUrl": "https://pc.example.com",
 			},
 		},
 	}
@@ -680,31 +679,32 @@ func TestDevAppPermissionCommandsBuildParams(t *testing.T) {
 	}{
 		{
 			name:     "list",
-			args:     []string{"permission", "list", "--agent-id", "123", "--keyword", "手机号", "--status", "all", "--limit", "5"},
+			args:     []string{"permission", "list", "--unified-app-id", "u-1", "--keyword", "手机号", "--status", "all", "--page-size", "5", "--cursor", "next-1"},
 			wantTool: "list_open_dev_app_permissions",
 			wantParams: map[string]any{
-				"agentId":    123,
-				"keyword":    "手机号",
-				"authStatus": "ALL",
-				"limit":      5,
+				"unifiedAppId": "u-1",
+				"keyword":      "手机号",
+				"authStatus":   "ALL",
+				"pageSize":     5,
+				"cursor":       "next-1",
 			},
 		},
 		{
 			name:     "add",
-			args:     []string{"permission", "add", "--agent-id", "123", "--permissions", "Contact.User.mobile,qyapi_robot_sendmsg", "--yes"},
+			args:     []string{"permission", "add", "--unified-app-id", "u-1", "--permissions", "Contact.User.mobile,qyapi_robot_sendmsg", "--yes"},
 			wantTool: "apply_open_dev_app_permissions",
 			wantParams: map[string]any{
-				"agentId":     123,
-				"scopeValues": []string{"Contact.User.mobile", "qyapi_robot_sendmsg"},
+				"unifiedAppId": "u-1",
+				"scopeValues":  []string{"Contact.User.mobile", "qyapi_robot_sendmsg"},
 			},
 		},
 		{
 			name:     "remove",
-			args:     []string{"permission", "remove", "--agent-id", "123", "--permission", "Contact.User.mobile", "--yes"},
+			args:     []string{"permission", "remove", "--unified-app-id", "u-1", "--permission", "Contact.User.mobile", "--yes"},
 			wantTool: "remove_open_dev_app_permission",
 			wantParams: map[string]any{
-				"agentId":    123,
-				"scopeValue": "Contact.User.mobile",
+				"unifiedAppId": "u-1",
+				"scopeValue":   "Contact.User.mobile",
 			},
 		},
 	}
@@ -737,7 +737,7 @@ func TestDevAppCredentialsGetBuildsParams(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"devapp", "credentials", "get", "--agent-id", "123"})
+	root.SetArgs([]string{"devapp", "credentials", "get", "--unified-app-id", "u-1"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
@@ -745,7 +745,7 @@ func TestDevAppCredentialsGetBuildsParams(t *testing.T) {
 	if got := runner.last.Tool; got != "get_open_dev_app_credentials" {
 		t.Fatalf("Tool = %q, want get_open_dev_app_credentials", got)
 	}
-	want := map[string]any{"agentId": 123}
+	want := map[string]any{"unifiedAppId": "u-1"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -766,7 +766,7 @@ func TestDevAppCredentialsGetKeepsSecretFields(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"devapp", "credentials", "get", "--agent-id", "123"})
+	root.SetArgs([]string{"devapp", "credentials", "get", "--unified-app-id", "u-1"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())

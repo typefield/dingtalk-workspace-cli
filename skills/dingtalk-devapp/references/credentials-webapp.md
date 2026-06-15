@@ -4,7 +4,8 @@
 
 ```bash
 dws devapp credentials get --unified-app-id UNIFIED_APP_ID --format json
-dws devapp credentials get --agent-id 123456 --format json
+dws devapp credentials get --app-key dingxxx --format json
+dws devapp credentials get --name DemoApp --format json
 ```
 
 MCP tool: `get_open_dev_app_credentials`
@@ -28,19 +29,19 @@ MCP tool: `get_open_dev_app_credentials`
 ## 网页应用查询
 
 ```bash
-dws devapp webapp get --agent-id 123456 --format json
 dws devapp webapp get --unified-app-id UNIFIED_APP_ID --format json
+dws devapp webapp get --app-key dingxxx --format json
 ```
 
 MCP tool: `get_webapp_config`
 
-未配置网页应用前可能只返回 `agentId`。
+未配置网页应用前可能只返回空配置。
 
 ## 网页应用配置
 
 ```bash
-dws devapp webapp config --agent-id 123456 --homepage-link https://example.com/mobile --dry-run --format json
-dws devapp webapp config --agent-id 123456 --homepage-link https://example.com/mobile --pc-homepage-link https://example.com/pc --yes --format json
+dws devapp webapp config --unified-app-id UNIFIED_APP_ID --homepage-url https://example.com/mobile --dry-run --format json
+dws devapp webapp config --unified-app-id UNIFIED_APP_ID --homepage-url https://example.com/mobile --pc-homepage-url https://example.com/pc --yes --format json
 ```
 
 MCP tool: `set_webapp_config`
@@ -48,8 +49,8 @@ MCP tool: `set_webapp_config`
 | CLI | MCP | 说明 |
 |-----|-----|------|
 | `--h5-page-type` | `h5PageType` | 网页应用生效端 |
-| `--homepage-link` | `homepageLink` | 移动端首页地址 |
-| `--pc-homepage-link` | `pcHomepageLink` | PC 端首页地址 |
-| `--omp-link` | `ompLink` | 管理后台地址 |
+| `--homepage-url` | `homepageUrl` | 移动端首页地址 |
+| `--pc-homepage-url` | `pcHomepageUrl` | PC 端首页地址 |
+| `--omp-url` | `ompUrl` | 管理后台地址 |
 
 至少提供一个配置字段。`h5PageType` 未显式传入时，不要假设固定默认值；配置后以 `webapp get` 回读为准（实跑可能返回 `mobile`）。

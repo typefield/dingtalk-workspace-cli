@@ -9,31 +9,26 @@
 | 优先级 | 标识 | 处理 |
 |--------|------|------|
 | 1 | `--unified-app-id` | 直接使用 |
-| 2 | `--agent-id` / `--app-id` | 直接使用 |
-| 3 | `--app-key` / `--custom-key` | 先查询，唯一命中才继续 |
-| 4 | `--name` | 模糊搜索，写操作必须唯一命中 |
+| 2 | `--app-key` | appKey/clientId，唯一命中才继续 |
+| 3 | `--name` | 应用名称关键词，写操作必须唯一命中 |
 
 ## 应用列表
 
 ```bash
 dws devapp list --format json
 dws devapp list --name DemoApp --format json
-dws devapp list --agent-id 123456 --format json
-dws devapp list --creator 张三 --sort gmt_modified --order desc --format json
+dws devapp list --app-key dingxxx --format json
+dws devapp list --name DemoApp --page-size 20 --cursor NEXT_CURSOR --format json
 ```
 
-MCP tool: `list_open_dev_apps_by_condition`
+MCP tool: `list_open_dev_app`
 
 | CLI | MCP | 说明 |
 |-----|-----|------|
-| `--page` | `currentPage` | 1-based，默认 1 |
 | `--page-size` | `pageSize` | 默认 20 |
-| `--name` / `--keyword` | `appName` | 应用名搜索 |
-| `--agent-id` | `agentId` | 精确定位 |
+| `--cursor` | `cursor` | 游标，首次为空，用上一页 `nextCursor` 继续 |
+| `--name` / `--keyword` | `name` | 应用名搜索 |
 | `--app-key` | `appKey` | appKey/clientId |
-| `--creator` | `creator` | 创建人关键词 |
-| `--sort` | `sortType` | 如 `gmt_modified` |
-| `--order` | `sortOrder` | `asc` / `desc` |
 
 ## 应用状态字段
 
@@ -52,10 +47,11 @@ MCP tool: `list_open_dev_apps_by_condition`
 
 ```bash
 dws devapp get --unified-app-id UNIFIED_APP_ID --format json
-dws devapp get --agent-id 123456 --format json
+dws devapp get --app-key dingxxx --format json
+dws devapp get --name DemoApp --format json
 ```
 
-MCP tool: `get_open_dev_app_detail`
+MCP tool: `get_dev_app`
 
 详情主要用于定位和核验应用。若上游偶尔随详情返回 `clientSecret/appSecret`，必须脱敏处理，不要复制到回答里；主动读取凭证仍走 `credentials get`。
 
@@ -66,7 +62,7 @@ dws devapp create --name DemoApp --desc "内部应用" --type internal --dry-run
 dws devapp create --name DemoApp --desc "内部应用" --type internal --yes --format json
 ```
 
-MCP tool: `create_inner_app`
+MCP tool: `create_dev_app`
 
 | CLI | MCP | 必填 |
 |-----|-----|------|
@@ -83,7 +79,7 @@ dws devapp update --unified-app-id ID --name DemoApp2 --desc "新描述" --dry-r
 dws devapp update --unified-app-id ID --name DemoApp2 --desc "新描述" --yes --format json
 ```
 
-MCP tool: `update_inner_app`
+MCP tool: `update_dev_app`
 
 至少提供一个更新字段：`--name` / `--desc` / `--icon`。
 
@@ -97,7 +93,7 @@ dws devapp active --unified-app-id ID --dry-run --format json
 dws devapp active --unified-app-id ID --yes --format json
 ```
 
-MCP tools: `inactive_inner_app` / `active_inner_app`
+MCP tools: `disable_dev_app` / `enable_dev_app`
 
 停用保留数据但应用不可用，可通过 `active` 恢复。
 
@@ -110,7 +106,7 @@ dws devapp delete --unified-app-id ID --dry-run --format json
 dws devapp delete --unified-app-id ID --yes --format json
 ```
 
-MCP tool: `delete_inner_app`
+MCP tool: `delete_dev_app`
 
 删除前必须展示应用摘要。删除为异步操作，成功后应用延迟从列表消失。
 

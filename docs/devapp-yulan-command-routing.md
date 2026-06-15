@@ -128,13 +128,13 @@ Do not send confirmation fields such as `confirmCreate`, `confirmUpdate`, `confi
 
 | Area | CLI command | MCP tool | Backend HSF facade | Current backend status | Open-source DWS status |
 | --- | --- | --- | --- | --- | --- |
-| App query | `devapp list` | `list_open_dev_apps_by_condition` | `OpenInnerAppQueryFacade.listByCondition` | Implemented | Hardcoded helper |
-| App detail | `devapp get` | `get_open_dev_app_detail` | `OpenInnerAppQueryFacade.getDetail` | Implemented | Hardcoded helper |
-| App create | `devapp create` | `create_inner_app` | `OpenInnerAppManageFacade.create` | Implemented | Hardcoded helper |
-| App update | `devapp update` | `update_inner_app` | `OpenInnerAppManageFacade.update` | Implemented | Hardcoded helper |
-| App delete | `devapp delete` | `delete_inner_app` | `OpenInnerAppManageFacade.delete` | Implemented | Hardcoded helper |
+| App query | `devapp list` | `list_open_dev_app` | `OpenInnerAppQueryFacade.listByCondition` | Implemented | Hardcoded helper |
+| App detail | `devapp get` | `get_dev_app` | `OpenInnerAppQueryFacade.getDetail` | Implemented | Hardcoded helper |
+| App create | `devapp create` | `create_dev_app` | `OpenInnerAppManageFacade.create` | Implemented | Hardcoded helper |
+| App update | `devapp update` | `update_dev_app` | `OpenInnerAppManageFacade.update` | Implemented | Hardcoded helper |
+| App delete | `devapp delete` | `delete_dev_app` | `OpenInnerAppManageFacade.delete` | Implemented | Hardcoded helper |
 | Credentials | `devapp credentials get` | `get_open_dev_app_credentials` | `OpenInnerAppQueryFacade.getCredentials` | Implemented | Hardcoded helper |
-| Web app | `devapp webapp get/config` | `get_webapp_config`/`set_webapp_config` | Webapp facade | Implemented | Hardcoded helper; verified `config` then `get` returns `agentId/h5PageType/homepageLink/pcHomepageLink/ompLink`; before config, `get` may only return `agentId`. |
+| Web app | `devapp webapp get/config` | `get_webapp_config`/`set_webapp_config` | Webapp facade | Implemented | Hardcoded helper; locator fields are `unifiedAppId/appKey`; config fields are `h5PageType/homepageUrl/pcHomepageUrl/ompUrl`. |
 | Permission list | `devapp permission list/search/detail` | `list_open_dev_app_permissions` | `OpenInnerAppPermissionFacade.list` | Implemented | Hardcoded helper |
 | Permission apply | `devapp permission add` | `apply_open_dev_app_permissions` | `OpenInnerAppPermissionFacade.apply` | Implemented | Hardcoded helper |
 | Permission remove | `devapp permission remove` | `remove_open_dev_app_permission` | `OpenInnerAppPermissionFacade.remove` | Implemented | Hardcoded helper |
@@ -179,36 +179,34 @@ MCP output configuration should keep the wrapper fields and configure success as
 `ServiceResult.success == true`. DWS/Agent normalization can add `ok`, `reason`,
 `summary`, and `nextAction`, but raw `errorCode/errorMsg` must remain visible.
 
+Naming convention:
+
+- Public CLI flags use user-facing names: `--name`, `--desc`, `--icon`, `--homepage-url`.
+- MCP app create/update currently keep backend request field names: `appName`, `appDesc`, `appIcon`.
+- MCP app list/detail use the simplified locator/search fields: `unifiedAppId`, `appKey`, `name`.
+- The CLI helper owns the translation, for example `--name` -> `appName` for create/update and
+  `--name` -> `name` for list/detail.
+
 ### 3.2 P0 Tool Contracts
 
-#### list_open_dev_apps_by_condition
+#### list_open_dev_app
 
 | Item | Contract |
 | --- | --- |
 | CLI | `dws devapp list` |
 | HSF facade | `OpenInnerAppQueryFacade.listByCondition` |
 | Request shape | One object with system context and optional list filters. |
-| Required public fields | None; default `currentPage=1`, `pageSize=20`. |
+| Required public fields | None; default `pageSize=20`. |
 | Identity source | `corpId/userId` from MCP system context. |
 
 Input fields:
 
 | Field | Type | CLI flag | Required | Notes |
 | --- | --- | --- | --- | --- |
-| `currentPage` | number | `--page` | no | 1-based page number. |
 | `pageSize` | number | `--page-size` | no | Default 20; cap by backend. |
-| `appName` | string | `--name` | no | App name keyword. |
-| `agentId` | number | `--agent-id` | no | Exact DingTalk app agentId. |
-| `appId` | number | `--app-id` | no | Compatible app id. |
+| `cursor` | string | `--cursor` | no | Cursor from previous response; empty for first page. |
+| `name` | string | `--name` | no | App name keyword. |
 | `appKey` | string | `--app-key` | no | DingTalk appKey/clientId. |
-| `customKey` | string | `--custom-key` | no | Custom key. |
-| `appGroupId` | number | `--app-group-id` | no | App group id. |
-| `creator` | string | `--creator` | no | Creator name keyword. |
-| `robotName` | string | `--robot-name` | no | Bot name keyword. |
-| `developType` | number/string | `--develop-type` | no | Use backend enum if schema exposes one. |
-| `filterCoolApp` | number/boolean | `--filter-cool-app` | no | Only expose when backend semantics are documented. |
-| `sortType` | string | `--sort` | no | Example: `gmt_modified`. |
-| `sortOrder` | string | `--order` | no | `asc` or `desc`. |
 
 Normalized response:
 
@@ -216,15 +214,12 @@ Normalized response:
 {
   "ok": true,
   "operation": "app.list",
-  "page": {"currentPage": 1, "pageSize": 20, "total": 0},
+  "page": {"pageSize": 20, "nextCursor": ""},
   "apps": [
     {
       "unifiedAppId": "UNIFIED_APP_ID",
-      "appName": "DemoApp",
-      "agentId": 123456,
-      "appId": 123,
+      "name": "DemoApp",
       "appKey": "dingxxx",
-      "customKey": "custom-key",
       "creator": "Creator",
       "robotName": "BotName",
       "gmtModified": "2026-06-05T00:00:00+08:00"
@@ -234,7 +229,7 @@ Normalized response:
 }
 ```
 
-#### get_open_dev_app_detail
+#### get_dev_app
 
 | Item | Contract |
 | --- | --- |
@@ -249,11 +244,8 @@ Locator fields:
 | Field | Type | CLI flag | Notes |
 | --- | --- | --- | --- |
 | `unifiedAppId` | string | `--unified-app-id` | Preferred. |
-| `agentId` | number | `--agent-id` | Exact id. |
-| `appId` | number | `--app-id` | Compatible id. |
 | `appKey` | string | `--app-key` | appKey/clientId. |
-| `customKey` | string | `--custom-key` | Custom key. |
-| `appName` | string | `--name` | Fuzzy; must resolve uniquely before writes. |
+| `name` | string | `--name` | Fuzzy; must resolve uniquely before writes. |
 
 Detail response should include identifiers and configuration summary, but not
 full `clientSecret/appSecret`:
@@ -264,11 +256,8 @@ full `clientSecret/appSecret`:
   "operation": "app.get",
   "app": {
     "unifiedAppId": "UNIFIED_APP_ID",
-    "appName": "DemoApp",
-    "agentId": 123456,
-    "appId": 123,
+    "name": "DemoApp",
     "appKey": "dingxxx",
-    "customKey": "custom-key",
     "developType": "internal",
     "creator": "Creator",
     "visibility": "partial_members",
@@ -279,7 +268,7 @@ full `clientSecret/appSecret`:
 }
 ```
 
-#### create_inner_app
+#### create_dev_app
 
 | Item | Contract |
 | --- | --- |
@@ -305,8 +294,7 @@ Response:
   "operation": "app.create",
   "app": {
     "unifiedAppId": "UNIFIED_APP_ID",
-    "appName": "DemoApp",
-    "agentId": 123456,
+    "name": "DemoApp",
     "appKey": "dingxxx"
   },
   "nextAction": "run devapp get or configure permissions",
@@ -314,7 +302,7 @@ Response:
 }
 ```
 
-#### update_inner_app
+#### update_dev_app
 
 | Item | Contract |
 | --- | --- |
@@ -324,7 +312,7 @@ Response:
 | Required public fields | One app locator and at least one changed field. |
 | Write guard | CLI `--dry-run`, then `--yes`; no MCP confirm field. |
 
-Locator fields are the same as `get_open_dev_app_detail`, but the Agent should
+Locator fields are the same as `get_dev_app`, but the Agent should
 prefer `unifiedAppId` after resolving a unique app.
 
 Update fields:
@@ -340,7 +328,7 @@ Update fields:
 Response should return the updated app summary plus a `changedFields` array when
 available.
 
-#### delete_inner_app
+#### delete_dev_app
 
 | Item | Contract |
 | --- | --- |
@@ -361,21 +349,21 @@ backend fields.
 | CLI | `dws devapp permission list/search/detail` |
 | HSF facade | `OpenInnerAppPermissionFacade.list` |
 | Request shape | One object with system context, app locator, and optional filters. |
-| Required public fields | One app locator. |
+| Required public fields | `unifiedAppId`. |
 | Web semantics | Equivalent to grouped `scope/list` for APP and SNS scopes. |
 
 Input fields:
 
 | Field | Type | CLI flag | Required | Notes |
 | --- | --- | --- | --- | --- |
-| `unifiedAppId` | string | `--unified-app-id` | one locator | Preferred. |
-| `agentId` | number | `--agent-id` | one locator | Compatible. |
+| `unifiedAppId` | string | `--unified-app-id` | yes | Unified app id. |
 | `keyword` | string | `--keyword` | no | Maps to Web `key`. |
 | `apiStatus` | string | `--api-status` | no | Web `apiStatus` filter. |
 | `authStatus` | string | `--status` | no | `ALL/AUTHED/UNAUTHED`, post-filter. |
-| `firstLevelType` | string | `--scope-type` | no | `APP/SNS`; empty returns both. |
+| `scopeType` | string | `--scope-type` | no | `APP/SNS`; empty returns both. |
 | `scopeValue` | string | `--scope` | no | Detail mode and exact post-filter. |
-| `limit` | number | `--limit` | no | Agent display cap; no server pagination. |
+| `pageSize` | number | `--page-size` | no | Return count cap; default 20. |
+| `cursor` | string | `--cursor` | no | Cursor from previous response; empty for first page. |
 
 Normalized response should flatten `appScopes` and `snsScopes` into one
 `permissions[]` list while preserving group metadata:
@@ -389,7 +377,7 @@ Normalized response should flatten `appScopes` and `snsScopes` into one
     {
       "scopeValue": "qyapi_robot_sendmsg",
       "scopeName": "企业内机器人发消息权限",
-      "firstLevelType": "APP",
+      "scopeType": "APP",
       "categoryTitle": "机器人",
       "authed": true,
       "canEdit": true,
@@ -400,7 +388,7 @@ Normalized response should flatten `appScopes` and `snsScopes` into one
     }
   ],
   "summary": {"totalMatched": 1, "returnedCount": 1},
-  "truncated": false,
+  "nextCursor": "",
   "raw": {}
 }
 ```
@@ -412,15 +400,14 @@ Normalized response should flatten `appScopes` and `snsScopes` into one
 | CLI | `dws devapp permission add` |
 | HSF facade | `OpenInnerAppPermissionFacade.apply` |
 | Request shape | One object with system context, app locator, and `scopeValues`. |
-| Required public fields | One app locator and non-empty `scopeValues`. |
+| Required public fields | `unifiedAppId` and non-empty `scopeValues`. |
 | Write guard | CLI `--dry-run`, then `--yes`; no MCP confirm field. |
 
 Input fields:
 
 | Field | Type | CLI flag | Required | Notes |
 | --- | --- | --- | --- | --- |
-| `unifiedAppId` | string | `--unified-app-id` | one locator | Preferred. |
-| `agentId` | number | `--agent-id` | one locator | Compatible. |
+| `unifiedAppId` | string | `--unified-app-id` | yes | Unified app id. |
 | `scopeValues` | string[] | `--permissions` | yes | Comma-separated in CLI; must come from list response. |
 
 Response must distinguish direct apply, version-staged apply, rejected scopes, and
@@ -450,15 +437,14 @@ current app version. Approver selection is handled by the version flow.
 | CLI | `dws devapp permission remove` |
 | HSF facade | `OpenInnerAppPermissionFacade.remove` |
 | Request shape | One object with system context, app locator, and one `scopeValue`. |
-| Required public fields | One app locator and one `scopeValue`. |
+| Required public fields | `unifiedAppId` and one `scopeValue`. |
 | Write guard | CLI `--dry-run`, then `--yes`; no MCP confirm field. |
 
 Input fields:
 
 | Field | Type | CLI flag | Required | Notes |
 | --- | --- | --- | --- | --- |
-| `unifiedAppId` | string | `--unified-app-id` | one locator | Preferred. |
-| `agentId` | number | `--agent-id` | one locator | Compatible. |
+| `unifiedAppId` | string | `--unified-app-id` | yes | Unified app id. |
 | `scopeValue` | string | `--permission` | yes | Remove exactly one permission. |
 
 Expected structured failures:
@@ -498,36 +484,26 @@ Tool override examples:
 ```json
 {
   "toolOverrides": {
-    "list_open_dev_apps_by_condition": {
+    "list_open_dev_app": {
       "cliName": "list",
       "description": "查询开放平台企业内部应用列表",
       "flags": {
-        "currentPage": {"alias": "page", "default": 1},
         "pageSize": {"alias": "page-size", "default": 20},
-        "appName": {"alias": "name"},
-        "agentId": {"alias": "agent-id"},
-        "appId": {"alias": "app-id"},
-        "appKey": {"alias": "app-key"},
-        "customKey": {"alias": "custom-key"},
-        "creator": {"alias": "creator"},
-        "robotName": {"alias": "robot-name"},
-        "sortType": {"alias": "sort"},
-        "sortOrder": {"alias": "order"}
+        "cursor": {"alias": "cursor"},
+        "name": {"alias": "name"},
+        "appKey": {"alias": "app-key"}
       }
     },
-    "get_open_dev_app_detail": {
+    "get_dev_app": {
       "cliName": "get",
       "description": "查询开放平台企业内部应用详情",
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
-        "appId": {"alias": "app-id"},
         "appKey": {"alias": "app-key"},
-        "customKey": {"alias": "custom-key"},
-        "appName": {"alias": "name"}
+        "name": {"alias": "name"}
       }
     },
-    "create_inner_app": {
+    "create_dev_app": {
       "cliName": "create",
       "description": "创建开放平台企业内部应用",
       "isSensitive": true,
@@ -537,35 +513,26 @@ Tool override examples:
         "appIcon": {"alias": "icon"}
       }
     },
-    "update_inner_app": {
+    "update_dev_app": {
       "cliName": "update",
       "description": "修改开放平台企业内部应用基础信息",
       "isSensitive": true,
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
-        "appId": {"alias": "app-id"},
         "appKey": {"alias": "app-key"},
-        "customKey": {"alias": "custom-key"},
-        "currentAppName": {"alias": "current-name"},
         "appName": {"alias": "name"},
         "appDesc": {"alias": "desc"},
-        "appIcon": {"alias": "icon"},
-        "international": {"alias": "international"},
-        "supportHarmony": {"alias": "support-harmony", "type": "bool"}
+        "appIcon": {"alias": "icon"}
       }
     },
-    "delete_inner_app": {
+    "delete_dev_app": {
       "cliName": "delete",
       "description": "删除开放平台企业内部应用",
       "isSensitive": true,
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
-        "appId": {"alias": "app-id"},
-        "appName": {"alias": "name"},
         "appKey": {"alias": "app-key"},
-        "customKey": {"alias": "custom-key"}
+        "name": {"alias": "name"}
       }
     },
     "list_open_dev_app_permissions": {
@@ -574,13 +541,13 @@ Tool override examples:
       "description": "查询开放平台应用权限列表，默认同时返回 APP 应用权限和 SNS 个人权限",
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
         "keyword": {"alias": "keyword"},
         "apiStatus": {"alias": "api-status"},
         "authStatus": {"alias": "status", "default": "ALL"},
-        "firstLevelType": {"alias": "scope-type"},
+        "scopeType": {"alias": "scope-type"},
         "scopeValue": {"alias": "scope"},
-        "limit": {"alias": "limit", "default": "20"}
+        "pageSize": {"alias": "page-size", "default": "20"},
+        "cursor": {"alias": "cursor"}
       }
     },
     "apply_open_dev_app_permissions": {
@@ -590,7 +557,6 @@ Tool override examples:
       "isSensitive": true,
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
         "scopeValues": {
           "alias": "permissions",
           "type": "stringSlice",
@@ -606,7 +572,6 @@ Tool override examples:
       "isSensitive": true,
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
-        "agentId": {"alias": "agent-id"},
         "scopeValue": {
           "alias": "permission",
           "required": true,
@@ -639,16 +604,14 @@ Application identity must be resolved before detail and write commands.
 | Priority | Identifier | Rule |
 | --- | --- | --- |
 | 1 | `unifiedAppId` | Preferred unique id for write operations. |
-| 2 | `agentId/appId` | Compatible exact identifier. |
-| 3 | `appKey/clientId` | Call list/detail and require one result. |
-| 4 | `customKey` | Call list/detail and require one result. |
-| 5 | `appName/name` | Fuzzy search; write operations require one result. |
+| 2 | `appKey/clientId` | Call list/detail and require one result. |
+| 3 | `name` | Fuzzy search; write operations require one result. |
 
 Agent rule:
 
 1. Never choose the first row when multiple apps match.
-2. Show candidates with `appName`, `unifiedAppId`, `agentId`, `appKey/clientId`, `creator`, and modified time.
-3. Ask the user to pick `unifiedAppId` or `agentId` for write operations.
+2. Show candidates with `name`, `unifiedAppId`, `appKey/clientId`, `creator`, and modified time.
+3. Ask the user to pick `unifiedAppId` for write operations when multiple apps match.
 
 MCP calls must rely on system context for caller identity:
 
@@ -666,31 +629,26 @@ Open-source DWS and Agent must not pass `orgId` or `uid` as user input.
 ```bash
 dws devapp list --page 1 --page-size 20 --format json
 dws devapp list --name DemoApp --format json
-dws devapp list --agent-id AGENT_ID --format json
 dws devapp list --app-key dingxxx --format json
-dws devapp list --creator 张三 --format json
-dws devapp list --robot-name 小钉 --format json
+dws devapp list --page-size 20 --cursor NEXT_CURSOR --format json
 ```
 
 MCP payload:
 
 ```json
 {
-  "currentPage": 1,
   "pageSize": 20,
-  "appName": "DemoApp",
-  "sortType": "gmt_modified",
-  "sortOrder": "desc"
+  "name": "DemoApp"
 }
 ```
 
-Pagination is supported for app list through `currentPage/pageSize`, both 1-based. Search filters are optional. A baseline call should pass only pagination and sort fields.
+Pagination is cursor based. A baseline call should pass only `pageSize`; use the response `nextCursor` for the next page.
 
 ### 6.2 Get
 
 ```bash
 dws devapp get --unified-app-id UNIFIED_APP_ID --format json
-dws devapp get --agent-id AGENT_ID --format json
+dws devapp get --app-key dingxxx --format json
 dws devapp get --name DemoApp --format json
 ```
 
@@ -702,7 +660,7 @@ MCP payload:
 }
 ```
 
-`get` may show `clientId/appKey/agentId`, but it must not be used to read full `clientSecret/appSecret`. Secret read belongs to `credentials get`.
+`get` may show `clientId/appKey`, but it must not be used to read full `clientSecret/appSecret`. Secret read belongs to `credentials get`.
 
 ### 6.3 Create
 
@@ -764,7 +722,7 @@ MCP payload:
 }
 ```
 
-Valid locator fields are `unifiedAppId`, `agentId`, `appId`, `appName`, `appKey`, and `customKey`. Name/key locators must uniquely resolve.
+Valid public locator fields are `unifiedAppId`, `appKey`, and `name`. Name/key locators must uniquely resolve.
 
 ## 7. Credentials
 
@@ -772,7 +730,8 @@ Target command:
 
 ```bash
 dws devapp credentials get --unified-app-id UNIFIED_APP_ID --format json
-dws devapp credentials get --agent-id AGENT_ID --format json
+dws devapp credentials get --app-key dingxxx --format json
+dws devapp credentials get --name DemoApp --format json
 ```
 
 Current status:
@@ -786,7 +745,7 @@ Target fields:
 
 | Field | Notes |
 | --- | --- |
-| `unifiedAppId/agentId/appName` | App summary. |
+| `unifiedAppId/name` | App summary. |
 | `clientId/appKey` | Non-secret identifiers. |
 | `clientSecret/appSecret` | Returned by the dedicated credentials tool; treat as sensitive output. |
 | `currentSecretStatus` | Current secret state. |
@@ -809,10 +768,10 @@ Returned groups:
   "success": true,
   "data": {
     "snsScopes": [
-      {"title": "个人权限", "firstLevelType": "SNS", "scopeList": []}
+      {"title": "个人权限", "scopeType": "SNS", "scopeList": []}
     ],
     "appScopes": [
-      {"title": "通讯录管理", "firstLevelType": "APP", "scopeList": []}
+      {"title": "通讯录管理", "scopeType": "APP", "scopeList": []}
     ]
   }
 }
@@ -835,7 +794,7 @@ MCP payload for normal list:
 {
   "unifiedAppId": "UNIFIED_APP_ID",
   "authStatus": "ALL",
-  "limit": 20
+  "pageSize": 20
 }
 ```
 
@@ -846,7 +805,7 @@ MCP payload for search:
   "unifiedAppId": "UNIFIED_APP_ID",
   "keyword": "机器人发送消息",
   "authStatus": "UNAUTHED",
-  "limit": 10
+  "pageSize": 10
 }
 ```
 
@@ -856,7 +815,7 @@ MCP payload for detail:
 {
   "unifiedAppId": "UNIFIED_APP_ID",
   "scopeValue": "qyapi_robot_sendmsg",
-  "limit": 1
+  "pageSize": 1
 }
 ```
 
@@ -864,16 +823,16 @@ Input fields:
 
 | Field | Type | Required | Notes |
 | --- | --- | --- | --- |
-| `unifiedAppId` | string | one of app id fields | Preferred app locator. |
-| `agentId` | number | one of app id fields | Compatible app locator. |
+| `unifiedAppId` | string | yes | Unified app id. |
 | `keyword` | string | no | Maps to Web `key`. |
 | `apiStatus` | string | no | Maps to Web `apiStatus`. |
 | `authStatus` | string | no | `ALL/AUTHED/UNAUTHED`, post-filter. |
-| `firstLevelType` | string | no | `APP/SNS`; empty returns both. |
+| `scopeType` | string | no | `APP/SNS`; empty returns both. |
 | `scopeValue` | string | no | Detail mode and exact post-filter. |
-| `limit` | number | no | Default 20, hard cap 50. |
+| `pageSize` | number | no | Default 20, hard cap 50. |
+| `cursor` | string | no | Cursor from previous response; empty for first page. |
 
-Permission list has no server pagination. Web also loads the full grouped list. Use `keyword` to reduce server-side results, then use `limit` to control Agent context.
+Permission list uses cursor pagination. Use `keyword` to reduce server-side results and `pageSize/cursor` to control Agent context.
 
 Default response must flatten APP and SNS scopes into one stable `permissions[]` array:
 
@@ -885,7 +844,7 @@ Default response must flatten APP and SNS scopes into one stable `permissions[]`
       "scopeValue": "qyapi_robot_sendmsg",
       "scopeName": "企业内机器人发消息权限",
       "scopeDesc": "企业内机器人发消息权限",
-      "firstLevelType": "APP",
+      "scopeType": "APP",
       "categoryTitle": "机器人",
       "authed": true,
       "canEdit": true,
@@ -918,7 +877,7 @@ Default response must flatten APP and SNS scopes into one stable `permissions[]`
 {
   "scopeValue": "Contact.User.mobile",
   "scopeName": "个人手机号信息",
-  "firstLevelType": "SNS",
+  "scopeType": "SNS",
   "authed": false,
   "canEdit": true,
   "requiredApproval": true,
@@ -933,7 +892,7 @@ Agent selection order:
 1. Exact `scopeValue`.
 2. Matched `apiList[].name`.
 3. Scope name or description.
-4. Category title and `firstLevelType`.
+4. Category title and `scopeType`.
 
 Agent must pass final `scopeValue` to add/remove. Do not pass API name, API uuid, or category title into write tools.
 
@@ -1074,7 +1033,7 @@ Positive `devapp` signals:
 | Signal | Route |
 | --- | --- |
 | `开放平台应用`, `开发者后台应用`, `企业内部应用`, `内部应用` | `devapp` |
-| `agentId`, `clientId`, `appKey`, `customKey`, `appSecret`, `clientSecret` | `devapp` |
+| `unifiedAppId`, `clientId`, `appKey`, `appSecret`, `clientSecret` | `devapp` |
 | `应用权限`, `权限点`, `API 权限`, `APP/SNS 权限`, `scopeValue` | `devapp permission ...` |
 | `事件订阅`, `订阅事件`, `退订事件`, `eventCode`, `可订阅事件` in an app context | `devapp event ...` |
 | `应用版本`, `版本发布`, `选审批人`, `发布审核` in developer backend context | `devapp version ...` |
@@ -1120,11 +1079,11 @@ Intent table:
 
 | User intent | Command | Tool |
 | --- | --- | --- |
-| "查应用/搜索应用" | `devapp list` | `list_open_dev_apps_by_condition` |
-| "看应用详情/clientId/agentId" | `devapp get` | `get_open_dev_app_detail` |
-| "创建应用" | `devapp create` | `create_inner_app` |
-| "修改名称/描述/图标" | `devapp update` | `update_inner_app` |
-| "删除应用" | `devapp delete` | `delete_inner_app` |
+| "查应用/搜索应用" | `devapp list` | `list_open_dev_app` |
+| "看应用详情/clientId/appKey" | `devapp get` | `get_dev_app` |
+| "创建应用" | `devapp create` | `create_dev_app` |
+| "修改名称/描述/图标" | `devapp update` | `update_dev_app` |
+| "删除应用" | `devapp delete` | `delete_dev_app` |
 | "查权限/搜索 API 权限" | `permission list` | `list_open_dev_app_permissions` |
 | "这个权限覆盖哪些 API" | `permission list --scope` | `list_open_dev_app_permissions` |
 | "申请权限/开通权限" | `permission add` | `apply_open_dev_app_permissions` |
@@ -1217,7 +1176,7 @@ Do not add confirmation booleans to MCP payloads. These belong to the CLI layer:
 | User request | Agent recipe |
 | --- | --- |
 | "查 DemoApp 应用" | `devapp list --name DemoApp`; if one result, optionally `devapp get`; if multiple, show candidates. |
-| "这个 agentId 是哪个应用" | `devapp get --agent-id AGENT_ID`; if backend requires list semantics, use `devapp list --agent-id AGENT_ID`. |
+| "这个 appKey 是哪个应用" | `devapp get --app-key APP_KEY`; if multiple apps match, ask for `unifiedAppId`. |
 | "创建企业内部应用" | `devapp create --name ... --type internal --dry-run`; after confirmation, repeat with `--yes`. |
 | "修改应用描述/图标" | Resolve `unifiedAppId`; `devapp update --unified-app-id ... --desc/icon ... --dry-run`; after confirmation, `--yes`. |
 | "删除应用" | Resolve unique app; show app summary; `devapp delete ... --dry-run`; after confirmation, `--yes`. |
@@ -1237,9 +1196,9 @@ writing:
 2. If the user gives an API name, search with `keyword`, then match
    `apiList[].name` or `apiPreview.name`.
 3. If the user gives a human permission name, match `scopeName/scopeDesc`.
-4. If multiple scopes remain, show `scopeValue`, `scopeName`, `firstLevelType`,
+4. If multiple scopes remain, show `scopeValue`, `scopeName`, `scopeType`,
    `authed`, `requiredApproval`, and `apiPreview`, then ask for one.
-5. For list output, cap the displayed list with `limit`; for detail output, call
+5. For list output, cap the displayed list with `pageSize`; for detail output, call
    with `scopeValue` and return the full API coverage for one scope only.
 
 `requiredApproval=true` is not a blocker for permission add. It means the add
@@ -1279,8 +1238,7 @@ details:
   "operation": "permission.add",
   "app": {
     "unifiedAppId": "UNIFIED_APP_ID",
-    "agentId": 123456,
-    "appName": "DemoApp"
+    "name": "DemoApp"
   },
   "summary": {
     "appliedCount": 1,
@@ -1383,7 +1341,7 @@ For each P0 tool:
 6. Configure tool input JSON Schema with only Agent-facing fields.
 7. Map `corpId/userId` from system context to the business request object.
 8. Review every recommended mapping manually, especially fields named
-   `agentId`, `appId`, `appKey`, or `userId`.
+   `unifiedAppId`, `appKey`, `name`, or `userId`.
 9. Keep `ServiceResult` output wrapper and success rule
    `ServiceResult.success == true`.
 10. Remove blank error-text optimization rows; preserve raw
@@ -1396,12 +1354,12 @@ P0 debug inputs:
 
 | Tool | Baseline debug input |
 | --- | --- |
-| `list_open_dev_apps_by_condition` | `{"currentPage":1,"pageSize":10}` |
-| `get_open_dev_app_detail` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
-| `create_inner_app` | `{"appName":"DemoApp","appDesc":"internal app"}` |
-| `update_inner_app` | `{"unifiedAppId":"UNIFIED_APP_ID","appDesc":"new desc"}` |
-| `delete_inner_app` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
-| `list_open_dev_app_permissions` | `{"unifiedAppId":"UNIFIED_APP_ID","authStatus":"ALL","limit":20}` |
+| `list_open_dev_app` | `{"pageSize":10}` |
+| `get_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
+| `create_dev_app` | `{"appName":"DemoApp","appDesc":"internal app"}` |
+| `update_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID","appDesc":"new desc"}` |
+| `delete_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
+| `list_open_dev_app_permissions` | `{"unifiedAppId":"UNIFIED_APP_ID","authStatus":"ALL","pageSize":20}` |
 | `apply_open_dev_app_permissions` | `{"unifiedAppId":"UNIFIED_APP_ID","scopeValues":["SCOPE_VALUE"]}` |
 | `remove_open_dev_app_permission` | `{"unifiedAppId":"UNIFIED_APP_ID","scopeValue":"SCOPE_VALUE"}` |
 
@@ -1414,8 +1372,8 @@ After publish, verify the service through MCP before using DWS:
 
 1. Run MCP `initialize`.
 2. Run `tools/list` and confirm all expected P0 tool keys exist.
-3. Call `list_open_dev_apps_by_condition` with only pagination.
-4. Call one exact locator scenario, such as `get_open_dev_app_detail`.
+3. Call `list_open_dev_app` with only pagination.
+4. Call one exact locator scenario, such as `get_dev_app`.
 5. Call permission list with `authStatus=ALL` and confirm APP and SNS scopes are
    both represented.
 6. Confirm failures preserve `errorCode/errorMsg`.
@@ -1495,8 +1453,8 @@ the following are true:
 | `dws devapp get --name DemoApp --format json` with multiple matches | Stops and returns candidates. |
 | `dws devapp create --name T --type internal --dry-run --format json` | Prints payload only; no MCP call. |
 | `dws devapp create --name T --type internal --format json` | Refuses because write confirmation is missing. |
-| `dws devapp create --name T --type internal --yes --format json` | Calls `create_inner_app`. |
-| `dws devapp update --unified-app-id X --desc Y --yes --format json` | Calls `update_inner_app`. |
+| `dws devapp create --name T --type internal --yes --format json` | Calls `create_dev_app`. |
+| `dws devapp update --unified-app-id X --desc Y --yes --format json` | Calls `update_dev_app`. |
 | `dws devapp delete --unified-app-id X --format json` | Refuses because delete confirmation is missing. |
 | `dws devapp permission list --unified-app-id X --format json` | Returns flattened APP and SNS permissions. |
 | `dws devapp permission list --unified-app-id X --keyword "发送消息" --format json` | Returns candidate `permissions[]`; no automatic apply. |

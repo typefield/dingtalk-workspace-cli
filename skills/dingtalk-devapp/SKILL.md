@@ -1,6 +1,6 @@
 ---
 name: dingtalk-devapp
-description: 钉钉开放平台应用管理。Use when 用户说 开发者后台应用/开放平台应用/企业内部应用/查应用/创建应用/修改应用/删除应用/停用应用/启用应用/应用成员/安全配置/IP白名单/登录重定向/端内免登/agentId/clientId/appKey/appSecret/应用权限/权限点/创建机器人/智能体机器人/机器人配置/机器人回调/应用版本/版本发布/发布审核/选审批人/事件订阅/订阅事件/退订事件/eventCode。Distinct from dingtalk-devdoc(开放平台文档搜索) and dingtalk-doc(钉钉云文档)。命令前缀：dws devapp（兼容别名 dws app）。
+description: 钉钉开放平台应用管理。Use when 用户说 开发者后台应用/开放平台应用/企业内部应用/查应用/创建应用/修改应用/删除应用/停用应用/启用应用/应用成员/安全配置/IP白名单/登录重定向/端内免登/unifiedAppId/clientId/appKey/appSecret/应用权限/权限点/创建机器人/智能体机器人/机器人配置/机器人回调/应用版本/版本发布/发布审核/选审批人/事件订阅/订阅事件/退订事件/eventCode。Distinct from dingtalk-devdoc(开放平台文档搜索) and dingtalk-doc(钉钉云文档)。命令前缀：dws devapp（兼容别名 dws app）。
 cli_version: ">=1.0.15"
 metadata:
   category: product
@@ -19,7 +19,7 @@ metadata:
 `应用` 是泛词。只有出现以下信号才路由到 devapp：
 
 - `开放平台应用/开发者后台应用/企业内部应用/内部应用`
-- `agentId/clientId/appKey/appSecret/customKey`
+- `unifiedAppId/clientId/appKey/appSecret`
 - `应用权限/权限点/scopeValue/应用成员/安全配置/IP 白名单`
 - `创建机器人/智能体机器人/机器人配置/机器人回调地址`（→ `robot`）
 - `应用版本/版本发布/发布审核/选审批人`（→ `version`）
@@ -31,7 +31,7 @@ metadata:
 
 1. 所有命令加 `--format json`。
 2. 写操作先 `--dry-run`，确认后才加 `--yes`。
-3. 应用名/appKey/customKey 命中多条时展示候选，不取第一条。
+3. 应用名/appKey 命中多条时展示候选，不取第一条。
 4. 权限申请/取消只接受 `scopeValue`，不传 API 名或分组名。
 5. 主动读取密钥走 `credentials get`；任何 `devapp get`/详情返回里的 `clientSecret/appSecret` 都按敏感凭证脱敏，不向用户展开。
 

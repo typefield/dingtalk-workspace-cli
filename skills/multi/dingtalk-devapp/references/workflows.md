@@ -8,7 +8,7 @@
 1. 创建应用
    dws devapp create --name "应用名" --desc "描述" --type internal --dry-run --format json
    → 确认后加 --yes
-   → 记录返回的 unifiedAppId 和 agentId
+   → 记录返回的 unifiedAppId 和 appKey
 
 2. 确认创建成功
    dws devapp get --unified-app-id <unifiedAppId> --format json
@@ -17,12 +17,12 @@
    dws devapp credentials get --unified-app-id <unifiedAppId> --format json
 
 4. 配置网页应用（按需）
-   dws devapp webapp config --agent-id <agentId> --homepage-link <URL> --dry-run --format json
+   dws devapp webapp config --unified-app-id <unifiedAppId> --homepage-url <URL> --dry-run --format json
    → 确认后加 --yes
 
 5. 验证网页应用配置
-   dws devapp webapp get --agent-id <agentId> --format json
-   → 确认返回 homepageLink/pcHomepageLink 等
+   dws devapp webapp get --unified-app-id <unifiedAppId> --format json
+   → 确认返回 homepageUrl/pcHomepageUrl 等
 
 6. 申请权限（按需）
    dws devapp permission list --unified-app-id <unifiedAppId> --keyword "关键词" --format json
