@@ -282,9 +282,13 @@ func launchConnector(cmd *cobra.Command, runner executor.Runner, channel, client
 				audit = &sheetAuditSink{runner: runner, nodeID: opts.AuditSheetNode, sheetID: opts.AuditSheetTab}
 				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 操作审计已开启：在线表格 node=%s tab=%s（每个操作追加一行）\n", opts.AuditSheetNode, opts.AuditSheetTab)
 			}
+			if len(opts.RoleScopes) > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 角色能力边界：仅允许 [%s]（其它产品的执行动作会被拒）\n", strings.Join(opts.RoleScopes, ", "))
+			}
 			if sender := newDingtalkApprovalCardSender(clientID, clientSecret, opts.ApprovalCardTemplate); sender != nil {
 				orch := newApprovalOrchestrator(gate, sender, runner, opts.OwnerUserID)
 				orch.audit = audit
+				orch.allowedScopes = opts.RoleScopes
 				extras.approval = orch
 				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（执行类请求先卡片审批，[同意]/[拒绝]按钮）\n", opts.OwnerUserID)
 			} else {
@@ -297,6 +301,7 @@ func launchConnector(cmd *cobra.Command, runner executor.Runner, channel, client
 				notifier := newAICardClient(clientID, clientSecret, "")
 				orch := newTextApprovalOrchestrator(gate, runner, opts.OwnerUserID, notifier)
 				orch.audit = audit
+				orch.allowedScopes = opts.RoleScopes
 				extras.approval = orch
 				// Background auto-retry: a deferred backlog (e.g. queued while the
 				// dws login was not yet the owner) drains by itself once the identity

@@ -186,6 +186,25 @@ type approvalOrchestrator struct {
 	// (e.g. a DingTalk online sheet) on top of the local approvals JSON. nil =
 	// local-file audit only.
 	audit auditSink
+	// allowedScopes is the role's capability allowlist (product names). When
+	// non-empty, an action whose product is not listed is refused before it ever
+	// reaches the gate, keeping the role in its lane. Empty = no restriction.
+	allowedScopes []string
+}
+
+// scopeAllows reports whether the role may use the given product. An empty
+// allowlist means no restriction (allow all).
+func (o *approvalOrchestrator) scopeAllows(product string) bool {
+	if len(o.allowedScopes) == 0 {
+		return true
+	}
+	product = strings.ToLower(strings.TrimSpace(product))
+	for _, s := range o.allowedScopes {
+		if strings.ToLower(strings.TrimSpace(s)) == product {
+			return true
+		}
+	}
+	return false
 }
 
 // recordAudit writes the request's current (terminal) state to the audit sink,
@@ -278,6 +297,15 @@ func (o *approvalOrchestrator) handleReply(ctx context.Context, requester, convI
 		// Unknown/blank action: degrade to a plain reply (marker stripped) so a
 		// malformed marker never silently swallows the answer.
 		return cleaned, false
+	}
+
+	// Role scope: an action outside the role's capability allowlist is refused
+	// up front (never reaches the gate or the owner). The requester is told it is
+	// out of lane — this is a capability boundary, not an approval, so it is fine
+	// to surface to them.
+	if !o.scopeAllows(pa.Product) {
+		fmt.Fprintf(os.Stderr, "[connect][approval] 越权拦截：角色无 %q 能力，拒绝动作 %s\n", pa.Product, summary)
+		return fmt.Sprintf("（该数字员工没有「%s」能力，无法执行此操作：%s）", pa.Product, summary), false
 	}
 
 	// 写类才拦：route the gate-or-not decision through the read/write classifier

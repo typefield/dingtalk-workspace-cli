@@ -601,6 +601,41 @@ func TestDeferredExecution_HoldsAndRetries(t *testing.T) {
 	}
 }
 
+// TestScopeEnforcement: an action outside the role's allowlist is refused up
+// front (the requester is told, nothing reaches the gate); an in-scope action
+// proceeds; an empty allowlist allows everything.
+func TestScopeEnforcement(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	gate := newApprovalGate("ctscope")
+	runner := &fakeRunner{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", &fakeNotifier{})
+	o.allowedScopes = []string{"todo"} // HR-style: only todo
+
+	// doc.create is out of scope → refused, NOT gated, requester told.
+	out, handled := o.handleReply(context.Background(), "requester", "c1", `[[ACTION:doc.create name="周报"]]`, nil)
+	if handled {
+		t.Fatal("out-of-scope action must not be handled by the gate")
+	}
+	if !strings.Contains(out, "没有") || !strings.Contains(out, "doc") {
+		t.Fatalf("requester should be told it's out of scope, got %q", out)
+	}
+	if len(gate.list()) != 0 {
+		t.Fatal("out-of-scope action must not create an approval request")
+	}
+
+	// todo.create is in scope → proceeds (owner self-request auto-executes).
+	o.handleReply(context.Background(), "owner", "c2", `[[ACTION:todo.create title="排期"]]`, func(_ context.Context, _, _ string) error { return nil })
+	if len(gate.list()) != 1 {
+		t.Fatalf("in-scope action should be processed, got %d requests", len(gate.list()))
+	}
+
+	// scopeAllows: empty allowlist = allow all.
+	o.allowedScopes = nil
+	if !o.scopeAllows("anything") {
+		t.Fatal("empty allowlist must allow all products")
+	}
+}
+
 // TestAutoFlushDeferred verifies the background retry: silent while the identity
 // is still wrong (no spam), and it drains + notifies once execution works.
 func TestAutoFlushDeferred(t *testing.T) {

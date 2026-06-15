@@ -198,6 +198,9 @@ func applyRoleConfig(opts connectAgentOptions, role *RoleConfig) connectAgentOpt
 	if len(role.KnowledgeSources) > 0 {
 		opts.KnowledgeSources = append(opts.KnowledgeSources, role.KnowledgeSources...)
 	}
+	if len(opts.RoleScopes) == 0 && len(role.AllowedScopes) > 0 {
+		opts.RoleScopes = append([]string(nil), role.AllowedScopes...)
+	}
 	return opts
 }
 
