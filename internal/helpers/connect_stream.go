@@ -153,6 +153,11 @@ type connectAgentOptions struct {
 	// "Sheet1"). Empty AuditSheetNode = local approvals JSON only.
 	AuditSheetNode string
 	AuditSheetTab  string
+	// RoleScopes is the role's capability allowlist (RoleConfig.AllowedScopes),
+	// e.g. ["todo", "approval"]. When non-empty the approval gate refuses an
+	// action whose product is not in the list, so a role stays in its lane (an
+	// HR assistant can't touch code/drive). Empty = no scope restriction.
+	RoleScopes []string
 }
 
 // isStreamBridgeChannel reports whether a channel is wired through the Go-native
