@@ -127,9 +127,38 @@ func (s *sheetAuditSink) record(ctx context.Context, req *ApprovalRequest) {
 		"sheetId": s.sheetID,
 		"values":  [][]any{row},
 	})
-	if _, err := s.runner.Run(ctx, inv); err != nil {
-		fmt.Fprintf(os.Stderr, "[connect][approval][audit] 写审计表格失败 approvalId=%s: %v\n", req.ID, err)
+	// The online-sheet API throttles (e.g. THREADPOOL_BUSY) under bursts, dropping
+	// an audit row on a transient error. Retry a few times with backoff so the
+	// trail stays complete; still best-effort — give up (log) after the last try.
+	var err error
+	for attempt := 1; attempt <= 3; attempt++ {
+		if _, err = s.runner.Run(ctx, inv); err == nil {
+			return
+		}
+		if attempt < 3 && isTransientSheetErr(err) {
+			time.Sleep(time.Duration(attempt) * 600 * time.Millisecond)
+			continue
+		}
+		break
 	}
+	if err != nil {
+		fmt.Fprintf(os.Stderr, "[connect][approval][audit] 写审计表格失败（已重试）approvalId=%s: %v\n", req.ID, err)
+	}
+}
+
+// isTransientSheetErr reports whether a sheet-append error is a transient
+// throttle/timeout worth retrying (vs. a permanent error like a bad node id).
+func isTransientSheetErr(err error) bool {
+	if err == nil {
+		return false
+	}
+	s := strings.ToUpper(err.Error())
+	for _, sig := range []string{"BUSY", "THREADPOOL", "TIMEOUT", "RATE", "LIMIT", "TOO MANY", "503", "429"} {
+		if strings.Contains(s, sig) {
+			return true
+		}
+	}
+	return false
 }
 
 // approvalOrchestrator is the connector-side controller for the gate. It is
@@ -422,7 +451,8 @@ func (o *approvalOrchestrator) flushDeferred(ctx context.Context) bool {
 		_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "当前没有积压的请求。")
 		return true
 	}
-	done, stuck := 0, 0
+	doneSummaries := make([]string, 0, len(pending))
+	stuck := 0
 	for _, req := range pending {
 		out, execErr := o.execute(ctx, req)
 		if execErr != nil {
@@ -434,13 +464,25 @@ func (o *approvalOrchestrator) flushDeferred(ctx context.Context) bool {
 		o.gate.markExecuted(req.ID)
 		o.recordAudit(ctx, req.ID)
 		o.notifyRequester(ctx, req, "（已恢复）已为你完成："+req.Summary+"\n"+out)
-		done++
+		doneSummaries = append(doneSummaries, req.Summary)
 	}
-	summary := fmt.Sprintf("已补做 %d 个积压请求。", done)
+	// Report to the owner WHAT was done (not just a count) — when the owner is
+	// also the requester, this per-item list is their only completion receipt
+	// (notifyRequester skips owner==requester to avoid double-messaging).
+	var b strings.Builder
+	fmt.Fprintf(&b, "已补做 %d 个积压请求", len(doneSummaries))
+	if len(doneSummaries) > 0 {
+		b.WriteString("：\n")
+		for i, s := range doneSummaries {
+			fmt.Fprintf(&b, "%d. %s\n", i+1, s)
+		}
+	} else {
+		b.WriteString("。")
+	}
 	if stuck > 0 {
-		summary += fmt.Sprintf("仍有 %d 个未成功（身份可能还没对上，确认 dws 登录后再回复「重试」）。", stuck)
+		fmt.Fprintf(&b, "仍有 %d 个未成功（身份可能还没对上，确认 dws 登录后再回复「重试」）。", stuck)
 	}
-	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, summary)
+	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, strings.TrimRight(b.String(), "\n"))
 	return true
 }
 
