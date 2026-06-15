@@ -253,6 +253,47 @@ func TestHandleReply_RejectDoesNotExecute(t *testing.T) {
 	}
 }
 
+// TestToPlannedAction_Actions covers the action verbs the twin can execute:
+// each maps to the right product/tool, and missing required args degrade to
+// "not an action" (ok=false) so a malformed marker never submits a no-op.
+func TestToPlannedAction_Actions(t *testing.T) {
+	cases := []struct {
+		name        string
+		act         detectedAction
+		wantOK      bool
+		wantProduct string
+		wantTool    string
+	}{
+		{"todo", detectedAction{Verb: "todo.create", Args: map[string]string{"title": "交方案"}}, true, "todo", "create_personal_todo"},
+		{"calendar", detectedAction{Verb: "calendar.create", Args: map[string]string{"title": "评审会", "start": "2026-06-20T10:00:00+08:00", "end": "2026-06-20T11:00:00+08:00"}}, true, "calendar", "create_calendar_event"},
+		{"calendar missing time", detectedAction{Verb: "calendar.create", Args: map[string]string{"title": "评审会"}}, false, "", ""},
+		{"doc", detectedAction{Verb: "doc.create", Args: map[string]string{"name": "周报"}}, true, "doc", "create_document"},
+		{"doc missing name", detectedAction{Verb: "doc.create", Args: map[string]string{}}, false, "", ""},
+		{"unknown verb", detectedAction{Verb: "drive.delete", Args: map[string]string{}}, false, "", ""},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			pa, summary, ok := toPlannedAction(tc.act, "owner")
+			if ok != tc.wantOK {
+				t.Fatalf("ok=%v want %v", ok, tc.wantOK)
+			}
+			if !ok {
+				return
+			}
+			if pa.Product != tc.wantProduct || pa.Tool != tc.wantTool {
+				t.Fatalf("got %s/%s want %s/%s", pa.Product, pa.Tool, tc.wantProduct, tc.wantTool)
+			}
+			if summary == "" {
+				t.Fatal("summary should not be empty for a valid action")
+			}
+			// Every twin action is write-class → must be gated.
+			if classifyPlannedAction(pa) != CmdClassWrite {
+				t.Fatalf("%s should classify as write (gated), got %s", tc.name, classifyPlannedAction(pa))
+			}
+		})
+	}
+}
+
 // TestClassifyPlannedAction verifies the gate's read/write bridge: it classifies
 // on the human command path first and falls back to product + RPC tool name.
 func TestClassifyPlannedAction(t *testing.T) {

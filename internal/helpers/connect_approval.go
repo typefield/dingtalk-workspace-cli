@@ -573,9 +573,52 @@ func toPlannedAction(act detectedAction, ownerStaffID string) (plannedAction, st
 			Params:     map[string]any{"PersonalTodoCreateVO": vo},
 		}
 		return pa, summary, true
+
+	case "calendar.create":
+		title := firstNonEmpty(act.Args["title"], act.Args["summary"])
+		start := strings.TrimSpace(act.Args["start"])
+		end := strings.TrimSpace(act.Args["end"])
+		if title == "" || start == "" || end == "" {
+			return plannedAction{}, "", false
+		}
+		pa := plannedAction{
+			Product:    "calendar",
+			Tool:       "create_calendar_event",
+			LegacyPath: "calendar event create",
+			Params: map[string]any{
+				"summary":       title,
+				"startDateTime": start,
+				"endDateTime":   end,
+			},
+		}
+		return pa, fmt.Sprintf("创建日程：%s（%s ~ %s）", title, start, end), true
+
+	case "doc.create":
+		name := firstNonEmpty(act.Args["name"], act.Args["title"])
+		if name == "" {
+			return plannedAction{}, "", false
+		}
+		pa := plannedAction{
+			Product:    "doc",
+			Tool:       "create_document",
+			LegacyPath: "doc create",
+			Params:     map[string]any{"name": name},
+		}
+		return pa, fmt.Sprintf("创建文档：%s", name), true
+
 	default:
 		return plannedAction{}, "", false
 	}
+}
+
+// firstNonEmpty returns the first trimmed non-empty string among the args.
+func firstNonEmpty(vals ...string) string {
+	for _, v := range vals {
+		if t := strings.TrimSpace(v); t != "" {
+			return t
+		}
+	}
+	return ""
 }
 
 // approveWords / rejectWords are the whole-message replies the text-approval

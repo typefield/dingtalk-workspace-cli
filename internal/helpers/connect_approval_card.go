@@ -242,9 +242,11 @@ func (o *approvalOrchestrator) enabled() bool {
 // structured action marker (see parseActionMarker) instead of executing
 // anything itself. It is the simplified "intent detection" for the slice.
 const agentSystemHint = "\n\n[系统提示] 如果用户的请求是要执行一个动作（而不是单纯提问），" +
-	"不要假装已经完成，而是在回复末尾用如下标记声明这个动作，由主人确认后再执行：" +
-	`[[ACTION:todo.create title="待办标题" due="2026-06-14T18:00:00+08:00"]]（due 可省略）。` +
-	"如果只是普通提问，正常回答即可，不要输出该标记。"
+	"不要假装已经完成，而是在回复末尾用下面其中一个标记声明这个动作，由主人确认后再执行：\n" +
+	`· 建待办：[[ACTION:todo.create title="待办标题" due="2026-06-14T18:00:00+08:00"]]（due 可省略）` + "\n" +
+	`· 建日程：[[ACTION:calendar.create title="日程标题" start="2026-06-20T10:00:00+08:00" end="2026-06-20T11:00:00+08:00"]]` + "\n" +
+	`· 建文档：[[ACTION:doc.create name="文档名"]]` + "\n" +
+	"时间一律用 ISO-8601（带时区）。如果只是普通提问，正常回答即可，不要输出任何标记。"
 
 // decorateForActionDetection appends the action-marker instruction to a prompt
 // when the gate is enabled. A no-op when disabled, so plain Q&A is untouched.
