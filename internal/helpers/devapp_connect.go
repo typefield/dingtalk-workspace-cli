@@ -274,15 +274,30 @@ func launchConnector(cmd *cobra.Command, runner executor.Runner, channel, client
 		// before executing. Needs a runner to run the approved command directly.
 		if opts.OwnerUserID != "" {
 			gate := newApprovalGate(clientID)
+			// Optional online-sheet audit: one row per action, reviewable in
+			// DingTalk. Runs under the connector (bot) identity via the runner.
+			var audit auditSink
+			if opts.AuditSheetNode != "" {
+				audit = &sheetAuditSink{runner: runner, nodeID: opts.AuditSheetNode, sheetID: opts.AuditSheetTab}
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 操作审计已开启：在线表格 node=%s tab=%s（每个操作追加一行）\n", opts.AuditSheetNode, opts.AuditSheetTab)
+			}
 			if sender := newDingtalkApprovalCardSender(clientID, clientSecret, opts.ApprovalCardTemplate); sender != nil {
-				extras.approval = newApprovalOrchestrator(gate, sender, runner, opts.OwnerUserID)
+				orch := newApprovalOrchestrator(gate, sender, runner, opts.OwnerUserID)
+				orch.audit = audit
+				extras.approval = orch
 				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（执行类请求先卡片审批，[同意]/[拒绝]按钮）\n", opts.OwnerUserID)
 			} else {
 				// No card template → fall back to text approval instead of disabling
-				// the gate: the owner confirms by replying 「同意」/「拒绝」 in chat,
-				// so the digital twin works with zero card-platform setup.
-				extras.approval = newTextApprovalOrchestrator(gate, runner, opts.OwnerUserID)
-				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（文本审批：执行类请求由主人回复「同意」/「拒绝」确认；配 --approval-card-template 可升级为卡片按钮）\n", opts.OwnerUserID)
+				// the gate: the bot privately DMs the owner, who confirms by replying
+				// 「同意」/「拒绝」 in their 1:1 chat — the requester never sees the
+				// approval. Works with zero card-platform setup. The notifier reuses
+				// the bot's own credentials (robot 1:1 send), so it reaches the owner
+				// in the bot's org.
+				notifier := newAICardClient(clientID, clientSecret, "")
+				orch := newTextApprovalOrchestrator(gate, runner, opts.OwnerUserID, notifier)
+				orch.audit = audit
+				extras.approval = orch
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（文本审批：执行类请求私聊主人，主人回复「同意」/「拒绝」确认，请求人无感；配 --approval-card-template 可升级为卡片按钮）\n", opts.OwnerUserID)
 			}
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s Go 原生 Stream 建联，转发到 %s，回复样式=%s（Ctrl-C 退出）\n", channel, fwd.label(), replyStyle)
@@ -451,6 +466,8 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("owner-user-id", "", "数字分身主人 staffId：开启确认闸后，执行类请求先发卡片给主人审批，同意才执行；env: DWS_OWNER_USER_ID")
 	cmd.Flags().String("approval-card-template", "", "确认闸交互卡片模板 ID（带[同意][拒绝]按钮）；与 --owner-user-id 同时配置才开启确认闸；env: DWS_APPROVAL_CARD_TEMPLATE")
 	cmd.Flags().String("role-config", "", "数字员工角色配置 YAML：用角色的主人/人设/知识源填充未显式给出的选项（显式 flag 优先）；role 的 client_id 必须与本机器人一致；env: DWS_ROLE_CONFIG")
+	cmd.Flags().String("audit-sheet", "", "审计在线表格 ID/URL（axls）：确认闸每个操作追加一行到该表格，可在钉钉随时查看；空=仅本地审计文件；env: DWS_AUDIT_SHEET")
+	cmd.Flags().String("audit-sheet-tab", "Sheet1", "审计表格的工作表 ID/名称（配合 --audit-sheet）；env: DWS_AUDIT_SHEET_TAB")
 	return cmd
 }
 
@@ -518,6 +535,17 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 	if roleConfig == "" {
 		roleConfig = strings.TrimSpace(os.Getenv("DWS_ROLE_CONFIG"))
 	}
+	auditSheet := devAppStringFlag(cmd, "audit-sheet")
+	if auditSheet == "" {
+		auditSheet = strings.TrimSpace(os.Getenv("DWS_AUDIT_SHEET"))
+	}
+	auditSheetTab := devAppStringFlag(cmd, "audit-sheet-tab")
+	if auditSheetTab == "" {
+		auditSheetTab = strings.TrimSpace(os.Getenv("DWS_AUDIT_SHEET_TAB"))
+	}
+	if auditSheetTab == "" {
+		auditSheetTab = "Sheet1"
+	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
 		ReplyCard: replyCard, CardTemplate: cardTemplate,
 		KnowledgeDir:    knowledgeDir,
@@ -526,7 +554,9 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 		UserRateLimit:        rateLimit,
 		OwnerUserID:          owner,
 		ApprovalCardTemplate: approvalTemplate,
-		RoleConfigPath:       roleConfig}
+		RoleConfigPath:       roleConfig,
+		AuditSheetNode:       auditSheet,
+		AuditSheetTab:        auditSheetTab}
 }
 
 // connectAgentOptionsPayload renders the effective agent tuning for the

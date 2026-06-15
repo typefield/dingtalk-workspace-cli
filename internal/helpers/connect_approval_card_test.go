@@ -70,6 +70,41 @@ func (r *fakeRunner) Run(_ context.Context, inv executor.Invocation) (executor.R
 
 func (r *fakeRunner) count() int { r.mu.Lock(); defer r.mu.Unlock(); return len(r.runs) }
 
+// fakeNotifier records the proactive 1:1 messages text-mode approval sends to
+// the owner and the requester.
+type fakeNotifier struct {
+	mu   sync.Mutex
+	sent []sentMsg
+}
+
+type sentMsg struct {
+	to   []string
+	text string
+}
+
+func (n *fakeNotifier) sendOTOText(_ context.Context, userIDs []string, text string) error {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	n.sent = append(n.sent, sentMsg{to: append([]string(nil), userIDs...), text: text})
+	return nil
+}
+
+// toUser reports whether any recorded message was sent to userID.
+func (n *fakeNotifier) toUser(userID string) bool {
+	n.mu.Lock()
+	defer n.mu.Unlock()
+	for _, m := range n.sent {
+		for _, u := range m.to {
+			if u == userID {
+				return true
+			}
+		}
+	}
+	return false
+}
+
+func (n *fakeNotifier) count() int { n.mu.Lock(); defer n.mu.Unlock(); return len(n.sent) }
+
 // cardClickReq builds a card callback as DingTalk delivers it: the tapped
 // button's action id plus its private params (approval id + decision).
 func cardClickReq(outTrackID, approvalID, decision, actionID, userID string) *card.CardRequest {
@@ -335,21 +370,21 @@ func TestPendingForConv(t *testing.T) {
 	}
 }
 
-// TestHandleReply_TextMode_OwnerApproves is the text-approval happy path: an
-// action prompts a confirmation (no execution yet); a non-owner "同意" is
-// ignored; the owner's "同意" decides and executes.
+// TestHandleReply_TextMode_OwnerApproves is the private text-approval happy
+// path: an action privately DMs the OWNER (the requester sees nothing, no
+// execution yet); a non-owner "同意" is ignored; the owner's "同意" — sent from
+// their own chat, NOT the request conversation — decides and executes.
 func TestHandleReply_TextMode_OwnerApproves(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	gate := newApprovalGate("ct1")
 	runner := &fakeRunner{}
-	o := newTextApprovalOrchestrator(gate, runner, "owner")
+	notifier := &fakeNotifier{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", notifier)
 
-	var replies []string
-	reply := func(_ context.Context, _, text string) error { replies = append(replies, text); return nil }
-
-	out, handled := o.handleReply(context.Background(), "requester", "conv-1", `好的。[[ACTION:todo.create title="交方案"]]`, reply)
+	// A group requester (not the owner) asks for an action.
+	out, handled := o.handleReply(context.Background(), "requester", "conv-group", `好的。[[ACTION:todo.create title="交方案"]]`, nil)
 	if !handled || out != "" {
-		t.Fatalf("text-mode action: handled=%v out=%q, want handled with empty out", handled, out)
+		t.Fatalf("text-mode action: handled=%v out=%q, want handled with empty out (requester sees nothing)", handled, out)
 	}
 	if runner.count() != 0 {
 		t.Fatalf("must not execute before the owner decides, ran %d", runner.count())
@@ -357,20 +392,25 @@ func TestHandleReply_TextMode_OwnerApproves(t *testing.T) {
 	if len(gate.list()) != 1 {
 		t.Fatalf("expected one pending request, got %d", len(gate.list()))
 	}
-	if !strings.Contains(strings.Join(replies, "|"), "需要主人确认") {
-		t.Fatalf("confirmation prompt not posted: %v", replies)
+	// The approval prompt went privately to the OWNER, never to the requester.
+	if !notifier.toUser("owner") {
+		t.Fatalf("approval prompt was not DMed to the owner: %+v", notifier.sent)
+	}
+	if notifier.toUser("requester") {
+		t.Fatal("the requester must NOT be notified of the approval")
 	}
 
 	// A non-owner saying 同意 must not decide or execute.
-	if o.handleOwnerDecision(context.Background(), "intruder", "conv-1", "同意", reply) {
+	if o.handleOwnerDecision(context.Background(), "intruder", "同意") {
 		t.Fatal("non-owner must not be able to approve")
 	}
 	if runner.count() != 0 {
 		t.Fatalf("non-owner approval must not execute, ran %d", runner.count())
 	}
 
-	// The owner saying 同意 decides and executes.
-	if !o.handleOwnerDecision(context.Background(), "owner", "conv-1", "同意", reply) {
+	// The owner saying 同意 decides and executes; the requester then gets the
+	// outcome.
+	if !o.handleOwnerDecision(context.Background(), "owner", "同意") {
 		t.Fatal("owner approval must be consumed")
 	}
 	if runner.count() != 1 {
@@ -378,6 +418,92 @@ func TestHandleReply_TextMode_OwnerApproves(t *testing.T) {
 	}
 	if gate.list()[0].State != approvalExecuted {
 		t.Fatalf("request state = %s, want executed", gate.list()[0].State)
+	}
+	if !notifier.toUser("requester") {
+		t.Fatal("the requester should get the final outcome after execution")
+	}
+}
+
+// TestHandleReply_TextMode_OwnerSelfAutoApproves: when the requester IS the
+// owner, the action runs immediately with NO confirmation round-trip, but is
+// still recorded (auto_approved=true, decided-by owner, executed) for audit.
+func TestHandleReply_TextMode_OwnerSelfAutoApproves(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	gate := newApprovalGate("ctself")
+	runner := &fakeRunner{}
+	notifier := &fakeNotifier{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", notifier)
+
+	var replies []string
+	reply := func(_ context.Context, _, text string) error { replies = append(replies, text); return nil }
+
+	// The OWNER asks for the action themselves.
+	out, handled := o.handleReply(context.Background(), "owner", "conv-owner", `好。[[ACTION:todo.create title="自己的待办"]]`, reply)
+	if !handled || out != "" {
+		t.Fatalf("owner self-request: handled=%v out=%q", handled, out)
+	}
+	// Executed immediately — no second confirmation asked.
+	if runner.count() != 1 {
+		t.Fatalf("owner self-request must execute immediately, ran %d", runner.count())
+	}
+	if notifier.count() != 0 {
+		t.Fatalf("owner self-request must NOT send an approval DM, sent %d", notifier.count())
+	}
+	// Still recorded for audit: auto_approved + executed + decided by owner.
+	rec := gate.list()[0]
+	if !rec.AutoApproved || rec.State != approvalExecuted || rec.DecidedBy != "owner" {
+		t.Fatalf("audit record wrong: autoApproved=%v state=%s decidedBy=%s", rec.AutoApproved, rec.State, rec.DecidedBy)
+	}
+	if !strings.Contains(strings.Join(replies, "|"), "已为你完成") {
+		t.Fatalf("owner should get the result, replies=%v", replies)
+	}
+}
+
+// fakeAudit records the requests handed to the audit sink.
+type fakeAudit struct {
+	mu   sync.Mutex
+	recs []*ApprovalRequest
+}
+
+func (a *fakeAudit) record(_ context.Context, req *ApprovalRequest) {
+	a.mu.Lock()
+	defer a.mu.Unlock()
+	cp := *req
+	a.recs = append(a.recs, &cp)
+}
+
+func (a *fakeAudit) count() int { a.mu.Lock(); defer a.mu.Unlock(); return len(a.recs) }
+
+// TestAudit_RecordsTerminalOutcomes verifies the audit sink gets one terminal
+// record per action: an auto-executed owner request, and an approved request.
+func TestAudit_RecordsTerminalOutcomes(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	gate := newApprovalGate("cta")
+	audit := &fakeAudit{}
+	o := newTextApprovalOrchestrator(gate, &fakeRunner{}, "owner", &fakeNotifier{})
+	o.audit = audit
+	reply := func(_ context.Context, _, _ string) error { return nil }
+
+	// Owner self-request → auto-executed → audited once, as executed.
+	o.handleReply(context.Background(), "owner", "conv-o", `[[ACTION:todo.create title="自己"]]`, reply)
+	if audit.count() != 1 {
+		t.Fatalf("auto-exec must produce one audit record, got %d", audit.count())
+	}
+	if audit.recs[0].State != approvalExecuted || !audit.recs[0].AutoApproved {
+		t.Fatalf("auto audit record: state=%s auto=%v", audit.recs[0].State, audit.recs[0].AutoApproved)
+	}
+
+	// Someone else's request, approved by the owner → audited as executed.
+	o.handleReply(context.Background(), "requester", "conv-g", `[[ACTION:todo.create title="别人"]]`, reply)
+	if audit.count() != 1 {
+		t.Fatal("a pending (not yet decided) request must not be audited yet")
+	}
+	o.handleOwnerDecision(context.Background(), "owner", "同意")
+	if audit.count() != 2 {
+		t.Fatalf("owner approval must produce a second audit record, got %d", audit.count())
+	}
+	if audit.recs[1].State != approvalExecuted || audit.recs[1].DecidedBy != "owner" {
+		t.Fatalf("approved audit record: state=%s decidedBy=%s", audit.recs[1].State, audit.recs[1].DecidedBy)
 	}
 }
 
@@ -387,11 +513,11 @@ func TestHandleReply_TextMode_OwnerRejects(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	gate := newApprovalGate("ct2")
 	runner := &fakeRunner{}
-	o := newTextApprovalOrchestrator(gate, runner, "owner")
-	reply := func(_ context.Context, _, _ string) error { return nil }
+	notifier := &fakeNotifier{}
+	o := newTextApprovalOrchestrator(gate, runner, "owner", notifier)
 
-	o.handleReply(context.Background(), "requester", "conv-1", `[[ACTION:todo.create title="x"]]`, reply)
-	if !o.handleOwnerDecision(context.Background(), "owner", "conv-1", "拒绝", reply) {
+	o.handleReply(context.Background(), "requester", "conv-group", `[[ACTION:todo.create title="x"]]`, nil)
+	if !o.handleOwnerDecision(context.Background(), "owner", "拒绝") {
 		t.Fatal("owner rejection must be consumed")
 	}
 	if runner.count() != 0 {
@@ -407,12 +533,25 @@ func TestHandleReply_TextMode_OwnerRejects(t *testing.T) {
 func TestHandleOwnerDecision_NotADecision(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	gate := newApprovalGate("ct3")
-	o := newTextApprovalOrchestrator(gate, &fakeRunner{}, "owner")
-	reply := func(_ context.Context, _, _ string) error { return nil }
+	o := newTextApprovalOrchestrator(gate, &fakeRunner{}, "owner", &fakeNotifier{})
 	gate.Submit(ApprovalRequest{ConvID: "conv-1", Summary: "x", State: approvalPending})
 
-	if o.handleOwnerDecision(context.Background(), "owner", "conv-1", "顺便帮我查下天气", reply) {
+	if o.handleOwnerDecision(context.Background(), "owner", "顺便帮我查下天气") {
 		t.Fatal("a non-decision owner message must pass through to the agent")
+	}
+}
+
+// TestLatestPending returns the newest pending request across conversations.
+func TestLatestPending(t *testing.T) {
+	gate := newApprovalGate("")
+	gate.Submit(ApprovalRequest{ConvID: "c1", Summary: "old", CreatedAt: time.Unix(100, 0)})
+	newer := gate.Submit(ApprovalRequest{ConvID: "c2", Summary: "new", CreatedAt: time.Unix(200, 0)})
+	if got := gate.latestPending(); got == nil || got.ID != newer.ID {
+		t.Fatalf("latestPending = %v, want newest %s", got, newer.ID)
+	}
+	gate.Decide(newer.ID, true, "owner")
+	if got := gate.latestPending(); got == nil || got.Summary != "old" {
+		t.Fatalf("after deciding newest, latestPending should fall back to the older pending, got %v", got)
 	}
 }
 

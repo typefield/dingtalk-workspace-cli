@@ -73,6 +73,65 @@ type approvalRunner interface {
 // over the chatbot replier + sessionWebhook; tests supply a recorder.
 type approvalReplier func(ctx context.Context, convID, text string) error
 
+// ownerNotifier sends a proactive 1:1 message to specific users (the owner, the
+// requester), independent of any inbound sessionWebhook. Text approval needs it
+// because the approval conversation (owner's 1:1 with the bot) is not the
+// conversation the request arrived on, and because the decision can land minutes
+// later when the original webhook is stale. *aiCardClient implements it.
+type ownerNotifier interface {
+	sendOTOText(ctx context.Context, userIDs []string, text string) error
+}
+
+// auditSink records a terminal-state request to a durable, reviewable place
+// (e.g. a DingTalk online sheet) so every action the twin takes is auditable
+// beyond the local approvals JSON. Best-effort: a sink failure must never block
+// or fail the action.
+type auditSink interface {
+	record(ctx context.Context, req *ApprovalRequest)
+}
+
+// sheetAuditSink appends one row per action to a DingTalk online sheet (axls)
+// via the sheet `append_rows` tool, run under the connector's (bot) identity.
+// Columns: 时间 | 摘要 | 请求人 | 状态 | 批准人 | 是否自动 | 失败原因 | 单据ID.
+type sheetAuditSink struct {
+	runner  approvalRunner
+	nodeID  string // axls doc id / URL
+	sheetID string // worksheet id or name (e.g. "Sheet1")
+}
+
+func (s *sheetAuditSink) record(ctx context.Context, req *ApprovalRequest) {
+	if s == nil || s.runner == nil || req == nil {
+		return
+	}
+	auto := ""
+	if req.AutoApproved {
+		auto = "自动"
+	}
+	decidedAt := ""
+	if !req.DecidedAt.IsZero() {
+		decidedAt = req.DecidedAt.Format("2006-01-02 15:04:05")
+	}
+	row := []any{
+		req.CreatedAt.Format("2006-01-02 15:04:05"),
+		req.Summary,
+		req.Requester,
+		string(req.State),
+		req.DecidedBy,
+		auto,
+		req.ExecErr,
+		req.ID,
+		decidedAt,
+	}
+	inv := executor.NewHelperInvocation("sheet append", "sheet", "append_rows", map[string]any{
+		"nodeId":  s.nodeID,
+		"sheetId": s.sheetID,
+		"values":  [][]any{row},
+	})
+	if _, err := s.runner.Run(ctx, inv); err != nil {
+		fmt.Fprintf(os.Stderr, "[connect][approval][audit] 写审计表格失败 approvalId=%s: %v\n", req.ID, err)
+	}
+}
+
 // approvalOrchestrator is the connector-side controller for the gate. It is
 // constructed per connector with the owner's userId, the gate, the card sender
 // and the runner. Zero owner / nil sender disables the gate (the connector then
@@ -83,13 +142,33 @@ type approvalOrchestrator struct {
 	runner      approvalRunner
 	ownerUserID string
 	awaitWindow time.Duration
-	// textMode swaps the interactive [Approve]/[Reject] card for a plain-text
-	// confirmation: the bot posts "需要主人确认……" into the conversation and the
-	// owner replies "同意"/"拒绝". Used when no approval-card template is
-	// configured, so the gate works with zero card-platform setup. In this mode
-	// there is no card sender and the decision is captured asynchronously (see
-	// handleOwnerDecision) rather than by blocking on Await.
+	// textMode swaps the interactive [Approve]/[Reject] card for a private
+	// text confirmation: the bot DMs the OWNER "X 请求执行……" and the owner
+	// replies "同意"/"拒绝" in their own 1:1 chat with the bot. The requester
+	// never sees the approval — they only get the final result. Used when no
+	// approval-card template is configured, so the gate works with zero
+	// card-platform setup. The decision is captured asynchronously (see
+	// handleOwnerDecision), not by blocking on Await.
 	textMode bool
+	// notifier delivers the proactive owner/requester 1:1 messages text mode
+	// needs (nil in card mode).
+	notifier ownerNotifier
+	// audit, when set, records every terminal-state request to a durable sink
+	// (e.g. a DingTalk online sheet) on top of the local approvals JSON. nil =
+	// local-file audit only.
+	audit auditSink
+}
+
+// recordAudit writes the request's current (terminal) state to the audit sink,
+// fetching the fresh snapshot so state/exec_err reflect the final outcome.
+// No-op when no sink is configured; best-effort.
+func (o *approvalOrchestrator) recordAudit(ctx context.Context, id string) {
+	if o == nil || o.audit == nil {
+		return
+	}
+	if r := o.gate.Get(id); r != nil {
+		o.audit.record(ctx, r)
+	}
 }
 
 // newApprovalOrchestrator builds the card-mode controller. awaitWindow caps how
@@ -107,22 +186,27 @@ func newApprovalOrchestrator(gate *approvalGate, sender approvalCardSender, runn
 }
 
 // newTextApprovalOrchestrator builds the text-mode controller (no card sender).
-// The owner confirms by replying "同意"/"拒绝" in the conversation; the decision
-// is captured by handleOwnerDecision on the next inbound message, so handleReply
-// must NOT block waiting for it.
-func newTextApprovalOrchestrator(gate *approvalGate, runner approvalRunner, ownerUserID string) *approvalOrchestrator {
+// notifier delivers the private owner/requester messages. The owner confirms by
+// replying "同意"/"拒绝" in their 1:1 chat with the bot; the decision is captured
+// by handleOwnerDecision on the next inbound message, so handleReply must NOT
+// block waiting for it.
+func newTextApprovalOrchestrator(gate *approvalGate, runner approvalRunner, ownerUserID string, notifier ownerNotifier) *approvalOrchestrator {
 	o := newApprovalOrchestrator(gate, nil, runner, ownerUserID)
 	o.textMode = true
+	o.notifier = notifier
 	return o
 }
 
 // enabled reports whether the gate is active. Card mode needs an owner + a card
-// sender; text mode needs an owner only (the conversation is the channel).
+// sender; text mode needs an owner + a notifier to reach them privately.
 func (o *approvalOrchestrator) enabled() bool {
 	if o == nil || o.ownerUserID == "" || o.gate == nil {
 		return false
 	}
-	return o.sender != nil || o.textMode
+	if o.textMode {
+		return o.notifier != nil
+	}
+	return o.sender != nil
 }
 
 // agentSystemHint is appended to the forwarded prompt so the agent emits the
@@ -174,45 +258,93 @@ func (o *approvalOrchestrator) handleReply(ctx context.Context, requester, convI
 		return cleaned, false
 	}
 
+	autoApprove := strings.TrimSpace(requester) != "" && strings.TrimSpace(requester) == o.ownerUserID
 	req := o.gate.Submit(ApprovalRequest{
-		Requester: requester,
-		ConvID:    convID,
-		Summary:   summary,
-		Action:    pa,
+		Requester:    requester,
+		ConvID:       convID,
+		Summary:      summary,
+		Action:       pa,
+		AutoApproved: autoApprove,
 	})
 
-	// Text mode: post a plain-text confirmation into the conversation and return
-	// immediately — the owner's "同意/拒绝" reply is captured asynchronously by
-	// handleOwnerDecision (blocking here would deadlock the per-conversation
-	// worker that must also process that reply).
+	// Owner's own request: asking IS the authorization, so do not bother them
+	// with a second confirmation — execute directly. The record is still
+	// persisted (DecidedBy=owner, auto_approved=true) so every action stays
+	// auditable. Applies in both card and text mode.
+	if autoApprove {
+		return o.autoApproveAndExecute(ctx, req, convID, reply)
+	}
+
+	// Text mode: privately DM the owner and return immediately — the owner's
+	// "同意/拒绝" reply is captured asynchronously by handleOwnerDecision
+	// (blocking here would deadlock the per-conversation worker that must also
+	// process that reply). The requester (this conversation) sees nothing.
 	if o.textMode {
-		return o.handleReplyText(ctx, req, reply)
+		return o.handleReplyText(ctx, req)
 	}
 	return o.handleReplyCard(ctx, req, convID, reply)
 }
 
-// handleReplyText posts the text-mode confirmation prompt and hands control back
-// to the connector (handled=true). It never blocks: the decision arrives later
-// as an ordinary inbound message routed through handleOwnerDecision.
-func (o *approvalOrchestrator) handleReplyText(ctx context.Context, req *ApprovalRequest, reply approvalReplier) (string, bool) {
-	prompt := fmt.Sprintf("⚠️ 这是执行类操作，需要主人确认：%s\n主人请回复「同意」执行，或「拒绝」取消。", req.Summary)
-	if err := reply(ctx, req.ConvID, prompt); err != nil {
-		fmt.Fprintf(os.Stderr, "[connect][approval] 文本确认提示发送失败: %v\n", err)
-		// Could not even ask: surface it rather than silently dropping or running.
-		return "（需要主人确认，但提示发送失败，本次未执行）", false
+// autoApproveAndExecute runs an owner's own request without a second
+// confirmation, while still recording the full lifecycle (Decide by the owner →
+// execute) so the on-disk approvals log audits it like any other action. It
+// replies into the conversation the owner asked in (the inbound webhook is still
+// fresh — the owner just messaged). Used for both card and text mode.
+func (o *approvalOrchestrator) autoApproveAndExecute(ctx context.Context, req *ApprovalRequest, convID string, reply approvalReplier) (string, bool) {
+	decided, _ := o.gate.Decide(req.ID, true, o.ownerUserID)
+	if decided == nil {
+		decided = req
 	}
-	fmt.Fprintf(os.Stderr, "[connect][approval] 待主人文本确认 approvalId=%s conv=%s: %s\n",
-		req.ID, req.ConvID, req.Summary)
+	fmt.Fprintf(os.Stderr, "[connect][approval][audit] 主人自助操作，自动执行 approvalId=%s owner=%s: %s\n",
+		decided.ID, o.ownerUserID, decided.Summary)
+	out, execErr := o.execute(ctx, decided)
+	if execErr != nil {
+		o.gate.markFailed(decided.ID, execErr.Error())
+		o.recordAudit(ctx, decided.ID)
+		if reply != nil {
+			_ = reply(ctx, convID, "执行失败："+execErr.Error())
+		}
+		return "", true
+	}
+	o.gate.markExecuted(decided.ID)
+	o.recordAudit(ctx, decided.ID)
+	if reply != nil {
+		_ = reply(ctx, convID, "已为你完成："+decided.Summary+"\n"+out)
+	}
 	return "", true
 }
 
-// handleOwnerDecision intercepts an inbound message that is the owner replying
-// "同意/拒绝" to a pending text-mode confirmation in this conversation. It
-// returns true when it consumed the message (decided + executed/declined),
-// telling the connector to skip forwarding it to the agent. A non-owner sender,
-// a non-decision message, or no pending request all return false (ordinary
+// handleReplyText privately DMs the OWNER the approval request and hands control
+// back to the connector (handled=true). The requester sees nothing — the
+// approval happens only between the owner and the bot. It never blocks: the
+// owner's decision arrives later as an inbound message routed through
+// handleOwnerDecision.
+func (o *approvalOrchestrator) handleReplyText(ctx context.Context, req *ApprovalRequest) (string, bool) {
+	who := strings.TrimSpace(req.Requester)
+	if who == "" {
+		who = "有人"
+	}
+	prompt := fmt.Sprintf("🔔 %s 请求执行一个操作，需要你确认：\n%s\n回复「同意」执行，或「拒绝」取消。", who, req.Summary)
+	if err := o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, prompt); err != nil {
+		// Cannot reach the owner: the action does not run. Do NOT leak the
+		// approval to the requester — text mode's whole point is privacy — so
+		// just log and swallow (handled), leaving the request Pending on disk.
+		fmt.Fprintf(os.Stderr, "[connect][approval] 私聊主人 %s 失败，本次未执行: %v\n", o.ownerUserID, err)
+		return "", true
+	}
+	fmt.Fprintf(os.Stderr, "[connect][approval] 已私聊主人 %s 待确认 approvalId=%s requester=%s: %s\n",
+		o.ownerUserID, req.ID, req.Requester, req.Summary)
+	return "", true
+}
+
+// handleOwnerDecision intercepts an inbound message that is the OWNER replying
+// "同意/拒绝" (in their own 1:1 chat with the bot) to the pending request. It
+// decides, executes-or-declines, privately acks the owner, and sends the
+// outcome to the original requester. Returns true when it consumed the message
+// (so the connector skips forwarding it to the agent). A non-owner sender, a
+// non-decision message, or no pending request all return false (ordinary
 // message). Only active in text mode.
-func (o *approvalOrchestrator) handleOwnerDecision(ctx context.Context, senderStaffID, convID, text string, reply approvalReplier) bool {
+func (o *approvalOrchestrator) handleOwnerDecision(ctx context.Context, senderStaffID, text string) bool {
 	if o == nil || !o.textMode || !o.enabled() {
 		return false
 	}
@@ -223,29 +355,46 @@ func (o *approvalOrchestrator) handleOwnerDecision(ctx context.Context, senderSt
 	if !ok {
 		return false
 	}
-	req := o.gate.pendingForConv(convID)
+	req := o.gate.latestPending()
 	if req == nil {
 		return false
 	}
 	decided, deciding := o.gate.Decide(req.ID, approve, senderStaffID)
 	if !deciding {
-		// Already decided (e.g. a double reply): consume the keyword but do not
+		// Already decided (e.g. a double reply): consume the keyword, do not
 		// re-execute.
 		return decided != nil
 	}
 	if !decided.approved() {
-		_ = reply(ctx, convID, "好的，已拒绝，本次不执行。")
+		o.recordAudit(ctx, decided.ID)
+		_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "好的，已拒绝，未执行。")
+		o.notifyRequester(ctx, decided, "你的请求未获主人批准，本次未执行。")
 		return true
 	}
 	out, execErr := o.execute(ctx, decided)
 	if execErr != nil {
 		o.gate.markFailed(decided.ID, execErr.Error())
-		_ = reply(ctx, convID, "已同意，但执行失败："+execErr.Error())
+		o.recordAudit(ctx, decided.ID)
+		_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "已同意，但执行失败："+execErr.Error())
+		o.notifyRequester(ctx, decided, "你的请求已获批准，但执行失败："+execErr.Error())
 		return true
 	}
 	o.gate.markExecuted(decided.ID)
-	_ = reply(ctx, convID, "已同意，已执行："+decided.Summary+"\n"+out)
+	o.recordAudit(ctx, decided.ID)
+	_ = o.notifier.sendOTOText(ctx, []string{o.ownerUserID}, "已同意并执行完成："+decided.Summary)
+	o.notifyRequester(ctx, decided, "已为你完成："+decided.Summary+"\n"+out)
 	return true
+}
+
+// notifyRequester sends the outcome to the original requester, unless they are
+// the owner themselves (who already got the owner-side ack — no need to double
+// message). Best-effort.
+func (o *approvalOrchestrator) notifyRequester(ctx context.Context, req *ApprovalRequest, text string) {
+	who := strings.TrimSpace(req.Requester)
+	if who == "" || who == o.ownerUserID {
+		return
+	}
+	_ = o.notifier.sendOTOText(ctx, []string{who}, text)
 }
 
 // handleReplyCard runs the interactive-card flow: deliver the [Approve]/[Reject]
@@ -272,6 +421,7 @@ func (o *approvalOrchestrator) handleReplyCard(ctx context.Context, req *Approva
 		return "", true
 	}
 	if !decided.approved() {
+		o.recordAudit(ctx, decided.ID)
 		_ = o.sender.UpdateApprovalCard(ctx, decided.OutTrackID, "已拒绝：未执行。")
 		_ = reply(ctx, convID, "主人暂时没批准。")
 		return "", true
@@ -282,11 +432,13 @@ func (o *approvalOrchestrator) handleReplyCard(ctx context.Context, req *Approva
 	out, execErr := o.execute(ctx, decided)
 	if execErr != nil {
 		o.gate.markFailed(decided.ID, execErr.Error())
+		o.recordAudit(ctx, decided.ID)
 		_ = o.sender.UpdateApprovalCard(ctx, decided.OutTrackID, "已同意，但执行失败："+execErr.Error())
 		_ = reply(ctx, convID, "主人已同意，但执行失败："+execErr.Error())
 		return "", true
 	}
 	o.gate.markExecuted(decided.ID)
+	o.recordAudit(ctx, decided.ID)
 	_ = o.sender.UpdateApprovalCard(ctx, decided.OutTrackID, "已同意并执行完成。")
 	_ = reply(ctx, convID, "主人已同意，已执行："+decided.Summary+"\n"+out)
 	return "", true

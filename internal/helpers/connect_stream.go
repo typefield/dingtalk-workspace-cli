@@ -147,6 +147,12 @@ type connectAgentOptions struct {
 	// role config's `knowledge_sources`; each is loaded and its chunks appended
 	// to the same knowledge base as KnowledgeDir/KnowledgeSource. Empty = none.
 	KnowledgeSources []string
+	// AuditSheetNode / AuditSheetTab point the approval gate's audit trail at a
+	// DingTalk online sheet (axls): one row per action (--audit-sheet /
+	// DWS_AUDIT_SHEET is the doc id/URL, --audit-sheet-tab the worksheet, default
+	// "Sheet1"). Empty AuditSheetNode = local approvals JSON only.
+	AuditSheetNode string
+	AuditSheetTab  string
 }
 
 // isStreamBridgeChannel reports whether a channel is wired through the Go-native
@@ -870,18 +876,13 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		// Same-conversation messages run in arrival order (follow-ups need the
 		// previous turn's session state); different conversations in parallel.
 		queue.run(convID, func() {
-			// Digital-twin text approval: if this is the owner replying
-			// 「同意」/「拒绝」 to a pending confirmation in this conversation, route
-			// it to the gate (decide → execute/decline) instead of forwarding it to
+			// Digital-twin text approval: if this is the OWNER replying
+			// 「同意」/「拒绝」 (in their 1:1 chat with the bot) to the pending
+			// request, route it to the gate (decide → execute/decline, with
+			// private owner ack + requester outcome) instead of forwarding it to
 			// the agent. Returns true only when it consumed the message.
-			ownerDecisionReply := func(ctx context.Context, _, t string) error {
-				if len([]rune(t)) > 200 {
-					return replier.SimpleReplyMarkdown(ctx, webhook, []byte(channel), []byte(t))
-				}
-				return replier.SimpleReplyText(ctx, webhook, []byte(t))
-			}
 			if extras.approval.handleOwnerDecision(context.Background(),
-				strings.TrimSpace(callbackData.SenderStaffId), convID, text, ownerDecisionReply) {
+				strings.TrimSpace(callbackData.SenderStaffId), text) {
 				return
 			}
 			started := time.Now()

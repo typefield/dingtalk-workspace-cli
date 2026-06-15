@@ -80,11 +80,16 @@ type ApprovalRequest struct {
 	// OutTrackID is the delivered card's instance id, recorded so a button
 	// callback that only carries the card id (not the approval id in its action
 	// params) can still be mapped back to this request.
-	OutTrackID string    `json:"out_track_id,omitempty"`
-	DecidedBy  string    `json:"decided_by,omitempty"` // staffId who approved/rejected
-	ExecErr    string    `json:"exec_err,omitempty"`   // failure detail when State=failed
-	CreatedAt  time.Time `json:"created_at"`
-	DecidedAt  time.Time `json:"decided_at,omitempty"`
+	OutTrackID string `json:"out_track_id,omitempty"`
+	DecidedBy  string `json:"decided_by,omitempty"` // staffId who approved/rejected
+	ExecErr    string `json:"exec_err,omitempty"`   // failure detail when State=failed
+	// AutoApproved marks a request the owner made of THEMSELVES: no second
+	// confirmation is asked (the owner asking IS the authorization), but the
+	// full record is still persisted for audit, with DecidedBy=owner. Lets the
+	// audit trail distinguish an auto-run from an explicitly-confirmed one.
+	AutoApproved bool      `json:"auto_approved,omitempty"`
+	CreatedAt    time.Time `json:"created_at"`
+	DecidedAt    time.Time `json:"decided_at,omitempty"`
 }
 
 // decided reports whether the owner has made a call (approved or rejected),
@@ -211,6 +216,31 @@ func (g *approvalGate) pendingForConv(convID string) *ApprovalRequest {
 	var best *ApprovalRequest
 	for _, r := range g.reqs {
 		if r.State == approvalPending && r.ConvID == convID {
+			if best == nil || r.CreatedAt.After(best.CreatedAt) {
+				best = r
+			}
+		}
+	}
+	if best == nil {
+		return nil
+	}
+	cp := *best
+	return &cp
+}
+
+// latestPending returns a snapshot of the most-recent still-Pending request
+// across all conversations, or nil when none awaits a decision. Text approval
+// uses it to map the owner's "同意/拒绝" — sent from the owner's OWN 1:1 chat
+// with the bot, a different conversation than where the request originated —
+// onto the request they are deciding. One bot has one owner, so every pending
+// request belongs to that owner; newest-first matches "decide what I was just
+// asked about".
+func (g *approvalGate) latestPending() *ApprovalRequest {
+	g.mu.Lock()
+	defer g.mu.Unlock()
+	var best *ApprovalRequest
+	for _, r := range g.reqs {
+		if r.State == approvalPending {
 			if best == nil || r.CreatedAt.After(best.CreatedAt) {
 				best = r
 			}
