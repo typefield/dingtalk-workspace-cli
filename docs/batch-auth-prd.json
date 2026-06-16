@@ -200,35 +200,64 @@
         "repo": "dingtalk-workspace-cli",
         "localPath": "/Users/xuan/dingtalk-workspace-cli",
         "branch": "codex/dws-auth-login-recommend",
-        "prepubPackage": "pending",
+        "commit": "11dfd4ccf20ad0e1d1f8ce68843fbc2b0274014d",
+        "prepubPackage": "blocked_no_aone_app_for_current_github_repo_lippi_dws_release_uses_gitlab_release_repo",
         "prepubFunctionalVerification": "pending"
       },
       {
         "repo": "lippi-open-mcpserver-gw",
         "localPath": "/Users/xuan/lippi-open-mcpserver-gw",
-        "branch": "codex/pat-batch-identity-args-gw",
-        "prepubPackage": "pending",
+        "branch": "codex/pat-batch-auth-service-gate-20260616",
+        "commit": "ffaa951f13a107a08fb04c6246ba99bf7d583477",
+        "aoneAppId": 296391,
+        "aoneCrId": 34656146,
+        "aoneCrStatus": "INTG",
+        "aoneCrStatusLabel": "发布中",
+        "prepubPipelineId": 66,
+        "prepubPipelineInstanceId": 3094877547,
+        "prepubPackage": "pipeline_reached_final_prepub_validation_waiting_state",
         "prepubFunctionalVerification": "pending"
       },
       {
         "repo": "lippi-pat-core-wukong-capability",
         "localPath": "/Users/xuan/lippi-pat-core-wukong-capability",
         "branch": "codex/batch-auth-page-flow",
-        "prepubPackage": "blocked_locally_by_internal_maven_http_mirror_until_release_system_or_correct_settings_runs",
+        "commit": "0c9b64d7b99c90a55d30b8e322cf379797783e45",
+        "aoneAppId": 312546,
+        "aoneCrId": 34656143,
+        "aoneCrStatus": "INTG",
+        "aoneCrStatusLabel": "发布中",
+        "aoneBranchRevision": "b38e29e9e9c0f55dc71762c37d261180cb30692b",
+        "aoneNewestRevision": "0c9b64d7b99c90a55d30b8e322cf379797783e45",
+        "prepubPipelineId": 66,
+        "prepubPipelineInstanceId": 3094877542,
+        "prepubPackage": "paused_by_user_for_pat_core_release_conflict_resolution; local_compile_success_after_tryConsumeOnceTokenFromTair_signature_fix; lippi-pat-core-api_1.0.5-SNAPSHOT_snapshot_deployed",
         "prepubFunctionalVerification": "pending"
       },
       {
         "repo": "lippi-open-app-dev",
         "localPath": "/Users/xuan/lippi-open-app-dev",
         "branch": "codex/batch-auth-bff-selected-scopes",
-        "prepubPackage": "blocked_locally_by_internal_maven_http_mirror_until_release_system_or_correct_settings_runs",
+        "commit": "139c9a245c724870a1dd17fe2b2f07384081100b",
+        "aoneAppId": 154450,
+        "aoneCrId": 34656145,
+        "aoneCrStatus": "PREINTG",
+        "aoneCrStatusLabel": "待发布",
+        "aoneBranchRevision": "f4222f3b2acba1899446d338c4b3788b8a58b29f",
+        "aoneNewestRevision": "139c9a245c724870a1dd17fe2b2f07384081100b",
+        "prepubPipelineId": 66,
+        "prepubPipelineInstanceId": 3094879946,
+        "prepubPackage": "local_compile_success_with_PAT_API_1.0.5-SNAPSHOT; prior_aone_build_failed_before_dependency_bump; deploy_paused_until_pat_core_prepub_is_ready",
         "prepubFunctionalVerification": "pending"
       },
       {
         "repo": "lippi-open-dev-front",
         "localPath": "/Users/xuan/lippi-open-dev-front",
         "branch": "codex/batch-auth-page-flow",
-        "prepubPackage": "local_npm_build_passed_prepub_package_pending",
+        "commit": "5dd46c172e3d793fb6aa161c2c89b8cd71ef0f40",
+        "aoneAppId": null,
+        "aoneCrId": null,
+        "prepubPackage": "blocked_no_aone_app_found_for_gitlab_repo_dingding_lippi_open_dev_front_local_npm_build_passed",
         "prepubFunctionalVerification": "pending"
       }
     ],
@@ -238,6 +267,12 @@
       "Prepub deployed versions include the selectedScopes frontend-to-BFF-to-PAT core chain.",
       "Prepub functional verification covers login recommend, chmod without --yes page flow, chmod with --yes direct flow, selectedScopes subset approval, reject, destructive-scope filtering, high-risk pending, and JSON no-wait pending response.",
       "Prepub UI screenshot matches visualDesignTarget."
+    ],
+    "latestDiagnostics": [
+      "PAT core Aone compile error at PatAuthCheckService.java:517 was caused by a two-argument tryConsumeOnceTokenFromTair call after the method signature changed to require effective risk level. Current feature and release-merge worktrees use RiskLevelEnum.MEDIUM.getCode() for the high-risk-to-medium DCF bypass path and compile locally.",
+      "The Maven warning about requested profile lippi-pat-core is an Aone/Maven parameter warning: the root POM has no profile with id lippi-pat-core. It is not the cause of the Java compilation failure and does not justify a POM change in this slice.",
+      "BFF now depends on com.dingtalk.pat:lippi-pat-core-api:1.0.5-SNAPSHOT and uses HandleFlowActionRequest#setSelectedScopes directly. The old reflection fallback has been removed.",
+      "BFF local verification passed with Java 11: mvn -pl lippi-open-app-dev-start -am -DskipTests compile -s /Users/xuan/Downloads/settings.xml."
     ]
   },
   "serviceContract": {
