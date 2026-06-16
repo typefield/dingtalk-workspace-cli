@@ -555,7 +555,7 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 - [命令索引](./docs/command-index.md) — 全部运行时命令，带描述与使用场景
 - [参考手册](./docs/reference.md) — 环境变量、退出码、输出格式、Shell 补全
 - [架构设计](./docs/architecture.md) — 发现驱动管道、IR、Transport 层
-- [开放平台应用指令设计](./docs/devapp-yulan-command-routing.md) — yulan devapp/app 应用侧命令、MCP overlay、权限流程与 Agent 路由
+- [开放平台应用指令设计](./docs/dev-yulan-command-routing.md) — yulan dev app 应用侧命令、MCP overlay、权限流程与 Agent 路由
 - [更新日志](./CHANGELOG.md) — 版本历史与迁移说明
 
 ## 贡献指南

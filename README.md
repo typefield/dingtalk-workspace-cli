@@ -557,7 +557,7 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 - [Command Index](./docs/command-index.md) — every runtime command with description and when-to-use guidance
 - [Reference](./docs/reference.md) — environment variables, exit codes, output formats, shell completion
 - [Architecture](./docs/architecture.md) — discovery-driven pipeline, IR, transport layer
-- [Open Platform App Command Routing](./docs/devapp-yulan-command-routing.md) — yulan devapp/app command design, MCP overlay, permission flow, and Agent routing
+- [Open Platform App Command Routing](./docs/dev-yulan-command-routing.md) — yulan dev app command design, MCP overlay, permission flow, and Agent routing
 - [Changelog](./CHANGELOG.md) — release history and migration notes
 
 ## Contributing
