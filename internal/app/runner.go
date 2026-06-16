@@ -262,7 +262,7 @@ func (r *runtimeRunner) handleCatalogMiss(ctx context.Context, invocation execut
 	hint := "产品 envelope 可能未下发到 discovery，或已经被 serverDeps fail-fast 丢弃；可执行 'dws cache refresh' 强制重新 discovery，仍失败请向 Portal 确认 envelope 状态。"
 	actions := []string{"dws cache refresh"}
 	if strings.TrimSpace(invocation.CanonicalProduct) == devappProductID {
-		hint = "devapp 是 helper-only 产品，命令树不依赖 discovery；真实调用需要内部版通过 SupplementServers/StaticServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
+		hint = "dev app（product id: devapp）是 helper-only 产品，命令树不依赖 discovery；真实调用需要内部版通过 SupplementServers/StaticServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
 		actions = []string{
 			"检查内部版 SupplementServers/StaticServers 是否包含 devapp endpoint",
 			"本地调试可临时设置 DINGTALK_DEVAPP_MCP_URL 后重试",

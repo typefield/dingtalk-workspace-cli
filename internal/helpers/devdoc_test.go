@@ -38,7 +38,7 @@ func TestDevdocArticleSearchAcceptsWukongKeywordAlias(t *testing.T) {
 	var out, errOut bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&errOut)
-	cmd.SetArgs([]string{"article", "search", "--keyword", "openConversationId", "--page", "2", "--size", "5"})
+	cmd.SetArgs([]string{"article", "search", "--keyword", "openConversationId", "--cursor", "tok-d", "--page-size", "5"})
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\nstderr:\n%s", err, errOut.String())
@@ -49,11 +49,11 @@ func TestDevdocArticleSearchAcceptsWukongKeywordAlias(t *testing.T) {
 	if got := runner.last.Params["keyword"]; got != "openConversationId" {
 		t.Fatalf("keyword = %#v, want openConversationId", got)
 	}
-	if got := runner.last.Params["page"]; got != 2 {
-		t.Fatalf("page = %#v, want 2", got)
+	if got := runner.last.Params["cursor"]; got != "tok-d" {
+		t.Fatalf("cursor = %#v, want tok-d", got)
 	}
-	if got := runner.last.Params["size"]; got != 5 {
-		t.Fatalf("size = %#v, want 5", got)
+	if got := runner.last.Params["pageSize"]; got != 5 {
+		t.Fatalf("pageSize = %#v, want 5", got)
 	}
 }
 
