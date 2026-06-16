@@ -95,7 +95,7 @@ dws devapp
   robot get                    Get robot config of an existing app
   robot config                 Create or update robot config on an existing app
   robot enable                 Enable / re-enable robot capability
-  robot offline                Offline robot capability
+  robot disable                Disable robot capability
   version create               Save app version
   version list                 List app versions (cursor paged)
   version get                  Get one version detail
@@ -138,10 +138,10 @@ Do not send confirmation fields such as `confirmCreate`, `confirmUpdate`, `confi
 | Permission list | `devapp permission list/search/detail` | `list_open_dev_app_permissions` | `OpenInnerAppPermissionFacade.list` | Implemented | Hardcoded helper |
 | Permission apply | `devapp permission add` | `apply_open_dev_app_permissions` | `OpenInnerAppPermissionFacade.apply` | Implemented | Hardcoded helper |
 | Permission remove | `devapp permission remove` | `remove_open_dev_app_permission` | `OpenInnerAppPermissionFacade.remove` | Implemented | Hardcoded helper |
-| Events | `devapp event list/subscribe/unsubscribe` | `list_open_dev_app_events`, `subscribe/unsubscribe_open_dev_app_event` | Implemented | Hardcoded helper |
+| Events | `devapp event list/subscribe/unsubscribe` | `list_dev_app_events`, `subscribe_dev_app_event`, `unsubscribe_dev_app_event` | Implemented | Hardcoded helper |
 | Robot create | `devapp robot create/submit/result` | `create_dingtalk_robot`/`submit_robot_create_task`/`query_robot_create_result` | Implemented | Hardcoded helper |
-| Robot config | `devapp robot get/config/enable/offline` | `get/set_open_dev_app_robot_config`, `enable/offline_open_dev_app_robot` | Implemented | Hardcoded helper |
-| Version | `devapp version create/list/get/check-approval/publish/status` | `create/list_open_dev_app_versions`, `get_open_dev_app_version_detail/status`, `publish_open_dev_app_version` | Implemented | Hardcoded helper |
+| Robot config | `devapp robot get/config/enable/disable` | `get_dev_app_robot_config`, `set_extension_robot_config`, `enable_dev_app_robot`, `disable_dev_app_robot` | Implemented | Hardcoded helper |
+| Version | `devapp version create/list/get/check-approval/publish/status` | `create_dev_app_version`, `list_dev_app_versions`, `get_dev_app_version_detail`, `publish_dev_app_version`, `get_dev_app_version_status` | Implemented | Hardcoded helper |
 
 P0 for yulan is app CRUD, permissions, credentials, and web app config. Robot,
 version, and event subscription are now all implemented as hardcoded helper
@@ -967,9 +967,9 @@ real model is "list subscribable events + subscribe/unsubscribe one event by
 
 | CLI | MCP tool | Notes |
 | --- | --- | --- |
-| `devapp event list` | `list_open_dev_app_events` | Args `unifiedAppId`; returns `pushType` + `events[]` (`eventCode`/`eventName`/`subscribed`). Read. |
-| `devapp event subscribe` | `subscribe_open_dev_app_event` | Args `unifiedAppId` + `eventCode`. Write (`--dry-run`/`--yes`). |
-| `devapp event unsubscribe` | `unsubscribe_open_dev_app_event` | Args `unifiedAppId` + `eventCode`. Write. |
+| `devapp event list` | `list_dev_app_events` | Args `unifiedAppId`; returns `pushType` + `events[]` (`eventCode`/`eventName`/`subscribed`). Read. |
+| `devapp event subscribe` | `subscribe_dev_app_event` | Args `unifiedAppId` + `eventCode`. Write (`--dry-run`/`--yes`). |
+| `devapp event unsubscribe` | `unsubscribe_dev_app_event` | Args `unifiedAppId` + `eventCode`. Write. |
 
 Note: for gray unified apps, subscribe/unsubscribe are staged into version
 metadata and only take effect after `version publish`. The event callback URL
@@ -980,12 +980,12 @@ Implemented version tools (verified against the `op-app` MCP `tools/list`):
 
 | CLI | MCP tool | Notes |
 | --- | --- | --- |
-| `devapp version create` | `create_open_dev_app_version` | Save a new version from current config (`version`, `description`). |
-| `devapp version list` | `list_open_dev_app_versions` | Cursor-paged list (`cursor`, `pageSize`; response `items/nextCursor/hasMore`). |
-| `devapp version get` | `get_open_dev_app_version_detail` | One version detail by `versionId`. |
-| `devapp version check-approval` | `publish_open_dev_app_version` (`precheckOnly=true`) | Precheck approval requirement / approvers; does not publish. |
-| `devapp version publish` | `publish_open_dev_app_version` (`precheckOnly=false`) | Publish; `confirmedSensitive` for high-sensitivity scopes, optional `approverUserId`. |
-| `devapp version status` | `get_open_dev_app_version_status` | Poll publish and approval state. |
+| `devapp version create` | `create_dev_app_version` | Save a new version from current config (`version`, `description`). |
+| `devapp version list` | `list_dev_app_versions` | Cursor-paged list (`cursor`, `pageSize`; response `items/nextCursor/hasMore`). |
+| `devapp version get` | `get_dev_app_version_detail` | One version detail by `versionId`. |
+| `devapp version check-approval` | `publish_dev_app_version` (`precheckOnly=true`) | Precheck approval requirement / approvers; does not publish. |
+| `devapp version publish` | `publish_dev_app_version` (`precheckOnly=false`) | Publish; `confirmedSensitive` for high-sensitivity scopes, optional `approverUserId`. |
+| `devapp version status` | `get_dev_app_version_status` | Poll publish and approval state. |
 
 Note: the MCP `precheckOnly` field is the server-side approval precheck and maps to
 `version check-approval`. It is distinct from the CLI global `--dry-run` (preview
@@ -999,12 +999,12 @@ Implemented robot tools:
 | `devapp robot create` | `create_dingtalk_robot` | Synchronously create a new agent app + robot. |
 | `devapp robot submit` | `submit_robot_create_task` | Async submit; supports retry via original `taskId`. |
 | `devapp robot result` | `query_robot_create_result` | Poll async task by `taskId`. |
-| `devapp robot get` | `get_open_dev_app_robot_config` | Read robot config of an existing app. |
-| `devapp robot config` | `set_open_dev_app_robot_config` | Create or update robot config on an existing app. |
-| `devapp robot enable` | `enable_open_dev_app_robot` | Enable / re-enable robot capability. |
-| `devapp robot offline` | `offline_open_dev_app_robot` | Offline robot capability. |
+| `devapp robot get` | `get_dev_app_robot_config` | Read robot config of an existing app. |
+| `devapp robot config` | `set_extension_robot_config` | Create or update robot config on an existing app. |
+| `devapp robot enable` | `enable_dev_app_robot` | Enable / re-enable robot capability. |
+| `devapp robot disable` | `disable_dev_app_robot` | Disable robot capability. |
 
-Robot create/submit and config/enable/offline are write operations and
+Robot create/submit and config/enable/disable are write operations and
 use the `--dry-run`/`--yes` guard; `get` and `result` are reads.
 
 Stitching rule:
@@ -1089,8 +1089,8 @@ Intent table:
 | "申请权限/开通权限" | `permission add` | `apply_open_dev_app_permissions` |
 | "取消权限/移除权限" | `permission remove` | `remove_open_dev_app_permission` |
 | "拿 appSecret/clientSecret" | `credentials get` | `get_open_dev_app_credentials` |
-| "查可订阅事件/订阅/退订事件" | `event list/subscribe/unsubscribe` | `list_open_dev_app_events`, `subscribe/unsubscribe_open_dev_app_event` |
-| "发布/审核/选审批人" | `version ...` | `publish_open_dev_app_version` etc. |
+| "查可订阅事件/订阅/退订事件" | `event list/subscribe/unsubscribe` | `list_dev_app_events`, `subscribe_dev_app_event`, `unsubscribe_dev_app_event` |
+| "发布/审核/选审批人" | `version ...` | `publish_dev_app_version` etc. |
 
 Yulan invocation examples:
 

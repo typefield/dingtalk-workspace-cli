@@ -46,22 +46,22 @@ const (
 	devAppRobotCreateTool    = "create_dingtalk_robot"
 	devAppRobotSubmitTool    = "submit_robot_create_task"
 	devAppRobotResultTool    = "query_robot_create_result"
-	devAppRobotConfigGetTool = "get_open_dev_app_robot_config"
-	devAppRobotConfigSetTool = "set_open_dev_app_robot_config"
-	devAppRobotEnableTool    = "enable_open_dev_app_robot"
-	devAppRobotOfflineTool   = "offline_open_dev_app_robot"
+	devAppRobotConfigGetTool = "get_dev_app_robot_config"
+	devAppRobotConfigSetTool = "set_extension_robot_config"
+	devAppRobotEnableTool    = "enable_dev_app_robot"
+	devAppRobotDisableTool   = "disable_dev_app_robot"
 
 	// 版本发布能力（op-app MCP 工具，硬编码不走服务发现）。
-	devAppVersionCreateTool  = "create_open_dev_app_version"
-	devAppVersionListTool    = "list_open_dev_app_versions"
-	devAppVersionDetailTool  = "get_open_dev_app_version_detail"
-	devAppVersionPublishTool = "publish_open_dev_app_version"
-	devAppVersionStatusTool  = "get_open_dev_app_version_status"
+	devAppVersionCreateTool  = "create_dev_app_version"
+	devAppVersionListTool    = "list_dev_app_versions"
+	devAppVersionDetailTool  = "get_dev_app_version_detail"
+	devAppVersionPublishTool = "publish_dev_app_version"
+	devAppVersionStatusTool  = "get_dev_app_version_status"
 
 	// 事件订阅能力（op-app MCP 工具，硬编码不走服务发现）。
-	devAppEventListTool        = "list_open_dev_app_events"
-	devAppEventSubscribeTool   = "subscribe_open_dev_app_event"
-	devAppEventUnsubscribeTool = "unsubscribe_open_dev_app_event"
+	devAppEventListTool        = "list_dev_app_events"
+	devAppEventSubscribeTool   = "subscribe_dev_app_event"
+	devAppEventUnsubscribeTool = "unsubscribe_dev_app_event"
 )
 
 func init() {
@@ -182,7 +182,7 @@ func newDevAppCommand(runner executor.Runner) *cobra.Command {
 		newDevAppRobotConfigGetCommand(runner),
 		newDevAppRobotConfigCommand(runner, "config", "创建或更新现有应用机器人配置", devAppRobotConfigSetTool),
 		newDevAppRobotConfigCommand(runner, "enable", "启用现有应用机器人能力", devAppRobotEnableTool),
-		newDevAppRobotOfflineCommand(runner),
+		newDevAppRobotDisableCommand(runner),
 		newDevAppRobotConnectCommand(runner),
 	)
 
@@ -805,22 +805,22 @@ func newDevAppRobotConfigCommand(runner executor.Runner, use, short, tool string
 	return cmd
 }
 
-func newDevAppRobotOfflineCommand(runner executor.Runner) *cobra.Command {
+func newDevAppRobotDisableCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "offline",
+		Use:               "disable",
 		Short:             "停用现有应用的机器人能力",
-		Example:           "  dws devapp robot offline --unified-app-id UNIFIED_APP_ID --dry-run --format json",
+		Example:           "  dws devapp robot disable --unified-app-id UNIFIED_APP_ID --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := devAppRequireWriteGuard(cmd, "robot offline"); err != nil {
+			if err := devAppRequireWriteGuard(cmd, "robot disable"); err != nil {
 				return err
 			}
 			appID, err := requiredDevAppUnifiedID(cmd)
 			if err != nil {
 				return err
 			}
-			return runDevAppTool(runner, cmd, devAppRobotOfflineTool, map[string]any{"unifiedAppId": appID})
+			return runDevAppTool(runner, cmd, devAppRobotDisableTool, map[string]any{"unifiedAppId": appID})
 		},
 	}
 	addDevAppUnifiedIDFlag(cmd)

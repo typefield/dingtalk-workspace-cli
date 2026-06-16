@@ -3,7 +3,7 @@
 为开放平台企业内部应用创建和配置机器人。分两类场景：
 
 1. **新建智能体机器人**：一次性创建一个新的 Agent 应用 + 承载机器人（`create` / `submit` / `result`）。
-2. **现有应用配置机器人**：在已存在的应用上开启/配置/停用机器人（`get` / `config` / `enable` / `offline`），通过 `--unified-app-id` 定位。
+2. **现有应用配置机器人**：在已存在的应用上开启/配置/停用机器人（`get` / `config` / `enable` / `disable`），通过 `--unified-app-id` 定位。
 
 > `corpId` / `userId` 由 MCP 系统上下文注入，CLI 不传。所有写操作先 `--dry-run`，确认后再 `--yes`。
 
@@ -64,7 +64,7 @@ MCP tools: `submit_robot_create_task` / `query_robot_create_result`
 dws devapp robot get --unified-app-id <unifiedAppId> --format json
 ```
 
-MCP tool: `get_open_dev_app_robot_config`。返回机器人基础信息、回调地址、模式、状态和技能列表。应用尚未配置机器人时后端会返回 `robot info is not exist`。
+MCP tool: `get_dev_app_robot_config`。返回机器人基础信息、回调地址、模式、状态和技能列表。应用尚未配置机器人时后端会返回 `robot info is not exist`。
 
 状态判断：
 
@@ -88,7 +88,7 @@ dws devapp robot config --unified-app-id <unifiedAppId> --name 小助手 --brief
 dws devapp robot enable --unified-app-id <unifiedAppId> --name 小助手 --dry-run --format json
 ```
 
-MCP tools: `set_open_dev_app_robot_config` / `enable_open_dev_app_robot`
+MCP tools: `set_extension_robot_config` / `enable_dev_app_robot`
 
 | CLI | MCP | 说明 |
 |-----|-----|------|
@@ -111,11 +111,11 @@ MCP tools: `set_open_dev_app_robot_config` / `enable_open_dev_app_robot`
 ### 停用
 
 ```bash
-dws devapp robot offline --unified-app-id <unifiedAppId> --dry-run --format json
-dws devapp robot offline --unified-app-id <unifiedAppId> --yes --format json
+dws devapp robot disable --unified-app-id <unifiedAppId> --dry-run --format json
+dws devapp robot disable --unified-app-id <unifiedAppId> --yes --format json
 ```
 
-MCP tool: `offline_open_dev_app_robot`
+MCP tool: `disable_dev_app_robot`
 
 ### 建联（把机器人接到本地 agent）
 

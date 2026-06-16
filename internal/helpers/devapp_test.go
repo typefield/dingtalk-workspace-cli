@@ -170,13 +170,13 @@ func TestDevAppRobotCommandsBuildToolParams(t *testing.T) {
 		{
 			name:       "get config",
 			args:       []string{"robot", "get", "--unified-app-id", "u-1"},
-			wantTool:   "get_open_dev_app_robot_config",
+			wantTool:   "get_dev_app_robot_config",
 			wantParams: map[string]any{"unifiedAppId": "u-1"},
 		},
 		{
 			name:     "config create with skills and mode",
 			args:     []string{"robot", "config", "--unified-app-id", "u-1", "--name", "小助手", "--brief", "审批助手", "--mode", "2", "--skills", "qa,approval", "--add-scope", "--yes"},
-			wantTool: "set_open_dev_app_robot_config",
+			wantTool: "set_extension_robot_config",
 			wantParams: map[string]any{
 				"unifiedAppId": "u-1",
 				"name":         "小助手",
@@ -187,9 +187,9 @@ func TestDevAppRobotCommandsBuildToolParams(t *testing.T) {
 			},
 		},
 		{
-			name:       "offline",
-			args:       []string{"robot", "offline", "--unified-app-id", "u-1", "--yes"},
-			wantTool:   "offline_open_dev_app_robot",
+			name:       "disable",
+			args:       []string{"robot", "disable", "--unified-app-id", "u-1", "--yes"},
+			wantTool:   "disable_dev_app_robot",
 			wantParams: map[string]any{"unifiedAppId": "u-1"},
 		},
 	}
@@ -229,7 +229,7 @@ func TestDevAppVersionCommandsBuildToolParams(t *testing.T) {
 		{
 			name:     "create",
 			args:     []string{"version", "create", "--unified-app-id", "u-1", "--version", "1.0.1", "--desc", "新增机器人", "--yes"},
-			wantTool: "create_open_dev_app_version",
+			wantTool: "create_dev_app_version",
 			wantParams: map[string]any{
 				"unifiedAppId": "u-1",
 				"version":      "1.0.1",
@@ -239,7 +239,7 @@ func TestDevAppVersionCommandsBuildToolParams(t *testing.T) {
 		{
 			name:     "list",
 			args:     []string{"version", "list", "--unified-app-id", "u-1", "--cursor", "cursor-1", "--page-size", "5"},
-			wantTool: "list_open_dev_app_versions",
+			wantTool: "list_dev_app_versions",
 			wantParams: map[string]any{
 				"unifiedAppId": "u-1",
 				"cursor":       "cursor-1",
@@ -249,19 +249,19 @@ func TestDevAppVersionCommandsBuildToolParams(t *testing.T) {
 		{
 			name:       "get detail",
 			args:       []string{"version", "get", "--unified-app-id", "u-1", "--version-id", "v-1"},
-			wantTool:   "get_open_dev_app_version_detail",
+			wantTool:   "get_dev_app_version_detail",
 			wantParams: map[string]any{"unifiedAppId": "u-1", "versionId": "v-1"},
 		},
 		{
 			name:       "check-approval prechecks only",
 			args:       []string{"version", "check-approval", "--unified-app-id", "u-1", "--version-id", "v-1"},
-			wantTool:   "publish_open_dev_app_version",
+			wantTool:   "publish_dev_app_version",
 			wantParams: map[string]any{"unifiedAppId": "u-1", "versionId": "v-1", "precheckOnly": true},
 		},
 		{
 			name:     "publish disables precheck and sets sensitive",
 			args:     []string{"version", "publish", "--unified-app-id", "u-1", "--version-id", "v-1", "--confirm-sensitive", "--approver", "user-1", "--yes"},
-			wantTool: "publish_open_dev_app_version",
+			wantTool: "publish_dev_app_version",
 			wantParams: map[string]any{
 				"unifiedAppId":       "u-1",
 				"versionId":          "v-1",
@@ -273,7 +273,7 @@ func TestDevAppVersionCommandsBuildToolParams(t *testing.T) {
 		{
 			name:       "status",
 			args:       []string{"version", "status", "--unified-app-id", "u-1", "--version-id", "v-1"},
-			wantTool:   "get_open_dev_app_version_status",
+			wantTool:   "get_dev_app_version_status",
 			wantParams: map[string]any{"unifiedAppId": "u-1", "versionId": "v-1"},
 		},
 	}
@@ -310,19 +310,19 @@ func TestDevAppEventCommandsBuildToolParams(t *testing.T) {
 		{
 			name:       "list",
 			args:       []string{"event", "list", "--unified-app-id", "u-1"},
-			wantTool:   "list_open_dev_app_events",
+			wantTool:   "list_dev_app_events",
 			wantParams: map[string]any{"unifiedAppId": "u-1"},
 		},
 		{
 			name:       "subscribe",
 			args:       []string{"event", "subscribe", "--unified-app-id", "u-1", "--event-code", "user_add_org", "--yes"},
-			wantTool:   "subscribe_open_dev_app_event",
+			wantTool:   "subscribe_dev_app_event",
 			wantParams: map[string]any{"unifiedAppId": "u-1", "eventCode": "user_add_org"},
 		},
 		{
 			name:       "unsubscribe",
 			args:       []string{"event", "unsubscribe", "--unified-app-id", "u-1", "--event-code", "user_add_org", "--yes"},
-			wantTool:   "unsubscribe_open_dev_app_event",
+			wantTool:   "unsubscribe_dev_app_event",
 			wantParams: map[string]any{"unifiedAppId": "u-1", "eventCode": "user_add_org"},
 		},
 	}
@@ -383,7 +383,7 @@ func TestDevAppScopedCommandsRejectLegacyLocators(t *testing.T) {
 		{name: "robot get", args: []string{"devapp", "robot", "get", "--app-id", "u-1"}},
 		{name: "robot config", args: []string{"devapp", "robot", "config", "--app-id", "u-1", "--name", "小助手", "--yes"}},
 		{name: "robot enable", args: []string{"devapp", "robot", "enable", "--app-id", "u-1", "--name", "小助手", "--yes"}},
-		{name: "robot offline", args: []string{"devapp", "robot", "offline", "--app-id", "u-1", "--yes"}},
+		{name: "robot disable", args: []string{"devapp", "robot", "disable", "--app-id", "u-1", "--yes"}},
 		{name: "event list", args: []string{"devapp", "event", "list", "--app-id", "u-1"}},
 		{name: "event subscribe", args: []string{"devapp", "event", "subscribe", "--app-id", "u-1", "--event-code", "user_add_org", "--yes"}},
 		{name: "event unsubscribe", args: []string{"devapp", "event", "unsubscribe", "--app-id", "u-1", "--event-code", "user_add_org", "--yes"}},
@@ -442,6 +442,26 @@ func TestDevAppScopedCommandsRejectAgentAndCustomKeyLocators(t *testing.T) {
 	}
 }
 
+func TestDevAppRobotOfflineCommandRemoved(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"devapp", "robot", "offline", "--unified-app-id", "u-1", "--yes"})
+
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("Execute() error = nil, want unknown command")
+	}
+	if !strings.Contains(err.Error(), "unknown command") {
+		t.Fatalf("error = %q, want unknown command", err.Error())
+	}
+	if runner.last.Tool != "" {
+		t.Fatalf("tool = %q, want no invocation", runner.last.Tool)
+	}
+}
+
 func TestDevAppRobotAndVersionWritesRequireGuard(t *testing.T) {
 	cases := []struct {
 		name string
@@ -449,7 +469,7 @@ func TestDevAppRobotAndVersionWritesRequireGuard(t *testing.T) {
 	}{
 		{name: "robot create", args: []string{"devapp", "robot", "create", "--app-name", "智能体", "--robot-name", "小助手", "--desc", "审批"}},
 		{name: "robot config", args: []string{"devapp", "robot", "config", "--unified-app-id", "u-1", "--name", "小助手"}},
-		{name: "robot offline", args: []string{"devapp", "robot", "offline", "--unified-app-id", "u-1"}},
+		{name: "robot disable", args: []string{"devapp", "robot", "disable", "--unified-app-id", "u-1"}},
 		{name: "version create", args: []string{"devapp", "version", "create", "--unified-app-id", "u-1", "--version", "1.0.1"}},
 		{name: "version publish", args: []string{"devapp", "version", "publish", "--unified-app-id", "u-1", "--version-id", "v-1"}},
 		{name: "event subscribe", args: []string{"devapp", "event", "subscribe", "--unified-app-id", "u-1", "--event-code", "user_add_org"}},

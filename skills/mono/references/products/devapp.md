@@ -216,10 +216,10 @@ MCP tools: `create_dingtalk_robot` / `submit_robot_create_task` / `query_robot_c
 dws devapp robot get --unified-app-id ID --format json
 dws devapp robot config --unified-app-id ID --name 小助手 --brief 审批助手 --outgoing-url URL --mode 2 --skills qa,approval --dry-run --format json
 dws devapp robot enable --unified-app-id ID --name 小助手 --dry-run --format json
-dws devapp robot offline --unified-app-id ID --dry-run --format json
+dws devapp robot disable --unified-app-id ID --dry-run --format json
 ```
 
-MCP tools: `get_open_dev_app_robot_config` / `set_open_dev_app_robot_config` / `enable_open_dev_app_robot` / `offline_open_dev_app_robot`。
+MCP tools: `get_dev_app_robot_config` / `set_extension_robot_config` / `enable_dev_app_robot` / `disable_dev_app_robot`。
 
 配置字段：`--name/--brief/--description/--icon/--outgoing-url(outgoingUrl)/--event-url(chatBotEventUrl)/--mode/--skills(skillList)/--add-scope/--disable-ssl-verify/--i18n-name/--i18n-brief/--i18n-description`。应用未配机器人时 `get` 返回 `robot info is not exist`。
 
@@ -280,10 +280,10 @@ dws devapp version publish --unified-app-id ID --version-id VERSION_ID --confirm
 dws devapp version status --unified-app-id ID --version-id VERSION_ID --format json
 ```
 
-MCP tools: `create_open_dev_app_version` / `list_open_dev_app_versions` / `get_open_dev_app_version_detail` / `publish_open_dev_app_version` / `get_open_dev_app_version_status`。
+MCP tools: `create_dev_app_version` / `list_dev_app_versions` / `get_dev_app_version_detail` / `publish_dev_app_version` / `get_dev_app_version_status`。
 
 - `version list` 使用 `cursor/pageSize`；首次不传 cursor，后续传响应里的 `nextCursor`。
-- `check-approval` = `publish_open_dev_app_version` 的 `precheckOnly=true` 预检模式，不实际发布。
+- `check-approval` = `publish_dev_app_version` 的 `precheckOnly=true` 预检模式，不实际发布。
 - `publish` 设 `precheckOnly=false`；含高敏权限需 `--confirm-sensitive`，灰度选人模式用 `--approver USER_ID`。
 - 流程：`permission add`（requiredApproval 写入版本变更）→ `version create` → `check-approval` → `publish` → `status`。
 - 新应用如果 `version list` 返回空，先执行 `version create`，用返回的 `versionId` 继续 `check-approval/publish`；不要因为列表为空误判无可发布内容。
@@ -330,7 +330,7 @@ dws devapp event subscribe --unified-app-id ID --event-code user_add_org --dry-r
 dws devapp event unsubscribe --unified-app-id ID --event-code user_add_org --dry-run --format json
 ```
 
-MCP tools: `list_open_dev_app_events` / `subscribe_open_dev_app_event` / `unsubscribe_open_dev_app_event`。
+MCP tools: `list_dev_app_events` / `subscribe_dev_app_event` / `unsubscribe_dev_app_event`。
 
 - `event list` 返回 `pushType` 与 `events[]`（每项 `eventCode`/`eventName`/`subscribed`）；订阅/退订只接受 `--event-code`（取自 list 返回），一次一个。
 - 写操作走 `--dry-run`/`--yes` 写保护；`list` 是只读。

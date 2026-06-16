@@ -10,7 +10,7 @@
 dws devapp event list --unified-app-id <unifiedAppId> --format json
 ```
 
-MCP tool: `list_open_dev_app_events`。返回 `pushType`（当前推送类型）和 `events[]`，每项含：
+MCP tool: `list_dev_app_events`。返回 `pushType`（当前推送类型）和 `events[]`，每项含：
 
 | 字段 | 含义 |
 |------|------|
@@ -27,7 +27,7 @@ dws devapp event subscribe --unified-app-id <unifiedAppId> --event-code user_add
 dws devapp event subscribe --unified-app-id <unifiedAppId> --event-code user_add_org --yes --format json
 ```
 
-MCP tool: `subscribe_open_dev_app_event`（入参 `unifiedAppId` + `eventCode`，一次订阅一个）。
+MCP tool: `subscribe_dev_app_event`（入参 `unifiedAppId` + `eventCode`，一次订阅一个）。
 
 ## 退订事件
 
@@ -36,7 +36,7 @@ dws devapp event unsubscribe --unified-app-id <unifiedAppId> --event-code user_a
 dws devapp event unsubscribe --unified-app-id <unifiedAppId> --event-code user_add_org --yes --format json
 ```
 
-MCP tool: `unsubscribe_open_dev_app_event`（入参 `unifiedAppId` + `eventCode`）。
+MCP tool: `unsubscribe_dev_app_event`（入参 `unifiedAppId` + `eventCode`）。
 
 ## 字段映射
 

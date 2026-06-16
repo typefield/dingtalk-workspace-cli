@@ -52,7 +52,7 @@ metadata:
 | 凭证与网页应用 | [credentials-webapp.md](references/credentials-webapp.md) | credentials get / webapp get / webapp config |
 | 权限管理 | [permissions.md](references/permissions.md) | permission list / permission add / permission remove |
 | 成员与安全 | [member-security.md](references/member-security.md) | member list / add / remove / security config |
-| 机器人 | [robot.md](references/robot.md) | robot create / submit / result / get / config / update / enable / offline |
+| 机器人 | [robot.md](references/robot.md) | robot create / submit / result / get / config / update / enable / disable |
 | 版本发布 | [version.md](references/version.md) | version create / list / get / check-approval / publish / status |
 | 事件订阅 | [event.md](references/event.md) | event list / subscribe / unsubscribe |
 | 操作流程 | [workflows.md](references/workflows.md) | 创建应用全流程 / 权限全流程 / 生命周期管理 |
