@@ -307,9 +307,9 @@ func newDevAppCreateCommand(runner executor.Runner) *cobra.Command {
 			if name == "" {
 				return apperrors.NewValidation("--name is required")
 			}
-			params := map[string]any{"appName": name}
-			devAppPutString(params, "appDesc", devAppStringFlag(cmd, "desc"))
-			devAppPutString(params, "appIcon", devAppStringFlag(cmd, "icon"))
+			params := map[string]any{"name": name}
+			devAppPutString(params, "desc", devAppStringFlag(cmd, "desc"))
+			devAppPutString(params, "icon", devAppStringFlag(cmd, "icon"))
 			return runDevAppTool(runner, cmd, devAppCreateTool, params)
 		},
 	}
@@ -338,15 +338,15 @@ func newDevAppUpdateCommand(runner executor.Runner) *cobra.Command {
 			}
 			updates := 0
 			if v := devAppStringFlag(cmd, "name"); v != "" {
-				params["appName"] = v
+				params["name"] = v
 				updates++
 			}
 			if v := devAppStringFlag(cmd, "desc"); v != "" {
-				params["appDesc"] = v
+				params["desc"] = v
 				updates++
 			}
 			if v := devAppStringFlag(cmd, "icon"); v != "" {
-				params["appIcon"] = v
+				params["icon"] = v
 				updates++
 			}
 			if updates == 0 {
@@ -1302,7 +1302,7 @@ func devAppCredentialsLocatorParams(cmd *cobra.Command) map[string]any {
 	params := map[string]any{}
 	devAppPutString(params, "unifiedAppId", devAppStringFlag(cmd, "unified-app-id"))
 	devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
-	devAppPutString(params, "appName", devAppStringFlag(cmd, "name"))
+	devAppPutString(params, "name", devAppStringFlag(cmd, "name"))
 	return params
 }
 

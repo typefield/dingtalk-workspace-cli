@@ -66,9 +66,9 @@ MCP tool: `create_dev_app`
 
 | CLI | MCP | 必填 |
 |-----|-----|------|
-| `--name` | `appName` | 是 |
-| `--desc` | `appDesc` | 否 |
-| `--icon` | `appIcon` | 否 |
+| `--name` | `name` | 是 |
+| `--desc` | `desc` | 否 |
+| `--icon` | `icon` | 否 |
 
 `--type` 只做 CLI 校验（当前仅支持 `internal`），不下发 MCP。
 

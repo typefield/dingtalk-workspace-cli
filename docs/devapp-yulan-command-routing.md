@@ -182,10 +182,9 @@ MCP output configuration should keep the wrapper fields and configure success as
 Naming convention:
 
 - Public CLI flags use user-facing names: `--name`, `--desc`, `--icon`, `--homepage-url`.
-- MCP app create/update currently keep backend request field names: `appName`, `appDesc`, `appIcon`.
+- MCP app create/update use the current backend request field names: `name`, `desc`, `icon`.
 - MCP app list/detail use the simplified locator/search fields: `unifiedAppId`, `appKey`, `name`.
-- The CLI helper owns the translation, for example `--name` -> `appName` for create/update and
-  `--name` -> `name` for list/detail.
+- The CLI helper keeps public flags stable, for example `--name` -> `name` for create/update/list/detail.
 
 ### 3.2 P0 Tool Contracts
 
@@ -275,16 +274,16 @@ full `clientSecret/appSecret`:
 | CLI | `dws devapp create` |
 | HSF facade | `OpenInnerAppManageFacade.create` |
 | Request shape | One object with system context and app base fields. |
-| Required public fields | `appName`; `--type` is a CLI-only guard and currently must be `internal`. |
+| Required public fields | `name`; `--type` is a CLI-only guard and currently must be `internal`. |
 | Write guard | CLI `--dry-run`, then `--yes`; no MCP confirm field. |
 
 Input fields:
 
 | Field | Type | CLI flag | Required | Notes |
 | --- | --- | --- | --- | --- |
-| `appName` | string | `--name` | yes | Enterprise internal app name. |
-| `appDesc` | string | `--desc` | no | App description. |
-| `appIcon` | string | `--icon` | no | Existing media/resource id if backend accepts it. |
+| `name` | string | `--name` | yes | Enterprise internal app name. |
+| `desc` | string | `--desc` | no | App description. |
+| `icon` | string | `--icon` | no | Existing media/resource id if backend accepts it. |
 
 Response:
 
@@ -319,9 +318,9 @@ Update fields:
 
 | Field | Type | CLI flag | Notes |
 | --- | --- | --- | --- |
-| `appName` | string | `--name` | New app name. |
-| `appDesc` | string | `--desc` | New app description. |
-| `appIcon` | string | `--icon` | New icon resource id if backend accepts it. |
+| `name` | string | `--name` | New app name. |
+| `desc` | string | `--desc` | New app description. |
+| `icon` | string | `--icon` | New icon resource id if backend accepts it. |
 | `international` | object/string | `--international` | Only expose when schema describes the shape. |
 | `supportHarmony` | boolean | `--support-harmony` | Harmony support switch if backend exposes it. |
 
@@ -508,9 +507,9 @@ Tool override examples:
       "description": "创建开放平台企业内部应用",
       "isSensitive": true,
       "flags": {
-        "appName": {"alias": "name", "required": true},
-        "appDesc": {"alias": "desc"},
-        "appIcon": {"alias": "icon"}
+        "name": {"alias": "name", "required": true},
+        "desc": {"alias": "desc"},
+        "icon": {"alias": "icon"}
       }
     },
     "update_dev_app": {
@@ -520,9 +519,9 @@ Tool override examples:
       "flags": {
         "unifiedAppId": {"alias": "unified-app-id"},
         "appKey": {"alias": "app-key"},
-        "appName": {"alias": "name"},
-        "appDesc": {"alias": "desc"},
-        "appIcon": {"alias": "icon"}
+        "name": {"alias": "name"},
+        "desc": {"alias": "desc"},
+        "icon": {"alias": "icon"}
       }
     },
     "delete_dev_app": {
@@ -683,8 +682,8 @@ MCP payload:
 
 ```json
 {
-  "appName": "DemoApp",
-  "appDesc": "internal app"
+  "name": "DemoApp",
+  "desc": "internal app"
 }
 ```
 
@@ -699,9 +698,9 @@ At least one update field is required. Supported P0 fields:
 
 | CLI flag | MCP field | Notes |
 | --- | --- | --- |
-| `--name` | `appName` | New app name. |
-| `--desc` | `appDesc` | New description. |
-| `--icon` | `appIcon` | Existing media id or backend-supported resource. |
+| `--name` | `name` | New app name. |
+| `--desc` | `desc` | New description. |
+| `--icon` | `icon` | Existing media id or backend-supported resource. |
 | `--international` | `international` | JSON string if exposed. |
 | `--support-harmony` | `supportHarmony` | Boolean if exposed. |
 
@@ -1356,8 +1355,8 @@ P0 debug inputs:
 | --- | --- |
 | `list_dev_app` | `{"pageSize":10}` |
 | `get_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
-| `create_dev_app` | `{"appName":"DemoApp","appDesc":"internal app"}` |
-| `update_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID","appDesc":"new desc"}` |
+| `create_dev_app` | `{"name":"DemoApp","desc":"internal app"}` |
+| `update_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID","desc":"new desc"}` |
 | `delete_dev_app` | `{"unifiedAppId":"UNIFIED_APP_ID"}` |
 | `list_dev_app_permissions` | `{"unifiedAppId":"UNIFIED_APP_ID","authStatus":"ALL","pageSize":20}` |
 | `apply_dev_app_permissions` | `{"unifiedAppId":"UNIFIED_APP_ID","scopeValues":["SCOPE_VALUE"]}` |

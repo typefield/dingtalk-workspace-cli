@@ -569,7 +569,7 @@ func TestDevAppCreateUsesCurrentInnerToolAndWriteGuard(t *testing.T) {
 		t.Fatalf("Tool = %q, want create_dev_app", got)
 	}
 
-	want := map[string]any{"appName": "Demo", "appDesc": "internal app"}
+	want := map[string]any{"name": "Demo", "desc": "internal app"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -589,7 +589,7 @@ func TestDevAppUpdateUsesCurrentInnerTool(t *testing.T) {
 	if got := runner.last.Tool; got != "update_dev_app" {
 		t.Fatalf("Tool = %q, want update_dev_app", got)
 	}
-	want := map[string]any{"unifiedAppId": "u-1", "appDesc": "new desc"}
+	want := map[string]any{"unifiedAppId": "u-1", "desc": "new desc"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -753,22 +753,42 @@ func TestDevAppPermissionCommandsBuildParams(t *testing.T) {
 }
 
 func TestDevAppCredentialsGetBuildsParams(t *testing.T) {
-	runner := &captureRunner{}
-	root := newDevAppTestRoot(runner)
-	var out bytes.Buffer
-	root.SetOut(&out)
-	root.SetErr(&out)
-	root.SetArgs([]string{"devapp", "credentials", "get", "--unified-app-id", "u-1"})
+	cases := []struct {
+		name       string
+		args       []string
+		wantParams map[string]any
+	}{
+		{
+			name:       "by unified app id",
+			args:       []string{"devapp", "credentials", "get", "--unified-app-id", "u-1"},
+			wantParams: map[string]any{"unifiedAppId": "u-1"},
+		},
+		{
+			name:       "by name",
+			args:       []string{"devapp", "credentials", "get", "--name", "Demo"},
+			wantParams: map[string]any{"name": "Demo"},
+		},
+	}
 
-	if err := root.Execute(); err != nil {
-		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
-	}
-	if got := runner.last.Tool; got != "get_dev_app_credentials" {
-		t.Fatalf("Tool = %q, want get_dev_app_credentials", got)
-	}
-	want := map[string]any{"unifiedAppId": "u-1"}
-	if !reflect.DeepEqual(runner.last.Params, want) {
-		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := &captureRunner{}
+			root := newDevAppTestRoot(runner)
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs(tc.args)
+
+			if err := root.Execute(); err != nil {
+				t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+			}
+			if got := runner.last.Tool; got != "get_dev_app_credentials" {
+				t.Fatalf("Tool = %q, want get_dev_app_credentials", got)
+			}
+			if !reflect.DeepEqual(runner.last.Params, tc.wantParams) {
+				t.Fatalf("Params = %#v, want %#v", runner.last.Params, tc.wantParams)
+			}
+		})
 	}
 }
 
