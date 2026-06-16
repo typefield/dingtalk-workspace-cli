@@ -170,7 +170,7 @@ func TestDevAppRobotCommandsBuildToolParams(t *testing.T) {
 		{
 			name:       "get config",
 			args:       []string{"robot", "get", "--unified-app-id", "u-1"},
-			wantTool:   "get_robot_config",
+			wantTool:   "get_extension_robot_config",
 			wantParams: map[string]any{"unifiedAppId": "u-1"},
 		},
 		{
