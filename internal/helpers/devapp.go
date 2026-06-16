@@ -1203,7 +1203,24 @@ func runDevAppTool(runner executor.Runner, cmd *cobra.Command, tool string, para
 	if err != nil {
 		return err
 	}
+	result = normalizeDevAppServiceResult(result)
 	return writeCommandPayload(cmd, result)
+}
+
+func normalizeDevAppServiceResult(result executor.Result) executor.Result {
+	content, ok := result.Response["content"].(map[string]any)
+	if !ok {
+		return result
+	}
+	if success, ok := content["success"].(bool); !ok || !success {
+		return result
+	}
+	value, ok := content["result"]
+	if !ok || value == nil {
+		return result
+	}
+	result.Response["content"] = value
+	return result
 }
 
 func requiredDevAppID(cmd *cobra.Command) (string, error) {

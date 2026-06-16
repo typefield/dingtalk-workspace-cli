@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -776,6 +777,44 @@ func TestDevAppCredentialsGetKeepsSecretFields(t *testing.T) {
 		if !strings.Contains(rendered, expected) {
 			t.Fatalf("credentials output missing %q:\n%s", expected, rendered)
 		}
+	}
+}
+
+func TestDevAppUnwrapsSuccessfulServiceResult(t *testing.T) {
+	runner := &devAppResponseRunner{
+		response: map[string]any{
+			"content": map[string]any{
+				"success":   true,
+				"errorCode": nil,
+				"errorMsg":  nil,
+				"result": map[string]any{
+					"items": []any{
+						map[string]any{"versionId": "v-1"},
+					},
+					"hasMore": false,
+				},
+			},
+		},
+	}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"devapp", "version", "list", "--unified-app-id", "u-1"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	var rendered map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rendered); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v\noutput:\n%s", err, out.String())
+	}
+	if _, ok := rendered["success"]; ok {
+		t.Fatalf("output kept ServiceResult wrapper: %#v", rendered)
+	}
+	items, ok := rendered["items"].([]any)
+	if !ok || len(items) != 1 {
+		t.Fatalf("items = %#v, want one item", rendered["items"])
 	}
 }
 
