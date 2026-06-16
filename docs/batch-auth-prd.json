@@ -344,7 +344,8 @@
       "Frontend O2 release route confirmed: app lippi-open-dev-front id=8780, iteration 16804012 named pat页面授权, branch codex/batch-auth-page-flow. O2 iteration id 86573 from the provided Dbase URL maps to an old pmod iteration in a1 o2, so 16804012 is the correct O2 release target discovered from app 8780.",
       "Frontend O2 non-production task 149432667 succeeded for commit 065178a7011174c14952c89992022968a8a49a7b, flow 114592128, version 5.219.0, pub_env daily. Attempting pub_env pre returned: assets does not support prepub.",
       "Independent cross-repo review found no P0/P1 contract break in CLI -> gateway -> BFF -> PAT -> frontend for selectedScopes. The important contract is that gateway pat.batch_grant takes scopes, while CLI/BFF use selectedScopes only at their own API boundaries before converting/passing to PAT.",
-      "CLI recommend login TUI default-selects all product domains before plan/grant, matching the Lark-like pre-authorization selector requirement. Local verification passed with go test ./internal/pat ./internal/app."
+      "CLI recommend login TUI default-selects all product domains before plan/grant, matching the Lark-like pre-authorization selector requirement. Local verification passed with go test ./internal/pat ./internal/app.",
+      "Frontend CDN verification after O2 task 149432667: https://dev.g.alicdn.com/dingding/lippi-open-dev-front/5.219.0/bundle.js contains 个人数据授权管理 and 可授权的权限, and no longer contains 应用授权管理 or 可授权的权限（已选."
     ]
   },
   "serviceContract": {
