@@ -74,26 +74,16 @@ func newDevdocArticleSearchCommand(runner executor.Runner) *cobra.Command {
 			if keyword == "" {
 				return apperrors.NewValidation("--query is required")
 			}
-			page, _ := cmd.Flags().GetInt("page")
-			if page < 1 {
-				page = 1
-			}
-			size, _ := cmd.Flags().GetInt("size")
-			if size < 1 {
-				size = 10
-			}
-			return runDevdocTool(cmd, runner, "search_open_platform_docs", map[string]any{
-				"keyword": keyword,
-				"page":    page,
-				"size":    size,
-			})
+			params := map[string]any{"keyword": keyword}
+			devAppApplyCursorParams(cmd, params)
+			return runDevdocTool(cmd, runner, "search_open_platform_docs", params)
 		},
 	}
 	preferLegacyLeaf(cmd)
 	cmd.Flags().String("query", "", "搜索关键词 (必填)")
 	addDevdocHiddenStringFlag(cmd, "keyword", "--query 的悟空兼容别名")
-	cmd.Flags().Int("page", 1, "分页页码 (从 1 开始，默认 1)")
-	cmd.Flags().Int("size", 10, "分页大小 (默认 10)")
+	cmd.Flags().String("cursor", "", "游标令牌：首次查询留空，续翻传上次返回的 nextCursor")
+	cmd.Flags().Int("page-size", 20, "单页条数，默认 20")
 	return cmd
 }
 
