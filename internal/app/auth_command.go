@@ -615,7 +615,7 @@ func selectLoginRecommendProducts(products []pat.LoginRecommendProduct) ([]strin
 		huh.NewGroup(
 			huh.NewMultiSelect[string]().
 				Title("选择要授权的业务域").
-				Description("[空格]选择  回车确认；默认已选中全部产品线").
+				Description("空格选择 回车确认").
 				Options(options...).
 				Height(height).
 				Value(&selected).
@@ -663,17 +663,9 @@ func loginRecommendProductLabel(product pat.LoginRecommendProduct) string {
 	}
 	summary := strings.TrimSpace(product.Summary)
 	if summary != "" {
-		summary = " — " + clipRunes(summary, 34)
+		summary = " - " + clipRunes(summary, 42)
 	}
-	count := product.ScopeCount
-	if product.SelectedScopeCount > 0 && product.SelectedScopeCount != product.ScopeCount {
-		count = product.SelectedScopeCount
-	}
-	countText := ""
-	if count > 0 {
-		countText = fmt.Sprintf("  %d项", count)
-	}
-	return fmt.Sprintf("%-10s %s%s%s", product.ProductCode, name, countText, summary)
+	return fmt.Sprintf("%-10s %s%s", product.ProductCode, name, summary)
 }
 
 func clipRunes(value string, limit int) string {

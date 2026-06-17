@@ -26,6 +26,7 @@ import (
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pat"
 	"github.com/spf13/cobra"
 )
 
@@ -241,6 +242,18 @@ func TestAuthLoginRecommendSelectorRespectsExplicitFormat(t *testing.T) {
 			t.Fatal("login without --recommend should not switch default json to human mode")
 		}
 	})
+}
+
+func TestLoginRecommendProductLabelMatchesTUITarget(t *testing.T) {
+	label := loginRecommendProductLabel(pat.LoginRecommendProduct{
+		ProductCode: "approval",
+		ProductName: "审批",
+		Summary:     "审批实例，审批模板，审批任务管理",
+		ScopeCount:  12,
+	})
+	if label != "approval   审批 - 审批实例，审批模板，审批任务管理" {
+		t.Fatalf("label = %q", label)
+	}
 }
 
 type roundTripFunc func(*http.Request) (*http.Response, error)
