@@ -258,16 +258,16 @@
         "repo": "lippi-open-app-dev",
         "localPath": "/Users/xuan/lippi-open-app-dev",
         "branch": "codex/batch-auth-bff-selected-scopes",
-        "commit": "9ac576c77d142b5f4ec318c8d7b8ecf472ea6341",
+        "commit": "df53f856c31be3abee220b738022f861cbf78b93",
         "aoneAppId": 154450,
         "aoneCrId": 34656145,
         "aoneCrStatus": "INTG",
         "aoneCrStatusLabel": "发布中",
         "aoneBranchRevision": "f4222f3b2acba1899446d338c4b3788b8a58b29f",
-        "aoneNewestRevision": "9ac576c77d142b5f4ec318c8d7b8ecf472ea6341",
+        "aoneNewestRevision": "df53f856c31be3abee220b738022f861cbf78b93",
         "prepubPipelineId": 66,
         "prepubPipelineInstanceId": 3095097708,
-        "prepubPackage": "Aone CR 34656145 pipeline 66 instance 3095097708 is WAITING at code merge task 3391355335 because Aone reports CONFLICT. The conflicting change is 34571941 feature/robot-openapi-pop at db24ed483eaa89a59fd34f763cfb2ee4adf45c06 merging into release branch releases/20260616153930479_r_release_154450_lippi-open-app-dev-code at e7d0add08308110250c26356a4ee511624bd8e5e; build, prepub deploy, integration, and validation are INIT. Latest successful prepub deploy remains old instance 3095018664/orders 155350849/155350851 with deployed branchRevision f4222f3, so current head 9ac576c is not proven active in prepub.",
+        "prepubPackage": "Aone CR 34656145 pipeline 66 instance 3095097708 is WAITING at code merge task 3391355335 because Aone reports CONFLICT. The conflicting change is 34571941 feature/robot-openapi-pop at db24ed483eaa89a59fd34f763cfb2ee4adf45c06 merging into release branch releases/20260616153930479_r_release_154450_lippi-open-app-dev-code at e7d0add08308110250c26356a4ee511624bd8e5e; build, prepub deploy, integration, and validation are INIT. Latest successful prepub deploy remains old instance 3095018664/orders 155350849/155350851 with deployed branchRevision f4222f3, so current head df53f856c31be3abee220b738022f861cbf78b93 is not proven active in prepub.",
         "prepubFunctionalVerification": "pending_bff_integration_test_resolution_or_accepted_exception"
       },
       {
@@ -346,7 +346,7 @@
       "PAT core Aone pipeline 66 instance 3094916508 reached SUCCESS for code merge, build, prepub deploy, and prepub integration test; prepub validation remained RUNNING when checked.",
       "BFF now depends on com.dingtalk.pat:lippi-pat-core-api:1.0.5-SNAPSHOT and uses HandleFlowActionRequest#setSelectedScopes directly. The old reflection fallback has been removed.",
       "BFF local verification passed with Java 11: mvn -pl lippi-open-app-dev-start -am -DskipTests compile -s /Users/xuan/Downloads/settings.xml.",
-      "BFF latest branch head is 9ac576c77d142b5f4ec318c8d7b8ecf472ea6341 after merging latest master. Aone CR 34656145 is INTG and pipeline 66 instance 3094919448 had code merge and build SUCCESS, with prepub deploy RUNNING at 2026-06-16 16:28:13+08:00.",
+      "BFF latest branch head is df53f856c31be3abee220b738022f861cbf78b93. It rejects malformed HTTP selectedScopes before HSF: missing field remains legacy-compatible and forwards null, but present null/non-array/non-string/blank entries return INVALID_PARAM_TYPE and skip PatAuthService#handleFlowAction. Verification passed with Java 11: mvn -pl lippi-open-app-dev-start -am -Dtest=com.dingtalk.open.appdev.http.DWSPatAuthRpcServiceTest -DfailIfNoTests=false -DfailIfNoSpecifiedTests=false test -s /Users/xuan/Downloads/settings.xml. The first Java 22 attempt failed on old aspectjweaver Zip64/PowerMock compatibility, so Java 11 remains the recorded build runtime.",
       "Gateway latest branch head is a0873a6a98b96eaa86a1e8e9f75726a3f8dc16a9. It rejects pat.batch_grant calls that carry plan-only recommend/productCodes fields, normalizes non-empty selected scopes before forwarding to PAT core, and has local verification uv run python -m pytest test/test_pat_batch_bridge.py -q: 26 passed.",
       "Frontend latest branch head is 356dcbab5d02c9f0225baabbd80a98b28d6f92b3. It only renders the batch page when the server explicitly marks batchFlow/isBatchFlow/flowType=BATCH, and reject success falls back to FLOW_REJECTED so the terminal page shows 已拒绝授权 instead of 授权失败. Verification: npm run build passed with existing bundle-size warnings.",
       "lark-cli parity check on 2026-06-16: lark-cli auth login --help does not list --yes, and lark-cli auth login --yes --no-wait --json exits with Error: unknown flag: --yes. Lark recommended login therefore still requires Device Flow/browser authorization and does not provide a --yes bypass.",
@@ -372,7 +372,8 @@
       "Frontend O2 non-production task 149432767 succeeded for commit f33e349b2c29c7ba139e48fdfbdd70759ce3a4c4, flow 114592657, version 5.219.0, pub_env daily, build id 53073038, assetCount 203. CDN bundle contains userAvatar|| and no longer contains the old orgLogo|| account-row priority; old title 可授权的权限（已选 remains absent.",
       "2026-06-17 server release audit: gateway current head a0873a6 and PAT current head 79a8fa5 are not proven deployed because their successful prepub deploy receipts predate the current commits. BFF current head 9ac576c is also not proven deployed by deploy-order revision: latest pipeline 3095011879 deployed, but deploy-order 155348765 records revision f4222f3b2acba1899446d338c4b3788b8a58b29f and integration-test task 3390965943 is FAIL. Gateway deploy-order 155284562 records revision ffaa951f13a107a08fb04c6246ba99bf7d583477; PAT deploy-order 155318893 records revision b38e29e9e9c0f55dc71762c37d261180cb30692b. Full prepub e2e remains blocked on current-head redeploy plus BFF integration-test resolution or accepted exception.",
       "2026-06-17 15:46+08:00 Aone recheck: gateway pipeline 66 instance 3095046153 has deploy/integration SUCCESS but deploy orders still show deployed branchRevision ffaa951, one commit behind CR newestRevision/current head a0873a6; PAT pipeline 66 instance 3095097702 has deploy/integration SUCCESS but deploy order 155387876 still shows deployed branchRevision b38e29e, 12 commits behind CR newestRevision/current head 79a8fa5; BFF pipeline 66 instance 3095097708 is WAITING at code merge task 3391355335 with build/deploy INIT, and latest successful deployed revision remains f4222f3, 199 commits behind current head 9ac576c. Therefore PRD acceptance remains not passed until current revisions are demonstrably active and functional verification is rerun.",
-      "2026-06-17 16:06+08:00 Aone task drill-down: BFF task 3391355335 progress says 合并代码存在冲突,请查看冲突并解决. componentData.status=CONFLICT and nextSteps instruct resolving change 34571941 from feature/robot-openapi-pop revision db24ed483eaa89a59fd34f763cfb2ee4adf45c06 into release branch releases/20260616153930479_r_release_154450_lippi-open-app-dev-code, then rerunning a1 app pipeline. Gateway verification task 3391110450 is CANCEL; PAT verification task 3391355313 remains WAITING for CR34656143."
+      "2026-06-17 16:06+08:00 Aone task drill-down: BFF task 3391355335 progress says 合并代码存在冲突,请查看冲突并解决. componentData.status=CONFLICT and nextSteps instruct resolving change 34571941 from feature/robot-openapi-pop revision db24ed483eaa89a59fd34f763cfb2ee4adf45c06 into release branch releases/20260616153930479_r_release_154450_lippi-open-app-dev-code, then rerunning a1 app pipeline. Gateway verification task 3391110450 is CANCEL; PAT verification task 3391355313 remains WAITING for CR34656143.",
+      "2026-06-17 20:22+08:00 BFF contract hardening: commit df53f856c31be3abee220b738022f861cbf78b93 was pushed to codex/batch-auth-bff-selected-scopes. DWSPatAuthRpcService now fail-closes malformed HTTP selectedScopes so bad input cannot be converted into PAT core's legacy null=approve-all DTO semantics. Local Java 11 regression passed with 7 tests in DWSPatAuthRpcServiceTest."
     ]
   },
   "serviceContract": {
@@ -447,7 +448,8 @@
         "selectedScopes": "required for the new batch page when action=approve; must be a non-empty subset of flow.scopes"
       },
       "compatibility": {
-        "selectedScopesNull": "legacy clients approve all flow-stored scopes",
+        "selectedScopesMissing": "legacy clients that omit selectedScopes approve all flow-stored scopes through PAT core's DTO null compatibility",
+        "selectedScopesPresentNullOrMalformed": "BFF returns INVALID_PARAM_TYPE and does not call PAT core",
         "selectedScopesEmpty": "INVALID_PARAMETER",
         "selectedScopesOutsideFlow": "INVALID_PARAMETER"
       },
