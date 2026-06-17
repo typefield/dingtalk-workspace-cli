@@ -15,6 +15,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"net/http"
 	"os"
@@ -27,6 +28,7 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pat"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
 
@@ -285,8 +287,103 @@ func TestResolveAuthLoginConfigReadsInheritedYes(t *testing.T) {
 	}
 }
 
+func TestAuthLoginRecommendTUIRunsAfterLoginTokenSaved(t *testing.T) {
+	t.Setenv(keychain.DisableKeychainEnv, "1")
+	t.Setenv(keychain.StorageDirEnv, t.TempDir())
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+
+	oldGuideSelector := authLoginGuideActionSelector
+	oldGuideApplier := authLoginGuideActionApplier
+	oldScopeSelector := loginRecommendScopeModeSelector
+	oldProductSelector := loginRecommendProductSelector
+	oldInteractiveTerminal := authLoginInteractiveTerminal
+	t.Cleanup(func() {
+		authLoginGuideActionSelector = oldGuideSelector
+		authLoginGuideActionApplier = oldGuideApplier
+		loginRecommendScopeModeSelector = oldScopeSelector
+		loginRecommendProductSelector = oldProductSelector
+		authLoginInteractiveTerminal = oldInteractiveTerminal
+	})
+	authLoginInteractiveTerminal = func() bool { return true }
+
+	var sawTokenBeforeTUI bool
+	authLoginGuideActionSelector = func() (authLoginGuideAction, error) {
+		token, err := authpkg.LoadTokenData(configDir)
+		if err != nil {
+			t.Fatalf("LoadTokenData before TUI error = %v", err)
+		}
+		if token.AccessToken != "login-token" {
+			t.Fatalf("AccessToken before TUI = %q, want login-token", token.AccessToken)
+		}
+		sawTokenBeforeTUI = true
+		return authLoginGuideDirectCLI, nil
+	}
+	authLoginGuideActionApplier = func(*cobra.Command, string, authLoginGuideAction) error {
+		return nil
+	}
+	loginRecommendScopeModeSelector = func() (pat.LoginRecommendScopeMode, error) {
+		if !sawTokenBeforeTUI {
+			t.Fatal("scope selector ran before login token was observed")
+		}
+		return pat.LoginRecommendScopeRecommended, nil
+	}
+	loginRecommendProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
+		if !sawTokenBeforeTUI {
+			t.Fatal("product selector ran before login token was observed")
+		}
+		if len(products) != 1 || products[0].ProductCode != "calendar" {
+			t.Fatalf("selector products = %+v, want calendar", products)
+		}
+		return []string{"calendar"}, nil
+	}
+
+	fake := &authLoginRecommendSequenceCaller{responses: []string{
+		`{"success":true,"data":{"items":[{"scope":"calendar.event:read","productCode":"calendar","productName":"日历"}],"selectedScopes":["calendar.event:read"]}}`,
+		`{"success":true,"data":{"items":[{"scope":"calendar.event:read","productCode":"calendar","productName":"日历"}],"selectedScopes":["calendar.event:read"]}}`,
+		`{"success":true,"data":{"grantedScopes":["calendar.event:read"]}}`,
+	}}
+	cmd := newAuthLoginCommand(fake)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--token", "login-token", "--recommend"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("auth login --recommend error = %v\noutput:\n%s", err, out.String())
+	}
+	if !sawTokenBeforeTUI {
+		t.Fatal("recommend TUI selector was not called")
+	}
+	if len(fake.tools) != 3 {
+		t.Fatalf("CallTool count = %d, want initial plan + selected plan + grant", len(fake.tools))
+	}
+	if fake.tools[0] != "pat.batch_plan" || fake.tools[1] != "pat.batch_plan" || fake.tools[2] != "pat.batch_grant" {
+		t.Fatalf("tool sequence = %v, want plan, plan, grant", fake.tools)
+	}
+}
+
 type roundTripFunc func(*http.Request) (*http.Response, error)
 
 func (f roundTripFunc) RoundTrip(req *http.Request) (*http.Response, error) {
 	return f(req)
 }
+
+type authLoginRecommendSequenceCaller struct {
+	responses []string
+	tools     []string
+}
+
+func (f *authLoginRecommendSequenceCaller) CallTool(_ context.Context, _ string, toolName string, _ map[string]any) (*edition.ToolResult, error) {
+	f.tools = append(f.tools, toolName)
+	response := `{"success":true,"data":{}}`
+	if len(f.responses) > 0 {
+		response = f.responses[0]
+		f.responses = f.responses[1:]
+	}
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: response}}}, nil
+}
+
+func (f *authLoginRecommendSequenceCaller) Format() string { return "table" }
+
+func (f *authLoginRecommendSequenceCaller) DryRun() bool { return false }

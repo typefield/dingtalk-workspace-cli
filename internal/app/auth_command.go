@@ -117,20 +117,6 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			recommendHumanMode := !cfg.Yes && authLoginShouldUseRecommendHumanMode(cmd, format, cfg.Recommend)
 			recommendScopeMode := pat.LoginRecommendScopeRecommended
 
-			if recommendHumanMode {
-				action, err := selectAuthLoginGuideAction()
-				if err != nil {
-					return err
-				}
-				if err := applyAuthLoginGuideAction(cmd, configDir, action); err != nil {
-					return err
-				}
-				recommendScopeMode, err = selectLoginRecommendScopeMode()
-				if err != nil {
-					return err
-				}
-			}
-
 			switch {
 			case strings.TrimSpace(cfg.Token) != "":
 				tokenData = &authpkg.TokenData{
@@ -171,10 +157,23 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 				if !cfg.Recommend {
 					return nil
 				}
+				if recommendHumanMode {
+					action, err := authLoginGuideActionSelector()
+					if err != nil {
+						return err
+					}
+					if err := authLoginGuideActionApplier(cmd, configDir, action); err != nil {
+						return err
+					}
+					recommendScopeMode, err = loginRecommendScopeModeSelector()
+					if err != nil {
+						return err
+					}
+				}
 				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode}
 				if recommendHumanMode {
 					opts.ProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
-						return selectLoginRecommendProducts(products)
+						return loginRecommendProductSelector(products)
 					}
 				}
 				retryFormat := format
@@ -251,6 +250,14 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 	_ = cmd.Flags().MarkHidden("no-browser")
 	return cmd
 }
+
+var (
+	authLoginGuideActionSelector    = selectAuthLoginGuideAction
+	authLoginGuideActionApplier     = applyAuthLoginGuideAction
+	loginRecommendScopeModeSelector = selectLoginRecommendScopeMode
+	loginRecommendProductSelector   = selectLoginRecommendProducts
+	authLoginInteractiveTerminal    = isInteractiveTerminal
+)
 
 func selectAuthLoginGuideAction() (authLoginGuideAction, error) {
 	choice := authLoginGuideDirectCLI
@@ -753,7 +760,7 @@ func selectLoginRecommendProducts(products []pat.LoginRecommendProduct) ([]strin
 }
 
 func authLoginShouldShowRecommendSelector(cmd *cobra.Command, format string) bool {
-	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, true, isInteractiveTerminal())
+	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, true, authLoginInteractiveTerminal())
 }
 
 func authLoginShouldShowRecommendSelectorForTerminal(cmd *cobra.Command, format string, interactive bool) bool {
@@ -761,7 +768,7 @@ func authLoginShouldShowRecommendSelectorForTerminal(cmd *cobra.Command, format 
 }
 
 func authLoginShouldUseRecommendHumanMode(cmd *cobra.Command, format string, recommend bool) bool {
-	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, recommend, isInteractiveTerminal())
+	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
 }
 
 func authLoginShouldUseRecommendHumanModeForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
