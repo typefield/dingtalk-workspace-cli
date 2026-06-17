@@ -17,6 +17,7 @@ import (
 	"fmt"
 	"os"
 	"os/exec"
+	"strconv"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cobracmd"
@@ -125,6 +126,19 @@ func buildConnectPlan(channel, clientID, robotCode string) map[string]any {
 		}
 	}
 	if spec, ok := agentSpecs[channel]; ok {
+		if channel == "codex" && codexAppServerPlanEnabled() {
+			return map[string]any{
+				"method":  "stream-bridge-codex-app-server",
+				"summary": "Go 原生 Stream 建联，优先转发到本地 Codex app-server 的 thread/turn 协议；失败时降级 codex exec",
+				"steps": []string{
+					"自动定位 Codex CLI（DWS_AGENT_CMD > PATH），默认带 --skip-git-repo-check 避免空白工作目录失败",
+					"用 clientId/clientSecret 起 Stream，注册 TOPIC_ROBOT 回调",
+					"收到消息 → 按 conversationId 映射/恢复 Codex thread → turn/start 获取结构化增量与完成事件",
+					"app-server 失败时降级为 codex exec 一次性回复",
+					"经 AI 卡片或 sessionWebhook 把回复发回钉钉，并记录发送成功/失败",
+				},
+			}
+		}
 		return map[string]any{
 			"method":  "stream-bridge",
 			"summary": fmt.Sprintf("Go 原生 Stream 建联，转发到本地 %s 的无头 CLI（每条消息起一个新实例，可 7×24 无人值守）", spec.app),
@@ -199,8 +213,22 @@ func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string,
 				replyStyle = "text/markdown + thinking/done表态（配 --card-template 升级为卡片）"
 			}
 		}
+		extras := &connectExtras{}
+		if opts.KnowledgeDir != "" {
+			kb, kerr := loadKnowledgeBase(opts.KnowledgeDir)
+			if kerr != nil {
+				return kerr
+			}
+			extras.kb = kb
+			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 知识库已加载：%d 个片段（%s）\n", len(kb.chunks), opts.KnowledgeDir)
+		}
+		if len(opts.AllowedUsers) > 0 || len(opts.AllowedGroups) > 0 || opts.UserRateLimit > 0 {
+			extras.gate = newConnectGate(opts.AllowedUsers, opts.AllowedGroups, opts.UserRateLimit)
+			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 访问控制：用户白名单 %d、群白名单 %d、限流 %d 条/分钟/人\n",
+				len(opts.AllowedUsers), len(opts.AllowedGroups), opts.UserRateLimit)
+		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s Go 原生 Stream 建联，转发到 %s，回复样式=%s（Ctrl-C 退出）\n", channel, fwd.label(), replyStyle)
-		return runStreamConnector(cmd.Context(), channel, clientID, clientSecret, fwd, cardCli)
+		return runStreamConnector(cmd.Context(), channel, clientID, clientSecret, fwd, cardCli, extras)
 	}
 
 	// hermes / openclaw run their own official bot provisioning + reply logic
@@ -339,6 +367,10 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().Bool("agent-memory", true, "按会话续聊：同一群/单聊共享 agent 会话上下文（claudecode/codebuddy/workbuddy 支持；--agent-memory=false 关闭）")
 	cmd.Flags().Bool("reply-card", true, "用 AI 卡片回复（思考中→完成状态，同官方渠道体验）；卡片失败自动回退普通消息；--reply-card=false 关闭")
 	cmd.Flags().String("card-template", "", "AI 卡片模板 ID（开发者后台·本应用·AI 卡片设置里获取；模板按应用授权，强烈建议注册自己应用的模板）；env: DWS_CARD_TEMPLATE")
+	cmd.Flags().String("knowledge-dir", "", "答疑知识目录（.md/.txt）：每条消息本地检索 top-k 片段拼进 prompt，agent 仍在空目录跑、不拖慢回复；env: DWS_KNOWLEDGE_DIR")
+	cmd.Flags().String("allowed-users", "", "用户白名单 staffId（逗号分隔），配置后仅名单内用户可触发；env: DWS_ALLOWED_USERS")
+	cmd.Flags().String("allowed-groups", "", "群白名单 openConversationId（逗号分隔），配置后仅名单内群可触发；env: DWS_ALLOWED_GROUPS")
+	cmd.Flags().Int("user-rate-limit", 20, "单用户每分钟消息上限（防刷；每条消息都是一次 LLM 调用），0 关闭；env: DWS_USER_RATE_LIMIT")
 	return cmd
 }
 
@@ -370,8 +402,31 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 	if strings.EqualFold(cardTemplate, "public") {
 		cardTemplate = defaultAICardTemplateID
 	}
+	knowledgeDir := devAppStringFlag(cmd, "knowledge-dir")
+	if knowledgeDir == "" {
+		knowledgeDir = strings.TrimSpace(os.Getenv("DWS_KNOWLEDGE_DIR"))
+	}
+	users := devAppStringFlag(cmd, "allowed-users")
+	if users == "" {
+		users = os.Getenv("DWS_ALLOWED_USERS")
+	}
+	groups := devAppStringFlag(cmd, "allowed-groups")
+	if groups == "" {
+		groups = os.Getenv("DWS_ALLOWED_GROUPS")
+	}
+	rateLimit, _ := cmd.Flags().GetInt("user-rate-limit")
+	if !cmd.Flags().Changed("user-rate-limit") {
+		if v := strings.TrimSpace(os.Getenv("DWS_USER_RATE_LIMIT")); v != "" {
+			if n, err := strconv.Atoi(v); err == nil && n >= 0 {
+				rateLimit = n
+			}
+		}
+	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
-		ReplyCard: replyCard, CardTemplate: cardTemplate}
+		ReplyCard: replyCard, CardTemplate: cardTemplate,
+		KnowledgeDir: knowledgeDir,
+		AllowedUsers: splitCommaList(users), AllowedGroups: splitCommaList(groups),
+		UserRateLimit: rateLimit}
 }
 
 // connectAgentOptionsPayload renders the effective agent tuning for the
@@ -381,7 +436,13 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 func connectAgentOptionsPayload(channel string, opts connectAgentOptions) map[string]any {
 	spec, ok := agentSpecs[channel]
 	memory := "unsupported"
-	if ok && spec.ccSessions {
+	if channel == "codex" && codexAppServerPlanEnabled() {
+		if opts.Memory {
+			memory = "per-conversation-app-server"
+		} else {
+			memory = "disabled"
+		}
+	} else if ok && spec.ccSessions {
 		if opts.Memory {
 			memory = "per-conversation"
 		} else {
@@ -423,7 +484,7 @@ func devAppFetchCredentials(runner executor.Runner, cmd *cobra.Command, unifiedA
 	invocation := executor.NewHelperInvocation(
 		cobracmd.LegacyCommandPath(cmd),
 		devAppProduct,
-		"get_dev_app_credentials",
+		devAppCredentialsGetTool,
 		map[string]any{"unifiedAppId": unifiedAppID},
 	)
 	res, err := runner.Run(cmd.Context(), invocation)

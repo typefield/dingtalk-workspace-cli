@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"reflect"
 	"strings"
 	"testing"
@@ -866,5 +867,82 @@ func TestDevAppMemberAndSecurityRequireWriteGuard(t *testing.T) {
 				t.Fatalf("tool = %q, want no invocation", runner.last.Tool)
 			}
 		})
+	}
+}
+
+func TestDevAppUnwrapsSuccessfulServiceResult(t *testing.T) {
+	runner := &devAppResponseRunner{
+		response: map[string]any{
+			"content": map[string]any{
+				"success":   true,
+				"errorCode": nil,
+				"errorMsg":  nil,
+				"result": map[string]any{
+					"items": []any{
+						map[string]any{"versionId": "v-1"},
+					},
+					"hasMore": false,
+				},
+			},
+		},
+	}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"dev", "app", "version", "list", "--unified-app-id", "u-1"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	var rendered map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rendered); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v\noutput:\n%s", err, out.String())
+	}
+	if _, ok := rendered["success"]; ok {
+		t.Fatalf("output kept ServiceResult wrapper: %#v", rendered)
+	}
+	items, ok := rendered["items"].([]any)
+	if !ok || len(items) != 1 {
+		t.Fatalf("items = %#v, want one item", rendered["items"])
+	}
+}
+
+func TestNormalizeDevAppRemovePermissionScopeValues(t *testing.T) {
+	result := executor.Result{
+		Response: map[string]any{
+			"content": map[string]any{
+				"removedScopeValues": []any{
+					map[string]any{"scopeValue": "qyapi_robot_sendmsg", "scopeName": "机器人发消息"},
+					map[string]any{"scopeValue": "Contact.User.mobile", "scopeName": "手机号"},
+				},
+			},
+		},
+	}
+
+	normalized := normalizeDevAppToolResult(devAppPermissionRmTool, result)
+	content := normalized.Response["content"].(map[string]any)
+	got := content["removedScopeValues"]
+	want := []string{"qyapi_robot_sendmsg", "Contact.User.mobile"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("removedScopeValues = %#v, want %#v", got, want)
+	}
+}
+
+func TestNormalizeDevAppLifecycleResult(t *testing.T) {
+	disable := normalizeDevAppToolResult(devAppDisableTool, executor.Result{
+		Response: map[string]any{"content": map[string]any{"deleted": false}},
+	})
+	disableContent := disable.Response["content"].(map[string]any)
+	if disabled, _ := disableContent["disabled"].(bool); !disabled {
+		t.Fatalf("disabled = %#v, want true", disableContent["disabled"])
+	}
+
+	enable := normalizeDevAppToolResult(devAppEnableTool, executor.Result{
+		Response: map[string]any{"content": map[string]any{"deleted": false}},
+	})
+	enableContent := enable.Response["content"].(map[string]any)
+	if enabled, _ := enableContent["enabled"].(bool); !enabled {
+		t.Fatalf("enabled = %#v, want true", enableContent["enabled"])
 	}
 }

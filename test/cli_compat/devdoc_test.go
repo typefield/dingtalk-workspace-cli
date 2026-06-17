@@ -13,7 +13,7 @@ func TestDevdocArticleSearch_should_call_correct_tool(t *testing.T) {
 	if err != nil {
 		t.Fatalf("unexpected error: %v", err)
 	}
-	assertToolName(t, cap, "search_open_platform_docs")
+	assertToolName(t, cap, "search_open_platform_docs_rag")
 }
 
 func TestDevdocArticleSearch_should_pass_keyword(t *testing.T) {
@@ -23,6 +23,16 @@ func TestDevdocArticleSearch_should_pass_keyword(t *testing.T) {
 		"keyword": "openConversationId", "page": "1", "size": "10",
 	})
 	assertToolArg(t, cap, "keyword", "openConversationId")
+}
+
+func TestDevdocArticleSearch_should_pass_cursor(t *testing.T) {
+	cap := setupTestDeps(t, "devdoc")
+	root := buildRoot()
+	_ = execCmd(t, root, []string{"devdoc", "article", "search"}, map[string]string{
+		"keyword": "Webhook", "cursor": "3", "size": "10",
+	})
+	assertToolArg(t, cap, "cursor", "3")
+	assertArgNotPresent(t, cap, "page")
 }
 
 func TestDevdocArticleSearch_should_not_call_when_dry_run(t *testing.T) {

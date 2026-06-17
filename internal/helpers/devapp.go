@@ -1387,10 +1387,82 @@ func runDevAppTool(runner executor.Runner, cmd *cobra.Command, tool string, para
 	if err != nil {
 		return err
 	}
+	// Unwrap the ServiceResult envelope and apply per-tool response fixes before
+	// rendering, so agents read the inner payload directly and pretty-annotation
+	// walks the already-normalized content.
+	result = normalizeDevAppToolResult(tool, normalizeDevAppServiceResult(result))
 	if devAppPrettyWanted(cmd) {
 		devAppPrettyAnnotate(tool, result.Response)
 	}
 	return writeCommandPayload(cmd, result)
+}
+
+// normalizeDevAppServiceResult unwraps the op-app ServiceResult envelope
+// ({content:{success:true, result:{...}}}) down to its inner result, so a
+// successful tool call renders its payload directly instead of the wrapper.
+func normalizeDevAppServiceResult(result executor.Result) executor.Result {
+	content, ok := result.Response["content"].(map[string]any)
+	if !ok {
+		return result
+	}
+	if success, ok := content["success"].(bool); !ok || !success {
+		return result
+	}
+	value, ok := content["result"]
+	if !ok || value == nil {
+		return result
+	}
+	result.Response["content"] = value
+	return result
+}
+
+// normalizeDevAppToolResult applies per-tool response shape fixes: flatten
+// remove-permission's removedScopeValues to a string array, and stamp an
+// explicit disabled/enabled boolean on the lifecycle tools whose servers omit it.
+func normalizeDevAppToolResult(tool string, result executor.Result) executor.Result {
+	content, ok := result.Response["content"].(map[string]any)
+	if !ok {
+		return result
+	}
+	switch tool {
+	case devAppPermissionRmTool:
+		normalizeDevAppScopeValueArray(content, "removedScopeValues")
+	case devAppDisableTool:
+		if _, ok := content["disabled"]; !ok {
+			content["disabled"] = true
+		}
+	case devAppEnableTool:
+		if _, ok := content["enabled"]; !ok {
+			content["enabled"] = true
+		}
+	}
+	return result
+}
+
+// normalizeDevAppScopeValueArray rewrites an array of scope objects (or strings)
+// into a flat string array of scopeValues, leaving the field untouched if any
+// element is an unexpected shape.
+func normalizeDevAppScopeValueArray(content map[string]any, key string) {
+	values, ok := content[key].([]any)
+	if !ok {
+		return
+	}
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		switch typed := value.(type) {
+		case string:
+			if typed != "" {
+				out = append(out, typed)
+			}
+		case map[string]any:
+			if scopeValue, _ := typed["scopeValue"].(string); scopeValue != "" {
+				out = append(out, scopeValue)
+			}
+		}
+	}
+	if len(out) == len(values) {
+		content[key] = out
+	}
 }
 
 func requiredDevAppUsers(cmd *cobra.Command) ([]string, error) {
