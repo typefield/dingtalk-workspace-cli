@@ -184,7 +184,7 @@ func TestAuthStatusRefreshFailureLeavesStoredTokenIntact(t *testing.T) {
 	}
 }
 
-func TestAuthLoginRecommendSelectorRespectsExplicitFormat(t *testing.T) {
+func TestAuthLoginPostLoginTUIModeRespectsRecommendAndFormat(t *testing.T) {
 	newRoot := func(t *testing.T) *cobra.Command {
 		t.Helper()
 		root := &cobra.Command{Use: "dws"}
@@ -192,13 +192,23 @@ func TestAuthLoginRecommendSelectorRespectsExplicitFormat(t *testing.T) {
 		return root
 	}
 
-	t.Run("default json still shows selector for interactive login", func(t *testing.T) {
+	t.Run("recommend skips tui but keeps human auth for interactive login", func(t *testing.T) {
 		root := newRoot(t)
-		if !authLoginShouldShowRecommendSelectorForTerminal(root, "json", true) {
-			t.Fatal("default json format should still show recommend selector in an interactive terminal")
+		if authLoginShouldShowPostLoginTUIForTerminal(root, "json", true, true) {
+			t.Fatal("--recommend must not show the post-login product TUI")
 		}
-		if !authLoginShouldUseRecommendHumanModeForTerminal(root, "json", true, true) {
-			t.Fatal("default json format should use human recommend flow in an interactive terminal")
+		if !authLoginShouldUseHumanAuthorizationModeForTerminal(root, "json", true, true) {
+			t.Fatal("default interactive --recommend should still use human authorization flow")
+		}
+	})
+
+	t.Run("without recommend shows tui for interactive default login", func(t *testing.T) {
+		root := newRoot(t)
+		if !authLoginShouldShowPostLoginTUIForTerminal(root, "json", false, true) {
+			t.Fatal("default interactive login without --recommend should show post-login TUI")
+		}
+		if !authLoginShouldUseHumanAuthorizationModeForTerminal(root, "json", true, true) {
+			t.Fatal("default interactive post-login TUI flow should use human authorization flow")
 		}
 	})
 
@@ -207,41 +217,41 @@ func TestAuthLoginRecommendSelectorRespectsExplicitFormat(t *testing.T) {
 		if err := root.PersistentFlags().Set("format", "json"); err != nil {
 			t.Fatalf("set format: %v", err)
 		}
-		if authLoginShouldShowRecommendSelectorForTerminal(root, "json", true) {
-			t.Fatal("explicit --format json must not show recommend selector")
+		if authLoginShouldShowPostLoginTUIForTerminal(root, "json", false, true) {
+			t.Fatal("explicit --format json must not show post-login TUI")
 		}
-		if authLoginShouldUseRecommendHumanModeForTerminal(root, "json", true, true) {
-			t.Fatal("explicit --format json must keep machine-readable recommend flow")
+		if authLoginShouldUseHumanAuthorizationModeForTerminal(root, "json", true, true) {
+			t.Fatal("explicit --format json must keep machine-readable authorization flow")
 		}
 	})
 
-	t.Run("table shows selector", func(t *testing.T) {
+	t.Run("table without recommend shows tui", func(t *testing.T) {
 		root := newRoot(t)
 		if err := root.PersistentFlags().Set("format", "table"); err != nil {
 			t.Fatalf("set format: %v", err)
 		}
-		if !authLoginShouldShowRecommendSelectorForTerminal(root, "table", true) {
-			t.Fatal("table format should show recommend selector in an interactive terminal")
+		if !authLoginShouldShowPostLoginTUIForTerminal(root, "table", false, true) {
+			t.Fatal("table format should show post-login TUI without --recommend")
 		}
-		if !authLoginShouldUseRecommendHumanModeForTerminal(root, "table", true, true) {
-			t.Fatal("table format should use human recommend flow in an interactive terminal")
+		if !authLoginShouldUseHumanAuthorizationModeForTerminal(root, "table", true, true) {
+			t.Fatal("table format should use human authorization flow in an interactive terminal")
 		}
 	})
 
 	t.Run("non interactive skips selector", func(t *testing.T) {
 		root := newRoot(t)
-		if authLoginShouldShowRecommendSelectorForTerminal(root, "json", false) {
-			t.Fatal("non-interactive login should skip recommend selector")
+		if authLoginShouldShowPostLoginTUIForTerminal(root, "json", false, false) {
+			t.Fatal("non-interactive login should skip post-login TUI")
 		}
-		if authLoginShouldUseRecommendHumanModeForTerminal(root, "json", true, false) {
-			t.Fatal("non-interactive login should keep machine-readable recommend flow")
+		if authLoginShouldUseHumanAuthorizationModeForTerminal(root, "json", true, false) {
+			t.Fatal("non-interactive login should keep machine-readable authorization flow")
 		}
 	})
 
-	t.Run("without recommend keeps normal login output contract", func(t *testing.T) {
+	t.Run("without authorization flow keeps normal login output contract", func(t *testing.T) {
 		root := newRoot(t)
-		if authLoginShouldUseRecommendHumanModeForTerminal(root, "json", false, true) {
-			t.Fatal("login without --recommend should not switch default json to human mode")
+		if authLoginShouldUseHumanAuthorizationModeForTerminal(root, "json", false, true) {
+			t.Fatal("login without a post-login authorization flow should not switch default json to human mode")
 		}
 	})
 }
@@ -287,7 +297,63 @@ func TestResolveAuthLoginConfigReadsInheritedYes(t *testing.T) {
 	}
 }
 
-func TestAuthLoginRecommendTUIRunsAfterLoginTokenSaved(t *testing.T) {
+func TestAuthLoginRecommendSkipsPostLoginTUI(t *testing.T) {
+	t.Setenv(keychain.DisableKeychainEnv, "1")
+	t.Setenv(keychain.StorageDirEnv, t.TempDir())
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+
+	oldGuideSelector := authLoginGuideActionSelector
+	oldGuideApplier := authLoginGuideActionApplier
+	oldScopeSelector := loginRecommendScopeModeSelector
+	oldProductSelector := loginRecommendProductSelector
+	oldInteractiveTerminal := authLoginInteractiveTerminal
+	t.Cleanup(func() {
+		authLoginGuideActionSelector = oldGuideSelector
+		authLoginGuideActionApplier = oldGuideApplier
+		loginRecommendScopeModeSelector = oldScopeSelector
+		loginRecommendProductSelector = oldProductSelector
+		authLoginInteractiveTerminal = oldInteractiveTerminal
+	})
+	authLoginInteractiveTerminal = func() bool { return true }
+	authLoginGuideActionSelector = func() (authLoginGuideAction, error) {
+		t.Fatal("--recommend must not call the post-login guide selector")
+		return "", nil
+	}
+	authLoginGuideActionApplier = func(*cobra.Command, string, authLoginGuideAction) error {
+		t.Fatal("--recommend must not apply a post-login guide action")
+		return nil
+	}
+	loginRecommendScopeModeSelector = func() (pat.LoginRecommendScopeMode, error) {
+		t.Fatal("--recommend must not call the scope-mode TUI")
+		return "", nil
+	}
+	loginRecommendProductSelector = func([]pat.LoginRecommendProduct) ([]string, error) {
+		t.Fatal("--recommend must not call the product-domain TUI")
+		return nil, nil
+	}
+
+	fake := &authLoginRecommendSequenceCaller{responses: []string{
+		`{"success":true,"data":{"items":[{"scope":"calendar.event:read","productCode":"calendar","productName":"日历"}],"selectedScopes":["calendar.event:read"]}}`,
+		`{"success":true,"data":{"grantedScopes":["calendar.event:read"]}}`,
+	}}
+	cmd := newAuthLoginCommand(fake)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--token", "login-token", "--recommend"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("auth login --recommend error = %v\noutput:\n%s", err, out.String())
+	}
+	if len(fake.tools) != 2 {
+		t.Fatalf("CallTool count = %d, want plan + grant", len(fake.tools))
+	}
+	if fake.tools[0] != "pat.batch_plan" || fake.tools[1] != "pat.batch_grant" {
+		t.Fatalf("tool sequence = %v, want plan, grant", fake.tools)
+	}
+}
+
+func TestAuthLoginWithoutRecommendTUIRunsAfterLoginTokenSaved(t *testing.T) {
 	t.Setenv(keychain.DisableKeychainEnv, "1")
 	t.Setenv(keychain.StorageDirEnv, t.TempDir())
 	configDir := t.TempDir()
@@ -347,13 +413,13 @@ func TestAuthLoginRecommendTUIRunsAfterLoginTokenSaved(t *testing.T) {
 	var out bytes.Buffer
 	cmd.SetOut(&out)
 	cmd.SetErr(&out)
-	cmd.SetArgs([]string{"--token", "login-token", "--recommend"})
+	cmd.SetArgs([]string{"--token", "login-token"})
 
 	if err := cmd.Execute(); err != nil {
-		t.Fatalf("auth login --recommend error = %v\noutput:\n%s", err, out.String())
+		t.Fatalf("auth login error = %v\noutput:\n%s", err, out.String())
 	}
 	if !sawTokenBeforeTUI {
-		t.Fatal("recommend TUI selector was not called")
+		t.Fatal("post-login TUI selector was not called")
 	}
 	if len(fake.tools) != 3 {
 		t.Fatalf("CallTool count = %d, want initial plan + selected plan + grant", len(fake.tools))

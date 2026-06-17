@@ -114,8 +114,8 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			configDir := defaultConfigDir()
 			var tokenData *authpkg.TokenData
 			format, _ := cmd.Root().PersistentFlags().GetString("format")
-			recommendHumanMode := !cfg.Yes && authLoginShouldUseRecommendHumanMode(cmd, format, cfg.Recommend)
-			recommendScopeMode := pat.LoginRecommendScopeRecommended
+			postLoginTUIMode := !cfg.Yes && authLoginShouldUsePostLoginTUIMode(cmd, format, cfg.Recommend)
+			humanAuthMode := !cfg.Yes && authLoginShouldUseHumanAuthorizationMode(cmd, format, cfg.Recommend || postLoginTUIMode)
 
 			switch {
 			case strings.TrimSpace(cfg.Token) != "":
@@ -153,11 +153,12 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			clearCompatCache()
 
 			w := cmd.OutOrStdout()
-			runRecommend := func() error {
-				if !cfg.Recommend {
+			runPostLoginAuthorization := func() error {
+				if !cfg.Recommend && !postLoginTUIMode {
 					return nil
 				}
-				if recommendHumanMode {
+				recommendScopeMode := pat.LoginRecommendScopeRecommended
+				if postLoginTUIMode {
 					action, err := authLoginGuideActionSelector()
 					if err != nil {
 						return err
@@ -171,13 +172,13 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 					}
 				}
 				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode}
-				if recommendHumanMode {
+				if postLoginTUIMode {
 					opts.ProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
 						return loginRecommendProductSelector(products)
 					}
 				}
 				retryFormat := format
-				if recommendHumanMode {
+				if humanAuthMode {
 					retryFormat = "table"
 				}
 				run := func(ctx context.Context) error {
@@ -197,8 +198,8 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			}
 
 			// Check if JSON output is requested
-			if strings.EqualFold(strings.TrimSpace(format), "json") && !recommendHumanMode {
-				if err := runRecommend(); err != nil {
+			if strings.EqualFold(strings.TrimSpace(format), "json") && !humanAuthMode {
+				if err := runPostLoginAuthorization(); err != nil {
 					return err
 				}
 				return writeAuthLoginJSON(w, tokenData, cfg.Force)
@@ -226,7 +227,7 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 				}
 			}
 			fmt.Fprintf(w, "Token 将自动刷新，无需重复登录\n")
-			return runRecommend()
+			return runPostLoginAuthorization()
 		},
 	}
 	cmd.Flags().String("token", "", "Access token")
@@ -759,20 +760,38 @@ func selectLoginRecommendProducts(products []pat.LoginRecommendProduct) ([]strin
 	return selected, nil
 }
 
-func authLoginShouldShowRecommendSelector(cmd *cobra.Command, format string) bool {
-	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, true, authLoginInteractiveTerminal())
+func authLoginShouldShowPostLoginTUI(cmd *cobra.Command, format string, recommend bool) bool {
+	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
 }
 
-func authLoginShouldShowRecommendSelectorForTerminal(cmd *cobra.Command, format string, interactive bool) bool {
-	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, true, interactive)
+func authLoginShouldShowPostLoginTUIForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
+	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, interactive)
 }
 
-func authLoginShouldUseRecommendHumanMode(cmd *cobra.Command, format string, recommend bool) bool {
-	return authLoginShouldUseRecommendHumanModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
+func authLoginShouldUsePostLoginTUIMode(cmd *cobra.Command, format string, recommend bool) bool {
+	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
 }
 
-func authLoginShouldUseRecommendHumanModeForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
-	if !recommend || !interactive {
+func authLoginShouldUsePostLoginTUIModeForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
+	if recommend || !interactive {
+		return false
+	}
+	return authLoginAllowsInteractiveDefault(cmd, format)
+}
+
+func authLoginShouldUseHumanAuthorizationMode(cmd *cobra.Command, format string, hasAuthorizationFlow bool) bool {
+	return authLoginShouldUseHumanAuthorizationModeForTerminal(cmd, format, hasAuthorizationFlow, authLoginInteractiveTerminal())
+}
+
+func authLoginShouldUseHumanAuthorizationModeForTerminal(cmd *cobra.Command, format string, hasAuthorizationFlow bool, interactive bool) bool {
+	if !hasAuthorizationFlow || !interactive {
+		return false
+	}
+	return authLoginAllowsInteractiveDefault(cmd, format)
+}
+
+func authLoginAllowsInteractiveDefault(cmd *cobra.Command, format string) bool {
+	if cmd == nil || cmd.Root() == nil {
 		return false
 	}
 	if !strings.EqualFold(strings.TrimSpace(format), "json") {
