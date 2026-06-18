@@ -16,6 +16,12 @@ permission add（requiredApproval=true 写入版本变更）
 
 新应用如果 `version list` 返回空，先 `version create`，用返回的 `versionId` 继续 check-approval/publish；不要因列表空误判无可发布内容。
 
+## 创建版本
+
+默认不要传 `--version`，不传时服务端基于最新已发布版本自动递增。只有用户明确要指定时才填 `--version`，且必须大于最新 `RELEASE` 版本，否则服务端返回 `62018`（版本号需高于上个版本号）。
+
+创建成功后，后续 `get`/`check-approval`/`publish` 必须用 `create` 返回的 `versionId`；不要通过 `list` 猜最新版本。如果创建没返回 `versionId`，停止并报错。
+
 ## check-approval 与 publish
 
 `check-approval` 只查审批要求和候选审批人，不发布。`publish` 是真实发布；含高敏权限要加 `--confirmed-sensitive`，灰度选人模式用 `--approver-user-id` 指定审批人。
