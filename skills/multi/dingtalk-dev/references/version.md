@@ -19,11 +19,15 @@ permission add（requiredApproval=true 写入版本变更）
 ## 创建版本
 
 ```bash
-dws dev app version create --unified-app-id <unifiedAppId> --version 1.0.1 --desc "新增机器人能力" --dry-run --format json
-dws dev app version create --unified-app-id <unifiedAppId> --version 1.0.1 --desc "新增机器人能力" --yes --format json
+dws dev app version create --unified-app-id <unifiedAppId> --desc "新增机器人能力" --dry-run --format json
+dws dev app version create --unified-app-id <unifiedAppId> --desc "新增机器人能力" --yes --format json
 ```
 
 参数查 `dws schema dev.app.version.create`。
+
+默认创建版本时不要随机生成 `--version`，不传时服务端会基于最新已发布版本自动递增。只有用户明确指定版本号时才填写 `--version`，并且目标版本必须大于最新 `RELEASE` 版本，否则服务端会返回 `62018`（应用版本号需要高于上个版本号）。
+
+真实创建成功后，后续 `get` / `check-approval` / `publish` 必须使用 `create` 返回的 `versionId`。不要通过 `list` 猜测最新版本；如果创建结果没有返回 `versionId`，应停止并报错。
 
 ## 版本列表
 

@@ -222,7 +222,16 @@ func TestDevAppVersionCommandsBuildToolParams(t *testing.T) {
 		wantParams map[string]any
 	}{
 		{
-			name:     "create",
+			name:     "create lets server auto-increment version",
+			args:     []string{"version", "create", "--unified-app-id", "u-1", "--desc", "新增机器人", "--yes"},
+			wantTool: "create_dev_app_version",
+			wantParams: map[string]any{
+				"unifiedAppId": "u-1",
+				"desc":         "新增机器人",
+			},
+		},
+		{
+			name:     "create with explicit version",
 			args:     []string{"version", "create", "--unified-app-id", "u-1", "--version", "1.0.1", "--desc", "新增机器人", "--yes"},
 			wantTool: "create_dev_app_version",
 			wantParams: map[string]any{
@@ -302,7 +311,7 @@ func TestDevAppRobotAndVersionWritesRequireGuard(t *testing.T) {
 	}{
 		{name: "robot config", args: []string{"dev", "app", "robot", "config", "--unified-app-id", "u-1", "--name", "小助手"}},
 		{name: "robot disable", args: []string{"dev", "app", "robot", "disable", "--unified-app-id", "u-1"}},
-		{name: "version create", args: []string{"dev", "app", "version", "create", "--unified-app-id", "u-1", "--version", "1.0.1"}},
+		{name: "version create", args: []string{"dev", "app", "version", "create", "--unified-app-id", "u-1"}},
 		{name: "version publish", args: []string{"dev", "app", "version", "publish", "--unified-app-id", "u-1", "--version-id", "v-1"}},
 	}
 

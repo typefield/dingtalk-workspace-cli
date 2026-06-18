@@ -1145,7 +1145,7 @@ func newDevAppVersionCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "create",
 		Short:             "基于当前配置创建应用新版本",
-		Example:           "  dws dev app version create --unified-app-id UNIFIED_APP_ID --version 1.0.1 --desc \"新增机器人能力\" --dry-run --format json",
+		Example:           "  dws dev app version create --unified-app-id UNIFIED_APP_ID --desc \"新增机器人能力\" --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -1156,17 +1156,14 @@ func newDevAppVersionCreateCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			version := devAppStringFlag(cmd, "version")
-			if version == "" {
-				return apperrors.NewValidation("--version 为必填")
-			}
-			params := map[string]any{"unifiedAppId": appID, "version": version}
+			params := map[string]any{"unifiedAppId": appID}
+			devAppPutString(params, "version", devAppStringFlag(cmd, "version"))
 			devAppPutString(params, "desc", devAppStringFlag(cmd, "desc"))
 			return runDevAppTool(runner, cmd, devAppVersionCreateTool, params)
 		},
 	}
 	addDevAppUnifiedIDFlag(cmd)
-	cmd.Flags().String("version", "", "版本号，如 1.0.1")
+	cmd.Flags().String("version", "", "高级可选：显式版本号，如 1.0.1；默认不传，由服务端基于最新已发布版本自动递增")
 	cmd.Flags().String("desc", "", "版本描述")
 	preferLegacyLeaf(cmd)
 	annotateDevAppTool(cmd, devAppVersionCreateTool)
