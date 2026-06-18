@@ -109,4 +109,4 @@ metadata:
 
 ## Gotchas
 - 新应用 `version list` 返回空不等于无可发布内容：先 `version create`，用返回的 `versionId` 继续 check-approval/publish。
-- `robot info is not exist` 是「应用还没配过机器人」，走 `robot config` 首次创建，不是 `enable`。
+- `robotStatus=UNCONFIGURED` 是「应用还没配过机器人」，走 `robot config` 首次创建，不是 `enable`。

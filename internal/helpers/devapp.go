@@ -285,9 +285,11 @@ func newDevAppEventSubscribeCommand(runner executor.Runner) *cobra.Command {
 			}
 			params := map[string]any{"unifiedAppId": appID}
 			// 服务端 subscribe/unsubscribe 工具收 eventCodes 数组（事件码列表）。
-			if types := parseDevAppListFlag(cmd, "event-codes"); len(types) > 0 {
-				params["eventCodes"] = types
+			eventCodes, err := requiredDevAppEventCodes(cmd)
+			if err != nil {
+				return err
 			}
+			params["eventCodes"] = eventCodes
 			return runDevAppTool(runner, cmd, devAppEventSubscribeTool, params)
 		},
 	}
@@ -314,9 +316,11 @@ func newDevAppEventUnsubscribeCommand(runner executor.Runner) *cobra.Command {
 				return err
 			}
 			params := map[string]any{"unifiedAppId": appID}
-			if types := parseDevAppListFlag(cmd, "event-codes"); len(types) > 0 {
-				params["eventCodes"] = types
+			eventCodes, err := requiredDevAppEventCodes(cmd)
+			if err != nil {
+				return err
 			}
+			params["eventCodes"] = eventCodes
 			return runDevAppTool(runner, cmd, devAppEventUnsubscribeTool, params)
 		},
 	}
@@ -1487,6 +1491,14 @@ func requiredDevAppMemberType(cmd *cobra.Command) (string, error) {
 func parseDevAppListFlag(cmd *cobra.Command, name string) []string {
 	raw, _ := cmd.Flags().GetString(name)
 	return splitDevAppList(raw)
+}
+
+func requiredDevAppEventCodes(cmd *cobra.Command) ([]string, error) {
+	eventCodes := parseDevAppListFlag(cmd, "event-codes")
+	if len(eventCodes) == 0 {
+		return nil, apperrors.NewValidation("--event-codes 为必填")
+	}
+	return eventCodes, nil
 }
 
 func splitDevAppList(raw string) []string {

@@ -7,10 +7,10 @@
 ## 可订阅事件列表
 
 ```bash
-dws devapp event list --unified-app-id <unifiedAppId> --format json
+dws dev app event list --unified-app-id <unifiedAppId> --page-size 20 --format json
 ```
 
-MCP tool: `list_dev_app_events`。返回 `pushType`（当前推送类型）和 `events[]`，每项含：
+MCP tool: `list_dev_app_events`。返回 `pushType=STREAM`、`events[]`、`hasMore`、`nextCursor`、`pageSize`；`hasMore=true` 时下一页继续传 `--cursor <nextCursor>`。`events[]` 每项含：
 
 | 字段 | 含义 |
 |------|------|
@@ -23,26 +23,28 @@ MCP tool: `list_dev_app_events`。返回 `pushType`（当前推送类型）和 `
 ## 订阅事件
 
 ```bash
-dws devapp event subscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --dry-run --format json
-dws devapp event subscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --yes --format json
+dws dev app event subscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --dry-run --format json
+dws dev app event subscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --yes --format json
 ```
 
-MCP tool: `subscribe_dev_app_events`（入参 `unifiedAppId` + `eventCodes`，一次订阅多个事件码）。
+MCP tool: `subscribe_dev_app_events`（入参 `unifiedAppId` + 必填数组 `eventCodes`，一次订阅多个事件码）。成功返回 `success/operation=SUBSCRIBE/unifiedAppId/eventCodes/needsPublish/versionRequiredAction`；失败时补 `errorCode/errorMsg/reason/retryable/action`。
 
 ## 退订事件
 
 ```bash
-dws devapp event unsubscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --dry-run --format json
-dws devapp event unsubscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --yes --format json
+dws dev app event unsubscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --dry-run --format json
+dws dev app event unsubscribe --unified-app-id <unifiedAppId> --event-codes user_add_org,org_dept_modify --yes --format json
 ```
 
-MCP tool: `unsubscribe_dev_app_events`（入参 `unifiedAppId` + `eventCodes`，一次退订多个事件码）。
+MCP tool: `unsubscribe_dev_app_events`（入参 `unifiedAppId` + 必填数组 `eventCodes`，一次退订多个事件码）。成功返回 `success/operation=UNSUBSCRIBE/unifiedAppId/eventCodes/needsPublish/versionRequiredAction`；失败时补 `errorCode/errorMsg/reason/retryable/action`。
 
 ## 字段映射
 
 | CLI | MCP | 必填 | 说明 |
 |-----|-----|------|------|
 | `--unified-app-id` | `unifiedAppId` | 是 | 统一应用 ID |
+| `--cursor` | `cursor` | list 可选 | 服务端返回的下一页游标 |
+| `--page-size` | `pageSize` | list 可选 | 单页数量 |
 | `--event-codes` | `eventCodes` | subscribe/unsubscribe 必填 | 事件码列表，逗号分隔，取自 `event list` |
 
 ## 灰度应用需发布版本生效（重要）
@@ -57,21 +59,21 @@ event subscribe/unsubscribe   订阅变更写入版本元数据
   → version status             轮询发布/审批状态
 ```
 
-详见 [version.md](version.md)。
+详见版本发布文档。
 
 ## 单步流程
 
 ```text
 1. 查看可订阅事件及当前状态
-   dws devapp event list --unified-app-id <ID> --format json
+   dws dev app event list --unified-app-id <ID> --format json
    → 从返回里挑 eventCode
 
 2. 订阅
-   dws devapp event subscribe --unified-app-id <ID> --event-codes <CODE1>,<CODE2> --dry-run --format json
+   dws dev app event subscribe --unified-app-id <ID> --event-codes <CODE1>,<CODE2> --dry-run --format json
    → 确认后加 --yes
 
 3. 验证
-   dws devapp event list --unified-app-id <ID> --format json
+   dws dev app event list --unified-app-id <ID> --format json
    → 确认对应事件 subscribed=true（灰度应用需先发布版本）
 ```
 
@@ -81,4 +83,5 @@ event subscribe/unsubscribe   订阅变更写入版本元数据
 |------|------|
 | `--event-codes` 缺失 | CLI 直接报错，先 `event list` 取事件码 |
 | 订阅后 `subscribed` 仍为 false | 灰度应用需先 `version publish` 发布版本 |
+| `errorCode=STREAM_NOT_CONNECTED` / `reason=STREAM_NOT_CONNECTED` | 先执行 `dev connect` 建联，再重试订阅 |
 | `ServiceResult.success=false` | 透传 `errorCode/errorMsg` |

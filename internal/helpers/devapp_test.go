@@ -568,6 +568,32 @@ func TestDevAppEventSubscribeUsesEventCodes(t *testing.T) {
 	}
 }
 
+func TestDevAppEventSubscribeRequiresEventCodes(t *testing.T) {
+	for _, tc := range []struct {
+		name string
+		args []string
+	}{
+		{"subscribe", []string{"dev", "app", "event", "subscribe", "--unified-app-id", "u-1", "--yes"}},
+		{"unsubscribe", []string{"dev", "app", "event", "unsubscribe", "--unified-app-id", "u-1", "--yes"}},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := &captureRunner{}
+			root := newDevAppTestRoot(runner)
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs(tc.args)
+			err := root.Execute()
+			if err == nil || !strings.Contains(err.Error(), "--event-codes 为必填") {
+				t.Fatalf("Execute() error = %v, want --event-codes 为必填", err)
+			}
+			if runner.last.Tool != "" {
+				t.Fatalf("runner should not be called, got tool %q", runner.last.Tool)
+			}
+		})
+	}
+}
+
 func TestDevAppWebappCommandsBuildParams(t *testing.T) {
 	cases := []struct {
 		name       string

@@ -22,9 +22,7 @@ import (
 
 // devapp_pretty annotates --format pretty output with human-readable status
 // labels. Upstream payloads use a numeric enum for app status and the bare
-// INIT/AUDIT/... enum for version status, and the same key `status` means
-// different things on different tools — fine for agents reading JSON against
-// the skill's enum tables, hostile to humans. JSON output is NEVER touched
+// INIT/AUDIT/... enum for versionStatus. JSON output is NEVER touched
 // (transparency contract); only the pretty view gets `*Text` companions.
 
 var devAppStatusLabels = map[int]string{
@@ -50,8 +48,8 @@ var devAppToolStatusKind = map[string]string{
 	"create_dev_app":             "version", // create/update 返回 versionStatus
 	"update_dev_app":             "version",
 	"create_dev_app_version":     "version",
-	"list_dev_app_version":       "version",
-	"get_dev_app_version":        "version",
+	"list_dev_app_versions":      "version",
+	"get_dev_app_version_detail": "version",
 	"get_dev_app_version_status": "version",
 	"publish_dev_app_version":    "version",
 }
@@ -96,11 +94,9 @@ func devAppAnnotateMap(m map[string]any, kind string) {
 		}
 		return
 	}
-	for _, key := range []string{"status", "versionStatus"} {
-		if s, ok := m[key].(string); ok {
-			if label, ok := devAppVersionStatusLabels[s]; ok {
-				m[key+"Text"] = label
-			}
+	if s, ok := m["versionStatus"].(string); ok {
+		if label, ok := devAppVersionStatusLabels[s]; ok {
+			m["versionStatusText"] = label
 		}
 	}
 }

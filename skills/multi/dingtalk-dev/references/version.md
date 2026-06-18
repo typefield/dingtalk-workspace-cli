@@ -28,13 +28,15 @@ permission add（requiredApproval=true 写入版本变更）
 
 区分两个"预检"：`--dry-run` 是 CLI 层的预览不调上游；`check-approval` 是服务端查审批要求不发布。发布前建议先 `check-approval`。
 
-发布响应 `result`：
+发布/预检不返回动作枚举 `result`，看结构化字段判断下一步：
 
-| result | 含义 | 下一步 |
-|--------|------|--------|
-| `NOT_REQUIRED` | 不需审批；预检=可直接发布，真实发布=已直接上线 | 回读 `version status/get` 验证 `RELEASE` |
-| `APPROVAL_REQUIRED` | 需审批，常见于 `check-approval` 或未指定审批人 | 看 `approvalMode/approvalCandidates`，让用户选审批人后再 `publish --approver-user-id` |
-| `SUBMITTED` | 已提交审批 | 保存 `processId`，轮询 `version status` |
+| 字段 | 含义 | 下一步 |
+|------|------|--------|
+| `requiresApproval=false` + `publishable=true` | 不需审批，`check-approval` 通过 | 可以执行 `version publish` |
+| `requiresApproval=true` + `approvalMode=SELECT_APPROVER` | 需从候选人里选审批人 | 展示 `approvalCandidates`，让用户选后再 `publish --approver-user-id` |
+| `requiresApproval=true` + `approvalMode=ENTERPRISE_SELF_BUILT` | 企业自建审核 | 不传 `--approver-user-id`，直接 `publish` 提交审批 |
+| `published=true` | 本次 `publish` 已直接发布 | 回读 `version status/get` 验证 `versionStatus=RELEASE` |
+| `approvalSubmitted=true` | 本次 `publish` 已提交审批 | 保存 `processId`，轮询 `version status` |
 
 审批模式 `approvalMode`：
 

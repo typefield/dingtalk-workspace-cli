@@ -726,13 +726,23 @@ func resolveIdentityHeaders() map[string]string {
 // errors (success=false + errorCode/errorMsg) that are not flagged at the MCP
 // protocol level. Returns the error message, or "" if the response is OK.
 func detectBusinessError(content map[string]any) string {
+	return detectBusinessErrorAtDepth(content, 0)
+}
+
+func detectBusinessErrorAtDepth(content map[string]any, depth int) string {
+	if content == nil || depth > 8 {
+		return ""
+	}
 	success, ok := content["success"]
 	if !ok {
-		return ""
+		return detectNestedBusinessError(content, depth)
 	}
 	b, ok := success.(bool)
 	if !ok || b {
-		return ""
+		return detectNestedBusinessError(content, depth)
+	}
+	if nested := detectNestedBusinessError(content, depth); nested != "" {
+		return nested
 	}
 	if msg, ok := content["errorMsg"].(string); ok && strings.TrimSpace(msg) != "" {
 		return strings.TrimSpace(msg)
@@ -741,6 +751,28 @@ func detectBusinessError(content map[string]any) string {
 		return "business error: code " + strings.TrimSpace(code)
 	}
 	return "business error: success=false"
+}
+
+func detectNestedBusinessError(content map[string]any, depth int) string {
+	for _, key := range []string{"content", "result", "data"} {
+		switch child := content[key].(type) {
+		case map[string]any:
+			if msg := detectBusinessErrorAtDepth(child, depth+1); msg != "" {
+				return msg
+			}
+		case []any:
+			for _, item := range child {
+				childMap, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if msg := detectBusinessErrorAtDepth(childMap, depth+1); msg != "" {
+					return msg
+				}
+			}
+		}
+	}
+	return ""
 }
 
 // extractMCPErrorMessage builds an error message from a ToolCallResult with

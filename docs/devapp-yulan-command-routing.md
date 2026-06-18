@@ -138,7 +138,7 @@ Do not send confirmation fields such as `confirmCreate`, `confirmUpdate`, `confi
 | Permission list | `devapp permission list/search/detail` | `list_dev_app_permissions` | `OpenInnerAppPermissionFacade.list` | Implemented | Hardcoded helper |
 | Permission apply | `devapp permission add` | `apply_dev_app_permissions` | `OpenInnerAppPermissionFacade.apply` | Implemented | Hardcoded helper |
 | Permission remove | `devapp permission remove` | `remove_dev_app_permissions` | `OpenInnerAppPermissionFacade.remove` | Implemented | Hardcoded helper |
-| Events | `devapp event list/subscribe/unsubscribe` | `list_open_dev_app_events`, `subscribe/unsubscribe_open_dev_app_event` | Implemented | Hardcoded helper |
+| Events | `devapp event list/subscribe/unsubscribe` | `list_dev_app_events`, `subscribe_dev_app_events`, `unsubscribe_dev_app_events` | Implemented | Hardcoded helper |
 | Robot create | `devapp robot create/submit/result` | `create_dingtalk_robot`/`submit_robot_create_task`/`query_robot_create_result` | Implemented | Hardcoded helper |
 | Robot config | `devapp robot get/config/enable/disable` | `get_extension_robot_config`, `set_extension_robot_config`, `enable_dev_app_robot`, `disable_dev_app_robot` | Implemented | Hardcoded helper |
 | Version | `devapp version create/list/get/check-approval/publish/status` | `create_dev_app_version`, `list_dev_app_versions`, `get_dev_app_version_detail`, `publish_dev_app_version`, `get_dev_app_version_status` | Implemented | Hardcoded helper |
@@ -953,9 +953,9 @@ real model is "list subscribable events + subscribe/unsubscribe events by
 
 | CLI | MCP tool | Notes |
 | --- | --- | --- |
-| `devapp event list` | `list_dev_app_events` | Args `unifiedAppId`; returns `pushType` + `events[]` (`eventCode`/`eventName`/`subscribed`). Read. |
-| `devapp event subscribe` | `subscribe_dev_app_events` | Args `unifiedAppId` + `eventCodes`. Write (`--dry-run`/`--yes`). |
-| `devapp event unsubscribe` | `unsubscribe_dev_app_events` | Args `unifiedAppId` + `eventCodes`. Write. |
+| `dev app event list` | `list_dev_app_events` | Args `unifiedAppId/cursor/pageSize`; returns `pushType=STREAM` + `events[]` (`eventCode`/`eventName`/`subscribed`) + `hasMore/nextCursor/pageSize`. Read. |
+| `dev app event subscribe` | `subscribe_dev_app_events` | Args `unifiedAppId` + required array `eventCodes`. Returns `success/operation/eventCodes/needsPublish/versionRequiredAction`; failures include `errorCode/errorMsg/reason/retryable/action` such as `STREAM_NOT_CONNECTED`. Write (`--dry-run`/`--yes`). |
+| `dev app event unsubscribe` | `unsubscribe_dev_app_events` | Args `unifiedAppId` + required array `eventCodes`. Returns `success/operation/eventCodes/needsPublish/versionRequiredAction`; failures include `errorCode/errorMsg/reason/retryable/action`. Write. |
 
 Note: for gray unified apps, subscribe/unsubscribe are staged into version
 metadata and only take effect after `version publish`. The event callback URL
@@ -969,8 +969,8 @@ Implemented version tools (verified against the `op-app` MCP `tools/list`):
 | `devapp version create` | `create_dev_app_version` | Save a new version from current config. Omit `version` by default so the server auto-increments from the latest released version; only pass `version` when the user explicitly requests a higher version. |
 | `devapp version list` | `list_dev_app_versions` | Cursor-paged list (`cursor`, `pageSize`; response `items/nextCursor/hasMore`). |
 | `devapp version get` | `get_dev_app_version_detail` | One version detail by `versionId`. |
-| `devapp version check-approval` | `publish_dev_app_version` (`precheckOnly=true`) | Precheck approval requirement / approvers; does not publish. |
-| `devapp version publish` | `publish_dev_app_version` (`precheckOnly=false`) | Publish; `confirmedSensitive` for high-sensitivity scopes, optional `approverUserId`. |
+| `devapp version check-approval` | `publish_dev_app_version` (`precheckOnly=true`) | Precheck approval requirement / approvers via `requiresApproval/publishable/approvalMode/approvalCandidates`; does not publish. |
+| `devapp version publish` | `publish_dev_app_version` (`precheckOnly=false`) | Publish or submit approval; inspect `published/approvalSubmitted/processId/versionStatus`. |
 | `devapp version status` | `get_dev_app_version_status` | Poll publish and approval state. |
 
 Note: the MCP `precheckOnly` field is the server-side approval precheck and maps to
@@ -1086,7 +1086,7 @@ Yulan invocation examples:
 | "把应用图标换成 ICON_RESOURCE" | `dws devapp update --unified-app-id ... --icon ICON_RESOURCE --dry-run --format json` | Icon change is app base info update and must be guarded. |
 | "已确认删除这个开放平台应用" | `dws devapp delete --unified-app-id ... --yes --format json` | Destructive write only after unique app resolution and confirmation. |
 | "手机号权限要申请，虽然需要审核" | `dws devapp permission add --permissions Contact.User.mobile --dry-run/--yes` | `requiredApproval=true` is still appliable; approval moves to version publish. |
-| "订阅通讯录用户增加事件" | `dws devapp event list ...` then `dws devapp event subscribe --event-codes user_add_org --dry-run --format json` | Pick eventCode from list, then subscribe; gray apps need a version publish to take effect. |
+| "订阅通讯录用户增加事件" | `dws dev app event list ...` then `dws dev app event subscribe --event-codes user_add_org --dry-run --format json` | Pick eventCode from list, then subscribe; gray apps need a version publish to take effect. |
 | "保存版本并看审核状态" | `version create`, `check-approval`, `publish`, `status` | Version flow owns approver selection and publish audit state. |
 | "创建 MCP 服务并配置 HSF tool" | OpenDev MCP platform workflow, not `dws devapp create` | MCP connector/tool is a platform artifact, not an enterprise internal app. |
 
@@ -1209,7 +1209,7 @@ Agent should normalize behavior without hiding raw backend fields.
 | `PERMISSION_ALREADY_AUTHED` | Add receives an already authorized scope | Report skipped scope and continue only for remaining unauth scopes. |
 | `PERMISSION_NOT_AUTHED` | Remove receives an unauthorized scope | Report that there is nothing to remove. |
 | `PERMISSION_NOT_EDITABLE` | `canEdit=false` or backend no-edit error | Show the no-edit reason; do not retry as a write. |
-| `VERSION_APPROVAL_REQUIRED` | `check-approval` says approver is required | Ask for approver or use returned candidate when the user gave an explicit approver. |
+| `requiresApproval=true` | `check-approval` says approval is required | Use `approvalMode/approvalCandidates`; ask for approver only in `SELECT_APPROVER` mode. |
 Raw `errorCode/errorMsg` must remain in JSON output or the Agent response so the
 backend owner can diagnose actual HSF failures.
 

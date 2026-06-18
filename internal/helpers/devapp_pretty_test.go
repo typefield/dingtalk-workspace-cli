@@ -35,11 +35,14 @@ func TestDevAppPrettyAnnotateAppStatus(t *testing.T) {
 }
 
 func TestDevAppPrettyAnnotateVersionStatusKindSeparation(t *testing.T) {
-	// 版本工具的字符串枚举要注解
+	// 版本工具只注解 versionStatus；旧 status 字段不再参与版本契约。
 	version := map[string]any{"status": "INIT", "versionStatus": "RELEASE"}
-	devAppPrettyAnnotate("get_dev_app_version", version)
-	if version["statusText"] != "未发布（有待发布变更）" || version["versionStatusText"] != "已发布生效" {
+	devAppPrettyAnnotate("get_dev_app_version_detail", version)
+	if version["versionStatusText"] != "已发布生效" {
 		t.Fatalf("version annotations wrong: %#v", version)
+	}
+	if _, exists := version["statusText"]; exists {
+		t.Fatalf("version status should not be annotated: %#v", version)
 	}
 
 	// 应用工具的数字枚举不能套用版本语义；未登记的工具不动
