@@ -27,13 +27,13 @@ err() { printf '  ❌ %s\n' "$@" >&2; exit 1; }
 need_cmd() { command -v "$1" >/dev/null 2>&1 || err "Missing required command: $1"; }
 
 need_cmd curl
-need_cmd tar
 
 detect_os() {
   case "$(uname -s)" in
     Linux*)  echo linux ;;
     Darwin*) echo darwin ;;
-    *) err "Unsupported OS: $(uname -s)" ;;
+    MINGW*|MSYS*|CYGWIN*) echo windows ;;  # Git Bash / MSYS2 / Cygwin on Windows
+    *) err "Unsupported OS: $(uname -s). On native Windows use install-devapp.ps1." ;;
   esac
 }
 
@@ -94,15 +94,23 @@ main() {
   printf '\n'
 
   # 1) binary (already ad-hoc signed by CI; copy does not break the signature)
-  asset="dws-${os}-${arch}.tar.gz"
+  if [ "$os" = "windows" ]; then
+    asset="dws-windows-${arch}.zip"; binname="dws.exe"
+  else
+    asset="dws-${os}-${arch}.tar.gz"; binname="dws"
+  fi
   say "⬇  Downloading ${asset} ..."
   curl -fsSL "https://github.com/${DEVAPP_REPO}/releases/download/${DEVAPP_VERSION}/${asset}" -o "$tmp/$asset" \
     || err "Binary download failed — does release ${DEVAPP_VERSION} have ${asset}?"
-  tar -xzf "$tmp/$asset" -C "$tmp"
-  [ -f "$tmp/dws" ] || err "dws binary not found inside ${asset}"
+  if [ "$os" = "windows" ]; then
+    need_cmd unzip; unzip -q "$tmp/$asset" -d "$tmp"
+  else
+    need_cmd tar; tar -xzf "$tmp/$asset" -C "$tmp"
+  fi
+  [ -f "$tmp/$binname" ] || err "${binname} not found inside ${asset}"
   mkdir -p "$INSTALL_DIR"
-  cp "$tmp/dws" "$INSTALL_DIR/dws"; chmod +x "$INSTALL_DIR/dws"
-  say "✅ Binary → ${INSTALL_DIR}/dws"
+  cp "$tmp/$binname" "$INSTALL_DIR/$binname"; chmod +x "$INSTALL_DIR/$binname" 2>/dev/null || true
+  say "✅ Binary → ${INSTALL_DIR}/${binname}"
 
   # 2) dev skill from the release's skills bundle
   if [ "$NO_SKILLS" != "1" ]; then
