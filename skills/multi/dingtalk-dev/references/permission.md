@@ -16,18 +16,16 @@
 | `AUTHED` | 只看已授权/已开通 |
 | `UNAUTHED` | 只看未授权/未开通 |
 
-单个权限项返回的 `status` 是内部操作态：
+单个权限项的状态看这几个字段：
 
-| status | 枚举 | 含义 | 下一步 |
-|--------|------|------|--------|
-| `0` | `STATUS_OBTAINED` | 权限已获得 | 不要重复申请；如需取消，确认 `canRemove=true` 后走 `permission remove` |
-| `1` | `STATUS_APPLYING` | 权限申请中 | 不要重复申请；看 `authedStatusDesc`，通常等待审批或版本发布 |
-| `2` | `STATUS_CAN_APPLY` | 可以申请 | 走 `permission add` |
-| `3` | `STATUS_CAN_NOT_APPLY` | 不可申请 | 停止，展示 `applyDisabledReason/displayMessage` |
+- `authed`（布尔）：是否已授权/已开通。true=已开通，不要重复申请。
+- `allowedActions`（数组）：本权限点当前允许的动作，如 `["view","detail","apply"]`。含 `apply` 才能申请，含 `remove` 才能取消。
+- `authedStatusDesc`（中文文案）：状态的中文说明，如"已开通"/"未开通"，直接展示给用户。
+- `apiStatus`：权限点本身的开放状态，如 `FULLY_OPEN`。
+- `requiredApproval`（布尔）：申请是否需审批。true 的变更走版本通道，审批在版本发布时处理。
+- `displayMessage`（中文文案）：服务端给的提示语，能否申请的原因看它。
 
-`authedStatusDesc` 是给用户看的细分状态：`OPENED`/`APPLIED`/`TO_BE_PUBLISHED`=已开通/已申请/待发布；`NOT_OPEN`/`NOT_APPLIED`=未开通/未申请；`AUDIT_PROCESSING`=审批中；`AUDIT_REFUSE`=审批未通过。能否操作仍以 `status`、`canEdit`、`canApplyDirectly`、`allowedActions` 为准。
-
-list 默认同时返回 APP 和 SNS 权限；列表模式只返回 `apiPreview`，`--scope-value` 详情模式返回完整 `apiList`。`permission search`/`detail` 是 `list` 的别名。
+list 默认同时返回 APP 和 SNS 权限；列表模式和 `--scope-value` 详情模式，权限项里的 API 信息字段都叫 `apiPreview`。`permission search` 是 `list` 的别名。
 
 scopeValue 选择顺序：
 1. 用户给了 `scopeValue`，精确匹配
@@ -41,4 +39,4 @@ scopeValue 选择顺序：
 
 ## 取消权限
 
-`--scope-values` 多个逗号分隔；上游一次只取消一个权限点，多条时 CLI 逐条调用并返回 `results` 聚合数组。未开通返回 `NOT_AUTHED`；不可编辑返回 no-edit 原因。
+`--scope-values` 多个逗号分隔。返回：`removed`（布尔，整体成败）、`removedScopeValues`（成功取消的）、`rejectedScopeValues`（被拒的）、`message`。逐条看 `removedScopeValues`/`rejectedScopeValues` 判断每个权限点的结果。

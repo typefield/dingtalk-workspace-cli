@@ -6,25 +6,18 @@
 
 ## 应用定位
 
-所有单应用命令统一只用 `--unified-app-id`（全树主键）定位。`--app-key`/`--name` 只在 `dev app list` 里作列表过滤，不能定位单应用；旧的 `--agent-id`/`--app-id`/`--custom-key` 已移除。拿到 appKey/agentId 时，先用 `dev app list` 查出 unifiedAppId 再操作。
+所有单应用命令统一只用 `--unified-app-id`（全树主键）定位。`--app-key`/`--name` 只在 `dev app list` 里作列表过滤，不能定位单应用。拿到 appKey/agentId 时，先用 `dev app list` 查出 unifiedAppId 再操作。
 
 ## 应用状态 appStatus
 
-列表/详情统一用 `appStatus`，按生命周期判断，不要和版本 `versionStatus` 混。
+`app get` 的 `appStatus` 是字符串，取值如 `normal`、`published`。`app list` 不回这个字段（恒 `null`），看应用状态以 `app get` 为准。应用状态 `appStatus` 和版本状态 `versionStatus` 是两套，别混。遇到没见过的 `appStatus` 值原样展示。
 
-| appStatus | 枚举 | 含义 | 下一步 |
-|-----------|------|------|--------|
-| `0` | `IN_ACTIVE` | 已停用，应用不可用 | 需恢复走 `enable` |
-| `1` | `ACTIVE` | 已激活，应用可用 | 可继续配权限/网页/机器人/版本 |
-| `2` | `WAIT_ACTIVE` | 待激活 | 先回读 `get/list` 确认，别按已生效处理 |
-| `3` | `EXPIRED` | 已过期 | 停止写操作，提示到开发者后台或管理员处理 |
-
-`create/update` 返回的 `versionStatus` 是版本状态（见 version.md），不等同应用启停状态。
+`app create`、`app update` 不返回状态字段；版本状态由 `version create` 返回的 `status`（值如 INIT）表达，见 version.md。
 
 ## 要点
 
-- `get` 主要用于定位核验；若偶尔返回 `clientSecret/appSecret`，脱敏处理，不复制到回答；主动读凭证走 `credentials get`。
-- `disable/enable` 后必须回读 `get`/`list`：`appStatus=0` 才算停用完成，`appStatus=1` 才算启用完成；接口只返回成功未带状态时，以回读为准。
+- `get` 主要用于定位核验；若返回里带 `appSecret`，脱敏处理，不复制到回答；主动读凭证走 `credentials get`。
+- `disable/enable` 成功返回 `{disabled:true}` / `{enabled:true}` + `message`，不回 `appStatus`；以这个布尔判操作成败。要确认最终生效态再 `get` 看 `appStatus` 字符串值。
 - `delete` 前必须展示应用摘要；删除是异步，成功后延迟从列表消失。
 
 ## 错误处理

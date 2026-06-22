@@ -44,13 +44,13 @@ metadata:
 ### ID 体系
 | 标识 | 是什么 | 用在哪 |
 |------|--------|--------|
-| `unifiedAppId` | 统一应用 ID，新模型主键 | 唯一全树定位标识，所有单应用命令都用 `--unified-app-id` |
-| `appKey` = `clientId` | 应用身份标识，同一个东西的新旧两个名字，非密钥 | OpenAPI 调用、建联；也可作 `--app-key` 列表过滤（不能定位单应用） |
+| `unifiedAppId` | 统一应用 ID，全树主键 | 唯一全树定位标识，所有单应用命令都用 `--unified-app-id` |
+| `appKey` = `clientId` | 应用身份标识，同一个标识的两个名字，非密钥 | OpenAPI 调用、建联；也可作 `--app-key` 列表过滤（不能定位单应用） |
 | `appSecret` = `clientSecret` | 应用密钥，敏感 | 同上，按敏感凭证处理 |
-| `agentId` | 旧版微应用 ID，历史遗留 | 仅出现在返回数据里；不能用于定位，拿到它先查出 unifiedAppId |
+| `agentId` | 应用 ID，仅出现在返回数据里 | 不能用于定位，拿到它先查出 unifiedAppId |
 | `robotCode` | 机器人编号 | 加群、机器人发消息、建联 |
 
-应用定位统一只用 `--unified-app-id`（--app-key/--name 仅作 list 过滤，不能定位单应用）。旧的 `--agent-id`/`--app-id`/`--custom-key` 定位 flag 已移除——agentId 只是返回字段，不再是入参定位手段。appKey 与 clientId 是同一标识的新旧两名，无需追问区别。
+应用定位统一只用 `--unified-app-id`（--app-key/--name 仅作 list 过滤，不能定位单应用）。agentId 只是返回字段，不能用于定位。appKey 与 clientId 是同一标识的两个名字，无需追问区别。
 
 ### 生效模型
 - 改配置不等于线上生效，需审批的变更（如 `requiredApproval=true` 的权限点）先累积在开发态，必须走版本通道才上线：
@@ -61,7 +61,7 @@ metadata:
 ```
 - 机器人等能力需版本发布后才能被搜索、加群、路由消息。
 - 用户问「为什么没生效 / 机器人搜不到 / 权限加了还报错」时，先查 `version status`。
-- 两套状态别混：应用 appStatus（0 停用 / 1 激活 / 2 待激活 / 3 过期）是应用开关；版本 versionStatus（INIT / AUDIT / RELEASE / GRAY）是变更走到哪了。
+- 两套状态别混：应用 appStatus（字符串，取值如 normal / published）是应用开关；版本 versionStatus（INIT / AUDIT / RELEASE / GRAY）是变更走到哪了。app list 不回 appStatus（恒 null），看应用状态以 app get 为准。
 
 ### 边界与角色
 - 本 skill 只管企业内部应用。接口文档用 `dingtalk-devdoc`；钉钉云文档用 `dingtalk-doc`；工作台入口的「应用」用 `workbench app`；群里发消息用的机器人用 `dingtalk-chat`；审批流用 `dingtalk-oa`。
@@ -76,7 +76,7 @@ metadata:
 
 ### 通用出参约定（跨所有命令）
 - 游标分页（list / permission list / version list / event list / doc search）：首次不传 `--cursor`，出参带 `nextCursor`（空=到底）原样回传续翻；`hasMore == nextCursor 非空`。cursor 是上游不透明令牌，不要自己解析或构造，也不要跨命令复用。
-- 批量聚合：`permission remove` 传多个权限点时出参是 `{results:[...], ok, total, failedCount}`，逐条判断成败（`ok=false` 即有失败）。
+- 批量聚合：`permission remove` 出参是 `{removed, removedScopeValues, rejectedScopeValues, success, message}`，逐条看 `removedScopeValues`/`rejectedScopeValues` 判断每个权限点成败。
 - pretty：`--format pretty` 会在应用/版本状态字段旁附 `*Text` 可读标签（如 `appStatusText`）；JSON 格式不附，以原始字段为准。
 - 失败：`ServiceResult.success=false` 原样透传 `errorCode/errorMsg`，不编造解释，解读走下方文档 RAG。
 

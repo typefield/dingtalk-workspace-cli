@@ -21,12 +21,16 @@ dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret
 |------|------|
 | `--channel` | `auto`(默认,运行时信号自动识别) / openclaw / qoder / qoderwork / hermes / workbuddy / claudecode / codebuddy / codex / gemini / opencode |
 | `--robot-client-id` / `--robot-client-secret` | 现成机器人凭证（clientId=AppKey, clientSecret=AppSecret）。命名带 `robot-` 前缀以避开全局 OAuth `--client-id` flag |
-| `--unified-app-id` | 统一应用 ID，内部复用 `credentials get` 自动取凭证。⚠️ 字段名待预发真机验证；clientSecret 仅建号时返回一次、未必可取，必要时回退手填 |
+| `--unified-app-id` | 统一应用 ID，内部复用 `credentials get` 自动取凭证，替代手填 robot-client-id/secret。注意 clientSecret 仅建号时返回一次、未必可取，取不到时回退手填 |
 | `--agent-memory` | 按会话续聊（默认开）：同一群/单聊共享 agent 会话，追问保留上下文。仅 claudecode/codebuddy/workbuddy（CLI 有 `--session-id`/`--resume`）；qoder 系/codex/gemini/opencode 无寻址会话，自动保持无状态。`--agent-memory=false` 关闭 |
 | `--agent-model` | 覆盖本地 agent 模型（如 claudecode 默认锁 haiku 求快，可改 `claude-sonnet-4-6` 换聪明）。env: `DWS_AGENT_MODEL` |
 | `--agent-workdir` | agent 运行目录：放知识文件（如 CLAUDE.md）可给机器人企业上下文。默认空白临时目录（冷启动快 ~4s vs 大目录 ~29s，慢了会错过钉钉响应窗口）。env: `DWS_AGENT_WORKDIR` |
 | `--reply-card` | 富回复（默认开）：🤔Thinking/🥳Done 表态永远生效；**卡片需配 `--card-template` 才启用**（同 hermes：没配模板=纯文字回复），失败自动回退文字；env `DWS_REPLY_CARD=0` 全关 |
 | `--card-template` | AI 卡片模板 ID。**模板按应用授权**：去开发者后台→你的应用→AI 卡片设置注册/获取模板 ID，可去掉公共模板的第三方角标；默认用公共模板 best-effort。env `DWS_CARD_TEMPLATE` |
+| `--allowed-groups` | 群白名单 openConversationId（逗号分隔），配置后只有名单内的群能触发机器人。env `DWS_ALLOWED_GROUPS` |
+| `--allowed-users` | 用户白名单 staffId（逗号分隔），配置后只有名单内的用户能触发。env `DWS_ALLOWED_USERS` |
+| `--knowledge-dir` | 答疑知识目录（.md/.txt）：每条消息本地检索 top-k 片段拼进 prompt，agent 仍在空目录跑、不拖慢回复。env `DWS_KNOWLEDGE_DIR` |
+| `--user-rate-limit` | 单用户每分钟消息上限（防刷，每条消息都是一次 LLM 调用），0 关闭，默认 20。env `DWS_USER_RATE_LIMIT` |
 
 ## 建联前的依赖预检（agent 必做）
 

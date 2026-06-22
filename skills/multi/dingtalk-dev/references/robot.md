@@ -4,7 +4,7 @@
 
 为开放平台企业内部应用创建和配置机器人。参数查 `dws schema dev.app.robot.<method>`。分两类场景：
 
-1. 新建智能体机器人：异步创建一个新的 Agent 应用 + 承载机器人（`submit` / `result`）。同步建号已下线，统一走异步。
+1. 新建智能体机器人：异步创建一个新的 Agent 应用 + 承载机器人（`submit` / `result`）。
 2. 现有应用配置机器人：在已存在的应用上配置/启用/停用机器人（`get` / `config`(upsert) / `enable` / `disable`），用 `--unified-app-id` 定位。
 
 > `corpId` / `userId` 由系统上下文自动注入，CLI 不传。所有写操作先 `--dry-run`，确认后再 `--yes`。
@@ -32,10 +32,10 @@
 - `robotStatus=OFFLINE`：配置存在但停用/下线，可走 `robot enable`。
 - `robotStatus=ONLINE`：配置已启用；`robotCode` 可用于加群、机器人身份发消息或后续建联。
 - `mode` 是字符串枚举：`HTTPS` / `STREAM` / `AISKILL`。
-- `robot get` 返回 `success=true` 且含 `robotCode` = 配置已落库，不是异步等待态。
+- `robot get` 正常返回是平铺字段（`configured`/`mode`/`robotStatus`/`robotCode`/`name`/`brief`/`desc`），没有 `success` 字段；拿到这组字段就是配置已落库，不是异步等待态。
 - ONLINE 只代表能力已开启。要让机器人自动处理消息，还需配 `--outgoing-url`/`--event-callback-url`，或用 `dev connect` 接本地 Agent（见 connect.md）。
 
-`config` 是 upsert：建或改都用它，不存在则建、存在则改，至少给一个配置字段。国际化字段（`--i18n-name` 等）传 JSON，如 `'{"en_US":"Bot"}'`。`enable` 是纯启用：只开启能力，不带配置字段（只传 `--unified-app-id`）。旧的独立 `update` 已并入 `config`。`config/enable/disable` 成功统一返回 `success/operation/unifiedAppId/robotCode/robotStatus/configured`；回读 `robot get` 看到 `robotStatus=ONLINE` 就别再误判"待生效"。
+`config` 是 upsert：建或改都用它，不存在则建、存在则改，至少给一个配置字段。国际化字段（`--i18n-name` 等）传 JSON，如 `'{"en_US":"Bot"}'`。`enable` 是纯启用：只开启能力，不带配置字段（只传 `--unified-app-id`）。`config/enable/disable` 成功统一返回 `success/operation/unifiedAppId/robotCode/robotStatus/configured`；回读 `robot get` 看到 `robotStatus=ONLINE` 就别再误判"待生效"。
 
 ## 错误处理
 
