@@ -38,6 +38,8 @@ permission add（requiredApproval=true 写入版本变更）
 | `published=true` | 本次 `publish` 已直接发布 | 回读 `version status/get` 验证 `versionStatus=RELEASE` |
 | `approvalSubmitted=true` | 本次 `publish` 已提交审批 | 保存 `processId`，轮询 `version status` |
 
+展示 `approvalCandidates` 时，选项文案优先使用候选人的 `name`：`姓名（userId: xxx）`；`mainAdmin=true` 时可标注“主管理员”。只有 `name` 为空时才退回显示 `userId: xxx`。发布时仍把用户选中的 `userId` 传给 `--approver-user-id`。
+
 审批模式 `approvalMode`：
 
 | approvalMode | 含义 | 下一步 |

@@ -19,6 +19,7 @@ func newDevAppTestRoot(runner executor.Runner) *cobra.Command {
 	}
 	root.PersistentFlags().Bool("dry-run", false, "dry run")
 	root.PersistentFlags().Bool("yes", false, "yes")
+	root.PersistentFlags().String("format", "json", "format")
 	root.AddCommand(devHandler{}.Command(runner))
 	return root
 }
@@ -969,6 +970,62 @@ func TestDevAppUnwrapsSuccessfulServiceResult(t *testing.T) {
 	items, ok := rendered["items"].([]any)
 	if !ok || len(items) != 1 {
 		t.Fatalf("items = %#v, want one item", rendered["items"])
+	}
+}
+
+func TestDevAppVersionCheckApprovalPreservesApprovalCandidateNames(t *testing.T) {
+	runner := &devAppResponseRunner{
+		response: map[string]any{
+			"content": map[string]any{
+				"success":   true,
+				"errorCode": nil,
+				"errorMsg":  nil,
+				"result": map[string]any{
+					"requiresApproval": true,
+					"publishable":      false,
+					"approvalMode":     "SELECT_APPROVER",
+					"approvalCandidates": []any{
+						map[string]any{"userId": "034766", "name": "张三", "mainAdmin": true},
+						map[string]any{"userId": "084896", "name": "李四", "mainAdmin": false},
+					},
+				},
+			},
+		},
+	}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{
+		"dev", "app", "version", "check-approval",
+		"--unified-app-id", "u-1",
+		"--version-id", "v-1",
+		"--format", "json",
+	})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	if got := runner.last.Tool; got != devAppVersionPublishTool {
+		t.Fatalf("Tool = %q, want %q", got, devAppVersionPublishTool)
+	}
+	if precheckOnly, _ := runner.last.Params["precheckOnly"].(bool); !precheckOnly {
+		t.Fatalf("precheckOnly = %#v, want true", runner.last.Params["precheckOnly"])
+	}
+	var rendered map[string]any
+	if err := json.Unmarshal(out.Bytes(), &rendered); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v\noutput:\n%s", err, out.String())
+	}
+	candidates, ok := rendered["approvalCandidates"].([]any)
+	if !ok || len(candidates) != 2 {
+		t.Fatalf("approvalCandidates = %#v, want two candidates", rendered["approvalCandidates"])
+	}
+	first, ok := candidates[0].(map[string]any)
+	if !ok {
+		t.Fatalf("approvalCandidates[0] = %#v, want object", candidates[0])
+	}
+	if first["userId"] != "034766" || first["name"] != "张三" || first["mainAdmin"] != true {
+		t.Fatalf("approvalCandidates[0] = %#v, want userId/name/mainAdmin preserved", first)
 	}
 }
 
