@@ -194,6 +194,29 @@ func (c *aiCardClient) callRaw(ctx context.Context, method, path string, payload
 	return string(raw), nil
 }
 
+// sendOTOText sends a plain-text 1:1 (robot → person) message to each userId,
+// using the robot batch one-to-one send API. It is how the connector reaches a
+// specific person (e.g. the digital-twin owner) proactively, outside the
+// ephemeral inbound sessionWebhook — the webhook can only reply into the
+// conversation a message arrived on, and may be stale by the time an owner
+// decides. Auth reuses the app access token (the bot's own clientId/secret), so
+// the message is sent as the bot in its own org.
+func (c *aiCardClient) sendOTOText(ctx context.Context, userIDs []string, text string) error {
+	if len(userIDs) == 0 {
+		return nil
+	}
+	param, err := json.Marshal(map[string]string{"content": text})
+	if err != nil {
+		return err
+	}
+	return c.call(ctx, http.MethodPost, "/v1.0/robot/oToMessages/batchSend", map[string]any{
+		"robotCode": c.clientID,
+		"userIds":   userIDs,
+		"msgKey":    "sampleText",
+		"msgParam":  string(param),
+	})
+}
+
 // createAndDeliver creates an AI-card instance and delivers it into the
 // conversation the message came from. With empty content the template
 // renders the "Thinking" state while the agent runs. Group messages deliver

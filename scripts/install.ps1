@@ -37,6 +37,8 @@ $AgentDirs = @(
     ".agents\skills",
     ".claude\skills",
     ".cursor\skills",
+    ".qoder\skills",
+    ".qoderwork\skills",
     ".gemini\skills",
     ".codex\skills",
     ".github\skills",

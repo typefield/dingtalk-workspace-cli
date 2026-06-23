@@ -4,7 +4,12 @@
 
 package helpers
 
-import "testing"
+import (
+	"os"
+	"path/filepath"
+	"strings"
+	"testing"
+)
 
 // TestBrandReply covers the qoderwork identity rewrite using the exact replies
 // captured from a real qodercli (QoderWork.app) headless run.
@@ -65,5 +70,55 @@ func TestBrandReply(t *testing.T) {
 				t.Fatalf("brandReply(%q, %q)\n  got:  %q\n  want: %q", tc.channel, tc.in, got, tc.want)
 			}
 		})
+	}
+}
+
+// TestClaudeUserSettingsEnv covers the third-party-provider auth passthrough
+// for the claudecode channel (issue PeterGuy326#10): the env block of the
+// user-level Claude settings must surface as process env entries, without
+// clobbering variables the operator already exported.
+func TestClaudeUserSettingsEnv(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("CLAUDE_CONFIG_DIR", dir)
+
+	// No settings file → no injection.
+	if got := claudeUserSettingsEnv(); len(got) != 0 {
+		t.Fatalf("expected no env without settings.json, got %v", got)
+	}
+
+	writeSettings := func(body string) {
+		t.Helper()
+		if err := os.WriteFile(filepath.Join(dir, "settings.json"), []byte(body), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+
+	// Malformed JSON → fail open with no injection.
+	writeSettings(`{not json`)
+	if got := claudeUserSettingsEnv(); len(got) != 0 {
+		t.Fatalf("expected no env for malformed settings, got %v", got)
+	}
+
+	// Provider credentials in the env block are exposed; a key already present
+	// in the process environment is left alone.
+	t.Setenv("ANTHROPIC_MODEL", "from-shell")
+	writeSettings(`{"env":{"ANTHROPIC_BASE_URL":"https://relay.example","ANTHROPIC_AUTH_TOKEN":"tok","ANTHROPIC_MODEL":"from-settings"}}`)
+	got := claudeUserSettingsEnv()
+	want := map[string]bool{
+		"ANTHROPIC_BASE_URL=https://relay.example": false,
+		"ANTHROPIC_AUTH_TOKEN=tok":                 false,
+	}
+	for _, kv := range got {
+		if strings.HasPrefix(kv, "ANTHROPIC_MODEL=") {
+			t.Fatalf("process env must win over settings env, got %q", kv)
+		}
+		if _, ok := want[kv]; ok {
+			want[kv] = true
+		}
+	}
+	for kv, seen := range want {
+		if !seen {
+			t.Fatalf("missing %q in %v", kv, got)
+		}
 	}
 }

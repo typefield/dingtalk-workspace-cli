@@ -62,13 +62,14 @@ func newHelperToolFetcher() cli.HelperToolFetcher {
 }
 
 // helperSourceEndpoint maps a schema source to its MCP endpoint. op-app (dev
-// app) is pinned in source (devappEndpoint); other sources (e.g. devdoc) are
-// resolved the same way the runner resolves a product endpoint — env override →
-// discovery → edition StaticServers/SupplementServers.
+// app) is pinned in source (devappMCPEndpoint, derived from the active gateway
+// base — production by default, pre when ~/.dws/mcp_url points at pre); other
+// sources (e.g. devdoc) are resolved the same way the runner resolves a product
+// endpoint — env override → discovery → edition StaticServers/SupplementServers.
 func helperSourceEndpoint(source string) (string, error) {
 	switch source {
 	case "", "op-app", "devapp":
-		return devappEndpoint, nil
+		return devappMCPEndpoint(), nil
 	default:
 		if endpoint, ok := directRuntimeEndpoint(source, ""); ok {
 			return endpoint, nil

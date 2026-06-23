@@ -53,6 +53,8 @@ func TestResolveConnectChannel(t *testing.T) {
 		{"signal workbuddy(WORKBUDDY_APP_NAME)", "auto", map[string]string{"WORKBUDDY_APP_NAME": "WorkBuddy"}, "workbuddy", "signal:WORKBUDDY_CONFIG_DIR"},
 		{"signal claudecode", "auto", map[string]string{"CLAUDECODE": "1"}, "claudecode", "signal:CLAUDECODE"},
 		{"qoder fork precedes claudecode", "auto", map[string]string{"QODER_CLI": "1", "CLAUDECODE": "1"}, "qoder", "signal:QODER_CLI"},
+		{"custom via DWS_AGENT_CMD", "auto", map[string]string{"DWS_AGENT_CMD": "lobster -p"}, "custom", "env:DWS_AGENT_CMD"},
+		{"explicit channel beats DWS_AGENT_CMD", "claudecode", map[string]string{"DWS_AGENT_CMD": "lobster -p"}, "claudecode", "flag:--channel"},
 		{"undetected", "auto", nil, "", "undetected"},
 	}
 	for _, tc := range cases {
@@ -70,7 +72,7 @@ func TestResolveConnectChannel(t *testing.T) {
 }
 
 func TestConnectChannelsKnown(t *testing.T) {
-	for _, ch := range []string{"openclaw", "qoder", "qoderwork", "hermes", "workbuddy", "claudecode", "codebuddy"} {
+	for _, ch := range []string{"openclaw", "qoder", "qoderwork", "hermes", "workbuddy", "claudecode", "codebuddy", "custom"} {
 		if _, ok := connectChannels[ch]; !ok {
 			t.Errorf("channel %q should be in connectChannels", ch)
 		}
@@ -78,6 +80,35 @@ func TestConnectChannelsKnown(t *testing.T) {
 	if _, ok := connectChannels["weird"]; ok {
 		t.Error("unknown channel should not be in connectChannels")
 	}
+}
+
+// TestCustomChannel covers the self-built / unsupported-agent escape hatch
+// (issue #37): custom is a stream-bridge channel whose argv comes entirely from
+// DWS_AGENT_CMD (set by --agent-cmd); without a command it errors clearly.
+func TestCustomChannel(t *testing.T) {
+	if !isStreamBridgeChannel("custom") {
+		t.Fatal("custom should be a stream-bridge channel")
+	}
+	if got, _ := buildConnectPlan("custom", "cid", "rc")["method"].(string); got != "stream-bridge-custom" {
+		t.Errorf("buildConnectPlan(custom).method = %q, want stream-bridge-custom", got)
+	}
+	t.Run("missing command errors", func(t *testing.T) {
+		clearChannelEnv(t)
+		if _, _, err := resolveExecAgent("custom"); err == nil {
+			t.Error("custom without DWS_AGENT_CMD should error")
+		}
+	})
+	t.Run("command wins", func(t *testing.T) {
+		clearChannelEnv(t)
+		t.Setenv("DWS_AGENT_CMD", "lobster -p")
+		argv, _, err := resolveExecAgent("custom")
+		if err != nil {
+			t.Fatalf("err = %v", err)
+		}
+		if !equalStringSlice(argv, []string{"lobster", "-p"}) {
+			t.Errorf("argv = %v, want [lobster -p]", argv)
+		}
+	})
 }
 
 func TestBuildConnectPlanMethod(t *testing.T) {
@@ -146,7 +177,7 @@ func TestForwarderForChannel(t *testing.T) {
 	// agent binaries being installed on the test machine.
 	t.Setenv("DWS_AGENT_CMD", "fake-cli --flag")
 	for ch := range agentSpecs {
-		fwd, err := forwarderForChannel(ch, connectAgentOptions{})
+		fwd, err := forwarderForChannel(ch, "", connectAgentOptions{})
 		if err != nil {
 			t.Fatalf("forwarderForChannel(%q) err = %v", ch, err)
 		}
@@ -160,7 +191,7 @@ func TestForwarderForChannel(t *testing.T) {
 		}
 	}
 	// Non-agent channel has no forwarder.
-	if _, err := forwarderForChannel("openclaw", connectAgentOptions{}); err == nil {
+	if _, err := forwarderForChannel("openclaw", "", connectAgentOptions{}); err == nil {
 		t.Error("openclaw should not yield a forwarder")
 	}
 }

@@ -47,8 +47,15 @@ const (
 	defaultPATDisplayName = "行为授权"
 	defaultPATServerID    = "abc3c880fb90f04b52d1426aaf093766e5fc9ec38411688cbb74df42a584d374"
 	devappProductID       = "devapp"
-	devappEndpoint        = "https://pre-mcp-gw.dingtalk.com/server/op-app"
+	devappServerPath      = "/server/op-app"
 )
+
+// devappMCPEndpoint resolves the open-platform app-management MCP endpoint
+// from the configured gateway base URL, so it follows the active environment
+// (production by default, pre when ~/.dws/mcp_url points at the pre gateway).
+func devappMCPEndpoint() string {
+	return defaultPATGatewayBaseURL() + devappServerPath
+}
 
 func defaultPATServerDescriptor() market.ServerDescriptor {
 	return market.ServerDescriptor{
@@ -245,7 +252,7 @@ func directRuntimeEndpoint(productID, toolName string) (string, bool) {
 	// MCP server in source (NOT service discovery), per product decision.
 	for _, candidate := range []string{strings.TrimSpace(productID), normalized} {
 		if candidate == devappProductID {
-			return devappEndpoint, true
+			return devappMCPEndpoint(), true
 		}
 	}
 

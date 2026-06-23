@@ -19,6 +19,7 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cobracmd"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
@@ -96,6 +97,13 @@ func resolveConnectChannel(explicit string) (channel string, detectedBy string) 
 		// Pure Claude Code (not the qoder fork): only CLAUDECODE=1, no QODER_CLI.
 		return "claudecode", "signal:CLAUDECODE"
 	}
+	// Last resort: a self-built / unsupported AI tool that supplied its own
+	// command (via --agent-cmd, which sets DWS_AGENT_CMD, or DWS_AGENT_CMD
+	// directly) routes to the generic "custom" channel — so onboarding an
+	// unrecognised host needs no per-tool detection signal (issue #37).
+	if strings.TrimSpace(os.Getenv("DWS_AGENT_CMD")) != "" {
+		return "custom", "env:DWS_AGENT_CMD"
+	}
 	return "", "undetected"
 }
 
@@ -122,6 +130,17 @@ func buildConnectPlan(channel, clientID, robotCode string) map[string]any {
 				"运行 `hermes gateway setup` → 选 DingTalk → QR Code Scan 扫码授权",
 				"`hermes gateway restart`，直接在钉钉里跟新机器人对话",
 				"回复打了 Done 表情却不显示/卡在'数据加载中'：钉钉按 AI 助理应答窗口渲染回复，超窗的纯文本会被丢弃；回复慢的 agent 需在 hermes 侧启用 AI 卡片（config.yaml 配 platforms.dingtalk.extra.card_template_id），由卡片先占位再流式出字",
+			},
+		}
+	case "custom":
+		return map[string]any{
+			"method":  "stream-bridge-custom",
+			"summary": "Go 原生 Stream 建联，转发到 --agent-cmd/DWS_AGENT_CMD 指定的自定义 AI CLI（无头/一次性：问题作为末参，stdout 作回复）；用来接入未内置支持的或自研的 AI 工具",
+			"steps": []string{
+				"用 --agent-cmd \"<你的命令>\"（或 DWS_AGENT_CMD）指定 AI 工具的无头/一次性命令",
+				"用 clientId/clientSecret 起 Stream，注册 TOPIC_ROBOT 回调",
+				"收到消息 → 运行 <你的命令> \"用户问题\" → stdout 作为回复",
+				"经 sessionWebhook/AI 卡片把回复发回钉钉",
 			},
 		}
 	}
@@ -184,7 +203,7 @@ func connectExternalCommand(channel string) []string {
 //  2. stream-bridge channels (qoder/qoderwork/claudecode/workbuddy) → Go-native
 //     in-process Stream + forwarder, no node/external-script dependency;
 //  3. others (hermes etc.) → no built-in linking, advise DWS_CONNECT_CMD.
-func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string, opts connectAgentOptions) error {
+func launchConnector(cmd *cobra.Command, runner executor.Runner, channel, clientID, clientSecret string, opts connectAgentOptions) error {
 	if argv := connectExternalCommand(channel); len(argv) > 0 {
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s 启动外部连接器: %s\n", channel, strings.Join(argv, " "))
 		proc := exec.CommandContext(cmd.Context(), argv[0], argv[1:]...)
@@ -199,7 +218,25 @@ func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string,
 	}
 
 	if isStreamBridgeChannel(channel) {
-		fwd, err := forwarderForChannel(channel, opts)
+		// Role config ("digital employee"): when supplied, validate it targets THIS
+		// bot and fold its owner / persona / knowledge into the options that were
+		// not set explicitly (an explicit flag always wins). Done first so the
+		// merged options feed the forwarder, knowledge loading and the gate below.
+		if opts.RoleConfigPath != "" {
+			role, rerr := LoadRoleConfig(opts.RoleConfigPath)
+			if rerr != nil {
+				return rerr
+			}
+			if role.ClientID != clientID {
+				return apperrors.NewValidation(fmt.Sprintf(
+					"角色配置 %q 绑定 client_id=%s，与本次连接的机器人 %s 不一致；一个角色对应一个机器人，请核对凭证或换用对应的角色配置",
+					opts.RoleConfigPath, role.ClientID, clientID))
+			}
+			opts = applyRoleConfig(opts, role)
+			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 角色已加载：%s（主人=%s｜知识源 +%d｜权限scope=[%s]｜确认策略=%s）\n",
+				role.Name, opts.OwnerUserID, len(role.KnowledgeSources), strings.Join(role.AllowedScopes, ","), role.ConfirmPolicy)
+		}
+		fwd, err := forwarderForChannel(channel, clientID, opts)
 		if err != nil {
 			return err
 		}
@@ -213,7 +250,7 @@ func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string,
 				replyStyle = "text/markdown + thinking/done表态（配 --card-template 升级为卡片）"
 			}
 		}
-		extras := &connectExtras{}
+		extras := &connectExtras{persona: opts.Persona}
 		if opts.KnowledgeDir != "" {
 			kb, kerr := loadKnowledgeBase(opts.KnowledgeDir)
 			if kerr != nil {
@@ -222,10 +259,86 @@ func launchConnector(cmd *cobra.Command, channel, clientID, clientSecret string,
 			extras.kb = kb
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 知识库已加载：%d 个片段（%s）\n", len(kb.chunks), opts.KnowledgeDir)
 		}
+		if opts.KnowledgeSource != "" {
+			if kb, kerr := loadConnectKnowledgeSource(cmd, runner, clientID, opts.KnowledgeSource); kerr != nil {
+				return kerr
+			} else if kb != nil {
+				extras.kb = kb
+			}
+		}
+		// Role-supplied knowledge sources are additive: load each and merge its
+		// chunks into the same retriever (knowledgeBase is just a chunk slice), so
+		// a role can carry several wiki/doc/dir sources without a flag per source.
+		for _, src := range opts.KnowledgeSources {
+			kb, kerr := loadConnectKnowledgeSource(cmd, runner, clientID, src)
+			if kerr != nil {
+				return kerr
+			}
+			if kb == nil {
+				continue
+			}
+			if extras.kb == nil {
+				extras.kb = kb
+			} else {
+				extras.kb.chunks = append(extras.kb.chunks, kb.chunks...)
+			}
+		}
 		if len(opts.AllowedUsers) > 0 || len(opts.AllowedGroups) > 0 || opts.UserRateLimit > 0 {
 			extras.gate = newConnectGate(opts.AllowedUsers, opts.AllowedGroups, opts.UserRateLimit)
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 访问控制：用户白名单 %d、群白名单 %d、限流 %d 条/分钟/人\n",
 				len(opts.AllowedUsers), len(opts.AllowedGroups), opts.UserRateLimit)
+		}
+		// Confirmation gate ("digital twin"): when an owner + an interactive-card
+		// template are configured, action requests route to the owner for approval
+		// before executing. Needs a runner to run the approved command directly.
+		if opts.OwnerUserID != "" {
+			gate := newApprovalGate(clientID)
+			// Optional online-sheet audit: one row per action, reviewable in
+			// DingTalk. Runs under the connector (bot) identity via the runner.
+			var audit auditSink
+			if opts.AuditSheetNode != "" {
+				audit = &sheetAuditSink{runner: runner, nodeID: opts.AuditSheetNode, sheetID: opts.AuditSheetTab}
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 操作审计已开启：在线表格 node=%s tab=%s（每个操作追加一行）\n", opts.AuditSheetNode, opts.AuditSheetTab)
+			}
+			if len(opts.RoleScopes) > 0 {
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 角色能力边界：仅允许 [%s]（其它产品的执行动作会被拒）\n", strings.Join(opts.RoleScopes, ", "))
+			}
+			if opts.ConfirmPolicy != "" && opts.ConfirmPolicy != "manual" {
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认策略：%s（manual=每次问 / auto=不问直接做仍留痕 / remember=同类记住上次）\n", opts.ConfirmPolicy)
+			}
+			if sender := newDingtalkApprovalCardSender(clientID, clientSecret, opts.ApprovalCardTemplate); sender != nil {
+				orch := newApprovalOrchestrator(gate, sender, runner, opts.OwnerUserID)
+				orch.audit = audit
+				orch.allowedScopes = opts.RoleScopes
+				orch.confirmPolicy = opts.ConfirmPolicy
+				extras.approval = orch
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（执行类请求先卡片审批，[同意]/[拒绝]按钮）\n", opts.OwnerUserID)
+			} else {
+				// No card template → fall back to text approval instead of disabling
+				// the gate: the bot privately DMs the owner, who confirms by replying
+				// 「同意」/「拒绝」 in their 1:1 chat — the requester never sees the
+				// approval. Works with zero card-platform setup. The notifier reuses
+				// the bot's own credentials (robot 1:1 send), so it reaches the owner
+				// in the bot's org.
+				notifier := newAICardClient(clientID, clientSecret, "")
+				orch := newTextApprovalOrchestrator(gate, runner, opts.OwnerUserID, notifier)
+				orch.audit = audit
+				orch.allowedScopes = opts.RoleScopes
+				orch.confirmPolicy = opts.ConfirmPolicy
+				extras.approval = orch
+				// Background auto-retry: a deferred backlog (e.g. queued while the
+				// dws login was not yet the owner) drains by itself once the identity
+				// is back — no manual "重试" needed. Silent unless something completes.
+				orch.startAutoRetry(cmd.Context(), 2*time.Minute)
+				fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 确认闸已开启：主人=%s（文本审批：执行类请求私聊主人，主人回复「同意」/「拒绝」确认，请求人无感；积压请求每2分钟自动重试，也可回「重试」立即补做；配 --approval-card-template 可升级为卡片按钮）\n", opts.OwnerUserID)
+			}
+		}
+		// Quality hint (issue #39): the bot runs in a clean temp dir with no
+		// project knowledge by default, so it answers with less context than the
+		// same agent in your terminal. Surface the levers once, only when neither
+		// is set, so users discover why "终端答得对、机器人答不对".
+		if opts.WorkDir == "" && opts.KnowledgeDir == "" && opts.KnowledgeSource == "" && len(opts.KnowledgeSources) == 0 {
+			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] 提示：机器人默认在空白临时目录里跑、不带你本地项目的上下文，回答可能不如终端准。要对齐终端：加 --agent-workdir <你的项目目录> 让它读到同样的文件，或 --knowledge-dir/--knowledge-source 挂资料。\n")
 		}
 		fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s Go 原生 Stream 建联，转发到 %s，回复样式=%s（Ctrl-C 退出）\n", channel, fwd.label(), replyStyle)
 		return runStreamConnector(cmd.Context(), channel, clientID, clientSecret, fwd, cardCli, extras)
@@ -287,20 +400,40 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 		Long: "用已建好的机器人凭证把它接到当前本地 agent，不做建号。\n" +
 			"凭证两种来源：① 直接传 --robot-client-id/--robot-client-secret；② 传 --unified-app-id（复用 dev app credentials get 自动取凭证）。\n" +
 			"渠道由 --channel 显式指定，或运行时信号自动探测。\n" +
-			"缺凭证请先用 `dws dev app robot create` 建号拿 clientId/clientSecret。",
+			"缺凭证请先用 `dws dev app robot submit` 建号（随后 `robot result` 轮询）拿 clientId/clientSecret。",
 		Example: "  dws dev connect --channel workbuddy --robot-client-id <id> --robot-client-secret <secret>\n" +
 			"  dws dev connect --unified-app-id <ID> --channel qoderwork\n" +
-			"  dws dev connect --channel claudecode --robot-client-id <id> --robot-client-secret <secret>",
+			"  dws dev connect --channel claudecode --robot-client-id <id> --robot-client-secret <secret>\n" +
+			"  dws dev connect --agent-cmd \"lobster -p\" --robot-client-id <id> --robot-client-secret <secret>  # 自研/未支持的 AI 工具",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
+			// Daemon dispatch (see connect_daemon.go). --daemon-supervise runs the
+			// restart supervisor; --daemon (parent) re-execs into a detached
+			// supervisor; --daemon-worker falls through to the normal foreground
+			// connector below (it IS the connector, just spawned by the supervisor).
+			supervise, _ := cmd.Flags().GetBool(daemonSuperviseFlag)
+			if supervise {
+				return runSupervisor(cmd)
+			}
 			channelFlag := devAppStringFlag(cmd, "channel")
+			// --agent-cmd is sugar for the generic "custom" channel: it supplies the
+			// agent argv (via DWS_AGENT_CMD) so an unsupported / self-built AI tool can
+			// be onboarded without a detection signal (issue #37). The intent is
+			// unambiguous, so it forces channel=custom unless the user explicitly chose
+			// a different --channel (then we honour their choice but still pass the cmd).
+			if ac := strings.TrimSpace(devAppStringFlag(cmd, "agent-cmd")); ac != "" {
+				_ = os.Setenv("DWS_AGENT_CMD", ac)
+				if channelFlag == "" || strings.EqualFold(channelFlag, "auto") {
+					channelFlag = "custom"
+				}
+			}
 			channel, detectedBy := resolveConnectChannel(channelFlag)
 			if channel == "" {
-				return apperrors.NewValidation("无法探测 agent 渠道；请用 --channel 指定 (openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode) 或设置 DWS_AGENT_CHANNEL")
+				return apperrors.NewValidation("无法探测 agent 渠道；请用 --channel 指定 (openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode)，或用 --agent-cmd \"<命令>\" 接入自研/未支持的 AI（custom 渠道），或设置 DWS_AGENT_CHANNEL")
 			}
 			if _, ok := connectChannels[channel]; !ok {
-				return apperrors.NewValidation(fmt.Sprintf("未知渠道 %q（支持 openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode）", channel))
+				return apperrors.NewValidation(fmt.Sprintf("未知渠道 %q（支持 openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode|custom）", channel))
 			}
 
 			clientID := devAppStringFlag(cmd, "robot-client-id")
@@ -350,12 +483,32 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 				}))
 			}
 
+			// --daemon: detach into a background supervisor that keeps the
+			// connector alive 7x24. We resolve credentials/channel first (above) so
+			// the parent fails fast on bad input before forking, then re-exec.
+			if daemonMode, _ := cmd.Flags().GetBool(daemonFlag); daemonMode {
+				return startDaemon(cmd, daemonDirKey(clientID, unifiedAppID), clientID)
+			}
+
 			fmt.Fprintf(cmd.ErrOrStderr(), "[connect] channel=%s（%s）凭证来源=%s\n", channel, detectedBy, resolvedBy)
-			return launchConnector(cmd, channel, clientID, clientSecret, opts)
+			return launchConnector(cmd, runner, channel, clientID, clientSecret, opts)
 		},
 	}
 	preferLegacyLeaf(cmd)
-	cmd.Flags().String("channel", "auto", "渠道：auto(默认,自动探测)|openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode")
+	// Daemon mode (see connect_daemon.go). --daemon detaches the connector into a
+	// self-restarting background supervisor; status/stop are sibling subcommands.
+	cmd.Flags().Bool(daemonFlag, false, "守护进程模式：把连接器放到后台常驻（脱离终端、崩溃自拉起），父进程打印 pid/日志路径后退出（Windows 暂不支持）")
+	// Internal re-exec mode flags, hidden from help.
+	cmd.Flags().Bool(daemonSuperviseFlag, false, "internal: run the daemon supervisor (set automatically by --daemon)")
+	cmd.Flags().Bool(daemonWorkerFlag, false, "internal: run a single supervised connector worker (set automatically by the supervisor)")
+	_ = cmd.Flags().MarkHidden(daemonSuperviseFlag)
+	_ = cmd.Flags().MarkHidden(daemonWorkerFlag)
+	cmd.AddCommand(
+		newDevAppRobotConnectStatusCommand(),
+		newDevAppRobotConnectStopCommand(),
+	)
+	cmd.Flags().String("channel", "auto", "渠道：auto(默认,自动探测)|openclaw|qoder|qoderwork|hermes|workbuddy|claudecode|codebuddy|codex|gemini|opencode|custom(自研/未支持的 AI，配 --agent-cmd)")
+	cmd.Flags().String("agent-cmd", "", "自研/未支持的 AI 工具命令（无头/一次性：问题作为最后一个参数追加，答案打到 stdout）；用来接入内置渠道之外的 AI（如网易有道龙虾 LobsterAI）；等价于 --channel custom + 设 DWS_AGENT_CMD；env: DWS_AGENT_CMD")
 	// 用 robot-client-* 而非 client-id/client-secret：后者是全局 OAuth 客户端覆盖
 	// 持久 flag（见 internal/app/flags.go），同名会 shadow 全局 flag。这里是要建联的
 	// 目标机器人凭证，与 OAuth 客户端是两码事，故独立命名避免撞名。
@@ -368,9 +521,15 @@ func newDevAppRobotConnectCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().Bool("reply-card", true, "用 AI 卡片回复（思考中→完成状态，同官方渠道体验）；卡片失败自动回退普通消息；--reply-card=false 关闭")
 	cmd.Flags().String("card-template", "", "AI 卡片模板 ID（开发者后台·本应用·AI 卡片设置里获取；模板按应用授权，强烈建议注册自己应用的模板）；env: DWS_CARD_TEMPLATE")
 	cmd.Flags().String("knowledge-dir", "", "答疑知识目录（.md/.txt）：每条消息本地检索 top-k 片段拼进 prompt，agent 仍在空目录跑、不拖慢回复；env: DWS_KNOWLEDGE_DIR")
+	cmd.Flags().String("knowledge-source", "", "答疑知识源：wiki:<spaceId> / doc:<docId> 从钉钉知识库拉取并缓存为本地知识（复用 dws doc 能力）；裸值当作本地目录；与 --knowledge-dir 并存；env: DWS_KNOWLEDGE_SOURCE")
 	cmd.Flags().String("allowed-users", "", "用户白名单 staffId（逗号分隔），配置后仅名单内用户可触发；env: DWS_ALLOWED_USERS")
 	cmd.Flags().String("allowed-groups", "", "群白名单 openConversationId（逗号分隔），配置后仅名单内群可触发；env: DWS_ALLOWED_GROUPS")
 	cmd.Flags().Int("user-rate-limit", 20, "单用户每分钟消息上限（防刷；每条消息都是一次 LLM 调用），0 关闭；env: DWS_USER_RATE_LIMIT")
+	cmd.Flags().String("owner-user-id", "", "数字分身主人 staffId：开启确认闸后，执行类请求先发卡片给主人审批，同意才执行；env: DWS_OWNER_USER_ID")
+	cmd.Flags().String("approval-card-template", "", "确认闸交互卡片模板 ID（带[同意][拒绝]按钮）；与 --owner-user-id 同时配置才开启确认闸；env: DWS_APPROVAL_CARD_TEMPLATE")
+	cmd.Flags().String("role-config", "", "数字员工角色配置 YAML：用角色的主人/人设/知识源填充未显式给出的选项（显式 flag 优先）；role 的 client_id 必须与本机器人一致；env: DWS_ROLE_CONFIG")
+	cmd.Flags().String("audit-sheet", "", "审计在线表格 ID/URL（axls）：确认闸每个操作追加一行到该表格，可在钉钉随时查看；空=仅本地审计文件；env: DWS_AUDIT_SHEET")
+	cmd.Flags().String("audit-sheet-tab", "Sheet1", "审计表格的工作表 ID/名称（配合 --audit-sheet）；env: DWS_AUDIT_SHEET_TAB")
 	return cmd
 }
 
@@ -406,6 +565,10 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 	if knowledgeDir == "" {
 		knowledgeDir = strings.TrimSpace(os.Getenv("DWS_KNOWLEDGE_DIR"))
 	}
+	knowledgeSource := devAppStringFlag(cmd, "knowledge-source")
+	if knowledgeSource == "" {
+		knowledgeSource = strings.TrimSpace(os.Getenv("DWS_KNOWLEDGE_SOURCE"))
+	}
 	users := devAppStringFlag(cmd, "allowed-users")
 	if users == "" {
 		users = os.Getenv("DWS_ALLOWED_USERS")
@@ -422,11 +585,40 @@ func connectAgentOptionsFromCommand(cmd *cobra.Command) connectAgentOptions {
 			}
 		}
 	}
+	owner := devAppStringFlag(cmd, "owner-user-id")
+	if owner == "" {
+		owner = strings.TrimSpace(os.Getenv("DWS_OWNER_USER_ID"))
+	}
+	approvalTemplate := devAppStringFlag(cmd, "approval-card-template")
+	if approvalTemplate == "" {
+		approvalTemplate = strings.TrimSpace(os.Getenv("DWS_APPROVAL_CARD_TEMPLATE"))
+	}
+	roleConfig := devAppStringFlag(cmd, "role-config")
+	if roleConfig == "" {
+		roleConfig = strings.TrimSpace(os.Getenv("DWS_ROLE_CONFIG"))
+	}
+	auditSheet := devAppStringFlag(cmd, "audit-sheet")
+	if auditSheet == "" {
+		auditSheet = strings.TrimSpace(os.Getenv("DWS_AUDIT_SHEET"))
+	}
+	auditSheetTab := devAppStringFlag(cmd, "audit-sheet-tab")
+	if auditSheetTab == "" {
+		auditSheetTab = strings.TrimSpace(os.Getenv("DWS_AUDIT_SHEET_TAB"))
+	}
+	if auditSheetTab == "" {
+		auditSheetTab = "Sheet1"
+	}
 	return connectAgentOptions{Model: model, WorkDir: workDir, Memory: memory,
 		ReplyCard: replyCard, CardTemplate: cardTemplate,
-		KnowledgeDir: knowledgeDir,
-		AllowedUsers: splitCommaList(users), AllowedGroups: splitCommaList(groups),
-		UserRateLimit: rateLimit}
+		KnowledgeDir:    knowledgeDir,
+		KnowledgeSource: knowledgeSource,
+		AllowedUsers:    splitCommaList(users), AllowedGroups: splitCommaList(groups),
+		UserRateLimit:        rateLimit,
+		OwnerUserID:          owner,
+		ApprovalCardTemplate: approvalTemplate,
+		RoleConfigPath:       roleConfig,
+		AuditSheetNode:       auditSheet,
+		AuditSheetTab:        auditSheetTab}
 }
 
 // connectAgentOptionsPayload renders the effective agent tuning for the

@@ -111,3 +111,44 @@ func TestKnowledgeNilBasePassesThrough(t *testing.T) {
 		t.Fatalf("nil kb should pass through, got %q", got)
 	}
 }
+
+func TestIsKnowledgeTextExt(t *testing.T) {
+	for _, e := range []string{".md", ".MD", ".markdown", ".mdx", ".txt", ".text"} {
+		if !isKnowledgeTextExt(e) {
+			t.Fatalf("%q should be an indexable text ext", e)
+		}
+	}
+	for _, e := range []string{".pdf", ".docx", ".json", ".png", ""} {
+		if isKnowledgeTextExt(e) {
+			t.Fatalf("%q should NOT be indexable", e)
+		}
+	}
+}
+
+func TestKnowledgeBaseIndexesMarkdownFamily(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "a.markdown"), []byte("# 标题\n\n内容关于考勤制度的说明。"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(dir, "b.text"), []byte("纯文本资料一段。"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	kb, err := loadKnowledgeBase(dir)
+	if err != nil {
+		t.Fatalf("load: %v", err)
+	}
+	if len(kb.chunks) == 0 {
+		t.Fatal(".markdown/.text should be indexed")
+	}
+}
+
+func TestKnowledgeBaseNoTextFilesError(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "doc.pdf"), []byte("%PDF-1.7"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	_, err := loadKnowledgeBase(dir)
+	if err == nil || !strings.Contains(err.Error(), "没有可用的文本内容") {
+		t.Fatalf("a dir with only non-text files should error clearly, got %v", err)
+	}
+}

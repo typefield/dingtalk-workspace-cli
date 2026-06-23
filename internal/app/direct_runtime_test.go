@@ -74,7 +74,7 @@ func TestDirectRuntimeEndpoint_DevappDynamicServerDoesNotOverrideHardcoded(t *te
 		},
 	})
 
-	assertEndpoint(t, "devapp", "list_dev_app", devappEndpoint)
+	assertEndpoint(t, "devapp", "list_dev_app", devappMCPEndpoint())
 }
 
 func TestDirectRuntimeEndpoint_DevappEditionSupplementDoesNotOverrideHardcoded(t *testing.T) {
@@ -95,7 +95,7 @@ func TestDirectRuntimeEndpoint_DevappEditionSupplementDoesNotOverrideHardcoded(t
 	})
 	t.Cleanup(func() { edition.Override(prev) })
 
-	assertEndpoint(t, "devapp", "list_dev_app", devappEndpoint)
+	assertEndpoint(t, "devapp", "list_dev_app", devappMCPEndpoint())
 }
 
 func TestDirectRuntimeEndpoint_DevappEditionStaticDoesNotOverrideHardcoded(t *testing.T) {
@@ -116,7 +116,7 @@ func TestDirectRuntimeEndpoint_DevappEditionStaticDoesNotOverrideHardcoded(t *te
 	})
 	t.Cleanup(func() { edition.Override(prev) })
 
-	assertEndpoint(t, "devapp", "list_dev_app", devappEndpoint)
+	assertEndpoint(t, "devapp", "list_dev_app", devappMCPEndpoint())
 }
 
 func TestDirectRuntimeEndpoint_DevappEnvOverrideWinsOverEditionSupplement(t *testing.T) {

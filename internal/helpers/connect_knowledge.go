@@ -48,9 +48,24 @@ type knowledgeBase struct {
 
 // loadKnowledgeBase walks dir for .md/.txt files (hidden dirs skipped) and
 // indexes them into scored-retrieval chunks.
+// knowledgeTextExts is the set of plain-text extensions the retriever indexes.
+var knowledgeTextExts = []string{".md", ".markdown", ".mdx", ".txt", ".text"}
+
+// isKnowledgeTextExt reports whether ext is an indexable plain-text extension.
+func isKnowledgeTextExt(ext string) bool {
+	ext = strings.ToLower(ext)
+	for _, e := range knowledgeTextExts {
+		if ext == e {
+			return true
+		}
+	}
+	return false
+}
+
 func loadKnowledgeBase(dir string) (*knowledgeBase, error) {
 	kb := &knowledgeBase{}
 	root := filepath.Clean(dir)
+	indexed, skipped := 0, 0
 	err := filepath.WalkDir(root, func(path string, d fs.DirEntry, walkErr error) error {
 		if walkErr != nil {
 			return walkErr
@@ -61,8 +76,8 @@ func loadKnowledgeBase(dir string) (*knowledgeBase, error) {
 			}
 			return nil
 		}
-		ext := strings.ToLower(filepath.Ext(path))
-		if ext != ".md" && ext != ".txt" {
+		if !isKnowledgeTextExt(filepath.Ext(path)) {
+			skipped++
 			return nil
 		}
 		if info, ierr := d.Info(); ierr == nil && info.Size() > knowledgeMaxFileBytes {
@@ -77,13 +92,21 @@ func loadKnowledgeBase(dir string) (*knowledgeBase, error) {
 		for _, chunk := range splitKnowledgeChunks(string(raw)) {
 			kb.chunks = append(kb.chunks, knowledgeChunk{source: rel, text: chunk, terms: knowledgeTerms(chunk)})
 		}
+		indexed++
 		return nil
 	})
 	if err != nil {
 		return nil, err
 	}
+	// Tell the operator when files were skipped — a knowledge dir full of .pdf /
+	// .docx / .json indexes nothing, which otherwise looks like "knowledge has no
+	// effect" (issue #32). Only the .md/.txt text family is indexed.
+	if skipped > 0 {
+		fmt.Fprintf(os.Stderr, "[connect][knowledge] 已索引 %d 个文本文件，跳过 %d 个非文本文件（仅索引 %s）\n",
+			indexed, skipped, strings.Join(knowledgeTextExts, "/"))
+	}
 	if len(kb.chunks) == 0 {
-		return nil, fmt.Errorf("知识目录 %s 下没有可用的 .md/.txt 内容", dir)
+		return nil, fmt.Errorf("知识目录 %s 下没有可用的文本内容（仅索引 %s；pdf/docx/json 等不会被索引）", dir, strings.Join(knowledgeTextExts, "/"))
 	}
 	return kb, nil
 }
@@ -178,6 +201,9 @@ func (kb *knowledgeBase) augment(question string) string {
 		}
 	}
 	if len(matches) == 0 {
+		// Observability for "knowledge has no effect" (issue #32): the KB loaded
+		// but nothing in it overlapped this question, so no context was injected.
+		fmt.Fprintf(os.Stderr, "[connect][knowledge] 本条未命中知识库（%d 个片段中无相关内容）\n", len(kb.chunks))
 		return question
 	}
 	sort.Slice(matches, func(a, b int) bool {
@@ -200,5 +226,10 @@ func (kb *knowledgeBase) augment(question string) string {
 	}
 	b.WriteString("\n用户问题：")
 	b.WriteString(question)
+	injected := len(matches)
+	if injected > knowledgeTopK {
+		injected = knowledgeTopK
+	}
+	fmt.Fprintf(os.Stderr, "[connect][knowledge] 本条命中并注入 %d 个知识片段\n", injected)
 	return b.String()
 }

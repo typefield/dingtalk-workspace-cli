@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"os"
 	"os/exec"
@@ -27,6 +28,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/google/uuid"
+	"github.com/open-dingtalk/dingtalk-stream-sdk-go/card"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/chatbot"
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/client"
 	sdklogger "github.com/open-dingtalk/dingtalk-stream-sdk-go/logger"
@@ -106,6 +108,12 @@ type connectAgentOptions struct {
 	// prepended to the prompt while the agent keeps running from the clean
 	// scratch dir (see connect_knowledge.go). Empty = off.
 	KnowledgeDir string
+	// KnowledgeSource is a typed knowledge source (--knowledge-source):
+	// "wiki:<spaceId>" / "doc:<docId>" pulls a DingTalk knowledge base on
+	// startup, caches it locally, and feeds it into the same retriever as
+	// KnowledgeDir (see connect_knowledge_wiki.go). A bare value is treated as
+	// a local directory. Empty = off; coexists with KnowledgeDir.
+	KnowledgeSource string
 	// AllowedUsers / AllowedGroups are staffId / openConversationId
 	// allowlists (--allowed-users / --allowed-groups, comma-separated; env
 	// DWS_ALLOWED_USERS / DWS_ALLOWED_GROUPS). Empty = everyone.
@@ -114,6 +122,48 @@ type connectAgentOptions struct {
 	// UserRateLimit caps messages per sender per minute
 	// (--user-rate-limit / DWS_USER_RATE_LIMIT); 0 = unlimited.
 	UserRateLimit int
+	// OwnerUserID is the digital-twin owner's staffId (--owner-user-id /
+	// DWS_OWNER_USER_ID). When set together with an interactive-card template
+	// (ApprovalCardTemplate), the confirmation gate is active: action requests
+	// are routed to this user for [Approve]/[Reject] before executing. Empty =
+	// gate off (plain Q&A).
+	OwnerUserID string
+	// ApprovalCardTemplate is the interactive-card template ID for the approval
+	// card (--approval-card-template / DWS_APPROVAL_CARD_TEMPLATE). Required for
+	// the gate to render [Approve]/[Reject] buttons; empty = gate off.
+	ApprovalCardTemplate string
+	// RoleConfigPath is a digital-employee role YAML (--role-config /
+	// DWS_ROLE_CONFIG). When set, the role's owner / persona / knowledge sources
+	// fill the corresponding options that were not given explicitly (an explicit
+	// flag/env always wins). The role's client_id must match the connecting bot.
+	// See connect_role.go for the schema. Empty = no role profile.
+	RoleConfigPath string
+	// Persona is a system-prompt fragment prepended to every forwarded prompt to
+	// shape the bot's tone/expertise. Normally sourced from the role config's
+	// `persona`; there is no standalone flag for it. Empty = no persona prefix.
+	Persona string
+	// KnowledgeSources are additional typed knowledge sources (same grammar as
+	// KnowledgeSource) merged into the retriever on startup. Sourced from the
+	// role config's `knowledge_sources`; each is loaded and its chunks appended
+	// to the same knowledge base as KnowledgeDir/KnowledgeSource. Empty = none.
+	KnowledgeSources []string
+	// AuditSheetNode / AuditSheetTab point the approval gate's audit trail at a
+	// DingTalk online sheet (axls): one row per action (--audit-sheet /
+	// DWS_AUDIT_SHEET is the doc id/URL, --audit-sheet-tab the worksheet, default
+	// "Sheet1"). Empty AuditSheetNode = local approvals JSON only.
+	AuditSheetNode string
+	AuditSheetTab  string
+	// RoleScopes is the role's capability allowlist (RoleConfig.AllowedScopes),
+	// e.g. ["todo", "approval"]. When non-empty the approval gate refuses an
+	// action whose product is not in the list, so a role stays in its lane (an
+	// HR assistant can't touch code/drive). Empty = no scope restriction.
+	RoleScopes []string
+	// ConfirmPolicy is the role's confirmation strategy for OTHERS' action
+	// requests (the owner's own requests always auto-run): "manual" asks the
+	// owner every time, "auto" runs without asking (full trust, still audited),
+	// "remember" asks once per action kind then reuses that decision. Sourced
+	// from RoleConfig.confirm_policy; empty = manual.
+	ConfirmPolicy string
 }
 
 // isStreamBridgeChannel reports whether a channel is wired through the Go-native
@@ -183,8 +233,20 @@ func (f *execForwarder) forward(ctx context.Context, convID, text string) (strin
 		cmd.Env = append(os.Environ(), f.env...)
 	}
 	out, err := cmd.Output()
-	if s := strings.TrimSpace(string(out)); s != "" {
+	s := strings.TrimSpace(string(out))
+	// Guard against a backend error being mistaken for the answer: some agent
+	// CLIs (claude) print "API Error: 4xx ..." to stdout and still exit 0, so a
+	// non-empty stdout is not proof of a real reply. If stdout is a bare backend
+	// error, return an actionable hint instead of forwarding the raw error into
+	// the chat (issue #14: a custom-provider 422 was echoed to the group).
+	if s != "" && !agentReplyIsError(s) {
 		return brandReply(f.name, s), nil
+	}
+	if s != "" && agentReplyIsError(s) {
+		if f.sessions != nil && strings.TrimSpace(convID) != "" {
+			f.sessions.reset(convID)
+		}
+		return agentBackendErrorReply(s), nil
 	}
 	if err != nil {
 		// Self-heal session state: if this conversation's session is broken
@@ -210,18 +272,37 @@ func (f *execForwarder) forward(ctx context.Context, convID, text string) (strin
 // codebuddy and other Claude-Code-family CLIs share these exact flags —
 // verified against `claude --help` / `codebuddy --help`. qodercli only has
 // `--resume` (no way to choose the ID), so the qoder family stays stateless.
-// State is in-memory: a connector restart starts conversations fresh.
+//
+// The map is persisted to disk (path, scoped per clientId) so a connector
+// restart resumes every chat's context instead of starting fresh — the whole
+// point of an always-on digital employee. An empty path keeps the map purely
+// in memory (persistence disabled, e.g. --agent-memory off or no clientId),
+// preserving the original behaviour exactly. Persistence is best-effort: a
+// failed save only logs a warning and never blocks message handling.
 type convSessions struct {
-	mu sync.Mutex
-	m  map[string]string
+	mu   sync.Mutex
+	m    map[string]string
+	path string // on-disk store; empty disables persistence
 }
 
-func newConvSessions() *convSessions {
-	return &convSessions{m: make(map[string]string)}
+// newConvSessions builds the session map, restoring any persisted state from
+// path. A missing or corrupt file degrades to an empty map (see
+// loadConvSessionMap) — it never panics or blocks startup. An empty path means
+// in-memory only.
+func newConvSessions(path string) *convSessions {
+	return &convSessions{m: loadConvSessionMap(path), path: path}
+}
+
+// persistLocked writes the current map to disk. The caller must hold s.mu, so
+// the snapshot marshalled here is race-free and the write is serialized with
+// every other map mutation. It is best-effort (see saveConvSessionMap).
+func (s *convSessions) persistLocked() {
+	saveConvSessionMap(s.path, s.m)
 }
 
 // args returns the session argv fragment for one conversation, minting a new
-// session on first sight.
+// session on first sight. A newly minted mapping is persisted so a restart can
+// resume it.
 func (s *convSessions) args(convID string) []string {
 	s.mu.Lock()
 	defer s.mu.Unlock()
@@ -230,16 +311,19 @@ func (s *convSessions) args(convID string) []string {
 	}
 	id := uuid.NewString()
 	s.m[convID] = id
+	s.persistLocked()
 	return []string{"--session-id", id}
 }
 
 // reset forgets a conversation's session so the next message starts a fresh
 // one (a new UUID — the old one may or may not exist on the agent side, and a
-// fresh ID is safe either way).
+// fresh ID is safe either way). The removal is persisted so a restart does not
+// resurrect the dropped session.
 func (s *convSessions) reset(convID string) {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 	delete(s.m, convID)
+	s.persistLocked()
 }
 
 // qoderworkIdentityRe matches a leading self-introduction emitted by qodercli
@@ -258,6 +342,58 @@ func brandReply(channel, reply string) string {
 		return reply
 	}
 	return qoderworkIdentityRe.ReplaceAllString(reply, "我是 QoderWork 助手，钉钉群里的智能助手。")
+}
+
+// agentReplyIsError reports whether an agent's stdout is a bare backend error
+// rather than a real answer. Claude Code prints provider failures as
+// "API Error: <status> ..." on stdout and may still exit 0, so the connector
+// cannot rely on exit code / non-empty stdout alone. This is a heuristic on the
+// leading marker; a legitimate reply never starts with "API Error:".
+func agentReplyIsError(s string) bool {
+	return strings.HasPrefix(strings.TrimSpace(s), "API Error:")
+}
+
+// agentBackendErrorReply turns a bare backend error into a short, actionable
+// Chinese message for the chat, instead of echoing the raw provider error
+// (issue #14). It keeps only the first line of the raw error, truncated.
+func agentBackendErrorReply(raw string) string {
+	first := strings.TrimSpace(raw)
+	if i := strings.IndexByte(first, byte('\n')); i >= 0 {
+		first = strings.TrimSpace(first[:i])
+	}
+	return fmt.Sprintf("AI 后端调用失败（原始错误：%s）。如果你用的是自定义模型供应商，请用 --agent-model <你供应商支持的模型名> 指定模型后重连。",
+		truncateRunes(first, 160))
+}
+
+// providerBaseURLInjected reports whether a custom Anthropic-compatible provider
+// base URL is in effect for the claude subprocess: either injected via the
+// user's Claude settings (env, see claudeUserSettingsEnv) or already present in
+// the connector's own environment. When it is, the built-in haiku pin must be
+// dropped so the provider's default model is used (it may not map haiku).
+func providerBaseURLInjected(env []string) bool {
+	for _, e := range env {
+		if k, _, ok := strings.Cut(e, "="); ok && strings.TrimSpace(k) == "ANTHROPIC_BASE_URL" {
+			return true
+		}
+	}
+	if v, ok := os.LookupEnv("ANTHROPIC_BASE_URL"); ok && strings.TrimSpace(v) != "" {
+		return true
+	}
+	return false
+}
+
+// stripModelArg removes a flag and its value from argv (the inverse of the
+// insert branch in applyModelArg). Used to drop the built-in --model haiku pin
+// when a custom provider is in effect and the user did not pick a model, so the
+// provider's default model applies. No-op when flag is absent.
+func stripModelArg(argv []string, flag string) []string {
+	for i := 1; i+1 < len(argv); i++ {
+		if argv[i] == flag {
+			out := append([]string(nil), argv[:i]...)
+			return append(out, argv[i+2:]...)
+		}
+	}
+	return append([]string(nil), argv...)
 }
 
 // connectWorkDir returns a stable empty directory to run forwarded agent CLIs
@@ -338,6 +474,49 @@ func codebuddyEnv() []string {
 	return []string{"CODEBUDDY_CONFIG_DIR=" + envOr("CODEBUDDY_CONFIG_DIR", filepath.Join(homeDir(), ".workbuddy"))}
 }
 
+// claudeUserSettingsEnv re-exposes the `env` block of the user-level Claude
+// Code settings ($CLAUDE_CONFIG_DIR/settings.json, default ~/.claude) as
+// process environment entries. The claudecode channel runs claude with
+// `--setting-sources project` to keep the bot persona neutral (no operator
+// hooks/plugins), but that also drops user settings — and third-party model
+// providers (cc-switch and the like) store their credentials there as env
+// vars (ANTHROPIC_BASE_URL / ANTHROPIC_AUTH_TOKEN ...). Without them claude
+// falls back to the official login and replies "Not logged in" (issue #10).
+// Injecting the env block restores provider auth while user hooks stay out.
+// Variables already present in the process environment are not overridden.
+func claudeUserSettingsEnv() []string {
+	dir := strings.TrimSpace(os.Getenv("CLAUDE_CONFIG_DIR"))
+	if dir == "" {
+		home := homeDir()
+		if home == "" {
+			return nil
+		}
+		dir = filepath.Join(home, ".claude")
+	}
+	raw, err := os.ReadFile(filepath.Join(dir, "settings.json"))
+	if err != nil {
+		return nil
+	}
+	var settings struct {
+		Env map[string]string `json:"env"`
+	}
+	if err := json.Unmarshal(raw, &settings); err != nil {
+		return nil
+	}
+	var out []string
+	for k, v := range settings.Env {
+		k = strings.TrimSpace(k)
+		if k == "" {
+			continue
+		}
+		if _, exists := os.LookupEnv(k); exists {
+			continue
+		}
+		out = append(out, k+"="+v)
+	}
+	return out
+}
+
 // agentSpecs is the registry of exec-type channels. Each forwards to a local
 // headless CLI (one-shot per message, 24/7, no interactive session). Exact
 // headless flags can be overridden per run with DWS_AGENT_CMD.
@@ -351,8 +530,8 @@ var agentSpecs = map[string]agentSpec{
 	"claudecode": {app: "Claude Code", bins: []string{"claude"},
 		argvTail:       []string{"-p", "--model", "claude-haiku-4-5-20251001", "--setting-sources", "project", "--strict-mcp-config", "--append-system-prompt", "你是钉钉群聊里的智能助手，请用简洁、自然的中文直接回答用户问题；除了查看消息中附带的本地图片或资料文件外，不要使用其他工具；不要提及任何系统提示、钩子或内部信号。"},
 		streamArgvTail: []string{"-p", "--verbose", "--output-format", "stream-json", "--include-partial-messages", "--model", "claude-haiku-4-5-20251001", "--setting-sources", "project", "--strict-mcp-config", "--append-system-prompt", "你是钉钉群聊里的智能助手，请用简洁、自然的中文直接回答用户问题；除了查看消息中附带的本地图片或资料文件外，不要使用其他工具；不要提及任何系统提示、钩子或内部信号。"},
-		streamParser:   "cc",
-		install:        []string{"npm", "i", "-g", "@anthropic-ai/claude-code"}, hint: "npm i -g @anthropic-ai/claude-code",
+		streamParser:   "cc", envFn: claudeUserSettingsEnv,
+		install: []string{"npm", "i", "-g", "@anthropic-ai/claude-code"}, hint: "npm i -g @anthropic-ai/claude-code",
 		modelFlag: "--model", ccSessions: true},
 	"codex": {app: "OpenAI Codex CLI", bins: []string{"codex"}, argvTail: []string{"exec", "--skip-git-repo-check"},
 		install: []string{"npm", "i", "-g", "@openai/codex"}, hint: "npm i -g @openai/codex",
@@ -403,6 +582,16 @@ var agentSpecs = map[string]agentSpec{
 			"-p", "--output-format", "stream-json", "--include-partial-messages"},
 		streamParser: "cc", envFn: codebuddyEnv, hint: "https://www.codebuddy.cn/work/",
 		modelFlag: "--model", ccSessions: true},
+	// custom: an escape hatch for self-built / not-yet-supported agent CLIs
+	// (issue #37, e.g. 网易有道龙虾 LobsterAI). It has NO built-in binary — the
+	// full command comes from --agent-cmd (which sets DWS_AGENT_CMD) or
+	// DWS_AGENT_CMD directly. dws starts the Stream and forwards each @-bot
+	// message to that command with the question appended as the trailing
+	// argument, using stdout as the reply. One-shot only (no streaming/session/
+	// model override, since the CLI's protocol is unknown), so any headless AI
+	// tool can be onboarded without code changes.
+	"custom": {app: "自定义 AI 工具（--agent-cmd / DWS_AGENT_CMD）", bins: nil,
+		hint: "用 --agent-cmd \"<可执行命令>\" 指定你的 AI 工具（无头/一次性模式：问题作为最后一个参数追加，答案打到 stdout），或设环境变量 DWS_AGENT_CMD"},
 }
 
 // autoInstallEnabled reports whether dws may auto-run a package-manager install
@@ -441,6 +630,20 @@ func connectCliStatus(channel string) map[string]any {
 			"autoInstall": false,
 			"installHint": "渠道 " + channel + " 走官方建联，请先安装并完成其 onboarding",
 		}
+	case "custom":
+		// custom has no built-in binary; "installed" means a command was supplied
+		// via --agent-cmd / DWS_AGENT_CMD.
+		command := strings.TrimSpace(os.Getenv("DWS_AGENT_CMD"))
+		status := map[string]any{
+			"required":    "自定义命令（--agent-cmd / DWS_AGENT_CMD）",
+			"installed":   command != "",
+			"autoInstall": false,
+			"installHint": "用 --agent-cmd \"<可执行命令>\" 指定你的 AI 工具",
+		}
+		if command != "" {
+			status["command"] = command
+		}
+		return status
 	}
 	spec, ok := agentSpecs[channel]
 	if !ok {
@@ -467,6 +670,11 @@ func resolveExecAgent(channel string) (argv []string, env []string, err error) {
 	if v := strings.TrimSpace(os.Getenv("DWS_AGENT_CMD")); v != "" {
 		return strings.Fields(v), nil, nil
 	}
+	if channel == "custom" {
+		// custom has no built-in binary: its argv MUST come from --agent-cmd /
+		// DWS_AGENT_CMD (handled above). Reaching here means neither was set.
+		return nil, nil, apperrors.NewValidation("custom 渠道需要用 --agent-cmd \"<可执行命令>\"（或环境变量 DWS_AGENT_CMD）指定你的 AI 工具：无头/一次性模式，用户问题作为最后一个参数追加，回答打到 stdout")
+	}
 	spec, ok := agentSpecs[channel]
 	if !ok {
 		return nil, nil, apperrors.NewValidation(fmt.Sprintf("渠道 %q 不是 exec 型渠道", channel))
@@ -492,7 +700,7 @@ func resolveExecAgent(channel string) (argv []string, env []string, err error) {
 // resolved via PATH → app bundle → install guidance — no hardcoded path, no
 // dependency on a live interactive session. opts applies the user-facing agent
 // tuning (--agent-model / --agent-workdir / --agent-memory).
-func forwarderForChannel(channel string, opts connectAgentOptions) (forwarder, error) {
+func forwarderForChannel(channel, clientID string, opts connectAgentOptions) (forwarder, error) {
 	timeout := envDurationMS("DWS_AGENT_TIMEOUT_MS", 300*time.Second)
 	spec, ok := agentSpecs[channel]
 	if !ok {
@@ -507,15 +715,30 @@ func forwarderForChannel(channel string, opts connectAgentOptions) (forwarder, e
 	// A DWS_AGENT_CMD override is a fully user-controlled argv: do not splice in
 	// model or session flags we cannot know are valid for it.
 	overridden := strings.TrimSpace(os.Getenv("DWS_AGENT_CMD")) != ""
+	userPickedModel := opts.Model != "" || strings.TrimSpace(os.Getenv("DWS_AGENT_MODEL")) != ""
 	if !overridden && opts.Model != "" {
 		if spec.modelFlag == "" {
 			return nil, apperrors.NewValidation(fmt.Sprintf("渠道 %q 的 agent CLI 不支持模型覆盖（--agent-model）", channel))
 		}
 		argv = applyModelArg(argv, spec.modelFlag, opts.Model)
 	}
+	// Custom-provider default-model fix (issue #14): when a third-party
+	// Anthropic-compatible provider is in effect (ANTHROPIC_BASE_URL injected via
+	// the user's Claude settings or already in our env) and the user did not pick
+	// a model, drop the spec's built-in model pin (claudecode's haiku) so the
+	// provider's default model applies — the provider may not map that exact pin
+	// and would otherwise return an error (a 422 that got echoed into the chat).
+	// Official-login users (no base URL) keep the built-in pin unchanged.
+	dropBuiltinModel := !overridden && !userPickedModel && spec.modelFlag != "" && providerBaseURLInjected(env)
+	if dropBuiltinModel {
+		argv = stripModelArg(argv, spec.modelFlag)
+	}
 	var sessions *convSessions
 	if !overridden && opts.Memory && spec.ccSessions {
-		sessions = newConvSessions()
+		// Scope the on-disk session store by clientId so multiple bots on one
+		// machine stay isolated; an empty clientId disables persistence and the
+		// map stays in memory (original behaviour).
+		sessions = newConvSessions(connectSessionStorePath(clientID))
 	}
 	// Incremental-output argv: same binary, the spec's stream tail, same model
 	// override. A DWS_AGENT_CMD override disables streaming (unknown argv).
@@ -525,6 +748,8 @@ func forwarderForChannel(channel string, opts connectAgentOptions) (forwarder, e
 		streamArgv = append([]string{argv[0]}, spec.streamArgvTail...)
 		if opts.Model != "" && spec.modelFlag != "" {
 			streamArgv = applyModelArg(streamArgv, spec.modelFlag, opts.Model)
+		} else if dropBuiltinModel {
+			streamArgv = stripModelArg(streamArgv, spec.modelFlag)
 		}
 		parser = spec.streamParser
 	}
@@ -597,8 +822,12 @@ func (d *msgDedup) first(id string) bool {
 // connectExtras carries the optional Q&A hardening features into the stream
 // connector; nil/zero fields are off.
 type connectExtras struct {
-	gate *connectGate
-	kb   *knowledgeBase
+	gate     *connectGate
+	kb       *knowledgeBase
+	approval *approvalOrchestrator
+	// persona is a role's system-prompt fragment prepended to every forwarded
+	// prompt (empty = no prefix). Sourced from RoleConfig.Persona.
+	persona string
 }
 
 func runStreamConnector(ctx context.Context, channel, clientID, clientSecret string, fwd forwarder, cardCli *aiCardClient, extras *connectExtras) error {
@@ -687,6 +916,15 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		// Same-conversation messages run in arrival order (follow-ups need the
 		// previous turn's session state); different conversations in parallel.
 		queue.run(convID, func() {
+			// Digital-twin text approval: if this is the OWNER replying
+			// 「同意」/「拒绝」 (in their 1:1 chat with the bot) to the pending
+			// request, route it to the gate (decide → execute/decline, with
+			// private owner ack + requester outcome) instead of forwarding it to
+			// the agent. Returns true only when it consumed the message.
+			if extras.approval.handleOwnerDecision(context.Background(),
+				strings.TrimSpace(callbackData.SenderStaffId), text) {
+				return
+			}
 			started := time.Now()
 			// Assemble the forwarded prompt: resolve an attached picture (the
 			// top Q&A inbound is an error screenshot), then knowledge-augment.
@@ -705,6 +943,20 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			}
 			if extras.kb != nil {
 				prompt = extras.kb.augment(prompt)
+			}
+			// Role persona: prepend the role's system-prompt fragment so the bot
+			// answers in its configured lane/tone. Sits above the knowledge and the
+			// question; a no-op when no role config supplied one.
+			if p := strings.TrimSpace(extras.persona); p != "" {
+				prompt = p + "\n\n" + prompt
+			}
+			// Confirmation gate: when active, ask the agent to declare any
+			// action it would take via a structured [[ACTION:...]] marker
+			// instead of executing it, so the orchestrator can route the
+			// action through the owner's approval card (see handleReply).
+			gateOn := extras.approval.enabled()
+			if gateOn {
+				prompt = extras.approval.decorateForActionDetection(prompt)
 			}
 			// hermes-UX reply sequence (gateway/platforms/dingtalk.py):
 			//   ① on receive: "🤔Thinking" reaction chip on the user's message
@@ -727,7 +979,7 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			var cardInst *aiCardInstance
 			var onDelta func(string)
 			sf, streamable := fwd.(streamingForwarder)
-			if cardCli != nil && cardCli.hasTemplate() && streamable && sf.canStream() {
+			if cardCli != nil && cardCli.hasTemplate() && streamable && sf.canStream() && !gateOn {
 				if ci, cerr := cardCli.createAndDeliver(context.Background(), callbackData); cerr != nil {
 					fmt.Fprintf(os.Stderr, "[connect][card] 预投卡片失败，降级一次性回复: %v\n", cerr)
 				} else {
@@ -752,6 +1004,28 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 				reply = fmt.Sprintf("（%s 调用失败：%v）", channel, err)
 			} else {
 				fmt.Fprintf(os.Stderr, "[connect] agent 已生成回复 (%s, 耗时 %s): %s\n", channel, time.Since(started).Round(time.Millisecond), truncateRunes(reply, 80))
+			}
+
+			// Confirmation gate orchestration: if the agent's reply declared
+			// an action, this submits it, sends the owner an approval card,
+			// blocks for the decision, executes on approve (or declines), and
+			// posts the outcome into the group itself. handled==true means the
+			// gate owns the reply and the normal delivery below is skipped.
+			if err == nil && gateOn {
+				groupReply := func(ctx context.Context, _, text string) error {
+					if len([]rune(text)) > 200 {
+						return replier.SimpleReplyMarkdown(ctx, webhook, []byte(channel), []byte(text))
+					}
+					return replier.SimpleReplyText(ctx, webhook, []byte(text))
+				}
+				out, handled := extras.approval.handleReply(context.Background(), strings.TrimSpace(callbackData.SenderStaffId), convID, reply, groupReply)
+				if handled {
+					if thinking {
+						cardCli.swapThinkingToDone(context.Background(), callbackData.ConversationId, msgID)
+					}
+					return
+				}
+				reply = out
 			}
 
 			delivered := false
@@ -803,6 +1077,16 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 		})
 		return []byte(""), nil
 	})
+
+	// Confirmation gate: button taps on the owner's approval card arrive on the
+	// same Stream long-connection (no public webhook). Register the card callback
+	// router only when the gate is active; it routes [Approve]/[Reject] into
+	// gate.Decide, which wakes the blocked Await in the forward goroutine.
+	if extras.approval.enabled() {
+		cli.RegisterCardCallbackRouter(func(ctx context.Context, creq *card.CardRequest) (*card.CardResponse, error) {
+			return extras.approval.handleCardCallback(ctx, creq)
+		})
+	}
 
 	if err := cli.Start(ctx); err != nil {
 		return apperrors.NewInternal("stream 建连失败：" + err.Error())
