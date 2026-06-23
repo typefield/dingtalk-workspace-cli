@@ -13,7 +13,7 @@
 ```bash
 ARCH=$(uname -m | sed 's/x86_64/amd64/')
 mkdir -p ~/.local/bin
-curl -fsSL -o /tmp/dws.tar.gz "https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/download/v1.0.53-dws-devapp/dws-darwin-${ARCH}.tar.gz"
+curl -fsSL -o /tmp/dws.tar.gz "https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/latest/download/dws-darwin-${ARCH}.tar.gz"
 tar xzf /tmp/dws.tar.gz -C ~/.local/bin dws
 export PATH="$HOME/.local/bin:$PATH"
 echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshrc
@@ -26,14 +26,14 @@ dws version
 
 ```powershell
 New-Item -ItemType Directory -Force "$env:USERPROFILE\dws" | Out-Null
-Invoke-WebRequest -Uri "https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/download/v1.0.53-dws-devapp/dws-windows-amd64.zip" -OutFile "$env:TEMP\dws.zip"
+Invoke-WebRequest -Uri "https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/latest/download/dws-windows-amd64.zip" -OutFile "$env:TEMP\dws.zip"
 Expand-Archive -Path "$env:TEMP\dws.zip" -DestinationPath "$env:USERPROFILE\dws" -Force
 [Environment]::SetEnvironmentVariable("Path", "$env:Path;$env:USERPROFILE\dws", "User")
 ```
 
 然后**重新打开一个 PowerShell 窗口**，执行 `dws version` 确认。
 
-> 两个平台装好后都应显示 `dws version v1.0.53-dws-devapp`。其他平台（Linux / Windows ARM）的安装包在 [Releases 页面](https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/tag/v1.0.53-dws-devapp)下载。
+> 两个平台装好后都应显示形如 `dws version v1.0.6x-dws-devapp` 的版本号（能打印版本即安装成功，具体数字以最新发布为准）。其他平台（Linux / Windows ARM）的安装包在 [最新 Release 页面](https://github.com/PeterGuy326/dingtalk-workspace-cli/releases/latest)下载。
 
 ### 登录钉钉
 

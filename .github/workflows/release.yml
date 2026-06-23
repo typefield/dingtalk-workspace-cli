@@ -58,6 +58,16 @@ jobs:
         run: |
           gh release upload "${{ github.ref_name }}" dist/dws-skills.zip --clobber
 
+      # goreleaser marks -dws-devapp tags as prerelease (semver suffix), so
+      # /releases/latest skips them and "install latest" breaks. Flip only the
+      # devapp edition to a non-prerelease "latest" — dev.x stays prerelease.
+      - name: Mark dws-devapp release as latest
+        if: contains(github.ref_name, '-dws-devapp')
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          gh release edit "${{ github.ref_name }}" --prerelease=false --latest
+
       - name: Setup Node.js
         if: github.repository == 'DingTalk-Real-AI/dingtalk-workspace-cli'
         uses: actions/setup-node@v4
