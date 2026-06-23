@@ -109,8 +109,8 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
       否则 OAuth 回调会跳到本机不可达的 127.0.0.1 链接，授权完成后无法回写 token。
 
 示例:
-  dws auth login --recommend  # 推荐：本机扫码登录并授权推荐 CLI 权限
-  dws auth login              # 同 --recommend，兼容保留的短写法
+  dws auth login              # 本机登录后选择推荐/全部权限与授权业务域
+  dws auth login --recommend  # 无交互批量授权服务端推荐权限
   dws auth login --device     # SSH 远程 / 无头环境登录 (设备流)
   dws auth login --force      # 强制重新登录 (忽略缓存 token)
   dws auth login --token xxx  # 使用指定 token`,
@@ -123,8 +123,8 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			configDir := defaultConfigDir()
 			var tokenData *authpkg.TokenData
 			format, _ := cmd.Root().PersistentFlags().GetString("format")
-			defaultRecommendMode := !cfg.Yes && authLoginShouldUseDefaultRecommendAuthorization(cmd, format, cfg.Recommend)
-			recommendAuthMode := cfg.Recommend || defaultRecommendMode
+			postLoginTUIMode := !cfg.Yes && authLoginShouldUsePostLoginTUIMode(cmd, format, cfg.Recommend)
+			recommendAuthMode := cfg.Recommend || postLoginTUIMode
 			humanAuthMode := !cfg.Yes && authLoginShouldUseHumanAuthorizationMode(cmd, format, recommendAuthMode)
 
 			switch {
@@ -167,7 +167,20 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 				if !recommendAuthMode {
 					return nil
 				}
-				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: pat.LoginRecommendScopeRecommended}
+				recommendScopeMode := pat.LoginRecommendScopeRecommended
+				if postLoginTUIMode {
+					var err error
+					recommendScopeMode, err = loginRecommendScopeModeSelector()
+					if err != nil {
+						return err
+					}
+				}
+				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode}
+				if postLoginTUIMode {
+					opts.ProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
+						return loginRecommendProductSelector(products)
+					}
+				}
 				retryFormat := format
 				if humanAuthMode {
 					retryFormat = "table"
@@ -196,6 +209,9 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 			}
 
 			// Default table output
+			if err := runPostLoginAuthorization(); err != nil {
+				return err
+			}
 			fmt.Fprintln(w)
 			if !cfg.Device && tokenData != nil && tokenData.IsAccessTokenValid() && !cfg.Force {
 				fmt.Fprintln(w, authLoginStatusLine("Token 有效，无需重新登录"))
@@ -217,13 +233,13 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 				}
 			}
 			fmt.Fprintln(w, authLoginMutedStyle().Render("Token 将自动刷新，无需重复登录"))
-			return runPostLoginAuthorization()
+			return nil
 		},
 	}
 	cmd.Flags().String("token", "", "Access token")
 	cmd.Flags().Bool("device", false, "Use device authorization flow")
 	cmd.Flags().Bool("force", false, "Force interactive login (ignore cached token)")
-	cmd.Flags().Bool("recommend", false, "登录成功后批量授权服务端推荐的安全权限（交互登录默认开启）")
+	cmd.Flags().Bool("recommend", false, "登录成功后无交互批量授权服务端推荐权限")
 	// Hidden compatibility flags
 	cmd.Flags().String("redirect-url", "", "Loopback redirect URL")
 	cmd.Flags().String("scopes", "", "Space-separated DingTalk OAuth scopes")
@@ -848,19 +864,6 @@ func authLoginShouldUsePostLoginTUIMode(cmd *cobra.Command, format string, recom
 }
 
 func authLoginShouldUsePostLoginTUIModeForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
-	return false
-}
-
-func authLoginShouldUseDefaultRecommendAuthorization(cmd *cobra.Command, format string, recommend bool) bool {
-	return authLoginShouldUseDefaultRecommendAuthorizationForTerminal(
-		cmd,
-		format,
-		recommend,
-		authLoginInteractiveTerminal(),
-	)
-}
-
-func authLoginShouldUseDefaultRecommendAuthorizationForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
 	if recommend || !interactive {
 		return false
 	}
