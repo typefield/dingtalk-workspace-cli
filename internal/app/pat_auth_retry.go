@@ -571,7 +571,7 @@ func handlePatAuthCheck(
 	if patData.Data.URI != "" {
 		authURL := apperrors.PATAuthorizationURL(patData.Data.URI)
 		fmt.Fprintf(output, "  %s 授权链接: %s\n", dim("🔗"), cyan(authURL))
-		fmt.Fprintf(output, "  PAT_AUTHORIZATION_URL=%s\n\n", authURL)
+		fmt.Fprintln(output)
 		if openBrowser {
 			_ = openPATAuthorizationURI(authURL)
 		}

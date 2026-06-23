@@ -1140,8 +1140,8 @@ func TestHandlePatAuthCheck_NonJSONModeRespectsBrowserPolicy(t *testing.T) {
 	if !strings.Contains(buf.String(), "授权链接: https://example.com/pat") {
 		t.Fatalf("expected authorization URL in human-readable PAT output, got %q", buf.String())
 	}
-	if !strings.Contains(buf.String(), "PAT_AUTHORIZATION_URL=https://example.com/pat") {
-		t.Fatalf("expected PAT_AUTHORIZATION_URL export line, got %q", buf.String())
+	if strings.Contains(buf.String(), "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit a second machine-readable URL line, got %q", buf.String())
 	}
 }
 
@@ -1359,8 +1359,8 @@ func TestHandlePatAuthCheck_OpensOpaqueURIWithoutRebuild(t *testing.T) {
 	if opened != rawURI {
 		t.Fatalf("opened url = %q, want verbatim %q", opened, rawURI)
 	}
-	if got := buf.String(); !strings.Contains(got, "PAT_AUTHORIZATION_URL="+rawURI) {
-		t.Fatalf("output missing copy-safe PAT_AUTHORIZATION_URL line:\n%s", got)
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
 	}
 }
 
@@ -1405,8 +1405,8 @@ func TestHandlePatAuthCheck_NormalizesLegacyHashRouteForBrowserAndOutput(t *test
 	if opened != wantURL {
 		t.Fatalf("opened url = %q, want normalized %q", opened, wantURL)
 	}
-	if got := buf.String(); !strings.Contains(got, "PAT_AUTHORIZATION_URL="+wantURL) {
-		t.Fatalf("output missing normalized PAT_AUTHORIZATION_URL line:\n%s", got)
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
 	}
 }
 
