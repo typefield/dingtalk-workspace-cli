@@ -168,14 +168,24 @@ func newAuthLoginCommand(patCaller edition.ToolCaller) *cobra.Command {
 					return nil
 				}
 				recommendScopeMode := pat.LoginRecommendScopeRecommended
+				var initialPlan *pat.LoginRecommendPlan
 				if postLoginTUIMode {
+					var planErr error
+					initialPlan, planErr = pat.PlanLoginRecommendAuthorization(cmd.Context(), patCaller)
+					if planErr != nil {
+						return planErr
+					}
+					if authLoginRecommendPlanSkipsInteractiveAuthorization(initialPlan) {
+						fmt.Fprintln(cmd.ErrOrStderr(), "推荐权限已全部授权或没有可授权项")
+						return nil
+					}
 					var err error
 					recommendScopeMode, err = loginRecommendScopeModeSelector()
 					if err != nil {
 						return err
 					}
 				}
-				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode}
+				opts := pat.LoginRecommendOptions{Confirmed: cfg.Yes, ScopeMode: recommendScopeMode, InitialPlan: initialPlan}
 				if postLoginTUIMode {
 					opts.ProductSelector = func(products []pat.LoginRecommendProduct) ([]string, error) {
 						return loginRecommendProductSelector(products)
@@ -879,6 +889,13 @@ func authLoginShouldUseHumanAuthorizationModeForTerminal(cmd *cobra.Command, for
 		return false
 	}
 	return authLoginAllowsInteractiveDefault(cmd, format)
+}
+
+func authLoginRecommendPlanSkipsInteractiveAuthorization(plan *pat.LoginRecommendPlan) bool {
+	if plan == nil {
+		return false
+	}
+	return plan.AllGranted || (len(plan.Scopes) == 0 && len(plan.Products) == 0)
 }
 
 func authLoginAllowsInteractiveDefault(cmd *cobra.Command, format string) bool {

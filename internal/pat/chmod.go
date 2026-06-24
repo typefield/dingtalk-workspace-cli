@@ -45,6 +45,9 @@ type LoginRecommendOptions struct {
 	// list before the final plan. It receives products extracted from the
 	// initial recommend plan and must return the product codes to grant.
 	ProductSelector func([]LoginRecommendProduct) ([]string, error)
+	// InitialPlan lets callers preflight the default recommend plan before any
+	// interactive selector and then reuse the same dry-run result.
+	InitialPlan *LoginRecommendPlan
 }
 
 type LoginRecommendScopeMode string
@@ -60,6 +63,13 @@ type LoginRecommendProduct struct {
 	Summary            string
 	ScopeCount         int
 	SelectedScopeCount int
+}
+
+type LoginRecommendPlan struct {
+	Result     *edition.ToolResult
+	Scopes     []string
+	Products   []LoginRecommendProduct
+	AllGranted bool
 }
 
 const (
@@ -582,6 +592,26 @@ func RunLoginRecommendAuthorization(ctx context.Context, c edition.ToolCaller, o
 	return RunLoginRecommendAuthorizationWithOptions(ctx, c, output, LoginRecommendOptions{})
 }
 
+func PlanLoginRecommendAuthorization(ctx context.Context, c edition.ToolCaller) (*LoginRecommendPlan, error) {
+	if c == nil {
+		return nil, fmt.Errorf("internal error: tool runtime not initialized")
+	}
+	planResult, scopes, allGranted, err := planLoginRecommend(ctx, c, nil, true)
+	if err != nil {
+		return nil, err
+	}
+	products, err := extractLoginRecommendProducts(planResult)
+	if err != nil {
+		return nil, err
+	}
+	return &LoginRecommendPlan{
+		Result:     planResult,
+		Scopes:     scopes,
+		Products:   products,
+		AllGranted: allGranted,
+	}, nil
+}
+
 func RunLoginRecommendAuthorizationWithOptions(ctx context.Context, c edition.ToolCaller, output io.Writer, opts LoginRecommendOptions) error {
 	if c == nil {
 		return fmt.Errorf("internal error: tool runtime not initialized")
@@ -596,9 +626,19 @@ func RunLoginRecommendAuthorizationWithOptions(ctx context.Context, c edition.To
 		// only after the user selects concrete productCodes.
 		initialRecommendPlan = true
 	}
-	planResult, scopes, err := planLoginRecommend(ctx, c, productCodes, initialRecommendPlan)
-	if err != nil {
-		return err
+	var planResult *edition.ToolResult
+	var scopes []string
+	var allGranted bool
+	if opts.InitialPlan != nil && initialRecommendPlan && len(productCodes) == 0 {
+		planResult = opts.InitialPlan.Result
+		scopes = append([]string(nil), opts.InitialPlan.Scopes...)
+		allGranted = opts.InitialPlan.AllGranted
+	} else {
+		var err error
+		planResult, scopes, allGranted, err = planLoginRecommend(ctx, c, productCodes, initialRecommendPlan)
+		if err != nil {
+			return err
+		}
 	}
 	if opts.ProductSelector != nil {
 		products, err := extractLoginRecommendProducts(planResult)
@@ -614,7 +654,7 @@ func RunLoginRecommendAuthorizationWithOptions(ctx context.Context, c edition.To
 			if len(productCodes) == 0 {
 				return fmt.Errorf("至少选择一个授权业务域")
 			}
-			_, scopes, err = planLoginRecommend(ctx, c, productCodes, recommendPlan)
+			_, scopes, allGranted, err = planLoginRecommend(ctx, c, productCodes, recommendPlan)
 			if err != nil {
 				return err
 			}
@@ -623,7 +663,7 @@ func RunLoginRecommendAuthorizationWithOptions(ctx context.Context, c edition.To
 			return fmt.Errorf("全部授权需要服务端返回可选授权业务域")
 		}
 	}
-	if len(scopes) == 0 {
+	if allGranted || len(scopes) == 0 {
 		if output != nil {
 			_, _ = fmt.Fprintln(output, "推荐权限已全部授权或没有可授权项")
 		}
@@ -646,25 +686,29 @@ func RunLoginRecommendAuthorizationWithOptions(ctx context.Context, c edition.To
 	return handleToolResultForWriter(output, result, c)
 }
 
-func planLoginRecommend(ctx context.Context, c edition.ToolCaller, productCodes []string, recommend bool) (*edition.ToolResult, []string, error) {
+func planLoginRecommend(ctx context.Context, c edition.ToolCaller, productCodes []string, recommend bool) (*edition.ToolResult, []string, bool, error) {
 	productCodes = normalizeProductCodes(productCodes)
 	if !recommend && len(productCodes) == 0 {
-		return nil, nil, fmt.Errorf("全部授权需要至少一个授权业务域")
+		return nil, nil, false, fmt.Errorf("全部授权需要至少一个授权业务域")
 	}
 	planArgs := buildBatchPlanArgs(nil, productCodes, recommend, grantTypePermanent, "", "", true)
 	planArgs["caller"] = patCallerAuthLoginRecommend
 	planResult, err := callPATBatchPlan(ctx, c, "", "", planArgs)
 	if err != nil {
-		return nil, nil, fmt.Errorf("pat login recommend plan failed: %w", err)
+		return nil, nil, false, fmt.Errorf("pat login recommend plan failed: %w", err)
 	}
 	if err := classifyToolResultText(planResult); err != nil {
-		return planResult, nil, err
+		return planResult, nil, false, err
 	}
 	scopes, err := extractSelectedScopesAllowEmpty(planResult)
 	if err != nil {
-		return planResult, nil, err
+		return planResult, nil, false, err
 	}
-	return planResult, scopes, nil
+	allGranted, err := extractBatchPlanAllGranted(planResult)
+	if err != nil {
+		return planResult, nil, false, err
+	}
+	return planResult, scopes, allGranted, nil
 }
 
 func newBatchClientRequestID(prefix string) string {
@@ -814,6 +858,23 @@ func productCodeFromScope(scope string) string {
 		end = idx
 	}
 	return strings.TrimSpace(scope[:end])
+}
+
+func extractBatchPlanAllGranted(result *edition.ToolResult) (bool, error) {
+	text := firstToolResultText(result)
+	if text == "" {
+		return false, fmt.Errorf("empty PAT batch plan result")
+	}
+	var body map[string]any
+	if err := json.Unmarshal([]byte(text), &body); err != nil {
+		return false, fmt.Errorf("parsing PAT batch plan result: %w", err)
+	}
+	data, _ := body["data"].(map[string]any)
+	if data == nil {
+		return false, fmt.Errorf("PAT batch plan result missing data")
+	}
+	allGranted, _ := data["allGranted"].(bool)
+	return allGranted, nil
 }
 
 func extractSelectedScopes(result *edition.ToolResult) ([]string, error) {
