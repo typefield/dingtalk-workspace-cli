@@ -15,13 +15,8 @@
 #   DWS_NO_SKILLS     — set to 1 to skip skills install
 #   DWS_SKILLS_ONLY   — set to 1 to install only skills (skip binary)
 #   DWS_SKILL_MODE    — mono | multi (default: prompt if TTY, else mono)
-#   DWS_RELEASE_BASE  — base URL for release assets       (default: GitHub Releases)
-#                       China users can point this at a domestic mirror (OSS+CDN), e.g.:
-#                         DWS_RELEASE_BASE=https://dl.dingtalk.com/dws/download
-#                       Layout must be: <base>/<version>/<asset-file>
-#   DWS_LATEST_URL    — endpoint to resolve the latest tag (default: GitHub redirect)
-#                       Mirror users should set DWS_VERSION explicitly, or expose a
-#                       redirect/latest endpoint compatible with the resolver below.
+#   DWS_GITEE_REPO    — "owner/repo" on Gitee; when set, version + assets resolve
+#                       via the Gitee API instead of GitHub (China mirror)
 #
 # Agent skills paths follow build/npm/install.js AGENT_DIRS (order and entries must match).
 
@@ -29,10 +24,10 @@ set -eu
 
 REPO="DingTalk-Real-AI/dingtalk-workspace-cli"
 BIN_NAME="dws"
-# Asset distribution base. Default = GitHub Releases (overseas); override for China mirror.
-RELEASE_BASE="${DWS_RELEASE_BASE:-https://github.com/${REPO}/releases/download}"
-# Latest-version resolution endpoint (the /releases/latest redirect trick is GitHub-specific).
-LATEST_URL="${DWS_LATEST_URL:-https://github.com/${REPO}/releases/latest}"
+# China mirror: Gitee repo "owner/repo". When set, version + asset URLs resolve via
+# the Gitee API (https://gitee.com/api/v5) instead of GitHub. Gitee attachment URLs
+# carry an unstable numeric id, so every asset is resolved by name at install time.
+GITEE_REPO="${DWS_GITEE_REPO:-}"
 INSTALL_DIR="${DWS_INSTALL_DIR:-$HOME/.local/bin}"
 INSTALL_NAME="${DWS_INSTALL_NAME:-$BIN_NAME}"
 VERSION="${DWS_VERSION:-latest}"
@@ -88,6 +83,42 @@ download() {
   fi
 }
 
+# Fetch a Gitee API endpoint, retrying transient failures. Gitee's gateway
+# returns sporadic 502/503, so a single curl is unreliable; retry a few times
+# before giving up. Prints the response body on success.
+gitee_api() {
+  _url="$1"
+  _try=1
+  while [ "$_try" -le 4 ]; do
+    if _resp="$(curl -fsSL "$_url" 2>/dev/null)" && [ -n "$_resp" ]; then
+      printf '%s' "$_resp"
+      return 0
+    fi
+    _try=$((_try + 1))
+    sleep 2
+  done
+  return 1
+}
+
+# Resolve the download URL of a release asset by file name.
+#   GitHub: deterministic template <repo>/releases/download/<version>/<file>.
+#   Gitee : query the release API and pick the asset whose name matches
+#           (Gitee attachment URLs carry an unstable numeric id, so we never
+#            template them — we read browser_download_url straight from the API).
+asset_url() {
+  _name="$1"
+  if [ -z "$GITEE_REPO" ]; then
+    printf '%s' "https://github.com/${REPO}/releases/download/${VERSION}/${_name}"
+    return 0
+  fi
+  gitee_api "https://gitee.com/api/v5/repos/${GITEE_REPO}/releases/tags/${VERSION}" \
+    | tr '}' '\n' \
+    | grep "\"name\":[ ]*\"${_name}\"" \
+    | grep -o '"browser_download_url":[ ]*"[^"]*"' \
+    | head -1 \
+    | sed 's/.*"browser_download_url":[ ]*"//;s/"$//'
+}
+
 extract_zip() {
   archive="$1"
   dest="$2"
@@ -125,9 +156,19 @@ detect_arch() {
 # Resolve the latest version tag from GitHub
 resolve_version() {
   if [ "$VERSION" = "latest" ]; then
-    # Follow the redirect from /releases/latest to get the tag
-    if need_cmd curl; then
-      VERSION="$(curl -fsSI "$LATEST_URL" 2>/dev/null \
+    if [ -n "$GITEE_REPO" ]; then
+      # Gitee's /releases/latest and /releases endpoints are unreliable — they
+      # return 404 / an empty list even when releases exist — so resolve the
+      # newest version from the git tags endpoint instead: keep only vN.N.N
+      # tags and pick the highest by version order.
+      VERSION="$(gitee_api "https://gitee.com/api/v5/repos/${GITEE_REPO}/tags" \
+        | grep -o '"name":[ ]*"v[0-9][0-9.]*"' \
+        | sed 's/.*"name":[ ]*"//;s/"$//' \
+        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -V | tail -1)"
+    elif need_cmd curl; then
+      # Follow the redirect from /releases/latest to get the tag
+      VERSION="$(curl -fsSI "https://github.com/${REPO}/releases/latest" 2>/dev/null \
         | grep -i '^location:' | sed 's|.*/tag/||;s/[[:space:]]*$//')"
     elif need_cmd wget; then
       VERSION="$(wget --spider --max-redirect=0 "$LATEST_URL" 2>&1 \
@@ -414,7 +455,8 @@ install_binary() {
   resolve_version
 
   archive_name="${BIN_NAME}-${os}-${arch}.tar.gz"
-  download_url="${RELEASE_BASE}/${VERSION}/${archive_name}"
+  download_url="$(asset_url "$archive_name")"
+  [ -n "$download_url" ] || err "Could not resolve download URL for ${archive_name} (version ${VERSION})."
 
   say "⬇  Downloading ${BIN_NAME} ${VERSION} (${os}/${arch})..."
 
@@ -424,7 +466,7 @@ install_binary() {
   download "$download_url" "$tmpdir/$archive_name"
 
   # Download and verify SHA256 checksum
-  checksum_url="${RELEASE_BASE}/${VERSION}/checksums.txt"
+  checksum_url="$(asset_url checksums.txt)"
   if download "$checksum_url" "$tmpdir/checksums.txt" 2>/dev/null; then
     expected="$(awk -v file="$archive_name" '$2 == file {print $1; exit}' "$tmpdir/checksums.txt")"
     if [ -n "$expected" ]; then
@@ -495,7 +537,8 @@ install_skills() {
 
   resolve_version
   skills_archive="dws-skills.zip"
-  download_url="${RELEASE_BASE}/${VERSION}/${skills_archive}"
+  download_url="$(asset_url "$skills_archive")"
+  [ -n "$download_url" ] || err "Could not resolve download URL for ${skills_archive} (version ${VERSION})."
 
   tmpdir_skills="$(mktemp -d)"
   trap 'rm -rf "$tmpdir_skills"' EXIT INT TERM

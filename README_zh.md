@@ -113,6 +113,28 @@ cp dws ~/.local/bin/         # 安装到 PATH
 
 </details>
 
+## 国内加速安装
+
+国内用户可使用以下通道，避免 GitHub 网络问题。默认（不设置这些环境变量）走 GitHub。
+
+**1. 安装脚本 + 预编译二进制（Gitee 镜像）：**
+
+仓库镜像地址：`https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli`
+
+```bash
+DWS_GITEE_REPO=DingTalk-Real-AI/dingtalk-workspace-cli curl -fsSL https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli/raw/main/scripts/install.sh | sh
+```
+
+> 设置 `DWS_GITEE_REPO` 后，安装脚本会改从 Gitee API 解析最新版本和各个 release 产物（二进制、校验和、skills 包），而不是走 GitHub。不设置时默认从 GitHub 安装。
+
+**2. npm 包（npmmirror 镜像）：**
+
+```bash
+npm install -g dingtalk-workspace-cli --registry=https://registry.npmmirror.com
+```
+
+> npmmirror 会自动同步公网 npm 的公开包，国内可直接使用。
+
 ## 升级
 
 > 需要 **v1.0.7** 及以上版本。更早版本请重新执行[安装脚本](#安装)进行升级。
@@ -274,7 +296,7 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 仓库内置完整的 Agent Skill 体系（`skills/` 目录），目前重组为两套布局：
 
 - `skills/mono/` — 单 skill 布局（一个 `SKILL.md` + `references/products/`），默认推荐。
-- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ... 共 19 个），每个 skill 自带 `SKILL.md`。🧪 **试验版 / Preview — 各 multi `SKILL.md` 头部有详细注意事项。**
+- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ... 共 18 个），每个 skill 自带 `SKILL.md`。🧪 **试验版 / Preview — 各 multi `SKILL.md` 头部有详细注意事项。**
 
 安装之后，Claude Code / Cursor 等 AI 工具就能通过自然语言直接操作钉钉：
 
@@ -493,7 +515,7 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 | 直播 | `live` | 1 | `stream` | 钉钉直播：查看我的直播列表 |
 | Raw API | `api` | 1 | — | 直接调用任意钉钉 OpenAPI（api / oapi 双形态），自动管理应用级 Token |
 
-> **18 个产品，330 条命令。** 完整命令清单（带描述与使用场景）：[`docs/command-index.md`](./docs/command-index.md)。运行 `dws --help` 查看顶层命令树，或 `dws <service> --help` 查看子命令。
+> **18 个产品，331 条命令。** 完整命令清单（带描述与使用场景）：[`docs/command-index.md`](./docs/command-index.md)。运行 `dws --help` 查看顶层命令树，或 `dws <service> --help` 查看子命令。
 
 > **关于 `chat bot`**：机器人能力（`send-by-bot` / `recall-by-bot` / `add-bot` / `send-by-webhook` / bot 搜索）已合并到对应的 `chat` 子树下（例如 `dws chat message send-by-bot`、`dws chat group members add-bot`），保持 agent 视角下的命令面扁平易发现。不再有独立的顶层 `bot` 产品。
 

@@ -37,6 +37,7 @@ type mcpCallCapture struct {
 	mu      sync.Mutex
 	calls   []capturedCall
 	dryRun  bool
+	preview bool
 	confirm bool
 }
 
@@ -103,6 +104,13 @@ func setupTestDepsWithDryRun(t *testing.T, product string) *mcpCallCapture {
 	return cap
 }
 
+func setupTestDepsWithPreview(t *testing.T, product string) *mcpCallCapture {
+	t.Helper()
+	cap := setupTestDeps(t, product)
+	cap.preview = true
+	return cap
+}
+
 func setupTestDepsAutoConfirm(t *testing.T, product string) *mcpCallCapture {
 	t.Helper()
 	cap := setupTestDeps(t, product)
@@ -126,9 +134,13 @@ func execCmdWithArgs(t *testing.T, root *cobra.Command, path []string, flags map
 
 	cap := getCapture(t)
 
-	cliArgs := []string{"-f", "json", "--dry-run"}
+	cliArgs := []string{"-f", "json"}
 	cliArgs = append(cliArgs, path...)
 
+	// Add dry-run if capture says so
+	if cap != nil && (cap.dryRun || cap.preview) {
+		cliArgs = append(cliArgs, "--dry-run")
+	}
 	// Add --yes if auto-confirm
 	if cap != nil && cap.confirm {
 		cliArgs = append(cliArgs, "--yes")
@@ -160,22 +172,21 @@ func execCmdWithArgs(t *testing.T, root *cobra.Command, path []string, flags map
 			DryRun bool           `json:"dry_run"`
 		} `json:"invocation"`
 	}
+	var flatInv struct {
+		Tool   string         `json:"tool"`
+		Params map[string]any `json:"params"`
+		DryRun bool           `json:"dry_run"`
+	}
 	if cap != nil {
-		recordDryRunPreview := !cap.dryRun
 		if jsonErr := json.Unmarshal(out.Bytes(), &inv); jsonErr == nil && inv.Invocation.Tool != "" {
-			if !inv.Invocation.DryRun || recordDryRunPreview {
+			if !inv.Invocation.DryRun || cap.preview {
 				cap.record(inv.Invocation.Tool, inv.Invocation.Params, "")
 			}
-			return nil
-		}
-		var directInv struct {
-			Tool   string         `json:"tool"`
-			Params map[string]any `json:"params"`
-			DryRun bool           `json:"dry_run"`
-		}
-		if jsonErr := json.Unmarshal(out.Bytes(), &directInv); jsonErr == nil && directInv.Tool != "" {
-			if recordDryRunPreview {
-				cap.record(directInv.Tool, directInv.Params, "")
+			// For dry-run: don't record (matches old behavior: assertCallCount == 0)
+		} else if jsonErr := json.Unmarshal(out.Bytes(), &flatInv); jsonErr == nil && flatInv.Tool != "" {
+			dryRunPreview := flatInv.DryRun || cap.dryRun || cap.preview
+			if !dryRunPreview || cap.preview {
+				cap.record(flatInv.Tool, flatInv.Params, "")
 			}
 		}
 	}

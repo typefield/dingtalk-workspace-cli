@@ -22,21 +22,24 @@ Flags:
       --size int         分页大小 (默认 10)
 ```
 
-### 排查调用错误
+### 错误排查
 ```
 Usage:
   dws devdoc error diagnose [flags]
+  dws devdoc error troubleshoot [flags]
 Example:
-  dws devdoc error diagnose --error-code "40014" --query "获取用户信息 access_token"
-  dws devdoc error diagnose --request-id "<REQUEST_ID>" --query "接口调用失败"
-  dws devdoc error troubleshoot --error-message "token is illegal" --api "获取用户信息"
+  dws devdoc error diagnose --request-id 15r6h45w0muec
+  dws devdoc error diagnose --trace-id 15r6h45w0muec --api "创建日程"
+  dws devdoc error diagnose --error-code 33012 --error-message "missing scope"
+  dws devdoc error diagnose --query "机器人回调失败" --context "HTTP 403"
 Flags:
       --query string           原始排查问题
+      --request-id string      开放平台 requestId
+      --trace-id string        requestId 的兼容别名
       --error-code string      错误码
       --error-message string   错误描述，会合并进原始问题
-      --api string             API 名称，会合并进原始问题
-      --context string         额外排查上下文
-      --request-id string      开放平台 requestId
+      --api string             API 名称，会合并进原始问题作为补充检索词
+      --context string         额外排查上下文，会合并进原始问题
       --page int               分页页码 (从 1 开始，默认 1)
       --cursor string          分页游标，翻页传上次返回的 nextCursor；传入后不再使用 --page
       --size int               分页大小 (默认 10)
@@ -49,9 +52,14 @@ Flags:
 - 用户已经给出错误码、错误描述或 requestId:
 - 先走 `devdoc error diagnose`；若后端返回 `PARAM_ERROR - 未找到指定工具` / `unknown tool`，降级 `devdoc article search`，同时把该结果标记为 `needs_gateway_tool_registration`
 
+用户已经提供 requestId / traceId / 错误码 / 错误描述 / 失败上下文:
+- 走 `devdoc error diagnose`，优先传 `--request-id`，没有 requestId 时传 `--error-code`、`--error-message`、`--query` 或 `--context`
+
 关键区分:
 - devdoc(钉钉**开放平台**开发者文档，面向研发) vs doc(钉钉在线文档，面向普通用户内容)
 - devdoc 只做搜索/诊断，不做读取；命中条目返回标题、摘要、文档链接，由 Agent 引用链接或进一步浏览
+- `devdoc error diagnose` 只返回诊断事实、参考资料和链接，不生成 AI 分析结论
+- `--api`、`--error-message`、`--context` 是 CLI 侧易用参数，调用 MCP 时会合并到 `query`；MCP 入参只发送 `query`、`requestId`、`errorCode`、`page`/`cursor`、`size`
 
 ## 核心工作流
 
@@ -71,11 +79,14 @@ dws devdoc article search --query "消息卡片" --cursor "<NEXT_CURSOR>" --size
 # 查错误码 / 字段含义
 dws devdoc article search --query "errcode 40078" --format json
 
-# 有明确错误码时优先走错误诊断
-dws devdoc error diagnose --error-code "40014" --query "获取用户信息 access_token" --format json
+# 已经有 requestId 时排查
+dws devdoc error diagnose --request-id 15r6h45w0muec --format json
 
-# 有 requestId 时尝试链路排查；不是所有接口都会返回 requestId
-dws devdoc error diagnose --request-id "<REQUEST_ID>" --query "接口调用失败" --format json
+# 只有 traceId 时按 requestId 兼容处理
+dws devdoc error diagnose --trace-id 15r6h45w0muec --api "创建日程" --format json
+
+# 只有错误码和错误描述时排查
+dws devdoc error diagnose --error-code 33012 --error-message "missing scope" --format json
 
 # 错误排查结果继续翻页
 dws devdoc error diagnose --error-code "40014" --query "access_token" --cursor "<NEXT_CURSOR>" --format json
@@ -97,6 +108,7 @@ dws schema devdoc.search_open_error_code_rag --format json || true
 ## 注意事项
 
 - 关键词必填；可用位置参数、`--query` 或兼容别名 `--keyword`。建议传用户原话里的关键名词（API 名、错误码、能力名），不要过度改写
+- 错误排查至少提供 `--query`、`--request-id`、`--error-code`、`--error-message`、`--context` 之一；单独 `--api` 只作为补充上下文，不足以发起排查
 - 返回按相关性排序，默认 `--size 10`；响应有 `hasMore=true` 时，用 `nextCursor` 传给 `--cursor` 继续翻页，不要手写猜测下一页
 - 命中结果里的链接是钉钉开放平台公开文档，可直接给用户做参考
 - 不要把 devdoc 用来查业务数据（那是 aitable / doc / report 的事）；devdoc 只查**官方开发者文档**

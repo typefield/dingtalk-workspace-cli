@@ -71,9 +71,9 @@ The installer ships skills in one of two layouts. CLI commands (`dws aitable ...
 | Mode | What gets installed | Best for |
 |------|----------------------|----------|
 | **mono** (stable, default) | One `dws` skill covering all products | Cross-product workflows; single entry point |
-| **multi** 🧪 **EXPERIMENTAL** | 20 per-product skills (`dingtalk-aitable`, `dingtalk-calendar`, `dingtalk-chat`, ...) | Single-product tasks; smaller context per call |
+| **multi** 🧪 **EXPERIMENTAL** | 18 per-product skills (`dingtalk-aitable`, `dingtalk-calendar`, `dingtalk-chat`, ...) | Single-product tasks; smaller context per call |
 
-> 🧪 **`multi` is currently EXPERIMENTAL / preview.** 20 product-scoped skills all pass the dispatch verifier, but interface, naming and cross-skill references may change in future releases. For production / shared environments, prefer `mono`. File issues if you hit problems.
+> 🧪 **`multi` is currently EXPERIMENTAL / preview.** 18 product-scoped skills all pass the dispatch verifier, but interface, naming and cross-skill references may change in future releases. For production / shared environments, prefer `mono`. File issues if you hit problems.
 
 How to pick:
 
@@ -112,6 +112,28 @@ cp dws ~/.local/bin/         # install to PATH
 > Requires Go 1.25+. Use `make package` to cross-compile for all platforms (macOS / Linux / Windows x amd64 / arm64).
 
 </details>
+
+## China mirror
+
+For users in mainland China, the following channels avoid GitHub network issues. By default (without setting these environment variables) the installer pulls from GitHub.
+
+**1. Install script + pre-built binary (Gitee mirror):**
+
+Repository mirror: `https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli`
+
+```bash
+DWS_GITEE_REPO=DingTalk-Real-AI/dingtalk-workspace-cli curl -fsSL https://gitee.com/DingTalk-Real-AI/dingtalk-workspace-cli/raw/main/scripts/install.sh | sh
+```
+
+> With `DWS_GITEE_REPO` set, the installer resolves the latest version and every release asset (binary, checksums, skills) from the Gitee API instead of GitHub. If it is unset, installation defaults to GitHub.
+
+**2. npm package (npmmirror mirror):**
+
+```bash
+npm install -g dingtalk-workspace-cli --registry=https://registry.npmmirror.com
+```
+
+> npmmirror automatically syncs public packages from the public npm registry, so this works directly in China.
 
 ## Upgrade
 
@@ -497,7 +519,7 @@ dws chat message send-by-bot --robot-code BOT_CODE --group GROUP_ID \
 | Live | `live` | 1 | `stream` | DingTalk live streaming: list my lives |
 | Raw API | `api` | 1 | — | Call any DingTalk OpenAPI directly (api / oapi dual-form), with automatic app-level token management |
 
-> **330 commands across 18 products.** Full listing with descriptions and usage scenarios: [`docs/command-index.md`](./docs/command-index.md). Run `dws --help` for the top-level tree, or `dws <service> --help` for subcommands.
+> **331 commands across 18 products.** Full listing with descriptions and usage scenarios: [`docs/command-index.md`](./docs/command-index.md). Run `dws --help` for the top-level tree, or `dws <service> --help` for subcommands.
 
 > **Note on `chat bot`**: bot capabilities (`send-by-bot` / `recall-by-bot` / `add-bot` / `send-by-webhook` / bot search) are merged into the relevant `chat` subtrees (e.g. `dws chat message send-by-bot`, `dws chat group members add-bot`) so the agent-facing command surface stays flat and discoverable. There is no longer a separate top-level `bot` product.
 

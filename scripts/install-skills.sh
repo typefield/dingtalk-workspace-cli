@@ -13,12 +13,12 @@ set -eu
 # Environment variables (optional):
 #   DWS_VERSION        — release tag (default: latest)
 #   DWS_SKILLS_ROOT    — base path for agent dirs (default: $PWD)
+#   DWS_GITEE_REPO     — "owner/repo" on Gitee; resolve version + assets via the
+#                        Gitee API instead of GitHub (China mirror)
 
 REPO="DingTalk-Real-AI/dingtalk-workspace-cli"
-# Asset distribution base. Default = GitHub Releases (overseas); override for China mirror:
-#   DWS_RELEASE_BASE=https://dl.dingtalk.com/dws/download  (layout: <base>/<version>/<file>)
-RELEASE_BASE="${DWS_RELEASE_BASE:-https://github.com/${REPO}/releases/download}"
-LATEST_URL="${DWS_LATEST_URL:-https://github.com/${REPO}/releases/latest}"
+# China mirror: Gitee repo "owner/repo". When set, version + asset URLs resolve via Gitee API.
+GITEE_REPO="${DWS_GITEE_REPO:-}"
 VERSION="${DWS_VERSION:-latest}"
 SKILL_NAME="dws"
 ROOT="${DWS_SKILLS_ROOT:-$PWD}"
@@ -33,15 +33,54 @@ need_cmd() {
   fi
 }
 
+# Fetch a Gitee API endpoint, retrying transient 502/503 from Gitee's gateway.
+gitee_api() {
+  _url="$1"
+  _try=1
+  while [ "$_try" -le 4 ]; do
+    if _resp="$(curl -fsSL "$_url" 2>/dev/null)" && [ -n "$_resp" ]; then
+      printf '%s' "$_resp"
+      return 0
+    fi
+    _try=$((_try + 1))
+    sleep 2
+  done
+  return 1
+}
+
 resolve_version() {
   if [ "$VERSION" = "latest" ]; then
-    VERSION="$(curl -fsSI "$LATEST_URL" 2>/dev/null \
-      | grep -i '^location:' | sed 's|.*/tag/||;s/[[:space:]]*$//')"
+    if [ -n "$GITEE_REPO" ]; then
+      # Gitee's /releases/latest and /releases endpoints are unreliable, so
+      # resolve the newest vN.N.N tag from the git tags endpoint instead.
+      VERSION="$(gitee_api "https://gitee.com/api/v5/repos/${GITEE_REPO}/tags" \
+        | grep -o '"name":[ ]*"v[0-9][0-9.]*"' \
+        | sed 's/.*"name":[ ]*"//;s/"$//' \
+        | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+        | sort -V | tail -1)"
+    else
+      VERSION="$(curl -fsSI "https://github.com/${REPO}/releases/latest" 2>/dev/null \
+        | grep -i '^location:' | sed 's|.*/tag/||;s/[[:space:]]*$//')"
+    fi
     if [ -z "$VERSION" ]; then
       printf '❌ Could not determine the latest version. Set DWS_VERSION explicitly.\n' >&2
       exit 1
     fi
   fi
+}
+
+# Resolve a release asset's download URL by name (GitHub template vs Gitee API).
+asset_url() {
+  _name="$1"
+  if [ -z "$GITEE_REPO" ]; then
+    printf '%s' "https://github.com/${REPO}/releases/download/${VERSION}/${_name}"
+    return 0
+  fi
+  gitee_api "https://gitee.com/api/v5/repos/${GITEE_REPO}/releases/tags/${VERSION}" \
+    | tr '}' '\n' \
+    | grep "\"name\":[ ]*\"${_name}\"" \
+    | grep -o '"browser_download_url":[ ]*"[^"]*"' \
+    | head -1 | sed 's/.*"browser_download_url":[ ]*"//;s/"$//'
 }
 
 extract_zip() {
@@ -172,7 +211,8 @@ main() {
   TMPDIR_WORK="$(mktemp -d)"
   trap 'rm -rf "$TMPDIR_WORK"' EXIT INT TERM
 
-  ASSET_URL="${RELEASE_BASE}/${VERSION}/dws-skills.zip"
+  ASSET_URL="$(asset_url dws-skills.zip)"
+  [ -n "$ASSET_URL" ] || { printf '❌ Could not resolve download URL for dws-skills.zip (version %s).\n' "$VERSION" >&2; exit 1; }
   printf '  ⬇  Downloading skills from GitHub Releases: %s (%s)\n' "$REPO" "$VERSION"
   curl -fsSL "$ASSET_URL" -o "$TMPDIR_WORK/dws-skills.zip"
   extract_zip "$TMPDIR_WORK/dws-skills.zip" "$TMPDIR_WORK/extracted"

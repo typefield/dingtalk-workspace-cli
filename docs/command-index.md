@@ -4,7 +4,7 @@ Every runtime command the `dws` CLI exposes when loaded with the **pre** environ
 
 - **Source**: `dws-wukong/envelope/channel/open/pre/config.json`
 - **Products**: 13
-- **Total commands**: 159
+- **Total commands**: 160
 - **Generated from**: `internal/compat.BuildDynamicCommands` rendering of the pre config — the same code path the CLI uses at runtime.
 
 > Auto-generated. Edit `pre/config.json`, not this file.
@@ -187,7 +187,7 @@ _Search the DingTalk Open Platform documentation._
 | Command | Description | When to use |
 |---|---|---|
 | `dws devdoc article search` | Search the DingTalk Open Platform documentation by keyword. | When the agent needs authoritative API reference or guides to answer a developer question. |
-| `dws devdoc error diagnose` | Diagnose DingTalk Open Platform API errors by error code, requestId, or context. | When the agent needs troubleshooting material for a failed OpenAPI call. |
+| `dws devdoc error diagnose` | Troubleshoot an Open Platform API failure by requestId, traceId, error code, error message, or context. | When the agent has a requestId, traceId, error code, or failure description and needs diagnostic facts plus references. |
 
 ## `dws ding` — DING Messages
 

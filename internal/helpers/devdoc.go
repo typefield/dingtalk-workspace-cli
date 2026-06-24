@@ -64,8 +64,7 @@ func (devdocHandler) Command(runner executor.Runner) *cobra.Command {
 		},
 	}
 	article.AddCommand(newDevdocArticleSearchCommand(runner))
-	root.AddCommand(article)
-	errs := &cobra.Command{
+	errorCmd := &cobra.Command{
 		Use:               "error",
 		Short:             "错误排查",
 		Args:              cobra.NoArgs,
@@ -75,8 +74,9 @@ func (devdocHandler) Command(runner executor.Runner) *cobra.Command {
 			return cmd.Help()
 		},
 	}
-	errs.AddCommand(newDevdocErrorDiagnoseCommand(runner))
-	root.AddCommand(errs)
+	errorCmd.AddCommand(newDevdocErrorDiagnoseCommand(runner))
+	root.AddCommand(article)
+	root.AddCommand(errorCmd)
 	return root
 }
 
@@ -154,19 +154,16 @@ func newDevdocErrorDiagnoseCommand(runner executor.Runner) *cobra.Command {
 			errorMessage := devdocFlagOrFallback(cmd, "error-message")
 			api := devdocFlagOrFallback(cmd, "api")
 			contextText := devdocFlagOrFallback(cmd, "context")
-			requestID := devdocFlagOrFallback(cmd, "request-id")
+			requestID := devdocFlagOrFallback(cmd, "request-id", "trace-id")
 			query := devdocFlagOrFallback(cmd, "query")
 
-			parts := make([]string, 0, 4)
-			for _, part := range []string{query, errorMessage, api, contextText} {
-				if trimmed := strings.TrimSpace(part); trimmed != "" {
-					parts = append(parts, trimmed)
-				}
+			// Validate primary troubleshooting input BEFORE merging api.
+			hasPrimaryInput := query != "" || requestID != "" || errorCode != "" || errorMessage != "" || contextText != ""
+			if !hasPrimaryInput {
+				return apperrors.NewValidation("one of --query, --request-id, --error-code, --error-message, or --context is required")
 			}
-			query = strings.Join(parts, " ")
-			if errorCode == "" && requestID == "" && query == "" {
-				return apperrors.NewValidation("--query, --error-code, or --request-id is required")
-			}
+
+			query = devdocJoinQueryParts(query, errorMessage, api, contextText)
 			page, _ := cmd.Flags().GetInt("page")
 			if page < 1 {
 				page = 1
@@ -202,12 +199,14 @@ func newDevdocErrorDiagnoseCommand(runner executor.Runner) *cobra.Command {
 			})
 		},
 	}
+	preferLegacyLeaf(cmd)
 	cmd.Flags().String("query", "", "原始排查问题")
 	cmd.Flags().String("error-code", "", "错误码")
 	cmd.Flags().String("error-message", "", "错误描述，会合并进原始问题")
 	cmd.Flags().String("api", "", "API 名称，会合并进原始问题作为补充检索词")
 	cmd.Flags().String("context", "", "额外排查上下文，会合并进原始问题")
 	cmd.Flags().String("request-id", "", "开放平台 requestId")
+	addDevdocHiddenStringFlag(cmd, "trace-id", "--request-id 的兼容别名")
 	cmd.Flags().Int("page", 1, "分页页码 (从 1 开始，默认 1)")
 	cmd.Flags().String("cursor", "", "分页游标，翻页传上次返回的 nextCursor；传入后不再使用 --page")
 	cmd.Flags().Int("size", 10, "分页大小 (默认 10)")
@@ -380,6 +379,22 @@ func devdocFlagOrFallback(cmd *cobra.Command, primary string, aliases ...string)
 		}
 	}
 	return ""
+}
+
+func devdocSetStringParam(params map[string]any, key, value string) {
+	if strings.TrimSpace(value) != "" {
+		params[key] = strings.TrimSpace(value)
+	}
+}
+
+func devdocJoinQueryParts(parts ...string) string {
+	cleaned := make([]string, 0, len(parts))
+	for _, part := range parts {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			cleaned = append(cleaned, trimmed)
+		}
+	}
+	return strings.Join(cleaned, " ")
 }
 
 func addDevdocHiddenStringFlag(cmd *cobra.Command, name, usage string) {

@@ -373,38 +373,6 @@ func TestCallToolAcceptsStructuredContentResults(t *testing.T) {
 	}
 }
 
-func TestCallToolPreservesEndpointQuery(t *testing.T) {
-	t.Parallel()
-
-	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if got := r.URL.Query().Get("key"); got != "secret-key" {
-			t.Fatalf("endpoint key query = %q, want secret-key", got)
-		}
-		if r.URL.Fragment != "" {
-			t.Fatalf("server should not receive URL fragment, got %q", r.URL.Fragment)
-		}
-		_ = json.NewEncoder(w).Encode(map[string]any{
-			"jsonrpc": "2.0",
-			"id":      3,
-			"result": map[string]any{
-				"content": []map[string]any{
-					{"type": "text", "text": `{"ok":true}`},
-				},
-			},
-		})
-	}))
-	defer server.Close()
-
-	client := NewClient(server.Client())
-	result, err := client.CallTool(context.Background(), server.URL+"?key=secret-key#ignored", "test_tool", nil)
-	if err != nil {
-		t.Fatalf("CallTool() error = %v", err)
-	}
-	if result.Content["ok"] != true {
-		t.Fatalf("ok = %#v, want true", result.Content["ok"])
-	}
-}
-
 func TestCallToolClassifiesUnauthorizedHTTPAsAuthError(t *testing.T) {
 	t.Parallel()
 
@@ -536,6 +504,56 @@ func TestCallToolClassifiesJSONRPCInvalidParamsAsValidationError(t *testing.T) {
 	}
 	if typed.Reason != "tools_call_jsonrpc_invalid_params" {
 		t.Fatalf("reason = %q, want tools_call_jsonrpc_invalid_params", typed.Reason)
+	}
+}
+
+func TestSanitizeJSONRPCEndpointPreservesDingTalkMCPGatewayQuery(t *testing.T) {
+	t.Parallel()
+
+	cases := []struct {
+		name     string
+		endpoint string
+		want     string
+	}{
+		{
+			name:     "prepub gateway",
+			endpoint: "https://pre-mcp-gw.dingtalk.com/server/demo?key=secret#frag",
+			want:     "https://pre-mcp-gw.dingtalk.com/server/demo?key=secret",
+		},
+		{
+			name:     "prod gateway",
+			endpoint: "https://mcp-gw.dingtalk.com/server/demo?key=secret#frag",
+			want:     "https://mcp-gw.dingtalk.com/server/demo?key=secret",
+		},
+	}
+
+	for _, tt := range cases {
+		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel()
+			if got := sanitizeJSONRPCEndpoint(tt.endpoint); got != tt.want {
+				t.Fatalf("sanitizeJSONRPCEndpoint() = %q, want %q", got, tt.want)
+			}
+		})
+	}
+}
+
+func TestSanitizeJSONRPCEndpointStripsQueryForOtherHosts(t *testing.T) {
+	t.Parallel()
+
+	got := sanitizeJSONRPCEndpoint("https://example.com/server/demo?admin=true#frag")
+	want := "https://example.com/server/demo"
+	if got != want {
+		t.Fatalf("sanitizeJSONRPCEndpoint() = %q, want %q", got, want)
+	}
+}
+
+func TestSanitizeJSONRPCEndpointStripsQueryForHTTPGateway(t *testing.T) {
+	t.Parallel()
+
+	got := sanitizeJSONRPCEndpoint("http://pre-mcp-gw.dingtalk.com/server/demo?key=secret#frag")
+	want := "http://pre-mcp-gw.dingtalk.com/server/demo"
+	if got != want {
+		t.Fatalf("sanitizeJSONRPCEndpoint() = %q, want %q", got, want)
 	}
 }
 
