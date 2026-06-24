@@ -23,6 +23,7 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/jsonutil"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/tui"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -453,7 +454,8 @@ func writeKeyValues(w io.Writer, payload map[string]any) error {
 		maxWidth = 24
 	}
 	for _, key := range keys {
-		if _, err := fmt.Fprintf(w, "%-*s  %s\n", maxWidth, key, formatValue(payload[key])); err != nil {
+		label := tui.PadRightANSI(tui.Key(key), maxWidth+1)
+		if _, err := fmt.Fprintf(w, "%s %s\n", label, formatValue(payload[key])); err != nil {
 			return err
 		}
 	}
@@ -476,57 +478,70 @@ func writeTable(w io.Writer, headers []string, rows [][]string) error {
 		}
 	}
 	for i := range widths {
-		if widths[i] > 60 {
-			widths[i] = 60
+		if widths[i] > tui.MaxTableColumnWidth {
+			widths[i] = tui.MaxTableColumnWidth
 		}
 	}
 
-	for i, header := range headers {
-		if i > 0 {
-			if _, err := io.WriteString(w, "  "); err != nil {
-				return err
-			}
-		}
-		if _, err := fmt.Fprintf(w, "%-*s", widths[i], truncate(header, widths[i])); err != nil {
-			return err
-		}
-	}
-	if _, err := fmt.Fprintln(w); err != nil {
-		return err
-	}
-	for i, width := range widths {
-		if i > 0 {
-			if _, err := io.WriteString(w, "  "); err != nil {
-				return err
-			}
-		}
-		if _, err := io.WriteString(w, strings.Repeat("-", width)); err != nil {
-			return err
-		}
-	}
-	if _, err := fmt.Fprintln(w); err != nil {
-		return err
+	if len(widths) == 0 {
+		return nil
 	}
 
-	for _, row := range rows {
-		for i, cell := range row {
-			if i >= len(widths) {
-				continue
-			}
+	writeRow := func(values []string, render func(string) string) error {
+		if _, err := io.WriteString(w, tui.Gray("│ ")); err != nil {
+			return err
+		}
+		for i := range widths {
 			if i > 0 {
-				if _, err := io.WriteString(w, "  "); err != nil {
+				if _, err := io.WriteString(w, tui.Gray(" │ ")); err != nil {
 					return err
 				}
 			}
-			if _, err := fmt.Fprintf(w, "%-*s", widths[i], truncate(cell, widths[i])); err != nil {
+			cell := ""
+			if i < len(values) {
+				cell = values[i]
+			}
+			cell = truncate(cell, widths[i])
+			if _, err := io.WriteString(w, tui.PadRightANSI(render(cell), widths[i])); err != nil {
 				return err
 			}
 		}
-		if _, err := fmt.Fprintln(w); err != nil {
+		_, err := io.WriteString(w, tui.Gray(" │\n"))
+		return err
+	}
+	writeDivider := func(left, mid, right string, render func(string) string) error {
+		if _, err := io.WriteString(w, render(left)); err != nil {
+			return err
+		}
+		for i, width := range widths {
+			if i > 0 {
+				if _, err := io.WriteString(w, render(mid)); err != nil {
+					return err
+				}
+			}
+			if _, err := io.WriteString(w, render(strings.Repeat("─", width+2))); err != nil {
+				return err
+			}
+		}
+		_, err := io.WriteString(w, render(right+"\n"))
+		return err
+	}
+
+	if err := writeDivider("╭", "┬", "╮", tui.Blue); err != nil {
+		return err
+	}
+	if err := writeRow(headers, tui.Brand); err != nil {
+		return err
+	}
+	if err := writeDivider("├", "┼", "┤", tui.Gray); err != nil {
+		return err
+	}
+	for _, row := range rows {
+		if err := writeRow(row, tui.White); err != nil {
 			return err
 		}
 	}
-	return nil
+	return writeDivider("╰", "┴", "╯", tui.Blue)
 }
 
 func sortedKeys(keys map[string]struct{}) []string {
@@ -554,24 +569,27 @@ func formatValue(value any) string {
 }
 
 func truncate(s string, maxWidth int) string {
-	if runeWidth(s) <= maxWidth {
+	if maxWidth <= 0 || runeWidth(s) <= maxWidth {
 		return s
 	}
-	runes := []rune(s)
-	if len(runes) > maxWidth-1 {
-		return string(runes[:maxWidth-1]) + "…"
+	if maxWidth == 1 {
+		return "…"
 	}
-	return s
+
+	var b strings.Builder
+	used := 0
+	limit := maxWidth - 1
+	for _, r := range s {
+		width := runeWidth(string(r))
+		if used+width > limit {
+			break
+		}
+		b.WriteRune(r)
+		used += width
+	}
+	return b.String() + "…"
 }
 
 func runeWidth(s string) int {
-	width := 0
-	for _, r := range s {
-		if r >= 0x2E80 && r <= 0x9FFF {
-			width += 2
-			continue
-		}
-		width++
-	}
-	return width
+	return tui.PlainRuneWidth(s)
 }

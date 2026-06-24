@@ -638,7 +638,7 @@ func TestRunDirectPATAuthCheck_ApprovedRetriesCallback(t *testing.T) {
 	server, _ := setupHandlePATServer(t, "APPROVED", "")
 	defer server.Close()
 
-	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-direct", "test-client-id")}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", "https://example.com/pat")}
 	var retried atomic.Bool
 	var retryHadKey atomic.Bool
 	err := runDirectPATAuthCheck(context.Background(), &GlobalFlags{}, patErr, func(ctx context.Context) error {
@@ -662,7 +662,7 @@ func TestRunDirectPATAuthCheckWaitOnly_ApprovedDoesNotRetry(t *testing.T) {
 	server, _ := setupHandlePATServer(t, "APPROVED", "")
 	defer server.Close()
 
-	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-direct", "test-client-id")}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", "https://example.com/pat")}
 	var out bytes.Buffer
 	err := runDirectPATAuthCheckWaitOnly(context.Background(), &GlobalFlags{}, patErr, &out)
 	if err != nil {
@@ -673,6 +673,56 @@ func TestRunDirectPATAuthCheckWaitOnly_ApprovedDoesNotRetry(t *testing.T) {
 	}
 	if !strings.Contains(out.String(), "授权成功") {
 		t.Fatalf("wait-only auth should still report success, output:\n%s", out.String())
+	}
+}
+
+func TestRunDirectPATAuthCheckWaitOnly_SuppressesBrowserOpen(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "")
+	defer server.Close()
+	if _, err := pat.SetBrowserPolicy(configDir, "", true); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	var opened bool
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = true
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", "https://example.com/pat")}
+	var out bytes.Buffer
+	err := runDirectPATAuthCheckWaitOnly(context.Background(), &GlobalFlags{}, patErr, &out)
+	if err != nil {
+		t.Fatalf("runDirectPATAuthCheckWaitOnly error = %v", err)
+	}
+	if opened {
+		t.Fatal("wait-only auth must not open a second browser tab")
+	}
+	if !strings.Contains(out.String(), "授权链接:") {
+		t.Fatalf("wait-only auth should still print the authorization URL, output:\n%s", out.String())
+	}
+}
+
+func TestResolvePATPollInterval(t *testing.T) {
+	tests := []struct {
+		name    string
+		seconds int
+		want    time.Duration
+	}{
+		{name: "default", seconds: 0, want: patPollInterval},
+		{name: "server value", seconds: 3, want: 3 * time.Second},
+		{name: "cap excessive value", seconds: 90, want: patMaxPollInterval},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := resolvePATPollInterval(tt.seconds); got != tt.want {
+				t.Fatalf("resolvePATPollInterval(%d) = %s, want %s", tt.seconds, got, tt.want)
+			}
+		})
 	}
 }
 

@@ -27,8 +27,8 @@ import (
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/i18n"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/tui"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
-	"github.com/fatih/color"
 )
 
 const (
@@ -590,20 +590,21 @@ func truncateBody(body []byte, maxLen int) string {
 }
 
 var (
-	dfBold   = color.New(color.Bold).SprintFunc()
-	dfGreen  = color.New(color.FgGreen).SprintFunc()
-	dfYellow = color.New(color.FgYellow).SprintFunc()
-	dfRed    = color.New(color.FgRed).SprintFunc()
-	dfCyan   = color.New(color.FgCyan).SprintFunc()
-	dfDim    = color.New(color.Faint).SprintFunc()
+	dfBold   = tui.Bold
+	dfGreen  = tui.Success
+	dfYellow = tui.Warning
+	dfRed    = tui.Danger
+	dfCyan   = tui.Cyan
+	dfDim    = tui.Dim
 )
 
 func dfPrintStep(w io.Writer, step int, message string, attempt int) {
+	label := fmt.Sprintf("Step %d", step)
 	if attempt > 1 {
-		_, _ = fmt.Fprintf(w, i18n.T("%s (第 %d 次尝试)\\n"), dfBold(fmt.Sprintf("▶ Step %d: %s", step, message)), attempt)
+		_, _ = fmt.Fprintf(w, i18n.T("%s %s: %s (第 %d 次尝试)\\n"), tui.StateMark("ok"), dfBold(label), message, attempt)
 		return
 	}
-	_, _ = fmt.Fprintf(w, "%s\n", dfBold(fmt.Sprintf("▶ Step %d: %s", step, message)))
+	_, _ = fmt.Fprintf(w, "%s %s: %s\n", tui.StateMark("ok"), dfBold(label), message)
 }
 
 func dfPrintDeviceCodeBox(w io.Writer, auth *DeviceAuthResponse) {
@@ -629,7 +630,7 @@ func dfPrintDeviceCodeBox(w io.Writer, auth *DeviceAuthResponse) {
 func dfPrintBox(w io.Writer, lines []string) {
 	maxLen := 0
 	for _, line := range lines {
-		if l := dfPlainLength(line); l > maxLen {
+		if l := tui.PlainRuneWidth(line); l > maxLen {
 			maxLen = l
 		}
 	}
@@ -638,38 +639,19 @@ func dfPrintBox(w io.Writer, lines []string) {
 	}
 
 	border := strings.Repeat("─", maxLen+4)
-	_, _ = fmt.Fprintf(w, "  ┌%s┐\n", border)
+	_, _ = fmt.Fprintf(w, "  %s\n", tui.Blue("╭"+border+"╮"))
 	for _, line := range lines {
-		pad := maxLen - dfPlainLength(line)
+		pad := maxLen - tui.PlainRuneWidth(line)
 		if pad < 0 {
 			pad = 0
 		}
-		_, _ = fmt.Fprintf(w, "  │  %s%s  │\n", line, strings.Repeat(" ", pad))
+		_, _ = fmt.Fprintf(w, "  %s  %s%s  %s\n", tui.Blue("│"), line, strings.Repeat(" ", pad), tui.Blue("│"))
 	}
-	_, _ = fmt.Fprintf(w, "  └%s┘\n", border)
-}
-
-func dfPlainLength(s string) int {
-	inEscape := false
-	length := 0
-	for _, r := range s {
-		if r == '\033' {
-			inEscape = true
-			continue
-		}
-		if inEscape {
-			if (r >= 'a' && r <= 'z') || (r >= 'A' && r <= 'Z') {
-				inEscape = false
-			}
-			continue
-		}
-		length++
-	}
-	return length
+	_, _ = fmt.Fprintf(w, "  %s\n", tui.Blue("╰"+border+"╯"))
 }
 
 func dfPrintPollStatus(w io.Writer, count, elapsedSec int) {
-	_, _ = fmt.Fprintf(w, "  %s ", dfDim(fmt.Sprintf(i18n.T("[%d] 轮询中... (%ds)"), count, elapsedSec)))
+	_, _ = fmt.Fprintf(w, "  %s %s ", tui.StateMark("pending"), dfDim(fmt.Sprintf(i18n.T("[%d] 轮询中... (%ds)"), count, elapsedSec)))
 }
 
 func dfPrintPollResult(w io.Writer, status, message string) {
