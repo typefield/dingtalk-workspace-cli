@@ -570,11 +570,17 @@ func handlePatAuthCheck(
 	}
 	if patData.Data.URI != "" {
 		authURL := apperrors.PATAuthorizationURL(patData.Data.URI)
-		fmt.Fprintf(output, "  %s 授权链接: %s\n", dim("🔗"), cyan(authURL))
-		fmt.Fprintln(output)
 		if openBrowser {
-			_ = openPATAuthorizationURI(authURL)
+			if err := openPATAuthorizationURI(authURL); err != nil {
+				fmt.Fprintf(output, "  %s 授权链接: %s\n", dim("🔗"), cyan(authURL))
+				fmt.Fprintf(output, "  %s 自动打开浏览器失败: %v\n", dim("ℹ"), err)
+			} else {
+				fmt.Fprintf(output, "  %s 已打开授权页面\n", dim("🔗"))
+			}
+		} else {
+			fmt.Fprintf(output, "  %s 授权链接: %s\n", dim("🔗"), cyan(authURL))
 		}
+		fmt.Fprintln(output)
 	}
 
 	// Poll the device flow status until user authorizes, rejects, or timeout.

@@ -1359,8 +1359,11 @@ func TestHandlePatAuthCheck_OpensOpaqueURIWithoutRebuild(t *testing.T) {
 	if opened != rawURI {
 		t.Fatalf("opened url = %q, want verbatim %q", opened, rawURI)
 	}
-	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
-		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") || strings.Contains(got, rawURI) {
+		t.Fatalf("human-readable PAT output should not emit raw authorization URL after opening browser:\n%s", got)
+	}
+	if got := buf.String(); !strings.Contains(got, "已打开授权页面") {
+		t.Fatalf("human-readable PAT output should confirm browser open without a raw URL:\n%s", got)
 	}
 }
 
@@ -1405,8 +1408,11 @@ func TestHandlePatAuthCheck_NormalizesLegacyHashRouteForBrowserAndOutput(t *test
 	if opened != wantURL {
 		t.Fatalf("opened url = %q, want normalized %q", opened, wantURL)
 	}
-	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
-		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") || strings.Contains(got, wantURL) {
+		t.Fatalf("human-readable PAT output should not emit raw authorization URL after opening browser:\n%s", got)
+	}
+	if got := buf.String(); !strings.Contains(got, "已打开授权页面") {
+		t.Fatalf("human-readable PAT output should confirm browser open without a raw URL:\n%s", got)
 	}
 }
 
