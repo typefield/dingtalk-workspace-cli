@@ -313,3 +313,101 @@ func TestOpencodeForwarderMessageGovernedByTurnCtx(t *testing.T) {
 		t.Fatal("a reply slower than the turn ctx should fail")
 	}
 }
+
+// opencodeForwarder must satisfy sessionClearer so /clear gets a real delete.
+var _ sessionClearer = (*opencodeForwarder)(nil)
+
+// TestOpencodeForwarderClearDeletesServerSession pins /clear semantics: it issues
+// a real DELETE /session/:id on the opencode server and drops the local mapping.
+func TestOpencodeForwarderClearDeletesServerSession(t *testing.T) {
+	dir := t.TempDir()
+	var deleted []string
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/global/health":
+			_, _ = w.Write([]byte(`{"healthy":true}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session":
+			_, _ = w.Write([]byte(`{"id":"ses_clear"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session/ses_clear/message":
+			_, _ = w.Write([]byte(`{"parts":[{"type":"text","text":"hi"}]}`))
+		case r.Method == http.MethodDelete && r.URL.Path == "/session/ses_clear":
+			deleted = append(deleted, r.URL.Path)
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	f := &opencodeForwarder{
+		bin:      "opencode",
+		timeout:  5 * time.Second,
+		workDir:  dir,
+		sessions: newOpencodeSessions(filepath.Join(dir, "s.json")),
+		server:   &opencodeServer{baseURL: ts.URL, httpClient: ts.Client()},
+	}
+
+	if _, err := f.forwardStream(context.Background(), "conv-1", "hi", nil); err != nil {
+		t.Fatalf("forward: %v", err)
+	}
+	if got := f.sessions.id("conv-1"); got != "ses_clear" {
+		t.Fatalf("session = %q, want ses_clear", got)
+	}
+
+	if err := f.clearSession(context.Background(), "conv-1"); err != nil {
+		t.Fatalf("clearSession: %v", err)
+	}
+	if len(deleted) != 1 || deleted[0] != "/session/ses_clear" {
+		t.Fatalf("server deletes = %v, want one DELETE /session/ses_clear", deleted)
+	}
+	if got := f.sessions.id("conv-1"); got != "" {
+		t.Fatalf("session after /clear = %q, want empty", got)
+	}
+}
+
+// TestOpencodeForwarderResetKeepsServerSession pins /new semantics: resetSession
+// only drops the local mapping and must NOT delete the server-side session, so
+// the old session stays resumable (the /new vs /clear distinction).
+func TestOpencodeForwarderResetKeepsServerSession(t *testing.T) {
+	dir := t.TempDir()
+	deletes := 0
+
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.URL.Path == "/global/health":
+			_, _ = w.Write([]byte(`{"healthy":true}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session":
+			_, _ = w.Write([]byte(`{"id":"ses_keep"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session/ses_keep/message":
+			_, _ = w.Write([]byte(`{"parts":[{"type":"text","text":"hi"}]}`))
+		case r.Method == http.MethodDelete:
+			deletes++
+			_, _ = w.Write([]byte(`{}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+
+	f := &opencodeForwarder{
+		bin:      "opencode",
+		timeout:  5 * time.Second,
+		workDir:  dir,
+		sessions: newOpencodeSessions(filepath.Join(dir, "s.json")),
+		server:   &opencodeServer{baseURL: ts.URL, httpClient: ts.Client()},
+	}
+
+	if _, err := f.forwardStream(context.Background(), "conv-1", "hi", nil); err != nil {
+		t.Fatalf("forward: %v", err)
+	}
+	f.resetSession("conv-1")
+	if deletes != 0 {
+		t.Fatalf("resetSession issued %d DELETE(s), want 0 (old session must stay resumable)", deletes)
+	}
+	if got := f.sessions.id("conv-1"); got != "" {
+		t.Fatalf("session after /new = %q, want empty", got)
+	}
+}

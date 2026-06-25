@@ -80,7 +80,8 @@ dws dev connect --unified-app-id <unifiedAppId> --channel codex --format json
 ## 机制与环境覆盖
 
 - **stream-bridge 渠道**：Go 原生进程内 Stream 转发器，订阅 `TOPIC_ROBOT`。Claude/CodeBuddy/WorkBuddy/custom 每条 @机器人消息起一个无头 CLI 实例 → stdout 回钉钉；Qoder/QoderWork 会在 connect 生命周期内复用一个常驻 `qodercli --print --output-format stream-json --input-format stream-json` 子进程。
-- **会话记忆**：Codex 记录 `conversationId -> threadId`；opencode 记录 `conversationId -> sessionId` 并通过本地 `opencode serve` 的 HTTP API 续聊；Qoder/QoderWork 记录 `conversationId -> Qoder session_id` 并在常驻 stream-json 子进程里续聊；Claude/CodeBuddy/WorkBuddy 使用 `--session-id`/`--resume`。映射按机器人落盘，重启后可继续；`/new`、`/start`、`/reset`、`/clear` 会清空当前会话映射。
+- **会话记忆**：Codex 记录 `conversationId -> threadId`；opencode 记录 `conversationId -> sessionId` 并通过本地 `opencode serve` 的 HTTP API 续聊；Qoder/QoderWork 记录 `conversationId -> Qoder session_id` 并在常驻 stream-json 子进程里续聊；Claude/CodeBuddy/WorkBuddy 使用 `--session-id`/`--resume`。映射按机器人落盘，重启后可继续。
+- **会话指令 `/new` vs `/clear`**（对齐各渠道真实能力）：`/new`（含 `/start`、`/reset`）开新会话——丢掉当前映射、下一条消息起新 session，**旧 session 保留**（opencode/Codex/Claude 侧仍可按 id 续）；`/clear` 则**真正清掉当前会话**——能删的渠道调 agent 原生删除原语（opencode `DELETE /session/:id`），不暴露删除接口的渠道（Codex/Qoder/Claude 系）降级为与 `/new` 相同的重置。两者都只回 ack、不消耗 agent turn。
 - **官方渠道**（openclaw/hermes）：dws 不代建机器人，输出官方 onboarding 指引。
 - 环境覆盖：`DWS_AGENT_CMD`(整条命令覆盖,覆盖时不再注入模型/会话参数) / `DWS_AGENT_MODEL` / `DWS_AGENT_WORKDIR` / `DWS_CONNECT_CMD` / `DWS_CONNECT_NO_INSTALL=1` / `DWS_AGENT_TIMEOUT_MS`。
 

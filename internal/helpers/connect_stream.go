@@ -82,6 +82,16 @@ type sessionResetter interface {
 	resetSession(convID string)
 }
 
+// sessionClearer is an optional capability beyond sessionResetter: a forwarder
+// that can actively dispose a conversation's session on the agent side (e.g.
+// opencode's DELETE /session/:id), so /clear truly wipes it instead of only
+// forgetting the local id mapping. Channels whose agent exposes no delete in
+// the mode DWS drives it fall back to sessionResetter, so /clear behaves like
+// /new there.
+type sessionClearer interface {
+	clearSession(ctx context.Context, convID string) error
+}
+
 type forwarderCloser interface {
 	close() error
 }
@@ -1004,10 +1014,26 @@ func runStreamConnector(ctx context.Context, channel, clientID, clientSecret str
 			if action, isCmd := parseConnectControlCommand(text); isCmd {
 				ackText := action.ack
 				if action.resetsSession() {
-					if r, canReset := fwd.(sessionResetter); canReset {
-						r.resetSession(convID)
-					} else {
-						ackText = "当前渠道暂不支持会话指令（/new、/clear）。"
+					cleared := false
+					// /clear prefers a real server-side session delete when the
+					// channel's agent supports one (opencode). /new always just
+					// drops the local mapping so the old session stays resumable.
+					if action.name == "clear" {
+						if c, canClear := fwd.(sessionClearer); canClear {
+							cctx, cancel := context.WithTimeout(context.Background(), 15*time.Second)
+							if err := c.clearSession(cctx, convID); err != nil {
+								fmt.Fprintf(os.Stderr, "[connect] /clear 删除会话失败 (%s, msgId=%s): %v\n", channel, msgID, err)
+							}
+							cancel()
+							cleared = true
+						}
+					}
+					if !cleared {
+						if r, canReset := fwd.(sessionResetter); canReset {
+							r.resetSession(convID)
+						} else {
+							ackText = "当前渠道暂不支持会话指令（/new、/clear）。"
+						}
 					}
 				}
 				if serr := replier.SimpleReplyText(context.Background(), webhook, []byte(ackText)); serr != nil {

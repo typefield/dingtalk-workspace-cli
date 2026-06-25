@@ -159,12 +159,32 @@ func (f *opencodeForwarder) close() error {
 }
 
 // resetSession drops the conversation's opencode session so the next message
-// starts a fresh one. Implements sessionResetter for the /new and /clear
-// commands. A no-op when per-conversation memory is disabled.
+// starts a fresh one, leaving the old session on the opencode server (it stays
+// resumable by id). Backs the /new command. A no-op when memory is disabled.
 func (f *opencodeForwarder) resetSession(convID string) {
 	if f.sessions != nil {
 		f.sessions.reset(convID)
 	}
+}
+
+// clearSession backs the /clear command: it actively deletes the conversation's
+// session on the opencode server (DELETE /session/:id) and then drops the local
+// mapping, so the context is truly wiped rather than just forgotten. A missing
+// server session is treated as already cleared. Implements sessionClearer.
+func (f *opencodeForwarder) clearSession(ctx context.Context, convID string) error {
+	if f.sessions == nil {
+		return nil
+	}
+	sessionID := f.sessions.id(convID)
+	f.sessions.reset(convID)
+	if strings.TrimSpace(sessionID) == "" {
+		return nil
+	}
+	client, err := f.server.ensure(ctx)
+	if err != nil {
+		return err
+	}
+	return client.deleteSession(ctx, sessionID)
 }
 
 type opencodeServer struct {
@@ -330,6 +350,21 @@ func (c *opencodeHTTPClient) createSession(ctx context.Context) (string, error) 
 		return "", fmt.Errorf("opencode server response missing session id")
 	}
 	return out.ID, nil
+}
+
+// deleteSession disposes a session on the opencode server (DELETE /session/:id).
+// A 404 (session already gone) is treated as success so /clear stays idempotent.
+func (c *opencodeHTTPClient) deleteSession(ctx context.Context, sessionID string) error {
+	if strings.TrimSpace(sessionID) == "" {
+		return nil
+	}
+	if err := c.doJSON(ctx, http.MethodDelete, "/session/"+sessionID, nil, nil); err != nil {
+		if errors.Is(err, errOpencodeSessionMissing) {
+			return nil
+		}
+		return err
+	}
+	return nil
 }
 
 func (c *opencodeHTTPClient) sendMessage(ctx context.Context, sessionID, text, model string) (string, error) {
