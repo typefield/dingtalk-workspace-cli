@@ -944,6 +944,20 @@ func jsonRPCToolName(req map[string]any) string {
 	return name
 }
 
+func TestDetectBusinessErrorNestedServiceResult(t *testing.T) {
+	content := map[string]any{
+		"success": false,
+		"result": map[string]any{
+			"success":   false,
+			"errorCode": "ROBOT_NOT_FOUND",
+			"errorMsg":  "robot info is not exist",
+		},
+	}
+	if got := detectBusinessError(content); got != "robot info is not exist" {
+		t.Fatalf("detectBusinessError() = %q, want nested errorMsg", got)
+	}
+}
+
 func writeJSONRPCToolResult(t *testing.T, w http.ResponseWriter, req map[string]any, content map[string]any, isError bool) {
 	t.Helper()
 	_ = json.NewEncoder(w).Encode(map[string]any{
