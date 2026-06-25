@@ -896,7 +896,7 @@ func authLoginRecommendPlanSkipsInteractiveAuthorization(plan *pat.LoginRecommen
 	if plan == nil {
 		return false
 	}
-	return plan.AllGranted || (len(plan.Scopes) == 0 && len(plan.Products) == 0)
+	return plan.AllGranted || len(plan.Scopes) == 0
 }
 
 func authLoginAllowsInteractiveDefault(cmd *cobra.Command, format string) bool {

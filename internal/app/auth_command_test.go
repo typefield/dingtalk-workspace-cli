@@ -414,7 +414,7 @@ func TestAuthLoginDefaultTUIModeSkipsSelectorWhenAllGranted(t *testing.T) {
 	}
 }
 
-func TestAuthLoginDefaultTUIModeRecommendedAlreadyGrantedSkipsAuthorizationPage(t *testing.T) {
+func TestAuthLoginDefaultTUIModeRecommendedAlreadyGrantedSkipsTUIAndAuthorizationPage(t *testing.T) {
 	t.Setenv(keychain.DisableKeychainEnv, "1")
 	t.Setenv(keychain.StorageDirEnv, t.TempDir())
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
@@ -440,10 +440,9 @@ func TestAuthLoginDefaultTUIModeRecommendedAlreadyGrantedSkipsAuthorizationPage(
 		t.Fatal("default auth login must not apply a post-login guide action")
 		return nil
 	}
-	var scopeSelectorCalled bool
 	loginRecommendScopeModeSelector = func() (pat.LoginRecommendScopeMode, error) {
-		scopeSelectorCalled = true
-		return pat.LoginRecommendScopeRecommended, nil
+		t.Fatal("already-granted recommended auth must not call the scope-mode TUI")
+		return "", nil
 	}
 	loginRecommendProductSelector = func([]pat.LoginRecommendProduct) ([]string, error) {
 		t.Fatal("already-granted recommended auth must not call product-domain TUI")
@@ -461,9 +460,6 @@ func TestAuthLoginDefaultTUIModeRecommendedAlreadyGrantedSkipsAuthorizationPage(
 
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("auth login error = %v\noutput:\n%s", err, out.String())
-	}
-	if !scopeSelectorCalled {
-		t.Fatal("scope-mode TUI was not called")
 	}
 	if len(fake.tools) != 1 {
 		t.Fatalf("CallTool count = %d, want only preflight recommend plan", len(fake.tools))
