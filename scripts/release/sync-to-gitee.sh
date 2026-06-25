@@ -62,11 +62,29 @@ fi
 [ -n "$release_id" ] || { echo "❌ Could not get/create Gitee release for ${VERSION}. Response: ${rel_json}" >&2; exit 1; }
 echo "   Gitee release id = ${release_id}"
 
+# ── Names already attached to this Gitee release (for idempotent re-runs) ─────
+# Re-fetch the release so the asset list reflects a release we may have just
+# created. Skipping already-present files makes a re-run upload only what is
+# missing — so a previous run that timed out mid-upload can be repaired cheaply
+# instead of re-uploading everything (and creating duplicate attachments).
+existing_names="$(curl -fsSL "${base}/releases/${release_id}?access_token=${GITEE_TOKEN}" 2>/dev/null \
+  | python3 -c 'import json,sys
+try:
+    print("\n".join(a.get("name","") for a in json.load(sys.stdin).get("assets",[])))
+except Exception:
+    pass' 2>/dev/null || true)"
+
 # ── Upload each artifact as a release attachment ──────────────────────────────
 uploaded=0
+skipped=0
 for f in "$DIST_DIR"/dws-*.tar.gz "$DIST_DIR"/dws-*.zip "$DIST_DIR"/checksums.txt; do
   [ -f "$f" ] || continue
   fn="$(basename "$f")"
+  if printf '%s\n' "$existing_names" | grep -qxF "$fn"; then
+    echo "   ✓ ${fn} already on Gitee — skip"
+    skipped=$((skipped + 1))
+    continue
+  fi
   echo "   ⬆ ${fn}"
   resp="$(curl -fsSL -X POST "${base}/releases/${release_id}/attach_files" \
     -F "access_token=${GITEE_TOKEN}" \
@@ -78,7 +96,10 @@ for f in "$DIST_DIR"/dws-*.tar.gz "$DIST_DIR"/dws-*.zip "$DIST_DIR"/checksums.tx
   fi
 done
 
-[ "$uploaded" -gt 0 ] || { echo "❌ No artifacts uploaded. Did the build (goreleaser) run?" >&2; exit 1; }
-echo "✅ Uploaded ${uploaded} asset(s) to Gitee release ${VERSION}."
+if [ "$uploaded" -eq 0 ] && [ "$skipped" -eq 0 ]; then
+  echo "❌ No artifacts found to upload. Did the build (goreleaser) run / were assets downloaded into ${DIST_DIR}?" >&2
+  exit 1
+fi
+echo "✅ Gitee release ${VERSION}: uploaded ${uploaded} asset(s), skipped ${skipped} already present."
 echo "   China install:  DWS_GITEE_REPO=${GITEE_REPO} \\"
 echo "     curl -fsSL https://gitee.com/${GITEE_REPO}/raw/main/scripts/install.sh | sh"
