@@ -39,6 +39,10 @@ type Config struct {
 	// ClientID is forwarded to busctl.Spawn so it can pass --client-id
 	// when forking _bus.
 	ClientID string
+	// SpawnExtraArgs are forwarded to the hidden _bus process when consume.Run
+	// needs to start a daemon. Used for source-mode options that must be
+	// reproduced in the child process.
+	SpawnExtraArgs []string
 
 	// EventTypes / Filter / Compact are forwarded to the bus via Hello
 	// for server-side pushdown filtering.
@@ -142,9 +146,10 @@ func Run(ctx context.Context, cfg Config) error {
 	defer pipeline.Close()
 
 	conn, err := busctl.Discover(busctl.DiscoverConfig{
-		WorkDir:     cfg.WorkDir,
-		IPCEndpoint: cfg.IPCEndpoint,
-		ClientID:    cfg.ClientID,
+		WorkDir:        cfg.WorkDir,
+		IPCEndpoint:    cfg.IPCEndpoint,
+		ClientID:       cfg.ClientID,
+		SpawnExtraArgs: cfg.SpawnExtraArgs,
 	})
 	if err != nil {
 		return fmt.Errorf("consume: discover bus: %w", err)
