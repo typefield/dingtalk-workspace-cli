@@ -370,9 +370,44 @@ func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 		"name":      "Waker",
 		"sortType":  "gmt_modified",
 		"sortOrder": "desc",
+		"appType":   "inner",
 	}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	}
+}
+
+func TestDevAppListPersonalAppType(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppCommand(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"list", "--app-type", "personal", "--page-size", "10"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	if got := runner.last.Tool; got != "list_dev_app" {
+		t.Fatalf("Tool = %q, want list_dev_app", got)
+	}
+	want := map[string]any{"appType": "personal", "pageSize": 10}
+	if !reflect.DeepEqual(runner.last.Params, want) {
+		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	}
+}
+
+func TestDevAppInvalidAppTypeRejected(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppCommand(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"list", "--app-type", "bogus"})
+
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "app-type") {
+		t.Fatalf("error = %v, want app-type validation error", err)
 	}
 }
 
@@ -421,9 +456,42 @@ func TestDevAppCreateUsesCurrentInnerToolAndWriteGuard(t *testing.T) {
 		t.Fatalf("Tool = %q, want create_dev_app", got)
 	}
 
-	want := map[string]any{"name": "Demo", "desc": "internal app"}
+	want := map[string]any{"name": "Demo", "desc": "internal app", "appType": "inner"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	}
+}
+
+func TestDevAppCreatePersonalAppType(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"dev", "app", "create", "--name", "MyApp", "--desc", "personal app", "--app-type", "personal", "--yes"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	if got := runner.last.Tool; got != "create_dev_app" {
+		t.Fatalf("Tool = %q, want create_dev_app", got)
+	}
+	want := map[string]any{"name": "MyApp", "desc": "personal app", "appType": "personal"}
+	if !reflect.DeepEqual(runner.last.Params, want) {
+		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	}
+}
+
+func TestDevAppCreateRequiresDesc(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppTestRoot(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"dev", "app", "create", "--name", "Demo", "--yes"})
+
+	err := root.Execute()
+	if err == nil || !strings.Contains(err.Error(), "--desc") {
+		t.Fatalf("error = %v, want --desc required validation", err)
 	}
 }
 

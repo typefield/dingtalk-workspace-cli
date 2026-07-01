@@ -335,13 +335,18 @@ func newDevAppEventUnsubscribeCommand(runner executor.Runner) *cobra.Command {
 
 func newDevAppListCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "list",
-		Short:             "查询开放平台企业内部应用列表",
-		Example:           "  dws dev app list --name DemoApp --page-size 20 --format json",
+		Use:   "list",
+		Short: "查询开放平台应用列表（企业内部应用或三方个人应用）",
+		Example: `  dws dev app list --name DemoApp --page-size 20 --format json
+  dws dev app list --app-type personal --page-size 20 --format json`,
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			params := map[string]any{}
+			appType, err := devAppValidateAppType(cmd)
+			if err != nil {
+				return err
+			}
+			params := map[string]any{"appType": appType}
 			devAppApplyCursorParams(cmd, params)
 			devAppPutString(params, "name", devAppFlagOrFallback(cmd, "name", "keyword"))
 			devAppPutString(params, "appKey", devAppStringFlag(cmd, "app-key"))
@@ -359,6 +364,7 @@ func newDevAppListCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("name", "", "应用名称关键词")
 	cmd.Flags().String("keyword", "", "--name 的兼容别名")
 	_ = cmd.Flags().MarkHidden("keyword")
+	cmd.Flags().String("app-type", "inner", "应用类型：inner=企业内部应用（默认），personal=三方个人应用；查询三方个人应用必须传 personal")
 	cmd.Flags().String("app-key", "", "按 appKey/clientId 过滤")
 	cmd.Flags().Int("app-group-id", 0, "应用分组 ID")
 	cmd.Flags().String("creator", "", "创建人名称关键词")
@@ -396,9 +402,10 @@ func newDevAppGetCommand(runner executor.Runner) *cobra.Command {
 
 func newDevAppCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "create",
-		Short:             "创建开放平台企业内部应用",
-		Example:           "  dws dev app create --name DemoApp --desc 内部应用 --dry-run --format json",
+		Use:   "create",
+		Short: "创建开放平台应用（企业内部应用或三方个人应用）",
+		Example: `  dws dev app create --name DemoApp --desc 内部应用 --dry-run --format json
+  dws dev app create --name MyPersonalApp --desc 个人应用 --app-type personal --dry-run`,
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -409,14 +416,26 @@ func newDevAppCreateCommand(runner executor.Runner) *cobra.Command {
 			if name == "" {
 				return apperrors.NewValidation("--name 为必填")
 			}
-			params := map[string]any{"name": name}
-			devAppPutString(params, "desc", devAppStringFlag(cmd, "desc"))
+			desc := devAppStringFlag(cmd, "desc")
+			if desc == "" {
+				return apperrors.NewValidation("--desc 为必填")
+			}
+			appType, err := devAppValidateAppType(cmd)
+			if err != nil {
+				return err
+			}
+			params := map[string]any{
+				"name":    name,
+				"desc":    desc,
+				"appType": appType,
+			}
 			devAppPutString(params, "iconMediaId", devAppStringFlag(cmd, "icon-media-id"))
 			return runDevAppTool(runner, cmd, devAppCreateTool, params)
 		},
 	}
 	cmd.Flags().String("name", "", "应用名称 (必填)")
-	cmd.Flags().String("desc", "", "应用描述")
+	cmd.Flags().String("desc", "", "应用描述 (必填)")
+	cmd.Flags().String("app-type", "inner", "应用类型：inner=企业内部应用（默认），personal=三方个人应用")
 	cmd.Flags().String("icon-media-id", "", "应用图标 mediaId")
 	preferLegacyLeaf(cmd)
 	annotateDevAppTool(cmd, devAppCreateTool)
@@ -1952,4 +1971,19 @@ func devAppPutInt(params map[string]any, key string, value int) {
 	if value != 0 {
 		params[key] = value
 	}
+}
+
+// devAppValidateAppType validates and normalizes the --app-type flag.
+// Accepts: "inner", "personal", or empty (defaults to "inner").
+// Returns the normalized value or an error.
+func devAppValidateAppType(cmd *cobra.Command) (string, error) {
+	raw := devAppStringFlag(cmd, "app-type")
+	if raw == "" {
+		return "inner", nil
+	}
+	normalized := strings.ToLower(raw)
+	if normalized != "inner" && normalized != "personal" {
+		return "", apperrors.NewValidation("--app-type 只能是 inner（企业内部应用）或 personal（三方个人应用）")
+	}
+	return normalized, nil
 }
