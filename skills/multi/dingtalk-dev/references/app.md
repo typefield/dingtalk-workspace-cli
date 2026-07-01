@@ -4,9 +4,25 @@
 
 应用列表查询、详情、创建、修改、生命周期启停和删除。参数查 `dws schema dev.app.<method>`（list / get / create / update / delete / disable / enable）。
 
+`create` 的 `--name` 和 `--desc` 均为必填；`--app-type`（inner/personal）可选，默认 inner。
+
 ## 应用定位
 
 所有单应用命令统一只用 `--unified-app-id`（全树主键）定位。`--app-key`/`--name` 只在 `dev app list` 里作列表过滤，不能定位单应用。拿到 appKey/agentId 时，只能做只读候选排查；写操作必须由用户或上游结果提供明确 `unifiedAppId`。
+
+## 应用类型 appType
+
+开放平台应用分两类，`create` 和 `list` 用 `--app-type` 区分：`inner`（企业内部应用，默认）或 `personal`（三方个人应用/个人小程序应用）。
+
+| | 企业内部应用 `inner`（默认） | 三方个人应用 `personal` |
+|---|---|---|
+| 归属 | 属于某个企业/组织，只在该组织内可用 | 属于开发者个人，跨组织分发 |
+| 典型场景 | 组织内部 H5 微应用、小程序、机器人 | 个人开发者上架、面向多组织的应用 |
+| 创建 | `create`（默认） | `create --app-type personal` |
+| 列表 | `list`（默认 inner） | `list --app-type personal` |
+
+- 两类是分开的两套列表，`list` 不跨类型混返：查三方个人应用**必须**显式传 `--app-type personal`，查企业内部应用可省略。
+- 创建拿到的 `unifiedAppId` 是全树主键；其余子命令（get/update/权限/成员/机器人/版本等）不区分 appType，统一按 `--unified-app-id` 定位。
 
 ## 应用状态 appStatus
 
