@@ -27,14 +27,15 @@
 |---|---|---|
 | **类型感知入口** | `create`、`list` | schema 显式带 `--app-type` 参数，`personal` 已在预发 MCP 验证 |
 | **通用操作（按 unifiedAppId 定位）** | `get`、`update`、`delete`、`enable`、`disable` | 无类型参数；拿到个人应用 unifiedAppId 后用同一套命令操作 |
-| **子资源管理** | `credentials get`、`permission list/add/remove`、`member list/add/remove`、`webapp get/config`、`security config`、`event list/subscribe/unsubscribe` | 无类型参数，按 unifiedAppId 定位 |
-| **机器人能力** | `robot submit/result/config/enable/offline` | 同上 |
+| **子资源管理** | `credentials get`、`permission list/add/remove`、`member list/add/remove`、`security config`、`event list/subscribe/unsubscribe` | 无类型参数，按 unifiedAppId 定位 |
 | **版本发布** | `version create/list/detail/publish/status/check-approval` | 同上 |
+| **⚠️ 不支持（企业内部应用专属）** | `webapp get/config`、`robot submit/result/config/enable/offline` | 三方个人应用不支持网页应用配置和机器人能力 |
 
 **要点：**
 - 只有 `create`/`list` 在参数层区分应用类型，是个人应用的唯一显式入口。
 - 两类是分开的两套列表，`list` 不跨类型混返：查三方个人应用**必须**显式传 `--app-type personal`，查企业内部应用可省略。
 - 其余子命令无类型参数，统一按 `--unified-app-id` 定位。服务端 schema 描述多写"企业内部应用"，但 unifiedAppId 是跨类型的全树主键，拿到个人应用 id 后同样用这些命令操作。
+- **三方个人应用不支持网页应用（webapp）和机器人（robot）能力**，这两类是企业内部应用的专属能力。
 
 ## 应用状态 appStatus
 
