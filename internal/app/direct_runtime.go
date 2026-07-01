@@ -50,11 +50,18 @@ const (
 	devappServerPath      = "/server/op-app"
 )
 
-// devappMCPEndpoint resolves the open-platform app-management MCP endpoint
-// from the configured gateway base URL, so it follows the active environment
-// (production by default, pre when ~/.dws/mcp_url points at the pre gateway).
+// devappMCPEndpoint resolves the open-platform app-management MCP endpoint.
+//
+// NOTE (pre-release pin): devapp is temporarily forced onto the pre-release
+// gateway so `dws dev app create/list --app-type personal` can be exercised
+// against the pre server that supports personal apps. Revert the host rewrite
+// before shipping to production.
 func devappMCPEndpoint() string {
-	return defaultPATGatewayBaseURL() + devappServerPath
+	base := defaultPATGatewayBaseURL()
+	if !strings.Contains(base, "pre-mcp-gw.dingtalk.com") {
+		base = strings.Replace(base, "mcp-gw.dingtalk.com", "pre-mcp-gw.dingtalk.com", 1)
+	}
+	return base + devappServerPath
 }
 
 func defaultPATServerDescriptor() market.ServerDescriptor {
