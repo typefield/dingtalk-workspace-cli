@@ -79,6 +79,14 @@ dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret
 
 两类是**分开的两套列表**，`list` 不跨类型混返：查企业内部应用不用传（默认 inner），查三方个人应用**必须**显式 `--app-type personal`，否则查不到。创建后拿到的 `unifiedAppId` 是全树主键，后续 get/update/权限/成员/机器人/版本等所有子命令都只认 `unifiedAppId`，不再关心它属于哪类。
 
+**个人应用支持的命令：**
+
+- **类型感知入口**（显式带 `--app-type personal`）：`create`、`list`。这两个是唯一在参数层区分应用类型的命令。
+- **通用生命周期**（按 `--unified-app-id` 定位）：`get`、`update`、`delete`、`disable`、`enable`。
+- **子资源与能力**（按 `--unified-app-id` 定位）：`credentials`、`permission`、`member`、`webapp`、`security`、`robot`、`version`、`event`。
+
+后续命令的服务端 schema 描述多写"企业内部应用"，但 `unifiedAppId` 是跨类型的全树主键——拿到个人应用的 `unifiedAppId` 后，同样用这些命令操作，不需要也没有额外的类型参数。
+
 ```bash
 # 查询应用列表（默认企业内部应用）
 dws dev app list --format json

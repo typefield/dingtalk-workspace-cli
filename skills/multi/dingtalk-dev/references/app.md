@@ -21,8 +21,20 @@
 | 创建 | `create`（默认） | `create --app-type personal` |
 | 列表 | `list`（默认 inner） | `list --app-type personal` |
 
+**个人应用支持的命令：**
+
+| 操作类型 | 支持的命令 | 说明 |
+|---|---|---|
+| **类型感知入口** | `create`、`list` | schema 显式带 `--app-type` 参数，`personal` 已在预发 MCP 验证 |
+| **通用操作（按 unifiedAppId 定位）** | `get`、`update`、`delete`、`enable`、`disable` | 无类型参数；拿到个人应用 unifiedAppId 后用同一套命令操作 |
+| **子资源管理** | `credentials get`、`permission list/add/remove`、`member list/add/remove`、`webapp get/config`、`security config`、`event list/subscribe/unsubscribe` | 无类型参数，按 unifiedAppId 定位 |
+| **机器人能力** | `robot submit/result/config/enable/offline` | 同上 |
+| **版本发布** | `version create/list/detail/publish/status/check-approval` | 同上 |
+
+**要点：**
+- 只有 `create`/`list` 在参数层区分应用类型，是个人应用的唯一显式入口。
 - 两类是分开的两套列表，`list` 不跨类型混返：查三方个人应用**必须**显式传 `--app-type personal`，查企业内部应用可省略。
-- 创建拿到的 `unifiedAppId` 是全树主键；其余子命令（get/update/权限/成员/机器人/版本等）不区分 appType，统一按 `--unified-app-id` 定位。
+- 其余子命令无类型参数，统一按 `--unified-app-id` 定位。服务端 schema 描述多写"企业内部应用"，但 unifiedAppId 是跨类型的全树主键，拿到个人应用 id 后同样用这些命令操作。
 
 ## 应用状态 appStatus
 
