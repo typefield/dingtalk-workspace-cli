@@ -915,7 +915,7 @@ func newDevAppSecurityConfigCommand(runner executor.Runner) *cobra.Command {
 	}
 	addDevAppUnifiedIDFlag(cmd)
 	cmd.Flags().String("ip-whitelist", "", "出口 IP 白名单，多个用逗号或分号分隔（整组覆盖，非追加）")
-	cmd.Flags().String("redirect-urls", "", "登录重定向 URL，多个用逗号或分号分隔（整组覆盖，非追加）")
+	cmd.Flags().String("redirect-urls", "", "登录重定向/OAuth 回调 URL，多个用逗号或分号分隔（整组覆盖，非追加）")
 	cmd.Flags().String("sso-urls", "", "端内免登地址，多个用逗号或分号分隔（整组覆盖，非追加）")
 	preferLegacyLeaf(cmd)
 	annotateDevAppTool(cmd, devAppSecurityConfigTool)
