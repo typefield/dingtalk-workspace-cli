@@ -139,6 +139,7 @@ func helperLeafSchema(ctx context.Context, cmd *cobra.Command, fetch HelperToolF
 			"error": fmt.Sprintf("MCP tool %q not found in %s tools/list", toolName, source),
 		}, nil
 	}
+	tool = helperSchemaCompatPatch(tool)
 
 	return map[string]any{
 		"description": tool.Description,
@@ -146,6 +147,68 @@ func helperLeafSchema(ctx context.Context, cmd *cobra.Command, fetch HelperToolF
 		"source":      "mcp:" + source,
 		"parameters":  helperFlatParameters(tool),
 	}, nil
+}
+
+// helperSchemaCompatPatch fixes narrow live-schema gaps for helper commands
+// whose cobra surface already accepts the intended parameter contract. It only
+// touches display schema; tool execution still sends the flags registered by
+// the helper command.
+func helperSchemaCompatPatch(tool HelperToolSchema) HelperToolSchema {
+	switch tool.Name {
+	case "list_dev_app":
+		return helperSchemaEnsureStringParam(tool, "appType", "应用类型过滤。可选值：internal 表示企业内部应用（默认）；individual 表示三方个人应用。查询三方个人应用时必须传 individual。")
+	case "create_dev_app":
+		tool = helperSchemaEnsureStringParam(tool, "appType", "应用类型。可选值：internal 表示企业内部应用（默认）；individual 表示三方个人应用。")
+		tool = helperSchemaSetParamDescription(tool, "name", "应用名称，必填，1-64 个字符；支持中文、英文字母、数字及 - _ # * +。")
+		tool = helperSchemaSetParamDescription(tool, "desc", "应用描述，必填，1-400 个字符；支持中文、英文字母、数字及常用中英文标点和空格。")
+		return tool
+	default:
+		return tool
+	}
+}
+
+func helperSchemaEnsureStringParam(tool HelperToolSchema, name, description string) HelperToolSchema {
+	if tool.Properties != nil {
+		if _, ok := tool.Properties[name]; ok {
+			return tool
+		}
+	}
+	props := helperSchemaCloneProperties(tool.Properties)
+	props[name] = map[string]any{
+		"type":        "string",
+		"description": description,
+	}
+	tool.Properties = props
+	return tool
+}
+
+func helperSchemaSetParamDescription(tool HelperToolSchema, name, description string) HelperToolSchema {
+	if tool.Properties == nil {
+		return tool
+	}
+	raw, ok := tool.Properties[name]
+	if !ok {
+		return tool
+	}
+	props := helperSchemaCloneProperties(tool.Properties)
+	prop := map[string]any{}
+	if rawProp, ok := raw.(map[string]any); ok {
+		for k, v := range rawProp {
+			prop[k] = v
+		}
+	}
+	prop["description"] = description
+	props[name] = prop
+	tool.Properties = props
+	return tool
+}
+
+func helperSchemaCloneProperties(in map[string]any) map[string]any {
+	props := make(map[string]any, len(in)+1)
+	for k, v := range in {
+		props[k] = v
+	}
+	return props
 }
 
 // helperFlatParameters projects an MCP tool's inputSchema into the gws-flat
