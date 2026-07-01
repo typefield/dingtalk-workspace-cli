@@ -31,7 +31,7 @@ import (
 // (P5) from flag values + strict resolver output.
 type Config struct {
 	// WorkDir is the bus working directory:
-	// <ConfigDir>/events/<edition>/<clientIDHash>/
+	// <ConfigDir>/events/<edition>/<source_kind>/<identity_hash>/
 	WorkDir string
 	// IPCEndpoint is the Unix socket path / Windows pipe name. Caller
 	// computes from WorkDir on Unix, from edition+hash on Windows.
@@ -41,14 +41,16 @@ type Config struct {
 	ClientID string
 	// SpawnExtraArgs are forwarded to the hidden _bus process when consume.Run
 	// needs to start a daemon. Used for source-mode options that must be
-	// reproduced in the child process.
+	// reproduced in the child process, including portal ticket mode and
+	// personal_stream.
 	SpawnExtraArgs []string
 
 	// EventTypes / Filter / Compact are forwarded to the bus via Hello
 	// for server-side pushdown filtering.
-	EventTypes []string
-	Filter     string
-	Compact    bool
+	EventTypes  []string
+	Filter      string
+	SubscribeID string
+	Compact     bool
 
 	// MaxEvents: stop after receiving this many events. 0 = no limit.
 	MaxEvents int
@@ -167,6 +169,7 @@ func Run(ctx context.Context, cfg Config) error {
 		ConsumerPID: os.Getpid(),
 		EventTypes:  cfg.EventTypes,
 		Filter:      cfg.Filter,
+		SubscribeID: cfg.SubscribeID,
 		Compact:     cfg.Compact,
 	}
 	if err := w.WriteJSON(hello); err != nil {
