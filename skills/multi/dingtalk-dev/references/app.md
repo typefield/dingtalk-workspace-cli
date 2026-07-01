@@ -29,7 +29,7 @@
 | **通用操作（按 unifiedAppId 定位）** | `get`、`update`、`delete`、`enable`、`disable` | 无类型参数；拿到个人应用 unifiedAppId 后用同一套命令操作 |
 | **子资源管理** | `credentials get`、`permission list/add/remove`、`member list/add/remove`、`security config`、`event list/subscribe/unsubscribe` | 无类型参数，按 unifiedAppId 定位 |
 | **版本发布** | `version create/list/detail/publish/status/check-approval` | 同上 |
-| **⚠️ 不支持（企业内部应用专属）** | `webapp get/config`、`robot submit/result/config/enable/offline` | 三方个人应用不支持网页应用配置和机器人能力 |
+| **不支持（企业内部应用专属）** | `webapp get/config`、`robot submit/result/config/enable/offline` | 三方个人应用不支持网页应用配置和机器人能力 |
 
 **要点：**
 - 只有 `create`/`list` 在参数层区分应用类型，是个人应用的唯一显式入口。

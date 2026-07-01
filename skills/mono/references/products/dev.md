@@ -84,7 +84,7 @@ dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret
 - **类型感知入口**（显式带 `--app-type personal`）：`create`、`list`。这两个是唯一在参数层区分应用类型的命令。
 - **通用生命周期**（按 `--unified-app-id` 定位）：`get`、`update`、`delete`、`disable`、`enable`。
 - **子资源与能力**（按 `--unified-app-id` 定位）：`credentials`、`permission`、`member`、`security`、`version`、`event`。
-- **⚠️ 不支持**：`webapp`（网页应用配置）、`robot`（机器人能力）。这两类是**企业内部应用专属**，三方个人应用不支持。
+- **不支持**：`webapp`（网页应用配置）、`robot`（机器人能力）。这两类是**企业内部应用专属**，三方个人应用不支持。
 
 后续命令的服务端 schema 描述多写"企业内部应用"，但 `unifiedAppId` 是跨类型的全树主键——拿到个人应用的 `unifiedAppId` 后，同样用这些命令操作，不需要也没有额外的类型参数。
 
