@@ -54,6 +54,7 @@ const (
 	devAppMemberAddTool      = "add_dev_app_members"
 	devAppMemberRemoveTool   = "remove_dev_app_members"
 	devAppSecurityConfigTool = "update_dev_app_security_config"
+	devAppSecurityGetTool    = "get_dev_app_security_config"
 
 	// 机器人能力（op-app MCP 工具，硬编码不走服务发现）。
 	devAppRobotSubmitTool    = "submit_robot_create_task"
@@ -164,7 +165,10 @@ func newDevAppCommand(runner executor.Runner) *cobra.Command {
 			return cmd.Help()
 		},
 	}
-	security.AddCommand(newDevAppSecurityConfigCommand(runner))
+	security.AddCommand(
+		newDevAppSecurityGetCommand(runner),
+		newDevAppSecurityConfigCommand(runner),
+	)
 
 	robot := &cobra.Command{
 		Use:               "robot",
@@ -847,6 +851,28 @@ func newDevAppMemberRemoveCommand(runner executor.Runner) *cobra.Command {
 	registerDevAppMemberMutationFlags(cmd)
 	preferLegacyLeaf(cmd)
 	annotateDevAppTool(cmd, devAppMemberRemoveTool)
+	return cmd
+}
+
+func newDevAppSecurityGetCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "get",
+		Short:             "查询开放平台应用安全配置",
+		Example:           "  dws dev app security get --unified-app-id <unifiedAppId> --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			appID, err := requiredDevAppUnifiedID(cmd)
+			if err != nil {
+				return err
+			}
+			params := map[string]any{"unifiedAppId": appID}
+			return runDevAppTool(runner, cmd, devAppSecurityGetTool, params)
+		},
+	}
+	addDevAppUnifiedIDFlag(cmd)
+	preferLegacyLeaf(cmd)
+	annotateDevAppTool(cmd, devAppSecurityGetTool)
 	return cmd
 }
 

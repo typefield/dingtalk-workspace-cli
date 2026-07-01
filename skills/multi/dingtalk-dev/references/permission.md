@@ -4,6 +4,8 @@
 
 查询、申请、取消开放平台应用的 APP 应用权限和 SNS 个人权限。参数查 `dws schema dev.app.permission.<method>`。
 
+三方个人应用支持 `permission list/add/remove`，定位方式仍然只用 `--unified-app-id`。权限点查询和申请使用同一套 `scopeValue` 语义；不要传 appKey、agentId 或 API 名做写操作定位。
+
 ## 权限列表
 
 `--scope-value` 传入即进单权限详情模式；`--scope-type` 取 `APP`/`SNS`，留空返回两者；一个应用可能 150+ 权限点，游标分页续翻、`--page-size` 不超过 50。

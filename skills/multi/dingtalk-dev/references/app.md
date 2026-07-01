@@ -10,32 +10,19 @@
 
 所有单应用命令统一只用 `--unified-app-id`（全树主键）定位。`--app-key`/`--name` 只在 `dev app list` 里作列表过滤，不能定位单应用。拿到 appKey/agentId 时，只能做只读候选排查；写操作必须由用户或上游结果提供明确 `unifiedAppId`。
 
-## 应用类型 appType
+## 三方个人应用
 
-开放平台应用分两类，`create` 和 `list` 用 `--app-type` 区分：`inner`（企业内部应用，默认）或 `personal`（三方个人应用/个人小程序应用）。
+三方个人应用是本命令组的受限支持范围，不等同于企业内部应用。当前只支持：
 
-| | 企业内部应用 `inner`（默认） | 三方个人应用 `personal` |
-|---|---|---|
-| 归属 | 属于某个企业/组织，只在该组织内可用 | 属于开发者个人，跨组织分发 |
-| 典型场景 | 组织内部 H5 微应用、小程序、机器人 | 个人开发者上架、面向多组织的应用 |
-| 创建 | `create`（默认） | `create --app-type personal` |
-| 列表 | `list`（默认 inner） | `list --app-type personal` |
+- `dev app create --app-type personal`：创建三方个人应用。
+- `dev app list --app-type personal`：查询三方个人应用列表；按名称搜索时必须带 `--app-type personal`，否则默认查询企业内部应用。
+- `dev app get --unified-app-id <id>`：查询三方个人应用基础信息。
+- `dev app security config --unified-app-id <id> --redirect-urls <url>`：配置个人应用 OAuth 回调地址（只支持 `--redirect-urls`，不支持 `--ip-whitelist` / `--sso-urls`）。
+- `dev app permission list/add/remove --unified-app-id <id>`：管理个人应用权限点。
 
-**个人应用支持的命令：**
+三方个人应用列表只可靠支持 `--name` 模糊搜索、`--app-key` 精确搜索、`--page-size` 和 `--cursor` 分页。不要使用企业内部应用专属过滤条件（如机器人名称、分组、开发类型）来查询三方个人应用。
 
-| 操作类型 | 支持的命令 | 说明 |
-|---|---|---|
-| **类型感知入口** | `create`、`list` | schema 显式带 `--app-type` 参数，`personal` 已在预发 MCP 验证 |
-| **通用操作（按 unifiedAppId 定位）** | `get`、`update`、`delete`、`enable`、`disable` | 无类型参数；拿到个人应用 unifiedAppId 后用同一套命令操作 |
-| **子资源管理** | `credentials get`、`permission list/add/remove`、`member list/add/remove`、`security config`、`event list/subscribe/unsubscribe` | 无类型参数，按 unifiedAppId 定位 |
-| **版本发布** | `version create/list/detail/publish/status/check-approval` | 同上 |
-| **不支持（企业内部应用专属）** | `webapp get/config`、`robot submit/result/config/enable/offline` | 三方个人应用不支持网页应用配置和机器人能力 |
-
-**要点：**
-- 只有 `create`/`list` 在参数层区分应用类型，是个人应用的唯一显式入口。
-- 两类是分开的两套列表，`list` 不跨类型混返：查三方个人应用**必须**显式传 `--app-type personal`，查企业内部应用可省略。
-- 其余子命令无类型参数，统一按 `--unified-app-id` 定位。服务端 schema 描述多写"企业内部应用"，但 unifiedAppId 是跨类型的全树主键，拿到个人应用 id 后同样用这些命令操作。
-- **三方个人应用不支持网页应用（webapp）和机器人（robot）能力**，这两类是企业内部应用的专属能力。
+三方个人应用不支持：`update`、`delete`、`enable`、`disable`、`credentials get`、`webapp`、`robot`、`version`、`event`、`member`。
 
 ## 应用状态 appStatus
 
