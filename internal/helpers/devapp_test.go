@@ -370,7 +370,7 @@ func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 		"name":      "Waker",
 		"sortType":  "gmt_modified",
 		"sortOrder": "desc",
-		"appType":   "inner",
+		"appType":   "internal",
 	}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
@@ -383,7 +383,7 @@ func TestDevAppListPersonalAppType(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"list", "--app-type", "personal", "--page-size", "10"})
+	root.SetArgs([]string{"list", "--app-type", "individual", "--page-size", "10"})
 
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
@@ -391,7 +391,7 @@ func TestDevAppListPersonalAppType(t *testing.T) {
 	if got := runner.last.Tool; got != "list_dev_app" {
 		t.Fatalf("Tool = %q, want list_dev_app", got)
 	}
-	want := map[string]any{"appType": "personal", "pageSize": 10}
+	want := map[string]any{"appType": "individual", "pageSize": 10}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -456,7 +456,7 @@ func TestDevAppCreateUsesCurrentInnerToolAndWriteGuard(t *testing.T) {
 		t.Fatalf("Tool = %q, want create_dev_app", got)
 	}
 
-	want := map[string]any{"name": "Demo", "desc": "internal app", "appType": "inner"}
+	want := map[string]any{"name": "Demo", "desc": "internal app", "appType": "internal"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}
@@ -468,14 +468,14 @@ func TestDevAppCreatePersonalAppType(t *testing.T) {
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
-	root.SetArgs([]string{"dev", "app", "create", "--name", "MyApp", "--desc", "personal app", "--app-type", "personal", "--yes"})
+	root.SetArgs([]string{"dev", "app", "create", "--name", "MyApp", "--desc", "personal app", "--app-type", "individual", "--yes"})
 	if err := root.Execute(); err != nil {
 		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
 	}
 	if got := runner.last.Tool; got != "create_dev_app" {
 		t.Fatalf("Tool = %q, want create_dev_app", got)
 	}
-	want := map[string]any{"name": "MyApp", "desc": "personal app", "appType": "personal"}
+	want := map[string]any{"name": "MyApp", "desc": "personal app", "appType": "individual"}
 	if !reflect.DeepEqual(runner.last.Params, want) {
 		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
 	}

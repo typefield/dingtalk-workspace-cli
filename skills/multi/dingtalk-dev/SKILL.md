@@ -72,7 +72,7 @@ metadata:
 - 两套状态别混：应用 appStatus（字符串，取值如 normal / published）是应用开关；版本 versionStatus（INIT / AUDIT / RELEASE / GRAY）是变更走到哪了。app list 不回 appStatus（恒 null），看应用状态以 app get 为准。
 
 ### 边界与角色
-- 本 skill 主体只管企业内部应用。三方个人应用仅支持已明确接入的子集：`app create --app-type personal`、`app list --app-type personal`、`app get --unified-app-id`、`app security config --redirect-urls`、`app permission list/add/remove`。不要把企业内部应用的网页应用、机器人、版本发布、事件订阅、成员、启停、删除能力泛化到三方个人应用。
+- 本 skill 主体只管企业内部应用。三方个人应用仅支持已明确接入的子集：`app create --app-type individual`、`app list --app-type individual`、`app get --unified-app-id`、`app security config --redirect-urls`、`app permission list/add/remove`。不要把企业内部应用的网页应用、机器人、版本发布、事件订阅、成员、启停、删除能力泛化到三方个人应用。
 - 接口文档用 `dingtalk-devdoc`；钉钉云文档用 `dingtalk-doc`；工作台入口的「应用」用 `workbench app`；群里发消息用的机器人用 `dingtalk-chat`；审批流用 `dingtalk-oa`。
 - 角色：开发者（member DEVELOPER）改配置；管理员管启停；审批人批版本发布。
 

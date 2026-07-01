@@ -53,7 +53,7 @@ const (
 // devappMCPEndpoint resolves the open-platform app-management MCP endpoint.
 //
 // NOTE (pre-release pin): devapp is temporarily forced onto the pre-release
-// gateway so `dws dev app create/list --app-type personal` can be exercised
+// gateway so `dws dev app create/list --app-type individual` can be exercised
 // against the pre server that supports personal apps. Revert the host rewrite
 // before shipping to production.
 func devappMCPEndpoint() string {

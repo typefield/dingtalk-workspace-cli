@@ -69,19 +69,19 @@ dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret
 
 开放平台的应用分两类，`--app-type` 区分：
 
-| | 企业内部应用 `inner`（默认） | 三方个人应用 `personal` |
+| | 企业内部应用 `internal`（默认） | 三方个人应用 `individual` |
 |---|---|---|
 | 归属 | 属于某个企业/组织，只在该组织内可用 | 属于开发者个人，跨组织分发 |
 | 典型场景 | 组织内部的 H5 微应用、小程序、机器人 | 个人开发者上架、面向多组织的小程序/应用 |
-| 创建 | `create`（不传 `--app-type` 即默认） | `create --app-type personal` |
-| 列表 | `list`（默认 inner） | `list --app-type personal` |
+| 创建 | `create`（不传 `--app-type` 即默认） | `create --app-type individual` |
+| 列表 | `list`（默认 internal） | `list --app-type individual` |
 | 定位与后续操作 | 都用 `--unified-app-id`，不区分类型 | 同左 |
 
-两类是**分开的两套列表**，`list` 不跨类型混返：查企业内部应用不用传（默认 inner），查三方个人应用**必须**显式 `--app-type personal`，否则查不到。创建后拿到的 `unifiedAppId` 是全树主键，后续 get/update/权限/成员/机器人/版本等所有子命令都只认 `unifiedAppId`，不再关心它属于哪类。
+两类是**分开的两套列表**，`list` 不跨类型混返：查企业内部应用不用传（默认 internal），查三方个人应用**必须**显式 `--app-type individual`，否则查不到。创建后拿到的 `unifiedAppId` 是全树主键，后续 get/update/权限/成员/机器人/版本等所有子命令都只认 `unifiedAppId`，不再关心它属于哪类。
 
 **个人应用支持的命令：**
 
-- **类型感知入口**（显式带 `--app-type personal`）：`create`、`list`。这两个是唯一在参数层区分应用类型的命令。
+- **类型感知入口**（显式带 `--app-type individual`）：`create`、`list`。这两个是唯一在参数层区分应用类型的命令。
 - **通用生命周期**（按 `--unified-app-id` 定位）：`get`、`update`、`delete`、`disable`、`enable`。
 - **子资源与能力**（按 `--unified-app-id` 定位）：`credentials`、`permission`、`member`、`security`、`version`、`event`。
 - **不支持**：`webapp`（网页应用配置）、`robot`（机器人能力）。这两类是**企业内部应用专属**，三方个人应用不支持。
@@ -92,8 +92,8 @@ dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret
 # 查询应用列表（默认企业内部应用）
 dws dev app list --format json
 
-# 查询三方个人应用列表（必须传 --app-type personal）
-dws dev app list --app-type personal --format json
+# 查询三方个人应用列表（必须传 --app-type individual）
+dws dev app list --app-type individual --format json
 
 # 查询单个应用详情
 dws dev app get --unified-app-id <unifiedAppId> --format json
@@ -101,8 +101,8 @@ dws dev app get --unified-app-id <unifiedAppId> --format json
 # 创建企业内部应用（--name、--desc 均必填）
 dws dev app create --name <名称> --desc <描述> --format json
 
-# 创建三方个人应用（--app-type personal）
-dws dev app create --name <名称> --desc <描述> --app-type personal --format json
+# 创建三方个人应用（--app-type individual）
+dws dev app create --name <名称> --desc <描述> --app-type individual --format json
 
 # 更新应用信息
 dws dev app update --unified-app-id <unifiedAppId> --name <新名称> --format json
@@ -115,7 +115,7 @@ dws dev app enable  --unified-app-id <unifiedAppId> --yes --format json
 dws dev app delete --unified-app-id <unifiedAppId> --confirm-name <应用名> --yes --format json
 ```
 
-> 应用类型 `--app-type`：`inner`（企业内部应用，默认）/ `personal`（三方个人应用）。`create` 决定新建应用类型，`list` 决定查哪类列表——两类是分开的列表，查三方个人应用必须显式传 `--app-type personal`。其余子命令按 `--unified-app-id` 定位，不区分类型。
+> 应用类型 `--app-type`：`internal`（企业内部应用，默认）/ `individual`（三方个人应用）。`create` 决定新建应用类型，`list` 决定查哪类列表——两类是分开的列表，查三方个人应用必须显式传 `--app-type individual`。其余子命令按 `--unified-app-id` 定位，不区分类型。
 
 ---
 

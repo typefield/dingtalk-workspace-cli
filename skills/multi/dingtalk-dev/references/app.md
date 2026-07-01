@@ -4,7 +4,7 @@
 
 应用列表查询、详情、创建、修改、生命周期启停和删除。参数查 `dws schema dev.app.<method>`（list / get / create / update / delete / disable / enable）。
 
-`create` 的 `--name` 和 `--desc` 均为必填；`--app-type`（inner/personal）可选，默认 inner。
+`create` 的 `--name` 和 `--desc` 均为必填；`--app-type`（internal/individual）可选，默认 internal。
 
 ## 应用定位
 
@@ -14,8 +14,8 @@
 
 三方个人应用是本命令组的受限支持范围，不等同于企业内部应用。当前只支持：
 
-- `dev app create --app-type personal`：创建三方个人应用。
-- `dev app list --app-type personal`：查询三方个人应用列表；按名称搜索时必须带 `--app-type personal`，否则默认查询企业内部应用。
+- `dev app create --app-type individual`：创建三方个人应用。
+- `dev app list --app-type individual`：查询三方个人应用列表；按名称搜索时必须带 `--app-type individual`，否则默认查询企业内部应用。
 - `dev app get --unified-app-id <id>`：查询三方个人应用基础信息。
 - `dev app security config --unified-app-id <id> --redirect-urls <url>`：配置个人应用 OAuth 回调地址（只支持 `--redirect-urls`，不支持 `--ip-whitelist` / `--sso-urls`）。
 - `dev app permission list/add/remove --unified-app-id <id>`：管理个人应用权限点。
