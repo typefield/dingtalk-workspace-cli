@@ -619,6 +619,43 @@ func TestEnrichPATErrorWithOpenBrowserKeepsAuthorizationURLAmpersandReadable(t *
 	}
 }
 
+func TestHandlePatAuthCheckOrgPolicyDeniedKeepsOpenBrowserFalse(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+
+	raw := `{"success":false,"code":"PAT_ORG_POLICY_DENIED","data":{"hint":"组织策略已禁止当前工具所需的开源数据权限","scope":"contact.user.read","openBrowser":false}}`
+	runner := &runtimeRunner{globalFlags: &GlobalFlags{Format: "json"}}
+
+	var out bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "contact",
+		Tool:             "get_current_user_profile",
+		CanonicalPath:    "contact.get_current_user_profile",
+	}, &apperrors.PATError{RawJSON: raw}, configDir, &out)
+	if err == nil {
+		t.Fatal("expected PATError")
+	}
+	if got := strings.TrimSpace(out.String()); got != "" {
+		t.Fatalf("expected no human-readable output in json PAT mode, got %q", got)
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, ok := data["openBrowser"].(bool); !ok || got {
+		t.Fatalf("data.openBrowser = %#v, want false", data["openBrowser"])
+	}
+	if got, _ := data["hint"].(string); !strings.Contains(got, "组织策略") {
+		t.Fatalf("data.hint = %q, want org policy guidance", got)
+	}
+}
+
 func TestHandlePatAuthCheck_Approved(t *testing.T) {
 	t.Setenv(authpkg.AgentCodeEnv, "")
 	server, configDir := setupHandlePATServer(t, "APPROVED", "test-auth-code")

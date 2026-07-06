@@ -234,7 +234,11 @@ func enrichPATErrorWithOpenBrowser(raw string, openBrowser bool) string {
 		delete(data, "authUrl")
 		delete(data, "authorizationUrl")
 	}
-	data["openBrowser"] = openBrowser
+	if code, _ := payload["code"].(string); code == "PAT_ORG_POLICY_DENIED" {
+		data["openBrowser"] = false
+	} else {
+		data["openBrowser"] = openBrowser
+	}
 
 	encoded, err := marshalSingleLineJSONNoHTMLEscape(payload)
 	if err != nil {
