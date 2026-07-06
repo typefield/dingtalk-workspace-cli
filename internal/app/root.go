@@ -370,6 +370,7 @@ func NewRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine) 
 		newCatalogCommand(loader),
 		newConfigCommand(),
 		newDoctorCommand(),
+		newAuditCommand(),
 		newCompletionCommand(root),
 		newRecoveryCommand(rootCtx, loader, flags),
 		newUpgradeCommand(),
