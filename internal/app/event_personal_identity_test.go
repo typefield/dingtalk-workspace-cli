@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -24,6 +25,7 @@ import (
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/busctl"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
 
@@ -110,6 +112,81 @@ func TestResolvePersonalEventIdentityFallsBackToAccessTokenSubject(t *testing.T)
 	}
 	if strings.Contains(rendered, wantSubject) || strings.Contains(rendered, "access-1") {
 		t.Fatalf("status output leaked local subject/token: %q", rendered)
+	}
+}
+
+func TestResolvePersonalEventIdentityDefaultsSourceIDToPre(t *testing.T) {
+	configDir := setupPersonalIdentityToken(t, &authpkg.TokenData{
+		AccessToken: "access-1",
+		ExpiresAt:   time.Now().Add(time.Hour),
+		CorpID:      "corp-1",
+		UserID:      "user-1",
+		ClientID:    "client-1",
+	})
+
+	identity, err := resolvePersonalEventIdentity(context.Background(), configDir, "")
+	if err != nil {
+		t.Fatalf("resolvePersonalEventIdentity() error = %v", err)
+	}
+	if identity.SourceID != "pre_open_source" {
+		t.Fatalf("SourceID = %q, want pre_open_source", identity.SourceID)
+	}
+}
+
+func TestPersonalEventDefaultsUsePreWithoutMCPConfig(t *testing.T) {
+	dir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", dir)
+	prev := edition.Get()
+	edition.Override(&edition.Hooks{})
+	t.Cleanup(func() { edition.Override(prev) })
+
+	if got := personalEventControlBaseURL("", dir); got != "https://pre-mcp.dingtalk.com/dws" {
+		t.Fatalf("personalEventControlBaseURL() = %q, want pre control URL", got)
+	}
+	if got := personalEventStreamTicketURL("", dir); got != "https://pre-mcp.dingtalk.com/stream/connections/ticket" {
+		t.Fatalf("personalEventStreamTicketURL() = %q, want pre ticket URL", got)
+	}
+	if got := personalEventStreamSourceID(""); got != "pre_open_source" {
+		t.Fatalf("personalEventStreamSourceID() = %q, want pre_open_source", got)
+	}
+	if got := config.GetMCPBaseURL(); got != "https://mcp.dingtalk.com" {
+		t.Fatalf("config.GetMCPBaseURL() = %q, want production MCP URL", got)
+	}
+}
+
+func TestPersonalEventDefaultsRespectExplicitAndMCPConfig(t *testing.T) {
+	dir := t.TempDir()
+	if err := os.WriteFile(filepath.Join(dir, "mcp_url"), []byte("https://custom-mcp.example.com\n"), 0o600); err != nil {
+		t.Fatalf("write mcp_url: %v", err)
+	}
+
+	if got := personalEventControlBaseURL("", dir); got != "https://custom-mcp.example.com/dws" {
+		t.Fatalf("personalEventControlBaseURL() = %q, want configured control URL", got)
+	}
+	if got := personalEventStreamTicketURL("", dir); got != "https://custom-mcp.example.com/stream/connections/ticket" {
+		t.Fatalf("personalEventStreamTicketURL() = %q, want configured ticket URL", got)
+	}
+	if got := personalEventControlBaseURL(" https://override.example.com/dws/ ", dir); got != "https://override.example.com/dws" {
+		t.Fatalf("explicit control URL = %q, want trimmed override", got)
+	}
+	if got := personalEventStreamTicketURL(" https://override.example.com/ticket/ ", dir); got != "https://override.example.com/ticket" {
+		t.Fatalf("explicit ticket URL = %q, want trimmed override", got)
+	}
+	if got := personalEventStreamSourceID("flag_source"); got != "flag_source" {
+		t.Fatalf("explicit sourceID = %q, want flag_source", got)
+	}
+}
+
+func TestPersonalEventSourceIDPrefersEditionOverride(t *testing.T) {
+	prev := edition.Get()
+	edition.Override(&edition.Hooks{PersonalEventSourceID: "edition_source"})
+	t.Cleanup(func() { edition.Override(prev) })
+
+	if got := personalEventStreamSourceID(""); got != "edition_source" {
+		t.Fatalf("personalEventStreamSourceID() = %q, want edition_source", got)
+	}
+	if got := personalEventStreamSourceID("flag_source"); got != "flag_source" {
+		t.Fatalf("explicit sourceID = %q, want flag_source", got)
 	}
 }
 
