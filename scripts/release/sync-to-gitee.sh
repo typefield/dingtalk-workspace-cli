@@ -28,6 +28,11 @@ set -eu
 
 DIST_DIR="${DIST_DIR:-dist}"
 GITEE_API="${GITEE_API:-https://gitee.com/api/v5}"
+GITEE_CURL_CONNECT_TIMEOUT="${GITEE_CURL_CONNECT_TIMEOUT:-15}"
+GITEE_CURL_MAX_TIME="${GITEE_CURL_MAX_TIME:-120}"
+GITEE_UPLOAD_MAX_TIME="${GITEE_UPLOAD_MAX_TIME:-300}"
+GITEE_UPLOAD_RETRIES="${GITEE_UPLOAD_RETRIES:-3}"
+GITEE_UPLOAD_RETRY_DELAY="${GITEE_UPLOAD_RETRY_DELAY:-10}"
 
 missing=""
 [ -z "${GITEE_TOKEN:-}" ] && missing="$missing GITEE_TOKEN"
@@ -119,7 +124,7 @@ echo "   Gitee release id = ${release_id}"
 # detail (/releases/{id}) endpoint: the latter's "assets" array omits the attach
 # id, so DELETE /attach_files/{id} was previously called with an empty id and
 # silently no-op'd — leaving stale + duplicate darwin binaries on Gitee.
-assets_map="$(curl -fsSL "${base}/releases/${release_id}/attach_files?access_token=${GITEE_TOKEN}" 2>/dev/null \
+assets_map="$(curl -fsSL --connect-timeout "$GITEE_CURL_CONNECT_TIMEOUT" --max-time "$GITEE_CURL_MAX_TIME" "${base}/releases/${release_id}/attach_files?access_token=${GITEE_TOKEN}" 2>/dev/null \
   | python3 -c 'import json,sys
 try:
     data=json.load(sys.stdin)
@@ -137,13 +142,27 @@ sha256_of() {  # sha256 of a file ($1) or, with no arg, of stdin
 }
 
 gitee_attach() {  # upload file $1; success when the response carries a download url
-  printf '%s' "$(curl -fsSL -X POST "${base}/releases/${release_id}/attach_files" \
-    -F "access_token=${GITEE_TOKEN}" -F "file=@${1}" 2>/dev/null || true)" \
-    | grep -q '"browser_download_url"'
+  file="$1"
+  fn="$(basename "$file")"
+  attempt=1
+  while [ "$attempt" -le "$GITEE_UPLOAD_RETRIES" ]; do
+    response="$(curl -fsS --connect-timeout "$GITEE_CURL_CONNECT_TIMEOUT" --max-time "$GITEE_UPLOAD_MAX_TIME" \
+      --retry 2 --retry-delay 5 --retry-all-errors \
+      -X POST "${base}/releases/${release_id}/attach_files" \
+      -F "access_token=${GITEE_TOKEN}" -F "file=@${file}" 2>&1 || true)"
+    if printf '%s' "$response" | grep -q '"browser_download_url"'; then
+      return 0
+    fi
+    echo "   ⚠ upload attempt ${attempt}/${GITEE_UPLOAD_RETRIES} failed for ${fn}: $(printf '%s' "$response" | head -c 240)" >&2
+    attempt=$((attempt + 1))
+    [ "$attempt" -le "$GITEE_UPLOAD_RETRIES" ] && sleep "$GITEE_UPLOAD_RETRY_DELAY"
+  done
+  return 1
 }
 
 gitee_delete() {  # delete attachment by id $1
-  curl -fsSL -X DELETE "${base}/releases/${release_id}/attach_files/${1}?access_token=${GITEE_TOKEN}" \
+  curl -fsSL --connect-timeout "$GITEE_CURL_CONNECT_TIMEOUT" --max-time "$GITEE_CURL_MAX_TIME" \
+    -X DELETE "${base}/releases/${release_id}/attach_files/${1}?access_token=${GITEE_TOKEN}" \
     >/dev/null 2>&1 || true
 }
 
@@ -166,7 +185,7 @@ for f in "$DIST_DIR"/dws-*.tar.gz "$DIST_DIR"/dws-*.zip "$DIST_DIR"/checksums.tx
   fi
 
   if [ "$count" -eq 1 ]; then
-    gitee_sha="$(curl -fsSL "$aurl" 2>/dev/null | sha256_of || true)"
+    gitee_sha="$(curl -fsSL --connect-timeout "$GITEE_CURL_CONNECT_TIMEOUT" --max-time "$GITEE_CURL_MAX_TIME" "$aurl" 2>/dev/null | sha256_of || true)"
     if [ "$gitee_sha" = "$local_sha" ]; then
       echo "   ✓ ${fn} already correct on Gitee — skip"
       skipped=$((skipped + 1))
