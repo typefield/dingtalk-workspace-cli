@@ -84,6 +84,7 @@ jobs:
         env:
           VERSION: ${{ github.ref_name }}
           GITEE_TOKEN: ${{ secrets.GITEE_TOKEN }}
+          GITEE_USER: ${{ secrets.GITEE_USER }}
           GITEE_REPO: ${{ secrets.GITEE_REPO }}
 
       - name: Setup Node.js
