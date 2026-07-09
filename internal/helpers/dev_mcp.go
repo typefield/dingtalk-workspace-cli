@@ -620,7 +620,207 @@ func devMCPToolUpsertParams(cmd *cobra.Command, includeActionID bool) (map[strin
 	if err := devMCPPutJSONArrayFlag(cmd, params, "output-mappings", "outputMappings"); err != nil {
 		return nil, err
 	}
+	if err := devMCPValidateToolUpsertParams(params); err != nil {
+		return nil, err
+	}
 	return params, nil
+}
+
+func devMCPValidateToolUpsertParams(params map[string]any) error {
+	if err := devMCPValidateToolName(stringValue(params["name"])); err != nil {
+		return err
+	}
+	if fields, ok := params["toolInputs"].([]any); ok {
+		if err := devMCPValidateFieldsFlag("tool-inputs", fields, true); err != nil {
+			return err
+		}
+	}
+	if fields, ok := params["toolOutputs"].([]any); ok {
+		if err := devMCPValidateFieldsFlag("tool-outputs", fields, true); err != nil {
+			return err
+		}
+	}
+	if inputs, ok := params["apiInputs"].(map[string]any); ok {
+		if err := devMCPValidateAPIFieldsFlag("api-inputs", inputs); err != nil {
+			return err
+		}
+	}
+	if outputs, ok := params["apiOutputs"].(map[string]any); ok {
+		if err := devMCPValidateAPIFieldsFlag("api-outputs", outputs); err != nil {
+			return err
+		}
+	}
+	if mappings, ok := params["inputMappings"].([]any); ok {
+		if err := devMCPValidateMappingsFlag("input-mappings", mappings, false); err != nil {
+			return err
+		}
+	}
+	if mappings, ok := params["outputMappings"].([]any); ok {
+		if err := devMCPValidateMappingsFlag("output-mappings", mappings, true); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func devMCPValidateToolName(name string) error {
+	if name == "" {
+		return nil
+	}
+	if len([]rune(name)) > 32 {
+		return apperrors.NewValidation("--name 必须不超过 32 个字符，便于生成稳定 DWS 命令")
+	}
+	for i, r := range name {
+		valid := r == '_' || r >= 'a' && r <= 'z' || r >= '0' && r <= '9'
+		if !valid || i == 0 && !(r >= 'a' && r <= 'z') {
+			return apperrors.NewValidation("--name 必须是 snake_case，且以小写英文动词开头，例如 lookup_english_word")
+		}
+	}
+	if !devMCPContainsKnownVerb(name) {
+		return apperrors.NewValidation("--name 必须包含清晰动作词，例如 get/list/search/query/lookup/create/update/delete，便于 Agent 选择工具")
+	}
+	return nil
+}
+
+func devMCPContainsKnownVerb(name string) bool {
+	for _, token := range strings.Split(name, "_") {
+		if devMCPKnownVerb(token) {
+			return true
+		}
+	}
+	return false
+}
+
+func devMCPKnownVerb(verb string) bool {
+	switch verb {
+	case "get", "list", "search", "query", "lookup", "find", "fetch", "read", "check", "validate",
+		"create", "add", "new", "update", "set", "edit", "delete", "remove",
+		"send", "submit", "publish", "debug", "run", "call", "sync", "refresh",
+		"convert", "generate", "calculate", "parse", "build", "upload", "download", "export", "import":
+		return true
+	default:
+		return false
+	}
+}
+
+func devMCPValidateAPIFieldsFlag(flag string, groups map[string]any) error {
+	for _, group := range []string{"headers", "head", "body", "query", "path"} {
+		raw, ok := groups[group]
+		if !ok {
+			continue
+		}
+		fields, ok := raw.([]any)
+		if !ok {
+			return apperrors.NewValidation(fmt.Sprintf("--%s.%s 必须是字段数组", flag, group))
+		}
+		if err := devMCPValidateFieldsFlag(flag+"."+group, fields, false); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func devMCPValidateFieldsFlag(flag string, fields []any, requireDescription bool) error {
+	for i, raw := range fields {
+		field, ok := raw.(map[string]any)
+		if !ok {
+			return apperrors.NewValidation(fmt.Sprintf("--%s[%d] 必须是 JSON 对象", flag, i))
+		}
+		path := fmt.Sprintf("--%s[%d]", flag, i)
+		if err := devMCPValidateField(path, field, requireDescription); err != nil {
+			return err
+		}
+	}
+	return nil
+}
+
+func devMCPValidateField(path string, field map[string]any, requireDescription bool) error {
+	key := stringValue(field["key"])
+	if key == "" {
+		return apperrors.NewValidation(path + ".key 为必填，DWS flag 需要稳定字段名")
+	}
+	typ := stringValue(field["type"])
+	if typ == "" {
+		return apperrors.NewValidation(path + ".type 为必填，DWS 需要据此生成参数类型")
+	}
+	if !devMCPValidFieldType(typ) {
+		return apperrors.NewValidation(path + ".type 只支持 string/number/integer/boolean/object/array")
+	}
+	if requireDescription && stringValue(field["description"]) == "" {
+		return apperrors.NewValidation(path + ".description 为必填，DWS 命令和 Agent 选参依赖字段描述")
+	}
+	children, hasChildren := field["children"].([]any)
+	if typ == "array" {
+		if !hasChildren || len(children) != 1 {
+			return apperrors.NewValidation(path + ".children 必须且只能包含一个 key=items 的数组元素描述")
+		}
+		child, ok := children[0].(map[string]any)
+		if !ok || stringValue(child["key"]) != "items" {
+			return apperrors.NewValidation(path + ".children[0].key 必须是 items")
+		}
+		return devMCPValidateField(path+".children[0]", child, requireDescription)
+	}
+	if typ == "object" && hasChildren {
+		for i, raw := range children {
+			child, ok := raw.(map[string]any)
+			if !ok {
+				return apperrors.NewValidation(fmt.Sprintf("%s.children[%d] 必须是 JSON 对象", path, i))
+			}
+			if err := devMCPValidateField(fmt.Sprintf("%s.children[%d]", path, i), child, requireDescription); err != nil {
+				return err
+			}
+		}
+	}
+	return nil
+}
+
+func devMCPValidFieldType(typ string) bool {
+	switch typ {
+	case "string", "number", "integer", "boolean", "object", "array":
+		return true
+	default:
+		return false
+	}
+}
+
+func stringValue(value any) string {
+	switch typed := value.(type) {
+	case nil:
+		return ""
+	case string:
+		return strings.TrimSpace(typed)
+	case fmt.Stringer:
+		return strings.TrimSpace(typed.String())
+	default:
+		return strings.TrimSpace(fmt.Sprint(value))
+	}
+}
+
+func devMCPValidateMappingsFlag(flag string, mappings []any, requireNonEmpty bool) error {
+	if requireNonEmpty && len(mappings) == 0 {
+		return apperrors.NewValidation("--" + flag + " 不能为空；如需整体透传可用 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]")
+	}
+	for i, raw := range mappings {
+		mapping, ok := raw.(map[string]any)
+		if !ok {
+			return apperrors.NewValidation(fmt.Sprintf("--%s[%d] 必须是 JSON 对象", flag, i))
+		}
+		path := fmt.Sprintf("--%s[%d]", flag, i)
+		if stringValue(mapping["target"]) == "" {
+			return apperrors.NewValidation(path + ".target 为必填")
+		}
+		typ := stringValue(mapping["type"])
+		if typ == "" {
+			return apperrors.NewValidation(path + ".type 为必填")
+		}
+		if typ != "reference" && typ != "fixed" && typ != "express" {
+			return apperrors.NewValidation(path + ".type 只支持 reference/fixed/express")
+		}
+		if _, ok := mapping["source"]; !ok {
+			return apperrors.NewValidation(path + ".source 为必填")
+		}
+	}
+	return nil
 }
 
 func devMCPRequiredString(cmd *cobra.Command, flag string) (string, error) {

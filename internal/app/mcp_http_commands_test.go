@@ -494,6 +494,63 @@ func TestAddMCPHTTPCommandsRegistersFixedRunnableCommand(t *testing.T) {
 	}
 }
 
+func TestMCPHTTPDynamicCommandHelpIsAgentFriendly(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	addMCPHTTPCommands(root, &mcpHTTPTestRunner{}, nil, []mcpHTTPCommandDescriptor{{
+		Path:        []string{"weather-service", "get-weather"},
+		ProductID:   "published-mcp-1001",
+		Tool:        "get_weather",
+		Description: "Get weather by city.\nUse for read-only weather lookup.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"cityName": map[string]any{"type": "string", "description": "City name, for example: Hangzhou."},
+				"options":  map[string]any{"type": "object", "description": "Optional lookup options as JSON."},
+			},
+			"required": []any{"cityName", "options"},
+		},
+	}})
+
+	cmd := findCommandByPath(root, []string{"weather-service", "get-weather"})
+	if cmd == nil {
+		t.Fatal("dynamic command was not registered")
+	}
+	if strings.Contains(cmd.Short, "\n") {
+		t.Fatalf("short should be single line, got %q", cmd.Short)
+	}
+	for _, want := range []string{
+		"Dynamic DWS command generated from a published MCP tool.",
+		"Use --format json for agent-readable stdout.",
+		"Pass inputs either as individual flags or as --params '<JSON object>'.",
+		"Command path: dws weather-service get-weather",
+		"MCP tool: get_weather",
+		"--city-name (string, required): City name",
+		"--options (JSON string, required): Optional lookup options as JSON. Pass object/array values as a JSON string.",
+	} {
+		if !strings.Contains(cmd.Long, want) {
+			t.Fatalf("Long missing %q:\n%s", want, cmd.Long)
+		}
+	}
+	if want := `dws weather-service get-weather --city-name Hangzhou --options '{"key":"value"}' --format json`; !strings.Contains(cmd.Example, want) {
+		t.Fatalf("Example = %q, want to contain %q", cmd.Example, want)
+	}
+	if want := `dws weather-service get-weather --params '{"cityName":"Hangzhou","options":{"key":"value"}}' --format json`; !strings.Contains(cmd.Example, want) {
+		t.Fatalf("Example = %q, want to contain %q", cmd.Example, want)
+	}
+	paramsFlag := cmd.Flags().Lookup("params")
+	if paramsFlag == nil || !strings.Contains(paramsFlag.Usage, "Full MCP input JSON object") {
+		t.Fatalf("params flag usage = %#v", paramsFlag)
+	}
+	cityFlag := cmd.Flags().Lookup("city-name")
+	if cityFlag == nil || !strings.Contains(cityFlag.Usage, "type: string; required") {
+		t.Fatalf("city flag usage = %#v", cityFlag)
+	}
+	optionsFlag := cmd.Flags().Lookup("options")
+	if optionsFlag == nil || !strings.Contains(optionsFlag.Usage, "type: JSON string; required; pass as JSON string") {
+		t.Fatalf("options flag usage = %#v", optionsFlag)
+	}
+}
+
 func TestAddMCPHTTPCommandsRegistersRunnableCommand(t *testing.T) {
 	root := &cobra.Command{Use: "dws"}
 	root.PersistentFlags().Bool("dry-run", false, "")
@@ -545,6 +602,77 @@ func TestAddMCPHTTPCommandsRegistersRunnableCommand(t *testing.T) {
 	options, ok := runner.invocation.Params["options"].(map[string]any)
 	if !ok || options["unit"] != "c" {
 		t.Fatalf("options param = %#v", runner.invocation.Params["options"])
+	}
+}
+
+func TestAddMCPHTTPCommandsAcceptsParamsJSON(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().BoolP("yes", "y", false, "")
+	ensureMCPHTTPGroup(root, []string{"connector", "mcp", "published"})
+
+	runner := &mcpHTTPTestRunner{}
+	addMCPHTTPCommands(root, runner, nil, []mcpHTTPCommandDescriptor{{
+		Path:      []string{"connector", "mcp", "published", "weather"},
+		ProductID: "weather-product",
+		Tool:      "get_weather",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"cityName": map[string]any{"type": "string"},
+				"limit":    map[string]any{"type": "integer"},
+				"options":  map[string]any{"type": "object"},
+			},
+			"required": []any{"cityName", "options"},
+		},
+	}})
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{
+		"connector", "mcp", "published", "weather",
+		"--params", `{"cityName":"杭州","limit":2,"options":{"unit":"c"}}`,
+		"--limit", "3",
+	})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if runner.invocation.Params["cityName"] != "杭州" {
+		t.Fatalf("cityName param = %#v", runner.invocation.Params["cityName"])
+	}
+	if runner.invocation.Params["limit"] != 3 {
+		t.Fatalf("limit param = %#v", runner.invocation.Params["limit"])
+	}
+	options, ok := runner.invocation.Params["options"].(map[string]any)
+	if !ok || options["unit"] != "c" {
+		t.Fatalf("options param = %#v", runner.invocation.Params["options"])
+	}
+}
+
+func TestAddMCPHTTPCommandsValidatesRequiredParamsAfterMerge(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	ensureMCPHTTPGroup(root, []string{"connector", "mcp", "published"})
+
+	addMCPHTTPCommands(root, &mcpHTTPTestRunner{}, nil, []mcpHTTPCommandDescriptor{{
+		Path:      []string{"connector", "mcp", "published", "weather"},
+		ProductID: "weather-product",
+		Tool:      "get_weather",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"cityName": map[string]any{"type": "string"},
+			},
+			"required": []any{"cityName"},
+		},
+	}})
+
+	root.SetArgs([]string{"connector", "mcp", "published", "weather"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("Execute() succeeded, want validation error")
+	}
+	if !strings.Contains(err.Error(), `missing required MCP input "cityName"; pass --city-name or include "cityName" in --params`) {
+		t.Fatalf("error = %v", err)
 	}
 }
 

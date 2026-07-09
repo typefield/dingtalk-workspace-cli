@@ -837,9 +837,12 @@ func addMCPHTTPCommands(root *cobra.Command, runner executor.Runner, flags *Glob
 
 func newMCPHTTPDynamicCommand(runner executor.Runner, flags *GlobalFlags, descriptor mcpHTTPCommandDescriptor) *cobra.Command {
 	name := descriptor.Path[len(descriptor.Path)-1]
+	specs := mcpHTTPFlagSpecs(descriptor.InputSchema)
 	cmd := &cobra.Command{
 		Use:               name,
-		Short:             descriptor.Description,
+		Short:             mcpHTTPCommandShort(descriptor),
+		Long:              mcpHTTPCommandLong(descriptor, specs),
+		Example:           mcpHTTPCommandExample(descriptor, specs),
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -867,12 +870,234 @@ func newMCPHTTPDynamicCommand(runner executor.Runner, flags *GlobalFlags, descri
 			return output.WriteCommandPayload(cmd, result, output.FormatJSON)
 		},
 	}
-	if cmd.Short == "" {
-		cmd.Short = descriptor.Tool
-	}
 	annotateMCPHTTPDynamicCommand(cmd, descriptor)
-	addMCPHTTPCommandFlags(cmd, descriptor.InputSchema)
+	addMCPHTTPCommandFlags(cmd, specs)
 	return cmd
+}
+
+func mcpHTTPCommandShort(descriptor mcpHTTPCommandDescriptor) string {
+	short := strings.TrimSpace(descriptor.Description)
+	if short == "" {
+		short = strings.TrimSpace(descriptor.Tool)
+	}
+	short = strings.ReplaceAll(short, "\n", " ")
+	short = strings.Join(strings.Fields(short), " ")
+	if len([]rune(short)) > 96 {
+		runes := []rune(short)
+		short = string(runes[:96]) + "..."
+	}
+	return short
+}
+
+func mcpHTTPCommandLong(descriptor mcpHTTPCommandDescriptor, specs []mcpHTTPFlagSpec) string {
+	var b strings.Builder
+	if description := strings.TrimSpace(descriptor.Description); description != "" {
+		b.WriteString(description)
+		b.WriteString("\n\n")
+	}
+	b.WriteString("Dynamic DWS command generated from a published MCP tool.\n")
+	b.WriteString("Use --format json for agent-readable stdout. corpId/userId and MCP credentials are supplied by the current DWS login; do not pass identity or secret parameters.\n\n")
+	b.WriteString("Pass inputs either as individual flags or as --params '<JSON object>'. Individual flags override matching keys from --params.\n\n")
+	b.WriteString("Command path: ")
+	b.WriteString(mcpHTTPCommandDisplayPath(descriptor.Path))
+	b.WriteString("\nMCP tool: ")
+	b.WriteString(strings.TrimSpace(descriptor.Tool))
+	b.WriteString("\nOutput: JSON written to stdout.\n\n")
+	b.WriteString("Inputs:\n")
+	if len(specs) == 0 {
+		b.WriteString("  none\n")
+		return b.String()
+	}
+	for _, spec := range specs {
+		b.WriteString("  --")
+		b.WriteString(spec.FlagName)
+		b.WriteString(" (")
+		b.WriteString(mcpHTTPFlagHelpKind(spec.Kind))
+		if spec.Required {
+			b.WriteString(", required")
+		} else {
+			b.WriteString(", optional")
+		}
+		b.WriteString(")")
+		if spec.Description != "" {
+			b.WriteString(": ")
+			b.WriteString(strings.Join(strings.Fields(spec.Description), " "))
+		}
+		if spec.Kind == "json" {
+			b.WriteString(" Pass object/array values as a JSON string.")
+		}
+		b.WriteString("\n")
+	}
+	return b.String()
+}
+
+func mcpHTTPCommandExample(descriptor mcpHTTPCommandDescriptor, specs []mcpHTTPFlagSpec) string {
+	parts := []string{mcpHTTPCommandDisplayPath(descriptor.Path)}
+	added := false
+	for _, spec := range specs {
+		if !spec.Required {
+			continue
+		}
+		parts = append(parts, mcpHTTPExampleFlag(spec)...)
+		added = true
+	}
+	if !added && len(specs) > 0 {
+		parts = append(parts, mcpHTTPExampleFlag(specs[0])...)
+	}
+	parts = append(parts, "--format", "json")
+	examples := []string{"  " + strings.Join(parts, " ")}
+	if params := mcpHTTPExampleParams(specs); params != "" {
+		examples = append(examples, "  "+mcpHTTPCommandDisplayPath(descriptor.Path)+" --params "+params+" --format json")
+	}
+	return strings.Join(examples, "\n")
+}
+
+func mcpHTTPCommandDisplayPath(path []string) string {
+	cleaned := make([]string, 0, len(path)+1)
+	cleaned = append(cleaned, "dws")
+	for _, part := range path {
+		if part = strings.TrimSpace(part); part != "" {
+			cleaned = append(cleaned, part)
+		}
+	}
+	return strings.Join(cleaned, " ")
+}
+
+func mcpHTTPExampleFlag(spec mcpHTTPFlagSpec) []string {
+	switch spec.Kind {
+	case "boolean":
+		return []string{"--" + spec.FlagName + "=true"}
+	case "integer":
+		return []string{"--" + spec.FlagName, "1"}
+	case "number":
+		return []string{"--" + spec.FlagName, "1.0"}
+	case "string_array":
+		return []string{"--" + spec.FlagName, "value1,value2"}
+	case "integer_array":
+		return []string{"--" + spec.FlagName, "1,2"}
+	case "number_array":
+		return []string{"--" + spec.FlagName, "1.0,2.0"}
+	case "boolean_array":
+		return []string{"--" + spec.FlagName, "true,false"}
+	case "json":
+		return []string{"--" + spec.FlagName, `'{"key":"value"}'`}
+	default:
+		value := mcpHTTPExampleStringValue(spec)
+		if value == "" {
+			value = "<value>"
+		} else {
+			value = mcpHTTPShellQuoteExample(value)
+		}
+		return []string{"--" + spec.FlagName, value}
+	}
+}
+
+func mcpHTTPExampleParams(specs []mcpHTTPFlagSpec) string {
+	params := map[string]any{}
+	for _, spec := range specs {
+		if spec.Required {
+			params[spec.PropertyName] = mcpHTTPExampleJSONValue(spec)
+		}
+	}
+	if len(params) == 0 && len(specs) > 0 {
+		params[specs[0].PropertyName] = mcpHTTPExampleJSONValue(specs[0])
+	}
+	if len(params) == 0 {
+		return ""
+	}
+	data, err := json.Marshal(params)
+	if err != nil {
+		return ""
+	}
+	return mcpHTTPShellQuoteExample(string(data))
+}
+
+func mcpHTTPExampleJSONValue(spec mcpHTTPFlagSpec) any {
+	switch spec.Kind {
+	case "boolean":
+		return true
+	case "integer":
+		return 1
+	case "number":
+		return 1.0
+	case "string_array":
+		return []string{"value1", "value2"}
+	case "integer_array":
+		return []int{1, 2}
+	case "number_array":
+		return []float64{1.0, 2.0}
+	case "boolean_array":
+		return []bool{true, false}
+	case "json":
+		return map[string]any{"key": "value"}
+	default:
+		if value := mcpHTTPExampleStringValue(spec); value != "" {
+			return value
+		}
+		return "value"
+	}
+}
+
+func mcpHTTPExampleStringValue(spec mcpHTTPFlagSpec) string {
+	description := strings.TrimSpace(spec.Description)
+	if description == "" {
+		return ""
+	}
+	lower := strings.ToLower(description)
+	markers := []string{"for example:", "example:", "e.g.", "eg:", "示例：", "示例:", "例如：", "例如:"}
+	for _, marker := range markers {
+		idx := strings.Index(lower, strings.ToLower(marker))
+		if idx < 0 {
+			continue
+		}
+		candidate := strings.TrimSpace(description[idx+len(marker):])
+		candidate = strings.Trim(candidate, " \t\r\n\"'`“”‘’")
+		for i, r := range candidate {
+			switch r {
+			case '\n', '\r', '。', '.', ';', '；', ',', '，', ')', '）':
+				candidate = strings.TrimSpace(candidate[:i])
+				candidate = strings.Trim(candidate, " \t\r\n\"'`“”‘’")
+				return candidate
+			}
+		}
+		return candidate
+	}
+	return ""
+}
+
+func mcpHTTPShellQuoteExample(value string) string {
+	if value == "" || value == "<value>" {
+		return value
+	}
+	for _, r := range value {
+		if r == '_' || r == '-' || r == '.' || r == '/' || r == ':' {
+			continue
+		}
+		if r >= 'a' && r <= 'z' || r >= 'A' && r <= 'Z' || r >= '0' && r <= '9' {
+			continue
+		}
+		return "'" + strings.ReplaceAll(value, "'", `'"'"'`) + "'"
+	}
+	return value
+}
+
+func mcpHTTPFlagHelpKind(kind string) string {
+	switch kind {
+	case "json":
+		return "JSON string"
+	case "string_array":
+		return "string list"
+	case "integer_array":
+		return "integer list"
+	case "number_array":
+		return "number list"
+	case "boolean_array":
+		return "boolean list"
+	case "":
+		return "string"
+	default:
+		return kind
+	}
 }
 
 func annotateMCPHTTPDynamicCommand(cmd *cobra.Command, descriptor mcpHTTPCommandDescriptor) {
@@ -885,12 +1110,10 @@ func annotateMCPHTTPDynamicCommand(cmd *cobra.Command, descriptor mcpHTTPCommand
 	}
 }
 
-func addMCPHTTPCommandFlags(cmd *cobra.Command, schema map[string]any) {
-	for _, spec := range mcpHTTPFlagSpecs(schema) {
-		usage := spec.Description
-		if usage == "" {
-			usage = fmt.Sprintf("Override %s", spec.PropertyName)
-		}
+func addMCPHTTPCommandFlags(cmd *cobra.Command, specs []mcpHTTPFlagSpec) {
+	cmd.Flags().String("params", "", "Full MCP input JSON object. Individual field flags override matching keys. (type: JSON object)")
+	for _, spec := range specs {
+		usage := mcpHTTPFlagUsage(spec)
 		switch spec.Kind {
 		case "integer":
 			cmd.Flags().Int(spec.FlagName, 0, usage)
@@ -903,15 +1126,36 @@ func addMCPHTTPCommandFlags(cmd *cobra.Command, schema map[string]any) {
 		default:
 			cmd.Flags().String(spec.FlagName, "", usage)
 		}
-		if spec.Required {
-			_ = cmd.MarkFlagRequired(spec.FlagName)
-		}
 	}
 }
 
+func mcpHTTPFlagUsage(spec mcpHTTPFlagSpec) string {
+	usage := strings.TrimSpace(spec.Description)
+	if usage == "" {
+		usage = fmt.Sprintf("Value for MCP input %s", spec.PropertyName)
+	}
+	usage = strings.Join(strings.Fields(usage), " ")
+	var hints []string
+	hints = append(hints, "type: "+mcpHTTPFlagHelpKind(spec.Kind))
+	if spec.Required {
+		hints = append(hints, "required")
+	}
+	if spec.Kind == "json" {
+		hints = append(hints, "pass as JSON string")
+	}
+	if len(hints) > 0 {
+		usage += " (" + strings.Join(hints, "; ") + ")"
+	}
+	return usage
+}
+
 func collectMCPHTTPCommandParams(cmd *cobra.Command, schema map[string]any) (map[string]any, error) {
-	params := map[string]any{}
-	for _, spec := range mcpHTTPFlagSpecs(schema) {
+	specs := mcpHTTPFlagSpecs(schema)
+	params, err := mcpHTTPParamsFlagValue(cmd)
+	if err != nil {
+		return nil, err
+	}
+	for _, spec := range specs {
 		flag := cmd.Flags().Lookup(spec.FlagName)
 		if flag == nil || !flag.Changed {
 			continue
@@ -922,7 +1166,58 @@ func collectMCPHTTPCommandParams(cmd *cobra.Command, schema map[string]any) (map
 		}
 		params[spec.PropertyName] = value
 	}
+	if err := validateMCPHTTPRequiredParams(cmd, schema, specs, params); err != nil {
+		return nil, err
+	}
 	return params, nil
+}
+
+func mcpHTTPParamsFlagValue(cmd *cobra.Command) (map[string]any, error) {
+	params := map[string]any{}
+	flag := cmd.Flags().Lookup("params")
+	if flag == nil || !flag.Changed {
+		return params, nil
+	}
+	raw, err := cmd.Flags().GetString("params")
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(raw) == "" {
+		return nil, apperrors.NewValidation("--params must be a non-empty JSON object")
+	}
+	decoder := json.NewDecoder(strings.NewReader(raw))
+	decoder.UseNumber()
+	if err := decoder.Decode(&params); err != nil {
+		return nil, apperrors.NewValidation(fmt.Sprintf("--params must be a valid JSON object: %v", err))
+	}
+	return params, nil
+}
+
+func validateMCPHTTPRequiredParams(cmd *cobra.Command, schema map[string]any, specs []mcpHTTPFlagSpec, params map[string]any) error {
+	required := mcpHTTPRequiredSet(schema)
+	if len(required) == 0 {
+		return nil
+	}
+	flagByProperty := map[string]string{}
+	for _, spec := range specs {
+		flagByProperty[spec.PropertyName] = spec.FlagName
+	}
+	keys := make([]string, 0, len(required))
+	for key := range required {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	for _, key := range keys {
+		value, ok := params[key]
+		if ok && value != nil {
+			continue
+		}
+		if flag := flagByProperty[key]; flag != "" {
+			return apperrors.NewValidation(fmt.Sprintf("missing required MCP input %q; pass --%s or include %q in --params", key, flag, key))
+		}
+		return apperrors.NewValidation(fmt.Sprintf("missing required MCP input %q; include it in --params", key))
+	}
+	return nil
 }
 
 func mcpHTTPFlagValue(cmd *cobra.Command, spec mcpHTTPFlagSpec) (any, error) {

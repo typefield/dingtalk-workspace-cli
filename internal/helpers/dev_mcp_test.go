@@ -67,7 +67,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--mcp-id", "10487",
 				"--name", "get_weather",
 				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
-				"--tool-inputs", `[{"key":"city","type":"string"}]`,
+				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
@@ -83,7 +83,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 					},
 				},
 				"toolInputs": []any{
-					map[string]any{"key": "city", "type": "string"},
+					map[string]any{"key": "city", "type": "string", "description": "City name, for example: Hangzhou."},
 				},
 				"outputMappings": []any{
 					map[string]any{"target": "$", "type": "reference", "source": "$.node_service_activator.Body"},
@@ -123,6 +123,91 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			}
 			if !reflect.DeepEqual(runner.last.Params, tc.wantParams) {
 				t.Fatalf("Params = %#v, want %#v", runner.last.Params, tc.wantParams)
+			}
+		})
+	}
+}
+
+func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name: "rejects non snake case tool name",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "GetWeather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--dry-run",
+			},
+			wantErr: "--name 必须是 snake_case",
+		},
+		{
+			name: "rejects exposed input without description",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--tool-inputs", `[{"key":"city","type":"string"}]`,
+				"--dry-run",
+			},
+			wantErr: "--tool-inputs[0].description 为必填",
+		},
+		{
+			name: "rejects array without items child",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--tool-inputs", `[{"key":"cities","type":"array","description":"City names, for example: Hangzhou."}]`,
+				"--dry-run",
+			},
+			wantErr: "children 必须且只能包含一个 key=items",
+		},
+		{
+			name: "rejects empty output mappings",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
+				"--output-mappings", `[]`,
+				"--dry-run",
+			},
+			wantErr: "--output-mappings 不能为空",
+		},
+		{
+			name: "rejects mapping without target",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--input-mappings", `[{"type":"reference","source":"$.node_start.city"}]`,
+				"--dry-run",
+			},
+			wantErr: "--input-mappings[0].target 为必填",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := &captureRunner{}
+			root := newDevAppTestRoot(runner)
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs(tc.args)
+
+			err := root.Execute()
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("Execute() error = %v, want %q\noutput:\n%s", err, tc.wantErr, out.String())
 			}
 		})
 	}
