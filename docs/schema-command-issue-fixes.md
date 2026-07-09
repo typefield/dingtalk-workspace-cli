@@ -67,3 +67,10 @@ This document records issues found while packaging, building, and executing comm
 - Cause: schema correctly marks `email` as optional for normal use, but the smoke harness used required parameters only; this made dry-run depend on the tester account's mailbox binding.
 - Fix: Added a smoke-only extra flag rule so `mail.search_mail_users` supplies a sample `--email` while leaving the runtime schema unchanged.
 - Verification: `dws mail user search --email user@example.com --keyword keyword-smoke --dry-run --yes --format json` passed; full smoke passed 359/359 after this fix.
+
+### Issue 9: newly surfaced attendance schema paths needed smoke-safe minimum payloads
+
+- Symptom: full smoke later discovered 375 leaf commands and failed on several attendance commands: one-of IDs, enum fields, JSON schedule items, and update commands requiring at least one changed field.
+- Cause: flat schema cannot express every one-of/at-least-one group, and the smoke value generator used generic string samples for attendance enums and empty JSON arrays for schedules.
+- Fix: Added attendance schema hints for minimum executable update fields; generated valid attendance enum/JSON samples; allowed dotted flag names such as `--param.use-history-group-and-shift` in help validation; added short retry for live helper schema fetches.
+- Verification: targeted smoke for the 9 failing paths passed 9/9, `go test ./internal/cli ./test/contract -count=1` passed, and full schema smoke passed 375/375.

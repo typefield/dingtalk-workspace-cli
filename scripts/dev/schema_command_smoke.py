@@ -16,6 +16,7 @@ import re
 import shlex
 import subprocess
 import tempfile
+import time
 from dataclasses import dataclass
 from datetime import datetime, timezone
 from pathlib import Path
@@ -34,21 +35,38 @@ class SmokeResult:
     error: str = ""
 
 
-def run_json(argv: list[str], cwd: Path, timeout: int) -> Any:
-    proc = subprocess.run(
-        argv,
-        cwd=cwd,
-        text=True,
-        stdout=subprocess.PIPE,
-        stderr=subprocess.PIPE,
-        timeout=timeout,
+def should_retry_json_failure(output: str) -> bool:
+    return any(
+        token in output
+        for token in [
+            "TOKEN_VERIFIED_FAILED",
+            "tools/list failed",
+            "returned HTTP 400",
+        ]
     )
-    if proc.returncode != 0:
-        raise RuntimeError(
-            f"{shlex.join(argv)} exited {proc.returncode}: "
-            f"{(proc.stderr or proc.stdout).strip()}"
+
+
+def run_json(argv: list[str], cwd: Path, timeout: int, attempts: int = 3) -> Any:
+    last_output = ""
+    last_code = 1
+    for attempt in range(attempts):
+        proc = subprocess.run(
+            argv,
+            cwd=cwd,
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout,
         )
-    return json.loads(proc.stdout)
+        if proc.returncode == 0:
+            return json.loads(proc.stdout)
+        last_code = proc.returncode
+        last_output = (proc.stderr or proc.stdout).strip()
+        if attempt + 1 < attempts and should_retry_json_failure(last_output):
+            time.sleep(1 + attempt)
+            continue
+        break
+    raise RuntimeError(f"{shlex.join(argv)} exited {last_code}: {last_output}")
 
 
 def kebab_to_words(value: str) -> str:
@@ -80,6 +98,14 @@ def scalar_value(flag: str, param: dict[str, Any], canonical_path: str) -> str:
         }
         if canonical_path in samples:
             return samples[canonical_path]
+    if canonical_path == "attendance.generateTurnSchedule" and flag == "scheduleVOS":
+        return '[{"userId":"user-smoke","workDate":"2026-07-09 09:00:00","classId":1,"isRest":"N"}]'
+    if canonical_path == "attendance.create_group_setting" and flag == "type":
+        return "NONE"
+    if canonical_path == "attendance.query_at_approve_template" and flag == "type":
+        return "leave"
+    if canonical_path == "attendance.save_self_setting" and flag == "setting-scene":
+        return "checkResultNotify"
     if "json" in haystack:
         if "array" in haystack or "数组" in haystack:
             return "[]"
@@ -202,7 +228,7 @@ def help_flags(binary: str, cwd: Path, cli_path: str, timeout: int) -> set[str]:
             f"{binary} {cli_path} --help exited {proc.returncode}: "
             f"{(proc.stderr or proc.stdout).strip()}"
         )
-    return set(re.findall(r"--([a-zA-Z0-9][a-zA-Z0-9-]*)", proc.stdout))
+    return set(re.findall(r"--([a-zA-Z0-9][a-zA-Z0-9_.-]*)", proc.stdout))
 
 
 def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: bool) -> SmokeResult:
