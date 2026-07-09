@@ -70,6 +70,11 @@ func helperSourceEndpoint(source string) (string, error) {
 	switch source {
 	case "", "op-app", "devapp":
 		return devappMCPEndpoint(), nil
+	case "mcpdev":
+		if endpoint, ok := directRuntimeEndpoint(mcpdevProductID, ""); ok {
+			return endpoint, nil
+		}
+		return mcpdevMCPEndpoint(), nil
 	default:
 		if endpoint, ok := directRuntimeEndpoint(source, ""); ok {
 			return endpoint, nil

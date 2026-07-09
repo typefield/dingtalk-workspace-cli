@@ -35,8 +35,8 @@ func init() {
 //	dev doc      open-platform developer doc search (bridges the devdoc
 //	             product; `dws devdoc` keeps working independently)
 //
-// Future developer capabilities (event subscription, MCP tooling, ...) join
-// as new subtrees here instead of new top-level commands.
+// Future developer capabilities join as new subtrees here instead of new
+// top-level commands.
 type devHandler struct{}
 
 func (devHandler) Name() string {
@@ -47,7 +47,7 @@ func (devHandler) Command(runner executor.Runner) *cobra.Command {
 	root := &cobra.Command{
 		Use:               "dev",
 		Short:             "开放平台开发者能力",
-		Long:              "钉钉开放平台开发者命令组：应用生命周期管理（app）、机器人本地调试建联（connect）、开发文档搜索（doc）。",
+		Long:              "钉钉开放平台开发者命令组：应用生命周期管理（app）、机器人本地调试建联（connect）和开发文档搜索（doc）。MCP 服务/工具管理已迁移到 connector mcp。",
 		Args:              cobra.NoArgs,
 		TraverseChildren:  true,
 		DisableAutoGenTag: true,

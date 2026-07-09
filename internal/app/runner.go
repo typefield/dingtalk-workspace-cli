@@ -167,10 +167,18 @@ func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation)
 		return executor.Result{}, apperrors.NewValidation(err.Error())
 	}
 	if multi {
-		return r.runMultiProfile(ctx, invocation, selections)
+		result, err := r.runMultiProfile(ctx, invocation, selections)
+		if err == nil {
+			maybeRefreshMCPHTTPCommandsAfterInvocation(ctx, invocation, result, r.globalFlags)
+		}
+		return result, err
 	}
 
-	return r.runSingle(ctx, invocation, true)
+	result, err := r.runSingle(ctx, invocation, true)
+	if err == nil {
+		maybeRefreshMCPHTTPCommandsAfterInvocation(ctx, invocation, result, r.globalFlags)
+	}
+	return result, err
 }
 
 func (r *runtimeRunner) runSingle(ctx context.Context, invocation executor.Invocation, prefetchToken bool) (executor.Result, error) {

@@ -21,6 +21,7 @@ func newDevAppTestRoot(runner executor.Runner) *cobra.Command {
 	root.PersistentFlags().Bool("yes", false, "yes")
 	root.PersistentFlags().String("format", "json", "format")
 	root.AddCommand(devHandler{}.Command(runner))
+	root.AddCommand(connectorHandler{}.Command(runner))
 	return root
 }
 

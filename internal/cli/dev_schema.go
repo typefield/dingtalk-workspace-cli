@@ -29,8 +29,8 @@ import (
 // LIVE from the helper's pinned MCP server (op-app) and rendered in the flat
 // gws-aligned shape — never synthesized from local cobra flags, never
 // hardcoded. The mapping from a leaf command to its MCP tool comes from the
-// `mcp-tool` cobra annotation set in internal/helpers/devapp.go.
-var helperSchemaRoots = map[string]bool{"dev": true}
+// `mcp-tool` cobra annotation set on helper leaf commands.
+var helperSchemaRoots = map[string]bool{"dev": true, "connector": true}
 
 // HelperToolSchema is the live op-app tool schema the renderer needs: the raw
 // MCP description plus the inputSchema's properties/required, exactly as the

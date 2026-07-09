@@ -368,6 +368,7 @@ func NewRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine) 
 
 	root.AddCommand(newLegacyPublicCommands(runner, patCaller)...)
 	root.AddCommand(newLegacyHiddenCommands(runner)...)
+	registerDynamicMCPHTTPCommands(root, runner, flags, rootCtx)
 
 	// --- Plugin loading: runs AFTER legacy commands so plugin endpoints can
 	// be appended on top of the static endpoint registry.
@@ -561,6 +562,7 @@ func hideNonDirectRuntimeCommands(root *cobra.Command) {
 		"api":        true,
 		"cache":      true,
 		"config":     true,
+		"connect":    true,
 		"dev":        true,
 		"doctor":     true,
 		"completion": true,
@@ -597,7 +599,7 @@ var reservedCommands = map[string]bool{
 	"plugin": true, "profile": true, "skill": true, "cache": true,
 	"config": true, "doctor": true, "completion": true,
 	"recovery": true, "upgrade": true, "version": true,
-	"schema": true, "mcp": true, "help": true,
+	"schema": true, "mcp": true, "connect": true, "connector": true, "help": true,
 }
 
 // addPluginCommandsSafe registers plugin commands with conflict detection.

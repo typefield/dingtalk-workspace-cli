@@ -48,6 +48,10 @@ const (
 	defaultPATServerID    = "abc3c880fb90f04b52d1426aaf093766e5fc9ec38411688cbb74df42a584d374"
 	devappProductID       = "devapp"
 	devappServerPath      = "/server/op-app"
+	mcpdevProductID       = "mcpdev"
+	mcpdevEndpointEnv     = "DINGTALK_MCPDEV_MCP_URL"
+	preMCPGatewayBaseURL  = "https://pre-mcp-gw.dingtalk.com"
+	mcpdevServerPath      = "/server/62445d67b5b7971653fbd0f7c8092ee3b9ca59ce51a15ad0a1e0c0d7aac4ede5"
 )
 
 // devappMCPEndpoint resolves the open-platform app-management MCP endpoint
@@ -55,6 +59,16 @@ const (
 // (production by default, pre when ~/.dws/mcp_url points at the pre gateway).
 func devappMCPEndpoint() string {
 	return defaultPATGatewayBaseURL() + devappServerPath
+}
+
+// mcpdevMCPEndpoint resolves the MCP development scaffold endpoint. This
+// branch pins mcpdev to pre-release by default while still allowing explicit
+// full-URL overrides for local or production verification.
+func mcpdevMCPEndpoint() string {
+	if raw := strings.TrimSpace(os.Getenv(mcpdevEndpointEnv)); raw != "" {
+		return strings.TrimRight(raw, "/")
+	}
+	return preMCPGatewayBaseURL + mcpdevServerPath
 }
 
 func defaultPATServerDescriptor() mcptypes.ServerDescriptor {
@@ -254,6 +268,9 @@ func directRuntimeEndpoint(productID, toolName string) (string, bool) {
 		if candidate == devappProductID {
 			return devappMCPEndpoint(), true
 		}
+		if candidate == mcpdevProductID {
+			return mcpdevMCPEndpoint(), true
+		}
 	}
 
 	// Priority 1: product-level endpoint.
@@ -350,9 +367,11 @@ func DirectRuntimeProductIDs() map[string]bool {
 	dynamicMu.RLock()
 	defer dynamicMu.RUnlock()
 
-	ids := make(map[string]bool, len(dynamicProducts)+2)
+	ids := make(map[string]bool, len(dynamicProducts)+4)
 	ids[defaultPATProductID] = true
 	ids[devappProductID] = true
+	ids[mcpdevProductID] = true
+	ids[mcpHTTPCommandRoot] = true
 	for key := range dynamicProducts {
 		ids[key] = true
 	}
