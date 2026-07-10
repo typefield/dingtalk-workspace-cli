@@ -48,8 +48,8 @@ MCP Service (mcpId)
 service create
   → tool create/update
   → draft
-  → tool debug --version-id <draftVersionId>
-  → tool publish
+  → tool debug --version-id <draftVersionId>   # 真跑验证，返回真实业务数据才算通过
+  → tool publish                                # publish = 企业内可用（≠ 上架市场）
   → published
   → url get --source PUBLISHED
   → connector mcp refresh
@@ -69,15 +69,23 @@ service create
 | `toolInputs` / `toolOutputs` | 暴露给 LLM 的参数和响应字段，可裁剪、改名、防呆 | `keyword`、`city`、`raw` |
 | `inputMappings` / `outputMappings` | LLM 字段和 HTTP 字段之间的映射 | `$.node_start.keyword` → `$.Query.wd` |
 
-字段结构统一用 `{key,title,type,required,description,children}`。`array` 的 `children` 固定为一项 `key="items"`。
+字段结构统一用 `{key,title,type,required,description,children}`（type：string/number/boolean/object/array；object/array 的子结构放 `children` 递归；**array 字段的 items 不能为空**）。
 
-映射规则：
+- `toolInputs` 的 `key` 对应 `inputMappings.source`（`$.node_start.<key>`）；`apiInputs` 的字段位置对应 `inputMappings.target`（`$.<位置>.<key>`）。
+- **平台不支持 enum/default/example 等 JSON Schema 标准属性**——枚举、默认值、示例一律写进字段 `description` 文本。
+- 必填最小集是 `mcpId/name/http`，但要工具真能用，`apiInputs + toolInputs + inputMappings + outputMappings` 都要给全（否则映射不生效或出参为空）。
+- 工具 `description` 有 DB 列长限制（约 700 字符）：`tool create/update` 草稿不报错，**`tool publish` 才报 Data too long**——描述超长要在发布前收敛。
 
-- `reference`：引用工具入参或系统参数，例如 `$.node_start.keyword`。
-- `fixed`：固定常量，例如把 `$.Query.prod` 固定为 `pc`。
-- `express`：表达式映射，只有确实需要转换时使用。
-- target 分组用 Pascal：`$.Head.*`、`$.Query.*`、`$.Body.*`、`$.Path.*`。不要写 `$.query.*` 或 `$.QUERY.*`。
-- `corpId` / `userId` 等调用者身份由系统注入，不要在映射里额外传。
+映射规则的完整格式（JSONPath 写法、Pascal 位置名、reference/fixed/express 三型、出参透传、系统参数、数组双规则）见 **[mapping-rules.md](mapping-rules.md)**，写 `--input-mappings` / `--output-mappings` 前必读。速记三条最大的坑：
+
+- target 位置名必须 Pascal（`$.Query.*` / `$.Body.*`），全大写/全小写**静默失效**；
+- `express` 类型的表达式必须放 `expression` 字段（不是 `source`），放错被静默存成 `{}`；
+- `outputMappings` 不能为空，最简写法 = 响应体整体透传 `{"type":"reference","source":"$.node_service_activator.Body","target":"$"}`。
+- `corpId` / `userId` 等调用者身份由系统参数注入（`$.system_node.*`），不要做成 toolInput 让 LLM 传。
+
+### 从 API 材料到工具定义
+
+用户给 API 材料（OpenAPI/Postman/curl/文档）要求「做成 MCP / 给 agent 用」时，按 **[api-to-tool.md](api-to-tool.md)** 拆解：信息对齐（材料/业务目标/鉴权，缺就问）→ 按材料类型提取三段式 → 工具侧加工（裁剪/改名/约束写 desc/身份走注入）→ 一个语义动作一个工具 → 设计整表给用户过目再动手建。只读接口建议先真跑一次取真实响应（反推 apiOutputs + 生成 debug 测试入参）。
 
 ### 发现与动态命令
 
@@ -110,6 +118,22 @@ dws connector mcp published --help
 
 ## Shortcut
 
+### 从 API 材料一键建 MCP（终端用户最高频）
+
+```text
+1. 信息对齐：API 材料 / 业务目标 / 鉴权方式，缺就问
+2. 按「从 API 材料到工具定义」拆三段式，映射按 mapping-rules.md 写
+3. 设计整表给用户过目（工具清单/入参/映射/测试入参）
+4. service create --dry-run → 确认 → --yes，记录 mcpId
+5. 先建最简单的一个工具：tool create → tool get 读回核对（rules 位置名/条数）
+6. 结构没问题再建其余；每建一个 tool list 反查一个，失败即停
+7. 逐个 tool debug（草稿传 --version-id）：校验返回真实业务数据
+8. debug 失败 → 对照 mapping-rules.md 修映射 → tool update → 再 debug（最多 2 轮，仍失败升级用户）
+9. 用户明确确认后逐个 tool publish --yes
+10. url get --source PUBLISHED 取接入地址（?key= 脱敏）
+11. connector mcp refresh → 确认动态命令出现 → 真实调用验证一次
+```
+
 ### 从零创建并发布一个只读 HTTP 工具
 
 ```text
@@ -141,14 +165,15 @@ dws connector mcp published --help
 7. 用户确认后 tool publish --yes
 ```
 
-注意：第 2 步读回的是平台底层存储结构，不能直接原样回填 `tool update`；要翻译回三段式参数后全量提交。
+注意：第 2 步读回的是平台底层存储结构（含组装后的 rules/schema JSON），**不能直接原样回填** `tool update`；要翻译回三段式参数后全量提交。翻译时以读回 rules 里的真实格式为参照（source/target/type 逐条还原到 inputMappings/outputMappings，schema 字段还原到 apiInputs/toolInputs）。
 
 ### 只验证线上工具
 
 ```text
 1. tool list --mcp-id <mcpId> 找 actionId
-2. tool debug --mcp-id <mcpId> --action-id <actionId> --value '{}' --dry-run
-3. 确认后 tool debug --mcp-id <mcpId> --action-id <actionId> --value '{}' --yes
+2. tool get 读 toolInputs，构造真实测试入参（如 '{"city_name":"北京"}'；不要传空 {} 走过场）
+3. tool debug --mcp-id <mcpId> --action-id <actionId> --value '<测试入参JSON>' --dry-run
+4. 确认后 tool debug --mcp-id <mcpId> --action-id <actionId> --value '<测试入参JSON>' --yes
 ```
 
 线上验证可以不传 `--version-id`；草稿验证必须传。
@@ -199,8 +224,12 @@ dws connector mcp published --help
 常见定位结论：
 
 - `mcp_not_found`：当前 mcpdev endpoint 或当前登录组织下没有该 `mcpId`。
+- `mcp_id_initializing`（MCP 数据初始化中）：存量数据补齐中，**等 10 秒重试一次**即可。
 - `no_draft_to_publish`：没有可发布草稿，先 `tool update` 或确认 actionId。
+- `tool_already_listed_in_market`：已上架市场的工具不允许删除，需先在市场下架。
+- 调试「成功」但接口报缺参/返回空：映射静默失效——位置名大小写（须 Pascal）/ express 用了 `source` 字段（须 `expression`）/ 漏映射，见 mapping-rules.md。
 - 调试通过但发布后调用旧逻辑：调试时漏传草稿 `versionId`，实际测了线上旧版本。
+- `service list` 偶发返回空列表：索引瞬态，重试一次即可。
 - 动态命令没出现：发现接口未返回 MCP，或接入地址 `tools/list` 不可访问。
 
 ## 服务
@@ -218,6 +247,8 @@ dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
 服务名用业务语义命名且组织内唯一，不要用 test、临时 等占位名。删除服务不可恢复，删除前先 `service get` 和 `tool list` 核对；服务下还有工具时会被拒绝。
 
+列表类命令（`service list` / `tool list` / `tool versions`）返回统一分页信封 `{list, hasMore, nextCursor, totalCount}`——用 `hasMore` 判断翻页，不要用「返回条数==pageSize」启发式。
+
 ## 工具
 
 ```bash
@@ -230,13 +261,13 @@ dws connector mcp tool versions --mcp-id <mcpId> --action-id <actionId> --format
 dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --title <标题> --description <描述> --http '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
 dws connector mcp tool update --mcp-id <mcpId> --action-id <actionId> --name <snake_case_name> --title <标题> --description <描述> --http '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
 
-# 调试 / 发布 / 删除
-dws connector mcp tool debug --mcp-id <mcpId> --action-id <actionId> --version-id <versionId> --value '{}' --dry-run --format json
+# 调试 / 发布 / 删除（value=符合 toolInputs 的测试入参，不要传空 {} 走过场）
+dws connector mcp tool debug --mcp-id <mcpId> --action-id <actionId> --version-id <versionId> --value '{"city_name":"北京"}' --dry-run --format json
 dws connector mcp tool publish --mcp-id <mcpId> --action-id <actionId> --dry-run --format json
 dws connector mcp tool delete --mcp-id <mcpId> --action-id <actionId> --dry-run --format json
 ```
 
-工具定义是三段式：
+工具定义是三段式（结构详见上文「三段式工具定义」，映射详见 mapping-rules.md）：
 
 - `apiInputs` / `apiOutputs`：HTTP 接口真实入参和出参。
 - `toolInputs` / `toolOutputs`：暴露给 LLM 的入参和出参，可以裁剪、改名、写防呆描述。
@@ -258,7 +289,8 @@ dws connector mcp tool delete --mcp-id <mcpId> --action-id <actionId> --dry-run 
 
 ## 调试与发布
 
-- `tool debug` 会真实执行目标接口；写接口必须用测试数据。
+- `tool debug` 会真实执行目标接口；写接口必须用测试数据（先让用户指定测试资源）。
+- **通过标准 = 返回真实业务数据**（如查天气要真返回温度数值），不是「没报错」——映射静默失效时命令不报错但接口收到空参数。
 - 不传 `--version-id` 时，如果工具曾发布过，会调已发布版本，不会自动调最新草稿。
 - 要调试正在编辑的草稿，必须从 `tool get` 取草稿 `versionId` 后显式传 `--version-id`。
 - 发布前必须至少调试通过一次。
@@ -272,7 +304,7 @@ dws connector mcp url get --mcp-id <mcpId> --source PUBLISHED --format json
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 ```
 
-- 新建服务发布后用于验证通常传 `--source PUBLISHED`。
+- **publish ≠ 上架市场**：publish 后企业内即可用，`--source PUBLISHED` 直接取到「已发布未上架」服务的可用地址——无需上架、无需外部工具，全程自助闭环。
 - 已上架市场传 `--source MARKET`。
 - 返回的 URL 或 JSON config 含 `?key=`，按敏感凭证处理，只能给当前用户本地配置使用。
 - 代码或命令需要接入地址时优先使用 `url get` 或发现接口返回值，不要自行拼接服务 URL。
