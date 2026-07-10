@@ -414,6 +414,10 @@ agentCode 配置:
 	chmodCmd.Flags().BoolVar(&recommend, "recommend", false, "使用推荐 scope 集合批量授权；执行授权需 --yes")
 
 	cli.AnnotateRuntimeFlagEnum(chmodCmd, "grant-type", "once", "session", "permanent")
+	cli.AnnotateRuntimeFlagExample(chmodCmd, "product", "calendar")
+	cli.AnnotateRuntimeFlagExample(chmodCmd, "products", "calendar,aitable")
+	cli.AnnotateRuntimeFlagExample(chmodCmd, "domain", "calendar")
+	cli.AnnotateRuntimeFlagExample(chmodCmd, "domains", "calendar,chat")
 	cli.AnnotateRuntimePositionals(chmodCmd, cli.RuntimeSchemaPositional{
 		Name:        "scope",
 		Type:        "array",

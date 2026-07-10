@@ -80,6 +80,47 @@ func TestSchemaCoversVisibleProductLeafCommands(t *testing.T) {
 	}
 }
 
+func TestSchemaHidesChatFileUploadCompatibilityAliases(t *testing.T) {
+	root := NewRootCommand()
+	var out, errOut bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&errOut)
+	root.SetArgs([]string{"schema", "chat.upload_conversation_file", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("schema Execute() error = %v\nstderr:\n%s", err, errOut.String())
+	}
+
+	var payload struct {
+		Parameters  map[string]json.RawMessage `json:"parameters"`
+		Constraints struct {
+			RequireOneOf [][]string `json:"require_one_of"`
+		} `json:"constraints"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("json.Unmarshal() error = %v\noutput:\n%s", err, out.String())
+	}
+	for _, name := range []string{"conversation-id", "id", "file-path"} {
+		if _, ok := payload.Parameters[name]; ok {
+			t.Fatalf("compatibility alias %q leaked into schema parameters", name)
+		}
+	}
+	for _, name := range []string{"group", "user", "open-dingtalk-id", "file", "url"} {
+		if _, ok := payload.Parameters[name]; !ok {
+			t.Fatalf("canonical parameter %q missing from schema", name)
+		}
+	}
+	wantGroups := map[string]bool{
+		"group,user,open-dingtalk-id": true,
+		"file,url":                    true,
+	}
+	for _, group := range payload.Constraints.RequireOneOf {
+		delete(wantGroups, strings.Join(group, ","))
+	}
+	if len(wantGroups) != 0 {
+		t.Fatalf("require_one_of missing groups: %#v", wantGroups)
+	}
+}
+
 func TestSchemaProductIDsMatchRootHelpServices(t *testing.T) {
 	root := NewRootCommand()
 	helpProducts := map[string]bool{}

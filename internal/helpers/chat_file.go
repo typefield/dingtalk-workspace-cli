@@ -164,12 +164,12 @@ func newChatFileUploadCommand(runner executor.Runner) *cobra.Command {
 	}
 	preferLegacyLeaf(cmd)
 	cmd.Flags().String("group", "", "群聊 openConversationId（群聊时使用）")
-	cmd.Flags().String("conversation-id", "", "--group 的别名")
-	cmd.Flags().String("id", "", "--group 的别名")
+	addChatFileHiddenStringFlag(cmd, "conversation-id", "--group 的别名")
+	addChatFileHiddenStringFlag(cmd, "id", "--group 的别名")
 	cmd.Flags().String("user", "", "单聊对方 userId（单聊时使用）")
 	cmd.Flags().String("open-dingtalk-id", "", "单聊对方 openDingTalkId（单聊时使用）")
 	cmd.Flags().String("file", "", "本地文件路径（与 --url 二选一）")
-	cmd.Flags().String("file-path", "", "--file 的别名")
+	addChatFileHiddenStringFlag(cmd, "file-path", "--file 的别名")
 	cmd.Flags().String("url", "", "远程文件 URL（与 --file 二选一，服务端代传）")
 	cmd.Flags().String("file-name", "", "文件名（可选）")
 	cmd.Flags().String("md5", "", "文件 MD5（可选，本地不传自动计算）")
@@ -187,6 +187,11 @@ func newChatFileUploadCommand(runner executor.Runner) *cobra.Command {
 		nil,
 	)
 	return cmd
+}
+
+func addChatFileHiddenStringFlag(cmd *cobra.Command, name, usage string) {
+	cmd.Flags().String(name, "", usage)
+	_ = cmd.Flags().MarkHidden(name)
 }
 
 func chatConversationTargetArgs(cmd *cobra.Command) (map[string]any, error) {

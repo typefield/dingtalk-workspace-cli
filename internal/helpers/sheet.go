@@ -1111,6 +1111,7 @@ func newSheetCondFormatCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("cell-style", "", "单元格样式 JSON 对象")
 	cmd.Flags().String("data-bar-style", "", "数据条样式 JSON 对象")
 	annotateFlagExample(cmd, "ranges", `["A1:B2"]`)
+	annotateFlagExample(cmd, "condition", `{"numberCondition":{"operator":"greater","value1":"80"}}`)
 	return cmd
 }
 
@@ -1132,6 +1133,7 @@ func newSheetCondFormatUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("cell-style", "", "单元格样式 JSON 对象")
 	cmd.Flags().String("data-bar-style", "", "数据条样式 JSON 对象")
 	annotateFlagExample(cmd, "ranges", `["A1:B2"]`)
+	annotateFlagExample(cmd, "condition", `{"numberCondition":{"operator":"greater","value1":"80"}}`)
 	annotateFlagConstraints(cmd, nil, [][]string{{
 		"ranges", "condition", "cell-style", "data-bar-style",
 	}}, nil)
@@ -2102,6 +2104,17 @@ func bindSheetStyleFlags(cmd *cobra.Command) {
 	cmd.Flags().String("font-weights-json", "", "字体粗细二维 JSON 数组")
 	cmd.Flags().String("word-wrap", "", "换行方式")
 	cmd.Flags().String("number-format", "", "数字格式 code")
+
+	annotateFlagEnum(cmd, "h-align", "left", "center", "right", "general")
+	annotateFlagEnum(cmd, "v-align", "top", "middle", "bottom")
+	annotateFlagEnum(cmd, "font-weight", "bold", "normal")
+	annotateFlagEnum(cmd, "word-wrap", "overflow", "clip", "autoWrap")
+	annotateFlagExample(cmd, "bg-colors-json", `[["#FFFFFF","#FFFFFF"],["#FFFFFF","#FFFFFF"]]`)
+	annotateFlagExample(cmd, "font-sizes-json", `[[12,12],[12,12]]`)
+	annotateFlagExample(cmd, "h-aligns-json", `[["left","left"],["left","left"]]`)
+	annotateFlagExample(cmd, "v-aligns-json", `[["top","top"],["top","top"]]`)
+	annotateFlagExample(cmd, "font-colors-json", `[["#000000","#000000"],["#000000","#000000"]]`)
+	annotateFlagExample(cmd, "font-weights-json", `[["normal","normal"],["normal","normal"]]`)
 }
 
 func sheetReadStyleSpec(cmd *cobra.Command) *sheetStyleSpec {

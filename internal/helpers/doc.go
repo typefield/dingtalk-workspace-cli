@@ -1066,6 +1066,8 @@ func newDocBlockInsertCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("content-format", "", i18n.T("输入格式: element / jsonml"))
 	cmd.Flags().String("parent-block", "", i18n.T("父容器块 ID（JSONML 场景透传）"))
 	addDocJSONMLControlFlags(cmd)
+	annotateFlagEnum(cmd, "type", "paragraph", "heading", "blockquote", "callout", "code", "orderedList", "unorderedList", "columns", "divider")
+	annotateFlagExample(cmd, "type", "divider")
 	annotateFlagConstraints(cmd, nil, [][]string{{"text", "heading", "element", "type"}}, nil)
 	return cmd
 }
@@ -1130,6 +1132,8 @@ func newDocBlockUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().Int("level", 1, i18n.T("标题级别"))
 	cmd.Flags().String("content-format", "", i18n.T("输入格式: element / jsonml"))
 	addDocJSONMLControlFlags(cmd)
+	annotateFlagEnum(cmd, "type", "paragraph", "heading", "blockquote", "callout", "code", "orderedList", "unorderedList", "columns", "divider")
+	annotateFlagExample(cmd, "type", "divider")
 	annotateFlagConstraints(cmd, nil, [][]string{{"text", "heading", "element", "type"}}, nil)
 	return cmd
 }

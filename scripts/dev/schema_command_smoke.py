@@ -3,13 +3,15 @@
 
 The script treats `dws schema --all --format json` as the command inventory, expands
 each leaf schema, synthesizes flag values from parameter metadata, and executes
-the runnable CLI path with `--dry-run --yes --format json`.
+the runnable CLI path with `--dry-run --yes --format json`. Every available
+combination of `require_one_of` branches is exercised independently.
 """
 
 from __future__ import annotations
 
 import argparse
 import concurrent.futures
+import itertools
 import json
 import os
 import re
@@ -26,6 +28,7 @@ from typing import Any
 @dataclass
 class SmokeResult:
     canonical_path: str
+    case_name: str
     cli_path: str
     command: list[str]
     status: str
@@ -74,12 +77,12 @@ def kebab_to_words(value: str) -> str:
 
 
 def scalar_value(flag: str, param: dict[str, Any], canonical_path: str) -> str:
+    if param.get("example") not in (None, ""):
+        return str(param["example"])
+
     enum = param.get("enum") or []
     if enum:
         return str(enum[0])
-
-    if param.get("example") not in (None, ""):
-        return str(param["example"])
 
     value_format = str(param.get("format", "")).lower()
     if value_format in {"numeric-id", "positive-integer"}:
@@ -182,6 +185,9 @@ def value_for(flag: str, param: dict[str, Any], canonical_path: str) -> str | No
     if canonical_path == "sheet.range_batch_set_style" and flag == "batch":
         return str(Path(tempfile.gettempdir()) / "dws-schema-smoke-style.json")
 
+    if param.get("example") not in (None, ""):
+        return str(param["example"])
+
     typ = str(param.get("type", "string")).lower()
     prop = str(param.get("property", ""))
     haystack = " ".join([kebab_to_words(flag), kebab_to_words(prop)])
@@ -223,7 +229,43 @@ def constraint_groups(leaf: dict[str, Any], name: str) -> list[list[str]]:
     return [[str(item) for item in group] for group in groups if group]
 
 
-def selected_inputs(leaf: dict[str, Any], include_optional: bool) -> tuple[set[str], set[str]]:
+def available_one_of_groups(leaf: dict[str, Any]) -> list[list[str]]:
+    params = leaf.get("parameters") or {}
+    positional_names = {
+        str(item.get("name"))
+        for item in (leaf.get("positionals") or [])
+        if item.get("name")
+    }
+    available = set(params) | positional_names
+    return [
+        [name for name in group if name in available]
+        for group in constraint_groups(leaf, "require_one_of")
+        if any(name in available for name in group)
+    ]
+
+
+def one_of_cases(leaf: dict[str, Any]) -> list[tuple[str, ...]]:
+    groups = available_one_of_groups(leaf)
+    if not groups:
+        return [()]
+    cases: list[tuple[str, ...]] = []
+    seen: set[tuple[str, ...]] = set()
+    mutually_exclusive = constraint_groups(leaf, "mutually_exclusive")
+    for choices in itertools.product(*groups):
+        selected = set(choices)
+        if any(sum(name in selected for name in group) > 1 for group in mutually_exclusive):
+            continue
+        if choices not in seen:
+            seen.add(choices)
+            cases.append(choices)
+    return cases or [()]
+
+
+def selected_inputs(
+    leaf: dict[str, Any],
+    include_optional: bool,
+    one_of_choices: tuple[str, ...] = (),
+) -> tuple[set[str], set[str]]:
     params = leaf.get("parameters") or {}
     positionals = {
         str(item.get("name")): item
@@ -251,12 +293,14 @@ def selected_inputs(leaf: dict[str, Any], include_optional: bool) -> tuple[set[s
             return True
         return False
 
-    for group in constraint_groups(leaf, "require_one_of"):
-        if any(is_selected(name) for name in group):
-            continue
+    one_of_groups = available_one_of_groups(leaf)
+    choices = one_of_choices or tuple(group[0] for group in one_of_groups)
+    preferred = set(choices)
+    for group, choice in zip(one_of_groups, choices):
         for name in group:
-            if select(name):
-                break
+            selected_params.discard(name)
+            selected_positionals.discard(name)
+        select(choice)
 
     changed = True
     while changed:
@@ -270,20 +314,30 @@ def selected_inputs(leaf: dict[str, Any], include_optional: bool) -> tuple[set[s
 
     for group in constraint_groups(leaf, "mutually_exclusive"):
         selected = [name for name in group if is_selected(name)]
-        for name in selected[1:]:
+        keep = next((name for name in selected if name in preferred), selected[0] if selected else "")
+        for name in selected:
+            if name == keep:
+                continue
             selected_params.discard(name)
             selected_positionals.discard(name)
 
     return selected_params, selected_positionals
 
 
-def build_command(binary: str, leaf: dict[str, Any], include_optional: bool) -> list[str]:
+def build_command(
+    binary: str,
+    leaf: dict[str, Any],
+    include_optional: bool,
+    one_of_choices: tuple[str, ...] = (),
+) -> list[str]:
     cli_path = str(leaf["cli_path"])
     canonical_path = str(leaf.get("canonical_path", ""))
     extra_flags = smoke_extra_flags(canonical_path)
     argv = [binary, *shlex.split(cli_path)]
     params = leaf.get("parameters") or {}
-    selected_params, selected_positionals = selected_inputs(leaf, include_optional)
+    selected_params, selected_positionals = selected_inputs(
+        leaf, include_optional, one_of_choices
+    )
 
     positionals = sorted(
         (leaf.get("positionals") or []),
@@ -326,24 +380,18 @@ def help_flags(binary: str, cwd: Path, cli_path: str, timeout: int) -> set[str]:
     return set(re.findall(r"--([a-zA-Z0-9][a-zA-Z0-9_.-]*)", proc.stdout))
 
 
-def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: bool) -> SmokeResult:
+def run_smoke_case(
+    binary: str,
+    cwd: Path,
+    path: str,
+    leaf: dict[str, Any],
+    timeout: int,
+    include_optional: bool,
+    choices: tuple[str, ...],
+) -> SmokeResult:
+    case_name = "default" if not choices else "one_of:" + "+".join(choices)
     try:
-        leaf = run_json([binary, "schema", path, "--format", "json"], cwd, timeout)
-        cli_path = str(leaf.get("cli_path", ""))
-        declared = set((leaf.get("parameters") or {}).keys())
-        missing = sorted(declared - help_flags(binary, cwd, cli_path, timeout))
-        if missing:
-            return SmokeResult(
-                canonical_path=path,
-                cli_path=cli_path,
-                command=[binary, *shlex.split(cli_path), "--help"],
-                status="schema_flag_mismatch",
-                exit_code=3,
-                stdout="",
-                stderr="",
-                error="schema parameters missing from command help: " + ", ".join(missing),
-            )
-        command = build_command(binary, leaf, include_optional)
+        command = build_command(binary, leaf, include_optional, choices)
         proc = subprocess.run(
             command,
             cwd=cwd,
@@ -355,6 +403,7 @@ def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: b
         status = "pass" if proc.returncode == 0 else "fail"
         return SmokeResult(
             canonical_path=path,
+            case_name=case_name,
             cli_path=str(leaf.get("cli_path", "")),
             command=command,
             status=status,
@@ -365,6 +414,7 @@ def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: b
     except subprocess.TimeoutExpired as exc:
         return SmokeResult(
             canonical_path=path,
+            case_name=case_name,
             cli_path="",
             command=exc.cmd if isinstance(exc.cmd, list) else [str(exc.cmd)],
             status="timeout",
@@ -376,6 +426,7 @@ def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: b
     except Exception as exc:  # noqa: BLE001 - record all smoke failures.
         return SmokeResult(
             canonical_path=path,
+            case_name=case_name,
             cli_path="",
             command=[],
             status="error",
@@ -386,9 +437,79 @@ def run_one(binary: str, cwd: Path, path: str, timeout: int, include_optional: b
         )
 
 
+def run_one(
+    binary: str,
+    cwd: Path,
+    path: str,
+    timeout: int,
+    include_optional: bool,
+) -> list[SmokeResult]:
+    try:
+        leaf = run_json([binary, "schema", path, "--format", "json"], cwd, timeout)
+        cli_path = str(leaf.get("cli_path", ""))
+        declared = set((leaf.get("parameters") or {}).keys())
+        missing = sorted(declared - help_flags(binary, cwd, cli_path, timeout))
+        if missing:
+            return [
+                SmokeResult(
+                    canonical_path=path,
+                    case_name="schema",
+                    cli_path=cli_path,
+                    command=[binary, *shlex.split(cli_path), "--help"],
+                    status="schema_flag_mismatch",
+                    exit_code=3,
+                    stdout="",
+                    stderr="",
+                    error="schema parameters missing from command help: "
+                    + ", ".join(missing),
+                )
+            ]
+        return [
+            run_smoke_case(
+                binary,
+                cwd,
+                path,
+                leaf,
+                timeout,
+                include_optional,
+                choices,
+            )
+            for choices in one_of_cases(leaf)
+        ]
+    except subprocess.TimeoutExpired as exc:
+        return [
+            SmokeResult(
+                canonical_path=path,
+                case_name="schema",
+                cli_path="",
+                command=exc.cmd if isinstance(exc.cmd, list) else [str(exc.cmd)],
+                status="timeout",
+                exit_code=124,
+                stdout=exc.stdout or "",
+                stderr=exc.stderr or "",
+                error=str(exc),
+            )
+        ]
+    except Exception as exc:  # noqa: BLE001 - record all smoke failures.
+        return [
+            SmokeResult(
+                canonical_path=path,
+                case_name="schema",
+                cli_path="",
+                command=[],
+                status="error",
+                exit_code=1,
+                stdout="",
+                stderr="",
+                error=str(exc),
+            )
+        ]
+
+
 def result_to_dict(result: SmokeResult) -> dict[str, Any]:
     return {
         "canonical_path": result.canonical_path,
+        "case": result.case_name,
         "cli_path": result.cli_path,
         "command": result.command,
         "status": result.status,
@@ -399,7 +520,7 @@ def result_to_dict(result: SmokeResult) -> dict[str, Any]:
     }
 
 
-def write_markdown(results: list[SmokeResult], output: Path) -> None:
+def write_markdown(results: list[SmokeResult], output: Path, tool_count: int) -> None:
     counts: dict[str, int] = {}
     for result in results:
         counts[result.status] = counts.get(result.status, 0) + 1
@@ -408,7 +529,8 @@ def write_markdown(results: list[SmokeResult], output: Path) -> None:
         "# Schema Command Smoke Results",
         "",
         f"- Generated: {datetime.now(timezone.utc).isoformat()}",
-        f"- Total: {len(results)}",
+        f"- Tools: {tool_count}",
+        f"- Cases: {len(results)}",
     ]
     for status in sorted(counts):
         lines.append(f"- {status}: {counts[status]}")
@@ -418,8 +540,8 @@ def write_markdown(results: list[SmokeResult], output: Path) -> None:
     if not failures:
         lines.append("No failures.")
     else:
-        lines.append("| canonical_path | cli_path | status | exit | issue |")
-        lines.append("| --- | --- | --- | --- | --- |")
+        lines.append("| canonical_path | case | cli_path | status | exit | issue |")
+        lines.append("| --- | --- | --- | --- | --- | --- |")
         for result in failures:
             issue = result.error or result.stderr.strip() or result.stdout.strip()
             issue = issue.replace("\n", "<br>")
@@ -430,6 +552,7 @@ def write_markdown(results: list[SmokeResult], output: Path) -> None:
                 + " | ".join(
                     [
                         f"`{result.canonical_path}`",
+                        f"`{result.case_name}`",
                         f"`{result.cli_path}`",
                         result.status,
                         str(result.exit_code),
@@ -469,14 +592,15 @@ def main() -> int:
         paths = [tool["canonical_path"] for product in listing["products"] for tool in product["tools"]]
 
     with concurrent.futures.ThreadPoolExecutor(max_workers=args.jobs) as executor:
-        results = list(
+        result_groups = list(
             executor.map(
                 lambda p: run_one(args.binary, cwd, p, args.timeout, args.include_optional),
                 paths,
             )
         )
+    results = [result for group in result_groups for result in group]
 
-    results.sort(key=lambda item: item.canonical_path)
+    results.sort(key=lambda item: (item.canonical_path, item.case_name))
 
     jsonl_path = Path(args.output_jsonl)
     jsonl_path.parent.mkdir(parents=True, exist_ok=True)
@@ -486,9 +610,10 @@ def main() -> int:
 
     md_path = Path(args.output_md)
     md_path.parent.mkdir(parents=True, exist_ok=True)
-    write_markdown(results, md_path)
+    write_markdown(results, md_path, len(paths))
 
     failures = [result for result in results if result.status != "pass"]
+    print(f"tools={len(paths)}")
     print(f"total={len(results)}")
     print(f"failures={len(failures)}")
     print(f"jsonl={jsonl_path}")

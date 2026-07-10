@@ -3,6 +3,8 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"os"
+	"path/filepath"
 	"strings"
 	"testing"
 
@@ -13,6 +15,41 @@ import (
 
 type captureRunner struct {
 	last executor.Invocation
+}
+
+func TestChatFileUploadCompatibilityAliasesRemainCallable(t *testing.T) {
+	for _, name := range []string{"conversation-id", "id", "file-path"} {
+		cmd := newChatFileUploadCommand(&captureRunner{})
+		flag := cmd.Flags().Lookup(name)
+		if flag == nil || !flag.Hidden {
+			t.Fatalf("compatibility flag --%s must remain registered and hidden", name)
+		}
+	}
+
+	runner := &captureRunner{}
+	cmd := newChatFileUploadCommand(runner)
+	cmd.SetArgs([]string{
+		"--conversation-id", "cid-alias",
+		"--url", "https://example.com/report.pdf",
+		"--file-name", "report.pdf",
+	})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("conversation alias Execute() error = %v", err)
+	}
+	if got := runner.last.Params["openConversationId"]; got != "cid-alias" {
+		t.Fatalf("openConversationId = %#v, want cid-alias", got)
+	}
+
+	fixture := filepath.Join(t.TempDir(), "report.txt")
+	if err := os.WriteFile(fixture, []byte("schema alias test\n"), 0o600); err != nil {
+		t.Fatalf("WriteFile() error = %v", err)
+	}
+	dryRun := newChatFileUploadCommand(&captureRunner{})
+	dryRun.Flags().Bool("dry-run", false, "dry run")
+	dryRun.SetArgs([]string{"--id", "cid-id-alias", "--file-path", fixture, "--dry-run"})
+	if err := dryRun.Execute(); err != nil {
+		t.Fatalf("id/file-path alias Execute() error = %v", err)
+	}
 }
 
 func (r *captureRunner) Run(_ context.Context, invocation executor.Invocation) (executor.Result, error) {
