@@ -1,0 +1,185 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package shortcut
+
+import (
+	"testing"
+
+	"github.com/spf13/cobra"
+)
+
+func TestProductDefaultsToService(t *testing.T) {
+	if got := (Shortcut{Service: "contact"}).product(); got != "contact" {
+		t.Fatalf("product() = %q, want contact", got)
+	}
+	if got := (Shortcut{Service: "contact", Product: "org"}).product(); got != "org" {
+		t.Fatalf("product() = %q, want org", got)
+	}
+}
+
+func TestRiskDefaultsToRead(t *testing.T) {
+	if got := (Shortcut{}).risk(); got != RiskRead {
+		t.Fatalf("risk() = %q, want read", got)
+	}
+	if got := (Shortcut{Risk: RiskHighWrite}).risk(); got != RiskHighWrite {
+		t.Fatalf("risk() = %q, want high-risk-write", got)
+	}
+}
+
+func TestMountRegistersFlagsAndUse(t *testing.T) {
+	s := Shortcut{
+		Service:     "contact",
+		Command:     "+search-user",
+		Description: "search",
+		Flags: []Flag{
+			{Name: "query", Type: FlagString, Required: true},
+			{Name: "limit", Type: FlagInt, Default: "20"},
+			{Name: "verbose", Type: FlagBool},
+			{Name: "ids", Type: FlagStringSlice},
+		},
+	}
+	cmd := mount(s)
+	if cmd.Use != "+search-user" {
+		t.Fatalf("Use = %q, want +search-user", cmd.Use)
+	}
+	for _, name := range []string{"query", "limit", "verbose", "ids"} {
+		if cmd.Flags().Lookup(name) == nil {
+			t.Errorf("flag --%s not registered", name)
+		}
+	}
+	if v, _ := cmd.Flags().GetInt("limit"); v != 20 {
+		t.Errorf("limit default = %d, want 20", v)
+	}
+}
+
+func TestValidateFlagsRequiredAndEnum(t *testing.T) {
+	s := Shortcut{
+		Service: "contact",
+		Command: "+x",
+		Flags: []Flag{
+			{Name: "query", Required: true},
+			{Name: "order", Enum: []string{"asc", "desc"}},
+		},
+	}
+	cmd := mount(s)
+
+	// Missing required flag → error.
+	rt := &RuntimeContext{cmd: cmd, shortcut: s}
+	if err := validateFlags(rt, s); err == nil {
+		t.Fatal("expected error for missing required --query")
+	}
+
+	// Set required, leave enum unset → ok.
+	_ = cmd.Flags().Set("query", "张三")
+	if err := validateFlags(rt, s); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+
+	// Invalid enum → error.
+	_ = cmd.Flags().Set("order", "sideways")
+	if err := validateFlags(rt, s); err == nil {
+		t.Fatal("expected error for invalid --order enum")
+	}
+
+	// Valid enum → ok.
+	_ = cmd.Flags().Set("order", "asc")
+	if err := validateFlags(rt, s); err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+}
+
+func TestBuildGroupsByService(t *testing.T) {
+	shortcuts := []Shortcut{
+		{Service: "contact", Command: "+a", Execute: noop},
+		{Service: "contact", Command: "+b", Execute: noop},
+		{Service: "calendar", Command: "+c", Execute: noop},
+	}
+	cmds := build(shortcuts)
+	if len(cmds) != 2 {
+		t.Fatalf("got %d service commands, want 2", len(cmds))
+	}
+	byName := map[string]*cobra.Command{}
+	for _, c := range cmds {
+		byName[c.Use] = c
+	}
+	if got := len(byName["contact"].Commands()); got != 2 {
+		t.Errorf("contact has %d leaves, want 2", got)
+	}
+	if got := len(byName["calendar"].Commands()); got != 1 {
+		t.Errorf("calendar has %d leaves, want 1", got)
+	}
+}
+
+func noop(_ *RuntimeContext) error { return nil }
+
+func TestValidationHelpers(t *testing.T) {
+	s := Shortcut{
+		Service: "x", Command: "+y",
+		Flags: []Flag{
+			{Name: "a"}, {Name: "b"}, {Name: "c"},
+			{Name: "n", Type: FlagInt},
+		},
+	}
+	cmd := mount(s)
+	rt := &RuntimeContext{cmd: cmd, shortcut: s}
+
+	// nothing set
+	if err := rt.MutuallyExclusive("a", "b"); err != nil {
+		t.Errorf("MutuallyExclusive with none set should pass: %v", err)
+	}
+	if err := rt.AtLeastOne("a", "b"); err == nil {
+		t.Error("AtLeastOne with none set should fail")
+	}
+	if err := rt.ExactlyOne("a", "b"); err == nil {
+		t.Error("ExactlyOne with none set should fail")
+	}
+
+	_ = cmd.Flags().Set("a", "1")
+	if err := rt.MutuallyExclusive("a", "b"); err != nil {
+		t.Errorf("MutuallyExclusive with one set should pass: %v", err)
+	}
+	if err := rt.AtLeastOne("a", "b"); err != nil {
+		t.Errorf("AtLeastOne with one set should pass: %v", err)
+	}
+	if err := rt.ExactlyOne("a", "b"); err != nil {
+		t.Errorf("ExactlyOne with one set should pass: %v", err)
+	}
+
+	_ = cmd.Flags().Set("b", "1")
+	if err := rt.MutuallyExclusive("a", "b"); err == nil {
+		t.Error("MutuallyExclusive with two set should fail")
+	}
+	if err := rt.ExactlyOne("a", "b"); err == nil {
+		t.Error("ExactlyOne with two set should fail")
+	}
+
+	// RangeInt
+	_ = cmd.Flags().Set("n", "50")
+	if err := rt.RangeInt("n", 1, 30); err == nil {
+		t.Error("RangeInt 50 not in [1,30] should fail")
+	}
+	_ = cmd.Flags().Set("n", "20")
+	if err := rt.RangeInt("n", 1, 30); err != nil {
+		t.Errorf("RangeInt 20 in [1,30] should pass: %v", err)
+	}
+
+	// RequireAll
+	if err := rt.RequireAll("a", "c"); err == nil {
+		t.Error("RequireAll with c unset should fail")
+	}
+	_ = cmd.Flags().Set("c", "1")
+	if err := rt.RequireAll("a", "c"); err != nil {
+		t.Errorf("RequireAll with both set should pass: %v", err)
+	}
+}

@@ -1,0 +1,231 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package shortcut
+
+import (
+	"bufio"
+	"encoding/json"
+	"fmt"
+	"os"
+	"strings"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
+)
+
+// RuntimeContext is handed to a Shortcut's Validate and Execute hooks. It wraps
+// the cobra command and exposes typed flag accessors plus a single CallMCP entry
+// point so shortcut authors never touch cobra/executor plumbing directly.
+type RuntimeContext struct {
+	cmd      *cobra.Command
+	shortcut Shortcut
+}
+
+// Command returns the underlying cobra command (escape hatch; prefer the typed
+// accessors below).
+func (rt *RuntimeContext) Command() *cobra.Command { return rt.cmd }
+
+// Str returns the trimmed string value of a flag, or "" if unset.
+func (rt *RuntimeContext) Str(name string) string {
+	v, _ := rt.cmd.Flags().GetString(name)
+	return strings.TrimSpace(v)
+}
+
+// Bool returns the bool value of a flag.
+func (rt *RuntimeContext) Bool(name string) bool {
+	v, _ := rt.cmd.Flags().GetBool(name)
+	return v
+}
+
+// Int returns the int value of a flag.
+func (rt *RuntimeContext) Int(name string) int {
+	v, _ := rt.cmd.Flags().GetInt(name)
+	return v
+}
+
+// StrSlice returns the string-slice value of a flag.
+func (rt *RuntimeContext) StrSlice(name string) []string {
+	v, _ := rt.cmd.Flags().GetStringSlice(name)
+	return v
+}
+
+// Changed reports whether the user explicitly set the flag on the command line.
+func (rt *RuntimeContext) Changed(name string) bool {
+	f := rt.cmd.Flags().Lookup(name)
+	return f != nil && f.Changed
+}
+
+// DryRun reports whether --dry-run is set (inherited from the root command).
+func (rt *RuntimeContext) DryRun() bool { return globalBool(rt.cmd, "dry-run") }
+
+// Yes reports whether --yes is set (skip confirmation prompts).
+func (rt *RuntimeContext) Yes() bool { return globalBool(rt.cmd, "yes") }
+
+// CallMCP dispatches a single MCP tool call and prints the result, reusing the
+// shared helper path so the shortcut inherits DWS's error classification
+// (auth/PAT/business), dry-run preview and --format/--jq/--fields output for
+// free. The MCP server id is the shortcut's product (defaults to Service).
+//
+// Most passthrough shortcuts do all their work in one CallMCP call.
+func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
+	if params == nil {
+		params = map[string]any{}
+	}
+	return helpers.CallMCPToolOnServer(rt.shortcut.product(), tool, params)
+}
+
+// CallMCPData dispatches a tool call to an explicit MCP product and returns the
+// PARSED response as data WITHOUT printing. This is the building block for
+// multi-step ("smart") shortcuts: call a tool, read its output, feed it into the
+// next call. Errors carry DWS's auth/PAT/business classification.
+//
+// The product is explicit (not the shortcut's own) because smart shortcuts
+// routinely cross services — e.g. resolve a name via `contact` then act via
+// `chat`. Reads run even under --dry-run so a preview can still resolve inputs;
+// the terminal write via CallMCP still honours --dry-run.
+func (rt *RuntimeContext) CallMCPData(product, tool string, params map[string]any) (map[string]any, error) {
+	if params == nil {
+		params = map[string]any{}
+	}
+	text, err := helpers.CallMCPToolTextOnServer(product, tool, params)
+	if err != nil {
+		return nil, err
+	}
+	if strings.TrimSpace(text) == "" {
+		return map[string]any{}, nil
+	}
+	var out map[string]any
+	if err := json.Unmarshal([]byte(text), &out); err != nil {
+		return nil, apperrors.NewInternal(fmt.Sprintf("解析 %s 返回失败: %v", tool, err))
+	}
+	return out, nil
+}
+
+// Output prints a (typically reshaped/projected) payload honouring the root
+// --format/--jq/--fields flags. Multi-step shortcuts use it to emit a clean,
+// composed result instead of the raw MCP response — the output-projection
+// output-formatting capability.
+func (rt *RuntimeContext) Output(payload any) error {
+	return output.WriteCommandPayload(rt.cmd, payload, output.FormatJSON)
+}
+
+// mount compiles a Shortcut into a cobra command.
+func mount(s Shortcut) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:    s.Command,
+		Short:  s.Description,
+		Long:   s.Intent,
+		Hidden: s.Hidden,
+	}
+	if len(s.Tips) > 0 {
+		cmd.Example = "  " + strings.Join(s.Tips, "\n  ")
+	}
+	registerFlags(cmd, s.Flags)
+
+	cmd.RunE = func(c *cobra.Command, _ []string) error {
+		rt := &RuntimeContext{cmd: c, shortcut: s}
+		if err := validateFlags(rt, s); err != nil {
+			return err
+		}
+		if s.Validate != nil {
+			if err := s.Validate(rt); err != nil {
+				return err
+			}
+		}
+		if !confirmRisk(rt, s) {
+			return nil
+		}
+		if s.Execute == nil {
+			return apperrors.NewInternal(fmt.Sprintf("shortcut %s %s 未实现 Execute", s.Service, s.Command))
+		}
+		return s.Execute(rt)
+	}
+	return cmd
+}
+
+// registerFlags declares each Flag on the command with its type/default/desc.
+func registerFlags(cmd *cobra.Command, flags []Flag) {
+	for _, f := range flags {
+		switch f.Type {
+		case FlagBool:
+			cmd.Flags().Bool(f.Name, f.Default == "true", f.Desc)
+		case FlagInt:
+			cmd.Flags().Int(f.Name, atoiDefault(f.Default), f.Desc)
+		case FlagStringSlice:
+			cmd.Flags().StringSlice(f.Name, nil, f.Desc)
+		default: // FlagString and empty
+			cmd.Flags().String(f.Name, f.Default, f.Desc)
+		}
+		if f.Hidden {
+			_ = cmd.Flags().MarkHidden(f.Name)
+		}
+	}
+}
+
+// validateFlags enforces the declarative Required and Enum constraints.
+func validateFlags(rt *RuntimeContext, s Shortcut) error {
+	for _, f := range s.Flags {
+		if f.Required && !rt.Changed(f.Name) {
+			return apperrors.NewValidation(fmt.Sprintf("缺少必填参数 --%s：%s", f.Name, f.Desc))
+		}
+		if len(f.Enum) > 0 && rt.Changed(f.Name) {
+			val := rt.Str(f.Name)
+			if !contains(f.Enum, val) {
+				return apperrors.NewValidation(fmt.Sprintf(
+					"参数 --%s 取值 %q 不合法，允许值：%s", f.Name, val, strings.Join(f.Enum, ", ")))
+			}
+		}
+	}
+	return nil
+}
+
+// confirmRisk prompts before a write/high-risk-write shortcut unless --yes or
+// --dry-run is set. Read-only shortcuts never prompt. Returns false when the
+// user declines.
+func confirmRisk(rt *RuntimeContext, s Shortcut) bool {
+	if s.risk() == RiskRead || rt.DryRun() || rt.Yes() {
+		return true
+	}
+	fmt.Fprintf(rt.cmd.ErrOrStderr(), "即将执行 %s %s（%s），确认继续？(yes/no): ", s.Service, s.Command, s.risk())
+	reader := bufio.NewReader(os.Stdin)
+	answer, _ := reader.ReadString('\n')
+	answer = strings.TrimSpace(strings.ToLower(answer))
+	return answer == "yes" || answer == "y"
+}
+
+// globalBool reads a bool flag that may live on the command, inherited flags, or
+// the root's persistent flags (e.g. --dry-run/--yes injected at root).
+func globalBool(cmd *cobra.Command, name string) bool {
+	if cmd == nil {
+		return false
+	}
+	sets := []*pflag.FlagSet{cmd.Flags(), cmd.InheritedFlags()}
+	if root := cmd.Root(); root != nil {
+		sets = append(sets, root.PersistentFlags())
+	}
+	for _, set := range sets {
+		if set == nil {
+			continue
+		}
+		if f := set.Lookup(name); f != nil {
+			if v, err := set.GetBool(name); err == nil {
+				return v
+			}
+		}
+	}
+	return false
+}

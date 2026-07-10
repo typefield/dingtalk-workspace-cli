@@ -181,6 +181,14 @@ func callMCPToolReturnTextOnServer(ctx context.Context, serverID, toolName strin
 	return "", nil
 }
 
+// CallMCPToolTextOnServer invokes an MCP tool and returns its raw text response
+// WITHOUT printing anything, applying the same error classification as the
+// print path. Exported for the shortcut layer's multi-step ("smart") shortcuts,
+// which chain several tool calls and need each intermediate result as data.
+func CallMCPToolTextOnServer(serverID, toolName string, args map[string]any) (string, error) {
+	return callMCPToolReturnTextOnServer(context.Background(), serverID, toolName, args)
+}
+
 // callMCPTool 是通用的 MCP 工具调用入口：自动路由 → 调用 → 格式化输出。
 // 通过 resolveProductID() 自动确定目标 MCP Server，JSON 输出使用默认的 HTML 转义。
 func callMCPTool(toolName string, args map[string]any) error {
