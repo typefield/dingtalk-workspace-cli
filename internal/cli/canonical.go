@@ -72,10 +72,10 @@ func NewMCPCommand(_ context.Context, _ CatalogLoader, _ executor.Runner, _ *pip
 func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema [path]",
-		Short: "查看有限的本地 Schema（静态端点模式）",
-		Long: `查看有限的本地 Schema 元数据。
+		Short: "查看当前可运行命令的 Schema 元数据",
+		Long: `查看当前二进制可运行命令的 Schema 元数据。
 
-服务发现和动态 schema 已下线。静态端点模式下，仅支持 helper-only 子树的 schema 查询；普通产品命令和 flag 以当前二进制的 --help 为准。`,
+Schema 从实际 Cobra 命令树动态构建，反映当前 binary 的产品、命令、flag 与参数；查询不执行服务发现。`,
 		Args:              cobra.MaximumNArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -101,7 +101,15 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 				}
 			}
 
-			fmt.Fprintln(cmd.OutOrStdout(), `{"kind":"schema","count":0,"products":[],"note":"static endpoint mode"}`)
+			payload, err := runtimeSchemaPayload(cmd.Root(), args)
+			if err != nil {
+				return err
+			}
+			data, err := json.MarshalIndent(payload, "", "  ")
+			if err != nil {
+				return err
+			}
+			fmt.Fprintln(cmd.OutOrStdout(), string(data))
 			return nil
 		},
 	}

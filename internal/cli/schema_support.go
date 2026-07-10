@@ -1,0 +1,46 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+// http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package cli
+
+import "github.com/spf13/cobra"
+
+// walkLeafCommands invokes fn for every runnable leaf command in the tree.
+func walkLeafCommands(cmd *cobra.Command, fn func(*cobra.Command)) {
+	if cmd.Runnable() && !cmd.HasAvailableSubCommands() {
+		fn(cmd)
+		return
+	}
+	for _, sub := range cmd.Commands() {
+		if !sub.IsAvailableCommand() || sub.Name() == "help" {
+			continue
+		}
+		walkLeafCommands(sub, fn)
+	}
+}
+
+// schemaCatalogToolCount sums tool counts across product summaries.
+func schemaCatalogToolCount(products []map[string]any) int {
+	total := 0
+	for _, product := range products {
+		total += schemaProductToolCount(product)
+	}
+	return total
+}
+
+// helperProductSummaries returns helper-only product summaries discovered from
+// the live command tree. The embedded runtime catalog already contains these
+// tools, so runtime schema queries do not depend on live-tree reconstruction.
+func helperProductSummaries(_ *cobra.Command) []map[string]any {
+	return nil
+}
