@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "source_hash": "sha256:b586fcc360af51716391806bd3b6b5c8600318952f79d405feac30ff199b9fa6",
+  "source_hash": "sha256:07abbdaa99a4ed8d7091c048f90d5c9d9330db52369b999bde9fd5868bfad341",
   "surface_hash": "sha256:850109b2cca4b17666eccc8cd6adbe4326773251ff62f2328a291ade02049673",
-  "source_files": 84,
-  "hint_files": 3,
+  "source_files": 85,
+  "hint_files": 4,
   "hint_products": 17,
-  "hint_tools": 181,
+  "hint_tools": 214,
   "interface_metadata": {
     "source": "mcp-tools-list+cli-registry",
     "revision": "4574f7022c32cf4c033e9b7b4156e2fec815fed8",
@@ -23,8 +23,8 @@
     "surface_products": 21,
     "products_with_metadata": 21,
     "surface_tools": 504,
-    "tools_with_metadata": 461,
-    "tools_with_agent_summary": 423,
+    "tools_with_metadata": 494,
+    "tools_with_agent_summary": 456,
     "unmatched_skill_tools": 99
   },
   "source_products": [

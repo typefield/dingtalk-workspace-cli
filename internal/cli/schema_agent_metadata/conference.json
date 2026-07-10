@@ -1,0 +1,340 @@
+{
+  "product_id": "conference",
+  "tools": {
+    "conference appearance background-setting": {
+      "agent_summary": "打开虚拟背景设置面板",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference appearance beauty-setting": {
+      "agent_summary": "打开美颜设置面板",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference camera close": {
+      "agent_summary": "关闭摄像头",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference camera open": {
+      "agent_summary": "打开摄像头",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference end": {
+      "agent_summary": "结束整场会议并让所有参会者退出（不可逆）",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "risk": "high",
+      "confirmation": "user_required",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference get-id": {
+      "agent_summary": "获取当前所在会议的会议 ID（需在会议中）",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "read",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference interaction panel": {
+      "agent_summary": "打开表情互动面板",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference interpretation close": {
+      "agent_summary": "关闭同声传译",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference interpretation open": {
+      "agent_summary": "开启同声传译",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference invite all": {
+      "agent_summary": "一键呼叫所有人",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference invite panel": {
+      "agent_summary": "打开邀请选人面板",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference leave": {
+      "agent_summary": "本人离开当前会议（其他人继续）",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference mic mute": {
+      "agent_summary": "静音自己",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference mic mute-all": {
+      "agent_summary": "主持人将会议内全体参会者静音",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "risk": "medium",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference mic unmute": {
+      "agent_summary": "取消静音",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference photo take": {
+      "agent_summary": "发起全员合影",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference record request": {
+      "agent_summary": "申请录制权限",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference record start": {
+      "agent_summary": "开始云端录制当前会议",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "risk": "medium",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference record stop": {
+      "agent_summary": "停止当前会议的云端录制",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "risk": "medium",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference security menu": {
+      "agent_summary": "打开安全设置菜单",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference share annotate": {
+      "agent_summary": "打开共享批注",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference share panel": {
+      "agent_summary": "打开共享选择面板",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference share start": {
+      "agent_summary": "开始共享桌面",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference share stop": {
+      "agent_summary": "停止屏幕共享",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference start": {
+      "agent_summary": "发起一场即时会议",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference status": {
+      "agent_summary": "查询当前会议状态（是否在会议中）",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "read",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference subtitle close": {
+      "agent_summary": "关闭实时字幕",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference subtitle open": {
+      "agent_summary": "开启实时字幕",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference transcript close": {
+      "agent_summary": "关闭智能听记",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference transcript open": {
+      "agent_summary": "开启智能听记",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference view grid": {
+      "agent_summary": "切换宫格视图",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference view speaker": {
+      "agent_summary": "切换演讲者视图",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    },
+    "conference view standard": {
+      "agent_summary": "切换标准视图",
+      "agent_summary_source": "conference-schema-review",
+      "effect": "write",
+      "effect_source": "agent-hint",
+      "reviewed": true,
+      "source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ]
+    }
+  }
+}

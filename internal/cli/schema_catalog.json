@@ -1,17 +1,17 @@
 {
   "version": 1,
-  "source_hash": "sha256:00fee548e8dbfecb52e5eda2ea125bfec78a0ed5155107efc15120a3bb8b4502",
+  "source_hash": "sha256:6dc63141d35119ff6095d189ef9d8994cd35162ecf9fff9ad23b2ab68e4e2b7f",
   "surface_hash": "sha256:850109b2cca4b17666eccc8cd6adbe4326773251ff62f2328a291ade02049673",
   "catalog": {
     "agent_metadata": {
       "products_with_metadata": 21,
       "source": "embedded-skill-metadata",
-      "source_hash": "sha256:b586fcc360af51716391806bd3b6b5c8600318952f79d405feac30ff199b9fa6",
+      "source_hash": "sha256:07abbdaa99a4ed8d7091c048f90d5c9d9330db52369b999bde9fd5868bfad341",
       "surface_hash": "sha256:850109b2cca4b17666eccc8cd6adbe4326773251ff62f2328a291ade02049673",
       "surface_products": 21,
       "surface_tools": 504,
-      "tools_with_agent_summary": 423,
-      "tools_with_metadata": 461,
+      "tools_with_agent_summary": 456,
+      "tools_with_metadata": 494,
       "unmatched_skill_tools": 99,
       "version": 1
     },
@@ -4140,300 +4140,470 @@
         "tool_count": 33,
         "tools": [
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "关闭摄像头",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_close_camera",
             "cli_name": "close",
             "cli_path": "conference camera close",
             "description": "关闭摄像头",
+            "effect": "write",
             "name": "ai_close_camera",
             "primary_cli_path": "conference camera close",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "关闭同声传译",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_close_simultaneous_interpretation",
             "cli_name": "close",
             "cli_path": "conference interpretation close",
             "description": "关闭同声传译",
+            "effect": "write",
             "name": "ai_close_simultaneous_interpretation",
             "primary_cli_path": "conference interpretation close",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "关闭实时字幕",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_close_subtitle",
             "cli_name": "close",
             "cli_path": "conference subtitle close",
             "description": "关闭实时字幕",
+            "effect": "write",
             "name": "ai_close_subtitle",
             "primary_cli_path": "conference subtitle close",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "关闭智能听记",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_close_transcript",
             "cli_name": "close",
             "cli_path": "conference transcript close",
             "description": "关闭智能听记",
+            "effect": "write",
             "name": "ai_close_transcript",
             "primary_cli_path": "conference transcript close",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "结束整场会议并让所有参会者退出（不可逆）",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_end_meeting_for_all",
             "cli_name": "end",
             "cli_path": "conference end",
+            "confirmation": "user_required",
             "description": "结束会议（所有人）",
+            "effect": "write",
             "name": "ai_end_meeting_for_all",
             "primary_cli_path": "conference end",
+            "reviewed": true,
+            "risk": "high",
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "本人离开当前会议（其他人继续）",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_leave_myself",
             "cli_name": "leave",
             "cli_path": "conference leave",
             "description": "离开当前会议",
+            "effect": "write",
             "name": "ai_leave_myself",
             "primary_cli_path": "conference leave",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "主持人将会议内全体参会者静音",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_mute_all",
             "cli_name": "mute-all",
             "cli_path": "conference mic mute-all",
             "description": "全体静音",
+            "effect": "write",
             "name": "ai_mute_all",
             "primary_cli_path": "conference mic mute-all",
+            "reviewed": true,
+            "risk": "medium",
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "静音自己",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_mute_mic",
             "cli_name": "mute",
             "cli_path": "conference mic mute",
             "description": "静音自己",
+            "effect": "write",
             "name": "ai_mute_mic",
             "primary_cli_path": "conference mic mute",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "一键呼叫所有人",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_one_click_call",
             "cli_name": "all",
             "cli_path": "conference invite all",
             "description": "一键呼叫所有人",
+            "effect": "write",
             "name": "ai_one_click_call",
             "primary_cli_path": "conference invite all",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开共享批注",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_annotation",
             "cli_name": "annotate",
             "cli_path": "conference share annotate",
             "description": "打开共享批注",
+            "effect": "write",
             "name": "ai_open_annotation",
             "primary_cli_path": "conference share annotate",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开美颜设置面板",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_beauty_setting_page",
             "cli_name": "beauty-setting",
             "cli_path": "conference appearance beauty-setting",
             "description": "打开美颜设置面板",
+            "effect": "write",
             "name": "ai_open_beauty_setting_page",
             "primary_cli_path": "conference appearance beauty-setting",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开摄像头",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_camera",
             "cli_name": "open",
             "cli_path": "conference camera open",
             "description": "打开摄像头",
+            "effect": "write",
             "name": "ai_open_camera",
             "primary_cli_path": "conference camera open",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开表情互动面板",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_interactive_panel",
             "cli_name": "panel",
             "cli_path": "conference interaction panel",
             "description": "打开表情互动面板",
+            "effect": "write",
             "name": "ai_open_interactive_panel",
             "primary_cli_path": "conference interaction panel",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开邀请选人面板",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_invite_member_panel",
             "cli_name": "panel",
             "cli_path": "conference invite panel",
             "description": "打开邀请选人面板",
+            "effect": "write",
             "name": "ai_open_invite_member_panel",
             "primary_cli_path": "conference invite panel",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开安全设置菜单",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_security_menu",
             "cli_name": "menu",
             "cli_path": "conference security menu",
             "description": "打开安全设置菜单",
+            "effect": "write",
             "name": "ai_open_security_menu",
             "primary_cli_path": "conference security menu",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开共享选择面板",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_share_panel",
             "cli_name": "panel",
             "cli_path": "conference share panel",
             "description": "打开共享选择面板",
+            "effect": "write",
             "name": "ai_open_share_panel",
             "primary_cli_path": "conference share panel",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "开启同声传译",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_simultaneous_interpretation",
             "cli_name": "open",
             "cli_path": "conference interpretation open",
             "description": "开启同声传译",
+            "effect": "write",
             "name": "ai_open_simultaneous_interpretation",
             "primary_cli_path": "conference interpretation open",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "开启实时字幕",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_subtitle",
             "cli_name": "open",
             "cli_path": "conference subtitle open",
             "description": "开启实时字幕",
+            "effect": "write",
             "name": "ai_open_subtitle",
             "primary_cli_path": "conference subtitle open",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "开启智能听记",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_transcript",
             "cli_name": "open",
             "cli_path": "conference transcript open",
             "description": "开启智能听记",
+            "effect": "write",
             "name": "ai_open_transcript",
             "primary_cli_path": "conference transcript open",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "打开虚拟背景设置面板",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_open_virtual_background_setting_page",
             "cli_name": "background-setting",
             "cli_path": "conference appearance background-setting",
             "description": "打开虚拟背景设置面板",
+            "effect": "write",
             "name": "ai_open_virtual_background_setting_page",
             "primary_cli_path": "conference appearance background-setting",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "申请录制权限",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_request_record",
             "cli_name": "request",
             "cli_path": "conference record request",
             "description": "申请录制权限",
+            "effect": "write",
             "name": "ai_request_record",
             "primary_cli_path": "conference record request",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "开始共享桌面",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_share_desktop",
             "cli_name": "start",
             "cli_path": "conference share start",
             "description": "开始共享桌面",
+            "effect": "write",
             "name": "ai_share_desktop",
             "primary_cli_path": "conference share start",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "开始云端录制当前会议",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_start_cloud_record",
             "cli_name": "start",
             "cli_path": "conference record start",
             "description": "开始云端录制",
+            "effect": "write",
             "name": "ai_start_cloud_record",
             "primary_cli_path": "conference record start",
+            "reviewed": true,
+            "risk": "medium",
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "停止当前会议的云端录制",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_stop_cloud_record",
             "cli_name": "stop",
             "cli_path": "conference record stop",
             "description": "停止云端录制",
+            "effect": "write",
             "name": "ai_stop_cloud_record",
             "primary_cli_path": "conference record stop",
+            "reviewed": true,
+            "risk": "medium",
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "停止屏幕共享",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_stop_share",
             "cli_name": "stop",
             "cli_path": "conference share stop",
             "description": "停止屏幕共享",
+            "effect": "write",
             "name": "ai_stop_share",
             "primary_cli_path": "conference share stop",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "切换宫格视图",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_switch_gallery_view",
             "cli_name": "grid",
             "cli_path": "conference view grid",
             "description": "切换宫格视图",
+            "effect": "write",
             "name": "ai_switch_gallery_view",
             "primary_cli_path": "conference view grid",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "切换演讲者视图",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_switch_speaker_view",
             "cli_name": "speaker",
             "cli_path": "conference view speaker",
             "description": "切换演讲者视图",
+            "effect": "write",
             "name": "ai_switch_speaker_view",
             "primary_cli_path": "conference view speaker",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "切换标准视图",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_switch_standard_view",
             "cli_name": "standard",
             "cli_path": "conference view standard",
             "description": "切换标准视图",
+            "effect": "write",
             "name": "ai_switch_standard_view",
             "primary_cli_path": "conference view standard",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "发起全员合影",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_take_group_photo",
             "cli_name": "take",
             "cli_path": "conference photo take",
             "description": "发起全员合影",
+            "effect": "write",
             "name": "ai_take_group_photo",
             "primary_cli_path": "conference photo take",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "取消静音",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.ai_unmute_mic",
             "cli_name": "unmute",
             "cli_path": "conference mic unmute",
             "description": "取消静音",
+            "effect": "write",
             "name": "ai_unmute_mic",
             "primary_cli_path": "conference mic unmute",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "发起一场即时会议",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.create_conference",
             "cli_name": "start",
             "cli_path": "conference start",
             "description": "发起即时会议",
+            "effect": "write",
             "name": "create_conference",
             "primary_cli_path": "conference start",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "获取当前所在会议的会议 ID（需在会议中）",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.get_conference_id",
             "cli_name": "get-id",
             "cli_path": "conference get-id",
             "description": "获取当前会议的会议ID（需要在会议中）",
+            "effect": "read",
             "name": "get_conference_id",
             "primary_cli_path": "conference get-id",
+            "reviewed": true,
             "source_product_id": "conference-local"
           },
           {
+            "agent_metadata_source": "embedded-skill-metadata",
+            "agent_summary": "查询当前会议状态（是否在会议中）",
+            "agent_summary_source": "conference-schema-review",
             "canonical_path": "conference.get_conference_status",
             "cli_name": "status",
             "cli_path": "conference status",
             "description": "查询当前会议状态",
+            "effect": "read",
             "name": "get_conference_status",
             "primary_cli_path": "conference status",
+            "reviewed": true,
             "source_product_id": "conference-local"
           }
         ]
@@ -10139,7 +10309,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10184,7 +10354,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10230,7 +10400,7 @@
       "parameter_count": 5,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10310,7 +10480,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10360,7 +10530,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10409,7 +10579,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10452,7 +10622,7 @@
       "parameter_count": 6,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10539,7 +10709,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10721,14 +10891,14 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "待删除 Base ID。建议先通过 get_base 确认目标",
           "property": "baseId",
           "required": true,
           "type": "string"
         },
         "reason": {
-          "description": "Delete reason (optional)",
+          "description": "删除原因（可选）",
           "interface_description": "一句话描述删除的原因",
           "property": "reason",
           "required": false,
@@ -10777,7 +10947,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base 唯一标识。优先使用 search_bases/list_bases 返回值",
           "property": "baseId",
           "required": true,
@@ -10820,7 +10990,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -10986,7 +11156,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID",
           "property": "baseId",
           "required": true,
@@ -11044,7 +11214,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必传参数，所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11112,7 +11282,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11133,7 +11303,7 @@
           "type": "string"
         },
         "reason": {
-          "description": "Delete reason (optional)",
+          "description": "删除原因（可选）",
           "interface_description": "可先参数，删除原因",
           "property": "reason",
           "required": false,
@@ -11180,7 +11350,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11240,7 +11410,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必填，所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11306,7 +11476,7 @@
           "type": "string"
         },
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必填，所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11379,7 +11549,7 @@
       "parameter_count": 5,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11522,7 +11692,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases / get_base 获取",
           "property": "baseId",
           "required": true,
@@ -11611,7 +11781,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必传参数，所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11671,7 +11841,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11685,7 +11855,7 @@
           "type": "string"
         },
         "reason": {
-          "description": "Delete reason (optional)",
+          "description": "删除原因（可选）",
           "interface_description": "可选，删除原因",
           "property": "reason",
           "required": false,
@@ -11732,7 +11902,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases / get_base 获取",
           "property": "baseId",
           "required": true,
@@ -11785,7 +11955,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases / get_base 获取",
           "property": "baseId",
           "required": true,
@@ -11844,7 +12014,7 @@
           "type": "string"
         },
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必填，所属 Base 的唯一标识，可通过 list_bases / search_bases / get_base 获取",
           "property": "baseId",
           "required": true,
@@ -11905,7 +12075,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "必传参数，所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -11971,7 +12141,7 @@
       "parameter_count": 7,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -12070,7 +12240,7 @@
           "type": "string"
         },
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -12156,21 +12326,21 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
           "type": "string"
         },
         "field-id": {
-          "description": "field ID (required)",
+          "description": "字段 ID (必填)",
           "interface_description": "待删除字段 ID（通过 get_tables 获取）",
           "property": "fieldId",
           "required": true,
           "type": "string"
         },
         "table-id": {
-          "description": "data table ID (required)",
+          "description": "数据表 ID (必填)",
           "interface_description": "Table ID（通过 get_base 获取）",
           "property": "tableId",
           "required": true,
@@ -12220,7 +12390,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（可通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -12277,7 +12447,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（可通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -12335,7 +12505,7 @@
       "parameter_count": 5,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（可通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -12419,7 +12589,7 @@
           "type": "string"
         },
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（可通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -12580,7 +12750,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -12636,7 +12806,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base 唯一标识。优先使用 search_bases/list_bases 返回值",
           "property": "baseId",
           "required": true,
@@ -12866,7 +13036,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -12945,14 +13115,14 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
           "type": "string"
         },
         "record-ids": {
-          "description": "Record ID list, comma-separated (required)",
+          "description": "记录 ID 列表，逗号分隔 (必填)",
           "interface_description": "待删除的记录 ID 列表，最多 100 条",
           "interface_type": "array",
           "property": "recordIds",
@@ -12960,7 +13130,7 @@
           "type": "string"
         },
         "table-id": {
-          "description": "data table ID (required)",
+          "description": "数据表 ID (必填)",
           "interface_description": "Table ID，可通过 get_base 获取",
           "property": "tableId",
           "required": true,
@@ -13004,7 +13174,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13074,7 +13244,7 @@
       "parameter_count": 5,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13151,7 +13321,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13217,7 +13387,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13277,7 +13447,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13348,7 +13518,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13424,7 +13594,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "Base ID，可通过 list_bases 或 search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13492,7 +13662,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -13611,7 +13781,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13680,7 +13850,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13732,7 +13902,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13776,7 +13946,7 @@
       "parameter_count": 1,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13819,7 +13989,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13886,7 +14056,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -13942,7 +14112,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识，可通过 list_bases / search_bases 获取",
           "property": "baseId",
           "required": true,
@@ -14003,7 +14173,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -14066,21 +14236,21 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "目标 Base ID（通过 list_bases 获取）",
           "property": "baseId",
           "required": true,
           "type": "string"
         },
         "reason": {
-          "description": "Delete reason (optional)",
+          "description": "删除原因（可选）",
           "interface_description": "一句话描述一下删除该数据表的原因，用于审计",
           "property": "reason",
           "required": false,
           "type": "string"
         },
         "table-id": {
-          "description": "data table ID (required)",
+          "description": "数据表 ID (必填)",
           "interface_description": "将被删除的 Table ID（通过 get_base / get_tables 获取）",
           "property": "tableId",
           "required": true,
@@ -14129,7 +14299,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -14183,7 +14353,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -14238,7 +14408,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（用于定位目标表）。",
           "property": "baseId",
           "required": true,
@@ -14367,7 +14537,7 @@
       "parameter_count": 7,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14458,7 +14628,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14519,7 +14689,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14585,7 +14755,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14641,7 +14811,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14696,7 +14866,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14752,7 +14922,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14811,7 +14981,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14866,7 +15036,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14925,7 +15095,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -14980,7 +15150,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15039,7 +15209,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15098,7 +15268,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15153,7 +15323,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15208,7 +15378,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15262,7 +15432,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15324,7 +15494,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15399,7 +15569,7 @@
           "type": "string"
         },
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15474,7 +15644,7 @@
       "parameter_count": 10,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15573,7 +15743,7 @@
       "parameter_count": 6,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15649,7 +15819,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15717,7 +15887,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15781,7 +15951,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15851,7 +16021,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15913,7 +16083,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -15977,7 +16147,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -16046,7 +16216,7 @@
       "parameter_count": 4,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -16109,7 +16279,7 @@
       "parameter_count": 10,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -16211,7 +16381,7 @@
       "parameter_count": 5,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base 的唯一标识。",
           "property": "baseId",
           "required": true,
@@ -16283,7 +16453,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -16338,7 +16508,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -16393,7 +16563,7 @@
       "parameter_count": 2,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -16448,7 +16618,7 @@
       "parameter_count": 3,
       "parameters": {
         "base-id": {
-          "description": "Base ID (required)",
+          "description": "Base ID (必填)",
           "interface_description": "所属 Base ID（通过 list_bases / search_bases 获取）",
           "property": "baseId",
           "required": true,
@@ -22544,11 +22714,19 @@
       "title": "上传本地文件或 URL 文件到会话文件空间"
     },
     "conference.ai_close_camera": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "关闭摄像头",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_close_camera",
       "cli_name": "close",
       "cli_path": "conference camera close",
       "description": "关闭摄像头",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "camera",
       "has_parameters": false,
       "is_alias": false,
@@ -22558,16 +22736,25 @@
       "path": "conference.ai_close_camera",
       "primary_cli_path": "conference camera close",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "关闭摄像头"
     },
     "conference.ai_close_simultaneous_interpretation": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "关闭同声传译",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_close_simultaneous_interpretation",
       "cli_name": "close",
       "cli_path": "conference interpretation close",
       "description": "关闭同声传译",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "interpretation",
       "has_parameters": false,
       "is_alias": false,
@@ -22577,16 +22764,25 @@
       "path": "conference.ai_close_simultaneous_interpretation",
       "primary_cli_path": "conference interpretation close",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "关闭同声传译"
     },
     "conference.ai_close_subtitle": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "关闭实时字幕",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_close_subtitle",
       "cli_name": "close",
       "cli_path": "conference subtitle close",
       "description": "关闭实时字幕",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "subtitle",
       "has_parameters": false,
       "is_alias": false,
@@ -22596,16 +22792,25 @@
       "path": "conference.ai_close_subtitle",
       "primary_cli_path": "conference subtitle close",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "关闭实时字幕"
     },
     "conference.ai_close_transcript": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "关闭智能听记",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_close_transcript",
       "cli_name": "close",
       "cli_path": "conference transcript close",
       "description": "关闭智能听记",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "transcript",
       "has_parameters": false,
       "is_alias": false,
@@ -22615,16 +22820,26 @@
       "path": "conference.ai_close_transcript",
       "primary_cli_path": "conference transcript close",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "关闭智能听记"
     },
     "conference.ai_end_meeting_for_all": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "结束整场会议并让所有参会者退出（不可逆）",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_end_meeting_for_all",
       "cli_name": "end",
       "cli_path": "conference end",
+      "confirmation": "user_required",
       "description": "结束会议（所有人）",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "has_parameters": false,
       "is_alias": false,
       "name": "ai_end_meeting_for_all",
@@ -22633,16 +22848,26 @@
       "path": "conference.ai_end_meeting_for_all",
       "primary_cli_path": "conference end",
       "product_id": "conference",
+      "reviewed": true,
+      "risk": "high",
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "结束会议（所有人）"
     },
     "conference.ai_leave_myself": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "本人离开当前会议（其他人继续）",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_leave_myself",
       "cli_name": "leave",
       "cli_path": "conference leave",
       "description": "离开当前会议",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "has_parameters": false,
       "is_alias": false,
       "name": "ai_leave_myself",
@@ -22651,16 +22876,25 @@
       "path": "conference.ai_leave_myself",
       "primary_cli_path": "conference leave",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "离开当前会议"
     },
     "conference.ai_mute_all": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "主持人将会议内全体参会者静音",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_mute_all",
       "cli_name": "mute-all",
       "cli_path": "conference mic mute-all",
       "description": "全体静音",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "mic",
       "has_parameters": false,
       "is_alias": false,
@@ -22670,16 +22904,26 @@
       "path": "conference.ai_mute_all",
       "primary_cli_path": "conference mic mute-all",
       "product_id": "conference",
+      "reviewed": true,
+      "risk": "medium",
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "全体静音"
     },
     "conference.ai_mute_mic": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "静音自己",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_mute_mic",
       "cli_name": "mute",
       "cli_path": "conference mic mute",
       "description": "静音自己",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "mic",
       "has_parameters": false,
       "is_alias": false,
@@ -22689,16 +22933,25 @@
       "path": "conference.ai_mute_mic",
       "primary_cli_path": "conference mic mute",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "静音自己"
     },
     "conference.ai_one_click_call": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "一键呼叫所有人",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_one_click_call",
       "cli_name": "all",
       "cli_path": "conference invite all",
       "description": "一键呼叫所有人",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "invite",
       "has_parameters": false,
       "is_alias": false,
@@ -22708,16 +22961,25 @@
       "path": "conference.ai_one_click_call",
       "primary_cli_path": "conference invite all",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "一键呼叫所有人"
     },
     "conference.ai_open_annotation": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开共享批注",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_annotation",
       "cli_name": "annotate",
       "cli_path": "conference share annotate",
       "description": "打开共享批注",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "share",
       "has_parameters": false,
       "is_alias": false,
@@ -22727,16 +22989,25 @@
       "path": "conference.ai_open_annotation",
       "primary_cli_path": "conference share annotate",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开共享批注"
     },
     "conference.ai_open_beauty_setting_page": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开美颜设置面板",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_beauty_setting_page",
       "cli_name": "beauty-setting",
       "cli_path": "conference appearance beauty-setting",
       "description": "打开美颜设置面板",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "appearance",
       "has_parameters": false,
       "is_alias": false,
@@ -22746,16 +23017,25 @@
       "path": "conference.ai_open_beauty_setting_page",
       "primary_cli_path": "conference appearance beauty-setting",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开美颜设置面板"
     },
     "conference.ai_open_camera": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开摄像头",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_camera",
       "cli_name": "open",
       "cli_path": "conference camera open",
       "description": "打开摄像头",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "camera",
       "has_parameters": false,
       "is_alias": false,
@@ -22765,16 +23045,25 @@
       "path": "conference.ai_open_camera",
       "primary_cli_path": "conference camera open",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开摄像头"
     },
     "conference.ai_open_interactive_panel": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开表情互动面板",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_interactive_panel",
       "cli_name": "panel",
       "cli_path": "conference interaction panel",
       "description": "打开表情互动面板",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "interaction",
       "has_parameters": false,
       "is_alias": false,
@@ -22784,16 +23073,25 @@
       "path": "conference.ai_open_interactive_panel",
       "primary_cli_path": "conference interaction panel",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开表情互动面板"
     },
     "conference.ai_open_invite_member_panel": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开邀请选人面板",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_invite_member_panel",
       "cli_name": "panel",
       "cli_path": "conference invite panel",
       "description": "打开邀请选人面板",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "invite",
       "has_parameters": false,
       "is_alias": false,
@@ -22803,16 +23101,25 @@
       "path": "conference.ai_open_invite_member_panel",
       "primary_cli_path": "conference invite panel",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开邀请选人面板"
     },
     "conference.ai_open_security_menu": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开安全设置菜单",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_security_menu",
       "cli_name": "menu",
       "cli_path": "conference security menu",
       "description": "打开安全设置菜单",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "security",
       "has_parameters": false,
       "is_alias": false,
@@ -22822,16 +23129,25 @@
       "path": "conference.ai_open_security_menu",
       "primary_cli_path": "conference security menu",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开安全设置菜单"
     },
     "conference.ai_open_share_panel": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开共享选择面板",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_share_panel",
       "cli_name": "panel",
       "cli_path": "conference share panel",
       "description": "打开共享选择面板",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "share",
       "has_parameters": false,
       "is_alias": false,
@@ -22841,16 +23157,25 @@
       "path": "conference.ai_open_share_panel",
       "primary_cli_path": "conference share panel",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开共享选择面板"
     },
     "conference.ai_open_simultaneous_interpretation": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "开启同声传译",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_simultaneous_interpretation",
       "cli_name": "open",
       "cli_path": "conference interpretation open",
       "description": "开启同声传译",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "interpretation",
       "has_parameters": false,
       "is_alias": false,
@@ -22860,16 +23185,25 @@
       "path": "conference.ai_open_simultaneous_interpretation",
       "primary_cli_path": "conference interpretation open",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "开启同声传译"
     },
     "conference.ai_open_subtitle": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "开启实时字幕",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_subtitle",
       "cli_name": "open",
       "cli_path": "conference subtitle open",
       "description": "开启实时字幕",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "subtitle",
       "has_parameters": false,
       "is_alias": false,
@@ -22879,16 +23213,25 @@
       "path": "conference.ai_open_subtitle",
       "primary_cli_path": "conference subtitle open",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "开启实时字幕"
     },
     "conference.ai_open_transcript": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "开启智能听记",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_transcript",
       "cli_name": "open",
       "cli_path": "conference transcript open",
       "description": "开启智能听记",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "transcript",
       "has_parameters": false,
       "is_alias": false,
@@ -22898,16 +23241,25 @@
       "path": "conference.ai_open_transcript",
       "primary_cli_path": "conference transcript open",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "开启智能听记"
     },
     "conference.ai_open_virtual_background_setting_page": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "打开虚拟背景设置面板",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_open_virtual_background_setting_page",
       "cli_name": "background-setting",
       "cli_path": "conference appearance background-setting",
       "description": "打开虚拟背景设置面板",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "appearance",
       "has_parameters": false,
       "is_alias": false,
@@ -22917,16 +23269,25 @@
       "path": "conference.ai_open_virtual_background_setting_page",
       "primary_cli_path": "conference appearance background-setting",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "打开虚拟背景设置面板"
     },
     "conference.ai_request_record": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "申请录制权限",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_request_record",
       "cli_name": "request",
       "cli_path": "conference record request",
       "description": "申请录制权限",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "record",
       "has_parameters": false,
       "is_alias": false,
@@ -22936,16 +23297,25 @@
       "path": "conference.ai_request_record",
       "primary_cli_path": "conference record request",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "申请录制权限"
     },
     "conference.ai_share_desktop": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "开始共享桌面",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_share_desktop",
       "cli_name": "start",
       "cli_path": "conference share start",
       "description": "开始共享桌面",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "share",
       "has_parameters": true,
       "is_alias": false,
@@ -22962,16 +23332,25 @@
       "path": "conference.ai_share_desktop",
       "primary_cli_path": "conference share start",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "开始共享桌面"
     },
     "conference.ai_start_cloud_record": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "开始云端录制当前会议",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_start_cloud_record",
       "cli_name": "start",
       "cli_path": "conference record start",
       "description": "开始云端录制",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "record",
       "has_parameters": false,
       "is_alias": false,
@@ -22981,16 +23360,26 @@
       "path": "conference.ai_start_cloud_record",
       "primary_cli_path": "conference record start",
       "product_id": "conference",
+      "reviewed": true,
+      "risk": "medium",
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "开始云端录制"
     },
     "conference.ai_stop_cloud_record": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "停止当前会议的云端录制",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_stop_cloud_record",
       "cli_name": "stop",
       "cli_path": "conference record stop",
       "description": "停止云端录制",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "record",
       "has_parameters": false,
       "is_alias": false,
@@ -23000,16 +23389,26 @@
       "path": "conference.ai_stop_cloud_record",
       "primary_cli_path": "conference record stop",
       "product_id": "conference",
+      "reviewed": true,
+      "risk": "medium",
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "停止云端录制"
     },
     "conference.ai_stop_share": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "停止屏幕共享",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_stop_share",
       "cli_name": "stop",
       "cli_path": "conference share stop",
       "description": "停止屏幕共享",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "share",
       "has_parameters": false,
       "is_alias": false,
@@ -23019,16 +23418,25 @@
       "path": "conference.ai_stop_share",
       "primary_cli_path": "conference share stop",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "停止屏幕共享"
     },
     "conference.ai_switch_gallery_view": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "切换宫格视图",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_switch_gallery_view",
       "cli_name": "grid",
       "cli_path": "conference view grid",
       "description": "切换宫格视图",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "view",
       "has_parameters": false,
       "is_alias": false,
@@ -23038,16 +23446,25 @@
       "path": "conference.ai_switch_gallery_view",
       "primary_cli_path": "conference view grid",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "切换宫格视图"
     },
     "conference.ai_switch_speaker_view": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "切换演讲者视图",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_switch_speaker_view",
       "cli_name": "speaker",
       "cli_path": "conference view speaker",
       "description": "切换演讲者视图",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "view",
       "has_parameters": false,
       "is_alias": false,
@@ -23057,16 +23474,25 @@
       "path": "conference.ai_switch_speaker_view",
       "primary_cli_path": "conference view speaker",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "切换演讲者视图"
     },
     "conference.ai_switch_standard_view": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "切换标准视图",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_switch_standard_view",
       "cli_name": "standard",
       "cli_path": "conference view standard",
       "description": "切换标准视图",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "view",
       "has_parameters": false,
       "is_alias": false,
@@ -23076,16 +23502,25 @@
       "path": "conference.ai_switch_standard_view",
       "primary_cli_path": "conference view standard",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "切换标准视图"
     },
     "conference.ai_take_group_photo": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "发起全员合影",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_take_group_photo",
       "cli_name": "take",
       "cli_path": "conference photo take",
       "description": "发起全员合影",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "photo",
       "has_parameters": false,
       "is_alias": false,
@@ -23095,16 +23530,25 @@
       "path": "conference.ai_take_group_photo",
       "primary_cli_path": "conference photo take",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "发起全员合影"
     },
     "conference.ai_unmute_mic": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "取消静音",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.ai_unmute_mic",
       "cli_name": "unmute",
       "cli_path": "conference mic unmute",
       "description": "取消静音",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "group": "mic",
       "has_parameters": false,
       "is_alias": false,
@@ -23114,16 +23558,25 @@
       "path": "conference.ai_unmute_mic",
       "primary_cli_path": "conference mic unmute",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "取消静音"
     },
     "conference.create_conference": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "发起一场即时会议",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.create_conference",
       "cli_name": "start",
       "cli_path": "conference start",
       "description": "发起即时会议",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "has_parameters": true,
       "is_alias": false,
       "name": "create_conference",
@@ -23139,16 +23592,25 @@
       "path": "conference.create_conference",
       "primary_cli_path": "conference start",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "发起即时会议"
     },
     "conference.get_conference_id": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "获取当前所在会议的会议 ID（需在会议中）",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.get_conference_id",
       "cli_name": "get-id",
       "cli_path": "conference get-id",
       "description": "获取当前会议的会议ID（需要在会议中）",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "read",
+      "effect_source": "agent-hint",
       "has_parameters": false,
       "is_alias": false,
       "name": "get_conference_id",
@@ -23157,16 +23619,25 @@
       "path": "conference.get_conference_id",
       "primary_cli_path": "conference get-id",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "获取当前会议的会议ID（需要在会议中）"
     },
     "conference.get_conference_status": {
+      "agent_metadata_source": "embedded-skill-metadata",
+      "agent_source_refs": [
+        "skills/mono/schema-hints/conference.json"
+      ],
+      "agent_summary": "查询当前会议状态（是否在会议中）",
+      "agent_summary_source": "conference-schema-review",
       "canonical_path": "conference.get_conference_status",
       "cli_name": "status",
       "cli_path": "conference status",
       "description": "查询当前会议状态",
       "display": "视频会议：发起/预约/邀请入会/会中控制",
+      "effect": "read",
+      "effect_source": "agent-hint",
       "has_parameters": false,
       "is_alias": false,
       "name": "get_conference_status",
@@ -23175,6 +23646,7 @@
       "path": "conference.get_conference_status",
       "primary_cli_path": "conference status",
       "product_id": "conference",
+      "reviewed": true,
       "source": "runtime:conference-local",
       "source_product_id": "conference-local",
       "title": "查询当前会议状态"
@@ -27327,7 +27799,7 @@
       "parameter_count": 7,
       "parameters": {
         "file": {
-          "description": "Local file path (required)",
+          "description": "本地文件路径 (必填)",
           "property": "file",
           "required": true,
           "type": "string"
@@ -28206,7 +28678,7 @@
           "type": "boolean"
         },
         "file": {
-          "description": "Local file path (required)",
+          "description": "本地文件路径 (必填)",
           "property": "file",
           "required": true,
           "type": "string"
@@ -39092,7 +39564,7 @@
           "type": "string"
         },
         "file-path": {
-          "description": "Local file path (required)",
+          "description": "本地文件路径 (必填)",
           "property": "filePath",
           "required": true,
           "type": "string"
@@ -39104,7 +39576,7 @@
           "type": "string"
         },
         "task-id": {
-          "description": "Todo task ID (required)",
+          "description": "待办任务 ID (必填)",
           "property": "taskId",
           "required": true,
           "type": "string"
@@ -39350,7 +39822,7 @@
       "parameter_count": 5,
       "parameters": {
         "due": {
-          "description": "Due time ISO-8601 (e.g. 2026-03-10T18:00:00+08:00)",
+          "description": "截止时间 ISO-8601 (如 2026-03-10T18:00:00+08:00)",
           "format": "date-time",
           "property": "due",
           "required": false,
@@ -39363,19 +39835,19 @@
           "type": "string"
         },
         "priority": {
-          "description": "Priority: 10=low/20=normal/30=high/40=urgent",
+          "description": "优先级: 10低/20普通/30较高/40紧急",
           "property": "priority",
           "required": false,
           "type": "string"
         },
         "recurrence": {
-          "description": "Recurring todo (requires --due); format: DTSTART:...\\nRRULE:FREQ=DAILY;INTERVAL=1",
+          "description": "循环待办 (需先设置 --due); 格式: DTSTART:...\\nRRULE:FREQ=DAILY;INTERVAL=1",
           "property": "recurrence",
           "required": false,
           "type": "string"
         },
         "title": {
-          "description": "Todo title (required)",
+          "description": "待办标题 (必填)",
           "property": "title",
           "required": true,
           "type": "string"
@@ -39427,14 +39899,14 @@
       "parameter_count": 2,
       "parameters": {
         "task-id": {
-          "description": "Todo task ID (required)",
+          "description": "待办任务 ID (必填)",
           "interface_description": "taskId",
           "property": "taskId",
           "required": true,
           "type": "string"
         },
         "yes": {
-          "description": "Skip confirmation and delete directly",
+          "description": "跳过确认直接删除",
           "property": "yes",
           "required": false,
           "type": "boolean"
@@ -39542,7 +40014,7 @@
       "parameter_count": 1,
       "parameters": {
         "task-id": {
-          "description": "Todo task ID (required)",
+          "description": "待办任务 ID (必填)",
           "interface_description": "待办的标识 id",
           "property": "taskId",
           "required": true,
@@ -39591,20 +40063,20 @@
       "parameters": {
         "page": {
           "default": "1",
-          "description": "page number (required)",
+          "description": "页码 (必填)",
           "property": "page",
           "required": true,
           "type": "string"
         },
         "size": {
           "default": "20",
-          "description": "Fetch count, auto-paginate if over 20 (default 20)",
+          "description": "获取数量，超过 20 自动分页 (默认 20)",
           "property": "size",
           "required": false,
           "type": "string"
         },
         "status": {
-          "description": "true=completed, false=not completed",
+          "description": "true=已完成, false=未完成",
           "property": "status",
           "required": false,
           "type": "string"
@@ -39883,13 +40355,13 @@
       "parameter_count": 2,
       "parameters": {
         "status": {
-          "description": "Done status: true=completed, false=not completed (required)",
+          "description": "完成状态: true=已完成, false=未完成 (必填)",
           "property": "status",
           "required": true,
           "type": "string"
         },
         "task-id": {
-          "description": "Todo task ID (required)",
+          "description": "待办任务 ID (必填)",
           "interface_description": "待办任务唯一标识id。指定需要修改哪个待办",
           "property": "taskId",
           "required": true,
@@ -39938,32 +40410,32 @@
       "parameter_count": 5,
       "parameters": {
         "done": {
-          "description": "Done status: true/false",
+          "description": "完成状态: true/false",
           "property": "done",
           "required": false,
           "type": "string"
         },
         "due": {
-          "description": "Due time ISO-8601 (e.g. 2026-03-10T18:00:00+08:00)",
+          "description": "截止时间 ISO-8601 (如 2026-03-10T18:00:00+08:00)",
           "format": "date-time",
           "property": "due",
           "required": false,
           "type": "string"
         },
         "priority": {
-          "description": "Priority: 10=low/20=normal/30=high/40=urgent",
+          "description": "优先级: 10低/20普通/30较高/40紧急",
           "property": "priority",
           "required": false,
           "type": "string"
         },
         "task-id": {
-          "description": "Todo task ID (required)",
+          "description": "待办任务 ID (必填)",
           "property": "taskId",
           "required": true,
           "type": "string"
         },
         "title": {
-          "description": "New title",
+          "description": "新标题",
           "property": "title",
           "required": false,
           "type": "string"

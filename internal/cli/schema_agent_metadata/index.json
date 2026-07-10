@@ -1,13 +1,13 @@
 {
   "version": 1,
-  "source_hash": "sha256:b586fcc360af51716391806bd3b6b5c8600318952f79d405feac30ff199b9fa6",
+  "source_hash": "sha256:07abbdaa99a4ed8d7091c048f90d5c9d9330db52369b999bde9fd5868bfad341",
   "surface_hash": "sha256:850109b2cca4b17666eccc8cd6adbe4326773251ff62f2328a291ade02049673",
   "coverage": {
     "surface_products": 21,
     "products_with_metadata": 21,
     "surface_tools": 504,
-    "tools_with_metadata": 461,
-    "tools_with_agent_summary": 423,
+    "tools_with_metadata": 494,
+    "tools_with_agent_summary": 456,
     "unmatched_skill_tools": 99
   },
   "products": {
@@ -270,6 +270,7 @@
     "attendance",
     "calendar",
     "chat",
+    "conference",
     "contact",
     "dev",
     "devdoc",
