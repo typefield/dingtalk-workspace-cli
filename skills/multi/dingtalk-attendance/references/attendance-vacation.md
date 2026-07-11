@@ -137,4 +137,4 @@ python scripts/attendance_vacation_balance.py \
 
 | 脚本 | 场景 | CLI 参数 |
 |------|------|---------|
-| [attendance_vacation_balance.py](../../scripts/attendance_vacation_balance.py) | 假期余额列表 Excel 导出；脚本按假期名称关键词筛选规则，并逐个 `leaveCode` 调用余额查询 | `--users [--leave-keywords] [--out] [--inspect]` |
+| [attendance_vacation_balance.py](../scripts/attendance_vacation_balance.py) | 假期余额列表 Excel 导出；脚本按假期名称关键词筛选规则，并逐个 `leaveCode` 调用余额查询 | `--users [--leave-keywords] [--out] [--inspect]` |

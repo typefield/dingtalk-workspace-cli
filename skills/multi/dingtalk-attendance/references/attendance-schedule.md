@@ -508,8 +508,8 @@ python scripts/attendance_schedule_import.py \
 
 | 脚本 | 用途 | CLI 参数 |
 |------|------|---------|
-| [attendance_schedule_import.py](../../scripts/attendance_schedule_import.py) | 排班导入（含校验、回显、执行） | `--group-id --schedules --confirm` |
-| [attendance_schedule_export.py](../../scripts/attendance_schedule_export.py) | 排班查询导出（分批查询、排班表 Excel） | `--users --start --end [--output]` |
+| [attendance_schedule_import.py](../scripts/attendance_schedule_import.py) | 排班导入（含校验、回显、执行） | `--group-id --schedules --confirm` |
+| [attendance_schedule_export.py](../scripts/attendance_schedule_export.py) | 排班查询导出（分批查询、排班表 Excel） | `--users --start --end [--output]` |
 
 ---
 
