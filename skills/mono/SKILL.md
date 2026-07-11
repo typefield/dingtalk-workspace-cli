@@ -123,27 +123,67 @@ Step 3 → 加 --yes 执行命令
 3. 精准产品映射：在完成前两步，意图已经清晰后，参考产品总览和意图判断决策树 来选择产品。
 4. 充分阅读产品参考文件，通过编写代码或直接调用指令实现用户意图。
 
-## 命令发现（flag / 参数以 binary 为准）
+## 命令发现（Schema 渐进查询 + --help 互为补充）
 
-产品参考文档（`references/products/*.md`）里的 flag 列表是**便于理解用途的参考**，不是权威契约。参数名称、默认值、必填约束以当前二进制编译出的 Cobra 命令为准，**`--help` 是产品命令调用的事实源**：
+### Schema 渐进查询（首选，Agent 友好）
+
+`dws schema` 内嵌了 21 产品、504 工具的结构化契约。**Agent 选命令时应优先用 schema 渐进查询**，只在需要人读示例时补查 `--help`：
 
 ```bash
-# 人读视图：看 Usage / Example / Flags
-dws <command-path> --help
-# 例：dws calendar event list --help
+# 第 1 层：产品概览（~4.5KB，列出全部产品 + 工具数 + 用途摘要）
+dws schema
 
-# helper-only schema 查询（如 dev.*），普通产品命令不要依赖 schema 推断参数
-dws schema "dev app create"
-# 注：--jq 对 schema 输出无效（不过滤，仍返回完整对象）；schema 结构里必填标在
-# .parameters.<字段>.required，没有 .tool 键。要看必填字段自行读 .parameters 即可。
+# 第 2 层：产品级（列出该产品下全部工具的 cli_path + description + effect/risk）
+dws schema calendar
+
+# 第 3 层：分组级（按命令分组列出工具摘要）
+dws schema "calendar event"
+
+# 第 4 层：完整 leaf（参数契约：type/required/description/constraints/examples）
+dws schema "calendar event create"
+
+# --compact：去除 provenance/debug 字段，仅保留 Agent 选参所需（体积减约 50%）
+dws schema "calendar event create" --compact
+
+# --all --compact：全量 504 工具 compact 模式（审计 / 一次性加载）
+dws schema --all --compact
 ```
 
-**何时用哪条路径：**
-- 只需看某个命令怎么调用 → `dws <cmd> --help`
-- 构造 `--params` / `--json` 时不确定字段类型、必填、别名 → 先看 `dws <cmd> --help`，helper-only 命令再看 `dws schema`
-- 参考文档和 `--help` 冲突时 → **以 `--help` 为准**，文档视为过期
+**--compact 模式**去掉的字段：`agent_metadata_source`、`agent_source_refs`、`agent_summary_source`、`effect_source`、`metadata_source`、`interface_ref`、`interface_description`、`property`、`primary_cli_path`、`parameter_count` 等 provenance/debug 字段。保留的字段：`cli_path`、`canonical_path`、`description`、`effect`、`risk`、`confirmation`、`parameters`（含 `type`/`required`/`description`/`default`/`enum`）、`constraints`、`examples`、`use_when`、`avoid_when`。
 
-`dws schema` 在静态端点模式下只保留 helper-only 子树；普通产品命令和 flag 不再通过远程 schema 动态发现。写/删操作须先向用户确认再加 `--yes`。
+### Schema 字段速查
+
+```jsonc
+// leaf 级输出（dws schema "calendar event create" --compact）
+{
+  "cli_path": "calendar event create",
+  "canonical_path": "calendar.create_calendar_event",
+  "description": "创建新的日程...",
+  "effect": "write",           // read | write | destructive
+  "risk": "medium",            // low | medium | high
+  "confirmation": "not_required", // not_required | user_required
+  "parameters": {
+    "title": { "type": "string", "required": true, "description": "..." },
+    "start": { "type": "string", "required": true, "format": "date-time" }
+    // ...
+  },
+  "constraints": { "require_together": [["recurrence-type", "recurrence-interval", "recurrence-range-type"]] },
+  "examples": ["dws calendar event create --title ..."]
+}
+```
+
+- `effect=destructive` 或 `risk=high` → 必须先向用户确认再加 `--yes`
+- `parameters.<flag>.required=true` → 缺少该 flag 命令会被拒绝
+- `constraints.require_together` → 列出的 flag 必须同时提供
+
+### 何时用 Schema vs --help
+
+| 场景 | 用什么 |
+|------|--------|
+| 选择哪个命令 | `dws schema` → `dws schema <product>` |
+| 确定参数名 / 类型 / 必填 | `dws schema "<cli_path>" --compact` |
+| 看人类可读用法 / 示例 | `dws <cli_path> --help` |
+| 参数和文档冲突时 | **以 schema 为准**（schema 从当前二进制生成） |
 
 ## 错误处理
 1. 遇到错误，加 `--verbose` 重试一次
@@ -156,7 +196,7 @@ dws schema "dev app create"
 
 ## 详细参考 (按需读取)
 
-- [references/products/](./references/products/) — 各产品命令详细参考（flag 细节以 `--help` / `dws schema` 为准）
+- [references/products/](./references/products/) — 各产品命令详细参考（flag 细节以 `dws schema --compact` / `--help` 为准）
 - [references/intent-guide.md](./references/intent-guide.md) — 意图路由指南（易混淆场景对照）
 - [references/url-patterns.md](./references/url-patterns.md) — URL 格式规范 + alidocs URL 分流决策与类型探测流程（含钉盘 `document/edit|preview?dentryKey=` 链接）
 - [references/global-reference.md](./references/global-reference.md) — 全局标志、认证、输出格式

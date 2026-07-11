@@ -76,11 +76,12 @@ func NewSchemaCommand(_ CatalogLoader) *cobra.Command {
 		Short: "渐进查看命令 Schema (产品 / 分组 / 工具参数)",
 		Long: `查看当前可运行命令的 Schema 元数据。
 
-不带参数时列出产品和工具数量；传产品或分组路径逐层展开；传具体工具路径输出扁平参数 Schema（对齐 GWS：parameters 内联 required，键为 CLI flag）。--all 输出完整目录。查询不执行服务发现。`,
+不带参数时列出产品和工具数量；传产品或分组路径逐层展开；传具体工具路径输出扁平参数 Schema（对齐 GWS：parameters 内联 required，键为 CLI flag）。--all 输出完整目录。--compact 去除 provenance / debug 字段，仅保留 Agent 选参所需信息（适合 Agent 上下文）。查询不执行服务发现。`,
 		Args:              cobra.MaximumNArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			all, _ := cmd.Flags().GetBool("all")
+			compact, _ := cmd.Flags().GetBool("compact")
 			cliPath, _ := cmd.Flags().GetString("cli-path")
 			cliPath = strings.TrimSpace(cliPath)
 			if cliPath != "" && len(args) > 0 {
@@ -103,16 +104,23 @@ func NewSchemaCommand(_ CatalogLoader) *cobra.Command {
 				if len(args) == 0 && !all {
 					payload = compactSchemaOverviewPayload(payload)
 				}
+				if compact {
+					payload = stripSchemaPayloadCompact(payload)
+				}
 				return output.WriteFiltered(cmd.OutOrStdout(), output.ResolveFormat(cmd, output.FormatJSON), payload, output.ResolveFields(cmd), output.ResolveJQ(cmd))
 			}
 			payload, err := runtimeSchemaPayload(cmd.Root(), args)
 			if err != nil {
 				return err
 			}
+			if compact {
+				payload = stripSchemaPayloadCompact(payload)
+			}
 			return output.WriteFiltered(cmd.OutOrStdout(), output.ResolveFormat(cmd, output.FormatJSON), payload, output.ResolveFields(cmd), output.ResolveJQ(cmd))
 		},
 	}
 	cmd.Flags().Bool("all", false, "输出全部产品和工具摘要（用于审计/CI）")
+	cmd.Flags().Bool("compact", false, "去除 provenance/debug 字段，仅保留 Agent 选参所需信息")
 	cmd.Flags().String("cli-path", "", "按 CLI 命令路径查询")
 	return cmd
 }

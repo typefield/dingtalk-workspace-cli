@@ -1500,3 +1500,103 @@ func inferredRuntimeFlagFormat(flag *pflag.Flag) string {
 func strconvQuote(value string) string {
 	return "\"" + strings.ReplaceAll(value, "\"", "\\\"") + "\""
 }
+
+// ─── --compact mode ──────────────────────────────────────────────────────────
+
+// schemaCompactStripKeys are top-level tool/product keys removed in --compact mode.
+var schemaCompactStripKeys = map[string]bool{
+	// provenance / debug
+	"agent_metadata_source": true,
+	"agent_source_refs":     true,
+	"agent_summary_source":  true,
+	"effect_source":         true,
+	"metadata_source":       true,
+	"source":                true,
+	"agent_metadata":        true,
+	"interface_metadata":    true,
+	"reviewed":              true,
+	// redundant with canonical_path / cli_path
+	"name":               true,
+	"path":               true,
+	"cli_name":           true,
+	"primary_cli_path":   true,
+	"is_alias":           true,
+	"has_parameters":     true,
+	"parameter_count":    true,
+	"product_id":         true,
+	"display":            true,
+	"title":              true,
+	"group":              true,
+	"source_product_id":  true,
+	"aliases":            true,
+	"catalog_hash":       true,
+	"surface_hash":       true,
+	"workflow_refs":      true,
+	"prerequisites":      true,
+	"tips":               true,
+	"interface_ref":      true,
+}
+
+// schemaCompactParamStripKeys are per-parameter keys removed in --compact mode.
+var schemaCompactParamStripKeys = map[string]bool{
+	"interface_description": true,
+	"interface_type":        true,
+	"property":              true,
+}
+
+// stripSchemaPayloadCompact walks a schema payload map and removes provenance,
+// debug and redundant keys so that only agent-essential fields remain.
+// It operates recursively on nested maps, slices, and parameter objects.
+func stripSchemaPayloadCompact(payload map[string]any) map[string]any {
+	if payload == nil {
+		return nil
+	}
+	result := make(map[string]any, len(payload))
+	for k, v := range payload {
+		if schemaCompactStripKeys[k] {
+			continue
+		}
+		result[k] = stripSchemaValueCompact(v)
+	}
+	return result
+}
+
+func stripSchemaValueCompact(v any) any {
+	switch val := v.(type) {
+	case map[string]any:
+		// Check if this looks like a parameter object (has "type" or "required" or "description")
+		_, isParam := val["required"]
+		if !isParam {
+			_, isParam = val["type"]
+		}
+		if isParam {
+			return stripSchemaParamCompact(val)
+		}
+		return stripSchemaPayloadCompact(val)
+	case []map[string]any:
+		result := make([]map[string]any, len(val))
+		for i, item := range val {
+			result[i] = stripSchemaPayloadCompact(item)
+		}
+		return result
+	case []any:
+		result := make([]any, len(val))
+		for i, item := range val {
+			result[i] = stripSchemaValueCompact(item)
+		}
+		return result
+	default:
+		return v
+	}
+}
+
+func stripSchemaParamCompact(param map[string]any) map[string]any {
+	result := make(map[string]any, len(param))
+	for k, v := range param {
+		if schemaCompactParamStripKeys[k] {
+			continue
+		}
+		result[k] = v
+	}
+	return result
+}
