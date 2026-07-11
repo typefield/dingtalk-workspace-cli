@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_hash": "sha256:be8c2aa6256ebc247d75274ee60599eab044e5c13402a24058137dbe0386e23e",
+  "source_hash": "sha256:ac9f6328bcf1c95aa23483dc0a79c3511c3f5a13fec44697dae2d20b140e2b7f",
   "surface_hash": "sha256:c0a9b75b4e38934db73f4ce1d337b4c64aa5e541257dd9e84c4947da9c9ab664",
   "catalog": {
     "agent_metadata": {
@@ -27544,7 +27544,9 @@
       "parameters": {
         "dept": {
           "description": "部门 ID (必填)",
-          "property": "dept",
+          "interface_description": "部门Id",
+          "interface_type": "number",
+          "property": "deptId",
           "required": true,
           "type": "string"
         }
@@ -27603,7 +27605,9 @@
       "parameters": {
         "depts": {
           "description": "部门 ID 列表 (必填)",
-          "property": "depts",
+          "interface_description": "需要获取部门的ID",
+          "interface_type": "array",
+          "property": "deptIds",
           "required": true,
           "type": "string"
         }
@@ -27653,7 +27657,9 @@
       "parameters": {
         "dept": {
           "description": "部门 ID (必填)",
-          "property": "dept",
+          "interface_description": "部门Id",
+          "interface_type": "number",
+          "property": "deptId",
           "required": true,
           "type": "string"
         }
@@ -38529,7 +38535,9 @@
         },
         "limit": {
           "description": "每页大小 (可选)",
-          "property": "limit",
+          "interface_description": "每页大小",
+          "interface_type": "number",
+          "property": "pageSize",
           "required": false,
           "type": "string"
         },
@@ -38669,7 +38677,9 @@
         "limit": {
           "default": "100",
           "description": "每页大小，最大 100 (必填)",
-          "property": "limit",
+          "interface_description": "每页大小，最大值100",
+          "interface_type": "number",
+          "property": "pageSize",
           "required": true,
           "type": "string"
         }

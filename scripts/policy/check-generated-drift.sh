@@ -13,6 +13,7 @@ trap 'rm -rf "$tmp"' EXIT HUP INT TERM
 metadata_tmp="$tmp/metadata"
 audit_tmp="$tmp/audit.json"
 catalog_tmp="$tmp/catalog.json"
+catalog_tmp_second="$tmp/catalog-second.json"
 
 go run ./internal/generator/cmd_schema_agent_metadata \
   -root . \
@@ -37,6 +38,16 @@ fi
 go run ./internal/generator/cmd_schema_catalog \
   -surface internal/cli/schema_command_surface.json \
   -output "$catalog_tmp"
+
+go run ./internal/generator/cmd_schema_catalog \
+  -surface internal/cli/schema_command_surface.json \
+  -output "$catalog_tmp_second"
+
+if ! cmp -s "$catalog_tmp" "$catalog_tmp_second"; then
+	printf '%s\n' 'generated drift: consecutive Catalog generations are not byte-identical' >&2
+	diff -u "$catalog_tmp" "$catalog_tmp_second" || true
+	exit 1
+fi
 
 if ! cmp -s internal/cli/schema_catalog.json "$catalog_tmp"; then
 	printf '%s\n' 'generated drift: internal/cli/schema_catalog.json is stale' >&2

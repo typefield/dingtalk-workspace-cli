@@ -27,23 +27,41 @@ const schemaParameterBindingsVersion = 1
 var embeddedSchemaParameterBindingsJSON []byte
 
 type schemaParameterBindingSnapshot struct {
-	Version  int                          `json:"version"`
-	Bindings map[string]map[string]string `json:"bindings"`
+	Version                int                          `json:"version"`
+	SourceCatalogHash      string                       `json:"source_catalog_hash"`
+	HistoricalBindingCount int                          `json:"historical_binding_count"`
+	Migrations             map[string]string            `json:"migrations"`
+	Excluded               map[string]string            `json:"excluded"`
+	Bindings               map[string]map[string]string `json:"bindings"`
 }
 
-var runtimeSchemaParameterBindings = loadSchemaParameterBindings()
+var runtimeSchemaParameterBindingSnapshot = loadSchemaParameterBindings()
+var runtimeSchemaParameterBindings = runtimeSchemaParameterBindingSnapshot.Bindings
 
-func loadSchemaParameterBindings() map[string]map[string]string {
+func loadSchemaParameterBindings() schemaParameterBindingSnapshot {
 	var snapshot schemaParameterBindingSnapshot
 	if err := json.Unmarshal(embeddedSchemaParameterBindingsJSON, &snapshot); err != nil ||
 		snapshot.Version != schemaParameterBindingsVersion {
-		return nil
+		return schemaParameterBindingSnapshot{}
 	}
-	return snapshot.Bindings
+	return snapshot
 }
 
 func applyRuntimeSchemaParameterBindings(cmd *cobra.Command, canonical string) {
 	for flagName, propertyName := range runtimeSchemaParameterBindings[strings.TrimSpace(canonical)] {
 		AnnotateRuntimeFlagProperty(cmd, flagName, propertyName)
 	}
+}
+
+// EmbeddedSchemaParameterBindings returns a defensive copy of the reviewed,
+// active public flag-to-interface bindings used by Catalog generation.
+func EmbeddedSchemaParameterBindings() map[string]map[string]string {
+	bindings := make(map[string]map[string]string, len(runtimeSchemaParameterBindings))
+	for canonical, parameters := range runtimeSchemaParameterBindings {
+		bindings[canonical] = make(map[string]string, len(parameters))
+		for flagName, propertyName := range parameters {
+			bindings[canonical][flagName] = propertyName
+		}
+	}
+	return bindings
 }

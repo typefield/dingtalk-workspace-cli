@@ -1,5 +1,19 @@
 {
   "version": 1,
+  "source_catalog_hash": "sha256:6dc63141d35119ff6095d189ef9d8994cd35162ecf9fff9ad23b2ab68e4e2b7f",
+  "historical_binding_count": 311,
+  "migrations": {
+    "contact.get_dept_info_by_dept_id --id": "contact.get_dept_info_by_dept_id --dept",
+    "contact.get_dept_members_by_deptId --ids": "contact.get_dept_members_by_deptId --depts",
+    "contact.get_sub_depts_by_dept_id --id": "contact.get_sub_depts_by_dept_id --dept",
+    "oa.list_pending_approvals --size": "oa.list_pending_approvals --limit",
+    "oa.list_user_visible_process --size": "oa.list_user_visible_process --limit"
+  },
+  "excluded": {
+    "calendar.list_acls --id": "current helper and MCP interface have no calendarId input",
+    "calendar.query_available_meeting_room --available": "hidden compatibility flag explicitly marked as a non-MCP parameter",
+    "minutes.query_user_tag_list --limit": "current helper and MCP interface have no pagination input"
+  },
   "bindings": {
     "aisearch.search_enterprise": {
       "types": "searchTypes"
@@ -296,6 +310,15 @@
     "contact.get_authorized_emp_rosterInfo": {
       "fields": "fieldCodeList"
     },
+    "contact.get_dept_info_by_dept_id": {
+      "dept": "deptId"
+    },
+    "contact.get_dept_members_by_deptId": {
+      "depts": "deptIds"
+    },
+    "contact.get_sub_depts_by_dept_id": {
+      "dept": "deptId"
+    },
     "contact.get_user_info_by_user_ids": {
       "ids": "user_id_list"
     },
@@ -510,6 +533,7 @@
     },
     "oa.list_pending_approvals": {
       "end": "endTime",
+      "limit": "pageSize",
       "page": "pageNum",
       "start": "starTime"
     },
@@ -524,6 +548,9 @@
     },
     "oa.revoke_processInstance": {
       "instance-id": "processInstanceId"
+    },
+    "oa.list_user_visible_process": {
+      "limit": "pageSize"
     },
     "report.get_received_report_list": {
       "end": "endTime",

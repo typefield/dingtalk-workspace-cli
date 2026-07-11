@@ -10,7 +10,7 @@
 4. `internal/executor` and `internal/transport` execute MCP JSON-RPC calls; `internal/output` formats responses.
 5. `internal/auth` manages login state, PAT tokens, and agent-code detection.
 6. Schema generation combines the reviewed command surface, current Cobra flags, strong typed CLI constraints, sanitized MCP snapshots, Agent hints, and Skills at build time. Startup and Schema queries do not call MCP `tools/list`.
-7. The embedded Catalog may backfill canonical identity for real commands, but it cannot replay parameter metadata into the next generation. Stable flag-to-RPC property bindings come from the versioned `schema_parameter_bindings.json`; CLI `required` and constraints come from Cobra/typed annotations. MCP `required` remains interface-only metadata.
+7. The embedded Catalog may backfill canonical identity for real commands, but it cannot replay parameter metadata into the next generation. Stable flag-to-RPC property bindings come from the versioned `schema_parameter_bindings.json` (308 active bindings audited from a 311-row historical seed); CLI `required` and constraints come from Cobra/typed annotations. MCP `required` remains interface-only metadata.
 
 ## Repository Structure
 

@@ -88,6 +88,8 @@ Catalog 是发布版本内的统一命令中间表示，位于 `internal/cli/sch
 
 内嵌 Catalog 对真实 Go 命令只允许回填稳定 canonical identity，禁止回灌任何参数元数据。flag-to-RPC property binding 固定在版本化 `internal/cli/schema_parameter_bindings.json`，每次人工执行 `make generate-schema` 都先应用该输入；required 和 constraints 则从当前 Cobra 树及强类型注解重算。这样 generator 不依赖上一次 Catalog 自回放。完整旧契约只允许用于 `-100` 优先级的 fallback leaf。
 
+parameter binding 快照由历史 Catalog 的 311 条非默认映射一次性审计得到。当前公开命令面保留 308 条 active binding：5 条旧 alias 已迁移到现行主 flag，3 条与当前 helper/MCP 接口不一致的旧参数被显式排除。迁移和排除原因都写在同一 JSON 中，生成器不得从上一版 Catalog 自动补回。policy 同时校验 active 数量、历史审计记录和连续两次 Catalog 生成 byte-identical。
+
 ## 5. Agent 元数据
 
 每个公开工具必须具备：

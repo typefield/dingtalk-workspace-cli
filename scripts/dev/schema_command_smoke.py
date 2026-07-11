@@ -91,6 +91,10 @@ def scalar_value(flag: str, param: dict[str, Any], canonical_path: str) -> str:
         return "A1:B2"
     if value_format == "file-path":
         return str(Path(tempfile.gettempdir()) / "dws-schema-smoke-fixture.txt")
+    if value_format == "date-time":
+        return "2027-01-15T10:00:00+08:00"
+    if value_format == "date":
+        return "2027-01-15"
 
     if "default" in param and param["default"] not in (None, ""):
         return str(param["default"])
@@ -102,6 +106,9 @@ def scalar_value(flag: str, param: dict[str, Any], canonical_path: str) -> str:
             str(param.get("description", "")).lower(),
         ]
     )
+
+    if flag in {"start", "end", "start-time", "end-time"}:
+        return "2027-01-15T10:00:00+08:00"
 
     if flag == "fields":
         return '[{"fieldName":"Name","type":"text"}]'
@@ -417,7 +424,25 @@ def help_flags(binary: str, cwd: Path, cli_path: str, timeout: int) -> set[str]:
             f"{binary} {cli_path} --help exited {proc.returncode}: "
             f"{(proc.stderr or proc.stdout).strip()}"
         )
-    return set(re.findall(r"--([a-zA-Z0-9][a-zA-Z0-9_.-]*)", proc.stdout))
+    flags_match = re.search(
+        r"(?ms)^Flags:\s*\n(?P<body>.*?)(?:^Global Flags:\s*$|\Z)",
+        proc.stdout,
+    )
+    flags_body = flags_match.group("body") if flags_match else ""
+    return set(re.findall(r"--([a-zA-Z0-9][a-zA-Z0-9_.-]*)", flags_body))
+
+
+def is_auth_required(output: str) -> bool:
+    lowered = output.lower()
+    return any(
+        token in lowered
+        for token in [
+            '"category": "auth"',
+            '"reason": "not_authenticated"',
+            "dws auth login",
+            "未登录",
+        ]
+    )
 
 
 def run_smoke_case(
@@ -440,7 +465,13 @@ def run_smoke_case(
             stderr=subprocess.PIPE,
             timeout=timeout,
         )
-        status = "pass" if proc.returncode == 0 else "fail"
+        combined = (proc.stderr or "") + "\n" + (proc.stdout or "")
+        if proc.returncode == 0:
+            status = "pass"
+        elif is_auth_required(combined):
+            status = "auth_required"
+        else:
+            status = "fail"
         return SmokeResult(
             canonical_path=path,
             case_name=case_name,
@@ -613,6 +644,11 @@ def main() -> int:
     parser.add_argument("--jobs", type=int, default=8)
     parser.add_argument("--timeout", type=int, default=20)
     parser.add_argument("--include-optional", action="store_true")
+    parser.add_argument(
+        "--strict-external",
+        action="store_true",
+        help="treat auth-required dry-runs as failures",
+    )
     parser.add_argument("--path", action="append", help="canonical schema path to run; repeatable")
     args = parser.parse_args()
 
@@ -652,7 +688,10 @@ def main() -> int:
     md_path.parent.mkdir(parents=True, exist_ok=True)
     write_markdown(results, md_path, len(paths))
 
-    failures = [result for result in results if result.status != "pass"]
+    accepted = {"pass"}
+    if not args.strict_external:
+        accepted.add("auth_required")
+    failures = [result for result in results if result.status not in accepted]
     print(f"tools={len(paths)}")
     print(f"total={len(results)}")
     print(f"failures={len(failures)}")

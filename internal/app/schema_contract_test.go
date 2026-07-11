@@ -17,6 +17,7 @@ func TestEmbeddedSchemaContractMapsToExecutableTree(t *testing.T) {
 	root := NewRootCommand()
 	report := cli.AnnotateEmbeddedSchemaCommands(root)
 	definitions := cli.EmbeddedSchemaCommandDefinitions()
+	bindings := cli.EmbeddedSchemaParameterBindings()
 	if len(definitions) != 504 {
 		t.Fatalf("embedded definitions = %d, want 504", len(definitions))
 	}
@@ -50,6 +51,23 @@ func TestEmbeddedSchemaContractMapsToExecutableTree(t *testing.T) {
 			}
 			if got := schemaContractFlagDefault(flag); parameter.Default != got {
 				t.Errorf("%s parameter %q default = %q, Cobra --help default = %q", definition.CanonicalPath, parameter.Name, parameter.Default, got)
+			}
+		}
+		for flagName, propertyName := range bindings[definition.CanonicalPath] {
+			flag := command.Flags().Lookup(flagName)
+			if flag == nil || flag.Hidden {
+				t.Errorf("%s binding --%s references a missing or hidden public flag", definition.CanonicalPath, flagName)
+				continue
+			}
+			var found bool
+			for _, parameter := range definition.Parameters {
+				if parameter.Name == flagName && parameter.Property == propertyName {
+					found = true
+					break
+				}
+			}
+			if !found {
+				t.Errorf("%s binding --%s -> %s is absent from generated Catalog", definition.CanonicalPath, flagName, propertyName)
 			}
 		}
 	}
