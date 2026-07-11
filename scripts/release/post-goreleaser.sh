@@ -90,36 +90,27 @@ resolve_release_base_url() {
 
 stage_npm_package() {
   version="$1"
-  pkg_root="$DIST_DIR/npm/dingtalk-workspace-cli"
-
-  rm -rf "$pkg_root"
-  mkdir -p "$pkg_root/assets" "$pkg_root/bin"
-
-  cp "$ROOT/build/npm/install.js" "$pkg_root/install.js"
-  cp "$ROOT/build/npm/bin/dws.js" "$pkg_root/bin/dws.js"
-  cp "$ROOT/build/npm/README.md" "$pkg_root/README.md"
-  sed "s|__VERSION__|$version|g" "$ROOT/build/npm/package.json.tmpl" > "$pkg_root/package.json"
-
-  for artifact in "$DIST_DIR"/dws-*.tar.gz "$DIST_DIR"/dws-*.zip "$DIST_DIR"/dws-skills.zip; do
-    if [ -f "$artifact" ]; then
-      cp "$artifact" "$pkg_root/assets/"
-    fi
-  done
+  DWS_PACKAGE_SOURCE_ROOT="$ROOT" \
+    DWS_PACKAGE_DIST_DIR="$DIST_DIR" \
+    "$ROOT/scripts/release/stage-npm-package.sh" "$version"
 }
 
 # ---------- Homebrew formula staging ----------
 
 render_homebrew_formula() {
   class_name="$1"
-  archive_url="$2"
-  skills_url="$3"
-  archive_sha="$4"
-  skills_sha="$5"
-  keg_only_line="$6"
-  output_path="$7"
+  formula_version="$2"
+  archive_url="$3"
+  skills_url="$4"
+  archive_sha="$5"
+  skills_sha="$6"
+  keg_only_line="$7"
+  output_path="$8"
 
   sed \
     -e "s|__CLASS_NAME__|$class_name|g" \
+    -e "s|__VERSION__|$formula_version|g" \
+    -e "s|__SKILL_HOME_OVERRIDE__||g" \
     -e "s|__ARCHIVE_URL__|$archive_url|g" \
     -e "s|__ARCHIVE_SHA256__|$archive_sha|g" \
     -e "s|__SKILLS_URL__|$skills_url|g" \
@@ -193,6 +184,7 @@ stage_homebrew_formula() {
 
   render_homebrew_formula \
     "DingtalkWorkspaceCliLocal" \
+    "$version" \
     "file://$archive_path" \
     "file://$DIST_DIR/dws-skills.zip" \
     "$archive_sha" \
@@ -200,27 +192,12 @@ stage_homebrew_formula() {
     '  keg_only "Local verification formula to avoid linking conflicts"' \
     "$formula_dir/dingtalk-workspace-cli-local.rb"
 
-  formula_class="DingtalkWorkspaceCli"
-  formula_path="$formula_dir/dingtalk-workspace-cli.rb"
-  keg_only_line=""
-  channel_caveat=""
-  case "$version" in
-    *-*)
-      formula_class="DingtalkWorkspaceCliBeta"
-      formula_path="$formula_dir/dingtalk-workspace-cli-beta.rb"
-      keg_only_line='  keg_only "it is the beta channel and conflicts with dingtalk-workspace-cli"'
-      channel_caveat='      This beta is keg-only. Add #{opt_bin} to PATH to use its `dws` binary.'
-      ;;
-  esac
-
-  render_homebrew_release_formula \
-    "$formula_class" \
+  render_homebrew_formula \
+    "DingtalkWorkspaceCli" \
     "$version" \
-    "$release_url_base" \
-    "$(sha256_file "$darwin_amd64")" \
-    "$(sha256_file "$darwin_arm64")" \
-    "$(sha256_file "$linux_amd64")" \
-    "$(sha256_file "$linux_arm64")" \
+    "$release_url_base/$archive_name" \
+    "$release_url_base/$skills_name" \
+    "$archive_sha" \
     "$skills_sha" \
     "$keg_only_line" \
     "$channel_caveat" \

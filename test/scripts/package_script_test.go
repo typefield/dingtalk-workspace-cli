@@ -105,6 +105,8 @@ func seedDistArchive(t *testing.T, path string) {
 
 func postGoreleaserEnv(t *testing.T, distDir, releaseBaseURL string) []string {
 	t.Helper()
+	trimmedBaseURL := strings.TrimRight(releaseBaseURL, "/")
+	version := trimmedBaseURL[strings.LastIndex(trimmedBaseURL, "/")+1:]
 
 	binDir := t.TempDir()
 	fakeCodesign := filepath.Join(binDir, "codesign")
@@ -114,7 +116,7 @@ func postGoreleaserEnv(t *testing.T, distDir, releaseBaseURL string) []string {
 
 	return append(os.Environ(),
 		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
-		"DWS_PACKAGE_VERSION=v0.0.0",
+		"DWS_PACKAGE_VERSION="+version,
 		"DWS_PACKAGE_DIST_DIR="+distDir,
 		"DWS_RELEASE_BASE_URL="+releaseBaseURL,
 	)
@@ -186,6 +188,8 @@ func TestPostGoreleaserBuildsExpectedArtifacts(t *testing.T) {
 	formulaText := string(formulaData)
 	for _, want := range []string{
 		"class DingtalkWorkspaceCliLocal < Formula",
+		"version \"1.2.3\"",
+		"skill_home_override = \"\"",
 		"resource \"skills\" do",
 		"Install locally built DingTalk workspace CLI artifacts for verification",
 	} {
@@ -202,14 +206,8 @@ func TestPostGoreleaserBuildsExpectedArtifacts(t *testing.T) {
 	releaseFormulaText := string(releaseFormulaData)
 	for _, want := range []string{
 		"class DingtalkWorkspaceCli < Formula",
-		`desc "Automate DingTalk workspace tasks from the terminal"`,
-		`version "0.0.0"`,
-		"on_macos do",
-		"on_linux do",
-		"https://downloads.example.com/dws/releases/v1.2.3/dws-darwin-amd64.tar.gz",
-		"https://downloads.example.com/dws/releases/v1.2.3/dws-darwin-arm64.tar.gz",
-		"https://downloads.example.com/dws/releases/v1.2.3/dws-linux-amd64.tar.gz",
-		"https://downloads.example.com/dws/releases/v1.2.3/dws-linux-arm64.tar.gz",
+		"version \"1.2.3\"",
+		"https://downloads.example.com/dws/releases/v1.2.3/" + archiveName,
 		"https://downloads.example.com/dws/releases/v1.2.3/dws-skills.zip",
 	} {
 		if !strings.Contains(releaseFormulaText, want) {
@@ -259,13 +257,20 @@ func TestPostGoreleaserBuildsExpectedArtifacts(t *testing.T) {
 		}
 	}
 
-	// Verify checksums.txt was updated to include skills zip
+	// Re-running post packaging must replace, not duplicate, the skills checksum.
+	cmd = exec.Command("sh", scriptPath)
+	cmd.Env = postGoreleaserEnv(t, distDir, "https://downloads.example.com/dws/releases/v1.2.3")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("second post-goreleaser.sh error = %v\noutput:\n%s", err, output)
+	}
+
+	// Verify checksums.txt includes exactly one skills zip entry.
 	checksumsData, err := os.ReadFile(filepath.Join(distDir, "checksums.txt"))
 	if err != nil {
 		t.Fatalf("ReadFile(checksums.txt) error = %v", err)
 	}
-	if !strings.Contains(string(checksumsData), "dws-skills.zip") {
-		t.Fatalf("checksums.txt missing dws-skills.zip entry:\n%s", string(checksumsData))
+	if count := strings.Count(string(checksumsData), "dws-skills.zip"); count != 1 {
+		t.Fatalf("checksums.txt dws-skills.zip count = %d, want 1:\n%s", count, checksumsData)
 	}
 }
 
@@ -449,7 +454,7 @@ func TestPostGoreleaserAllPlatformNpmAssets(t *testing.T) {
 	}
 
 	packageAssetsDir := filepath.Join(distDir, "npm", "dingtalk-workspace-cli", "assets")
-	for _, rel := range append(allArchives, "dws-skills.zip") {
+	for _, rel := range append(allArchives, "dws-skills.zip", "checksums.txt") {
 		if _, err := os.Stat(filepath.Join(packageAssetsDir, rel)); err != nil {
 			t.Fatalf("npm asset missing %q: %v", rel, err)
 		}

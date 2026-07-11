@@ -42,6 +42,10 @@ This release seals the `v1.0.52` line with personal event subscriptions, a deter
 - **Complex Connect messages and attachments** (#606, #612) — rich-text messages retain all embedded pictures in order, queued turns keep every pending attachment, and unknown or future callback shapes reach each Agent backend with their message type and raw JSON instead of being discarded. Attachment recovery is locator-based, nested `chatRecord` pictures/audio/video/files can be recovered from message APIs after Stream ACK, and OpenCode uses a full-duration storyboard for large videos to avoid base64 OOMs while preserving the original download for the turn.
 - **macOS auth survives Keychain mode changes** (#597) — credential reads try existing compatible DEKs without creating key material, updates preserve the DEK that decrypted existing ciphertext, unreadable slots fail closed before token exchange, profile slots use the canonical auth backend, and `auth status` reports ciphertext/key mismatches instead of treating them as ordinary logout. Dedicated macOS race and Windows DPAPI coverage protect the cross-platform paths.
 
+### Changed
+
+- **Guarded prerelease and stable automation** — adds the guided `dws-release` entry for one-command CHANGELOG preparation, validation-only and annotated-tag publication flows; promotes only an explicitly validated beta; verifies command-tree compatibility and all six packaged binaries; and serializes immutable GitHub Release, npm channel, OSS, and optional Gitee delivery with fail-closed recovery checks.
+
 ## [1.0.51] - 2026-07-10
 
 This release promotes the sealed `v1.0.51-beta.1` contents to stable. It syncs the hardcoded Wukong command surface, prevents `dev connect` conversations from blocking on messages received mid-turn, and makes local credential failures diagnosable without mutating key material.
