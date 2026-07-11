@@ -20,7 +20,7 @@
 
 ## 命令索引表
 
-### base (Base 管理)
+### base (Base 管理) → 详见 [aitable-base-index.md](./aitable/aitable-base-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -31,7 +31,7 @@
 | `base update` | 更新 Base 名称 | `--base-id` `--name` | — |
 | `base delete` | 删除 Base | `--base-id` | 不可逆 |
 
-### table (数据表管理)
+### table (数据表管理) → 详见 [aitable-table-index.md](./aitable/aitable-table-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -40,7 +40,7 @@
 | `table update` | 修改表名 / 备注 / 行命名规则 | `--base-id` `--table-id` + 三选一(`--name` / `--description` / `--record-name-key`) | `--record-name-key` 是固定枚举（如 task/project/event/customer/ji_lu 等），非字段 ID |
 | `table delete` | 删除表 | `--base-id` `--table-id` | 不可逆 |
 
-### field (字段管理) → 详见 [aitable-field.md](./aitable/aitable-field.md)、[field-properties](./aitable/aitable-field-properties.md)
+### field (字段管理) → 详见 [aitable-field-index.md](./aitable/aitable-field-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -73,7 +73,7 @@ Flags:
 
 > **写 record 时**：`record create / update` 对 singleSelect/multipleSelect 可直接传 option **name**，不需要用本命令。本命令主要用于 **filter** 写法（filters 优先用 option **id**）或选项较多需要精确定位时。
 
-### record (记录管理)
+### record (记录管理) → 详见 [aitable-record-index.md](./aitable/aitable-record-index.md)
 
 | 命令 | 用途 | 必读 reference | 路由提醒 |
 |------|------|----------------|----------|
@@ -90,7 +90,7 @@ Flags:
 | `record primary-doc-get` | 查询记录的主键文档 nodeId | [aitable-primary-doc.md](./aitable/aitable-primary-doc.md) | 返回的 nodeId 可直接用于 `dws doc read/update --node` |
 | `record primary-doc-create` | 为记录创建主键文档（幂等） | [aitable-primary-doc.md](./aitable/aitable-primary-doc.md) | fieldId 必须是 primaryDoc 类型；已存在则返回已有 nodeId |
 
-### view (视图管理)
+### view (视图管理) → 详见 [aitable-view-index.md](./aitable/aitable-view-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -115,7 +115,7 @@ Flags:
 > `visibleFieldIds` / `filter` / `sort` / `group` / `fieldWidths`(Grid) / `aggregate`(Grid) / `kanbanCard`(Kanban) / `ganttTimebar`(Gantt) / `galleryCard`(Gallery)。
 > filter/sort/group 必须传**数组**格式（与 `record query --filters` 的对象格式不同；CLI 会自动容错）。其他 key 会被服务端忽略并打 warning。
 
-### form (表单管理) → 详见 [aitable-form.md](./aitable/aitable-form.md)
+### form (表单管理) → 详见 [aitable-form-index.md](./aitable/aitable-form-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -130,7 +130,7 @@ Flags:
 
 > **创建表单**有两种等价方式：`form create --name "..."`（推荐）或 `view create --view-type FormDesigner --name "..."`。
 
-### workflow (自动化工作流) → 详见 [aitable-workflow.md](./aitable/aitable-workflow.md)
+### workflow (自动化工作流) → 详见 [aitable-workflow-index.md](./aitable/aitable-workflow-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
@@ -141,7 +141,7 @@ Flags:
 
 > **当前不支持通过 CLI 新建/修改/删除工作流**，请去 AI 表格 Web 端（数据表页面 → 自动化）配置。
 
-### dashboard & chart → 详见 [aitable-dashboard-chart.md](./aitable/aitable-dashboard-chart.md)
+### dashboard & chart → 详见 [aitable-dashboard-index.md](./aitable/aitable-dashboard-index.md)
 
 | 命令 | 用途 |
 |------|------|
@@ -151,7 +151,7 @@ Flags:
 | `chart get/create/update/delete` | 图表管理 |
 | `chart widgets-example` | 查看图表 widgets 配置模板 |
 
-### export & import → 详见 [aitable-export-import.md](./aitable/aitable-export-import.md)
+### export & import → 详见 [aitable-export-import-index.md](./aitable/aitable-export-import-index.md)
 
 | 命令 | 用途 |
 |------|------|
@@ -159,7 +159,7 @@ Flags:
 | `import upload` | 申请文件导入上传凭证 |
 | `import data` | 触发导入 |
 
-### attachment → 详见 [aitable-attachment.md](./aitable/aitable-attachment.md)
+### attachment → 详见 [aitable-attachment-index.md](./aitable/aitable-attachment-index.md)
 
 | 命令 | 用途 | 路由提醒 |
 |------|------|----------|
@@ -171,7 +171,7 @@ Flags:
 |------|------|----------|
 | `template search` | 搜索模板 | `--query` |
 
-### advperm (高级权限/自定义角色) → 详见 [aitable-advperm.md](./aitable/aitable-advperm.md)
+### advperm (高级权限/自定义角色) → 详见 [aitable-advperm-index.md](./aitable/aitable-advperm-index.md)
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
