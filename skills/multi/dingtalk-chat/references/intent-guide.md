@@ -79,7 +79,6 @@
 | "DING接收状态/谁收到了DING" | DING 接收状态 | `ding message receiver-status` | `chat message read-status` | ding 是独立顶层命令；receiver-status 查 DING 接收；chat message read-status 查普通消息已读 |
 | "发DING/DING通知" | 发送 DING 消息 | `ding message send` | `chat message send` | DING 是钉钉的强提醒（应用内/短信/电话），独立顶层命令；普通群消息用 chat |
 | "撤回DING" | 撤回 DING 消息 | `ding message recall` | `chat message recall` | DING 撤回独立命令；chat recall 是撤回普通聊天消息 |
-| "列出可用的 A2A Agent / 流式问 Agent" | Agent 发现与协作通信 | `a2a` | `chat` | A2A 协议与 `dws a2a`，不是群聊会话 |
 | "搜一下智能化方案/最近 OKR 相关邮件/最近发版相关消息" | 搜企业知识内容 | `aisearch enterprise` | `doc search` / `mail search` / `chat message search` | 跨文档、消息、日程、听记、邮件等企业内容语义检索走 enterprise；具体 `queries/types/time-range` 抽槽见 `aisearch.md` |
 | "我发给某人的消息/邮件/文档/今天我干了什么" | 搜行为记录 | `aisearch behavior` | `chat` / `mail` / `doc` / `report` | 关注“谁对什么做过什么”，走 behavior；具体 `behavior-type/direction/chat-scope` 抽槽见 `aisearch.md` |
 | "把这段文字翻译成英文/translate this" | 通用文本翻译 | `chat text translate` | `doc` / `aisearch` | 纯文本翻译，不是文档编辑或语义搜索 |

@@ -1,8 +1,5 @@
 # doc export（在线文档导出为 docx/markdown/pdf）
 
-> **前置条件（MUST READ）：** 执行本命令前，必须先用 Read 工具读取以下文件：
-> 1. [`../doc.md`](../doc.md) — 命令路由 + 场景索引 + 意图判断 + 工作流
-
 > **路由前置判断**：用户说「下载/导出」时**必须**先用 [`./doc-info.md`](./doc-info.md) `info --node <ID> --format json` 查 `contentType`：
 > - `contentType` 为 `ALIDOC`（在线文档）→ **必须用 `export`**，禁止用 `download`
 > - `contentType` 为 `DOCUMENT`/`IMAGE`/`VIDEO` 等（已有文件）→ 用 `dws drive download`（详见 [`../drive.md`](../../../dingtalk-drive/references/drive.md)）
@@ -99,6 +96,5 @@ dws doc export get --job-id <JOB_ID> --format json
 
 ## 参考
 
-- [`../doc.md` §意图判断](../doc.md#意图判断)（如何路由到本命令）
 - [`./doc-info.md`](./doc-info.md)（前置：判断 contentType=ALIDOC 才走 export）
 - [`../drive.md`](../../../dingtalk-drive/references/drive.md)（非 ALIDOC 文件用 `dws drive download`）

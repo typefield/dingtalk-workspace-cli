@@ -18,6 +18,7 @@ metadata:
 <!-- SAFETY_PREAMBLE_INJECT -->
 
 > 命令参考：[aitable.md](references/aitable.md)；复杂命令按需加载 `references/aitable/*.md`；剧本：[06-data-analytics.md](references/06-data-analytics.md)。
+> 高频模块：[Base](references/aitable/aitable-base-index.md) · [Table](references/aitable/aitable-table-index.md) · [Field](references/aitable/aitable-field-index.md) · [Record](references/aitable/aitable-record-index.md) · [View](references/aitable/aitable-view-index.md) · [Form](references/aitable/aitable-form-index.md) · [Workflow](references/aitable/aitable-workflow-index.md)。
 
 ## 意图表
 
@@ -105,7 +106,7 @@ metadata:
 
 ## 高频硬约束
 
-- 创建/改字段/写记录是多轮连续任务时，不能在"让我执行/先获取 ID"后停下；必须实际调用对应 `dws aitable` 命令并验证结果。
+- 创建 Base、改字段或写记录时，固定按“获取真实 ID → 执行写命令 → 回读验证”顺序完成，禁止跳过任一步。
 - 字段重命名使用 `dws aitable field update --base-id <baseId> --table-id <tableId> --field-id <fieldId> --name "<新名称>" --format json`；先 `field get` 找真实 `fieldId`，不要猜字段名能直接更新。
 - 写记录前必须 `field get` 获取 `fieldId` 与类型；`record create/update` 的 `cells` key 用 `fieldId`，不是字段中文名。长 JSON 使用 `--records-file`。
 - 表或字段创建返回名称被系统自动加后缀时，后续必须使用返回的真实 `tableId`/`fieldId`，不要继续按原名称猜。
@@ -122,4 +123,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)。
-

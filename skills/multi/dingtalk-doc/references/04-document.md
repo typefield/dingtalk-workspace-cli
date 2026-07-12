@@ -1,5 +1,16 @@
 # 文档知识
 
+## 模板保形生成
+
+已有 alidocs 文档需要“按模板生成、复刻或生成同形态变体”时，优先在原生文档层复制，避免 `doc read` 转成 Markdown 后重建导致样式丢失：
+
+1. `dws drive copy --node <SOURCE_NODE_ID> --folder <FOLDER_NODE_ID> --format json` 复制原文档。
+2. 从返回中取得副本 `nodeId`，再用 `dws drive rename --node <COPY_NODE_ID> --name "<新名称>" --format json` 重命名。
+3. 用 `dws doc block list --node <COPY_NODE_ID> --format json` 定位需要替换的块，仅在副本上执行 `doc block update`。
+4. 回读副本的关键块，确认文字已替换且原布局、表格与样式仍保留。
+
+不要用 `doc read + doc create` 重建要求保形的模板文档。
+
 > lite recipe 见 [SKILL.md 速查表](../SKILL.md)。
 
 | Recipe | 行动指南（固定路线） |

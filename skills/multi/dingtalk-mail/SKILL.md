@@ -17,7 +17,9 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> 命令参考：[mail.md](references/mail.md)。复杂搜索、附件、批量处理、草稿等多步邮件场景参考：[09-mail.md](references/09-mail.md)。
+> 渐进式参考：[mail-index.md](references/mail-index.md)。复杂搜索、附件、批量处理、草稿等多步邮件场景参考：[09-mail.md](references/09-mail.md)。先按索引选择专题。
+
+> 旧路径兼容入口：[mail.md](references/mail.md)。
 
 ## 意图表
 
@@ -55,11 +57,11 @@ metadata:
 **触发**：发邮件/写邮件/群发。
 
 1. **发件邮箱（必须）**：`dws mail mailbox list` 取自己邮箱。
-2. **收件邮箱（必须）**：地址直接用；姓名按 [mail.md](references/mail.md) "查找他人邮箱地址"流程（`mail user search` 等）获取，**禁止**猜测。
+2. **收件邮箱（必须）**：地址直接用；姓名按 [mail-message-commands.md](references/mail-message-commands.md) “查找他人邮箱地址”流程（`mail user search` 等）获取，**禁止**猜测。
 3. **执行（必须）**：`dws mail message send --from <发件邮箱> --to <收件邮箱> --subject "<主题>" --content "<正文>" --format json`；按需 `--cc`/`--attachment`/`--inline-attachment`。
-4. **验证（必须）**：从返回取邮件 ID，可 `dws mail message verify --email <发件邮箱> --id <id> --format json` 查发送状态。
+4. **验证（必须）**：从返回取 `internetMessageId`，可 `dws mail message verify --email <发件邮箱> --internet-message-id <internetMessageId> --format json` 查发送状态。
 
-**禁止**：猜测收件邮箱、发送后不确认状态就答复"已发送"。
+**完成条件**：收件邮箱来自真实解析结果，且发送返回或 `message verify` 显示成功。
 
 ### SOP-4 回复 / 转发（reply-forward）
 
@@ -72,7 +74,7 @@ metadata:
 
 ## 高频硬约束
 
-- 用户要"完整内容/看看这封邮件/正文"时，`message search` 命中后必须继续调用 `dws mail message get --email <邮箱> --id <messageId> --format json`；不要只列候选后停下。
+- 用户要“完整内容 / 看看这封邮件 / 正文”时，`message search` 只负责定位 messageId，随后用 `dws mail message get --email <邮箱> --id <messageId> --format json` 获取正文。
 - 搜到多封邮件时，若用户给了明确主题、附件名、发件人或时间线索，先选最匹配的一封执行 `message get`；只有同等候选无法判断时才询问用户。
 - 附件链路固定三步：`message search` → `attachment list --email <邮箱> --id <messageId>` → `attachment download --email <邮箱> --message-id <messageId> --attachment-id <attachmentId> --name <文件名>`；不存在批量下载命令。
 - 写入类操作（发送、回复、转发、删除、批量移动）按安全策略确认；只读查看、搜索、附件列表、下载不需要确认。
@@ -85,4 +87,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

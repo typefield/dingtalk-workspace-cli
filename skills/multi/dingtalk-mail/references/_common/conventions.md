@@ -38,7 +38,7 @@
 | `todoTaskId` | `todo task list` | `todo task update/done --task-id` |
 | `reportId` | `report inbox list` / `report outbox list` | `report entry get/stats --report-id` |
 | `baseId` / `tableId` | `aitable base search` | `aitable record query --base-id --table-id` |
-| `dentryUuid` | `drive list` / `drive mkdir` | `drive info/download --file-id`、`drive list/mkdir/upload --parent-id` |
+| `dentryUuid` | `drive list` / `drive mkdir` | `drive info/download --node`、`drive list/mkdir/upload --folder` |
 | `dentryId` | `drive info` 的数字字段 | 仅用于 `chat message send --dentry-id` |
 
-**ID 边界硬约束**：`dentryId` 通常是纯数字，只表示聊天文件消息需要的钉盘条目数字 ID；它不是父目录 ID。遇到 `drive --parent-id`、`doc --node`、`wiki node --folder` 时，只能使用 `dentryUuid` / `nodeId` / 文档 URL。若当前上下文只有数字型 `dentryId`，必须先重新 `drive list` / `drive search` / `wiki node list` 获取正确 ID，不能把该数字直接代入后续命令。
+**ID 边界硬约束**：`dentryId` 通常是纯数字，只表示聊天文件消息需要的钉盘条目数字 ID；它不是父目录 ID。遇到 `drive --node/--folder`、`doc --node/--folder`、`wiki node --folder` 时，只能使用 `dentryUuid` / `nodeId` / 文档 URL。若当前上下文只有数字型 `dentryId`，必须先重新 `drive list` / `drive search` / `wiki node list` 获取正确 ID，不能把该数字直接代入后续命令。

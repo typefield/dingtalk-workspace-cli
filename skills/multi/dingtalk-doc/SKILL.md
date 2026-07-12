@@ -18,6 +18,7 @@ metadata:
 <!-- SAFETY_PREAMBLE_INJECT -->
 
 > 命令参考：[doc.md](references/doc.md)；剧本：[04-document.md](references/04-document.md)。
+> 高频模块：[阅读/元信息](references/doc/doc-info-index.md) · [创建/写入/块编辑](references/doc/doc-write-index.md) · [媒体/评论/导出](references/doc/doc-media-index.md) · [导入/版本/模板](references/doc/doc-extra-index.md) · [JSONML](references/format/doc-jsonml-index.md)。
 
 ## 参数硬约束
 
@@ -61,9 +62,9 @@ metadata:
 **触发**：新建文档/写一篇/建文字文档。
 
 1. **执行（必须）**：`dws doc create --name "<标题>" --folder <FOLDER_NODE_ID> --content-file <tmp.md> --format json`（长/多行内容用 `--content-file`，不要用 `--content` 拼长串）。
-2. **验证（必须）**：从返回取 `nodeId`，立即 `dws doc info --node <nodeId> --format json` 回读确认。
+2. **验证（必须）**：从返回取 `nodeId`，立即 `dws doc read --node <nodeId> --format json` 回读正文；仅需确认类型、名称或补取链接时再用 `doc info`。
 
-**禁止**：创建后不回读就答复"已创建"、把 `--folder` 当成空间 ID 传入。
+**完成条件**：创建结果返回真实 `nodeId`，且正文回读成功；`--folder` 只能使用文档文件夹 nodeId，不能传空间 ID。
 
 ### SOP-3 覆盖/追加内容（write-content）
 
@@ -78,7 +79,7 @@ metadata:
 
 **触发**：导出文档/下载文档/转 PDF·Markdown。
 
-1. **判类型（必须）**：先 `dws doc info --node <nodeId> --format json`；在线文档 → `dws doc export --node <nodeId> --format <pdf|markdown> --format json`；普通文件 → 切 `dingtalk-drive` 用 `dws drive download --id <nodeId> --output <path>`。
+1. **判类型（必须）**：先 `dws doc info --node <nodeId> --format json`；在线文档 → `dws doc export --node <nodeId> --format <pdf|markdown> --format json`；普通文件 → 切 `dingtalk-drive` 用 `dws drive download --node <nodeId> --output <path>`。
 
 **禁止**：不分类型一律走 `doc export`（普通文件会失败）、跳过 `doc info` 判断。
 
@@ -88,9 +89,9 @@ metadata:
 
 1. **固定顺序（必须）**：`dws doc block list --node <nodeId> --format json` → 选真实 `blockId` → `dws doc block insert|update|delete --node <nodeId> --block-id <blockId> ...` → 再次 `doc block list` 验证。
 2. **删除（必须）**：删除块**必须**已有用户明确删除意图或二次确认。
-3. **复杂块（必须）**：插入引用/代码/表格/分栏/附件/图片前，**必须**先读 [doc.md](references/doc.md) 对应小节，**禁止**只停在"准备查看 help"——说"我将插入..."后必须立即执行命令。
+3. **复杂块（必须）**：插入引用/代码/表格/分栏/附件/图片前，先按 [写入索引](references/doc/doc-write-index.md) 与 [JSONML 索引](references/format/doc-jsonml-index.md) 确认对应命令和元素结构；写后按第 1 步回读验证。
 
-**禁止**：编造 blockId、未确认就删除、把完整 `--help` 输出当成最终结果答复用户。
+**禁止**：编造 blockId、未确认就删除。命令帮助只用于确认参数，操作结果必须来自实际命令与回读。
 ### SOP-6 导入本地文件为在线文档（import-file）
 
 **触发**：导入 Word / Excel / Markdown / 本地文件为在线文档。
@@ -106,10 +107,10 @@ metadata:
 
 - 在目标文件夹创建文字文档：`dws doc create --name "<标题>" --folder <FOLDER_NODE_ID> --content-file <tmp.md> --format json`。拿到 `nodeId` 后立即回读。
 - 块级编辑固定顺序：`doc block list --node <nodeId>` → 选 `blockId` → `doc block insert/update/delete` → `doc block list` 验证。删除块必须已有用户明确删除意图或二次确认。
-- 插入引用块、代码块、表格、分栏、附件、图片时，优先读 [doc.md](references/doc.md) 对应小节，不要只停在"准备查看 help"。说出"我将插入..."后必须立即执行对应 terminal 调用。
-- 用户要求多个子文档/附件/块操作时，按 checklist 串行完成；最后一条 assistant 消息不能停在"接下来我要..."，必须有实际工具调用或明确失败原因。
+- 插入引用块、代码块、表格、分栏、附件、图片时，按 [写入索引](references/doc/doc-write-index.md) 选择命令与结构，并在写后回读。
+- 多个子文档、附件或块操作按依赖顺序执行；每一步复用上一条命令返回的真实 ID，最后统一回读受影响内容。
 - 用户说"读取并下载/导出"时，先 `doc info --node ... --format json` 判断类型：在线文档用 `doc export`，普通文件切到 `dingtalk-drive` 用 `drive download`。
-- 所有 dws 命令带 `--format json`；仅参数不确定时查 `--help`，不要把完整 help 当成最终结果。
+- 所有 dws 命令带 `--format json`；仅参数不确定时查 `--help`，并以实际命令结果完成验证。
 
 ## 危险操作
 
@@ -124,4 +125,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

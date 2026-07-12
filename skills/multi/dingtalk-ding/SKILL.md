@@ -26,7 +26,7 @@ metadata:
 | "DING 张三" / "应用内紧急通知" | `dws ding message send --type app --users <userId> --content "<内容>"` |
 | "短信 DING" | `dws ding message send --type sms --users <userId> --content "<内容>"` |
 | "电话 DING" / "电话叫人" | `dws ding message send --type call --users <userId> --content "<内容>"` |
-| "撤回 DING" | `dws ding message recall --open-ding-id <id>` |
+| "撤回 DING" | `dws ding message recall --robot-code <robotCode> --id <openDingId>` |
 | "以我的名义发 DING / 个人 DING" | `dws ding message send-personal --users <openDingTalkId> --content "<内容>"` |
 | "以我的名义撤回 DING" | `dws ding message recall-personal --id <openDingId>` |
 | "DING 历史 / 接收状态" | `dws ding message list` / `dws ding message receiver-status` |
@@ -38,4 +38,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

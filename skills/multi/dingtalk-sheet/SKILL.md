@@ -18,6 +18,7 @@ metadata:
 <!-- SAFETY_PREAMBLE_INJECT -->
 
 > 命令参考：[sheet.md](references/sheet.md)。
+> 高频模块：[读取](references/sheet/sheet-read-index.md) · [写入](references/sheet/sheet-write-index.md) · [格式](references/sheet/sheet-format-index.md) · [查询](references/sheet/sheet-query-index.md) · [可视化](references/sheet/sheet-visual-index.md) · [导入导出](references/sheet/sheet-export-index.md)。
 
 ## 意图表
 
@@ -46,11 +47,11 @@ metadata:
 ## 高频硬约束
 
 - `sheet create` 后必须从返回结果提取真实 `nodeId` 或文档 URL，后续 `range update/read` 原样传给 `--node`；如果返回里同时有 `nodeId` 和 `url`，优先用 `nodeId`。
-- 写入区域前先 `sheet list --node <nodeId> --format json` 获取真实 `sheetId`；`range update` 成功后默认信任工具返回的 `success` / `updatedRows` / `updatedCells` / `message`，直接基于返回结果答复。用户明确要求“不要再读/信任工具返回”时，严禁再对同一区域或其子集调用 `range read` / `range get` 验证。
+- 写入区域前先 `sheet list --node <nodeId> --format json` 获取真实 `sheetId`。`range update` 返回的 `success` / `updatedRows` / `updatedCells` / `message` 可作为写入确认；仅在任务需要内容校验且用户未禁止额外读取时调用 `range read`。
 - `range update` 的 `--values` 必须是二维 JSON，行列数量与 `--range` 完全一致；批量样式用 `range batch-set-style --batch <json文件>`。
 - 整格超链接只能用 `range update` 的 cell-level `hyperlink` 字段：`{"type":"text","text":"显示文本","hyperlink":{"type":"path","link":"https://..."}}`。不要走 `doc`，不要用 `--hyperlinks`，不要把整格链接写成 richText 片段链接。
 - 搜索必须用 `sheet find`，不要用 `range read` 后本地过滤；“精确/完全匹配/等于”必须加 `--match-entire-cell`，“搜公式”必须加 `--match-formula`，“正则且不区分大小写”必须同时加 `--use-regexp --match-case=false`。
-- 同一参数错误最多纠正 2 次；若持续 `nodeId 格式不合法`，回到 `doc info --node <URL>` 或 `sheet create` 返回重新取 ID，不要无意义重试。
+- 出现 `nodeId 格式不合法` 时，回到 `doc info --node <URL>` 或 `sheet create` 的返回重新提取真实 ID，禁止复用无效值重试。
 
 ## 跨产品协作
 
@@ -59,4 +60,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)。
-

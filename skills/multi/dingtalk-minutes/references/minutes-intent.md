@@ -1,4 +1,4 @@
-# 听记意图判断与工作流
+# 听记意图判断
 
 ## 意图判断
 
@@ -193,7 +193,7 @@
 - 用户直接说"把发言人1改成张三" → `speaker replace`（无需走推断链路）
 - 用户想提取待办 → `get todos`
 
-用户说"帮我看看某人说了什么/某人在会上提了哪些观点/某人有什么发言" → 走**发言人识别与总结**完整链路（详见 [获取听记语音转写原文](#获取听记语音转写原文) 章节中的"发言人识别与总结执行链路"）
+用户说"帮我看看某人说了什么/某人在会上提了哪些观点/某人有什么发言" → 走**发言人识别与总结**完整链路（详见 [获取听记语音转写原文](./minutes-commands.md#获取听记语音转写原文) 章节中的"发言人识别与总结执行链路"）
 
 **自然语言示例：**
 
@@ -216,7 +216,7 @@
 
 **关键约束（必须遵守）：**
 - 这是一个**完整的识别 → 推断 → 确认 → 总结 → 引导替换**链路，不要只做总结就结束，**必须引导用户将「发言人1」等占位符替换为真实姓名**
-- 完整执行链路见 [获取听记语音转写原文](#获取听记语音转写原文) 章节中的"发言人识别与总结执行链路"
+- 完整执行链路见 [获取听记语音转写原文](./minutes-commands.md#获取听记语音转写原文) 章节中的"发言人识别与总结执行链路"
 
 ### 通过关键词模糊匹配确认发言人（与 `get transcription` 联动）
 当用户在拉取完转写原文（且已按发言人聚类）之后，提供形如『某某人主要讲了 XX』『某某人负责 YY』『某某人这次的核心是 ZZ』的描述时，**不要直接做替换**，而是按下面的链路推进：
@@ -237,7 +237,7 @@
 - "提到财务数据的是 CFO 老周"
 - "讲华东市场竞品分析的那个人是李四"
 
-详细工作流见 [获取听记语音转写原文](#获取听记语音转写原文) 章节中的"四阶段工作流"。
+详细工作流见 [获取听记语音转写原文](./minutes-commands.md#获取听记语音转写原文) 章节中的发言人工作流。
 
 ### 更新/修改纪要
 用户说"修改纪要/更新纪要/编辑纪要内容/重新整理纪要/纪要格式优化/纪要精简" → 先 `get summary` 获取纪要原文，AI 修改后再 `update summary` **写回**
@@ -317,13 +317,13 @@
 用户说"听记详情/听记信息" → `get info`
 用户说"摘要/总结/会议纪要/纪要" → `get summary`
 用户说"关键字/关键词" → `get keywords`
-用户说"原文/转写/录音文字/逐字稿" → `get transcription`（**默认拉取全部原文**，自动翻页直到拉完，**拉完后必须主动询问用户是否按发言人聚类**，详见 [获取听记语音转写原文](#获取听记语音转写原文) 的"四阶段工作流"）
+用户说"原文/转写/录音文字/逐字稿" → `get transcription`（需要完整原文时按 `nextToken` 自动翻页；需要发言人归属时再进入 [发言人工作流](./minutes-commands.md#获取听记语音转写原文)）
 用户说"会议待办/听记待办/待办事项" → `get todos`
 用户说"批量查询/查多个听记" → `get batch`
 用户说"音频地址/音频链接/录音文件/下载录音/音频下载/视频文件/媒体地址" → `get audio`
 
 **转写原文拉取时机判断（必须遵守）：**
-- **明确要看原文** → 调用 `get transcription`，自动翻页拉取所有原文；**累积超过 12000 字符时暂停，询问用户是否继续**
+- **明确要看原文** → 调用 `get transcription`，需要完整原文时按 `nextToken` 拉取到空；输出按用户目标摘要或提取，避免无差别粘贴全文
   - 示例："帮我看看转写原文"、"分析一下这篇听记的原文"、"把逐字稿发给我"
 - **未明确要看原文** → **不要**调用 `get transcription`，用其他更合适的命令响应
   - 示例："查一下和悟空相关的听记" → 应走 `list`，不需要拉原文
@@ -412,92 +412,3 @@
 - **格式**: `https://shanji.dingtalk.com/app/transcribes/{taskUuid}`
 - **示例**: `https://shanji.dingtalk.com/app/transcribes/76327569643231383535353939365f3436383537393431335f32`
 用户传入听记 URL（如 `https://shanji.dingtalk.com/app/transcribes/xxx`），从 URL 提取 taskUuid，再执行对应的 get/update 操作
-
-## 核心工作流
-
-```bash
-# 0. 发起听记（开始录音）
-dws minutes record start --format json
-
-# 1. 查看我的听记列表 — 提取 taskUuid
-dws minutes list mine --format json
-dws minutes list mine --max 10 --next-token <nextToken> --format json
-dws minutes list mine --query "周会" --format json
-
-# 1b. 查看共享给我的听记
-dws minutes list shared --max 20 --format json
-dws minutes list shared --query "日报" --format json
-
-# 1c. 查看我有权限访问的所有听记（支持关键字和时间范围筛选）
-dws minutes list all --format json
-dws minutes list all --query "周会" --start "2026-03-01T00:00:00+08:00" --end "2026-03-20T23:59:59+08:00" --format json
-
-# 2. 获取 AI 摘要
-dws minutes get summary --id <taskUuid> --format json
-
-# 3. 查看完整转写原文（拉完后默认按时间线返回，AI 必须主动追问"是否按发言人聚类"）
-dws minutes get transcription --id <taskUuid> --format json
-# 3a. 用户确认聚类 → AI 在本地按 speakerNick 分组并提取核心要点（无需新调用 dws）
-# 3b. 用户提供"某某人讲了 XX" → AI 模糊匹配关键词后，引导确认替换发言人
-dws minutes speaker replace --id <taskUuid> --from "发言人1" --to "李总" --format json
-
-# 4. 提取待办事项
-dws minutes get todos --id <taskUuid> --format json
-
-# 4b. 获取音频/视频地址（用于下载或播放原始媒体文件）
-dws minutes get audio --id <taskUuid> --format json
-
-# 5. 修改标题
-dws minutes update title --id <taskUuid> --title "新标题" --format json
-
-# 6. 更新纪要内容
-dws minutes update summary --id <taskUuid> --content "新的纪要内容" --format json
-
-# 7. 录音控制（基于 start 返回的 taskUuid）
-dws minutes record pause --id <taskUuid> --format json
-dws minutes record resume --id <taskUuid> --format json
-dws minutes record stop --id <taskUuid> --format json
-
-# 8. 思维导图
-dws minutes mind-graph create --id <taskUuid> --format json
-dws minutes mind-graph status --id <taskUuid> --format json
-
-# 9. 替换发言人
-dws minutes speaker replace --id <taskUuid> --from "张三" --to "李四" --format json
-
-# 9b. 发言人段落总结（异步：create 触发 → 延迟 5s → 轮询 get，最多 20 次）
-dws minutes speaker summary create --ids <taskUuid1,taskUuid2> --format json
-# 等待至少 5 秒...
-dws minutes speaker summary get --ids <taskUuid1,taskUuid2> --format json
-# 若返回为空，继续等待 5s 后重试，最多 20 次
-
-# 10. 添加个人热词
-dws minutes hot-word add --words "OKR,钉钉,Copilot" --format json
-
-# 11. 查找替换听记文字
-dws minutes replace-text --id <taskUuid> --search "旧文字" --replace "新文字" --format json
-
-# 12. 文件上传转听记（三步流程）
-# 12a. 创建上传会话，获取预签名 URL 和 sessionId
-dws minutes upload create --file-name "meeting.mp4" --file-size 102400 --format json
-# 12b. 用 HTTP PUT 上传文件到预签名 URL（不带 HEADER）
-curl -X PUT "<presignedUrl>" -T "/path/to/meeting.mp4"
-# 12c. 通知服务端上传完成，创建听记
-dws minutes upload complete --session-id <sessionId> --format json
-# 12d.（可选）取消上传会话
-dws minutes upload cancel --session-id <sessionId> --format json
-```
-
-## 上下文传递表
-
-| 操作 | 从返回中提取 | 用于 |
-|------|-------------|------|
-| `list mine` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
-| `list shared` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
-| `list all` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
-| `get batch` | 各听记 `taskUuid` | 进一步查询详情 |
-| `get audio` | 音频/视频 OSS 地址 | 用 HTTP GET 下载录音文件 / 在浏览器播放 |
-| `record start` | `taskUuid`/`uuid` | record pause/resume/stop 的 --id |
-| `upload create` | `sessionId`、`presignedUrl` | HTTP PUT 上传文件；upload complete/cancel 的 --session-id |
-| `mind-graph create` | 任务状态 | mind-graph status 轮询 |
-

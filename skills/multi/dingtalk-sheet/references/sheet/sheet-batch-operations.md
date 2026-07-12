@@ -22,14 +22,10 @@
 - 原子事务：任一操作失败则整批回滚
 - 传 `--continue-on-error` 可切换为宽松模式（失败继续）
 
-用户说"批量写入多个结构化 table/跨 sheet 写入 dataframe/table":
-- 不使用 `batch-update`；直接调用 `dws sheet table-put --node <NODE_ID> --sheets '{"sheets":[...]}'`
-- `table-put` 自身支持一次写入多个 sheet spec，写入后用 `table-get` 回读 dtype / format / 数据行数
-
 用户说"批量创建行列分组/批量取消行列分组/同时调整尺寸并分组":
 - 连续行/列分组 → `group-dimension`
 - 取消连续行/列分组 → `ungroup-dimension`
-- 分组回读用 `sheet info --include groups`
+- 分组回读用 `sheet info`
 - `group-dimension` 在 batch 中只适合默认展开分组；需要创建后立即折叠时，用独立 `dws sheet group-dimension --group-state fold`
 
 **何时推荐使用 `batch-update`**：
@@ -42,8 +38,7 @@
 当同一工具需要对多个区域重复调用时，**推荐**改用 `batch-update` 合并为单次请求——`batch-update` 是原子提交（要么全成功要么整批回滚）；逐个调用非原子，中途失败会留下半成品。
 
 **不可放进 `--operations` 的操作**（强行写入会被校验拒或行为未定义）：
-- `range read` / `csv-get` / `table-get`（读取操作，不在 batch dispatch 表中；结构化 table 回读需在 batch 外单独调用）
-- `table-put`（当前 `batch-update` 不支持结构化 table 写入；请直接调用独立 `dws sheet table-put`）
+- `range read` / `csv-get`（读取操作，不在 batch dispatch 表中）
 - `range sort` / `range move-to`（尚未支持，后续版本补充）
 - `write-image` / `media-upload` / `create-float-image` / `update-float-image`（需本地上传或依赖前置上传句柄）
 - `set-style` / `range batch-set-style`（自身已是批量入口，不可再嵌套）
@@ -102,7 +97,6 @@ Notes:
   - 当需要对多个区域执行相同清除时，优先使用 `range batch-clear`（更简洁）
   - 典型场景：先插入行列再写入数据、先清除再写入、批量合并+调整行高列宽
   - `group-dimension` 在 batch 中只适合默认展开分组；需要 `--group-state fold` 时请使用独立 `dws sheet group-dimension`
-  - `table-put` 不支持放进 batch-update；结构化 table 请用独立 `dws sheet table-put`
 ```
 
 ### 子操作定位规则
@@ -118,7 +112,6 @@ Notes:
 ]
 ```
 
-`table-put` / `table-get` 不支持放进 `batch-update`。结构化 table 写入请直接调用 `dws sheet table-put`，写入完成后在 batch 外单独调用 `table-get` 回读校验。
 
 ## 校验与预览
 
@@ -134,7 +127,6 @@ CLI 在发送请求前执行以下本地校验（不消耗网络请求）：
 | 每项必须是 object | `operations[N] 不是 object` | `--operations '["string"]'` |
 | `toolName` 必须是支持的 CLI 命令名 | `unsupported toolName "xxx"` | 传 `"batch-update"`（禁止嵌套）或拼写错误 |
 | 禁止嵌套 `batch-update` | 同上（`batch-update` 不在 dispatch 表中，自动拦截） | `toolName: "batch-update"` |
-| 禁止 `table-put` / `table-get` | `unsupported toolName "table-put"` | 结构化 table 应使用独立 `table-put` |
 
 > `input` 内的字段（如 `sheet-id`、`range`、`values` 等）由服务端校验，CLI 不提前拦截——传入空值或缺失必填字段时，请求会到达服务端再返回错误。
 
@@ -235,7 +227,7 @@ Cause: The requested resource was not found by the identifier 'NonExistentSheet'
 
 ### 批量创建/取消行列分组
 
-分组属于工作表结构元数据，批次完成后用 `sheet info --include groups` 回读 `rowGroups` / `columnGroups`，不要用 `range read` 校验。回读项中的 `level` 是 1-based，`collapsed` 表示当前折叠状态。
+分组属于工作表结构元数据，批次完成后用 `sheet info` 回读 `rowGroups` / `columnGroups`，不要用 `range read` 校验。回读项中的 `level` 是 1-based，`collapsed` 表示当前折叠状态。
 
 ```jsonc
 [
@@ -269,8 +261,7 @@ Cause: The requested resource was not found by the identifier 'NonExistentSheet'
 - ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **需要对多个区域执行相同清除操作时，用 `range batch-clear`**：一次原子请求清除多个区域（可跨工作表），失败时整批回滚
 - ★ **需要组合多个不同写操作（清除+写入等）时，用 `batch-update`**：原子事务，任一操作失败则整批回滚，避免留下半成品
-- ★ **table 写入不进 batch-update**：当前 `batch-update` 不支持结构化 table 写入；结构化 table 请直接调用 `dws sheet table-put`
 - ★ **批次完成后必须回读校验**：值写入用 `range read` 或 `csv-get` 抽样回读受影响区域；结构变更用 `sheet info` 回读
 - ★ **`batch-update` 不支持嵌套**：`--operations` 中的 `toolName` 必须是原子操作，不可再嵌套 `batch-update`
-- `batch-update` 支持 `group-dimension` / `ungroup-dimension`；分组结果用 `sheet info --include groups` 回读
+- `batch-update` 支持 `group-dimension` / `ungroup-dimension`；分组结果用 `sheet info` 回读
 - `batch-update` 中 `group-dimension` 只适合默认展开分组；需要 `fold` 初始状态时使用独立 `group-dimension`

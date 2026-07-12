@@ -72,7 +72,7 @@ Example:
   dws sheet info --node <NODE_ID>
   dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID>
   dws sheet info --node <NODE_ID> --sheet-id "Sheet1"
-  dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --include groups
+  dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID>
 Flags:
       --node string       表格文档 ID 或 URL (必填)
       --sheet-id string   工作表 ID 或名称 (不传则返回第一个工作表)
@@ -85,7 +85,7 @@ Flags:
 
 最后非空数据边界通过 `nonEmptyRange` 返回，字段均为 A1/UI 语义：`range` 是从 `A1` 到最后非空单元格的范围，`lastCell` 是最后非空单元格地址，`lastRow` 是 1-based 行号，`lastColumn` 是列字母。空表时 `nonEmptyRange` 为 `null`。不要使用旧的 0-based 字段 `lastNonEmptyRow` / `lastNonEmptyColumn`。
 
-需要读取行列分组时，加 `--include groups`。返回字段：
+需要读取行列分组时，检查 `sheet info` 返回中的以下字段：
 - `rowGroups`：行分组列表，单项包含 `range`、`startRow`、`endRow`、`count`、`level`、`collapsed`
 - `columnGroups`：列分组列表，单项包含 `range`、`startColumn`、`endColumn`、`count`、`level`、`collapsed`
 

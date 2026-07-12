@@ -5,7 +5,6 @@
 | 用户要做 | 正确命令 | 动手前读 | 禁止写法 |
 |---------|---------|----------|----------|
 | 快速查看数据 / 大表分批读取 | `csv-get` | [sheet-read-data](./sheet-read-data.md) | 不传 `--range` 全量 `range read` 大表 |
-| 按表格结构读写列名、类型、格式 | `table-get` / `table-put` | [sheet-read-data](./sheet-read-data.md)、[sheet-write-data](./sheet-write-data.md) | 把 table spec 塞进 `batch-update` |
 | 少量精确写入、公式、超链接、富文本、数据验证 | `range update` | [sheet-write-data](./sheet-write-data.md)、[sheet-formula](./sheet-formula.md) | 用 `csv-put` / `append` 写公式或富格式 |
 | 批量纯值写入 / CSV 粘贴 | `csv-put` | [sheet-write-data](./sheet-write-data.md) | 为大块纯值手写巨大 `--values` JSON |
 | 追加记录到末尾 | `append` | [sheet-write-data](./sheet-write-data.md) | 手算最后一行后 `range update` |

@@ -1,16 +1,15 @@
-# 前置条件 — 执行操作前必读
+# 文档参考选择
 
-## 前置条件 — 执行操作前必读
+只读取当前操作需要的参考，不要从命令 leaf 反向加载聚合 router：
 
-**CRITICAL — 执行对应操作前，MUST 先用 Read 工具读取以下子文件：**
+| 场景 | 参考 |
+|---|---|
+| 解析 URL、确认 nodeId 或文档类型 | [doc-info.md](./doc-info.md) |
+| 创建普通 Markdown 文档 | [doc-create.md](./doc-create.md) |
+| 长内容创建、分片或正文完整性验收 | [doc-create-workflow.md](./style/doc-create-workflow.md) |
+| 追加、覆盖或并发安全更新 | [doc-update.md](./doc-update.md) |
+| 块级精修 | [doc-block.md](./doc-block.md) |
+| 正式排版或统一风格 | [doc-style-guideline.md](./style/doc-style-guideline.md) |
+| JSONML、callout、分栏或复杂表格 | [doc-jsonml-cookbook.md](./format/doc-jsonml-cookbook.md) |
 
-1. **解析 URL / 定位文档**（几乎所有命令都需要先拿 nodeId）
-   → 必读 [`doc/doc-info.md`](./doc-info.md)（URL/dentryKey 提取规则、ID 边界、contentType 路由、**获取 nodeId 三种方式 A/B/C**）
-
-2. **创建或编辑文档内容**（`doc create` / `doc update` / `doc block insert|update`）
-   → 必读 [`doc/style/doc-update-workflow.md`](./style/doc-update-workflow.md)（**形态优先级硬规则：JSONML > element JSON > markdown**；markdown overwrite 会丢富结构）
-   - 从零创建时加读 [`doc/style/doc-create-workflow.md`](./style/doc-create-workflow.md)
-   - **任何 `doc create` 都必须先读 [`doc/style/doc-style-guideline.md`](./style/doc-style-guideline.md) §2.0 类型决策表 + §1 硬规则**（决定骨架 + 全局约束，不读就不知道用哪种骨架）
-   - 涉及 callout / 分栏 / 富 block 精修时再加读 style-guideline §4-§7 + [`doc/format/doc-jsonml-cookbook.md`](./format/doc-jsonml-cookbook.md)
-
-**未读以上文件就改写已有文档会导致富结构丢失、参数错误或样式不达标。其他命令（阅读 / 评论 / 权限 / 附件 / 下载导出 / 文件操作）按需查下方 §命令索引表跳转对应子文件加载，不必提前加载。**
+阅读、评论、权限、附件和导出等场景直接选择对应命令参考，无需先加载创建/更新工作流。

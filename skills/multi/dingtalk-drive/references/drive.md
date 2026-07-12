@@ -155,8 +155,8 @@ Flags:
 | extension | 文件类型 | 操作 | 命令 |
 |-----------|---------|------|------|
 | adoc | 在线文档 | 在线获取 Markdown 内容 | `dws doc read --node <fileId>` |
-| axls | 在线表格 | 在线读取表格数据 | `dws sheet get-all-sheets` → `dws sheet get-range` |
-| able | 多维表格 | 在线查询记录 | `dws aitable get-tables` → `dws aitable query-records` |
+| axls | 在线表格 | 在线读取表格数据 | `dws sheet list --node <nodeId>` → `dws sheet range read --node <nodeId> --sheet-id <sheetId>` |
+| able | 多维表格 | 在线查询记录 | `dws aitable table list --base-id <baseId>` → `dws aitable record query --base-id <baseId> --table-id <tableId>` |
 | 其他（pdf/docx/txt/png 等） | 普通文件 | **不支持在线分析**，需用户主动下载后本地查看 | `dws drive download` |
 
 ### 下载文件到本地
@@ -472,4 +472,4 @@ dws drive copy --node <源文件dentryUuid> --folder <目标文件夹fileId> --f
 ## 相关产品
 
 - [doc](../../dingtalk-doc/references/doc.md) — 文档内容读写/知识库空间，不是文件存储
-- [chat](../../dingtalk-chat/references/chat.md) — 上传文件到 drive 后可通过 Markdown 语法发送图片/文件消息
+- [chat](../../dingtalk-chat/references/chat-commands.md) — 上传文件到 drive 后可通过 Markdown 语法发送图片/文件消息

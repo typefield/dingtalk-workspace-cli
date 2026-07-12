@@ -15,7 +15,7 @@
 - 读取公式文本：使用 `dws sheet range read --value-render-option formula`。
 - 读取计算结果：使用 `dws sheet range read --value-render-option raw_value` 或默认 `formatted_value`。
 - 当前没有聚合式 `formula-verify` 工具，不能宣称已经完成全表零错误校验。
-- `csv-put` / `append` / `table-put` 不作为公式写入协议；`=` 开头内容可能按普通值或 table 数据处理。需要公式时用 `range update`。
+- `csv-put` / `append` 不作为公式写入协议；`=` 开头内容会按普通值处理。需要公式时用 `range update`。
 
 ## 命令选择
 

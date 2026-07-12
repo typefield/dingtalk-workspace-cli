@@ -1,5 +1,15 @@
 # 命令速查目录
 
+## 按需加载详细参数
+
+| 命令族 | 详见 |
+|---|---|
+| 邮箱选择、邮件列表/搜索/读取/发送 | [`mail-message-commands.md`](./mail-message-commands.md) |
+| 文件夹、附件、标签 | [`mail-folder-attachment-tag-commands.md`](./mail-folder-attachment-tag-commands.md) |
+| 会话、回复/转发、批量动作、撤回 | [`mail-thread-actions.md`](./mail-thread-actions.md) |
+| 草稿、用户搜索、模板、联系人 | [`mail-draft-directory-commands.md`](./mail-draft-directory-commands.md) |
+| 自动回复、黑白名单、收信规则 | [`mail-policy-commands.md`](./mail-policy-commands.md) |
+
 ## 命令速查目录
 
 | 命令 | 功能简述 |

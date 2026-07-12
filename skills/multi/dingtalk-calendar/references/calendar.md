@@ -122,7 +122,7 @@ Flags:
 **权限**：查询共享日历下的日程时，至少要有reader权限。
 **分页**：单次最多返回 `--limit` 指定的条数（默认/最大 100）；当结果超过 limit 时，返回体包含 `nextCursor` 字段。首次查询无需传 `--cursor`，仅在翻页时将上一次返回的 `nextCursor` 作为 `--cursor` 传入。
 
-补充：当前用户的个人日程也可用 `dws calendar event list-mine` 查询，参数与 `event list` 一致（含 `--limit` 和 `--cursor` 分页）。
+当前用户的个人日程使用 `dws calendar event list` 查询；参数包含 `--limit` 和 `--cursor` 分页。
 
 ### 获取日程详情
 ```

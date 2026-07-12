@@ -1,8 +1,5 @@
 # doc import（本地文件导入为在线文档）
 
-> **前置条件（MUST READ）：** 执行本命令前，必须先用 Read 工具读取以下文件：
-> 1. [`../doc.md`](../doc.md) — 命令路由 + 场景索引 + 意图判断 + 工作流
-
 > **支持的文件格式**：docx, doc, xlsx, xls, md, txt, xmind, mark
 > **文件大小限制**：20MB
 
@@ -112,5 +109,4 @@ dws doc import get --task-id <TASK_ID> --format json
 
 ## 参考
 
-- [`../doc.md` §意图判断](../doc.md#意图判断)（如何路由到本命令）
 - [`./doc-info.md`](./doc-info.md)（前置：理解文档标识）

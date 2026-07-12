@@ -69,7 +69,7 @@ metadata:
 
 **触发**：移动节点/复制节点/删节点。
 
-1. **执行（必须）**：移动 `dws wiki node move --workspace <workspaceId> --node-id <nodeId> --target-parent-id <目标>`；复制 `node copy`；删除 `node delete --node-id <nodeId>`（**必须**先与用户确认）。
+1. **执行（必须）**：移动 `dws wiki node move --workspace <workspaceId> --node <nodeId> --folder <目标文件夹nodeId>`；复制 `node copy`；删除 `node delete --node <nodeId>`（**必须**先与用户确认）。
 
 **禁止**：未确认就删除/移动、编造 nodeId/targetParentId。
 
@@ -88,4 +88,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

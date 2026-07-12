@@ -17,7 +17,9 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> 命令参考：[minutes.md](references/minutes.md)；剧本：[07-minutes.md](references/07-minutes.md)。
+> 渐进式参考：[minutes-index.md](references/minutes-index.md)；剧本：[07-minutes.md](references/07-minutes.md)。先按索引选择专题，不要一次性加载全部听记参考。
+
+> 旧路径兼容入口：[minutes.md](references/minutes.md)。
 
 ## 意图表
 
@@ -84,4 +86,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

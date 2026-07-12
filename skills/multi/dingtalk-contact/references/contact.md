@@ -276,7 +276,7 @@ Notes:
 > [!IMPORTANT]
 > **易混淆硬规则**：`relation list-my-followings` **只**返回"我特别关注的人员列表"（一组 openDingTalkId），**不**返回任何消息内容。
 >
-> **禁止路由到本命令的场景**（query 中同时包含『关注/特别关注/星标』和以下任一消息域动词/名词时，必须路由到 [`chat message list-focused`](../../dingtalk-chat/references/chat.md)）：
+> **禁止路由到本命令的场景**（query 中同时包含『关注/特别关注/星标』和以下任一消息域动词/名词时，必须路由到 [`chat message list-focused`](../../dingtalk-chat/references/chat-commands.md)）：
 > - 动词类：**发**了什么、**说**了什么/啥、**聊**了什么、**讲**了什么
 > - 名词类：**消息**、**聊天**、**动态**、**最新内容**
 >

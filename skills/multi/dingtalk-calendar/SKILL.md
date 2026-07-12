@@ -67,11 +67,11 @@ metadata:
 ## 执行硬约束
 
 - 多轮日程任务必须保留 `eventId`，后续加人、移人、订房、换房、改描述、删除都基于同一个 `eventId` 执行；不要重新创建重复日程。
-- 用户明确说"帮我订一个空闲会议室"时，`room search` 返回可用会议室后直接选择第一个可预订且不需要自定义审批的 `roomId` 执行 `room add`；不要把选择权抛回用户导致任务停住。
+- 用户明确授权“任意空闲会议室”时，`room search` 返回候选后选择第一个可预订且不需要自定义审批的 `roomId` 执行 `room add`；用户给了地点、容量或设备条件时按条件过滤。
 - 已有日程订房：`dws calendar room search --start ... --end ... --format json` → `dws calendar room add --event <EVENT_ID> --rooms <ROOM_ID> --format json` → `event get` 或 `room/busy` 验证。
 - 换会议室：先 `room delete --event <EVENT_ID> --rooms <OLD_ROOM_ID>`，再 `room add --event <EVENT_ID> --rooms <NEW_ROOM_ID>`，最后回查；不要只更新 `--location`。
 - 参会人变化用 `attendee add/delete`，日程描述变化用 `event update --desc`，删除日程用 `event delete --id`。用户当前消息已明确要求删除/取消时可直接执行；否则先确认。
-- 脚本失败或参数不完整时，立即降级到明确的 `dws calendar event/attendee/room` 命令，不要停在"我要查看用法"。
+- 脚本失败或参数不完整时，查明缺失参数后改用明确的 `dws calendar event/attendee/room` 命令完成同一流程。
 - 所有 dws 命令带 `--format json`；查询时间必须显式 `--start` / `--end`。
 
 ## 跨产品协作
@@ -86,4 +86,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-

@@ -9,7 +9,7 @@
 | "搜一下 OAuth2 接入文档" | 搜索开发文档 | `devdoc` | `doc search` | 搜索开放平台技术文档，不是钉钉内部内容 |
 | "帮我建一个项目跟踪表" | 创建数据表格 | `aitable` | `doc` / `sheet` | 涉及结构化数据/行列操作，不是富文本文档或电子表格 |
 | "帮我写个项目周报" | 创建钉钉文档 | `doc` | `aitable` | 富文本内容创作，不是数据表 |
-| "参照这个生成同样的 / 按模板生成 / 复刻 X / 同样的模板 X 月份的" + 已有 alidocs URL | 模板保形生成同形态变体 | `drive copy + drive rename + doc block update` → 见 [best_practices/04-document.md `template-based-generation`](../../dingtalk-doc/references/04-document.md#template-based-generation) | `doc read + doc create`（重写链） | adoc → markdown 是有损投影，read+create 会丢行高/单元格背景色/字号；copy 在 adoc 层保形复制后只在副本上局部修改 |
+| "参照这个生成同样的 / 按模板生成 / 复刻 X / 同样的模板 X 月份的" + 已有 alidocs URL | 模板保形生成同形态变体 | `drive copy + drive rename + doc block update` → 见 [模板保形生成](../../dingtalk-doc/references/04-document.md#模板保形生成) | `doc read + doc create`（重写链） | adoc → markdown 是有损投影，read+create 会丢行高/单元格背景色/字号；copy 在 adoc 层保形复制后只在副本上局部修改 |
 | "创建一个电子表格" | 创建表格文档 | `sheet` | `aitable` | Excel 式表格/单元格操作，不是多维表记录 |
 | "帮我读一下表格 A1:D10 的数据" | 读取单元格数据 | `sheet` | `aitable` | 按单元格区域读写，不是按记录查询 |
 | "这个 alidocs 表格链接帮我看下"（粘贴原始 URL） | 先 probe 节点类型 | `dws doc info --node` → 按 `extension` 路由 | 直接调 `sheet` | `alidocs/i/nodes/{id}` 可能是文档/axls/able/xlsx 等，禁止凭 URL 猜类型 |
@@ -109,7 +109,6 @@
 | "以我的名义发DING/个人发DING/用户身份DING" | 以用户身份发 DING | `ding message send-personal` | `ding message send` | send-personal 以用户身份发送，无需 robot-code；send 以机器人身份发送 |
 | "以我的名义撤回DING/个人撤回DING" | 以用户身份撤回 DING | `ding message recall-personal` | `ding message recall` | recall-personal 以用户身份撤回；recall 以机器人身份撤回 |
 | "消息转DING/把这条消息DING给某人/转发为DING" | 消息转 DING | `ding message send-by-message` | `ding message send-personal` | send-by-message 是将已有消息转为 DING，需指定原消息；send-personal 是直接发新 DING |
-| "列出可用的 A2A Agent / 流式问 Agent" | Agent 发现与协作通信 | `a2a` | `chat` | A2A 协议与 `dws a2a`，不是群聊会话 |
 | "把最近几次关于XX的会议汇总成报告" | 按主题汇总多次听记 | #5 generate-topic-report | #7 meeting-followup | #7 是单次会议听记跟进；多次会议按主题汇总属于工作汇报 |
 | "整理一下XX项目的所有讨论" | 跨源主题归档 | #5 generate-topic-report | #4 write-doc | #4 侧重单篇文档创作；按主题跨听记/群消息汇总属于工作汇报 |
 | "张三在哪个部门/查一下同事工号" | 通讯录精确查询 | #8 `contact` | #5 汇报 / #4 文档 | 需要 userId、手机号、部门 ID 等精确信息时用 contact |
@@ -342,7 +341,7 @@ dws chat message send --group <openConversationId> --msg-type profile --contact-
 
 ---
 
-### 6. chat vs a2a — 群聊会话 vs Agent 协作
+### 6. chat vs ding — 普通会话 vs 强提醒
 
 **用 `chat` 的场景**：
 - "在群里发条通知" — 钉钉会话/群消息
@@ -376,12 +375,7 @@ dws chat message send --group <openConversationId> --msg-type profile --contact-
 - "DING接收状态/谁收到了DING" — `ding message receiver-status`
 - 用户明确说"群"、"会话"、"机器人发群消息"、"Webhook"
 
-**用 `a2a` 的场景**：
-- "列出 A2A 上可用的 Agent" — `dws a2a agents`
-- "向 Agent 发一条消息（同步/流式）" — `dws a2a send`
-- 用户提到"A2A"、"Agent 协作"、"Agent 列表"、"调用 Agent"，不是钉钉群
-
-**判断关键**：面向 **钉钉会话与群** → `chat`；面向 **A2A 协议 Agent 发现与通信** → `a2a`。详见 [a2a.md](a2a)。
+**判断关键**：普通单聊、群聊、机器人或 Webhook 消息走 `chat`；需要应用内强提醒、短信或电话升级时走 `ding`。
 
 ---
 

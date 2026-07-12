@@ -30,7 +30,7 @@
 - `selfsetting get/save` 的 `--setting-scene` 必须是 `checkRemind`、`fastCheck`、`checkResultNotify`、`lackRemind`、`personalAttendStatNotify`、`bossAttendStatNotify` 之一
 - `selfsetting get/save` 的 MCP 入参 `userId` 为必填；CLI 的 `--user` 也必填，必须显式传入目标用户 ID
 - `selfsetting save` 必须传入与 `--setting-scene` 对应的至少一个设置字段；不同场景的字段不能混用
-- `selfsetting save` 是敏感写操作，AI 调用时必须先执行 `selfsetting get` 查询当前值，并向用户展示目标用户、设置场景、修改字段、“当前值 → 新值”和最终命令参数摘要；必须调用 `ask_human` 或返回待确认状态等待用户明确确认；用户确认后才允许追加全局 `--yes` 执行保存。禁止未经确认直接执行或自动添加 `--yes`
+- `selfsetting save` 是敏感写操作，必须先执行 `selfsetting get` 查询当前值，并向用户展示目标用户、设置场景、修改字段、“当前值 → 新值”和最终命令参数摘要，等待用户明确确认；确认后才允许追加全局 `--yes` 执行保存。禁止未经确认直接执行或自动添加 `--yes`
 - `selfsetting get/save` 不需要传 `--corp-id` / `--op-user`，`corpId` 和 `opUserId` 由当前登录上下文自动补齐
 - `report columns` 无需额外参数，corpId 和 operatorId 由系统自动传入
 - `report query-data` 和 `report query-leave` 的 `--start/--end` 格式: yyyy-MM-dd HH:mm:ss，间隔不超过 32 天，最多 20 人
@@ -63,7 +63,7 @@
 
 **强制执行流程**: 此命令为写操作，Agent 调用时必须遵守以下流程：
 1. 先向用户展示待执行操作的完整参数摘要
-2. 使用 `ask_human` 或返回待确认状态，等待用户明确确认
+2. 展示变更摘要并等待用户明确确认
 3. 用户确认后，再传 `--user-say-yes=true` 执行命令
 4. **禁止**未经用户确认直接执行或自动添加 `--user-say-yes=true`
 

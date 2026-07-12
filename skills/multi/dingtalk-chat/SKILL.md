@@ -17,7 +17,9 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> 命令参考：[chat.md](references/chat.md)；表情：[chat-emoji-list.md](references/chat-emoji-list.md)；剧本：[01-messaging.md](references/01-messaging.md)。
+> 渐进式参考：[chat-index.md](references/chat-index.md)；表情：[chat-emoji-list.md](references/chat-emoji-list.md)；剧本：[01-messaging.md](references/01-messaging.md)。先按索引选择命令族。
+
+> 旧路径兼容入口：[chat.md](references/chat.md)。
 
 ## 意图表
 
@@ -30,7 +32,7 @@ metadata:
 | "@我消息" / "查群聊记录" | `dws chat message list` |
 | "用机器人发消息" | `dws chat message send-by-bot --robot-code <code> --group <id>` |
 | "Webhook 推一条" | `dws chat message send-by-webhook --token <token>` |
-| "撤回消息" | `dws chat message recall --client-msg-id <id>` |
+| "撤回消息" | `dws chat message recall --conversation-id <openConversationId> --msg-id <openMessageId>` |
 | "标记未读 / 清除红点 / 全部已读" | `dws chat mark-unread` / `dws chat clear-red-point` / `dws chat clear-all-red-point` |
 | "置顶某条消息 / 取消消息置顶" | `dws chat message set-top-msg` / `dws chat message unset-top-msg` |
 | "我加入的所有群 / 全部群列表" | `dws chat group list-all` |
@@ -104,4 +106,3 @@ metadata:
 ## 局部意图与 Recipe
 
 - [局部意图消歧](references/intent-guide.md)；[Lite Recipe](references/lite-recipes.md)。
-
