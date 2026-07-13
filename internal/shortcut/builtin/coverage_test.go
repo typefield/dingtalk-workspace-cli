@@ -49,6 +49,8 @@ func (f *fakeCaller) CallTool(_ context.Context, product, tool string, args map[
 }
 func (f *fakeCaller) Format() string { return "json" }
 func (f *fakeCaller) DryRun() bool   { return f.dryRun }
+func (f *fakeCaller) Fields() string { return "" }
+func (f *fakeCaller) JQ() string     { return "" }
 
 // realToolSet scans the helper sources (the ground truth) and returns the set of
 // snake_case identifiers found there. Every tool a shortcut invokes must appear

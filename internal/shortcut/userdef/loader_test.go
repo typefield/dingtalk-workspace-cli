@@ -34,6 +34,8 @@ func (c *captureCaller) CallTool(_ context.Context, _, _ string, args map[string
 }
 func (c *captureCaller) Format() string { return "json" }
 func (c *captureCaller) DryRun() bool   { return false }
+func (c *captureCaller) Fields() string { return "" }
+func (c *captureCaller) JQ() string     { return "" }
 
 func TestValidate(t *testing.T) {
 	cases := []struct {

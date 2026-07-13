@@ -39,3 +39,5 @@ func (r recordingToolCaller) CallTool(ctx context.Context, product, tool string,
 
 func (r recordingToolCaller) Format() string { return r.inner.Format() }
 func (r recordingToolCaller) DryRun() bool   { return r.inner.DryRun() }
+func (r recordingToolCaller) Fields() string { return r.inner.Fields() }
+func (r recordingToolCaller) JQ() string     { return r.inner.JQ() }
