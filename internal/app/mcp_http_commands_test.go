@@ -74,6 +74,79 @@ func TestMCPHTTPDiscoveryBaseURLDefaultsToPre(t *testing.T) {
 	}
 }
 
+func TestMCPHTTPInspectCommandReturnsProtocolAndTools(t *testing.T) {
+	var methods []string
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Fatalf("decode JSON-RPC request: %v", err)
+		}
+		method, _ := req["method"].(string)
+		methods = append(methods, method)
+		switch method {
+		case "initialize":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0",
+				"id":      req["id"],
+				"result": map[string]any{
+					"protocolVersion": "2025-03-26",
+					"capabilities":    map[string]any{"tools": map[string]any{"listChanged": false}},
+					"serverInfo":      map[string]any{"name": "test-mcp", "version": "1.0.0"},
+				},
+			})
+		case "notifications/initialized":
+			w.WriteHeader(http.StatusAccepted)
+		case "tools/list":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0",
+				"id":      req["id"],
+				"result": map[string]any{
+					"tools": []map[string]any{{
+						"name":        "search_city",
+						"description": "Search a city",
+						"inputSchema": map[string]any{
+							"type": "object",
+							"properties": map[string]any{
+								"cityName": map[string]any{"type": "string"},
+							},
+						},
+					}},
+				},
+			})
+		default:
+			http.Error(w, "unexpected method", http.StatusBadRequest)
+		}
+	}))
+	defer server.Close()
+
+	cmd := newMCPHTTPInspectCommand()
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	t.Setenv(mcpdevEndpointEnv, server.URL+"?key=secret")
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("inspect command error = %v", err)
+	}
+
+	if want := []string{"initialize", "notifications/initialized", "tools/list"}; !reflect.DeepEqual(methods, want) {
+		t.Fatalf("methods = %#v, want %#v", methods, want)
+	}
+	var got map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &got); err != nil {
+		t.Fatalf("decode output: %v\n%s", err, stdout.String())
+	}
+	if got["endpoint"] != server.URL+"?key=REDACTED" {
+		t.Fatalf("endpoint = %#v, want redacted URL", got["endpoint"])
+	}
+	if got["toolCount"] != float64(1) {
+		t.Fatalf("toolCount = %#v, want 1", got["toolCount"])
+	}
+	initialize, _ := got["initialize"].(map[string]any)
+	if initialize["protocol_version"] != "2025-03-26" {
+		t.Fatalf("protocol_version = %#v", initialize["protocol_version"])
+	}
+}
+
 func TestFetchMCPHTTPCommandListFromPublishedDiscovery(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	ResetRuntimeTokenCache()

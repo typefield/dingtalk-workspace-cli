@@ -152,6 +152,9 @@ dws connector mcp tool versions --mcp-id <mcpId> --action-id <actionId> --format
 # 接入地址，返回含 ?key= 的敏感 URL，不要外传
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
+# 只读探测指定地址的协议、服务能力和工具 Schema
+DINGTALK_MCPDEV_MCP_URL='<含凭证的 MCP 地址>' dws connector mcp inspect --format json
+
 # 已发布 MCP 动态命令
 dws connector mcp refresh --format json
 dws <service-or-tool-slug> <tool-slug> --format json
@@ -161,6 +164,7 @@ dws connector mcp published <service-or-tool-slug> <tool-slug> --format json
 规则：
 
 - `?key=` 是敏感凭证，不能写进文档、日志、代码或回答全文。
+- `inspect` 只执行 MCP 握手和 `tools/list`，不调用业务工具；含凭证地址优先通过 `DINGTALK_MCPDEV_MCP_URL` 传入，输出会脱敏。
 - 动态命令一级路径优先用 `serverName`，缺失时用 MCP 服务 `name`，再缺失时退到工具 `name`；`connector mcp published ...` 作为调试路径保留。
 - 写操作和 `tool debug` 必须先 `--dry-run`，确认后再 `--yes`。
 - 复杂字段直接传 JSON：`--http`/`--api-inputs`/`--api-outputs` 为 object，`--tool-inputs`/`--tool-outputs`/`--input-mappings`/`--output-mappings` 为 array，`--value` 为 object。

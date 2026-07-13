@@ -137,33 +137,85 @@ func registerDynamicMCPHTTPCommands(root *cobra.Command, runner executor.Runner,
 
 func ensureMCPHTTPRefreshCommand(root *cobra.Command) {
 	connectorRoot := ensureMCPHTTPGroup(root, []string{mcpHTTPCommandRoot, "mcp"})
-	if connectorRoot == nil || commandChild(connectorRoot, "refresh") != nil {
+	if connectorRoot == nil {
 		return
 	}
+	if commandChild(connectorRoot, "refresh") == nil {
+		cmd := &cobra.Command{
+			Use:               "refresh",
+			Short:             "刷新远程 MCP 命令缓存",
+			Args:              cobra.NoArgs,
+			DisableAutoGenTag: true,
+			RunE: func(cmd *cobra.Command, args []string) error {
+				source, err := currentMCPHTTPCommandCacheSource()
+				if err != nil {
+					return err
+				}
+				commands, err := refreshMCPHTTPCommandCache(cmd.Context())
+				if err != nil {
+					return err
+				}
+				payload := map[string]any{
+					"success": true,
+					"count":   len(commands),
+					"ttl":     mcpHTTPCommandListTTL.String(),
+					"source":  source,
+				}
+				return output.WriteCommandPayload(cmd, payload, output.FormatJSON)
+			},
+		}
+		connectorRoot.AddCommand(cmd)
+	}
+	if commandChild(connectorRoot, "inspect") == nil {
+		connectorRoot.AddCommand(newMCPHTTPInspectCommand())
+	}
+}
+
+func newMCPHTTPInspectCommand() *cobra.Command {
+	var endpoint string
 	cmd := &cobra.Command{
-		Use:               "refresh",
-		Short:             "刷新远程 MCP 命令缓存",
+		Use:               "inspect",
+		Short:             "读取指定 MCP 地址的协议和工具元数据",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			source, err := currentMCPHTTPCommandCacheSource()
+			endpoint = strings.TrimSpace(endpoint)
+			if endpoint == "" {
+				endpoint = strings.TrimSpace(os.Getenv(mcpdevEndpointEnv))
+			}
+			if endpoint == "" {
+				return apperrors.NewValidation("--url is required (or set DINGTALK_MCPDEV_MCP_URL)")
+			}
+
+			client := transport.NewClient(nil).WithAuth(
+				resolveRuntimeAuthToken(cmd.Context(), ""),
+				resolveIdentityHeaders(),
+			)
+			initialized, err := client.Initialize(cmd.Context(), endpoint)
 			if err != nil {
 				return err
 			}
-			commands, err := refreshMCPHTTPCommandCache(cmd.Context())
+			if err := client.NotifyInitialized(cmd.Context(), endpoint); err != nil {
+				return err
+			}
+			tools, err := client.ListTools(cmd.Context(), endpoint)
 			if err != nil {
 				return err
 			}
+
 			payload := map[string]any{
-				"success": true,
-				"count":   len(commands),
-				"ttl":     mcpHTTPCommandListTTL.String(),
-				"source":  source,
+				"success":    true,
+				"endpoint":   transport.RedactURL(endpoint),
+				"transport":  "streamable-http",
+				"initialize": initialized,
+				"toolCount":  len(tools.Tools),
+				"tools":      tools.Tools,
 			}
 			return output.WriteCommandPayload(cmd, payload, output.FormatJSON)
 		},
 	}
-	connectorRoot.AddCommand(cmd)
+	cmd.Flags().StringVar(&endpoint, "url", "", "MCP Streamable HTTP 地址")
+	return cmd
 }
 
 func refreshMCPHTTPCommandCache(ctx context.Context) ([]mcpHTTPCommandDescriptor, error) {

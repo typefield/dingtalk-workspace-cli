@@ -116,6 +116,14 @@ dws connector mcp published --help
 - 发布或更新工具后，可以立即 `refresh`，再看 `published --help`。
 - 不要根据 `mcpId` 自行猜 `/server/org-{mcpId}`；应使用发现接口返回的 `mcpUrl`，或 `url get --source PUBLISHED` 返回的真实接入地址。
 
+指定接入地址的只读探测：
+
+```bash
+DINGTALK_MCPDEV_MCP_URL='<含凭证的 MCP 地址>' dws connector mcp inspect --format json
+```
+
+`inspect` 依次执行 `initialize`、`notifications/initialized`、`tools/list`，返回协商协议版本、服务能力和完整工具 Schema，不调用任何业务工具。优先通过环境变量传入含 `?key=` 的地址，避免凭证出现在命令参数中；输出中的地址会自动脱敏。
+
 ## Shortcut
 
 ### 从 API 材料一键建 MCP（终端用户最高频）

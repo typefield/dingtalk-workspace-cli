@@ -71,6 +71,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | debug 失败排查 | 大概率映射问题：位置名大小写（Pascal）/ express 字段用错 / 漏映射 → 按 mapping-rules.md 修 → `tool update`（全量）→ 再 debug；同一工具自动修最多 2 轮，仍不行按 [mcp.md](references/mcp.md) §故障定位 五步法排查后升级给用户 |
 | 发布工具并可调用 | 确认最近一次 debug 成功 → `tool publish --dry-run` → 明确说明发布后使用方可调用 → 用户明确确认（「嗯/继续」不算）→ `tool publish --yes` → `tool get` 回读状态 |
 | 获取客户端接入地址 | 已发布未上架用 `url get --source PUBLISHED`；已上架市场用 `url get --source MARKET`；输出中的 `?key=` 只脱敏展示 |
+| 探测指定 MCP 地址 | 将含凭证地址放入 `DINGTALK_MCPDEV_MCP_URL`，执行 `dws connector mcp inspect --format json`；读取协议版本、服务能力和完整工具 Schema，不调用业务工具 |
 | 生成/刷新 DWS 动态命令 | 工具发布后执行 `dws connector mcp refresh --format json` → 检查 `dws <service-or-tool> --help` 和 `dws connector mcp published --help` → 优先使用 `dws <service-or-tool> <tool>`，必要时用 `dws connector mcp published <service-or-tool> <tool>` 调试 |
 | 续作已有服务/工具 | `service list --keyword` 找 `mcpId` → `tool list --mcp-id` 找 `actionId` → 再执行目标操作 |
 | 编辑已发布工具 | `tool get` 读当前定义（底层存储格式，翻译回三段式，详见 [mcp.md](references/mcp.md) §只更新一个已有工具草稿）→ 全量构造 `tool update --dry-run` → 调试草稿 versionId → 用户确认后发布 |
@@ -89,6 +90,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | "调试工具草稿" | `dws connector mcp tool debug --mcp-id <mcpId> --action-id <actionId> --version-id <versionId> --value '{"city_name":"北京"}' --dry-run --format json`（value=符合 toolInputs 的测试入参，从设计阶段的材料示例值来，不要传空 `{}` 走过场） |
 | "发布工具" | `dws connector mcp tool publish --mcp-id <mcpId> --action-id <actionId> --dry-run --format json` |
 | "获取 MCP 接入地址" | `dws connector mcp url get --mcp-id <mcpId> --source PUBLISHED --format json` |
+| "读取这个 MCP 的协议和工具元数据" | 设置 `DINGTALK_MCPDEV_MCP_URL` 后执行 `dws connector mcp inspect --format json` |
 
 ## 详细参考
 
