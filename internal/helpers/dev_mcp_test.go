@@ -23,6 +23,13 @@ func TestConnectorMCPCommandTree(t *testing.T) {
 		{"mcp", "tool", "debug"},
 		{"mcp", "tool", "publish"},
 		{"mcp", "url", "get"},
+		{"mcp", "auth", "get"},
+		{"mcp", "auth", "save"},
+		{"mcp", "credential", "save"},
+		{"mcp", "credential", "list"},
+		{"mcp", "member", "list"},
+		{"mcp", "member", "add"},
+		{"mcp", "member", "remove"},
 	} {
 		cmd, _, err := connector.Find(path)
 		if err != nil {
@@ -58,6 +65,22 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			wantParams: map[string]any{
 				"mcpId":  10487,
 				"source": "MARKET",
+			},
+		},
+		{
+			name: "service create with server name",
+			args: []string{
+				"connector", "mcp", "service", "create",
+				"--name", "客户信息服务",
+				"--description", "查询客户信息",
+				"--server-name", "crm-assets",
+				"--dry-run",
+			},
+			wantTool: devMCPServiceCreateTool,
+			wantParams: map[string]any{
+				"name":        "客户信息服务",
+				"description": "查询客户信息",
+				"serverName":  "crm-assets",
 			},
 		},
 		{
@@ -98,6 +121,66 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"mcpId":    10487,
 				"actionId": "G-ACT-1",
 				"pageSize": 10,
+			},
+		},
+		{
+			name: "auth config save",
+			args: []string{
+				"connector", "mcp", "auth", "save",
+				"--mcp-id", "10520",
+				"--auth-type", "token",
+				"--token-auth-config", `{"refreshToken":true,"fetchTokenRequest":{"method":"GET","url":"https://example.com/token"}}`,
+				"--dry-run",
+			},
+			wantTool: devMCPAuthConfigSaveTool,
+			wantParams: map[string]any{
+				"mcpId":    10520,
+				"authType": "TOKEN",
+				"tokenAuthConfig": map[string]any{
+					"refreshToken": true,
+					"fetchTokenRequest": map[string]any{
+						"method": "GET",
+						"url":    "https://example.com/token",
+					},
+				},
+			},
+		},
+		{
+			name: "credential save",
+			args: []string{
+				"connector", "mcp", "credential", "save",
+				"--mcp-id", "10520",
+				"--name", "生产账号",
+				"--content", `{"appKey":"key","appSecret":"secret"}`,
+				"--yes",
+			},
+			wantTool: devMCPCredentialSaveTool,
+			wantParams: map[string]any{
+				"mcpId": 10520,
+				"name":  "生产账号",
+				"content": map[string]any{
+					"appKey":    "key",
+					"appSecret": "secret",
+				},
+			},
+		},
+		{
+			name:     "credential list",
+			args:     []string{"connector", "mcp", "credential", "list", "--mcp-id", "10520", "--cursor", "2", "--page-size", "20"},
+			wantTool: devMCPCredentialListTool,
+			wantParams: map[string]any{
+				"mcpId":    10520,
+				"cursor":   2,
+				"pageSize": 20,
+			},
+		},
+		{
+			name:     "member add",
+			args:     []string{"connector", "mcp", "member", "add", "--mcp-id", "10520", "--user-ids", "staff001, staff002", "--dry-run"},
+			wantTool: devMCPMemberAddTool,
+			wantParams: map[string]any{
+				"mcpId":         10520,
+				"memberUserIds": []string{"staff001", "staff002"},
 			},
 		},
 	}
@@ -144,6 +227,17 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"--dry-run",
 			},
 			wantErr: "--name 必须是 snake_case",
+		},
+		{
+			name: "rejects invalid server name",
+			args: []string{
+				"connector", "mcp", "service", "create",
+				"--name", "客户服务",
+				"--description", "查询客户",
+				"--server-name", "crm_assets",
+				"--dry-run",
+			},
+			wantErr: "--server-name 必须是 kebab-case",
 		},
 		{
 			name: "rejects exposed input without description",
@@ -244,5 +338,46 @@ func TestConnectorMCPInvalidJSON(t *testing.T) {
 	err := root.Execute()
 	if err == nil || !strings.Contains(err.Error(), "--http 必须是 JSON 对象") {
 		t.Fatalf("Execute() error = %v, want JSON object validation\noutput:\n%s", err, out.String())
+	}
+}
+
+func TestConnectorMCPCredentialDryRunRedactsContent(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppTestRoot(runner)
+	root.SetArgs([]string{
+		"connector", "mcp", "credential", "save",
+		"--mcp-id", "10520",
+		"--name", "生产账号",
+		"--content", `{"appKey":"key","appSecret":"secret"}`,
+		"--dry-run",
+	})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	want := map[string]any{"redacted": true}
+	if got := runner.last.Params["content"]; !reflect.DeepEqual(got, want) {
+		t.Fatalf("content = %#v, want %#v", got, want)
+	}
+}
+
+func TestConnectorMCPCredentialContentFromStdin(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppTestRoot(runner)
+	root.SetIn(strings.NewReader(`{"username":"api-user","password":"secret"}`))
+	root.SetArgs([]string{
+		"connector", "mcp", "credential", "save",
+		"--mcp-id", "10520",
+		"--name", "生产账号",
+		"--content-file", "-",
+		"--yes",
+	})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	want := map[string]any{"username": "api-user", "password": "secret"}
+	if got := runner.last.Params["content"]; !reflect.DeepEqual(got, want) {
+		t.Fatalf("content = %#v, want %#v", got, want)
 	}
 }

@@ -136,8 +136,8 @@ dws connector mcp tool --help
 # 服务
 dws connector mcp service list --keyword <关键词> --format json
 dws connector mcp service get --mcp-id <mcpId> --format json
-dws connector mcp service create --name <服务名> --description <描述> --dry-run --format json
-dws connector mcp service update --mcp-id <mcpId> --description <新描述> --dry-run --format json
+dws connector mcp service create --name <服务名> --description <描述> --server-name <kebab-case> --dry-run --format json
+dws connector mcp service update --mcp-id <mcpId> --description <新描述> --server-name <kebab-case> --dry-run --format json
 dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
 # 工具
@@ -152,6 +152,18 @@ dws connector mcp tool versions --mcp-id <mcpId> --action-id <actionId> --format
 # 接入地址，返回含 ?key= 的敏感 URL，不要外传
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
+# 下游鉴权配置、凭证账号、开发协作者
+dws connector mcp auth get --mcp-id <mcpId> --format json
+dws connector mcp auth save --mcp-id <mcpId> --auth-type TOKEN --token-auth-config '<JSON>' --dry-run --format json
+dws connector mcp credential list --mcp-id <mcpId> --format json
+dws connector mcp credential save --mcp-id <mcpId> --name <账号名> --content-file credentials.json --dry-run --format json
+dws connector mcp credential debug --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp credential bind --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp credential delete --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp member list --mcp-id <mcpId> --format json
+dws connector mcp member add --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json
+dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json
+
 # 只读探测指定地址的协议、服务能力和工具 Schema
 DINGTALK_MCPDEV_MCP_URL='<含凭证的 MCP 地址>' dws connector mcp inspect --format json
 
@@ -165,6 +177,8 @@ dws connector mcp published <service-or-tool-slug> <tool-slug> --format json
 
 - `?key=` 是敏感凭证，不能写进文档、日志、代码或回答全文。
 - `inspect` 只执行 MCP 握手和 `tools/list`，不调用业务工具；含凭证地址优先通过 `DINGTALK_MCPDEV_MCP_URL` 传入，输出会脱敏。
+- 凭证密钥优先用 `--content-file` 或 stdin 传入；dry-run 不回显密钥值。`credential debug` 会真实调用下游测试接口。
+- 成员命令的 `--user-ids` 必须传 staffId；新增/移除前先 `member list` 核对。
 - 动态命令一级路径优先用 `serverName`，缺失时用 MCP 服务 `name`，再缺失时退到工具 `name`；`connector mcp published ...` 作为调试路径保留。
 - 写操作和 `tool debug` 必须先 `--dry-run`，确认后再 `--yes`。
 - 复杂字段直接传 JSON：`--http`/`--api-inputs`/`--api-outputs` 为 object，`--tool-inputs`/`--tool-outputs`/`--input-mappings`/`--output-mappings` 为 array，`--value` 为 object。

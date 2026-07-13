@@ -16,6 +16,8 @@ package helpers
 import (
 	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cobracmd"
@@ -43,6 +45,20 @@ const (
 	devMCPToolPublishTool  = "mcp_tool_publish"
 	devMCPToolUpdateTool   = "mcp_tool_update"
 	devMCPToolVersionsTool = "mcp_tool_versions"
+
+	devMCPAuthConfigGetTool  = "mcp_auth_config_get"
+	devMCPAuthConfigSaveTool = "mcp_auth_config_save"
+
+	devMCPCredentialBindTool   = "mcp_credential_bind"
+	devMCPCredentialDebugTool  = "mcp_credential_debug"
+	devMCPCredentialDeleteTool = "mcp_credential_delete"
+	devMCPCredentialGetTool    = "mcp_credential_get"
+	devMCPCredentialListTool   = "mcp_credential_list"
+	devMCPCredentialSaveTool   = "mcp_credential_save"
+
+	devMCPMemberAddTool    = "mcp_member_add"
+	devMCPMemberListTool   = "mcp_member_list"
+	devMCPMemberRemoveTool = "mcp_member_remove"
 )
 
 // newDevMCPCommand builds the `mcp` subtree under `dws connector`.
@@ -115,8 +131,44 @@ func newDevMCPCommand(runner executor.Runner) *cobra.Command {
 	}
 	url.AddCommand(newDevMCPURLGetCommand(runner))
 
-	root.AddCommand(service, tool, url)
+	auth := newDevMCPCommandGroup("auth", "MCP 下游鉴权配置")
+	auth.AddCommand(
+		newDevMCPAuthConfigGetCommand(runner),
+		newDevMCPAuthConfigSaveCommand(runner),
+	)
+
+	credential := newDevMCPCommandGroup("credential", "MCP 凭证账号管理")
+	credential.AddCommand(
+		newDevMCPCredentialListCommand(runner),
+		newDevMCPCredentialGetCommand(runner),
+		newDevMCPCredentialSaveCommand(runner),
+		newDevMCPCredentialDebugCommand(runner),
+		newDevMCPCredentialBindCommand(runner),
+		newDevMCPCredentialDeleteCommand(runner),
+	)
+
+	member := newDevMCPCommandGroup("member", "MCP 开发协作者管理")
+	member.AddCommand(
+		newDevMCPMemberListCommand(runner),
+		newDevMCPMemberAddCommand(runner),
+		newDevMCPMemberRemoveCommand(runner),
+	)
+
+	root.AddCommand(service, tool, url, auth, credential, member)
 	return root
+}
+
+func newDevMCPCommandGroup(name, short string) *cobra.Command {
+	return &cobra.Command{
+		Use:               name,
+		Short:             short,
+		Args:              cobra.NoArgs,
+		TraverseChildren:  true,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return cmd.Help()
+		},
+	}
 }
 
 func newDevMCPURLGetCommand(runner executor.Runner) *cobra.Command {
@@ -219,12 +271,17 @@ func newDevMCPServiceCreateCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			serverName, err := devMCPServerNameFlag(cmd)
+			if err != nil {
+				return err
+			}
 			params := map[string]any{
 				"name":        name,
 				"description": description,
 			}
 			devMCPPutString(params, "icon_url", devMCPStringFlag(cmd, "icon-url"))
 			devMCPPutString(params, "introduction", devMCPStringFlag(cmd, "introduction"))
+			devMCPPutString(params, "serverName", serverName)
 			return runDevMCPTool(runner, cmd, devMCPServiceCreateTool, params)
 		},
 	}
@@ -232,6 +289,7 @@ func newDevMCPServiceCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("description", "", "服务用途描述")
 	cmd.Flags().String("icon-url", "", "服务图标 URL")
 	cmd.Flags().String("introduction", "", "服务详情介绍，支持 markdown")
+	cmd.Flags().String("server-name", "", "服务英文标识，kebab-case，作为 DWS 一级命令名")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPServiceCreateTool)
 	return cmd
@@ -252,14 +310,19 @@ func newDevMCPServiceUpdateCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			serverName, err := devMCPServerNameFlag(cmd)
+			if err != nil {
+				return err
+			}
 			params := map[string]any{"mcpId": mcpID}
 			updates := 0
 			updates += devMCPPutString(params, "name", devMCPStringFlag(cmd, "name"))
 			updates += devMCPPutString(params, "description", devMCPStringFlag(cmd, "description"))
 			updates += devMCPPutString(params, "icon_url", devMCPStringFlag(cmd, "icon-url"))
 			updates += devMCPPutString(params, "introduction", devMCPStringFlag(cmd, "introduction"))
+			updates += devMCPPutString(params, "serverName", serverName)
 			if updates == 0 {
-				return apperrors.NewValidation("至少提供一项待更新字段：--name、--description、--icon-url 或 --introduction")
+				return apperrors.NewValidation("至少提供一项待更新字段：--name、--description、--icon-url、--introduction 或 --server-name")
 			}
 			return runDevMCPTool(runner, cmd, devMCPServiceUpdateTool, params)
 		},
@@ -269,6 +332,7 @@ func newDevMCPServiceUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("description", "", "新服务描述")
 	cmd.Flags().String("icon-url", "", "新图标 URL")
 	cmd.Flags().String("introduction", "", "新详情介绍")
+	cmd.Flags().String("server-name", "", "新服务英文标识，kebab-case")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPServiceUpdateTool)
 	return cmd
@@ -500,6 +564,315 @@ func newDevMCPToolVersionsCommand(runner executor.Runner) *cobra.Command {
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPToolVersionsTool)
 	return cmd
+}
+
+func newDevMCPAuthConfigGetCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "get",
+		Short:             "查询 MCP 下游鉴权配置",
+		Example:           "  dws connector mcp auth get --mcp-id 10520 --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			return runDevMCPTool(runner, cmd, devMCPAuthConfigGetTool, map[string]any{"mcpId": mcpID})
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, devMCPAuthConfigGetTool)
+	return cmd
+}
+
+func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "save",
+		Short:             "保存 MCP 下游鉴权配置",
+		Example:           "  dws connector mcp auth save --mcp-id 10520 --auth-type NO_AUTH --dry-run --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := devAppRequireWriteGuard(cmd, "mcp auth save"); err != nil {
+				return err
+			}
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			authType, err := devMCPRequiredString(cmd, "auth-type")
+			if err != nil {
+				return err
+			}
+			authType = strings.ToUpper(authType)
+			if !devMCPValidAuthType(authType) {
+				return apperrors.NewValidation("--auth-type 只支持 NO_AUTH、BASIC、API_SECRET、TOKEN 或 SIGNATURE")
+			}
+			params := map[string]any{"mcpId": mcpID, "authType": authType}
+			for _, mapping := range []struct{ flag, key string }{
+				{"basic-auth-config", "basicAuthConfig"},
+				{"api-secret-auth-config", "apiSecretAuthConfig"},
+				{"token-auth-config", "tokenAuthConfig"},
+				{"signature-auth-config", "signatureAuthConfig"},
+			} {
+				if err := devMCPPutJSONObjectFlag(cmd, params, mapping.flag, mapping.key); err != nil {
+					return err
+				}
+			}
+			return runDevMCPTool(runner, cmd, devMCPAuthConfigSaveTool, params)
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	cmd.Flags().String("auth-type", "", "鉴权类型：NO_AUTH、BASIC、API_SECRET、TOKEN 或 SIGNATURE")
+	cmd.Flags().String("basic-auth-config", "", "BASIC 鉴权配置 JSON 对象")
+	cmd.Flags().String("api-secret-auth-config", "", "API_SECRET 鉴权配置 JSON 对象")
+	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象")
+	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 签名配置 JSON 对象")
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, devMCPAuthConfigSaveTool)
+	return cmd
+}
+
+func newDevMCPCredentialListCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "list",
+		Short:             "查询 MCP 凭证账号列表",
+		Example:           "  dws connector mcp credential list --mcp-id 10520 --page-size 20 --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			params := map[string]any{"mcpId": mcpID}
+			devMCPPutInt(params, "cursor", devMCPIntFlag(cmd, "cursor"))
+			devMCPPutInt(params, "pageSize", devMCPIntFlag(cmd, "page-size"))
+			return runDevMCPTool(runner, cmd, devMCPCredentialListTool, params)
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	addDevMCPPagingFlags(cmd)
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, devMCPCredentialListTool)
+	return cmd
+}
+
+func newDevMCPCredentialGetCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPCredentialLocatorCommand(runner, "get", "查询 MCP 凭证账号详情", devMCPCredentialGetTool, false)
+}
+
+func newDevMCPCredentialDebugCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPCredentialLocatorCommand(runner, "debug", "调试 MCP 凭证账号", devMCPCredentialDebugTool, true)
+}
+
+func newDevMCPCredentialBindCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPCredentialLocatorCommand(runner, "bind", "绑定 MCP 凭证账号", devMCPCredentialBindTool, true)
+}
+
+func newDevMCPCredentialDeleteCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPCredentialLocatorCommand(runner, "delete", "删除 MCP 凭证账号（不可恢复）", devMCPCredentialDeleteTool, true)
+}
+
+func newDevMCPCredentialLocatorCommand(runner executor.Runner, use, short, tool string, write bool) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               use,
+		Short:             short,
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if write {
+				if err := devAppRequireWriteGuard(cmd, "mcp credential "+use); err != nil {
+					return err
+				}
+			}
+			params, err := devMCPCredentialLocatorParams(cmd)
+			if err != nil {
+				return err
+			}
+			return runDevMCPTool(runner, cmd, tool, params)
+		},
+	}
+	addDevMCPCredentialLocatorFlags(cmd)
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, tool)
+	return cmd
+}
+
+func newDevMCPCredentialSaveCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "save",
+		Short:             "新增或修改 MCP 凭证账号",
+		Example:           "  dws connector mcp credential save --mcp-id 10520 --name 生产账号 --content-file credentials.json --dry-run --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := devAppRequireWriteGuard(cmd, "mcp credential save"); err != nil {
+				return err
+			}
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			name, err := devMCPRequiredString(cmd, "name")
+			if err != nil {
+				return err
+			}
+			content, err := devMCPCredentialContent(cmd)
+			if err != nil {
+				return err
+			}
+			params := map[string]any{"mcpId": mcpID, "name": name, "content": content}
+			devMCPPutInt(params, "credentialId", devMCPIntFlag(cmd, "credential-id"))
+			if commandDryRun(cmd) {
+				params["content"] = map[string]any{"redacted": true}
+			}
+			return runDevMCPTool(runner, cmd, devMCPCredentialSaveTool, params)
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	cmd.Flags().Int("credential-id", 0, "已有凭证账号 ID；不传表示新增")
+	cmd.Flags().String("name", "", "凭证账号名称")
+	cmd.Flags().String("content", "", "密钥键值 JSON 对象；推荐改用 --content-file")
+	cmd.Flags().String("content-file", "", "密钥键值 JSON 文件路径，传 - 从 stdin 读取")
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, devMCPCredentialSaveTool)
+	return cmd
+}
+
+func newDevMCPMemberListCommand(runner executor.Runner) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               "list",
+		Short:             "查询 MCP 开发协作者列表",
+		Example:           "  dws connector mcp member list --mcp-id 10520 --format json",
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			return runDevMCPTool(runner, cmd, devMCPMemberListTool, map[string]any{"mcpId": mcpID})
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, devMCPMemberListTool)
+	return cmd
+}
+
+func newDevMCPMemberAddCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPMemberMutationCommand(runner, "add", "新增 MCP 开发协作者", devMCPMemberAddTool)
+}
+
+func newDevMCPMemberRemoveCommand(runner executor.Runner) *cobra.Command {
+	return newDevMCPMemberMutationCommand(runner, "remove", "移除 MCP 开发协作者", devMCPMemberRemoveTool)
+}
+
+func newDevMCPMemberMutationCommand(runner executor.Runner, use, short, tool string) *cobra.Command {
+	cmd := &cobra.Command{
+		Use:               use,
+		Short:             short,
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			if err := devAppRequireWriteGuard(cmd, "mcp member "+use); err != nil {
+				return err
+			}
+			mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+			if err != nil {
+				return err
+			}
+			userIDs := splitDevAppList(devMCPStringFlag(cmd, "user-ids"))
+			if len(userIDs) == 0 {
+				return apperrors.NewValidation("--user-ids 至少包含一个成员 staffId")
+			}
+			return runDevMCPTool(runner, cmd, tool, map[string]any{
+				"mcpId":         mcpID,
+				"memberUserIds": userIDs,
+			})
+		},
+	}
+	addDevMCPMCPIDFlag(cmd)
+	cmd.Flags().String("user-ids", "", "成员 staffId 列表，多个用逗号或分号分隔")
+	preferLegacyLeaf(cmd)
+	annotateDevMCPTool(cmd, tool)
+	return cmd
+}
+
+func devMCPValidAuthType(authType string) bool {
+	switch authType {
+	case "NO_AUTH", "BASIC", "API_SECRET", "TOKEN", "SIGNATURE":
+		return true
+	default:
+		return false
+	}
+}
+
+func devMCPServerNameFlag(cmd *cobra.Command) (string, error) {
+	serverName := strings.ToLower(devMCPStringFlag(cmd, "server-name"))
+	if serverName == "" {
+		return "", nil
+	}
+	if len(serverName) > 255 {
+		return "", apperrors.NewValidation("--server-name 必须不超过 255 个字符")
+	}
+	for i, r := range serverName {
+		isAlphaNum := r >= 'a' && r <= 'z' || r >= '0' && r <= '9'
+		validDash := r == '-' && i > 0 && i < len(serverName)-1 && serverName[i-1] != '-'
+		if !isAlphaNum && !validDash {
+			return "", apperrors.NewValidation("--server-name 必须是 kebab-case，仅含字母、数字和单个中划线")
+		}
+	}
+	return serverName, nil
+}
+
+func addDevMCPCredentialLocatorFlags(cmd *cobra.Command) {
+	addDevMCPMCPIDFlag(cmd)
+	cmd.Flags().Int("credential-id", 0, "凭证账号 ID")
+}
+
+func devMCPCredentialLocatorParams(cmd *cobra.Command) (map[string]any, error) {
+	mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
+	if err != nil {
+		return nil, err
+	}
+	credentialID, err := devMCPRequiredInt(cmd, "credential-id")
+	if err != nil {
+		return nil, err
+	}
+	return map[string]any{"mcpId": mcpID, "credentialId": credentialID}, nil
+}
+
+func devMCPCredentialContent(cmd *cobra.Command) (map[string]any, error) {
+	raw := devMCPStringFlag(cmd, "content")
+	path := devMCPStringFlag(cmd, "content-file")
+	if raw != "" && path != "" {
+		return nil, apperrors.NewValidation("--content 与 --content-file 只能使用一个")
+	}
+	if path != "" {
+		var data []byte
+		var err error
+		if path == "-" {
+			data, err = io.ReadAll(cmd.InOrStdin())
+		} else {
+			data, err = os.ReadFile(path)
+		}
+		if err != nil {
+			return nil, apperrors.NewValidation(fmt.Sprintf("读取 --content-file 失败: %v", err))
+		}
+		raw = strings.TrimSpace(string(data))
+	}
+	if raw == "" {
+		return nil, apperrors.NewValidation("--content 或 --content-file 为必填")
+	}
+	var content map[string]any
+	if err := json.Unmarshal([]byte(raw), &content); err != nil || content == nil {
+		return nil, apperrors.NewValidation("凭证 content 必须是 JSON 对象")
+	}
+	return content, nil
 }
 
 func addDevMCPMCPIDFlag(cmd *cobra.Command) {

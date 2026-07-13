@@ -31,6 +31,9 @@ dws connector mcp url --help
 ```text
 MCP Service (mcpId)
 ├── service metadata
+├── AuthConfig（下游鉴权说明书，不含凭证值）
+├── Credential（凭证账号，密钥不回显）
+├── Member（开发协作者 staffId）
 ├── Endpoint(PUBLISHED / MARKET)
 └── Tool(actionId)
     ├── identity: name / title / description / status
@@ -123,6 +126,33 @@ DINGTALK_MCPDEV_MCP_URL='<含凭证的 MCP 地址>' dws connector mcp inspect --
 ```
 
 `inspect` 依次执行 `initialize`、`notifications/initialized`、`tools/list`，返回协商协议版本、服务能力和完整工具 Schema，不调用任何业务工具。优先通过环境变量传入含 `?key=` 的地址，避免凭证出现在命令参数中；输出中的地址会自动脱敏。
+
+### 鉴权、凭证与成员
+
+```bash
+# 服务级下游鉴权配置
+dws connector mcp auth get --mcp-id <mcpId> --format json
+dws connector mcp auth save --mcp-id <mcpId> --auth-type NO_AUTH --dry-run --format json
+dws connector mcp auth save --mcp-id <mcpId> --auth-type TOKEN --token-auth-config '<JSON>' --dry-run --format json
+
+# 凭证账号：密钥优先从文件或 stdin 读取，避免进入 shell history
+dws connector mcp credential list --mcp-id <mcpId> --format json
+dws connector mcp credential get --mcp-id <mcpId> --credential-id <id> --format json
+dws connector mcp credential save --mcp-id <mcpId> --name <账号名> --content-file credentials.json --dry-run --format json
+dws connector mcp credential debug --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp credential bind --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp credential delete --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+
+# 开发协作者，--user-ids 传 staffId，不传姓名
+dws connector mcp member list --mcp-id <mcpId> --format json
+dws connector mcp member add --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json
+dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json
+```
+
+- `authType` 仅支持 `NO_AUTH`、`BASIC`、`API_SECRET`、`TOKEN`、`SIGNATURE`；只传当前类型对应的配置对象。
+- `credential save` 的 `content` key 必须与 `auth get` 返回的 `authFields[].dataId` 一致；密钥不会回显，dry-run 也只显示脱敏占位。
+- `credential debug` 会真实调用鉴权配置中的 `testRequest`；`success=true` 只代表请求连通，仍要检查返回 `detail` 判断口令是否有效。
+- 删除凭证前先 `credential get` 检查 `flowCount`；移除成员前先 `member list` 核对，二者都必须获得明确确认。
 
 ## Shortcut
 
