@@ -3,10 +3,11 @@ set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 cd "$ROOT"
+. "$ROOT/scripts/policy/search.sh"
 
 if [ -e internal/cli/schema_native_contracts.go ] ||
 	[ -e internal/cli/schema_native_contracts_generated.go ] ||
-	rg -n 'ApplyNativeRuntimeSchemaContracts|nativeRuntimeSchemaContracts|runtimeSchemaIdentityCandidate' internal/cli --glob '*.go'; then
+	policy_search_go 'ApplyNativeRuntimeSchemaContracts|nativeRuntimeSchemaContracts|runtimeSchemaIdentityCandidate' internal/cli; then
 	printf '%s\n' 'native Schema identity materialization must not be reintroduced' >&2
 	exit 1
 fi
@@ -192,7 +193,7 @@ if ! jq -e '
 	exit 1
 fi
 
-if rg -n 'mcp-gw\.dingtalk\.com|mcp\.dingtalk\.com/server|Authorization[^[:alnum:]]*:|Bearer [A-Za-z0-9]|access[_-]?token|client[_-]?secret' \
+if policy_search_paths 'mcp-gw\.dingtalk\.com|mcp\.dingtalk\.com/server|Authorization[^[:alnum:]]*:|Bearer [A-Za-z0-9]|access[_-]?token|client[_-]?secret' \
 	internal/cli/schema_catalog.json \
 	internal/cli/schema_mcp_metadata.json \
 	internal/cli/schema_mcp_service_review.json \
@@ -203,7 +204,7 @@ if rg -n 'mcp-gw\.dingtalk\.com|mcp\.dingtalk\.com/server|Authorization[^[:alnum
 	exit 1
 fi
 
-if rg -n '\.ListTools\(' internal/app internal/cli --glob '*.go'; then
+if policy_search_go '\.ListTools\(' internal/app internal/cli; then
 	printf '%s\n' 'startup/schema packages must not call MCP tools/list' >&2
 	exit 1
 fi

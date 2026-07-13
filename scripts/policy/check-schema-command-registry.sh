@@ -7,10 +7,11 @@ set -eu
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 cd "$ROOT"
+. "$ROOT/scripts/policy/search.sh"
 
 if [ -e internal/cli/schema_native_contracts.go ] ||
 	[ -e internal/cli/schema_native_contracts_generated.go ] ||
-	rg -n 'ApplyNativeRuntimeSchemaContracts|nativeRuntimeSchemaContracts|runtimeSchemaIdentityCandidate' internal/cli --glob '*.go'; then
+	policy_search_go 'ApplyNativeRuntimeSchemaContracts|nativeRuntimeSchemaContracts|runtimeSchemaIdentityCandidate' internal/cli; then
 	printf '%s\n' 'native Schema identity materialization must not be reintroduced' >&2
 	exit 1
 fi
@@ -18,8 +19,8 @@ fi
 # Legacy hint maps used to select primary CLI paths and discover helper roots.
 # They are identity/navigation sources, so bringing any of them back would
 # silently reintroduce a second source beside CommandRegistry.
-if rg -n '(schemaPrimaryCLIPath|RuntimeSchemaRootHint|RegisterRuntimeSchemaRoot|PrimaryCLIPaths|RegisterSchemaProductVisibility|SchemaProductVisibilityFor|productVisibility)' \
-	internal/cli --glob '*.go'; then
+if policy_search_go '(schemaPrimaryCLIPath|RuntimeSchemaRootHint|RegisterRuntimeSchemaRoot|PrimaryCLIPaths|RegisterSchemaProductVisibility|SchemaProductVisibilityFor|productVisibility)' \
+	internal/cli; then
 	printf '%s\n' 'legacy Schema hint navigation or visibility sources must not be reintroduced' >&2
 	exit 1
 fi
@@ -37,14 +38,14 @@ fi
 
 # The registry argument is validation-only and all go:generate outputs must be
 # downstream assets. Reject any directive that targets the reviewed input.
-if ! rg -q '^//go:generate .*cmd_schema_agent_metadata .* -registry internal/cli/schema_command_registry\.json ' internal/cli/schema_agent_metadata.go; then
+if ! grep -Eq '^//go:generate .*cmd_schema_agent_metadata .* -registry internal/cli/schema_command_registry\.json ' internal/cli/schema_agent_metadata.go; then
 	printf '%s\n' 'go generate must validate the reviewed CommandRegistry explicitly' >&2
 	exit 1
 fi
-if rg -n '^//go:generate .*-(output|output-dir|audit-output)(=|[[:space:]]+)([^[:space:]]*/)?schema_command_registry\.json([[:space:]]|$)' \
-	internal/cli --glob '*.go' ||
-	rg -n '^//go:generate .*(>|>>)[[:space:]]*([^[:space:]]*/)?schema_command_registry\.json([[:space:]]|$)' \
-		internal/cli --glob '*.go'; then
+if policy_search_go '^//go:generate .*-(output|output-dir|audit-output)(=|[[:space:]]+)([^[:space:]]*/)?schema_command_registry\.json([[:space:]]|$)' \
+	internal/cli ||
+	policy_search_go '^//go:generate .*(>|>>)[[:space:]]*([^[:space:]]*/)?schema_command_registry\.json([[:space:]]|$)' \
+		internal/cli; then
 	printf '%s\n' 'go generate must never overwrite the reviewed CommandRegistry' >&2
 	exit 1
 fi
@@ -57,7 +58,7 @@ fi
 check_schema_loader_references() {
 	loader="$1"
 	allowed="$2"
-	references="$(rg -n "${loader}\\(" internal/cli --glob '*.go' --glob '!*_test.go' || true)"
+	references="$(policy_search_production_go "${loader}\\(" internal/cli || true)"
 	count="$(printf '%s\n' "$references" | awk 'NF { count++ } END { print count + 0 }')"
 	if [ "$count" -ne 2 ]; then
 		printf 'Schema loader %s has %s production references, want exactly declaration + lazy accessor\n' "$loader" "$count" >&2
@@ -83,8 +84,8 @@ check_schema_loader_references \
 
 # Catch the common direct eager form statically; the fresh-process tests below
 # additionally catch indirect or multi-line package initializers.
-if rg -n '^[[:space:]]*var .*=[[:space:]]*(runtimeAgentMetadata|runtimeMCPMetadata|runtimeSchemaParameterBindingData)\(' \
-	internal/cli --glob '*.go' --glob '!*_test.go'; then
+if policy_search_production_go '^[[:space:]]*var .*=[[:space:]]*(runtimeAgentMetadata|runtimeMCPMetadata|runtimeSchemaParameterBindingData)\(' \
+	internal/cli; then
 	printf '%s\n' 'Schema metadata accessors must not be called from package-scope variable initializers' >&2
 	exit 1
 fi
@@ -92,8 +93,8 @@ fi
 # Root construction may register the schema command, but app production code
 # must never parse or inspect generation metadata. The schema command reads the
 # already embedded Catalog only when it is actually executed.
-if rg -n '(loadEmbeddedAgentMetadata|loadEmbeddedMCPMetadata|loadSchemaParameterBindings|runtimeAgentMetadata|runtimeMCPMetadata|runtimeSchemaParameterBindingData|EmbeddedSchemaParameterBindings)\(' \
-	internal/app --glob '*.go' --glob '!*_test.go'; then
+if policy_search_production_go '(loadEmbeddedAgentMetadata|loadEmbeddedMCPMetadata|loadSchemaParameterBindings|runtimeAgentMetadata|runtimeMCPMetadata|runtimeSchemaParameterBindingData|EmbeddedSchemaParameterBindings)\(' \
+	internal/app; then
 	printf '%s\n' 'root/app production code must not access Schema generation metadata loaders or accessors' >&2
 	exit 1
 fi
