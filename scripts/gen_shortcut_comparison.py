@@ -7,7 +7,11 @@ import os, re, glob, html, json
 
 ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SC_DIR = os.path.join(ROOT, "internal", "shortcut")
-LARK = "/Users/dennis/Projects/larksuite/cli/shortcuts"
+LARK_ROOT = os.environ.get(
+    "LARK_CLI_ROOT",
+    os.path.abspath(os.path.join(ROOT, "..", "..", "larksuite", "cli")),
+)
+LARK = os.path.join(LARK_ROOT, "shortcuts")
 
 SKIP_PKG = {"builtin", "usage", "userdef"}
 
@@ -27,6 +31,8 @@ def load_lark():
     for svc in set(v for v in LARK_MAP.values() if v):
         cmds = set()
         for f in glob.glob(os.path.join(LARK, svc, "*.go")):
+            if f.endswith("_test.go"):
+                continue
             try:
                 txt = open(f, encoding="utf-8").read()
             except OSError:

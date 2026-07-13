@@ -2,6 +2,61 @@
 
 > 12 个 agent 逐条深读 lark 每个 shortcut 的智能实现（Validate/DryRun/ID解析/投影/多步/分页），映射钉钉、标注保真度差距。
 
+## 2026-07-13 最新源码复核
+
+对比基线：
+
+- DWS：`feature/shortcut@b7c14c1`（已合并 `origin/main@390b611`）
+- lark-cli：`main@e96c4fa5`
+- lark-cli 本轮更新范围：`f495cbb1..e96c4fa5`
+
+本轮 lark-cli **没有增加或删除生产 shortcut 命令**，变化集中在已有命令的实现保真度：统一 `--json` shorthand、文档分享锚点读取、whiteboard 本地文件安全内联、VC meeting events 的 identity/timeline/NDJSON 投影、Apps DB 环境自动选择、Drive push 错误分类，以及 Wiki token 解析兼容性。因此下方历史 gap 清单的命令面没有因本轮 pull 新增条目，但若要追平体验，以下实现差距需要上调优先级。
+
+### 当前命令面快照
+
+| 指标 | 数量 | 说明 |
+|---|---:|---|
+| DWS built-in shortcut | 366 | 16 个服务；运行时 registry 实测 |
+| lark-cli primary shortcut | 363 | 19 个服务；排除 `_test.go` 与 42 个 `sheets/backward` 隐藏兼容别名 |
+| 双方可映射服务内命令 | DWS 313 / lark 324 | 12 组产品映射，不含平台特有服务 |
+| 同服务同名命令 | 50 | 仅是名称交集，不等于语义等价或保真度一致 |
+| DWS 平台特有 shortcut | 53 | attendance / ding / oa / report 等 |
+| lark 平台特有 shortcut | 39 | okr / vc / slides / markdown / whiteboard / note / event |
+
+双方重叠服务的命令面如下；“同名”只用于定位，能力判断仍需看参数、验证、多步编排、输出投影和 dry-run：
+
+| 产品映射 | DWS | lark | 同名 |
+|---|---:|---:|---:|
+| aitable ↔ base | 82 | 87 | 31 |
+| calendar ↔ calendar | 23 | 10 | 3 |
+| chat ↔ im | 89 | 21 | 2 |
+| contact ↔ contact | 16 | 2 | 1 |
+| devapp ↔ apps | 30 | 63 | 3 |
+| doc ↔ doc | 19 | 14 | 1 |
+| drive ↔ drive | 9 | 26 | 3 |
+| mail ↔ mail | 10 | 21 | 0 |
+| minutes ↔ minutes | 13 | 9 | 1 |
+| sheet ↔ sheets | 2 | 42 | 0 |
+| todo ↔ task | 13 | 17 | 2 |
+| wiki ↔ wiki | 7 | 12 | 3 |
+
+### 最新优先差距
+
+1. **文档与白板资源保真度**：lark `doc +fetch/+update` 已支持分享链接 selection anchor、HTML5 block 资源引用，以及相对路径内的 SVG/Mermaid/PlantUML whiteboard 安全内联。DWS 具备文档读写和媒体原子能力，但缺少统一引用解析、路径门禁和资源回写编排。
+2. **Sheets typed workflow**：lark 的 typed table、批量样式、维度移动/冻结、range copy/fill/sort、workbook import/export 仍是最大可建设缺口。DWS 原生 helper 已有部分底层能力，但 shortcut 层只有 2 个精选命令，缺少跨 sheet 分块写、类型推断和 partial rollback。
+3. **Drive 本地同步体验**：lark `+push/+pull/+sync/+import/+export` 带批量计划、错误分类、路径保护和版本操作；DWS 目前偏原子上传/搜索，缺完整目录同步和可恢复批处理。
+4. **Mail 高保真写链路**：lark 对 send/reply/reply-all/forward 提供模板、签名、HTML lint、线程头、定时和附件编排；DWS 有底层发信/草稿工具，但 smart shortcut 尚未覆盖这些组合体验。
+5. **消息资源与统一搜索**：DWS 已有 `+search-msg/+chat-messages/+thread-replies/+at-me` 等拆分场景，lark `+messages-search` 仍在统一多维过滤、会话上下文富化、reaction/资源下载方面更完整。
+6. **会议事件输出**：lark `vc +meeting-events` 本轮新增当前身份、actor、会议状态推断、timeline 与 NDJSON 元数据。DWS 最新 main 已有更强的实时 event bus 和个人事件订阅，但尚未沉淀成同等级 shortcut 投影；这是“底层能力领先、shortcut UX 未收口”。
+
+### 不建议机械追平
+
+- lark Apps DB、Spark 发布、Lark Drive/Wiki 特有对象模型属于平台差异，不应只为同名率复制。
+- DWS 的 attendance、DING、OA、report、agoal 和最新 event bus 是钉钉侧差异化能力，应优先做场景化组合，而不是追求 363 vs 366 的数字对齐。
+- DWS 已具备按姓名解析、跨产品智能编排、失败回滚和 usage→自定义 shortcut 沉淀闭环，这些能力无法由同名命令统计体现。
+
+> 注：下方“361 条”汇总是上一轮逐条人工分类的历史基线；当前 lark-cli primary shortcut 是 363 条，另有 42 个不应重复计为能力的 Sheets 隐藏兼容别名。历史条目的判断仍可复用，但总量数字不能直接代表本轮最新覆盖率，后续应把新增条目按 covered-1to1 / covered-smart / gap-buildable / no-dingtalk-tool 四类补录。
+
 ## 汇总（361 条 lark shortcut）
 
 | dws_status | 数量 | 含义 |

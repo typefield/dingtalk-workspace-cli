@@ -31,7 +31,7 @@ footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
 <div class="stats">
 <div class="stat"><div class="n">366</div><div class="l">shortcut 总数</div></div>
 <div class="stat"><div class="n">16</div><div class="l">服务</div></div>
-<div class="stat"><div class="n">51</div><div class="l">lark 同名可对齐</div></div>
+<div class="stat"><div class="n">50</div><div class="l">lark 同名可对齐</div></div>
 <div class="stat"><div class="n">53</div><div class="l">钉钉特有(无 lark)</div></div>
 </div></header>
 <div class="wrap">
@@ -1250,7 +1250,7 @@ footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
 </tr>
 <tr>
 <td class="sc"><code>dws calendar +book --title &lt;title&gt; --start &lt;start&gt; --end &lt;end&gt; --with &lt;with&gt;</code><span class="rk rk-w">write</span><div class="desc">创建日程，并可按姓名邀请参会人（自动解析 userId，失败自动回滚删除日程）</div></td>
-<td class="raw"><code>dws mcp calendar create_calendar_event --json &#x27;{&quot;summary&quot;:&lt;..&gt;, &quot;startDateTime&quot;:&lt;..&gt;, &quot;endDateTime&quot;:&lt;..&gt;, &quot;eventId&quot;:&lt;..&gt;, &quot;attendeesToAdd&quot;:&lt;..&gt;}&#x27;</code></td>
+<td class="raw"><code>dws mcp calendar create_calendar_event --json &#x27;{&quot;summary&quot;:&lt;..&gt;, &quot;startDateTime&quot;:&lt;..&gt;, &quot;endDateTime&quot;:&lt;..&gt;, &quot;dryRun&quot;:&lt;..&gt;, &quot;wouldCreate&quot;:&lt;..&gt;, &quot;wouldInvite&quot;:&lt;..&gt;, &quot;eventId&quot;:&lt;..&gt;, &quot;attendeesToAdd&quot;:&lt;..&gt;}&#x27;</code></td>
 <td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
 </tr>
 <tr>
@@ -1671,7 +1671,7 @@ footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
 </tr>
 <tr>
 <td class="sc"><code>dws todo +todo-done --task &lt;task&gt;</code><span class="rk rk-w">write</span><div class="desc">按标题关键词把我的某条待办标记完成（自动定位 taskId）</div></td>
-<td class="raw"><code>dws mcp todo update_todo_done_status --json &#x27;{&quot;pageNum&quot;:&lt;..&gt;, &quot;pageSize&quot;:&lt;..&gt;, &quot;roleTypes&quot;:&lt;..&gt;, &quot;taskId&quot;:&lt;..&gt;, &quot;isDone&quot;:&lt;..&gt;}&#x27;</code></td>
+<td class="raw"><code>dws mcp todo update_todo_done_status --json &#x27;{&quot;roleTypes&quot;:&lt;..&gt;, &quot;taskId&quot;:&lt;..&gt;, &quot;isDone&quot;:&lt;..&gt;}&#x27;</code></td>
 <td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
 </tr>
 </tbody></table>
@@ -1836,11 +1836,6 @@ footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
 <table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
 <thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
 <tr>
-<td class="sc"><code>dws wiki +move --workspace &lt;workspace&gt; --node &lt;node&gt; --folder &lt;folder&gt;</code><span class="rk rk-w">write</span><div class="desc">移动知识库节点</div></td>
-<td class="raw"><code>dws mcp doc move_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;}&#x27;</code></td>
-<td><span class="lk-hit"><code>lark-cli wiki +move</code></span></td>
-</tr>
-<tr>
 <td class="sc"><code>dws wiki +node-copy --workspace &lt;workspace&gt; --node &lt;node&gt; --folder &lt;folder&gt;</code><span class="rk rk-w">write</span><div class="desc">复制知识库节点</div></td>
 <td class="raw"><code>dws mcp doc copy_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;}&#x27;</code></td>
 <td><span class="lk-hit"><code>lark-cli wiki +node-copy</code></span></td>
@@ -1849,6 +1844,11 @@ footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
 <td class="sc"><code>dws wiki +node-list --workspace &lt;workspace&gt; --folder &lt;folder&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出知识库节点</div></td>
 <td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
 <td><span class="lk-hit"><code>lark-cli wiki +node-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +node-move --workspace &lt;workspace&gt; --node &lt;node&gt; --folder &lt;folder&gt;</code><span class="rk rk-w">write</span><div class="desc">移动知识库节点</div></td>
+<td class="raw"><code>dws mcp doc move_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark wiki 无同名命令（能力/命名不同）</span></td>
 </tr>
 <tr>
 <td class="sc"><code>dws wiki +resolve-space --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称搜索知识空间并解析出唯一 spaceId（只读）</div></td>
