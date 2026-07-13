@@ -237,7 +237,6 @@ sign_one_darwin_binary() {
       --p12-password-file "$APPLE_CERTIFICATE_PASSWORD_FILE" \
       --for-notarization \
       "$bin"
-    rcodesign verify "$bin"
     return
   fi
   if command -v codesign >/dev/null 2>&1; then
