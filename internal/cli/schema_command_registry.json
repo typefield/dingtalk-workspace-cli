@@ -1,4 +1,5 @@
 {
+  "$schema": "./schema_command_registry.schema.json",
   "version": 1,
   "products": [
     {
@@ -1565,10 +1566,11 @@
         },
         {
           "canonical_path": "mail.search_emails",
-          "cli_path": "mail message search",
-          "aliases": [
-            "mail message list"
-          ]
+          "cli_path": "mail message search"
+        },
+        {
+          "canonical_path": "mail.list_emails",
+          "cli_path": "mail message list"
         },
         {
           "canonical_path": "mail.send_email",

@@ -1,315 +1,1427 @@
 {
   "version": 1,
-  "source_hash": "sha256:b0788dd79d817258e2fd5869e4b32eff5ab81b6d20f34e7eb131446670402003",
-  "surface_hash": "sha256:75c63f35d9b15dfb4df09136bfd250906751cfeb7f14bce08cf092097859baad",
+  "source_hash": "sha256:505582c28fd979d7018fe4def9f59d7cfd3911199606594b82cc64b978277656",
+  "surface_hash": "sha256:49f79c3ddb1b4513faded7f513952ec49904a28a1f1fea99f4a439ff848df7c7",
   "coverage": {
     "surface_products": 20,
     "products_with_metadata": 20,
-    "surface_tools": 538,
-    "tools_with_metadata": 538,
-    "tools_with_agent_summary": 538,
-    "tools_with_use_when": 538,
-    "tools_with_avoid_when": 538,
-    "tools_with_examples": 538,
-    "tools_with_interface_mode": 538,
+    "surface_tools": 539,
+    "tools_with_metadata": 539,
+    "tools_with_agent_summary": 539,
+    "tools_with_use_when": 539,
+    "tools_with_avoid_when": 539,
+    "tools_with_examples": 539,
+    "tools_with_interface_mode": 539,
     "unmatched_skill_tools": 162,
     "unreviewed_skill_tools": 40
   },
   "products": {
     "aisearch": {
-      "agent_summary": "企业内智能搜人，支持按姓名、部门、职位、技能、职责、手机号或工号定位人员",
-      "agent_summary_source": "dws-command-surface-review",
-      "use_when": [
-        "找人/搜人/谁负责 XX/某事项的负责人/某项目的人/团队成员/上级/下级/按工号找人/按手机号找人"
+      "agent_summary": "在企业知识、行为记录和组织人员范围内执行搜索。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "已经知道具体资源标识并需要读取或修改该资源时，应使用对应产品命令。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "在企业知识、行为记录和组织人员范围内执行搜索。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "在企业知识、行为记录和组织人员范围内执行搜索。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "已经知道具体资源标识并需要读取或修改该资源时，应使用对应产品命令。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "已经知道具体资源标识并需要读取或修改该资源时，应使用对应产品命令。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要检索企业知识、行为记录或组织人员时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要检索企业知识、行为记录或组织人员时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
+        "skills/mono/references/products/aisearch.md",
         "skills/mono/schema-hints/catalog-completeness.json"
+      ],
+      "use_when": [
+        "需要检索企业知识、行为记录或组织人员时。"
       ]
     },
     "aitable": {
-      "agent_summary": "AI 表格操作",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "帮我建一个项目跟踪表；创建数据表格",
-        "表格/多维表/AI表格/记录/数据/视图/图表/仪表盘"
-      ],
+      "agent_summary": "管理 AI 表格 Base、数据表、字段、记录、视图、表单、仪表盘、权限、导入导出与自动化工作流。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "创建一个电子表格；创建表格文档",
-        "帮我写个项目周报；创建钉钉文档",
-        "帮我记一下明天要做的事；创建个人待办",
-        "帮我读一下表格 A1:D10 的数据；读取单元格数据"
+        "目标不是 AI 表格资源时；涉及写操作且尚未确认 Base、Table、View 等目标标识时。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理 AI 表格 Base、数据表、字段、记录、视图、表单、仪表盘、权限、导入导出与自动化工作流。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理 AI 表格 Base、数据表、字段、记录、视图、表单、仪表盘、权限、导入导出与自动化工作流。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "目标不是 AI 表格资源时；涉及写操作且尚未确认 Base、Table、View 等目标标识时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "目标不是 AI 表格资源时；涉及写操作且尚未确认 Base、Table、View 等目标标识时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要读取或管理 AI 表格中的结构、数据、视图、权限、导入导出或工作流时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要读取或管理 AI 表格中的结构、数据、视图、权限、导入导出或工作流时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.aitable.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/references/products/aitable.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "需要读取或管理 AI 表格中的结构、数据、视图、权限、导入导出或工作流时。"
       ]
     },
     "attendance": {
-      "agent_summary": "考勤打卡 / 排班 / 统计",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "考勤/打卡/排班"
+      "agent_summary": "查询考勤记录、排班、班次、考勤组、审批、报表、个人规则和假期，并执行经确认的考勤配置变更。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "用户只需处理普通日历日程、非考勤类活动签到或通用审批流状态，而不是钉钉考勤业务。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询考勤记录、排班、班次、考勤组、审批、报表、个人规则和假期，并执行经确认的考勤配置变更。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询考勤记录、排班、班次、考勤组、审批、报表、个人规则和假期，并执行经确认的考勤配置变更。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户只需处理普通日历日程、非考勤类活动签到或通用审批流状态，而不是钉钉考勤业务。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户只需处理普通日历日程、非考勤类活动签到或通用审批流状态，而不是钉钉考勤业务。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户要查询或管理钉钉考勤数据、规则、排班、考勤组、审批表单或假期余额。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户要查询或管理钉钉考勤数据、规则、排班、考勤组、审批表单或假期余额。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "cobra-help:dws attendance --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.attendance.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
+        "skills/mono/references/products/attendance.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "用户要查询或管理钉钉考勤数据、规则、排班、考勤组、审批表单或假期余额。"
       ]
     },
     "calendar": {
-      "agent_summary": "日历日程 / 会议室 / 闲忙查询",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "帮我建一个明天下午的日程；日历日程",
-        "日程/日历/会议室/约会/时间建议"
-      ],
+      "agent_summary": "管理日历本、日程、参与人、附件、会议室，并查询人员或会议室闲忙状态。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "明早 9 点提醒我提交周报；创建个人待办，但需先声明 reminder 边界"
+        "目标是聊天消息、待办或审批，而不是日历与日程资源时。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理日历本、日程、参与人、附件、会议室，并查询人员或会议室闲忙状态。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理日历本、日程、参与人、附件、会议室，并查询人员或会议室闲忙状态。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "目标是聊天消息、待办或审批，而不是日历与日程资源时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "目标是聊天消息、待办或审批，而不是日历与日程资源时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查询或管理钉钉日历、日程、参与人、会议室和闲忙信息时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要查询或管理钉钉日历、日程、参与人、会议室和闲忙信息时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/references/products/calendar.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "需要查询或管理钉钉日历、日程、参与人、会议室和闲忙信息时。"
       ]
     },
     "chat": {
-      "agent_summary": "群聊 / 消息 / 机器人",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "群聊/建群/群成员/群管理/发消息/发图片消息/发文件消息/发 Markdown 消息/截图发钉钉/转发消息/引用回复/@我/特别关注消息/机器人发消息/Webhook/机器人群发/机器人单聊/通知"
-      ],
+      "agent_summary": "管理钉钉会话、群聊、群成员、机器人、消息检索与消息发送",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "我发给某人的消息/邮件/文档/今天我干了什么；搜行为记录"
+        "邮件使用 mail；开放平台应用和机器人建号、发布或本地建联使用 dev"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理钉钉会话、群聊、群成员、机器人、消息检索与消息发送",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理钉钉会话、群聊、群成员、机器人、消息检索与消息发送",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "邮件使用 mail；开放平台应用和机器人建号、发布或本地建联使用 dev"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "邮件使用 mail；开放平台应用和机器人建号、发布或本地建联使用 dev"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "请求涉及群聊管理、聊天记录、消息发送、会话设置或群机器人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "请求涉及群聊管理、聊天记录、消息发送、会话设置或群机器人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.chat.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/references/products/chat.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "请求涉及群聊管理、聊天记录、消息发送、会话设置或群机器人时"
       ]
     },
     "contact": {
-      "agent_summary": "通讯录 / 用户 / 部门",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "张三在哪个部门/查一下同事工号；通讯录精确查询",
-        "通讯录/同事/部门/组织架构/子部门/部门多少人/离职员工/离职名单/离职花名册/花名册/员工档案/学历/家庭/银行卡/紧急联系人/合同/角色/主管角色/管理员角色/财务/HR/特别关注/星标联系人"
-      ],
+      "agent_summary": "查询通讯录中的用户、部门、关注关系与授权花名册信息",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "13800138000是谁/查手机号；按手机号搜人",
-        "222020这个工号是谁/查工号；按工号搜人",
-        "五道的上级是谁/谁负责XX/XX的下属有谁；AI语义搜人"
+        "不要用于发送消息或修改通讯录；企业知识语义搜人场景优先使用 aisearch person"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询通讯录中的用户、部门、关注关系与授权花名册信息",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询通讯录中的用户、部门、关注关系与授权花名册信息",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于发送消息或修改通讯录；企业知识语义搜人场景优先使用 aisearch person"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于发送消息或修改通讯录；企业知识语义搜人场景优先使用 aisearch person"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "按姓名、手机号、用户 ID 或部门条件查找组织人员与部门信息时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "按姓名、手机号、用户 ID 或部门条件查找组织人员与部门信息时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=contact",
+        "Skill:skills/mono/references/products/contact.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.contact.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "按姓名、手机号、用户 ID 或部门条件查找组织人员与部门信息时"
       ]
     },
     "dev": {
-      "agent_summary": "管理钉钉开放平台应用、权限、版本、机器人、事件订阅与连接器",
-      "agent_summary_source": "dws-command-surface-review",
-      "use_when": [
-        "开发或维护钉钉开放平台应用",
-        "配置应用机器人、权限、成员、事件或发布版本"
-      ],
+      "agent_summary": "管理开放平台应用、权限、机器人配置、版本发布与本地 Stream 建联",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "只需要查询开放平台文档时优先使用 devdoc"
+        "只查询或发送聊天消息使用 chat；业务邮箱操作使用 mail"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理开放平台应用、权限、机器人配置、版本发布与本地 Stream 建联",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理开放平台应用、权限、机器人配置、版本发布与本地 Stream 建联",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只查询或发送聊天消息使用 chat；业务邮箱操作使用 mail"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "只查询或发送聊天消息使用 chat；业务邮箱操作使用 mail"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "请求涉及创建或配置开放平台应用、机器人建号、版本审批发布或本地连接器时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "请求涉及创建或配置开放平台应用、机器人建号、版本审批发布或本地连接器时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
+        "skills/mono/references/products/dev.md",
         "skills/mono/schema-hints/catalog-completeness.json"
+      ],
+      "use_when": [
+        "请求涉及创建或配置开放平台应用、机器人建号、版本审批发布或本地连接器时"
       ]
     },
     "devdoc": {
-      "agent_summary": "开放平台文档搜索",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "开发/API/调用错误 文档",
-        "搜一下 OAuth2 接入文档；搜索开发文档"
+      "agent_summary": "搜索钉钉开放平台开发文档",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "不要用于搜索用户业务文档或读取企业业务数据"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "搜索钉钉开放平台开发文档",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "搜索钉钉开放平台开发文档",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于搜索用户业务文档或读取企业业务数据"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于搜索用户业务文档或读取企业业务数据"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "查询 OpenAPI、字段、错误码、SDK、鉴权、回调或配额等开发问题时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "查询 OpenAPI、字段、错误码、SDK、鉴权、回调或配额等开发问题时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=devdoc",
+        "Skill:skills/mono/references/products/devdoc.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.devdoc.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/schema-hints/catalog-completeness.json",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "查询 OpenAPI、字段、错误码、SDK、鉴权、回调或配额等开发问题时"
       ]
     },
     "ding": {
-      "agent_summary": "DING 消息 / 发送 / 撤回",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "DING/紧急消息/电话提醒"
+      "agent_summary": "以机器人身份发送或撤回 DING 提醒",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "普通聊天消息使用 chat；应用机器人消息使用 chat message send-by-bot；需要用户身份 DING 或消息转 DING 时不要使用机器人命令"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "以机器人身份发送或撤回 DING 提醒",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "以机器人身份发送或撤回 DING 提醒",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "普通聊天消息使用 chat；应用机器人消息使用 chat message send-by-bot；需要用户身份 DING 或消息转 DING 时不要使用机器人命令"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "普通聊天消息使用 chat；应用机器人消息使用 chat message send-by-bot；需要用户身份 DING 或消息转 DING 时不要使用机器人命令"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要通过应用内、短信或电话方式发送机器人 DING，或撤回机器人 DING 时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要通过应用内、短信或电话方式发送机器人 DING，或撤回机器人 DING 时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=ding",
+        "Skill:skills/mono/references/products/ding.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "需要通过应用内、短信或电话方式发送机器人 DING，或撤回机器人 DING 时"
       ]
     },
     "doc": {
-      "agent_summary": "钉钉文档管理",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "帮我写个项目周报；创建钉钉文档",
-        "钉钉文档/云文档/知识库/读写文档/块级编辑/文档评论/文档复制移动"
-      ],
+      "agent_summary": "管理钉钉在线文档的正文、块、评论、导入导出、模板与版本",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "帮我建一个项目跟踪表；创建数据表格",
-        "帮我看看收到的日报；收到的日志",
-        "帮我记一下明天要做的事；创建个人待办",
-        "我发给某人的消息/邮件/文档/今天我干了什么；搜行为记录"
+        "文件、目录、上传下载及节点权限已迁移到 drive；知识库空间和成员使用 wiki；不要用于搜索开放平台开发文档"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理钉钉在线文档的正文、块、评论、导入导出、模板与版本",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理钉钉在线文档的正文、块、评论、导入导出、模板与版本",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "文件、目录、上传下载及节点权限已迁移到 drive；知识库空间和成员使用 wiki；不要用于搜索开放平台开发文档"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "文件、目录、上传下载及节点权限已迁移到 drive；知识库空间和成员使用 wiki；不要用于搜索开放平台开发文档"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "创建、读取或编辑在线文档内容，或处理文档块、评论、导入导出、模板和版本时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "创建、读取或编辑在线文档内容，或处理文档块、评论、导入导出、模板和版本时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=doc",
+        "Skill:skills/mono/references/products/doc.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "创建、读取或编辑在线文档内容，或处理文档块、评论、导入导出、模板和版本时"
       ]
     },
     "drive": {
-      "agent_summary": "钉盘文件管理",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "云盘/文件存储/文件上传下载/文件夹"
+      "agent_summary": "管理钉盘及文档空间中的文件、目录、上传下载、回收站与公开发布",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "需要读取或编辑在线文档正文时使用 doc；需要管理知识库空间或成员时使用 wiki"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理钉盘及文档空间中的文件、目录、上传下载、回收站与公开发布",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理钉盘及文档空间中的文件、目录、上传下载、回收站与公开发布",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要读取或编辑在线文档正文时使用 doc；需要管理知识库空间或成员时使用 wiki"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要读取或编辑在线文档正文时使用 doc；需要管理知识库空间或成员时使用 wiki"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "浏览、搜索、上传、下载或整理钉盘和文档空间文件时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "浏览、搜索、上传、下载或整理钉盘和文档空间文件时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=drive",
+        "Skill:skills/mono/references/products/drive.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "浏览、搜索、上传、下载或整理钉盘和文档空间文件时"
       ]
     },
     "live": {
-      "agent_summary": "直播列表 / 信息",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
+      "agent_summary": "查询当前用户的直播列表",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "不要用于创建、开始、结束或控制直播；当前命令面只提供列表查询"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询当前用户的直播列表",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询当前用户的直播列表",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于创建、开始、结束或控制直播；当前命令面只提供列表查询"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于创建、开始、结束或控制直播；当前命令面只提供列表查询"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户要查看自己的直播或直播列表时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户要查看自己的直播或直播列表时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=live",
+        "Skill:skills/multi/dingtalk-live/SKILL.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.live.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "用户要查看自己的直播或直播列表时"
       ]
     },
     "mail": {
-      "agent_summary": "邮箱 / 邮件收发",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "邮箱/邮件/发邮件/收邮件/搜邮件/查邮件/邮件草稿/转发邮件/回复邮件/邮件附件/抄送"
-      ],
+      "agent_summary": "管理邮箱、邮件、草稿、附件、文件夹、联系人和邮件模板",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "我发给某人的消息/邮件/文档/今天我干了什么；搜行为记录"
+        "即时聊天消息使用 chat；开放平台应用配置和机器人发布使用 dev"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理邮箱、邮件、草稿、附件、文件夹、联系人和邮件模板",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理邮箱、邮件、草稿、附件、文件夹、联系人和邮件模板",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "即时聊天消息使用 chat；开放平台应用配置和机器人发布使用 dev"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "即时聊天消息使用 chat；开放平台应用配置和机器人发布使用 dev"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "请求涉及查收、搜索、阅读、回复、发送或整理邮件时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "请求涉及查收、搜索、阅读、回复、发送或整理邮件时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/references/products/mail.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "请求涉及查收、搜索、阅读、回复、发送或整理邮件时"
       ]
     },
     "minutes": {
-      "agent_summary": "AI 听记 / 会议纪要：列表 / 详情 / 摘要 / 转写 / 待办 / 思维导图 / 发言人 / 热词 / 文件上传",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "听记/AI听记/会议纪要/转写/摘要/思维导图/发言人/热词"
+      "agent_summary": "查询和维护钉钉听记的转写、摘要、待办、权限、录音、标签、说话人总结及文件上传会话。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "用户要处理普通文档正文、群聊消息或日历会议安排，而不是钉钉听记。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询和维护钉钉听记的转写、摘要、待办、权限、录音、标签、说话人总结及文件上传会话。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询和维护钉钉听记的转写、摘要、待办、权限、录音、标签、说话人总结及文件上传会话。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户要处理普通文档正文、群聊消息或日历会议安排，而不是钉钉听记。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户要处理普通文档正文、群聊消息或日历会议安排，而不是钉钉听记。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户要查找、读取、编辑或管理钉钉听记及其录音、转写、摘要和衍生内容。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户要查找、读取、编辑或管理钉钉听记及其录音、转写、摘要和衍生内容。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "cobra-help:dws minutes --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
+        "skills/mono/references/products/minutes.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "用户要查找、读取、编辑或管理钉钉听记及其录音、转写、摘要和衍生内容。"
       ]
     },
     "oa": {
-      "agent_summary": "OA 审批 / 同意 / 拒绝 / 撤销",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "审批/请假/报销/出差/加班/同意/拒绝/撤销审批"
+      "agent_summary": "查询和处理 OA 审批实例、任务、记录、抄送与评论",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "不要用于普通待办任务或工作日志；需要创建审批实例时先确认当前命令面是否支持"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询和处理 OA 审批实例、任务、记录、抄送与评论",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询和处理 OA 审批实例、任务、记录、抄送与评论",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于普通待办任务或工作日志；需要创建审批实例时先确认当前命令面是否支持"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于普通待办任务或工作日志；需要创建审批实例时先确认当前命令面是否支持"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "查看待审、已办、已发起或抄送审批，并执行同意、拒绝、撤销、转交等审批动作时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "查看待审、已办、已发起或抄送审批，并执行同意、拒绝、撤销、转交等审批动作时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=oa",
+        "Skill:skills/mono/references/products/oa.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "查看待审、已办、已发起或抄送审批，并执行同意、拒绝、撤销、转交等审批动作时"
       ]
     },
     "pat": {
-      "agent_summary": "管理 DWS 操作所需的行为授权和浏览器授权策略",
-      "agent_summary_source": "dws-command-surface-review",
-      "use_when": [
-        "命令提示缺少行为授权",
-        "批量申请产品授权或配置授权浏览器策略"
-      ],
+      "agent_summary": "管理 Agent 的 PAT 行为授权与本地浏览器策略",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "普通 OAuth 登录使用 auth，而不是 pat"
+        "不要与开放平台应用权限或具体业务操作混用"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理 Agent 的 PAT 行为授权与本地浏览器策略",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理 Agent 的 PAT 行为授权与本地浏览器策略",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要与开放平台应用权限或具体业务操作混用"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要与开放平台应用权限或具体业务操作混用"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "配置 PAT 授权浏览器策略，或预览、授予 Agent 行为 scope 时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "配置 PAT 授权浏览器策略，或预览、授予 Agent 行为 scope 时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=pat",
+        "Skill:skills/mono/references/products/pat.md",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/schema-hints/catalog-completeness.json"
+      ],
+      "use_when": [
+        "配置 PAT 授权浏览器策略，或预览、授予 Agent 行为 scope 时"
       ]
     },
     "report": {
-      "agent_summary": "日志：模版 / 收件箱 / 发件箱 / 单条详情 / 统计（资源.动词命令树，与 mail 对齐）",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "帮我看看收到的日报；收到的日志",
-        "日志/日报/周报/日志统计/写日报/提交周报/发日志/填日志"
-      ],
+      "agent_summary": "查询日志模板、收发日志、日志正文与统计，并按模板提交日志",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "帮我创建一个待办提醒；个人待办",
-        "我发给某人的消息/邮件/文档/今天我干了什么；搜行为记录"
+        "不要用于待办任务、OA 审批或在线文档正文编辑"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询日志模板、收发日志、日志正文与统计，并按模板提交日志",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "查询日志模板、收发日志、日志正文与统计，并按模板提交日志",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于待办任务、OA 审批或在线文档正文编辑"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于待办任务、OA 审批或在线文档正文编辑"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "查看或提交日报、周报等钉钉日志时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "查看或提交日报、周报等钉钉日志时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=report",
+        "Skill:skills/mono/references/products/report.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "查看或提交日报、周报等钉钉日志时"
       ]
     },
     "sheet": {
-      "agent_summary": "钉钉表格管理",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "创建一个电子表格；创建表格文档",
-        "在线电子表格/钉钉表格/axls/工作表/单元格读写/合并单元格/筛选视图/导出 xlsx",
-        "帮我读一下表格 A1:D10 的数据；读取单元格数据"
-      ],
+      "agent_summary": "创建、读取、编辑和导出钉钉在线电子表格，并管理工作表、范围、筛选、图表、图片与格式。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "帮我建一个项目跟踪表；创建数据表格",
-        "这个 alidocs 表格链接帮我看下\"（粘贴原始 URL）；先 probe 节点类型"
+        "目标是 AI 表格 Base 的结构化记录、钉钉文档正文或本地 Excel 文件，而不是钉钉在线电子表格。"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "创建、读取、编辑和导出钉钉在线电子表格，并管理工作表、范围、筛选、图表、图片与格式。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "创建、读取、编辑和导出钉钉在线电子表格，并管理工作表、范围、筛选、图表、图片与格式。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "目标是 AI 表格 Base 的结构化记录、钉钉文档正文或本地 Excel 文件，而不是钉钉在线电子表格。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "目标是 AI 表格 Base 的结构化记录、钉钉文档正文或本地 Excel 文件，而不是钉钉在线电子表格。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户要处理钉钉在线电子表格中的工作表、单元格、范围、筛选、图表、图片或格式。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "用户要处理钉钉在线电子表格中的工作表、单元格、范围、筛选、图表、图片或格式。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "cobra-help:dws sheet --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.sheet.prod.json",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
+        "skills/mono/references/products/sheet.md",
+        "skills/mono/schema-hints/catalog-completeness.json",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "用户要处理钉钉在线电子表格中的工作表、单元格、范围、筛选、图表、图片或格式。"
       ]
     },
     "todo": {
-      "agent_summary": "待办任务管理",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "帮我创建一个待办提醒；个人待办",
-        "帮我记一下明天要做的事；创建个人待办",
-        "待办/TODO/任务提醒/循环待办",
-        "明早 9 点提醒我提交周报；创建个人待办，但需先声明 reminder 边界"
-      ],
+      "agent_summary": "管理待办任务、子任务、执行人、参与人、评论、附件与提醒",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
       "avoid_when": [
-        "给自己留一个明天下午的时间块/建个个人日程；创建个人日程"
+        "不要用于 OA 审批流转、工作日志提交或日历日程管理"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理待办任务、子任务、执行人、参与人、评论、附件与提醒",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理待办任务、子任务、执行人、参与人、评论、附件与提醒",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "不要用于 OA 审批流转、工作日志提交或日历日程管理"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "不要用于 OA 审批流转、工作日志提交或日历日程管理"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "查询、创建或更新个人待办及其协作信息时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "查询、创建或更新个人待办及其协作信息时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=todo",
+        "Skill:skills/mono/references/products/todo.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
         "skills/mono/schema-hints/imported/wukong.json"
+      ],
+      "use_when": [
+        "查询、创建或更新个人待办及其协作信息时"
       ]
     },
     "wiki": {
-      "agent_summary": "管理钉钉知识库空间、节点、内容检索和知识库成员权限",
-      "agent_summary_source": "dws-command-surface-review",
-      "use_when": [
-        "创建知识库/知识库列表/搜索知识库空间/wiki/团队空间/知识库成员管理/我的文档个人空间"
+      "agent_summary": "管理钉钉知识库空间、节点与成员权限",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "avoid_when": [
+        "需要编辑在线文档正文时使用 doc；只管理钉盘普通文件时使用 drive"
       ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "管理钉钉知识库空间、节点与成员权限",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "管理钉钉知识库空间、节点与成员权限",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要编辑在线文档正文时使用 doc；只管理钉盘普通文件时使用 drive"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "需要编辑在线文档正文时使用 doc；只管理钉盘普通文件时使用 drive"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "查找或管理知识库、知识库内节点及知识库成员时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": [
+                "查找或管理知识库、知识库内节点及知识库成员时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true
+            }
+          ]
+        }
+      },
       "source_refs": [
+        "CommandRegistry:product=wiki",
+        "Skill:skills/mono/references/products/wiki.md",
+        "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/schema-hints/catalog-completeness.json"
+      ],
+      "use_when": [
+        "查找或管理知识库、知识库内节点及知识库成员时"
       ]
     }
   },

@@ -14,8 +14,6 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
@@ -27,6 +25,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/app"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/generator/agentmetadata"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/generator/outputguard"
 )
 
 func main() {
@@ -35,50 +34,78 @@ func main() {
 	var productsDir string
 	var intentGuidePath string
 	var hintsDir string
+	var manualHintsPath string
 	var interfaceMetadataPath string
 	var outputPath string
 	var outputDir string
 	var auditOutputPath string
-	var surfacePath string
-	var writeSurfacePath string
+	var registryPath string
+	var legacySurfacePath string
 	var maxExamples int
 	var maxInterfaceSummaryRunes int
-	var validateSurface bool
+	var validateRegistry bool
+	var legacyValidateSurface bool
 	flag.StringVar(&root, "root", ".", "Repository root")
 	flag.StringVar(&skillPath, "skill", "skills/mono/SKILL.md", "Main DWS SKILL.md path")
 	flag.StringVar(&productsDir, "products", "skills/mono/references/products", "Product skill reference directory")
 	flag.StringVar(&intentGuidePath, "intent-guide", "skills/mono/references/intent-guide.md", "Cross-product intent guide path")
 	flag.StringVar(&hintsDir, "hints", "skills/mono/schema-hints", "Versioned Agent hint JSON directory")
+	flag.StringVar(&manualHintsPath, "manual-hints", "internal/cli/schema_manual_hints.json", "Reviewed Manual Schema/Agent hint input; read-only")
 	flag.StringVar(&interfaceMetadataPath, "interface-metadata", "internal/cli/schema_mcp_metadata.json", "Sanitized versioned MCP metadata used only for fallback Agent summaries")
 	flag.StringVar(&outputPath, "output", "", "Output embedded Agent metadata JSON file (legacy single-file mode)")
 	flag.StringVar(&outputDir, "output-dir", "", "Output directory for split embedded Agent metadata JSON")
-	flag.StringVar(&auditOutputPath, "audit-output", "", "Optional output path for build-time source and command-surface diagnostics")
-	flag.StringVar(&surfacePath, "surface", "", "Versioned command-surface snapshot path, relative to --root")
-	flag.StringVar(&writeSurfacePath, "write-surface", "", "Write the current runtime command surface snapshot and exit")
+	flag.StringVar(&auditOutputPath, "audit-output", "", "Optional output path for build-time source and CommandRegistry diagnostics")
+	flag.StringVar(&registryPath, "registry", "internal/cli/schema_command_registry.json", "Reviewed CommandRegistry path, relative to --root; validation-only because the registry is embedded")
+	flag.StringVar(&legacySurfacePath, "surface", "", "Deprecated alias for --registry; the file must equal the embedded reviewed CommandRegistry")
 	flag.IntVar(&maxExamples, "max-examples", 2, "Maximum examples retained per command")
 	flag.IntVar(&maxInterfaceSummaryRunes, "max-interface-summary-runes", 120, "Maximum runes retained in an unreviewed MCP-derived Agent summary")
-	flag.BoolVar(&validateSurface, "validate-surface", true, "Keep only paths present in the command-surface snapshot or current runtime schema")
+	flag.BoolVar(&validateRegistry, "validate-registry", true, "Require Agent metadata to use the embedded reviewed CommandRegistry")
+	flag.BoolVar(&legacyValidateSurface, "validate-surface", true, "Deprecated alias; false is rejected because Registry validation cannot be bypassed")
 	flag.Parse()
-	if strings.TrimSpace(writeSurfacePath) != "" {
-		if err := writeCommandSurfaceSnapshot(resolveRootPath(root, writeSurfacePath)); err != nil {
-			fail(fmt.Errorf("write command surface: %w", err))
-		}
-		return
-	}
 	if strings.TrimSpace(outputDir) == "" && strings.TrimSpace(outputPath) == "" {
 		outputDir = "internal/cli/schema_agent_metadata"
 	}
-	var surface commandSurface
-	if validateSurface {
-		var err error
-		if strings.TrimSpace(surfacePath) != "" {
-			surface, err = loadCommandSurfaceSnapshot(resolveRootPath(root, surfacePath))
-		} else {
-			surface, err = loadCommandSurface()
+	protectedInputs := []outputguard.Input{
+		{Name: "canonical main Skill input", Path: "skills/mono/SKILL.md"},
+		{Name: "canonical product Skill input directory", Path: "skills/mono/references/products"},
+		{Name: "canonical intent guide input", Path: "skills/mono/references/intent-guide.md"},
+		{Name: "canonical structured hint input directory", Path: "skills/mono/schema-hints"},
+		{Name: "canonical reviewed manual Agent hint input", Path: "internal/cli/schema_manual_hints.json"},
+		{Name: "canonical reviewed CommandRegistry input", Path: "internal/cli/schema_command_registry.json"},
+		{Name: "canonical pinned interface metadata input", Path: "internal/cli/schema_mcp_metadata.json"},
+		{Name: "main Skill input", Path: skillPath},
+		{Name: "product Skill input directory", Path: productsDir},
+		{Name: "intent guide input", Path: intentGuidePath},
+		{Name: "structured hint input directory", Path: hintsDir},
+		{Name: "reviewed manual Agent hint input", Path: manualHintsPath},
+		{Name: "reviewed CommandRegistry input", Path: registryPath},
+	}
+	if strings.TrimSpace(interfaceMetadataPath) != "" {
+		protectedInputs = append(protectedInputs, outputguard.Input{Name: "pinned interface metadata input", Path: interfaceMetadataPath})
+	}
+	if strings.TrimSpace(legacySurfacePath) != "" {
+		protectedInputs = append(protectedInputs, outputguard.Input{Name: "deprecated Registry compatibility input", Path: legacySurfacePath})
+	}
+	if err := validateAgentMetadataOutputIsolation(root, protectedInputs, outputPath, outputDir, auditOutputPath); err != nil {
+		fail(err)
+	}
+	if err := validateAgentMetadataOutputAllowlist(root, outputPath, outputDir, auditOutputPath); err != nil {
+		fail(err)
+	}
+	if !legacyValidateSurface {
+		validateRegistry = false
+	}
+	if strings.TrimSpace(legacySurfacePath) != "" {
+		if err := validateCommandRegistryFile(root, legacySurfacePath); err != nil {
+			fail(fmt.Errorf("validate deprecated -surface compatibility input: %w", err))
 		}
-		if err != nil {
-			fail(fmt.Errorf("load command surface: %w", err))
-		}
+	}
+	registry, err := loadEffectiveCommandRegistryProjection(root, registryPath, validateRegistry)
+	if err != nil {
+		fail(err)
+	}
+	if err := validateManualAgentHintInput(root, manualHintsPath, registry); err != nil {
+		fail(err)
 	}
 
 	metadata, stats, err := agentmetadata.Generate(agentmetadata.Options{
@@ -87,13 +114,16 @@ func main() {
 		ProductsDir:              productsDir,
 		IntentGuidePath:          intentGuidePath,
 		HintsDir:                 hintsDir,
+		ManualHintsPath:          manualHintsPath,
 		InterfaceMetadataPath:    interfaceMetadataPath,
 		MaxExamples:              maxExamples,
 		MaxInterfaceSummaryRunes: maxInterfaceSummaryRunes,
-		ToolPaths:                surface.ToolPaths,
-		ProductIDs:               surface.ProductIDs,
-		SurfaceHash:              surface.Hash,
-		SurfaceToolCount:         surface.ToolCount,
+		ToolPaths:                registry.ToolPaths,
+		CanonicalToolPaths:       registry.CanonicalToolPaths,
+		BoundCommands:            registry.Bound,
+		ProductIDs:               registry.ProductIDs,
+		SurfaceHash:              registry.Hash,
+		SurfaceToolCount:         registry.ToolCount,
 	})
 	if err != nil {
 		fail(err)
@@ -131,7 +161,7 @@ func main() {
 		stats.HintFiles,
 		stats.HintTools,
 		stats.UnmatchedTools,
-		surface.ToolCount,
+		registry.ToolCount,
 	)
 }
 
@@ -258,233 +288,121 @@ func firstPathToken(path string) string {
 	return parts[0]
 }
 
-type commandSurface struct {
-	ToolPaths  map[string]string
-	ProductIDs map[string]bool
-	Hash       string
-	ToolCount  int
+type commandRegistryProjection struct {
+	ToolPaths          map[string]string
+	CanonicalToolPaths map[string]string
+	ProductIDs         map[string]bool
+	Hash               string
+	ToolCount          int
+	Bound              cli.BoundCommandRegistry
 }
 
-const commandSurfaceSnapshotVersion = 1
-
-type commandSurfaceSnapshot struct {
-	Version  int                     `json:"version"`
-	Products []commandSurfaceProduct `json:"products"`
-}
-
-type commandSurfaceProduct struct {
-	ID    string               `json:"id"`
-	Tools []commandSurfaceTool `json:"tools"`
-}
-
-type commandSurfaceTool struct {
-	CanonicalPath   string   `json:"canonical_path,omitempty"`
-	SourceProductID string   `json:"source_product_id,omitempty"`
-	CLIPath         string   `json:"cli_path"`
-	Aliases         []string `json:"aliases,omitempty"`
-}
-
-func loadCommandSurface() (commandSurface, error) {
-	snapshot, err := currentCommandSurfaceSnapshot()
-	if err != nil {
-		return commandSurface{}, err
+// loadEffectiveCommandRegistryProjection consumes the same reviewed registry
+// API as the Catalog generator. The registry file argument is validation only
+// and can never replace or mutate the embedded identity registry.
+func loadEffectiveCommandRegistryProjection(rootPath, registryPath string, validateRegistry bool) (commandRegistryProjection, error) {
+	if !validateRegistry {
+		return commandRegistryProjection{}, fmt.Errorf("CommandRegistry validation cannot be disabled: Agent metadata must use the reviewed CommandRegistry")
 	}
-	return commandSurfaceFromSnapshot(snapshot), nil
+	if err := validateCommandRegistryFile(rootPath, registryPath); err != nil {
+		return commandRegistryProjection{}, fmt.Errorf("validate CommandRegistry input: %w", err)
+	}
+	commandRoot := app.NewRootCommand()
+	effective, err := cli.BuildEffectiveCommandRegistry(commandRoot)
+	if err != nil {
+		return commandRegistryProjection{}, fmt.Errorf("build effective CommandRegistry: %w", err)
+	}
+	bound, err := cli.BindEffectiveCommandRegistry(commandRoot, effective)
+	if err != nil {
+		return commandRegistryProjection{}, fmt.Errorf("bind effective CommandRegistry: %w", err)
+	}
+	projection := projectEffectiveCommandRegistry(effective)
+	projection.Bound = bound
+	return projection, nil
 }
 
-func currentCommandSurfaceSnapshot() (commandSurfaceSnapshot, error) {
-	root := app.NewRootCommand()
-	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{})
-	if err != nil {
-		return commandSurfaceSnapshot{}, fmt.Errorf("build command surface from Cobra tree: %w", err)
+// projectEffectiveCommandRegistry deliberately accepts the post-manual
+// registry. Keeping projection below this boundary prevents a base-registry
+// allowlist from silently dropping reviewed manual-only commands.
+func projectEffectiveCommandRegistry(effective cli.EffectiveCommandRegistry) commandRegistryProjection {
+	projection := commandRegistryProjection{
+		ToolPaths:          map[string]string{},
+		CanonicalToolPaths: map[string]string{},
+		ProductIDs:         map[string]bool{},
+		Hash:               effective.SourceHash(),
 	}
-	products := make([]commandSurfaceProduct, 0)
-	for _, rawProduct := range schemaMapSlice(snapshot.Catalog["products"]) {
-		productID := strings.TrimSpace(schemaString(rawProduct["id"]))
-		if productID == "" {
+	for _, command := range effective.Commands {
+		if command.Visibility != cli.SchemaVisibilityPublic {
 			continue
 		}
-		product := commandSurfaceProduct{ID: productID}
-		for _, rawTool := range schemaMapSlice(rawProduct["tools"]) {
-			cliPath := strings.TrimSpace(schemaString(rawTool["cli_path"]))
-			if cliPath == "" {
-				continue
+		projection.ToolCount++
+		primary := strings.TrimSpace(command.PrimaryCLIPath)
+		projection.ToolPaths[primary] = primary
+		projection.ToolPaths[command.CanonicalPath] = primary
+		projection.CanonicalToolPaths[command.CanonicalPath] = primary
+		if productID, _, ok := strings.Cut(command.CanonicalPath, "."); ok && strings.TrimSpace(productID) != "" {
+			projection.ProductIDs[strings.TrimSpace(productID)] = true
+		}
+		for _, alias := range command.Aliases {
+			if alias = strings.TrimSpace(alias); alias != "" {
+				projection.ToolPaths[alias] = primary
 			}
-			aliases := schemaStringSlice(rawTool["aliases"])
-			product.Tools = append(product.Tools, commandSurfaceTool{
-				CanonicalPath:   strings.TrimSpace(schemaString(rawTool["canonical_path"])),
-				SourceProductID: strings.TrimSpace(schemaString(rawTool["source_product_id"])),
-				CLIPath:         cliPath,
-				Aliases:         aliases,
-			})
-		}
-		products = append(products, product)
-	}
-	return normalizeCommandSurfaceSnapshot(commandSurfaceSnapshot{Version: commandSurfaceSnapshotVersion, Products: products}), nil
-}
-
-func schemaMapSlice(value any) []map[string]any {
-	items, ok := value.([]map[string]any)
-	if ok {
-		return items
-	}
-	anyItems, ok := value.([]any)
-	if !ok {
-		return nil
-	}
-	out := make([]map[string]any, 0, len(anyItems))
-	for _, item := range anyItems {
-		if mapped, ok := item.(map[string]any); ok {
-			out = append(out, mapped)
 		}
 	}
-	return out
+	return projection
 }
 
-func schemaString(value any) string {
-	if value == nil {
-		return ""
-	}
-	if s, ok := value.(string); ok {
-		return s
-	}
-	return fmt.Sprint(value)
-}
-
-func schemaStringSlice(value any) []string {
-	if value == nil {
+func validateCommandRegistryFile(rootPath, registryPath string) error {
+	if strings.TrimSpace(registryPath) == "" {
 		return nil
 	}
-	if items, ok := value.([]string); ok {
-		return append([]string(nil), items...)
-	}
-	anyItems, ok := value.([]any)
-	if !ok {
-		return nil
-	}
-	out := make([]string, 0, len(anyItems))
-	for _, item := range anyItems {
-		if s := strings.TrimSpace(schemaString(item)); s != "" {
-			out = append(out, s)
-		}
-	}
-	return out
-}
-
-func loadCommandSurfaceSnapshot(path string) (commandSurface, error) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return commandSurface{}, err
-	}
-	var snapshot commandSurfaceSnapshot
-	if err := json.Unmarshal(data, &snapshot); err != nil {
-		return commandSurface{}, fmt.Errorf("decode %s: %w", path, err)
-	}
-	if snapshot.Version != commandSurfaceSnapshotVersion {
-		return commandSurface{}, fmt.Errorf("unsupported command surface version %d", snapshot.Version)
-	}
-	return commandSurfaceFromSnapshot(normalizeCommandSurfaceSnapshot(snapshot)), nil
-}
-
-func writeCommandSurfaceSnapshot(path string) error {
-	snapshot, err := currentCommandSurfaceSnapshot()
+	data, err := os.ReadFile(resolveRootPath(rootPath, registryPath))
 	if err != nil {
 		return err
 	}
-	encoded, err := json.MarshalIndent(snapshot, "", "  ")
+	_, err = cli.ValidateCommandRegistrySource(data)
+	return err
+}
+
+func validateManualAgentHintInput(rootPath, manualHintsPath string, registry commandRegistryProjection) error {
+	if strings.TrimSpace(manualHintsPath) == "" {
+		return fmt.Errorf("manual Agent hint input cannot be disabled")
+	}
+	path := resolveRootPath(rootPath, manualHintsPath)
+	canonicalPath := resolveRootPath(rootPath, "internal/cli/schema_manual_hints.json")
+	selectedInfo, err := os.Stat(path)
 	if err != nil {
-		return fmt.Errorf("encode snapshot: %w", err)
+		return fmt.Errorf("stat reviewed manual Agent hints: %w", err)
 	}
-	if err := os.MkdirAll(filepath.Dir(path), 0o755); err != nil {
-		return fmt.Errorf("create snapshot directory: %w", err)
+	canonicalInfo, err := os.Stat(canonicalPath)
+	if err != nil {
+		return fmt.Errorf("stat canonical reviewed manual Agent hints: %w", err)
 	}
-	if err := os.WriteFile(path, append(encoded, '\n'), 0o644); err != nil {
-		return fmt.Errorf("write snapshot: %w", err)
+	if !os.SameFile(selectedInfo, canonicalInfo) {
+		return fmt.Errorf("manual Agent hint input %q must resolve to canonical reviewed source %q", manualHintsPath, "internal/cli/schema_manual_hints.json")
 	}
-	surface := commandSurfaceFromSnapshot(snapshot)
-	_, _ = fmt.Fprintf(os.Stderr, "generated schema command surface: output=%s products=%d tools=%d hash=%s\n", path, len(surface.ProductIDs), surface.ToolCount, surface.Hash)
+	data, err := os.ReadFile(path)
+	if err != nil {
+		return fmt.Errorf("read reviewed manual Agent hints: %w", err)
+	}
+	snapshot, err := cli.DecodeManualSchemaHintSource(data)
+	if err != nil {
+		return fmt.Errorf("decode reviewed manual Agent hints: %w", err)
+	}
+	expectedTools := make(map[string]bool, len(registry.CanonicalToolPaths))
+	for canonical := range registry.CanonicalToolPaths {
+		expectedTools[canonical] = true
+	}
+	if err := cli.ValidateManualAgentHintSet(snapshot.AgentHints, registry.ProductIDs, expectedTools); err != nil {
+		return fmt.Errorf("validate reviewed manual Agent hints: %w", err)
+	}
+	if err := cli.ValidateManualAgentHintExamples(registry.Bound, snapshot.AgentHints); err != nil {
+		return fmt.Errorf("validate reviewed manual Agent hint examples: %w", err)
+	}
+	if _, err := cli.ValidateManualAgentSelectionContract(registry.Bound, snapshot.AgentHints); err != nil {
+		return fmt.Errorf("validate reviewed manual Agent selection contract: %w", err)
+	}
 	return nil
-}
-
-func commandSurfaceFromSnapshot(snapshot commandSurfaceSnapshot) commandSurface {
-	surface := commandSurface{
-		ToolPaths:  map[string]string{},
-		ProductIDs: map[string]bool{},
-	}
-	rows := make([]string, 0)
-	seenPrimary := map[string]bool{}
-	for _, product := range snapshot.Products {
-		productID := strings.TrimSpace(product.ID)
-		if productID != "" {
-			surface.ProductIDs[productID] = true
-		}
-		for _, tool := range product.Tools {
-			primary := strings.TrimSpace(tool.CLIPath)
-			if primary == "" {
-				continue
-			}
-			surface.ToolPaths[primary] = primary
-			if canonical := strings.TrimSpace(tool.CanonicalPath); canonical != "" {
-				surface.ToolPaths[canonical] = primary
-			}
-			if !seenPrimary[primary] {
-				seenPrimary[primary] = true
-				surface.ToolCount++
-			}
-			aliases := append([]string(nil), tool.Aliases...)
-			sort.Strings(aliases)
-			for _, alias := range aliases {
-				alias = strings.TrimSpace(alias)
-				if alias != "" {
-					surface.ToolPaths[alias] = primary
-				}
-			}
-			rows = append(rows, productID+"\x00"+strings.TrimSpace(tool.CanonicalPath)+"\x00"+strings.TrimSpace(tool.SourceProductID)+"\x00"+primary+"\x00"+strings.Join(aliases, "\x00"))
-		}
-	}
-	sort.Strings(rows)
-	sum := sha256.Sum256([]byte(strings.Join(rows, "\n")))
-	surface.Hash = "sha256:" + hex.EncodeToString(sum[:])
-	return surface
-}
-
-func normalizeCommandSurfaceSnapshot(snapshot commandSurfaceSnapshot) commandSurfaceSnapshot {
-	products := make([]commandSurfaceProduct, 0, len(snapshot.Products))
-	for _, product := range snapshot.Products {
-		product.ID = strings.TrimSpace(product.ID)
-		if product.ID == "" {
-			continue
-		}
-		tools := make([]commandSurfaceTool, 0, len(product.Tools))
-		for _, tool := range product.Tools {
-			tool.CanonicalPath = strings.TrimSpace(tool.CanonicalPath)
-			tool.SourceProductID = strings.TrimSpace(tool.SourceProductID)
-			tool.CLIPath = strings.TrimSpace(tool.CLIPath)
-			if tool.CLIPath == "" {
-				continue
-			}
-			aliases := make([]string, 0, len(tool.Aliases))
-			seenAliases := map[string]bool{}
-			for _, alias := range tool.Aliases {
-				alias = strings.TrimSpace(alias)
-				if alias != "" && !seenAliases[alias] {
-					seenAliases[alias] = true
-					aliases = append(aliases, alias)
-				}
-			}
-			sort.Strings(aliases)
-			tools = append(tools, commandSurfaceTool{
-				CanonicalPath:   tool.CanonicalPath,
-				SourceProductID: tool.SourceProductID,
-				CLIPath:         tool.CLIPath,
-				Aliases:         aliases,
-			})
-		}
-		sort.Slice(tools, func(i, j int) bool { return tools[i].CLIPath < tools[j].CLIPath })
-		products = append(products, commandSurfaceProduct{ID: product.ID, Tools: tools})
-	}
-	sort.Slice(products, func(i, j int) bool { return products[i].ID < products[j].ID })
-	return commandSurfaceSnapshot{Version: commandSurfaceSnapshotVersion, Products: products}
 }
 
 func resolveRootPath(root, path string) string {
@@ -493,6 +411,44 @@ func resolveRootPath(root, path string) string {
 		return path
 	}
 	return filepath.Join(root, path)
+}
+
+// validateManualHintsOutputIsolation protects the reviewed manual hint source
+// before the generator creates, removes, or writes any output. Output paths
+// keep their existing command semantics (relative to the current working
+// directory), while the manual input remains relative to --root.
+func validateManualHintsOutputIsolation(rootPath, manualHintsPath, outputPath, outputDir, auditOutputPath string) error {
+	return validateAgentMetadataOutputIsolation(rootPath,
+		[]outputguard.Input{{Name: "reviewed manual Agent hint input", Path: manualHintsPath}},
+		outputPath, outputDir, auditOutputPath,
+	)
+}
+
+func validateAgentMetadataOutputIsolation(rootPath string, inputs []outputguard.Input, outputPath, outputDir, auditOutputPath string) error {
+	return outputguard.Validate(rootPath,
+		inputs,
+		[]outputguard.Target{
+			{Name: "--output", Path: outputPath},
+			{Name: "--output-dir", Path: outputDir, Directory: true},
+			{Name: "--audit-output", Path: auditOutputPath},
+		},
+	)
+}
+
+func validateAgentMetadataOutputAllowlist(rootPath, outputPath, outputDir, auditOutputPath string) error {
+	for _, target := range []struct {
+		target  outputguard.Target
+		allowed string
+	}{
+		{outputguard.Target{Name: "--output", Path: outputPath}, "internal/cli/schema_agent_metadata.json"},
+		{outputguard.Target{Name: "--output-dir", Path: outputDir, Directory: true}, "internal/cli/schema_agent_metadata"},
+		{outputguard.Target{Name: "--audit-output", Path: auditOutputPath}, "internal/cli/schema_agent_metadata_audit.json"},
+	} {
+		if err := outputguard.ValidateRepoTargetAllowlist(rootPath, target.target, target.allowed); err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 func fail(err error) {

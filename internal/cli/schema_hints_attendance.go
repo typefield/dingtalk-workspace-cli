@@ -14,20 +14,6 @@
 package cli
 
 func init() {
-	RegisterRuntimeSchemaRoot("attendance", RuntimeSchemaRootHint{
-		Source: "hardcoded:attendance",
-		ToolNames: map[string]string{
-			"attendance record get":  "get_user_attendance_record",
-			"attendance record list": "get_user_attendance_record",
-			"attendance shift list":  "batch_get_employee_shifts",
-			"attendance summary":     "get_attendance_summary",
-			"attendance rules":       "query_attendance_group_or_rules",
-		},
-		PrimaryCLIPaths: map[string]string{
-			"get_user_attendance_record": "attendance record get",
-		},
-	})
-
 	RegisterSchemaHints("attendance", map[string]ToolSchemaHint{
 		"get_user_attendance_record": {
 			Parameters: map[string]ParameterSchemaHint{

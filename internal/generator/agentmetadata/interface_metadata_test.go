@@ -28,13 +28,16 @@ func TestGenerateUsesMCPDescriptionsAsUnreviewedFallback(t *testing.T) {
   "source_hash": "sha256:interface",
   "tools": {
     "calendar.get_calendar": {"description": "MCP 原始读取描述。"},
-    "calendar.list_calendars": {"description": "列出当前用户可访问的日历。后续句子不应进入 summary。"},
+    "calendar.list_calendars": {
+      "description": "列出当前用户可访问的日历。后续句子不应进入 summary。",
+      "interface_ref": {"product_id": "calendar", "rpc_name": "list_calendars"}
+    },
     "calendar.raw_tool": {"description": "raw_tool_name"},
     "outside.tool": {"description": "不在公开命令面"}
   }
 }`)
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:                  root,
 		SkillPath:             "skills/mono/SKILL.md",
 		ProductsDir:           "skills/mono/references/products",
@@ -63,11 +66,22 @@ func TestGenerateUsesMCPDescriptionsAsUnreviewedFallback(t *testing.T) {
 	if list.AgentSummarySource != "mcp-tools-list+cli-registry@abcdef123456" {
 		t.Fatalf("MCP summary source = %q", list.AgentSummarySource)
 	}
+	if list.InterfaceRef == nil || list.InterfaceRef.ProductID != "calendar" || list.InterfaceRef.RPCName != "list_calendars" {
+		t.Fatalf("MCP interface ref = %#v", list.InterfaceRef)
+	}
+	refProvenance := list.FieldProvenance["interface_ref"]
+	if refProvenance.Value != "calendar.list_calendars" || refProvenance.Precedence != "mcp_fallback" || refProvenance.Source == "" {
+		t.Fatalf("MCP interface ref provenance = %#v", refProvenance)
+	}
 	if list.Reviewed == nil || *list.Reviewed {
 		t.Fatalf("MCP fallback reviewed = %#v, want false", list.Reviewed)
 	}
-	if _, exists := metadata.Tools["calendar raw"]; exists {
-		t.Fatal("identifier-only MCP description must not create Agent metadata")
+	raw, exists := metadata.Tools["calendar raw"]
+	if !exists {
+		t.Fatal("effective command without an eligible MCP summary must retain an Agent metadata projection")
+	}
+	if raw.AgentSummary != "" {
+		t.Fatalf("identifier-only MCP description became an Agent summary: %#v", raw)
 	}
 	audit := stats.InterfaceMetadata
 	if audit == nil || audit.SourceTools != 4 || audit.SurfaceTools != 3 ||

@@ -17,19 +17,15 @@ import (
 	"fmt"
 	"sort"
 	"strings"
-
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/ir"
 )
 
-// ToolSchemaHint is the hardcoded prompt/schema hint for a non-helper MCP tool.
-// Product-specific files register these hints through RegisterSchemaHints.
-// Helper and runtime commands can carry curated descriptions through this
-// framework without fetching live MCP schemas.
+// ToolSchemaHint is reviewed field metadata for an existing registry-owned
+// tool. It intentionally has no command path, alias, visibility, or canonical
+// identity fields: all identity/navigation comes from CommandRegistry.
 type ToolSchemaHint struct {
-	Title          string
-	Description    string
-	PrimaryCLIPath string
-	Parameters     map[string]ParameterSchemaHint
+	Title       string
+	Description string
+	Parameters  map[string]ParameterSchemaHint
 }
 
 // ParameterSchemaHint overrides the projected flat schema for one parameter.
@@ -52,21 +48,7 @@ const (
 )
 
 type SchemaHintRegistry struct {
-	tools             map[string]ToolSchemaHint
-	runtimeRoots      map[string]RuntimeSchemaRootHint
-	productVisibility map[string]SchemaVisibility
-}
-
-// RuntimeSchemaRootHint opts a hardcoded top-level command tree into `dws
-// schema`. The schema renderer walks the actual Cobra leaves under ProductID
-// and builds parameters from registered flags. ToolNames optionally maps a CLI
-// path like "aitable record query" to the real MCP tool name; unmapped leaves use
-// a stable path-derived name.
-type RuntimeSchemaRootHint struct {
-	Source          string
-	ToolNames       map[string]string
-	PrimaryCLIPaths map[string]string
-	IncludeCLIPaths map[string]bool
+	tools map[string]ToolSchemaHint
 }
 
 func boolPtr(v bool) *bool { return &v }
@@ -75,9 +57,7 @@ var defaultSchemaHintRegistry = newSchemaHintRegistry()
 
 func newSchemaHintRegistry() *SchemaHintRegistry {
 	return &SchemaHintRegistry{
-		tools:             map[string]ToolSchemaHint{},
-		runtimeRoots:      map[string]RuntimeSchemaRootHint{},
-		productVisibility: map[string]SchemaVisibility{},
+		tools: map[string]ToolSchemaHint{},
 	}
 }
 
@@ -87,28 +67,6 @@ func newSchemaHintRegistry() *SchemaHintRegistry {
 // conflicting product hint files are caught early.
 func RegisterSchemaHints(productID string, tools map[string]ToolSchemaHint) {
 	defaultSchemaHintRegistry.RegisterProduct(productID, tools)
-}
-
-// RegisterRuntimeSchemaRoot registers a hardcoded product command tree as a
-// runtime schema source. Use this for products whose runnable commands are
-// maintained in Go helpers rather than generated from ToolOverrides.
-func RegisterRuntimeSchemaRoot(productID string, hint RuntimeSchemaRootHint) {
-	defaultSchemaHintRegistry.RegisterRuntimeRoot(productID, hint)
-}
-
-// RegisterSchemaProductVisibility controls whether a top-level implementation
-// product is independently exposed through Agent schema. Internal and compat
-// products remain executable but must be represented by public canonical
-// helpers or aliases instead of separate tools.
-func RegisterSchemaProductVisibility(productID string, visibility SchemaVisibility) {
-	defaultSchemaHintRegistry.RegisterProductVisibility(productID, visibility)
-}
-
-// SchemaProductVisibilityFor exposes the reviewed public/compat/internal
-// classification to the application help layer. Non-public implementation
-// roots stay executable for compatibility but are hidden from help and Schema.
-func SchemaProductVisibilityFor(productID string) SchemaVisibility {
-	return defaultSchemaHintRegistry.ProductVisibility(productID)
 }
 
 func (r *SchemaHintRegistry) RegisterProduct(productID string, tools map[string]ToolSchemaHint) {
@@ -128,62 +86,6 @@ func (r *SchemaHintRegistry) RegisterProduct(productID string, tools map[string]
 	}
 }
 
-func (r *SchemaHintRegistry) RegisterRuntimeRoot(productID string, hint RuntimeSchemaRootHint) {
-	productID = strings.TrimSpace(productID)
-	if productID == "" {
-		panic("schema hints: runtime schema root product id is required")
-	}
-	if _, exists := r.runtimeRoots[productID]; exists {
-		panic(fmt.Sprintf("schema hints: duplicate runtime schema root for %s", productID))
-	}
-	normalized := RuntimeSchemaRootHint{
-		Source:          strings.TrimSpace(hint.Source),
-		ToolNames:       map[string]string{},
-		PrimaryCLIPaths: map[string]string{},
-		IncludeCLIPaths: map[string]bool{},
-	}
-	for path, toolName := range hint.ToolNames {
-		path = strings.Join(splitSchemaPathTokens(path), " ")
-		toolName = strings.TrimSpace(toolName)
-		if path == "" || toolName == "" {
-			continue
-		}
-		normalized.ToolNames[path] = toolName
-	}
-	for toolName, cliPath := range hint.PrimaryCLIPaths {
-		toolName = strings.TrimSpace(toolName)
-		cliPath = strings.Join(splitSchemaPathTokens(cliPath), " ")
-		if toolName == "" || cliPath == "" {
-			continue
-		}
-		normalized.PrimaryCLIPaths[toolName] = cliPath
-	}
-	for cliPath, included := range hint.IncludeCLIPaths {
-		cliPath = strings.Join(splitSchemaPathTokens(cliPath), " ")
-		if cliPath == "" || !included {
-			continue
-		}
-		normalized.IncludeCLIPaths[cliPath] = true
-	}
-	r.runtimeRoots[productID] = normalized
-}
-
-func (r *SchemaHintRegistry) RegisterProductVisibility(productID string, visibility SchemaVisibility) {
-	productID = strings.TrimSpace(productID)
-	if productID == "" {
-		panic("schema hints: product visibility product id is required")
-	}
-	switch visibility {
-	case SchemaVisibilityPublic, SchemaVisibilityCompat, SchemaVisibilityInternal:
-	default:
-		panic(fmt.Sprintf("schema hints: unsupported visibility %q for %s", visibility, productID))
-	}
-	if _, exists := r.productVisibility[productID]; exists {
-		panic(fmt.Sprintf("schema hints: duplicate product visibility for %s", productID))
-	}
-	r.productVisibility[productID] = visibility
-}
-
 func (r *SchemaHintRegistry) Lookup(canonicalPath string) (ToolSchemaHint, bool) {
 	canonicalPath = strings.TrimSpace(canonicalPath)
 	if canonicalPath == "" {
@@ -191,41 +93,6 @@ func (r *SchemaHintRegistry) Lookup(canonicalPath string) (ToolSchemaHint, bool)
 	}
 	hint, ok := r.tools[canonicalPath]
 	return hint, ok
-}
-
-func (r *SchemaHintRegistry) RuntimeRoots() map[string]RuntimeSchemaRootHint {
-	out := make(map[string]RuntimeSchemaRootHint, len(r.runtimeRoots))
-	for productID, hint := range r.runtimeRoots {
-		copied := RuntimeSchemaRootHint{Source: hint.Source}
-		if len(hint.ToolNames) > 0 {
-			copied.ToolNames = make(map[string]string, len(hint.ToolNames))
-			for path, toolName := range hint.ToolNames {
-				copied.ToolNames[path] = toolName
-			}
-		}
-		if len(hint.PrimaryCLIPaths) > 0 {
-			copied.PrimaryCLIPaths = make(map[string]string, len(hint.PrimaryCLIPaths))
-			for toolName, cliPath := range hint.PrimaryCLIPaths {
-				copied.PrimaryCLIPaths[toolName] = cliPath
-			}
-		}
-		if len(hint.IncludeCLIPaths) > 0 {
-			copied.IncludeCLIPaths = make(map[string]bool, len(hint.IncludeCLIPaths))
-			for cliPath, included := range hint.IncludeCLIPaths {
-				copied.IncludeCLIPaths[cliPath] = included
-			}
-		}
-		out[productID] = copied
-	}
-	return out
-}
-
-func (r *SchemaHintRegistry) ProductVisibility(productID string) SchemaVisibility {
-	productID = strings.TrimSpace(productID)
-	if visibility := r.productVisibility[productID]; visibility != "" {
-		return visibility
-	}
-	return SchemaVisibilityPublic
 }
 
 func canonicalHintPath(productID, name string) string {
@@ -238,10 +105,6 @@ func canonicalHintPath(productID, name string) string {
 		return name
 	}
 	return productID + "." + name
-}
-
-func schemaHintForTool(tool ir.ToolDescriptor) ToolSchemaHint {
-	return schemaHintForCanonicalPath(tool.CanonicalPath)
 }
 
 func schemaHintForCanonicalPath(canonicalPath string) ToolSchemaHint {

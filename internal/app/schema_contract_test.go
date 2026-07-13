@@ -5,7 +5,11 @@
 package app
 
 import (
+	"bytes"
+	"encoding/json"
+	"fmt"
 	"reflect"
+	"sort"
 	"strings"
 	"testing"
 
@@ -16,59 +20,123 @@ import (
 
 func TestEmbeddedSchemaContractMapsToExecutableTree(t *testing.T) {
 	root := NewRootCommand()
-	report := cli.AnnotateEmbeddedSchemaCommands(root)
-	definitions := cli.EmbeddedSchemaCommandDefinitions()
-	bindings := cli.EmbeddedSchemaParameterBindings()
-	if len(definitions) != 538 {
-		t.Fatalf("embedded definitions = %d, want 538", len(definitions))
+	effective, err := cli.BuildEffectiveCommandRegistry(root)
+	if err != nil {
+		t.Fatal(err)
 	}
-	if report.Matched != len(definitions) || len(report.Missing) != 0 {
-		t.Fatalf("schema annotation report = matched:%d missing:%v", report.Matched, report.Missing)
+	expected := make(map[string]bool)
+	for _, command := range effective.Commands {
+		if command.Visibility == cli.SchemaVisibilityPublic {
+			expected[command.CanonicalPath] = true
+		}
 	}
 
-	seen := make(map[string]bool, len(definitions))
-	for _, definition := range definitions {
-		if seen[definition.CanonicalPath] {
-			t.Fatalf("duplicate canonical path %q", definition.CanonicalPath)
+	var stdout, stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"schema", "--all", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute embedded schema --all: %v; stderr=%s", err, stderr.String())
+	}
+	var payload struct {
+		Products []struct {
+			Tools []struct {
+				CanonicalPath string `json:"canonical_path"`
+			} `json:"tools"`
+		} `json:"products"`
+	}
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("decode embedded schema --all: %v", err)
+	}
+	actual := make(map[string]bool)
+	var duplicates []string
+	for _, product := range payload.Products {
+		for _, tool := range product.Tools {
+			canonical := strings.TrimSpace(tool.CanonicalPath)
+			if canonical == "" {
+				t.Fatal("embedded schema --all contains an empty canonical path")
+			}
+			if actual[canonical] {
+				duplicates = append(duplicates, canonical)
+			}
+			actual[canonical] = true
 		}
-		seen[definition.CanonicalPath] = true
-		command := exactCommandForTest(root, definition.CLIPath)
+	}
+	if len(duplicates) > 0 {
+		sort.Strings(duplicates)
+		t.Fatalf("embedded schema --all contains duplicate canonicals: %v", duplicates)
+	}
+
+	var missing, extra []string
+	for canonical := range expected {
+		if !actual[canonical] {
+			missing = append(missing, canonical)
+		}
+	}
+	for canonical := range actual {
+		if !expected[canonical] {
+			extra = append(extra, canonical)
+		}
+	}
+	if len(missing) > 0 || len(extra) > 0 {
+		sort.Strings(missing)
+		sort.Strings(extra)
+		t.Fatalf("embedded Schema canonical set differs from EffectiveCommandRegistry: missing=%v extra=%v", missing, extra)
+	}
+}
+
+func TestGeneratedSchemaContractMapsToExecutableTree(t *testing.T) {
+	root := NewRootCommand()
+	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{})
+	if err != nil {
+		t.Fatal(err)
+	}
+	bindings := cli.EmbeddedSchemaParameterBindings()
+	if len(snapshot.Tools) == 0 {
+		t.Fatal("generated Schema Catalog contains no tools")
+	}
+	for canonicalPath := range bindings {
+		if _, ok := snapshot.Tools[canonicalPath]; !ok {
+			t.Errorf("parameter bindings reference canonical %q that is absent from the final generated Schema", canonicalPath)
+		}
+	}
+
+	for canonicalPath, definition := range snapshot.Tools {
+		cliPath := schemaContractString(definition["primary_cli_path"])
+		if cliPath == "" {
+			cliPath = schemaContractString(definition["cli_path"])
+		}
+		command := exactCommandForTest(root, cliPath)
 		if command == nil {
-			for _, alias := range definition.Aliases {
+			for _, alias := range schemaContractStringSlice(definition["aliases"]) {
 				if command = exactCommandForTest(root, alias); command != nil {
 					break
 				}
 			}
 		}
 		if command == nil {
-			t.Errorf("%s has no executable CLI path %q", definition.CanonicalPath, definition.CLIPath)
+			t.Errorf("%s has no executable CLI path %q", canonicalPath, cliPath)
 			continue
 		}
-		for _, parameter := range definition.Parameters {
-			flag := schemaContractCommandFlag(command, parameter.Name)
+		for parameterName, rawParameter := range schemaContractMap(definition["parameters"]) {
+			flag := schemaContractCommandFlag(command, parameterName)
 			if flag == nil {
-				t.Errorf("%s maps parameter %q to missing flag on %q", definition.CanonicalPath, parameter.Name, command.CommandPath())
+				t.Errorf("%s maps parameter %q to missing flag on %q", canonicalPath, parameterName, command.CommandPath())
 				continue
 			}
-			if got := schemaContractFlagDefault(flag); parameter.Default != got {
-				t.Errorf("%s parameter %q default = %q, Cobra --help default = %q", definition.CanonicalPath, parameter.Name, parameter.Default, got)
+			if got, want := schemaContractFlagDefault(flag), schemaContractString(rawParameter["default"]); want != got {
+				t.Errorf("%s parameter %q default = %q, Cobra --help default = %q", canonicalPath, parameterName, want, got)
 			}
 		}
-		for flagName, propertyName := range bindings[definition.CanonicalPath] {
+		for flagName, propertyName := range bindings[canonicalPath] {
 			flag := schemaContractCommandFlag(command, flagName)
 			if flag == nil || flag.Hidden {
-				t.Errorf("%s binding --%s references a missing or hidden public flag", definition.CanonicalPath, flagName)
+				t.Errorf("%s binding --%s references a missing or hidden public flag", canonicalPath, flagName)
 				continue
 			}
-			var found bool
-			for _, parameter := range definition.Parameters {
-				if parameter.Name == flagName && parameter.Property == propertyName {
-					found = true
-					break
-				}
-			}
-			if !found {
-				t.Errorf("%s binding --%s -> %s is absent from generated Catalog", definition.CanonicalPath, flagName, propertyName)
+			parameter := schemaContractMap(definition["parameters"])[flagName]
+			if parameter == nil || schemaContractString(parameter["property"]) != propertyName {
+				t.Errorf("%s binding --%s -> %s is absent from generated Catalog", canonicalPath, flagName, propertyName)
 			}
 		}
 	}
@@ -76,12 +144,7 @@ func TestEmbeddedSchemaContractMapsToExecutableTree(t *testing.T) {
 
 func TestRuntimeSchemaParameterMetadataMapsToGeneratedCatalog(t *testing.T) {
 	root := NewRootCommand()
-	cli.AnnotateEmbeddedSchemaCommands(root)
-	allowed := map[string]bool{}
-	for _, definition := range cli.EmbeddedSchemaCommandDefinitions() {
-		allowed[definition.CanonicalPath] = true
-	}
-	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{AllowedCanonicalPaths: allowed})
+	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{})
 	if err != nil {
 		t.Fatal(err)
 	}
@@ -179,36 +242,113 @@ func schemaContractCommandFlag(command *cobra.Command, name string) *pflag.Flag 
 	return nil
 }
 
-func TestChatSchemaSeparatesSendAndReply(t *testing.T) {
-	definitions := map[string]cli.CatalogCommandDefinition{}
-	for _, definition := range cli.EmbeddedSchemaCommandDefinitions() {
-		definitions[definition.CanonicalPath] = definition
+func schemaContractMap(value any) map[string]map[string]any {
+	switch typed := value.(type) {
+	case map[string]map[string]any:
+		return typed
+	case map[string]any:
+		out := make(map[string]map[string]any, len(typed))
+		for key, item := range typed {
+			if object, ok := item.(map[string]any); ok {
+				out[key] = object
+			}
+		}
+		return out
+	default:
+		return nil
 	}
+}
 
-	send, ok := definitions["chat.send_personal_message"]
-	if !ok || send.CLIPath != "chat message send" {
+func schemaContractString(value any) string {
+	switch typed := value.(type) {
+	case string:
+		return typed
+	case nil:
+		return ""
+	default:
+		return fmt.Sprint(typed)
+	}
+}
+
+func schemaContractStringSlice(value any) []string {
+	switch typed := value.(type) {
+	case []string:
+		return typed
+	case []any:
+		out := make([]string, 0, len(typed))
+		for _, item := range typed {
+			if text, ok := item.(string); ok {
+				out = append(out, text)
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+// schemaContractPayloadForBoundCanonicals builds a small test fixture by
+// selecting already validated BoundCommand entries before Schema assembly.
+// Production generation deliberately has no post-assembly subset option: its
+// delivered set must always equal the public EffectiveCommandRegistry set.
+func schemaContractPayloadForBoundCanonicals(t *testing.T, root *cobra.Command, canonicals ...string) cli.SchemaSnapshotPayload {
+	t.Helper()
+	if _, err := cli.ApplyEmbeddedManualSchemaHints(root); err != nil {
+		t.Fatalf("apply manual Schema hints: %v", err)
+	}
+	effective, err := cli.BuildEffectiveCommandRegistry(root)
+	if err != nil {
+		t.Fatalf("build effective CommandRegistry: %v", err)
+	}
+	fixtureRegistry := cli.EffectiveCommandRegistry{Commands: make([]cli.CommandSpec, 0, len(canonicals))}
+	for _, canonical := range canonicals {
+		command, ok := effective.ByCanonical[canonical]
+		if !ok {
+			t.Fatalf("effective fixture has no canonical %s", canonical)
+		}
+		fixtureRegistry.Commands = append(fixtureRegistry.Commands, command)
+	}
+	fixture, err := cli.BindEffectiveCommandRegistry(root, fixtureRegistry)
+	if err != nil {
+		t.Fatalf("bind synthetic effective CommandRegistry: %v", err)
+	}
+	registry, err := cli.AssembleSchemaRegistryFromBound(fixture)
+	if err != nil {
+		t.Fatalf("assemble synthetic bound Schema registry: %v", err)
+	}
+	payload, err := registry.ToSnapshotPayload()
+	if err != nil {
+		t.Fatalf("render synthetic bound Schema registry: %v", err)
+	}
+	return payload
+}
+
+func TestChatSchemaSeparatesSendAndReply(t *testing.T) {
+	snapshot := schemaContractPayloadForBoundCanonicals(t, NewRootCommand(),
+		"chat.send_personal_message",
+		"chat.reply_personal_message",
+	)
+
+	send, ok := snapshot.Tools["chat.send_personal_message"]
+	if !ok || schemaContractString(send["primary_cli_path"]) != "chat message send" {
 		t.Fatalf("send definition = %#v", send)
 	}
-	reply, ok := definitions["chat.reply_personal_message"]
-	if !ok || reply.CLIPath != "chat message reply" {
+	reply, ok := snapshot.Tools["chat.reply_personal_message"]
+	if !ok || schemaContractString(reply["primary_cli_path"]) != "chat message reply" {
 		t.Fatalf("reply definition = %#v", reply)
 	}
-	if reply.SourceProductID != "chat" || reply.RPCName != "send_personal_message" {
-		t.Fatalf("reply interface = %s/%s", reply.SourceProductID, reply.RPCName)
+	interfaceRef, _ := reply["interface_ref"].(map[string]any)
+	if schemaContractString(interfaceRef["product_id"]) != "chat" || schemaContractString(interfaceRef["rpc_name"]) != "send_personal_message" {
+		t.Fatalf("reply interface = %#v", interfaceRef)
 	}
-	if _, exists := definitions["chat.upload_conversation_file"]; exists {
+	if _, exists := snapshot.Tools["chat.upload_conversation_file"]; exists {
 		t.Fatal("downlined chat file upload must not be advertised in Schema")
 	}
 }
 
 func TestCalendarAttendeeDeleteSchemaRequiresUserConfirmation(t *testing.T) {
 	root := NewRootCommand()
-	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{
-		AllowedCanonicalPaths: map[string]bool{"calendar.remove_calendar_participant": true},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	snapshot := schemaContractPayloadForBoundCanonicals(t, root, "calendar.remove_calendar_participant")
 	tool := snapshot.Tools["calendar.remove_calendar_participant"]
 	if got := tool["risk"]; got != "high" {
 		t.Fatalf("calendar attendee delete risk = %#v, want high", got)
@@ -219,43 +359,37 @@ func TestCalendarAttendeeDeleteSchemaRequiresUserConfirmation(t *testing.T) {
 }
 
 func TestDefaultedPaginationSchemaFlagsAreOptional(t *testing.T) {
-	definitions := map[string]cli.CatalogCommandDefinition{}
-	for _, definition := range cli.EmbeddedSchemaCommandDefinitions() {
-		definitions[definition.CanonicalPath] = definition
-	}
-	for canonicalPath, flags := range map[string][]string{
+	wants := map[string][]string{
 		"chat.search_messages_by_time_range": {"limit"},
 		"oa.list_user_visible_process":       {"cursor", "limit"},
 		"report.get_received_report_list":    {"cursor", "size"},
 		"todo.get_user_todos_in_current_org": {"page"},
-	} {
-		parameters := map[string]cli.CatalogParameterDefinition{}
-		for _, parameter := range definitions[canonicalPath].Parameters {
-			parameters[parameter.Name] = parameter
-		}
+	}
+	canonicals := make([]string, 0, len(wants)+1)
+	for canonicalPath := range wants {
+		canonicals = append(canonicals, canonicalPath)
+	}
+	canonicals = append(canonicals, "aitable.section_reorder")
+	sort.Strings(canonicals)
+	snapshot := schemaContractPayloadForBoundCanonicals(t, NewRootCommand(), canonicals...)
+	for canonicalPath, flags := range wants {
+		parameters := schemaContractMap(snapshot.Tools[canonicalPath]["parameters"])
 		for _, flagName := range flags {
-			if parameters[flagName].Required {
+			if parameters[flagName]["required"] == true {
 				t.Errorf("%s --%s has a CLI default and must remain optional", canonicalPath, flagName)
 			}
 		}
 	}
 
-	for _, parameter := range definitions["aitable.section_reorder"].Parameters {
-		if parameter.Name == "target-index" && !parameter.Required {
-			t.Error("aitable.section_reorder --target-index uses -1 as a sentinel and must remain required")
-		}
+	targetIndex := schemaContractMap(snapshot.Tools["aitable.section_reorder"]["parameters"])["target-index"]
+	if targetIndex["required"] != true {
+		t.Error("aitable.section_reorder --target-index uses -1 as a sentinel and must remain required")
 	}
 }
 
 func TestPATSchemaKeepsCLIContract(t *testing.T) {
 	root := NewRootCommand()
-	cli.AnnotateEmbeddedSchemaCommands(root)
-	payload, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{
-		AllowedCanonicalPaths: map[string]bool{"pat.batch_grant": true},
-	})
-	if err != nil {
-		t.Fatal(err)
-	}
+	payload := schemaContractPayloadForBoundCanonicals(t, root, "pat.batch_grant")
 	tool := payload.Tools["pat.batch_grant"]
 	parameters, _ := tool["parameters"].(map[string]any)
 	grantType, _ := parameters["grant-type"].(map[string]any)

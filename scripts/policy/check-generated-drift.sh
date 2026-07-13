@@ -1,14 +1,23 @@
 #!/bin/sh
 set -eu
 
-# Regenerate deterministic release assets into a temporary directory and
-# compare them with the committed files.
+# Regenerate deterministic downstream release assets from the reviewed
+# CommandRegistry into a temporary directory and compare them with the
+# committed files.
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
 cd "$ROOT"
 
 tmp="$(mktemp -d)"
 trap 'rm -rf "$tmp"' EXIT HUP INT TERM
+
+# CommandRegistry and Manual Schema/Agent hints are reviewed inputs, never
+# generated artifacts. Keep independent byte-for-byte guards around the
+# ordinary downstream generators.
+registry_guard="$tmp/schema_command_registry.json"
+manual_hints_guard="$tmp/schema_manual_hints.json"
+cp internal/cli/schema_command_registry.json "$registry_guard"
+cp internal/cli/schema_manual_hints.json "$manual_hints_guard"
 
 metadata_tmp="$tmp/metadata"
 audit_tmp="$tmp/audit.json"
@@ -17,7 +26,7 @@ catalog_tmp_second="$tmp/catalog-second.json"
 
 go run ./internal/generator/cmd_schema_agent_metadata \
   -root . \
-  -surface internal/cli/schema_command_surface.json \
+  -registry internal/cli/schema_command_registry.json \
   -output-dir "$metadata_tmp" \
   -audit-output "$audit_tmp"
 
@@ -35,13 +44,23 @@ if ! cmp -s internal/cli/schema_agent_metadata_audit.json "$audit_tmp"; then
 	exit 1
 fi
 
-go run ./internal/generator/cmd_schema_catalog \
-  -surface internal/cli/schema_command_surface.json \
-  -output "$catalog_tmp"
+go run -a ./internal/generator/cmd_schema_catalog \
+	-root . \
+	-output "$catalog_tmp"
 
-go run ./internal/generator/cmd_schema_catalog \
-  -surface internal/cli/schema_command_surface.json \
-  -output "$catalog_tmp_second"
+go run -a ./internal/generator/cmd_schema_catalog \
+	-root . \
+	-output "$catalog_tmp_second"
+
+if ! cmp -s internal/cli/schema_command_registry.json "$registry_guard"; then
+	printf '%s\n' 'generation modified reviewed input internal/cli/schema_command_registry.json' >&2
+	exit 1
+fi
+
+if ! cmp -s internal/cli/schema_manual_hints.json "$manual_hints_guard"; then
+	printf '%s\n' 'generation modified reviewed input internal/cli/schema_manual_hints.json' >&2
+	exit 1
+fi
 
 if ! cmp -s "$catalog_tmp" "$catalog_tmp_second"; then
 	printf '%s\n' 'generated drift: consecutive Catalog generations are not byte-identical' >&2

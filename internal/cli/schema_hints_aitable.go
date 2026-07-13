@@ -14,17 +14,6 @@
 package cli
 
 func init() {
-	RegisterRuntimeSchemaRoot("aitable", RuntimeSchemaRootHint{
-		Source: "hardcoded:aitable",
-		ToolNames: map[string]string{
-			"aitable record query": "query_records",
-			"aitable record list":  "query_records",
-		},
-		PrimaryCLIPaths: map[string]string{
-			"query_records": "aitable record query",
-		},
-	})
-
 	RegisterSchemaHints("aitable", map[string]ToolSchemaHint{
 		"attachment_upload": {
 			Parameters: map[string]ParameterSchemaHint{
@@ -62,8 +51,7 @@ func init() {
 			},
 		},
 		"query_records": {
-			Description:    "查询 AI 表格记录。默认返回单页；传 --all 时自动翻页累计全部记录。",
-			PrimaryCLIPath: "aitable record query",
+			Description: "查询 AI 表格记录。默认返回单页；传 --all 时自动翻页累计全部记录。",
 			Parameters: map[string]ParameterSchemaHint{
 				"baseId": {
 					FlagName:    "base-id",

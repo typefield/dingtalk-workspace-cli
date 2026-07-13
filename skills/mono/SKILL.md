@@ -9,7 +9,7 @@ cli_version: ">=1.0.15"
 通过 `dws` 命令管理钉钉产品能力。
 
 
-> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。`--help` 决定 Cobra 实际接受的 flags；对应 leaf Schema 决定 Agent 选择、参数映射/约束和安全确认语义。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 ## 严格禁止 (NEVER DO)
 - 不要使用 dws 命令以外的方式操作（禁止 curl、HTTP API、浏览器）
@@ -125,9 +125,11 @@ Step 3 → 加 --yes 执行命令
 
 ## 命令发现（Schema 渐进查询 + --help 互为补充）
 
-### Schema 渐进查询（首选，Agent 友好）
+### Schema 渐进查询（Agent 选命令首选）
 
-`dws schema` 内嵌了 21 产品、504 工具的结构化契约。**Agent 选命令时应优先用 schema 渐进查询**，只在需要人读示例时补查 `--help`：
+`dws schema` 内嵌当前二进制公开命令面的结构化契约。**Agent 选择命令、读取参数映射/约束和安全语义时必须优先渐进查询 leaf Schema**；真正组装执行参数前，用 `--help` 确认当前 Cobra 接受的 flags：
+
+稳定 command identity、主 CLI path 和 alias 已在构建时由 reviewed registry 与真实 Cobra tree 精确绑定。Agent 不应读取 Catalog 文件、native annotation 或其他生成 JSON 来重新推断命令；所有运行时查询都以当前二进制交付的 Schema 投影为准。
 
 ```bash
 # 第 1 层：产品概览（~4.5KB，列出全部产品 + 工具数 + 用途摘要）
@@ -142,14 +144,20 @@ dws schema "calendar event"
 # 第 4 层：完整 leaf（参数契约：type/required/description/constraints/examples）
 dws schema "calendar event create"
 
-# --compact：去除 provenance/debug 字段，仅保留 Agent 选参所需（体积减约 50%）
+# --compact：当前支持；去除 provenance/debug 字段，仅保留 Agent 选参所需
 dws schema "calendar event create" --compact
 
-# --all --compact：全量 504 工具 compact 模式（审计 / 一次性加载）
-dws schema --all --compact
+# --all：导出所有工具的完整 leaf Schema，仅用于 CI / 审计 / 参数 baseline
+dws schema --all --format json
 ```
 
-**--compact 模式**去掉的字段：`agent_metadata_source`、`agent_source_refs`、`agent_summary_source`、`effect_source`、`metadata_source`、`interface_ref`、`interface_description`、`property`、`primary_cli_path`、`parameter_count` 等 provenance/debug 字段。保留的字段：`cli_path`、`canonical_path`、`description`、`effect`、`risk`、`confirmation`、`parameters`（含 `type`/`required`/`description`/`default`/`enum`）、`constraints`、`examples`、`use_when`、`avoid_when`。
+**`--all` 使用边界（强制）**：`--all` 会返回每个工具的完整参数、约束和安全语义，输出体积很大。仅在用户明确要求全量导出，或执行 CI、Catalog 审计、参数防丢 baseline 时使用。普通业务任务严禁使用 `--all` 做命令发现，也不要把全量结果直接注入 Agent 上下文；必须按“产品概览 → 产品/分组 → leaf”渐进查询。完整兼容性 baseline 必须使用未裁剪的 `schema --all`；`schema --all --compact` 会移除 provenance 和接口映射字段，不得作为完整 baseline。
+
+同一个工具的 leaf 查询与 `--all` 条目是同一份 `ToolSpec` 契约的投影，参数、安全和接口语义必须一致。Alias 查询只改变路径视图；不得根据 alias 重写或补猜参数。若观察到内容差异，应作为契约漂移报告，而不是选择其中一份继续执行。
+
+**--compact 模式**去掉的字段：`agent_metadata_source`、`agent_source_refs`、`agent_summary_source`、`effect_source`、`metadata_source`、`interface_ref`、`interface_description`、`property`、`primary_cli_path`、`parameter_count` 等 provenance/debug 字段。保留的字段：`cli_path`、`canonical_path`、`description`、`effect`、`risk`、`confirmation`、`interface_mode`、`availability`、`interface_reason`、`parameters`（含 `type`/`required`/`description`/`default`/`enum`）、`constraints`、`examples`、`use_when`、`avoid_when`。
+
+`--compact` 是 Schema 展示能力。当前版本支持；若兼容旧二进制时收到 `unknown_flag: --compact`，仅去掉 `--compact` 重跑同一个 Schema 查询。不要因此判定 leaf 不存在，也不要改用 Schema 查询业务数据。
 
 ### Schema 字段速查
 
@@ -162,6 +170,9 @@ dws schema --all --compact
   "effect": "write",           // read | write | destructive
   "risk": "medium",            // low | medium | high
   "confirmation": "not_required", // not_required | user_required
+  "interface_mode": "mcp",     // mcp | local | composite
+  "availability": "available", // available | unavailable
+  "interface_reason": "",
   "parameters": {
     "title": { "type": "string", "required": true, "description": "..." },
     "start": { "type": "string", "required": true, "format": "date-time" }
@@ -172,18 +183,28 @@ dws schema --all --compact
 }
 ```
 
-- `effect=destructive` 或 `risk=high` → 必须先向用户确认再加 `--yes`
-- `parameters.<flag>.required=true` → 缺少该 flag 命令会被拒绝
+- `confirmation=user_required` → 必须先向用户确认再加 `--yes`；不要根据 `effect` 或 `risk` 的值自行重写最终 confirmation winner
+- `availability=unavailable` → 不执行该工具；向用户说明 `interface_reason`。`interface_mode` 只描述实现机制，不能覆盖 availability
+- `parameters.<flag>.required=true` → Agent 应提供该参数；Cobra 是否硬拒绝以 `--help`/实际命令契约为准
+- `parameters.<flag>.cli_required=true` → Cobra 将该 flag 标记为硬必填
 - `constraints.require_together` → 列出的 flag 必须同时提供
 
-### 何时用 Schema vs --help
+### Schema、Help 与业务数据的边界
 
-| 场景 | 用什么 |
+| 信息 | 事实源 |
 |------|--------|
-| 选择哪个命令 | `dws schema` → `dws schema <product>` |
-| 确定参数名 / 类型 / 必填 | `dws schema "<cli_path>" --compact` |
-| 看人类可读用法 / 示例 | `dws <cli_path> --help` |
-| 参数和文档冲突时 | **以 schema 为准**（schema 从当前二进制生成） |
+| 命令是否存在、当前 Cobra 接受哪些 flags | `dws <cli_path> --help` |
+| Agent 选择、参数映射/required/组合约束、risk/confirmation | `dws schema "<cli_path>"`（按需加 `--compact`） |
+| 人类可读用法 | `dws <cli_path> --help` |
+| 钉钉中的文档、文件、日程、消息等实际数据 | 真正执行对应的 `read` / `search` / `list` 命令 |
+
+Schema 与 Help 冲突是**契约漂移**，不得静默猜测或把两边字段随意拼接：
+
+- 执行参数只使用 Cobra/Help 接受的 flags，并把漂移报告出来。
+- 安全语义冲突时不能选择更宽松行为；先采用更保守的确认方式，无法确认安全执行方式时停止并报告。
+- leaf Schema 是已经按来源 precedence 解析后的契约；不要根据值的“严格程度”自行改写 winner。只有发现它与 Help/实际执行契约冲突时，才进入上述安全降级。
+
+`dws schema` 只查询命令契约，不搜索钉钉文档或业务数据。完成命令发现后，必须继续执行真实命令，例如 `dws doc read`、`dws drive search`；不要把 Schema 查询结果当成业务查询结果。
 
 ## 错误处理
 1. 遇到错误，加 `--verbose` 重试一次
@@ -196,7 +217,7 @@ dws schema --all --compact
 
 ## 详细参考 (按需读取)
 
-- [references/products/](./references/products/) — 各产品命令详细参考（flag 细节以 `dws schema --compact` / `--help` 为准）
+- [references/products/](./references/products/) — 各产品命令详细参考（Cobra 接受的 flag 以 `--help` 为准，Agent 映射/约束/安全语义以 leaf Schema 为准）
 - [references/intent-guide.md](./references/intent-guide.md) — 意图路由指南（易混淆场景对照）
 - [references/url-patterns.md](./references/url-patterns.md) — URL 格式规范 + alidocs URL 分流决策与类型探测流程（含钉盘 `document/edit|preview?dentryKey=` 链接）
 - [references/global-reference.md](./references/global-reference.md) — 全局标志、认证、输出格式

@@ -3,514 +3,3785 @@
   "tools": {
     "oa approval approve": {
       "agent_summary": "同意审批",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "4a. 同意审批",
-        "同意审批/批准"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed",
-        "要“获取抄送用户的列表”请改用 dws oa approval list-cc"
+        "只需查看审批详情，或实例、待办和同意意图未确认时不要执行审批。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e",
-        "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"同意\""
+        "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --format json",
+        "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"同意\" --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.approve_processInstance",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/references/products/simple.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "同意审批",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "同意审批",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.approve_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看审批详情，或实例、待办和同意意图未确认时不要执行审批。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看审批详情，或实例、待办和同意意图未确认时不要执行审批。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --format json",
+            "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"同意\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --format json",
+                "dws oa approval approve --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"同意\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.approve_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.approve_processInstance",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.approve_processInstance",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.approve_processInstance",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.approve_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要同意审批时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要同意审批时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "approve_processInstance"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "medium",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.approve_processInstance",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval approve",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.approve_processInstance",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.approve_processInstance",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/references/products/simple.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.approve_processInstance",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.approve_processInstance"
+      ],
+      "use_when": [
+        "需要同意审批时"
+      ]
     },
     "oa approval detail": {
       "agent_summary": "获取审批实例详情",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "2. 查看审批详情 — 了解审批内容",
-        "审批详情/看审批"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "需要审批操作历史而非当前表单详情时改用记录查询；该命令不会处理审批。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws oa approval detail --instance-id \u003cprocessInstanceId\u003e",
         "dws oa approval detail --instance-id \u003cprocessInstanceId\u003e --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.get_processInstance_detail",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "获取审批实例详情",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "获取审批实例详情",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要审批操作历史而非当前表单详情时改用记录查询；该命令不会处理审批。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要审批操作历史而非当前表单详情时改用记录查询；该命令不会处理审批。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval detail --instance-id \u003cprocessInstanceId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval detail --instance-id \u003cprocessInstanceId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.get_processInstance_detail",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.get_processInstance_detail",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.get_processInstance_detail",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "已知审批实例 ID，需要查看表单与当前状态详情时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知审批实例 ID，需要查看表单与当前状态详情时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "get_processInstance_detail"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "oa approval list-cc": {
-      "agent_summary": "获取抄送用户的列表",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "11. 抄送我的审批单",
-        "抄送我的审批单"
-      ],
-      "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
-      ],
-      "effect": "read",
-      "effect_source": "command-verb",
+      "reviewed": true,
       "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
-      "examples": [
-        "dws oa approval list-cc --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词",
-        "dws oa approval list-cc --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词 --format json"
-      ],
-      "reviewed": false,
       "source_refs": [
-        "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "oa approval list-executed": {
-      "agent_summary": "获取员工已处理任务列表",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "9. 我处理过的审批单",
-        "我审批/处理过的审批单"
-      ],
-      "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取抄送用户的列表”请改用 dws oa approval list-cc"
-      ],
-      "effect": "read",
-      "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
-      "examples": [
-        "dws oa approval list-executed --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词",
-        "dws oa approval list-executed --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词 --format json"
-      ],
-      "reviewed": false,
-      "source_refs": [
-        "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "oa approval list-forms": {
-      "agent_summary": "获取当前用户可见的审批表单列表",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "7. 获取可见审批表单（得到 processCode）",
-        "有哪些审批表单/可见表单"
-      ],
-      "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
-      ],
-      "effect": "read",
-      "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
-      "examples": [
-        "dws oa approval list-forms --cursor 0 --limit 100",
-        "dws oa approval list-forms --cursor 0 --limit 100 --format json"
-      ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_user_visible_process",
+        "CommandRegistry:canonical_path=oa.get_processInstance_detail",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval detail",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.get_processInstance_detail",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_detail",
         "skills/mono/references/products/oa.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.get_processInstance_detail",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_processInstance_detail"
       ],
+      "use_when": [
+        "已知审批实例 ID，需要查看表单与当前状态详情时"
+      ]
+    },
+    "oa approval list-cc": {
+      "agent_summary": "列出抄送当前用户的审批单",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "需要查看待处理或自己发起的审批时不要使用；该命令只列抄送给当前用户的实例。"
+      ],
+      "confirmation": "not_required",
+      "effect": "read",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws oa approval list-cc --limit 20 --page 1 --query 关键词 --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "列出抄送当前用户的审批单",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "列出抄送当前用户的审批单",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要查看待处理或自己发起的审批时不要使用；该命令只列抄送给当前用户的实例。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看待处理或自己发起的审批时不要使用；该命令只列抄送给当前用户的实例。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-cc --limit 20 --page 1 --query 关键词 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-cc --limit 20 --page 1 --query 关键词 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.get_noticed_instances",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.get_noticed_instances",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查看抄送给当前用户的审批单时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看抄送给当前用户的审批单时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "get_noticed_instances"
+      },
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.get_noticed_instances",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-cc",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.get_noticed_instances",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_noticed_instances"
+      ],
+      "use_when": [
+        "需要查看抄送给当前用户的审批单时"
+      ]
+    },
+    "oa approval list-executed": {
+      "agent_summary": "列出当前用户已处理的审批单",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "需要查看待处理、已发起或抄送审批时不要使用；该命令只列当前用户已处理任务。"
+      ],
+      "confirmation": "not_required",
+      "effect": "read",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws oa approval list-executed  --limit 20 --page 1 --query 关键词 --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "列出当前用户已处理的审批单",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "列出当前用户已处理的审批单",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要查看待处理、已发起或抄送审批时不要使用；该命令只列当前用户已处理任务。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看待处理、已发起或抄送审批时不要使用；该命令只列当前用户已处理任务。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-executed  --limit 20 --page 1 --query 关键词 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-executed  --limit 20 --page 1 --query 关键词 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.get_done_tasks",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.get_done_tasks",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查看当前用户已经处理过的审批单时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看当前用户已经处理过的审批单时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "get_done_tasks"
+      },
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.get_done_tasks",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-executed",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.get_done_tasks",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_done_tasks"
+      ],
+      "use_when": [
+        "需要查看当前用户已经处理过的审批单时"
+      ]
+    },
+    "oa approval list-forms": {
+      "agent_summary": "获取当前用户可见的审批表单列表",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "需要审批实例、任务或操作记录时不要使用；该命令只列可见审批模板。"
+      ],
+      "confirmation": "not_required",
+      "effect": "read",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws oa approval list-forms --cursor 0 --limit 100 --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "获取当前用户可见的审批表单列表",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "获取当前用户可见的审批表单列表",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_user_visible_process.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要审批实例、任务或操作记录时不要使用；该命令只列可见审批模板。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要审批实例、任务或操作记录时不要使用；该命令只列可见审批模板。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-forms --cursor 0 --limit 100 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-forms --cursor 0 --limit 100 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_user_visible_process.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.list_user_visible_process",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.list_user_visible_process",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.list_user_visible_process",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_user_visible_process.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查看当前用户可发起或可见的审批表单时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看当前用户可发起或可见的审批表单时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "list_user_visible_process"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.list_user_visible_process",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-forms",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_user_visible_process",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.list_user_visible_process",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_user_visible_process",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_user_visible_process"
+      ],
+      "use_when": [
+        "需要查看当前用户可发起或可见的审批表单时"
+      ]
     },
     "oa approval list-initiated": {
       "agent_summary": "查询已发起的审批实例列表",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "8. 查看自己发起的审批列表（--process-code 来自 list-forms / search-forms / detail）",
-        "我发起的审批"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "没有审批模板 processCode，或需要当前用户全部已发起实例时不要使用该模板范围查询。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws oa approval list-initiated --process-code \u003ccode\u003e --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --limit 20",
         "dws oa approval list-initiated --process-code \u003ccode\u003e --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --limit 20 --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_initiated_instances",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/references/products/simple.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询已发起的审批实例列表",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "查询已发起的审批实例列表",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_initiated_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "没有审批模板 processCode，或需要当前用户全部已发起实例时不要使用该模板范围查询。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "没有审批模板 processCode，或需要当前用户全部已发起实例时不要使用该模板范围查询。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-initiated --process-code \u003ccode\u003e --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --limit 20 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-initiated --process-code \u003ccode\u003e --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --limit 20 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_initiated_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.list_initiated_instances",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.list_initiated_instances",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.list_initiated_instances",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_initiated_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "已知审批模板 processCode，需要按时间查询其发起记录时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知审批模板 processCode，需要按时间查询其发起记录时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "list_initiated_instances"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "oa approval list-pending": {
-      "agent_summary": "查询待我处理的审批",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "1. 查看待我处理的审批 — 提取 processInstanceId",
-        "待审批/待处理审批",
-        "待我审批/我要审批的"
-      ],
-      "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
-      ],
-      "effect": "read",
-      "effect_source": "command-verb",
+      "reviewed": true,
       "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
-      "examples": [
-        "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\"",
-        "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --query 关键词"
-      ],
       "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_pending_approvals",
+        "CommandRegistry:canonical_path=oa.list_initiated_instances",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-initiated",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_initiated_instances",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.list_initiated_instances",
         "skills/mono/references/products/oa.md",
         "skills/mono/references/products/simple.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_initiated_instances",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_initiated_instances"
       ],
+      "use_when": [
+        "已知审批模板 processCode，需要按时间查询其发起记录时"
+      ]
+    },
+    "oa approval list-pending": {
+      "agent_summary": "查询待我处理的审批",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "需要取得具体 taskId 时使用 dws oa approval tasks；需要查看单实例详情时使用 approval detail"
+      ],
+      "confirmation": "not_required",
+      "effect": "read",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --query 关键词 --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询待我处理的审批",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "查询待我处理的审批",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_approvals.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要取得具体 taskId 时使用 dws oa approval tasks；需要查看单实例详情时使用 approval detail"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要取得具体 taskId 时使用 dws oa approval tasks；需要查看单实例详情时使用 approval detail"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --query 关键词 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --query 关键词 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_approvals.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.list_pending_approvals",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.list_pending_approvals",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.list_pending_approvals",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_approvals.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查看当前用户待处理的审批单列表时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看当前用户待处理的审批单列表时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "list_pending_approvals"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.list_pending_approvals",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-pending",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_pending_approvals",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_approvals",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/references/products/simple.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_pending_approvals",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_pending_approvals"
+      ],
+      "use_when": [
+        "需要查看当前用户待处理的审批单列表时"
+      ]
     },
     "oa approval list-submitted": {
-      "agent_summary": "获取已提交实例列表",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "10. 我发起的审批单",
-        "我发起的审批单"
-      ],
+      "agent_summary": "列出当前用户已发起的审批单",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "需要查看待处理、已处理或抄送审批时不要使用；该命令只列当前用户已发起实例。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws oa approval list-submitted --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词",
-        "dws oa approval list-submitted --limit \u003cpageSize\u003e --page \u003cpageNumber\u003e --query 关键词 --format json"
+        "dws oa approval list-submitted --limit 20 --page 1 --query 关键词 --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "列出当前用户已发起的审批单",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "列出当前用户已发起的审批单",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_submitted_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要查看待处理、已处理或抄送审批时不要使用；该命令只列当前用户已发起实例。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看待处理、已处理或抄送审批时不要使用；该命令只列当前用户已发起实例。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval list-submitted --limit 20 --page 1 --query 关键词 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval list-submitted --limit 20 --page 1 --query 关键词 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_submitted_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.get_submitted_instances",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_submitted_instances.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.get_submitted_instances",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_submitted_instances.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查看当前用户已发起的审批单时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查看当前用户已发起的审批单时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "get_submitted_instances"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "CommandRegistry:canonical_path=oa.get_submitted_instances",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval list-submitted",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.oa.get_submitted_instances",
         "skills/mono/references/products/oa.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_submitted_instances"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要查看当前用户已发起的审批单时"
+      ]
     },
     "oa approval oa-cc-noticer": {
-      "agent_summary": "抄送审批人",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "14. 对审批实例进行抄送（processInstanceId 来自 list-pending 或 detail）",
-        "抄送审批/添加抄送人"
-      ],
+      "agent_summary": "为审批实例添加抄送人",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "只需查看现有抄送关系，或审批实例和新增抄送人未确认时不要添加抄送。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"68674200835816\"",
-        "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"userId1,userId2\" --operator-id \"123123\""
+        "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"68674200835816\" --format json",
+        "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"userId1,userId2\" --operator-id \"123123\" --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "为审批实例添加抄送人",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "为审批实例添加抄送人",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.oa_cc_noticer.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看现有抄送关系，或审批实例和新增抄送人未确认时不要添加抄送。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看现有抄送关系，或审批实例和新增抄送人未确认时不要添加抄送。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"68674200835816\" --format json",
+            "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"userId1,userId2\" --operator-id \"123123\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"68674200835816\" --format json",
+                "dws oa approval oa-cc-noticer --instance-id \u003cprocessInstanceId\u003e --users \"userId1,userId2\" --operator-id \"123123\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.oa_cc_noticer.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.oa_cc_noticer",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.oa_cc_noticer.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.oa_cc_noticer",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.oa_cc_noticer.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要为审批实例添加抄送人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要为审批实例添加抄送人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "oa_cc_noticer"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=oa.oa_cc_noticer",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval oa-cc-noticer",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.oa.oa_cc_noticer",
         "skills/mono/references/products/oa.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.oa_cc_noticer"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要为审批实例添加抄送人时"
+      ]
     },
     "oa approval oa-comments": {
-      "agent_summary": "用户添加审批评论",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "13. 对审批实例添加评论（processInstanceId 来自 list-pending 或 detail）",
-        "评论审批/添加评论/写评论"
-      ],
+      "agent_summary": "为审批实例添加评论",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed",
-        "要“获取抄送用户的列表”请改用 dws oa approval list-cc"
+        "只需读取审批记录，或评论内容和审批实例未确认时不要添加评论。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws oa approval oa-comments --instance-id \u003cprocessInstanceId\u003e --content \"同意，请尽快处理\"",
         "dws oa approval oa-comments --instance-id \u003cprocessInstanceId\u003e --content \"同意，请尽快处理\" --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "为审批实例添加评论",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "为审批实例添加评论",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.dingflow_comments.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需读取审批记录，或评论内容和审批实例未确认时不要添加评论。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需读取审批记录，或评论内容和审批实例未确认时不要添加评论。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval oa-comments --instance-id \u003cprocessInstanceId\u003e --content \"同意，请尽快处理\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval oa-comments --instance-id \u003cprocessInstanceId\u003e --content \"同意，请尽快处理\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.dingflow_comments.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.dingflow_comments",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.dingflow_comments.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.dingflow_comments",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.dingflow_comments.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要为审批实例添加评论时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要为审批实例添加评论时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "dingflow_comments"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=oa.dingflow_comments",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval oa-comments",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.oa.dingflow_comments",
         "skills/mono/references/products/oa.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.dingflow_comments"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要为审批实例添加评论时"
+      ]
     },
     "oa approval records": {
       "agent_summary": "获取审批操作记录",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "6. 查看审批操作记录",
-        "审批记录/操作历史"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "需要当前表单详情或执行审批时不要使用；该命令只读取操作历史。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws oa approval records --instance-id \u003cprocessInstanceId\u003e",
         "dws oa approval records --instance-id \u003cprocessInstanceId\u003e --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.get_processInstance_records",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "获取审批操作记录",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "获取审批操作记录",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_records.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要当前表单详情或执行审批时不要使用；该命令只读取操作历史。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要当前表单详情或执行审批时不要使用；该命令只读取操作历史。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval records --instance-id \u003cprocessInstanceId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval records --instance-id \u003cprocessInstanceId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_records.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.get_processInstance_records",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.get_processInstance_records",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.get_processInstance_records",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_records.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "已知审批实例 ID，需要查看审批操作历史时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知审批实例 ID，需要查看审批操作历史时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "get_processInstance_records"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.get_processInstance_records",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval records",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.get_processInstance_records",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.get_processInstance_records",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.get_processInstance_records",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_processInstance_records"
+      ],
+      "use_when": [
+        "已知审批实例 ID，需要查看审批操作历史时"
+      ]
     },
     "oa approval redirect-task": {
       "agent_summary": "转交审批任务",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "12. 转交审批任务（taskId 来自 tasks，toActionerId 来自 contact user search）",
-        "转交审批/转交任务"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "审批任务、接收人或转交意图未确认时不要使用；只需查看任务应使用查询命令。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e",
-        "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --remark \"请帮忙处理\""
+        "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --format json",
+        "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --remark \"请帮忙处理\" --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "转交审批任务",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "转交审批任务",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.redirect_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "审批任务、接收人或转交意图未确认时不要使用；只需查看任务应使用查询命令。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "审批任务、接收人或转交意图未确认时不要使用；只需查看任务应使用查询命令。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --format json",
+            "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --remark \"请帮忙处理\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --format json",
+                "dws oa approval redirect-task --task-id \u003ctaskId\u003e --to-actioner-id \u003cuserId\u003e --remark \"请帮忙处理\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.redirect_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.redirect_task",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.oa.redirect_task.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.redirect_task",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.redirect_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要转交审批任务时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要转交审批任务时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "oa",
+        "rpc_name": "redirect_task"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=oa.redirect_task",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval redirect-task",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.oa.redirect_task",
         "skills/mono/references/products/oa.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.redirect_task"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要转交审批任务时"
+      ]
     },
     "oa approval reject": {
       "agent_summary": "拒绝审批",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "4b. 拒绝审批",
-        "拒绝审批/驳回"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "用户未明确拒绝，或审批实例、待办与拒绝理由未确认时不要执行。"
       ],
+      "confirmation": "user_required",
       "effect": "destructive",
       "effect_source": "skill-explicit",
-      "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws oa approval reject --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"不同意\"",
-        "dws oa approval reject --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"不符合要求\" --format json"
+        "dws oa approval reject --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"不同意\" --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.reject_processInstance",
-        "skills/mono/SKILL.md",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/references/products/simple.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "拒绝审批",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "拒绝审批",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.reject_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确拒绝，或审批实例、待办与拒绝理由未确认时不要执行。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确拒绝，或审批实例、待办与拒绝理由未确认时不要执行。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/SKILL.md",
+          "precedence": "skill",
+          "resolution": "highest_precedence",
+          "review_reason": "Skill danger table explicitly reviews this operation",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": true,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "effect": {
+          "value": "destructive",
+          "source": "skills/mono/SKILL.md",
+          "precedence": "skill",
+          "resolution": "highest_precedence",
+          "review_reason": "Skill danger table explicitly reviews this operation",
+          "candidates": [
+            {
+              "value": "destructive",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": true,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval reject --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"不同意\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval reject --instance-id \u003cid\u003e --task-id \u003ctaskId\u003e --remark \"不同意\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.reject_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.reject_processInstance",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.reject_processInstance",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.reject_processInstance",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.reject_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/SKILL.md",
+          "precedence": "skill",
+          "resolution": "highest_precedence",
+          "review_reason": "Skill danger table explicitly reviews this operation",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": true,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求拒绝审批时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求拒绝审批时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "reject_processInstance"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "oa approval revoke": {
-      "agent_summary": "撤销已发起的审批",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "5. 撤销自己发起的审批",
-        "撤回审批/取消审批",
-        "撤销审批/撤回"
-      ],
-      "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
-      ],
-      "effect": "write",
-      "effect_source": "skill-explicit",
+      "reviewed": true,
       "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
-      "examples": [
-        "dws oa approval revoke --instance-id \u003cinstance-id\u003e"
-      ],
       "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.revoke_processInstance",
+        "CommandRegistry:canonical_path=oa.reject_processInstance",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval reject",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.reject_processInstance",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.reject_processInstance",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/oa.md",
         "skills/mono/references/products/simple.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.reject_processInstance",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.reject_processInstance"
       ],
+      "use_when": [
+        "用户明确要求拒绝审批时"
+      ]
+    },
+    "oa approval revoke": {
+      "agent_summary": "撤销已发起的审批",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "用户未明确撤销自己发起的审批，或实例状态与撤销影响未确认时不要执行。"
+      ],
+      "confirmation": "user_required",
+      "effect": "write",
+      "effect_source": "skill-explicit",
+      "examples": [
+        "dws oa approval revoke --instance-id \u003cid\u003e --format json",
+        "dws oa approval revoke --instance-id \u003cid\u003e --remark \"误发起\" --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "撤销已发起的审批",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "撤销已发起的审批",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.revoke_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确撤销自己发起的审批，或实例状态与撤销影响未确认时不要执行。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确撤销自己发起的审批，或实例状态与撤销影响未确认时不要执行。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "user_required",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": false,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "skills/mono/SKILL.md",
+          "precedence": "skill",
+          "resolution": "highest_precedence",
+          "review_reason": "Skill danger table explicitly reviews this operation",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": true,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval revoke --instance-id \u003cid\u003e --format json",
+            "dws oa approval revoke --instance-id \u003cid\u003e --remark \"误发起\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval revoke --instance-id \u003cid\u003e --format json",
+                "dws oa approval revoke --instance-id \u003cid\u003e --remark \"误发起\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.revoke_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.revoke_processInstance",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.revoke_processInstance",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.revoke_processInstance",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.revoke_processInstance.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "high",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": false,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求撤销已发起的审批时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求撤销已发起的审批时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "revoke_processInstance"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "high",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.revoke_processInstance",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval revoke",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.revoke_processInstance",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.revoke_processInstance",
+        "skills/mono/SKILL.md",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/references/products/simple.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.revoke_processInstance",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.revoke_processInstance"
+      ],
+      "use_when": [
+        "用户明确要求撤销已发起的审批时"
+      ]
     },
     "oa approval tasks": {
       "agent_summary": "查询待我审批的任务 ID",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "3. 获取待审批任务 ID — 提取 taskId",
-        "同意审批/批准",
-        "我有哪些待审的任务",
-        "拒绝审批/驳回"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“同意审批”请改用 dws oa approval approve",
-        "要“用户添加审批评论”请改用 dws oa approval oa-comments",
-        "要“获取员工已处理任务列表”请改用 dws oa approval list-executed"
+        "要查看审批单列表时使用 approval list-pending；要执行同意或拒绝时先取得并核对实例与 taskId"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws oa approval tasks --instance-id \u003cprocessInstanceId\u003e",
         "dws oa approval tasks --instance-id \u003cprocessInstanceId\u003e --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_pending_tasks",
-        "skills/mono/references/products/oa.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询待我审批的任务 ID",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "查询待我审批的任务 ID",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "要查看审批单列表时使用 approval list-pending；要执行同意或拒绝时先取得并核对实例与 taskId"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "要查看审批单列表时使用 approval list-pending；要执行同意或拒绝时先取得并核对实例与 taskId"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws oa approval tasks --instance-id \u003cprocessInstanceId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws oa approval tasks --instance-id \u003cprocessInstanceId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "oa.list_pending_tasks",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "oa.list_pending_tasks",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "oa.list_pending_tasks",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_tasks.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "已知审批实例 ID，需要取得当前用户待办 taskId 时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知审批实例 ID，需要取得当前用户待办 taskId 时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "oa",
         "rpc_name": "list_pending_tasks"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=oa.list_pending_tasks",
+        "Skill:skills/mono/references/products/oa.md",
+        "cobra-help:dws oa approval tasks",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json#oa.list_pending_tasks",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.oa.list_pending_tasks",
+        "skills/mono/references/products/oa.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_pending_tasks",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_pending_tasks"
+      ],
+      "use_when": [
+        "已知审批实例 ID，需要取得当前用户待办 taskId 时"
+      ]
     }
   }
 }

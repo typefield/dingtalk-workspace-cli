@@ -35,8 +35,37 @@ func TestSchemaUsesEmbeddedCatalogWithoutRuntimeLoad(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("decode schema: %v\n%s", err, stdout.String())
 	}
-	if payload.Count != 20 || payload.ToolCount != 538 {
-		t.Fatalf("schema counts = %d/%d, want 20/538", payload.Count, payload.ToolCount)
+	loaded := embeddedSchemaCatalog()
+	if payload.Count != len(loaded.Registry.Products) || payload.ToolCount != len(loaded.Index.CanonicalPaths()) {
+		t.Fatalf("schema counts = %d/%d, want %d/%d", payload.Count, payload.ToolCount, len(loaded.Registry.Products), len(loaded.Index.CanonicalPaths()))
+	}
+}
+
+func TestSchemaAllReturnsCompleteEmbeddedLeafSchemas(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	root.AddCommand(NewSchemaCommand(panicCatalogLoader{}))
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetArgs([]string{"schema", "--all"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("schema --all execute: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("decode schema --all: %v", err)
+	}
+	expanded := 0
+	for _, product := range schemaMapSlice(payload["products"]) {
+		for _, tool := range schemaMapSlice(product["tools"]) {
+			if _, ok := tool["parameters"].(map[string]any); !ok {
+				t.Fatalf("schema --all tool %q has no parameters object", schemaString(tool["canonical_path"]))
+			}
+			expanded++
+		}
+	}
+	want := len(embeddedSchemaCatalog().Index.CanonicalPaths())
+	if expanded != want {
+		t.Fatalf("schema --all tools = %d, want %d", expanded, want)
 	}
 }
 

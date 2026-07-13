@@ -1,6 +1,6 @@
 GO ?= go
 
-.PHONY: all help build rebuild test lint fmt policy edition-test generate-schema generate-schema-command-surface generate-schema-agent-metadata generate-schema-catalog package release publish-homebrew-formula setup-hooks
+.PHONY: all help build rebuild test lint fmt policy edition-test generate-schema generate-schema-agent-metadata generate-schema-catalog package release publish-homebrew-formula setup-hooks
 
 all: setup-hooks fmt lint build test rebuild
 
@@ -10,9 +10,8 @@ help:
 	@printf "  make test          - Run the Go test suite\n"
 	@printf "  make lint          - Run formatting checks and golangci-lint when available\n"
 	@printf "  make fmt           - Format Go source files\n"
-	@printf "  make policy        - Run open-source asset and command-surface checks\n"
+	@printf "  make policy        - Run open-source asset and Schema registry checks\n"
 	@printf "  make generate-schema - Regenerate embedded Agent metadata and the release Catalog\n"
-	@printf "  make generate-schema-command-surface - Refresh the reviewed command surface\n"
 	@printf "  make generate-schema-agent-metadata - Regenerate versioned Agent metadata\n"
 	@printf "  make generate-schema-catalog - Regenerate the embedded release Catalog\n"
 	@printf "  make package       - Build all release artifacts locally (goreleaser snapshot)\n"
@@ -36,31 +35,42 @@ fmt:
 
 policy:
 	@./scripts/policy/check-open-source-assets.sh
+	@./scripts/policy/check-schema-command-registry.sh
 	@./scripts/policy/check-command-surface.sh --strict
 	@./scripts/policy/check-generated-drift.sh
 	@./scripts/policy/check-schema-catalog.sh
+	@./scripts/policy/check-schema-binary.sh
 
 edition-test:
 	$(GO) test -v -count=1 ./pkg/editiontest/...
 
 generate-schema:
-	$(GO) generate ./internal/cli
-
-generate-schema-command-surface:
-	$(GO) run ./internal/generator/cmd_schema_agent_metadata \
-		-root . \
-		-write-surface internal/cli/schema_command_surface.json
+	@set -e; \
+	registry_guard=$$(mktemp); \
+	manual_hints_guard=$$(mktemp); \
+	trap 'rm -f "$$registry_guard" "$$manual_hints_guard"' EXIT HUP INT TERM; \
+	cp internal/cli/schema_command_registry.json "$$registry_guard"; \
+	cp internal/cli/schema_manual_hints.json "$$manual_hints_guard"; \
+	$(GO) generate ./internal/cli; \
+	cmp -s internal/cli/schema_command_registry.json "$$registry_guard" || { \
+		printf '%s\n' 'generation modified reviewed input internal/cli/schema_command_registry.json' >&2; \
+		exit 1; \
+	}; \
+	cmp -s internal/cli/schema_manual_hints.json "$$manual_hints_guard" || { \
+		printf '%s\n' 'generation modified reviewed input internal/cli/schema_manual_hints.json' >&2; \
+		exit 1; \
+	}
 
 generate-schema-agent-metadata:
 	$(GO) run ./internal/generator/cmd_schema_agent_metadata \
 		-root . \
-		-surface internal/cli/schema_command_surface.json \
+		-registry internal/cli/schema_command_registry.json \
 		-output-dir internal/cli/schema_agent_metadata \
 		-audit-output internal/cli/schema_agent_metadata_audit.json
 
 generate-schema-catalog:
-	$(GO) run ./internal/generator/cmd_schema_catalog \
-		-surface internal/cli/schema_command_surface.json \
+	$(GO) run -a ./internal/generator/cmd_schema_catalog \
+		-root . \
 		-output internal/cli/schema_catalog.json
 
 package:

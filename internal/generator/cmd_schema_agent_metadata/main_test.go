@@ -17,47 +17,73 @@ import (
 	"encoding/json"
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/generator/agentmetadata"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/generator/outputguard"
 )
 
-func TestLoadCommandSurfaceSnapshotReconcilesAliases(t *testing.T) {
-	path := filepath.Join(t.TempDir(), "schema_command_surface.json")
-	snapshot := commandSurfaceSnapshot{
-		Version: commandSurfaceSnapshotVersion,
-		Products: []commandSurfaceProduct{{
-			ID: "calendar",
-			Tools: []commandSurfaceTool{{
-				CanonicalPath: "calendar.delete_participant",
-				CLIPath:       "calendar attendee delete",
-				Aliases:       []string{"calendar participant delete"},
-			}},
-		}},
-	}
-	data, err := json.Marshal(snapshot)
+func TestLoadEffectiveCommandRegistryProjectionReconcilesAliases(t *testing.T) {
+	root := filepath.Join("..", "..", "..")
+	registry, err := loadEffectiveCommandRegistryProjection(root, "internal/cli/schema_command_registry.json", true)
 	if err != nil {
-		t.Fatalf("json.Marshal() error = %v", err)
+		t.Fatalf("loadEffectiveCommandRegistryProjection() error = %v", err)
 	}
-	if err := os.WriteFile(path, data, 0o644); err != nil {
-		t.Fatalf("WriteFile() error = %v", err)
+	if registry.ToolCount == 0 || !registry.ProductIDs["calendar"] {
+		t.Fatalf("registry = %#v", registry)
 	}
+	if got := registry.ToolPaths["aitable record list"]; got != "aitable record query" {
+		t.Fatalf("alias primary path = %q, want aitable record query", got)
+	}
+	if got := registry.ToolPaths["aitable.query_records"]; got != "aitable record query" {
+		t.Fatalf("canonical primary path = %q, want aitable record query", got)
+	}
+	if registry.Hash == "" {
+		t.Fatalf("registry hash is empty: %#v", registry)
+	}
+}
 
-	surface, err := loadCommandSurfaceSnapshot(path)
-	if err != nil {
-		t.Fatalf("loadCommandSurfaceSnapshot() error = %v", err)
+func TestLoadEffectiveCommandRegistryProjectionRejectsCompatibilityDrift(t *testing.T) {
+	path := filepath.Join(t.TempDir(), "schema_command_registry.json")
+	if err := os.WriteFile(path, []byte(`{"$schema":"./schema_command_registry.schema.json","version":1,"products":[{"id":"sample","tools":[{"canonical_path":"sample.run","cli_path":"sample run"}]}]}`), 0o644); err != nil {
+		t.Fatal(err)
 	}
-	if surface.ToolCount != 1 || !surface.ProductIDs["calendar"] {
-		t.Fatalf("surface = %#v", surface)
+	_, err := loadEffectiveCommandRegistryProjection(".", path, true)
+	if err == nil || !strings.Contains(err.Error(), "disagrees with the embedded") {
+		t.Fatalf("compatibility drift error = %v", err)
 	}
-	if got := surface.ToolPaths["calendar participant delete"]; got != "calendar attendee delete" {
-		t.Fatalf("alias primary path = %q, want calendar attendee delete", got)
+	if _, err := loadEffectiveCommandRegistryProjection(".", "", false); err == nil || !strings.Contains(err.Error(), "cannot be disabled") {
+		t.Fatalf("disabled registry validation error = %v", err)
 	}
-	if got := surface.ToolPaths["calendar.delete_participant"]; got != "calendar attendee delete" {
-		t.Fatalf("canonical primary path = %q, want calendar attendee delete", got)
+}
+
+func TestProjectEffectiveCommandRegistryKeepsManualOnlyCommand(t *testing.T) {
+	effective := cli.EffectiveCommandRegistry{Commands: []cli.CommandSpec{
+		{
+			CanonicalPath:  "base.get_item",
+			PrimaryCLIPath: "base item get",
+			Visibility:     cli.SchemaVisibilityPublic,
+			Source:         "reviewed_command_registry",
+		},
+		{
+			CanonicalPath:  "helper.add_item",
+			PrimaryCLIPath: "helper item add",
+			Visibility:     cli.SchemaVisibilityPublic,
+			Source:         "reviewed_manual_hint",
+		},
+	}}
+
+	projection := projectEffectiveCommandRegistry(effective)
+	if projection.ToolCount != 2 {
+		t.Fatalf("ToolCount = %d, want 2", projection.ToolCount)
 	}
-	if surface.Hash == "" {
-		t.Fatalf("surface hash is empty: %#v", surface)
+	if got := projection.ToolPaths["helper.add_item"]; got != "helper item add" {
+		t.Fatalf("manual-only canonical projection = %q", got)
+	}
+	if !projection.ProductIDs["helper"] {
+		t.Fatal("manual-only product was dropped from Agent metadata projection")
 	}
 }
 
@@ -107,5 +133,210 @@ func TestWriteMetadataDirectorySplitsDomains(t *testing.T) {
 	}
 	if _, err := os.Stat(filepath.Join(dir, "stale.json")); !os.IsNotExist(err) {
 		t.Fatalf("unexpected stale metadata file: %v", err)
+	}
+}
+
+func TestValidateManualHintsOutputIsolationRejectsOverlaps(t *testing.T) {
+	root := t.TempDir()
+	manualRelative := filepath.Join("internal", "cli", "schema_manual_hints.json")
+	manualPath := filepath.Join(root, manualRelative)
+	if err := os.MkdirAll(filepath.Dir(manualPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	const manualContents = `{"reviewed":true}`
+	if err := os.WriteFile(manualPath, []byte(manualContents), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	stalePath := filepath.Join(filepath.Dir(manualPath), "stale.json")
+	if err := os.WriteFile(stalePath, []byte(`{"stale":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	fileAlias := filepath.Join(root, "manual-file-alias.json")
+	if err := os.Symlink(manualPath, fileAlias); err != nil {
+		t.Fatal(err)
+	}
+	directoryAlias := filepath.Join(root, "manual-directory-alias")
+	if err := os.Symlink(filepath.Dir(manualPath), directoryAlias); err != nil {
+		t.Fatal(err)
+	}
+	hardLink := filepath.Join(root, "manual-hard-link.json")
+	if err := os.Link(manualPath, hardLink); err != nil {
+		t.Fatal(err)
+	}
+
+	tests := []struct {
+		name        string
+		output      string
+		outputDir   string
+		auditOutput string
+		want        string
+	}{
+		{
+			name:   "clean absolute output path",
+			output: filepath.Join(filepath.Dir(manualPath), "..", "cli", filepath.Base(manualPath)),
+			want:   "-output",
+		},
+		{
+			name:        "audit output",
+			auditOutput: manualPath,
+			want:        "-audit-output",
+		},
+		{
+			name:      "output directory contains source",
+			outputDir: filepath.Dir(manualPath),
+			want:      "contains reviewed manual",
+		},
+		{
+			name:   "file symlink",
+			output: fileAlias,
+			want:   "-output",
+		},
+		{
+			name:      "directory symlink",
+			outputDir: directoryAlias,
+			want:      "contains reviewed manual",
+		},
+		{
+			name:   "hard link",
+			output: hardLink,
+			want:   "-output",
+		},
+		{
+			name:   "directory passed as file output",
+			output: filepath.Dir(manualPath),
+			want:   "contains reviewed manual",
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			err := validateManualHintsOutputIsolation(root, manualRelative, tt.output, tt.outputDir, tt.auditOutput)
+			if err == nil || !strings.Contains(err.Error(), tt.want) {
+				t.Fatalf("validateManualHintsOutputIsolation() error = %v, want %q", err, tt.want)
+			}
+		})
+	}
+
+	manualAfter, err := os.ReadFile(manualPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(manualAfter) != manualContents {
+		t.Fatalf("manual source changed: %q", manualAfter)
+	}
+	if staleAfter, err := os.ReadFile(stalePath); err != nil || string(staleAfter) != `{"stale":true}` {
+		t.Fatalf("stale output was touched before preflight completed: contents=%q err=%v", staleAfter, err)
+	}
+}
+
+func TestValidateManualHintsOutputIsolationAllowsSeparateTargets(t *testing.T) {
+	root := t.TempDir()
+	manualRelative := filepath.Join("inputs", "schema_manual_hints.json")
+	manualPath := filepath.Join(root, manualRelative)
+	if err := os.MkdirAll(filepath.Dir(manualPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(manualPath, []byte(`{"reviewed":true}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+
+	outputDirParent := filepath.Join(root, "real-output-parent")
+	if err := os.MkdirAll(outputDirParent, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	outputDirAlias := filepath.Join(root, "output-parent-alias")
+	if err := os.Symlink(outputDirParent, outputDirAlias); err != nil {
+		t.Fatal(err)
+	}
+	err := validateManualHintsOutputIsolation(
+		root,
+		manualRelative,
+		filepath.Join(root, "metadata.json"),
+		filepath.Join(outputDirAlias, "split"),
+		filepath.Join(root, "audit", "metadata-audit.json"),
+	)
+	if err != nil {
+		t.Fatalf("validateManualHintsOutputIsolation() error = %v", err)
+	}
+}
+
+func TestValidateAgentMetadataOutputIsolationProtectsAllSourceKinds(t *testing.T) {
+	root := t.TempDir()
+	skillPath := filepath.Join(root, "skills/mono/SKILL.md")
+	hintsDir := filepath.Join(root, "skills/mono/schema-hints")
+	if err := os.MkdirAll(hintsDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(skillPath, []byte("# Skill\n"), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(filepath.Join(hintsDir, "reviewed.json"), []byte(`{}`), 0o644); err != nil {
+		t.Fatal(err)
+	}
+	inputs := []outputguard.Input{
+		{Name: "main Skill input", Path: "skills/mono/SKILL.md"},
+		{Name: "structured hint input directory", Path: "skills/mono/schema-hints"},
+	}
+	for _, test := range []struct {
+		name      string
+		output    string
+		outputDir string
+		want      string
+	}{
+		{name: "skill file", output: skillPath, want: "main Skill input"},
+		{name: "hint directory", outputDir: hintsDir, want: "structured hint input directory"},
+		{name: "inside hint directory", output: filepath.Join(hintsDir, "generated.json"), want: "structured hint input directory"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			err := validateAgentMetadataOutputIsolation(root, inputs, test.output, test.outputDir, "")
+			if err == nil || !strings.Contains(err.Error(), test.want) {
+				t.Fatalf("validateAgentMetadataOutputIsolation() error = %v, want %q", err, test.want)
+			}
+		})
+	}
+}
+
+func TestValidateManualAgentHintInputRejectsAlternateCopy(t *testing.T) {
+	root := t.TempDir()
+	canonical := filepath.Join(root, "internal/cli/schema_manual_hints.json")
+	if err := os.MkdirAll(filepath.Dir(canonical), 0o755); err != nil {
+		t.Fatal(err)
+	}
+	body := []byte(`{"version":1,"commands":[],"agent_hints":{}}`)
+	if err := os.WriteFile(canonical, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	alternate := filepath.Join(root, "alternate.json")
+	if err := os.WriteFile(alternate, body, 0o644); err != nil {
+		t.Fatal(err)
+	}
+	err := validateManualAgentHintInput(root, "alternate.json", commandRegistryProjection{})
+	if err == nil || !strings.Contains(err.Error(), "must resolve to canonical reviewed source") {
+		t.Fatalf("validateManualAgentHintInput() error = %v", err)
+	}
+
+	symlink := filepath.Join(root, "manual-link.json")
+	if err := os.Symlink(canonical, symlink); err != nil {
+		t.Fatal(err)
+	}
+	err = validateManualAgentHintInput(root, "manual-link.json", commandRegistryProjection{})
+	if err == nil || strings.Contains(err.Error(), "must resolve to canonical reviewed source") {
+		t.Fatalf("canonical symlink identity check error = %v", err)
+	}
+}
+
+func TestValidateAgentMetadataOutputAllowlist(t *testing.T) {
+	root := t.TempDir()
+	canonicalDir := filepath.Join(root, "internal/cli/schema_agent_metadata")
+	canonicalAudit := filepath.Join(root, "internal/cli/schema_agent_metadata_audit.json")
+	if err := validateAgentMetadataOutputAllowlist(root, "", canonicalDir, canonicalAudit); err != nil {
+		t.Fatalf("canonical outputs rejected: %v", err)
+	}
+	if err := validateAgentMetadataOutputAllowlist(root, "", filepath.Join(root, "skills/mono/schema-hints"), ""); err == nil || !strings.Contains(err.Error(), "not a canonical generated delivery target") {
+		t.Fatalf("non-canonical repository output error = %v", err)
+	}
+	if err := validateAgentMetadataOutputAllowlist(root, "", filepath.Join(t.TempDir(), "metadata"), ""); err != nil {
+		t.Fatalf("external temporary output rejected: %v", err)
 	}
 }

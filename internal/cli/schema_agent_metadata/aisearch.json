@@ -2,96 +2,731 @@
   "product_id": "aisearch",
   "tools": {
     "aisearch behavior": {
-      "agent_summary": "业内部行为记录搜索工具。",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "我发给某人的消息/邮件/文档/今天我干了什么；搜行为记录",
-        "我发过/谁发给我/创建过/分享过/收到过/今天我干了什么"
-      ],
+      "agent_summary": "仅当用户明确询问“我/某人发过、发给、收到、创建、分享、编辑过什么”等行为动作时，检索企业内部行为记录。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "需要创建、修改或删除数据时不要使用；本命令只用于“业内部行为记录搜索工具。”"
+        "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws aisearch behavior --queries \"智能化方案\" --types document --format json",
-        "dws aisearch behavior --types mail --behavior-type send --direction \"我-\u003e汐峰\" --format json"
+        "dws aisearch behavior --types mail --behavior-type send --direction \"我-\u003e汐峰\""
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "仅当用户明确询问“我/某人发过、发给、收到、创建、分享、编辑过什么”等行为动作时，检索企业内部行为记录。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": "仅当用户明确询问“我/某人发过、发给、收到、创建、分享、编辑过什么”等行为动作时，检索企业内部行为记录。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws aisearch behavior --types mail --behavior-type send --direction \"我-\u003e汐峰\""
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "dws aisearch behavior --types mail --behavior-type send --direction \"我-\u003e汐峰\""
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "aisearch.search_enterprise_behavior",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "aisearch.search_enterprise_behavior",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确询问某人发送、接收、创建、分享或编辑过什么时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确询问某人发送、接收、创建、分享或编辑过什么时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "aisearch",
+        "rpc_name": "search_enterprise_behavior"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "Cobra help: dws aisearch behavior --help",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/aisearch.md",
         "skills/mono/schema-hints/selection-review.json"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "用户明确询问某人发送、接收、创建、分享或编辑过什么时。"
+      ]
     },
     "aisearch enterprise": {
-      "agent_summary": "企业内部知识搜索工具。",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "搜一下智能化方案/最近 OKR 相关邮件/最近发版相关消息；搜企业知识内容",
-        "搜资料/找方案/查文档/搜企业知识/项目相关内容/工作总结/周报总结",
-        "最近/本周/今天 + XX相关消息/文档/邮件有哪些"
-      ],
+      "agent_summary": "检索企业内部知识内容，如文档、消息、日程、待办、听记、日志、图片、链接、AI 表格、企业百科、邮件等。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "需要创建、修改或删除数据时不要使用；本命令只用于“企业内部知识搜索工具。”"
+        "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws aisearch enterprise --queries \"智能化方案\" --types document --format json",
-        "dws aisearch enterprise --queries \"搜索问题\" --types im --time-range \"最近\" --format json"
+        "dws aisearch enterprise --queries \"智能化方案\" --types document"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "检索企业内部知识内容，如文档、消息、日程、待办、听记、日志、图片、链接、AI 表格、企业百科、邮件等。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": "检索企业内部知识内容，如文档、消息、日程、待办、听记、日志、图片、链接、AI 表格、企业百科、邮件等。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws aisearch enterprise --queries \"智能化方案\" --types document"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "dws aisearch enterprise --queries \"智能化方案\" --types document"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "aisearch.search_enterprise",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "aisearch.search_enterprise",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要按关键词、内容类型或时间范围检索企业内部知识时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "需要按关键词、内容类型或时间范围检索企业内部知识时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "aisearch",
+        "rpc_name": "search_enterprise"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "Cobra help: dws aisearch enterprise --help",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/aisearch.md",
         "skills/mono/schema-hints/selection-review.json"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要按关键词、内容类型或时间范围检索企业内部知识时。"
+      ]
     },
     "aisearch person": {
-      "agent_summary": "企业内找人搜索工具，支持按姓名、部门、职位、技能、工作职责等多维度搜索企业内人员。",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "13800138000是谁/查手机号；按手机号搜人",
-        "222020这个工号是谁/查工号；按工号搜人",
-        "五道的上级是谁/谁负责XX/XX的下属有谁；AI语义搜人",
-        "找一下张三/搜同事/找人；AI搜人(首选)",
-        "搜人/找人/谁负责/上级是谁/哪个部门的人"
-      ],
+      "agent_summary": "通过关键词搜索企业内人员信息，支持按维度筛选。",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "需要创建、修改或删除数据时不要使用；本命令只用于“企业内找人搜索工具，支持按姓名、部门、职位、技能、工作职责等多维度搜索企业内人员。”"
+        "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws aisearch person --keyword \"张三\" --dimension name --format json",
-        "dws aisearch person --keyword \"产品部\" --dimension department --format json"
+        "dws aisearch person --keyword \"张三\" --dimension name"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "通过关键词搜索企业内人员信息，支持按维度筛选。",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": "通过关键词搜索企业内人员信息，支持按维度筛选。",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "需要创建、修改或删除资源时不要使用；本命令用于读取、检索或检查现有状态。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws aisearch person --keyword \"张三\" --dimension name"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "dws aisearch person --keyword \"张三\" --dimension name"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "aisearch.enterprise_person_search",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "aisearch.enterprise_person_search",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要按姓名、部门、职位等维度搜索企业内人员时。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。",
+          "candidates": [
+            {
+              "value": [
+                "需要按姓名、部门、职位等维度搜索企业内人员时。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AISearch 参考文档明确命令选择边界并校验示例。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "aisearch",
+        "rpc_name": "enterprise_person_search"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "Cobra help: dws aisearch person --help",
+        "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/aisearch.md",
         "skills/mono/references/products/mail.md",
         "skills/mono/schema-hints/selection-review.json"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要按姓名、部门、职位等维度搜索企业内人员时。"
+      ]
     }
   }
 }

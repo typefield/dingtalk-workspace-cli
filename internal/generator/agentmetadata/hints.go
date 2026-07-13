@@ -38,6 +38,7 @@ type HintFile struct {
 type HintSource struct {
 	Kind       string `json:"kind"`
 	Name       string `json:"name"`
+	Reviewed   bool   `json:"reviewed,omitempty"`
 	Repository string `json:"repository,omitempty"`
 	Revision   string `json:"revision,omitempty"`
 	Channel    string `json:"channel,omitempty"`
@@ -54,30 +55,79 @@ type HintCoverage struct {
 }
 
 type HintProduct struct {
-	AgentSummary string   `json:"agent_summary,omitempty"`
-	UseWhen      []string `json:"use_when,omitempty"`
-	AvoidWhen    []string `json:"avoid_when,omitempty"`
-	SourceRefs   []string `json:"source_refs,omitempty"`
+	AgentSummary        string   `json:"agent_summary,omitempty"`
+	UseWhen             []string `json:"use_when,omitempty"`
+	AvoidWhen           []string `json:"avoid_when,omitempty"`
+	SourceRefs          []string `json:"source_refs,omitempty"`
+	agentSummaryPresent bool
 }
 
 type HintTool struct {
-	AgentSummary    string        `json:"agent_summary,omitempty"`
-	UseWhen         []string      `json:"use_when,omitempty"`
-	AvoidWhen       []string      `json:"avoid_when,omitempty"`
-	Prerequisites   []string      `json:"prerequisites,omitempty"`
-	Tips            []string      `json:"tips,omitempty"`
-	Effect          string        `json:"effect,omitempty"`
-	Risk            string        `json:"risk,omitempty"`
-	Confirmation    string        `json:"confirmation,omitempty"`
-	Idempotency     string        `json:"idempotency,omitempty"`
-	WorkflowRefs    []string      `json:"workflow_refs,omitempty"`
-	Examples        []string      `json:"examples,omitempty"`
-	Reviewed        *bool         `json:"reviewed,omitempty"`
-	SourceRefs      []string      `json:"source_refs,omitempty"`
-	InterfaceRef    *InterfaceRef `json:"interface_ref,omitempty"`
-	InterfaceMode   string        `json:"interface_mode,omitempty"`
-	Availability    string        `json:"availability,omitempty"`
-	InterfaceReason string        `json:"interface_reason,omitempty"`
+	AgentSummary           string        `json:"agent_summary,omitempty"`
+	UseWhen                []string      `json:"use_when,omitempty"`
+	AvoidWhen              []string      `json:"avoid_when,omitempty"`
+	Prerequisites          []string      `json:"prerequisites,omitempty"`
+	Tips                   []string      `json:"tips,omitempty"`
+	Effect                 string        `json:"effect,omitempty"`
+	Risk                   string        `json:"risk,omitempty"`
+	Confirmation           string        `json:"confirmation,omitempty"`
+	Idempotency            string        `json:"idempotency,omitempty"`
+	WorkflowRefs           []string      `json:"workflow_refs,omitempty"`
+	Examples               []string      `json:"examples,omitempty"`
+	Reviewed               *bool         `json:"reviewed,omitempty"`
+	ReviewReason           string        `json:"review_reason,omitempty"`
+	SourceRefs             []string      `json:"source_refs,omitempty"`
+	InterfaceRef           *InterfaceRef `json:"interface_ref,omitempty"`
+	InterfaceMode          string        `json:"interface_mode,omitempty"`
+	Availability           string        `json:"availability,omitempty"`
+	InterfaceReason        string        `json:"interface_reason,omitempty"`
+	agentSummaryPresent    bool
+	effectPresent          bool
+	riskPresent            bool
+	confirmationPresent    bool
+	idempotencyPresent     bool
+	interfaceRefPresent    bool
+	interfaceModePresent   bool
+	availabilityPresent    bool
+	interfaceReasonPresent bool
+}
+
+func (hint *HintProduct) UnmarshalJSON(data []byte) error {
+	type wire HintProduct
+	var decoded wire
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	*hint = HintProduct(decoded)
+	_, hint.agentSummaryPresent = fields["agent_summary"]
+	return nil
+}
+
+func (hint *HintTool) UnmarshalJSON(data []byte) error {
+	type wire HintTool
+	var decoded wire
+	if err := json.Unmarshal(data, &decoded); err != nil {
+		return err
+	}
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	*hint = HintTool(decoded)
+	_, hint.agentSummaryPresent = fields["agent_summary"]
+	_, hint.effectPresent = fields["effect"]
+	_, hint.riskPresent = fields["risk"]
+	_, hint.confirmationPresent = fields["confirmation"]
+	_, hint.idempotencyPresent = fields["idempotency"]
+	_, hint.interfaceRefPresent = fields["interface_ref"]
+	_, hint.interfaceModePresent = fields["interface_mode"]
+	_, hint.availabilityPresent = fields["availability"]
+	_, hint.interfaceReasonPresent = fields["interface_reason"]
+	return nil
 }
 
 type parsedHintSource struct {
@@ -115,14 +165,14 @@ func parseHintSources(out *File, files []sourceFile, opts Options, stats *Stats,
 			tool.InterfaceMode = strings.TrimSpace(tool.InterfaceMode)
 			tool.Availability = strings.TrimSpace(tool.Availability)
 			tool.InterfaceReason = strings.TrimSpace(tool.InterfaceReason)
-			if tool.InterfaceMode != "" && tool.InterfaceMode != "mcp" && tool.InterfaceMode != "composite" && tool.InterfaceMode != "local" && tool.InterfaceMode != "unavailable" {
+			if tool.InterfaceMode == "unavailable" {
+				return fmt.Errorf("decode Agent hint %s: tool %s uses legacy interface_mode=unavailable; migrate to interface_mode=mcp, local, or composite with availability=unavailable", file.display, path)
+			}
+			if tool.InterfaceMode != "" && tool.InterfaceMode != "mcp" && tool.InterfaceMode != "composite" && tool.InterfaceMode != "local" {
 				return fmt.Errorf("decode Agent hint %s: tool %s has unsupported interface_mode %q", file.display, path, tool.InterfaceMode)
 			}
 			if tool.Availability != "" && tool.Availability != "available" && tool.Availability != "unavailable" {
 				return fmt.Errorf("decode Agent hint %s: tool %s has unsupported availability %q", file.display, path, tool.Availability)
-			}
-			if tool.InterfaceMode == "unavailable" && tool.Availability != "unavailable" {
-				return fmt.Errorf("decode Agent hint %s: unavailable tool %s must set availability=unavailable", file.display, path)
 			}
 			if tool.InterfaceRef == nil {
 				hint.Tools[path] = tool
@@ -168,7 +218,9 @@ func parseHintSources(out *File, files []sourceFile, opts Options, stats *Stats,
 		return parsed[i].file.display < parsed[j].file.display
 	})
 	for _, source := range parsed {
-		applyHintSource(out, source, stats, origins)
+		if err := applyHintSource(out, source, stats, origins); err != nil {
+			return err
+		}
 	}
 	return nil
 }
@@ -180,10 +232,10 @@ func hintKindPriority(kind string) int {
 	return 1
 }
 
-func applyHintSource(out *File, parsed parsedHintSource, stats *Stats, origins sourceTracker) {
+func applyHintSource(out *File, parsed parsedHintSource, stats *Stats, origins sourceTracker) error {
 	hint := parsed.hint
-	explicit := hint.Source.Kind == "explicit"
 	sourceLabel := hintSourceLabel(hint.Source, parsed.file.display)
+	sourceRef := parsed.file.display
 	stats.HintFiles++
 	for rawPath, review := range hint.ReferenceReview {
 		path := normalizeCommandPath(rawPath)
@@ -208,12 +260,28 @@ func applyHintSource(out *File, parsed parsedHintSource, stats *Stats, origins s
 		}
 		incoming := hint.Products[rawProductID]
 		metadata := out.Products[productID]
-		if value := strings.TrimSpace(incoming.AgentSummary); value != "" && (explicit || metadata.AgentSummary == "") {
-			metadata.AgentSummary = value
+		rank := hintSelectionRank(hint.Source, nil)
+		incomingSummaryPresent := scalarIsPresent(incoming.AgentSummary, incoming.agentSummaryPresent)
+		previousRank := metadata.agentSummaryRank
+		if err := mergeRankedStringValue(
+			&metadata.AgentSummary, &metadata.agentSummaryPresent, &metadata.agentSummaryRank, &metadata.agentSummaryOrigin,
+			incoming.AgentSummary, incomingSummaryPresent, rank, sourceRef, productID, "agent_summary",
+		); err != nil {
+			return err
+		}
+		if incomingSummaryPresent && metadata.agentSummaryOrigin == sourceRef && rank >= previousRank {
 			metadata.AgentSummarySource = sourceLabel
 		}
-		metadata.UseWhen = append(metadata.UseWhen, incoming.UseWhen...)
-		metadata.AvoidWhen = append(metadata.AvoidWhen, incoming.AvoidWhen...)
+		useWhenPresent := incoming.UseWhen != nil
+		recordProductListCandidate(&metadata, "use_when", incoming.UseWhen, useWhenPresent, rank, sourceRef)
+		if err := mergeRankedStringList(&metadata.UseWhen, &metadata.useWhenPresent, &metadata.useWhenRank, &metadata.useWhenOrigin, incoming.UseWhen, useWhenPresent, rank, sourceRef, productID, "use_when"); err != nil {
+			return err
+		}
+		avoidWhenPresent := incoming.AvoidWhen != nil
+		recordProductListCandidate(&metadata, "avoid_when", incoming.AvoidWhen, avoidWhenPresent, rank, sourceRef)
+		if err := mergeRankedStringList(&metadata.AvoidWhen, &metadata.avoidWhenPresent, &metadata.avoidWhenRank, &metadata.avoidWhenOrigin, incoming.AvoidWhen, avoidWhenPresent, rank, sourceRef, productID, "avoid_when"); err != nil {
+			return err
+		}
 		metadata.SourceRefs = append(metadata.SourceRefs, parsed.file.display)
 		metadata.SourceRefs = append(metadata.SourceRefs, incoming.SourceRefs...)
 		out.Products[productID] = metadata
@@ -235,49 +303,103 @@ func applyHintSource(out *File, parsed parsedHintSource, stats *Stats, origins s
 			continue
 		}
 		metadata := out.Tools[path]
-		if value := strings.TrimSpace(incoming.AgentSummary); value != "" && (explicit || metadata.AgentSummary == "") {
-			metadata.AgentSummary = value
+		rank := hintSelectionRank(hint.Source, incoming.Reviewed)
+		reviewReason := hintCandidateReviewReason(hint.Source, incoming)
+		previousSummaryRank := metadata.agentSummaryRank
+		incomingSummaryPresent := scalarIsPresent(incoming.AgentSummary, incoming.agentSummaryPresent)
+		recordStringFieldCandidate(&metadata, "agent_summary", incoming.AgentSummary, incomingSummaryPresent, rank, sourceRef, reviewReason)
+		if err := mergeRankedStringValue(
+			&metadata.AgentSummary, &metadata.agentSummaryPresent, &metadata.agentSummaryRank, &metadata.agentSummaryOrigin,
+			incoming.AgentSummary, incomingSummaryPresent, rank, sourceRef, path, "agent_summary",
+		); err != nil {
+			return err
+		}
+		if incomingSummaryPresent && metadata.agentSummaryOrigin == sourceRef && rank >= previousSummaryRank {
 			metadata.AgentSummarySource = sourceLabel
 		}
-		if explicit && len(incoming.UseWhen) > 0 {
-			metadata.UseWhen = append([]string(nil), incoming.UseWhen...)
-			metadata.useWhenExplicit = true
-		} else {
-			metadata.UseWhen = append(metadata.UseWhen, incoming.UseWhen...)
+		for _, list := range []struct {
+			name          string
+			target        *[]string
+			targetPresent *bool
+			targetRank    *int
+			origin        *string
+			incoming      []string
+		}{
+			{"use_when", &metadata.UseWhen, &metadata.useWhenPresent, &metadata.useWhenRank, &metadata.useWhenOrigin, incoming.UseWhen},
+			{"avoid_when", &metadata.AvoidWhen, &metadata.avoidWhenPresent, &metadata.avoidWhenRank, &metadata.avoidWhenOrigin, incoming.AvoidWhen},
+			{"prerequisites", &metadata.Prerequisites, &metadata.prerequisitesPresent, &metadata.prerequisitesRank, &metadata.prerequisitesOrigin, incoming.Prerequisites},
+			{"tips", &metadata.Tips, &metadata.tipsPresent, &metadata.tipsRank, &metadata.tipsOrigin, incoming.Tips},
+			{"workflow_refs", &metadata.WorkflowRefs, &metadata.workflowRefsPresent, &metadata.workflowRefsRank, &metadata.workflowRefsOrigin, incoming.WorkflowRefs},
+			{"examples", &metadata.Examples, &metadata.examplesPresent, &metadata.examplesRank, &metadata.examplesOrigin, incoming.Examples},
+		} {
+			incomingPresent := list.incoming != nil
+			recordListFieldCandidate(&metadata, list.name, list.incoming, incomingPresent, rank, sourceRef, reviewReason)
+			if err := mergeRankedStringList(list.target, list.targetPresent, list.targetRank, list.origin, list.incoming, incomingPresent, rank, sourceRef, path, list.name); err != nil {
+				return err
+			}
 		}
-		if explicit && len(incoming.AvoidWhen) > 0 {
-			metadata.AvoidWhen = append([]string(nil), incoming.AvoidWhen...)
-			metadata.avoidWhenExplicit = true
-		} else {
-			metadata.AvoidWhen = append(metadata.AvoidWhen, incoming.AvoidWhen...)
+		if err := mergeEffectValue(&metadata, incoming.Effect, scalarIsPresent(incoming.Effect, incoming.effectPresent), "agent-hint", rank, sourceRef, reviewReason, path); err != nil {
+			return err
 		}
-		metadata.Prerequisites = append(metadata.Prerequisites, incoming.Prerequisites...)
-		metadata.Tips = append(metadata.Tips, incoming.Tips...)
-		metadata.WorkflowRefs = append(metadata.WorkflowRefs, incoming.WorkflowRefs...)
-		if explicit && len(incoming.Examples) > 0 {
-			metadata.Examples = append([]string(nil), incoming.Examples...)
-			metadata.examplesExplicit = true
-		} else {
-			metadata.Examples = append(metadata.Examples, incoming.Examples...)
+		if err := mergeRiskValue(&metadata, incoming.Risk, scalarIsPresent(incoming.Risk, incoming.riskPresent), rank, sourceRef, reviewReason, path); err != nil {
+			return err
 		}
-		applyHintScalar(&metadata.Effect, incoming.Effect, explicit)
-		if metadata.Effect != "" && metadata.EffectSource == "" {
-			metadata.EffectSource = "agent-hint"
+		if err := mergeConfirmationValue(&metadata, incoming.Confirmation, scalarIsPresent(incoming.Confirmation, incoming.confirmationPresent), rank, sourceRef, reviewReason, path); err != nil {
+			return err
 		}
-		applyHintScalar(&metadata.Risk, incoming.Risk, explicit)
-		applyHintScalar(&metadata.Confirmation, incoming.Confirmation, explicit)
-		applyHintScalar(&metadata.Idempotency, incoming.Idempotency, explicit)
-		if incoming.Reviewed != nil && (explicit || metadata.Reviewed == nil) {
-			value := *incoming.Reviewed
-			metadata.Reviewed = &value
+		idempotencyPresent := scalarIsPresent(incoming.Idempotency, incoming.idempotencyPresent)
+		recordStringFieldCandidate(&metadata, "idempotency", incoming.Idempotency, idempotencyPresent, rank, sourceRef, reviewReason)
+		if err := mergeRankedStringValue(
+			&metadata.Idempotency, &metadata.idempotencyPresent, &metadata.idempotencyRank, &metadata.idempotencyOrigin,
+			incoming.Idempotency, idempotencyPresent, rank, sourceRef, path, "idempotency",
+		); err != nil {
+			return err
 		}
-		if incoming.InterfaceRef != nil && (explicit || metadata.InterfaceRef == nil) {
-			value := *incoming.InterfaceRef
-			metadata.InterfaceRef = &value
+		if incoming.Reviewed != nil {
+			recordTypedFieldCandidateValue(&metadata, "reviewed", *incoming.Reviewed, true, rank, sourceRef, reviewReason)
+			if metadata.Reviewed == nil || rank > metadata.reviewedRank {
+				value := *incoming.Reviewed
+				metadata.Reviewed = &value
+				metadata.reviewedRank = rank
+				metadata.reviewedOrigin = sourceRef
+			} else if rank == metadata.reviewedRank && *metadata.Reviewed == *incoming.Reviewed {
+				metadata.reviewedOrigin = stableSource(metadata.reviewedOrigin, sourceRef)
+			}
 		}
-		applyHintScalar(&metadata.InterfaceMode, incoming.InterfaceMode, explicit)
-		applyHintScalar(&metadata.Availability, incoming.Availability, explicit)
-		applyHintScalar(&metadata.InterfaceReason, incoming.InterfaceReason, explicit)
+		if incoming.InterfaceRef != nil || incoming.interfaceRefPresent {
+			candidate := ToolMetadata{
+				InterfaceRef:        incoming.InterfaceRef,
+				interfaceRefPresent: true,
+				interfaceRefRank:    rank,
+				interfaceRefOrigin:  sourceRef,
+			}
+			var value any
+			if incoming.InterfaceRef != nil {
+				value = incoming.InterfaceRef.ProductID + "." + incoming.InterfaceRef.RPCName
+			}
+			recordTypedFieldCandidateValue(&candidate, "interface_ref", value, true, rank, sourceRef, reviewReason)
+			if err := mergeRankedInterfaceRef(&metadata, candidate, path); err != nil {
+				return err
+			}
+		}
+		for _, field := range []struct {
+			name            string
+			target          *string
+			targetPresent   *bool
+			targetRank      *int
+			origin          *string
+			incoming        string
+			incomingPresent bool
+		}{
+			{"interface_mode", &metadata.InterfaceMode, &metadata.interfaceModePresent, &metadata.interfaceModeRank, &metadata.interfaceModeOrigin, incoming.InterfaceMode, scalarIsPresent(incoming.InterfaceMode, incoming.interfaceModePresent)},
+			{"availability", &metadata.Availability, &metadata.availabilityPresent, &metadata.availabilityRank, &metadata.availabilityOrigin, incoming.Availability, scalarIsPresent(incoming.Availability, incoming.availabilityPresent)},
+			{"interface_reason", &metadata.InterfaceReason, &metadata.interfaceReasonPresent, &metadata.interfaceReasonRank, &metadata.interfaceReasonOrigin, incoming.InterfaceReason, scalarIsPresent(incoming.InterfaceReason, incoming.interfaceReasonPresent)},
+		} {
+			recordStringFieldCandidate(&metadata, field.name, field.incoming, field.incomingPresent, rank, sourceRef, reviewReason)
+			if err := mergeRankedStringValue(field.target, field.targetPresent, field.targetRank, field.origin, field.incoming, field.incomingPresent, rank, sourceRef, path, field.name); err != nil {
+				return err
+			}
+		}
 		metadata.SourceRefs = append(metadata.SourceRefs, parsed.file.display)
 		metadata.SourceRefs = append(metadata.SourceRefs, incoming.SourceRefs...)
 		out.Tools[path] = metadata
@@ -287,33 +409,60 @@ func applyHintSource(out *File, parsed parsedHintSource, stats *Stats, origins s
 			stats.RiskRules++
 		}
 	}
+	return nil
 }
 
 func hasAgentHintFields(hint HintTool) bool {
-	return strings.TrimSpace(hint.AgentSummary) != "" ||
-		len(hint.UseWhen) > 0 ||
-		len(hint.AvoidWhen) > 0 ||
-		len(hint.Prerequisites) > 0 ||
-		len(hint.Tips) > 0 ||
-		strings.TrimSpace(hint.Effect) != "" ||
-		strings.TrimSpace(hint.Risk) != "" ||
-		strings.TrimSpace(hint.Confirmation) != "" ||
-		strings.TrimSpace(hint.Idempotency) != "" ||
-		len(hint.WorkflowRefs) > 0 ||
-		len(hint.Examples) > 0 ||
+	return scalarIsPresent(hint.AgentSummary, hint.agentSummaryPresent) ||
+		hint.UseWhen != nil ||
+		hint.AvoidWhen != nil ||
+		hint.Prerequisites != nil ||
+		hint.Tips != nil ||
+		scalarIsPresent(hint.Effect, hint.effectPresent) ||
+		scalarIsPresent(hint.Risk, hint.riskPresent) ||
+		scalarIsPresent(hint.Confirmation, hint.confirmationPresent) ||
+		scalarIsPresent(hint.Idempotency, hint.idempotencyPresent) ||
+		hint.WorkflowRefs != nil ||
+		hint.Examples != nil ||
 		hint.Reviewed != nil ||
 		len(hint.SourceRefs) > 0 ||
-		hint.InterfaceRef != nil ||
-		strings.TrimSpace(hint.InterfaceMode) != "" ||
-		strings.TrimSpace(hint.Availability) != "" ||
-		strings.TrimSpace(hint.InterfaceReason) != ""
+		hint.InterfaceRef != nil || hint.interfaceRefPresent ||
+		scalarIsPresent(hint.InterfaceMode, hint.interfaceModePresent) ||
+		scalarIsPresent(hint.Availability, hint.availabilityPresent) ||
+		scalarIsPresent(hint.InterfaceReason, hint.interfaceReasonPresent)
 }
 
-func applyHintScalar(target *string, incoming string, override bool) {
-	incoming = strings.TrimSpace(incoming)
-	if incoming != "" && (override || strings.TrimSpace(*target) == "") {
-		*target = incoming
+func hintSelectionRank(source HintSource, reviewed *bool) int {
+	if reviewed != nil {
+		if *reviewed {
+			return selectionRankReviewedExplicit
+		}
+		return selectionRankUnreviewedExplicit
 	}
+	if source.Reviewed {
+		return selectionRankReviewedExplicit
+	}
+	if strings.EqualFold(strings.TrimSpace(source.Kind), "imported") {
+		return selectionRankImported
+	}
+	return selectionRankExplicit
+}
+
+func hintCandidateReviewReason(source HintSource, tool HintTool) string {
+	if reason := strings.TrimSpace(tool.ReviewReason); reason != "" {
+		return reason
+	}
+	label := hintSourceLabel(source, "Agent hint")
+	if tool.Reviewed != nil && *tool.Reviewed {
+		return label + " marks this tool as reviewed"
+	}
+	if source.Reviewed {
+		return label + " is a reviewed Agent hint source"
+	}
+	if strings.EqualFold(strings.TrimSpace(source.Kind), "explicit") && tool.Reviewed == nil {
+		return label + " is an explicit Agent hint source"
+	}
+	return ""
 }
 
 func normalizeHintToolPath(raw string) string {

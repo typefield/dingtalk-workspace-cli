@@ -2,13 +2,14 @@
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/blob/main/internal/cli/schema_manual_hints.schema.json",
   "title": "DWS Manual Schema Hints",
-  "description": "Agent-editable, human-reviewed inputs that expose an existing public Cobra leaf through DWS Schema and optionally correct the Schema projection of its existing flags. This file never creates commands, flags, or interfaces.",
+  "description": "The single Agent-editable, reviewed manual input for existing Cobra command/parameter overrides and product/tool Agent-selection prose. This file never creates commands, flags, parameters, safety facts, or interfaces.",
   "type": "object",
   "additionalProperties": false,
   "required": [
     "$schema",
     "version",
-    "commands"
+    "commands",
+    "agent_hints"
   ],
   "properties": {
     "$schema": {
@@ -26,9 +27,179 @@
         "$ref": "#/$defs/commandHint"
       },
       "default": []
+    },
+    "agent_hints": {
+      "$ref": "#/$defs/agentHintSet"
     }
   },
   "$defs": {
+    "agentHintSet": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "revisions",
+        "products",
+        "tools"
+      ],
+      "properties": {
+        "revisions": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9][A-Za-z0-9._-]*$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/agentHintRevision"
+          }
+        },
+        "products": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9_-]+$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/agentProductHint"
+          }
+        },
+        "tools": {
+          "type": "object",
+          "minProperties": 1,
+          "propertyNames": {
+            "pattern": "^[A-Za-z0-9_-]+\\.[A-Za-z0-9_.-]+$"
+          },
+          "additionalProperties": {
+            "$ref": "#/$defs/agentToolHint"
+          }
+        }
+      }
+    },
+    "agentHintRevision": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "generated_by",
+        "reason"
+      ],
+      "properties": {
+        "generated_by": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Authoring mechanism, normally ai for the initial offline batch or human for a later hand revision."
+        },
+        "model": {
+          "type": "string",
+          "minLength": 1
+        },
+        "prompt_version": {
+          "type": "string",
+          "minLength": 1
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "generated_by": {
+                "const": "ai"
+              }
+            },
+            "required": [
+              "generated_by"
+            ]
+          },
+          "then": {
+            "required": [
+              "model",
+              "prompt_version"
+            ]
+          }
+        }
+      ]
+    },
+    "agentProductHint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/agentHintCommon"
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "agentToolHint": {
+      "allOf": [
+        {
+          "$ref": "#/$defs/agentHintCommon"
+        },
+        {
+          "type": "object",
+          "required": [
+            "examples"
+          ],
+          "properties": {
+            "examples": {
+              "$ref": "#/$defs/nonEmptyStringArray",
+              "maxItems": 2,
+              "description": "Executable examples using a reviewed primary/alias path and real Cobra flags. Do not include --yes or a help-only example."
+            }
+          }
+        }
+      ],
+      "unevaluatedProperties": false
+    },
+    "agentHintCommon": {
+      "type": "object",
+      "required": [
+        "agent_summary",
+        "use_when",
+        "avoid_when",
+        "reviewed",
+        "revision",
+        "reason",
+        "evidence"
+      ],
+      "properties": {
+        "agent_summary": {
+          "type": "string",
+          "minLength": 1
+        },
+        "use_when": {
+          "$ref": "#/$defs/nonEmptyStringArray",
+          "description": "Reviewed positive Agent-selection scenarios. For tools, each entry becomes an eval case whose expected result is the enclosing canonical tool."
+        },
+        "avoid_when": {
+          "$ref": "#/$defs/nonEmptyStringArray",
+          "description": "Reviewed negative Agent-selection scenarios. For tools, each entry becomes an eval case that must not choose the enclosing canonical tool."
+        },
+        "reviewed": {
+          "const": true
+        },
+        "revision": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Key in agent_hints.revisions."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1
+        },
+        "evidence": {
+          "$ref": "#/$defs/nonEmptyStringArray"
+        }
+      }
+    },
+    "nonEmptyStringArray": {
+      "type": "array",
+      "minItems": 1,
+      "uniqueItems": true,
+      "items": {
+        "type": "string",
+        "minLength": 1
+      }
+    },
     "commandHint": {
       "type": "object",
       "additionalProperties": false,
@@ -135,7 +306,54 @@
             }
           }
         }
-      ]
+      ],
+      "agent_hints": {
+        "revisions": {
+          "ai-agent-contract-v1": {
+            "generated_by": "ai",
+            "model": "gpt-5",
+            "prompt_version": "dws-agent-contract-v1",
+            "reason": "Generate one reviewed Agent-selection baseline from Registry, Cobra Help, and Skill evidence."
+          }
+        },
+        "products": {
+          "chat": {
+            "agent_summary": "管理会话、群聊和消息",
+            "use_when": [
+              "需要查询或管理钉钉会话和消息时"
+            ],
+            "avoid_when": [
+              "邮件操作使用 mail"
+            ],
+            "reviewed": true,
+            "revision": "ai-agent-contract-v1",
+            "reason": "Reviewed product routing guidance.",
+            "evidence": [
+              "skills/mono/references/products/chat.md"
+            ]
+          }
+        },
+        "tools": {
+          "chat.create_smart_conv_category": {
+            "agent_summary": "按条件创建智能会话分组",
+            "use_when": [
+              "需要自动归集符合名称、成员或关键词条件的会话时"
+            ],
+            "avoid_when": [
+              "只需查看现有分组时不要使用"
+            ],
+            "examples": [
+              "dws chat category create-smart --name 项目群"
+            ],
+            "reviewed": true,
+            "revision": "ai-agent-contract-v1",
+            "reason": "Reviewed tool-selection guidance.",
+            "evidence": [
+              "dws chat category create-smart --help"
+            ]
+          }
+        }
+      }
     }
   ]
 }

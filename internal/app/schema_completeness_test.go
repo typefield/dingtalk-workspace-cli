@@ -14,7 +14,11 @@ func TestRuntimeSchemaCompletenessCoversPublicCommandTree(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	report := cli.RuntimeSchemaCompleteness(NewRootCommand(), exclusions)
+	root := NewRootCommand()
+	if err := cli.ValidateEmbeddedRuntimeSchemaCompleteness(root); err != nil {
+		t.Fatal(err)
+	}
+	report := cli.RuntimeSchemaCompleteness(root, exclusions)
 	if len(report.Missing) > 0 || len(report.InvalidExclusions) > 0 || len(report.StaleExclusions) > 0 {
 		t.Fatalf("runtime schema completeness: missing=%v invalid=%v stale=%v", report.Missing, report.InvalidExclusions, report.StaleExclusions)
 	}

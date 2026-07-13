@@ -3,14 +3,12 @@
   "source": {
     "kind": "explicit",
     "name": "agent-selection-contract-v1",
+    "reviewed": true,
     "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
     "channel": "open-source"
   },
   "coverage": {
-    "source_tools": 505,
-    "eligible_tools": 505,
-    "matched_tools": 505,
-    "unmatched_tools": 0
+    "source_tools": 506
   },
   "tools": {
     "aisearch.enterprise_person_search": {
@@ -1928,9 +1926,7 @@
       "examples": [
         "dws chat category create-smart --name \"重点项目群\" --keywords \"项目,重点\""
       ],
-      "reviewed": true,
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true
     },
     "chat.create_group_conversation": {
       "use_when": [
@@ -2901,7 +2897,7 @@
       "examples": [
         "dws conference camera close"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2915,7 +2911,7 @@
       "examples": [
         "dws conference interpretation close"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2929,7 +2925,7 @@
       "examples": [
         "dws conference subtitle close"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2943,7 +2939,7 @@
       "examples": [
         "dws conference transcript close"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2957,7 +2953,7 @@
       "examples": [
         "dws conference end"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2971,7 +2967,7 @@
       "examples": [
         "dws conference leave"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2985,7 +2981,7 @@
       "examples": [
         "dws conference mic mute-all"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -2999,7 +2995,7 @@
       "examples": [
         "dws conference mic mute"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3013,7 +3009,7 @@
       "examples": [
         "dws conference invite all"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3027,7 +3023,7 @@
       "examples": [
         "dws conference share annotate"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3041,7 +3037,7 @@
       "examples": [
         "dws conference appearance beauty-setting"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3055,7 +3051,7 @@
       "examples": [
         "dws conference camera open"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3069,7 +3065,7 @@
       "examples": [
         "dws conference interaction panel"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3083,7 +3079,7 @@
       "examples": [
         "dws conference invite panel"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3097,7 +3093,7 @@
       "examples": [
         "dws conference security menu"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3111,7 +3107,7 @@
       "examples": [
         "dws conference share panel"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3125,7 +3121,7 @@
       "examples": [
         "dws conference interpretation open"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3139,7 +3135,7 @@
       "examples": [
         "dws conference subtitle open"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3153,7 +3149,7 @@
       "examples": [
         "dws conference transcript open"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3167,7 +3163,7 @@
       "examples": [
         "dws conference appearance background-setting"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3181,7 +3177,7 @@
       "examples": [
         "dws conference record request"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3195,7 +3191,7 @@
       "examples": [
         "dws conference share start"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3209,7 +3205,7 @@
       "examples": [
         "dws conference record start"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3223,7 +3219,7 @@
       "examples": [
         "dws conference record stop"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3237,7 +3233,7 @@
       "examples": [
         "dws conference share stop"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3251,7 +3247,7 @@
       "examples": [
         "dws conference view grid"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3265,7 +3261,7 @@
       "examples": [
         "dws conference view speaker"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3279,7 +3275,7 @@
       "examples": [
         "dws conference view standard"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3293,7 +3289,7 @@
       "examples": [
         "dws conference photo take"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3307,7 +3303,7 @@
       "examples": [
         "dws conference mic unmute"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3321,7 +3317,7 @@
       "examples": [
         "dws conference start"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3335,7 +3331,7 @@
       "examples": [
         "dws conference get-id"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3349,7 +3345,7 @@
       "examples": [
         "dws conference status"
       ],
-      "interface_mode": "unavailable",
+      "interface_mode": "local",
       "availability": "unavailable",
       "interface_reason": "当前开源版本的 conference 产品已下线，仅保留冻结兼容命令面，未注册静态 MCP 后端"
     },
@@ -3540,9 +3536,7 @@
       ],
       "examples": [
         "dws dev app member add --member-type <member-type> --unified-app-id <unified-app-id> --user-ids <user-ids>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.apply_dev_app_permissions": {
       "use_when": [
@@ -3553,9 +3547,7 @@
       ],
       "examples": [
         "dws dev app permission add   --unified-app-id <unifiedAppId> --scope-values <scopeValue> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.connect_status": {
       "use_when": [
@@ -3598,9 +3590,7 @@
       ],
       "examples": [
         "dws dev app create --name \"我的 AI 机器人\" --desc \"接 opencode\" --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.create_dev_app_version": {
       "use_when": [
@@ -3612,9 +3602,7 @@
       ],
       "examples": [
         "dws dev app version create --unified-app-id <unifiedAppId> --desc \"发布机器人能力\" --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.delete_dev_app": {
       "use_when": [
@@ -3626,9 +3614,7 @@
       ],
       "examples": [
         "dws dev app delete --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.disable_dev_app": {
       "use_when": [
@@ -3639,9 +3625,7 @@
       ],
       "examples": [
         "dws dev app disable --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.disable_dev_app_robot": {
       "use_when": [
@@ -3652,9 +3636,7 @@
       ],
       "examples": [
         "dws dev app robot disable --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.enable_dev_app": {
       "use_when": [
@@ -3666,9 +3648,7 @@
       ],
       "examples": [
         "dws dev app enable --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.enable_dev_app_robot": {
       "use_when": [
@@ -3680,9 +3660,7 @@
       ],
       "examples": [
         "dws dev app robot enable  --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_dev_app": {
       "use_when": [
@@ -3694,9 +3672,7 @@
       ],
       "examples": [
         "dws dev app get --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_dev_app_credentials": {
       "use_when": [
@@ -3708,9 +3684,7 @@
       ],
       "examples": [
         "dws dev app credentials get --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_dev_app_version_detail": {
       "use_when": [
@@ -3721,9 +3695,7 @@
       ],
       "examples": [
         "dws dev app version get --unified-app-id <unified-app-id> --version-id <version-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_dev_app_version_status": {
       "use_when": [
@@ -3736,9 +3708,7 @@
       "examples": [
         "dws dev app version status --unified-app-id <unifiedAppId> --version-id <versionId> --format json",
         "dws dev app version status         --unified-app-id <unifiedAppId> --version-id <versionId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_extension_robot_config": {
       "use_when": [
@@ -3750,9 +3720,7 @@
       ],
       "examples": [
         "dws dev app robot get --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.get_extension_webapp_config": {
       "use_when": [
@@ -3763,9 +3731,7 @@
       ],
       "examples": [
         "dws dev app webapp get --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.list_dev_app": {
       "use_when": [
@@ -3777,9 +3743,7 @@
       ],
       "examples": [
         "dws dev app list --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.list_dev_app_events": {
       "use_when": [
@@ -3790,9 +3754,7 @@
       ],
       "examples": [
         "dws dev app event list        --unified-app-id <unifiedAppId> --keyword <关键词> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.list_dev_app_members": {
       "use_when": [
@@ -3803,9 +3765,7 @@
       ],
       "examples": [
         "dws dev app member list --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.list_dev_app_permissions": {
       "use_when": [
@@ -3816,9 +3776,7 @@
       ],
       "examples": [
         "dws dev app permission list  --unified-app-id <unifiedAppId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.list_dev_app_versions": {
       "use_when": [
@@ -3829,9 +3787,7 @@
       ],
       "examples": [
         "dws dev app version list --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.publish_dev_app_version": {
       "use_when": [
@@ -3843,9 +3799,7 @@
       ],
       "examples": [
         "dws dev app version publish --unified-app-id <unifiedAppId> --version-id <versionId> --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.query_robot_create_result": {
       "use_when": [
@@ -3857,9 +3811,7 @@
       ],
       "examples": [
         "dws dev app robot result --task-id <taskId> --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.remove_dev_app_members": {
       "use_when": [
@@ -3870,9 +3822,7 @@
       ],
       "examples": [
         "dws dev app member remove --member-type <member-type> --unified-app-id <unified-app-id> --user-ids <user-ids>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.remove_dev_app_permissions": {
       "use_when": [
@@ -3883,9 +3833,7 @@
       ],
       "examples": [
         "dws dev app permission remove --scope-values <scope-values> --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.search_open_platform_docs_rag": {
       "use_when": [
@@ -3911,9 +3859,7 @@
       ],
       "examples": [
         "dws dev app robot config --unified-app-id <unifiedAppId> --name \"小助手\" --desc \"接 opencode\" --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.set_extension_webapp_config": {
       "use_when": [
@@ -3924,9 +3870,7 @@
       ],
       "examples": [
         "dws dev app webapp config --homepage-url <homepage-url> --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.submit_robot_create_task": {
       "use_when": [
@@ -3938,9 +3882,7 @@
       ],
       "examples": [
         "dws dev app robot submit --name <智能体名> --robot-name <机器人名> --desc <描述> --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.subscribe_dev_app_events": {
       "use_when": [
@@ -3951,9 +3893,7 @@
       ],
       "examples": [
         "dws dev app event subscribe   --unified-app-id <unifiedAppId> --event-codes <code1>,<code2> --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.unsubscribe_dev_app_events": {
       "use_when": [
@@ -3964,9 +3904,7 @@
       ],
       "examples": [
         "dws dev app event unsubscribe --event-codes <event-codes> --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.update_dev_app": {
       "use_when": [
@@ -3978,9 +3916,7 @@
       ],
       "examples": [
         "dws dev app update --unified-app-id <unifiedAppId> --name <新名称> --dry-run --format json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "dev.update_dev_app_security_config": {
       "use_when": [
@@ -3991,9 +3927,7 @@
       ],
       "examples": [
         "dws dev app security config --redirect-urls <redirect-urls> --unified-app-id <unified-app-id>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "devdoc.devdoc_rag_pretest": {
       "use_when": [
@@ -5258,6 +5192,27 @@
       "interface_mode": "mcp",
       "availability": "available"
     },
+    "mail.list_emails": {
+      "agent_summary": "列出收件箱或指定文件夹中的邮件，无需编写 KQL 查询",
+      "use_when": [
+        "列出收件箱、已发送、草稿、垃圾邮件或其他指定文件夹中的邮件"
+      ],
+      "avoid_when": [
+        "需要按主题、发件人、日期或附件等条件组合搜索时使用 mail message search"
+      ],
+      "examples": [
+        "dws mail message list --email user@company.com",
+        "dws mail message list --email user@company.com --folder-id 1 --limit 50"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": true,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "CLI wrapper converts the reviewed folder selection into a KQL query and maps pagination before calling the pinned search_emails RPC; the local transform plus RPC call is not a one-to-one interface contract"
+    },
     "mail.search_emails": {
       "use_when": [
         "2. 搜索邮件 — 提取 messageId",
@@ -5701,9 +5656,7 @@
       "examples": [
         "dws minutes record pause --id <taskUuid>",
         "dws minutes record pause --id <taskUuid> --session-id <sessionId>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "minutes.record_resume": {
       "use_when": [
@@ -5717,9 +5670,7 @@
       "examples": [
         "dws minutes record resume --id <taskUuid>",
         "dws minutes record resume --id <taskUuid> --session-id <sessionId>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "minutes.record_start": {
       "use_when": [
@@ -5733,9 +5684,7 @@
       "examples": [
         "dws minutes record start",
         "dws minutes record start --session-id <sessionId>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "minutes.record_stop": {
       "use_when": [
@@ -5749,9 +5698,7 @@
       "examples": [
         "dws minutes record stop --id <taskUuid>",
         "dws minutes record stop --id <taskUuid> --session-id <sessionId>"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "minutes.remove_member_permission": {
       "use_when": [
@@ -6593,9 +6540,7 @@
       "examples": [
         "dws sheet filter-view update-criteria --node <NODE_ID> --sheet-id <SHEET_ID> --filter-view-id <FV_ID> --column 0 --filter-criteria '{\"filterType\":\"values\",\"visibleValues\":[\"销售部\",\"市场部\"]}'",
         "dws sheet filter-view update-criteria --node <NODE_ID> --sheet-id <SHEET_ID> --filter-view-id <FV_ID> --column 2 --filter-criteria '{\"filterType\":\"condition\",\"conditions\":[{\"operator\":\"greater\",\"value\":\"100\"}]}'"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      ]
     },
     "sheet.find_cells": {
       "use_when": [

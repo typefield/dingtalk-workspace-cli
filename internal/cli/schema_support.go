@@ -46,19 +46,3 @@ func hasRuntimeSchemaCommand(cmd *cobra.Command) bool {
 	}
 	return false
 }
-
-// schemaCatalogToolCount sums tool counts across product summaries.
-func schemaCatalogToolCount(products []map[string]any) int {
-	total := 0
-	for _, product := range products {
-		total += schemaProductToolCount(product)
-	}
-	return total
-}
-
-// helperProductSummaries returns helper-only product summaries discovered from
-// the live command tree. The embedded runtime catalog already contains these
-// tools, so runtime schema queries do not depend on live-tree reconstruction.
-func helperProductSummaries(_ *cobra.Command) []map[string]any {
-	return nil
-}

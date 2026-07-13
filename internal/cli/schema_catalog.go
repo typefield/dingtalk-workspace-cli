@@ -19,9 +19,9 @@ import (
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
-	"sort"
 	"strings"
 	"sync"
+	"sync/atomic"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
@@ -43,64 +43,39 @@ type SchemaCatalogSnapshot struct {
 	Tools       map[string]map[string]any `json:"tools"`
 }
 
-// SchemaCatalogBuildOptions limits generation to the reviewed public command
-// surface. Unknown local/plugin commands are ignored and every allowed path
-// must be present in the source Cobra tree.
+// SchemaCatalogBuildOptions carries release-envelope inputs which are checked
+// against the effective reviewed CommandRegistry. The command set is not an
+// option: visibility is resolved by EffectiveCommandRegistry before assembly,
+// and every public command must be delivered.
 type SchemaCatalogBuildOptions struct {
-	AllowedCanonicalPaths map[string]bool
-	SurfaceHash           string
-}
-
-// CatalogCommandDefinition is the endpoint-free executable fallback carried
-// by the release catalog. Real Go helpers and CLIOverlay commands take
-// precedence; these definitions only restore reviewed leaves that disappear
-// from a runtime registry response.
-type CatalogCommandDefinition struct {
-	ProductID       string
-	ProductName     string
-	SourceProductID string
-	Source          string
-	ToolName        string
-	RPCName         string
-	CanonicalPath   string
-	CLIPath         string
-	Aliases         []string
-	Title           string
-	Description     string
-	Parameters      []CatalogParameterDefinition
-	Constraints     RuntimeSchemaConstraints
-	Positionals     []RuntimeSchemaPositional
-}
-
-type CatalogParameterDefinition struct {
-	Name          string
-	Property      string
-	Type          string
-	InterfaceType string
-	Description   string
-	Default       string
-	Format        string
-	RequiredWhen  string
-	Enum          []string
-	Required      bool
+	RegistryHash string
 }
 
 type loadedSchemaCatalog struct {
 	Snapshot SchemaCatalogSnapshot
-	Lookup   map[string]string
-	Products map[string]map[string]any
+	Registry SchemaRegistry
+	Index    SchemaIndex
 }
 
 var (
 	runtimeEmbeddedSchemaCatalogOnce sync.Once
 	runtimeEmbeddedSchemaCatalog     loadedSchemaCatalog
+	runtimeEmbeddedSchemaCatalogErr  error
 )
+
+var runtimeEmbeddedSchemaCatalogLazyLoadCount atomic.Uint64
 
 func embeddedSchemaCatalog() loadedSchemaCatalog {
 	runtimeEmbeddedSchemaCatalogOnce.Do(func() {
-		runtimeEmbeddedSchemaCatalog = loadEmbeddedSchemaCatalog()
+		runtimeEmbeddedSchemaCatalogLazyLoadCount.Add(1)
+		runtimeEmbeddedSchemaCatalog, runtimeEmbeddedSchemaCatalogErr = decodeSchemaCatalogSnapshot(embeddedSchemaCatalogJSON)
 	})
 	return runtimeEmbeddedSchemaCatalog
+}
+
+func embeddedSchemaCatalogError() error {
+	_ = embeddedSchemaCatalog()
+	return runtimeEmbeddedSchemaCatalogErr
 }
 
 // BuildSchemaCatalogSnapshot renders a deterministic catalog from the
@@ -109,287 +84,131 @@ func BuildSchemaCatalogSnapshot(root *cobra.Command, options SchemaCatalogBuildO
 	if root == nil {
 		return SchemaCatalogSnapshot{}, fmt.Errorf("schema source root is nil")
 	}
-	catalog, err := runtimeSchemaPayload(root, nil)
+	if _, err := ApplyEmbeddedManualSchemaHints(root); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("apply reviewed manual Schema hints: %w", err)
+	}
+	registry, err := buildRuntimeSchemaRegistry(root)
 	if err != nil {
 		return SchemaCatalogSnapshot{}, err
 	}
-	catalog = cloneSchemaMap(catalog)
-	appendMissingHelperProducts(catalog, helperProductSummaries(root))
-	catalog["source"] = "embedded-command-catalog"
-
-	allowed := options.AllowedCanonicalPaths
-	seen := map[string]bool{}
-	tools := map[string]map[string]any{}
-	products := schemaMapSlice(catalog["products"])
-	filteredProducts := make([]map[string]any, 0, len(products))
-	for _, product := range products {
-		filteredTools := make([]map[string]any, 0)
-		for _, summary := range schemaMapSlice(product["tools"]) {
-			canonical := strings.TrimSpace(schemaString(summary["canonical_path"]))
-			if canonical == "" || (len(allowed) > 0 && !allowed[canonical]) {
-				continue
-			}
-			detail, detailErr := schemaDetailFromRoot(root, canonical)
-			if detailErr != nil {
-				return SchemaCatalogSnapshot{}, fmt.Errorf("render %s: %w", canonical, detailErr)
-			}
-			filteredTools = append(filteredTools, cloneSchemaMap(summary))
-			tools[canonical] = cloneSchemaMap(detail)
-			seen[canonical] = true
-		}
-		if len(filteredTools) == 0 {
-			continue
-		}
-		copyProduct := cloneSchemaMap(product)
-		copyProduct["tools"] = filteredTools
-		copyProduct["tool_count"] = len(filteredTools)
-		filteredProducts = append(filteredProducts, copyProduct)
+	effectiveCommands, err := BuildEffectiveCommandRegistry(root)
+	if err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("build effective Schema CommandRegistry: %w", err)
 	}
-	if len(allowed) > 0 {
-		missing := make([]string, 0)
-		for canonical := range allowed {
-			if !seen[canonical] {
-				missing = append(missing, canonical)
-			}
-		}
-		if len(missing) > 0 {
-			sort.Strings(missing)
-			return SchemaCatalogSnapshot{}, fmt.Errorf("command surface contains %d paths absent from source tree: %s", len(missing), strings.Join(missing, ", "))
-		}
+	registryHash := strings.TrimSpace(options.RegistryHash)
+	if registryHash == "" {
+		registryHash = effectiveCommands.SourceHash()
+	} else if registryHash != effectiveCommands.SourceHash() {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("provided Registry hash %q disagrees with effective CommandRegistry %q", registryHash, effectiveCommands.SourceHash())
 	}
-	catalog["products"] = filteredProducts
-	catalog["count"] = len(filteredProducts)
-	catalog["tool_count"] = schemaCatalogToolCount(filteredProducts)
+	if err := validateSchemaRegistryAgainstCommandRegistry(registry, effectiveCommands); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("validate typed Schema registry against reviewed CommandRegistry: %w", err)
+	}
+	if err := validateSchemaRegistryInterfaces(registry); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("validate final Schema interface disposition: %w", err)
+	}
+	if err := validateSchemaRegistryAgentMetadata(registry); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("validate final Schema Agent metadata set: %w", err)
+	}
+	if err := validateFinalSchemaProvenanceCoverage(registry); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("validate final Schema provenance: %w", err)
+	}
+	// Visibility has already selected the complete public set in
+	// collectRuntimeSchemaEntriesFromBound. Do not apply a post-assembly
+	// allowlist: doing so could silently erase an otherwise valid reviewed
+	// manual-only command after the exact-set validation above has passed.
+	registry.Source = "embedded-command-catalog"
+	payload, err := registry.ToSnapshotPayload()
+	if err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("serialize typed Schema registry: %w", err)
+	}
 
 	snapshot := SchemaCatalogSnapshot{
 		Version:     SchemaCatalogSnapshotVersion,
-		SurfaceHash: strings.TrimSpace(options.SurfaceHash),
-		Catalog:     catalog,
-		Tools:       tools,
+		SurfaceHash: registryHash,
+		Catalog:     payload.Catalog,
+		Tools:       payload.Tools,
 	}
 	snapshot.SourceHash = schemaCatalogSnapshotHash(snapshot)
+	if err := ValidateSchemaDeliveryInvariants(registry, snapshot); err != nil {
+		return SchemaCatalogSnapshot{}, fmt.Errorf("validate final Schema delivery invariants: %w", err)
+	}
 	return snapshot, nil
 }
 
-func schemaDetailFromRoot(root *cobra.Command, canonical string) (map[string]any, error) {
-	return runtimeSchemaPayload(root, []string{canonical})
-}
-
-func appendMissingHelperProducts(catalog map[string]any, helpers []map[string]any) {
-	products := schemaMapSlice(catalog["products"])
-	seen := map[string]bool{}
-	for _, product := range products {
-		seen[schemaString(product["id"])] = true
-	}
-	for _, product := range helpers {
-		if id := schemaString(product["id"]); id != "" && !seen[id] {
-			products = append(products, cloneSchemaMap(product))
-			seen[id] = true
-		}
-	}
-	catalog["products"] = products
-	catalog["count"] = len(products)
-	catalog["tool_count"] = schemaCatalogToolCount(products)
-}
-
-func loadEmbeddedSchemaCatalog() loadedSchemaCatalog {
+// decodeSchemaCatalogSnapshot is the single release and generation-time
+// loading path. Delivery validation round-trips generated JSON through this
+// function so it cannot pass with data that the shipped binary would reject.
+func decodeSchemaCatalogSnapshot(data []byte) (loadedSchemaCatalog, error) {
 	var snapshot SchemaCatalogSnapshot
-	if err := json.Unmarshal(embeddedSchemaCatalogJSON, &snapshot); err != nil ||
-		snapshot.Version != SchemaCatalogSnapshotVersion || len(snapshot.Catalog) == 0 || len(snapshot.Tools) == 0 {
-		return loadedSchemaCatalog{}
+	if err := decodeStrictSchemaJSON(data, &snapshot); err != nil {
+		return loadedSchemaCatalog{}, fmt.Errorf("decode Schema Catalog snapshot: %w", err)
+	}
+	return loadSchemaCatalogSnapshot(snapshot)
+}
+
+// loadSchemaCatalogSnapshot constructs the production lookup from an
+// arbitrary decoded snapshot. It validates the progressive summaries against
+// the full leaf store before publishing any lookup key.
+func loadSchemaCatalogSnapshot(snapshot SchemaCatalogSnapshot) (loadedSchemaCatalog, error) {
+	if snapshot.Version != SchemaCatalogSnapshotVersion {
+		return loadedSchemaCatalog{}, fmt.Errorf("unsupported Schema Catalog snapshot version %d", snapshot.Version)
+	}
+	if len(snapshot.Catalog) == 0 || len(snapshot.Tools) == 0 {
+		return loadedSchemaCatalog{}, fmt.Errorf("Schema Catalog snapshot is empty")
 	}
 	if snapshot.SourceHash == "" || snapshot.SourceHash != schemaCatalogSnapshotHash(snapshot) {
-		return loadedSchemaCatalog{}
+		return loadedSchemaCatalog{}, fmt.Errorf("Schema Catalog snapshot source_hash does not match its content")
 	}
-	loaded := loadedSchemaCatalog{
-		Snapshot: snapshot,
-		Lookup:   map[string]string{},
-		Products: map[string]map[string]any{},
+	registry, index, err := schemaRegistryFromSnapshot(snapshot)
+	if err != nil {
+		return loadedSchemaCatalog{}, fmt.Errorf("load typed Schema registry: %w", err)
 	}
-	for _, product := range schemaMapSlice(snapshot.Catalog["products"]) {
-		if id := strings.TrimSpace(schemaString(product["id"])); id != "" {
-			loaded.Products[id] = product
+	if err := validateSchemaRegistryInterfaces(registry); err != nil {
+		return loadedSchemaCatalog{}, fmt.Errorf("validate final Schema interface disposition: %w", err)
+	}
+	// The production loader validates delivered provenance exactly as encoded.
+	// toolSpecFromSnapshot deliberately does not synthesize candidates or
+	// rewrite winners, and this coverage gate applies to every snapshot source.
+	if err := validateFinalSchemaProvenanceCoverage(registry); err != nil {
+		return loadedSchemaCatalog{}, fmt.Errorf("validate final Schema provenance: %w", err)
+	}
+	if registry.Source == "embedded-command-catalog" {
+		if err := validateSchemaRegistryAgentMetadata(registry); err != nil {
+			return loadedSchemaCatalog{}, fmt.Errorf("validate final Schema Agent metadata set: %w", err)
 		}
 	}
-	for canonical, detail := range snapshot.Tools {
-		registerSchemaLookup(loaded.Lookup, canonical, canonical)
-		registerSchemaLookup(loaded.Lookup, schemaString(detail["canonical_path"]), canonical)
-		registerSchemaLookup(loaded.Lookup, schemaString(detail["path"]), canonical)
-		registerSchemaLookup(loaded.Lookup, schemaString(detail["cli_path"]), canonical)
-		registerSchemaLookup(loaded.Lookup, schemaString(detail["primary_cli_path"]), canonical)
-		for _, alias := range schemaStringSlice(detail["aliases"]) {
-			registerSchemaLookup(loaded.Lookup, alias, canonical)
-		}
-		if sourceProduct := strings.TrimSpace(schemaString(detail["source_product_id"])); sourceProduct != "" {
-			registerSchemaLookup(loaded.Lookup, sourceProduct+"."+schemaString(detail["name"]), canonical)
-		}
-	}
-	return loaded
+	return loadedSchemaCatalog{Snapshot: snapshot, Registry: registry, Index: index}, nil
 }
 
 func embeddedSchemaCatalogAvailable() bool {
-	return len(embeddedSchemaCatalog().Snapshot.Tools) > 0
+	return len(embeddedSchemaCatalog().Index.CanonicalPaths()) > 0
 }
 
-// EmbeddedSchemaCommandDefinitions returns a detached, deterministic view of
-// the frozen CLI contract. It never exposes endpoints or Agent-only fields.
-func EmbeddedSchemaCommandDefinitions() []CatalogCommandDefinition {
+func embeddedSchemaAllPayload() (map[string]any, error) {
 	loaded := embeddedSchemaCatalog()
-	if len(loaded.Snapshot.Tools) == 0 {
-		return nil
+	payload, err := loaded.Registry.ToPayload()
+	if err != nil {
+		return nil, err
 	}
-	productNames := map[string]string{}
-	for id, product := range loaded.Products {
-		productNames[id] = firstNonEmptySchemaString(product["name"], product["description"], id)
+	payload["catalog_hash"] = loaded.Snapshot.SourceHash
+	if loaded.Snapshot.SurfaceHash != "" {
+		payload["surface_hash"] = loaded.Snapshot.SurfaceHash
 	}
-	keys := make([]string, 0, len(loaded.Snapshot.Tools))
-	for canonical := range loaded.Snapshot.Tools {
-		keys = append(keys, canonical)
-	}
-	sort.Strings(keys)
-	out := make([]CatalogCommandDefinition, 0, len(keys))
-	for _, canonical := range keys {
-		detail := loaded.Snapshot.Tools[canonical]
-		definition := CatalogCommandDefinition{
-			ProductID:       strings.TrimSpace(schemaString(detail["product_id"])),
-			SourceProductID: strings.TrimSpace(schemaString(detail["source_product_id"])),
-			Source:          strings.TrimSpace(schemaString(detail["source"])),
-			ToolName:        strings.TrimSpace(schemaString(detail["name"])),
-			CanonicalPath:   canonical,
-			CLIPath:         strings.TrimSpace(schemaString(detail["primary_cli_path"])),
-			Aliases:         append([]string(nil), schemaStringSlice(detail["aliases"])...),
-			Title:           strings.TrimSpace(schemaString(detail["title"])),
-			Description:     strings.TrimSpace(schemaString(detail["description"])),
-		}
-		if definition.CLIPath == "" {
-			definition.CLIPath = strings.TrimSpace(schemaString(detail["cli_path"]))
-		}
-		if definition.SourceProductID == "" {
-			definition.SourceProductID = definition.ProductID
-		}
-		definition.RPCName = definition.ToolName
-		if ref, ok := detail["interface_ref"].(map[string]any); ok {
-			definition.SourceProductID = firstNonEmptySchemaString(ref["product_id"], definition.SourceProductID)
-			definition.RPCName = firstNonEmptySchemaString(ref["rpc_name"], definition.RPCName)
-		}
-		definition.ProductName = productNames[definition.ProductID]
-		for name, raw := range schemaMap(detail["parameters"]) {
-			parameter := CatalogParameterDefinition{
-				Name:          name,
-				Property:      strings.TrimSpace(schemaString(raw["property"])),
-				Type:          strings.TrimSpace(schemaString(raw["type"])),
-				InterfaceType: strings.TrimSpace(schemaString(raw["interface_type"])),
-				Description:   strings.TrimSpace(schemaString(raw["description"])),
-				Default:       schemaScalarString(raw["default"]),
-				Format:        strings.TrimSpace(schemaString(raw["format"])),
-				RequiredWhen:  strings.TrimSpace(schemaString(raw["required_when"])),
-				Enum:          append([]string(nil), schemaStringSlice(raw["enum"])...),
-				Required:      schemaBool(raw["required"]),
-			}
-			if parameter.Property == "" {
-				parameter.Property = name
-			}
-			if parameter.Type == "" {
-				parameter.Type = "string"
-			}
-			definition.Parameters = append(definition.Parameters, parameter)
-		}
-		sort.Slice(definition.Parameters, func(i, j int) bool { return definition.Parameters[i].Name < definition.Parameters[j].Name })
-		decodeSchemaValue(detail["constraints"], &definition.Constraints)
-		decodeSchemaValue(detail["positionals"], &definition.Positionals)
-		out = append(out, definition)
-	}
-	return out
+	return payload, nil
 }
 
-// EmbeddedSchemaCLIPaths returns the reviewed executable primary and alias
-// paths for the current release.
-func EmbeddedSchemaCLIPaths() map[string]bool {
-	paths := map[string]bool{}
-	for _, definition := range EmbeddedSchemaCommandDefinitions() {
-		for _, path := range append([]string{definition.CLIPath}, definition.Aliases...) {
-			if path = strings.Join(strings.Fields(path), " "); path != "" {
-				paths[path] = true
-			}
-		}
+func embeddedSchemaOverviewPayload() (map[string]any, error) {
+	loaded := embeddedSchemaCatalog()
+	payload, err := loaded.Registry.ToOverviewPayload()
+	if err != nil {
+		return nil, err
 	}
-	return paths
-}
-
-// EmbeddedSchemaAnnotationReport describes how the frozen release contract
-// maps back to the executable Cobra tree. Missing paths indicate a release
-// contract drift and are asserted by catalog quality gates.
-type EmbeddedSchemaAnnotationReport struct {
-	Matched         int
-	Missing         []string
-	ManualHintError string
-}
-
-// AnnotateEmbeddedSchemaCommands attaches the frozen release contract to the
-// executable Cobra leaves. It never creates commands or changes validation;
-// catalog fallback commands are registered separately at low priority.
-func AnnotateEmbeddedSchemaCommands(root *cobra.Command) EmbeddedSchemaAnnotationReport {
-	report := EmbeddedSchemaAnnotationReport{}
-	if _, err := ApplyEmbeddedManualSchemaHints(root); err != nil {
-		report.ManualHintError = err.Error()
+	payload["catalog_hash"] = loaded.Snapshot.SourceHash
+	if loaded.Snapshot.SurfaceHash != "" {
+		payload["surface_hash"] = loaded.Snapshot.SurfaceHash
 	}
-	for _, definition := range EmbeddedSchemaCommandDefinitions() {
-		cmd := compatibleSchemaCommand(root, definition.CLIPath, definition)
-		if cmd == nil {
-			for _, alias := range definition.Aliases {
-				if cmd = compatibleSchemaCommand(root, alias, definition); cmd != nil {
-					break
-				}
-			}
-		}
-		if cmd == nil {
-			report.Missing = append(report.Missing, definition.CanonicalPath)
-			continue
-		}
-		existingProduct, existingTool, existingSource := runtimeSchemaAnnotations(cmd)
-		if existingProduct != "" && existingTool != "" && existingSource != "frozen-catalog" {
-			report.Matched++
-			continue
-		}
-		AttachRuntimeSchema(cmd, definition.ProductID, definition.ToolName, definition.Source)
-		// Real Cobra commands own their current parameter contract. The embedded
-		// Catalog may backfill stable identity only. Parameter bindings come from
-		// their own versioned input; required and constraints come from current
-		// Cobra metadata and strong annotations. Only generated fallback leaves
-		// need the complete frozen contract.
-		if existingSource != "frozen-catalog" {
-			report.Matched++
-			continue
-		}
-		AnnotateRuntimeToolMetadata(cmd, definition.Title, definition.Description, "embedded-command-catalog")
-		AnnotateRuntimeConstraints(cmd, definition.Constraints)
-		AnnotateRuntimePositionals(cmd, definition.Positionals...)
-		for _, parameter := range definition.Parameters {
-			parameterType := firstNonEmptySchemaString(parameter.InterfaceType, parameter.Type, "string")
-			AnnotateRuntimeFlag(cmd, parameter.Name, parameter.Property, parameterType, parameter.Required, parameter.Default)
-			AnnotateRuntimeFlagRequiredWhen(cmd, parameter.Name, parameter.RequiredWhen)
-			AnnotateRuntimeFlagFormat(cmd, parameter.Name, parameter.Format)
-			AnnotateRuntimeFlagEnum(cmd, parameter.Name, parameter.Enum...)
-		}
-		report.Matched++
-	}
-	sort.Strings(report.Missing)
-	return report
-}
-
-func compatibleSchemaCommand(root *cobra.Command, path string, definition CatalogCommandDefinition) *cobra.Command {
-	cmd := exactSchemaCommand(root, path)
-	if cmd == nil {
-		return nil
-	}
-	productID, toolName, _ := runtimeSchemaAnnotations(cmd)
-	if productID == "" && toolName == "" {
-		return cmd
-	}
-	if productID == definition.ProductID && toolName == definition.ToolName {
-		return cmd
-	}
-	return nil
+	return payload, nil
 }
 
 func exactSchemaCommand(root *cobra.Command, rawPath string) *cobra.Command {
@@ -421,9 +240,19 @@ func exactSchemaCommand(root *cobra.Command, rawPath string) *cobra.Command {
 }
 
 func embeddedSchemaPayload(args []string) (map[string]any, error) {
-	loaded := embeddedSchemaCatalog()
+	return schemaPayloadFromLoadedCatalog(embeddedSchemaCatalog(), args)
+}
+
+// schemaPayloadFromLoadedCatalog is shared by the shipped schema command and
+// the final-delivery gate. Keeping lookup and payload rendering on one path
+// prevents generation-only validation from accepting an unqueryable snapshot.
+func schemaPayloadFromLoadedCatalog(loaded loadedSchemaCatalog, args []string) (map[string]any, error) {
 	if len(args) == 0 {
-		payload := cloneSchemaMap(loaded.Snapshot.Catalog)
+		snapshot, err := loaded.Registry.ToSnapshotPayload()
+		if err != nil {
+			return nil, err
+		}
+		payload := snapshot.Catalog
 		payload["catalog_hash"] = loaded.Snapshot.SourceHash
 		if loaded.Snapshot.SurfaceHash != "" {
 			payload["surface_hash"] = loaded.Snapshot.SurfaceHash
@@ -431,34 +260,36 @@ func embeddedSchemaPayload(args []string) (map[string]any, error) {
 		return payload, nil
 	}
 	raw := strings.TrimSpace(args[0])
-	if canonical := resolveSchemaLookup(loaded.Lookup, raw); canonical != "" {
-		detail := cloneSchemaMap(loaded.Snapshot.Tools[canonical])
-		if alias := matchingSchemaAlias(detail, raw); alias != "" {
-			detail["is_alias"] = true
-			detail["cli_path"] = alias
-		}
-		return detail, nil
+	if tool, ok := loaded.Index.Resolve(raw); ok {
+		return schemaToolForResolvedPath(tool, raw).ToPayload()
 	}
 	tokens := splitSchemaPathTokens(raw)
 	if len(tokens) == 1 {
-		if product := loaded.Products[tokens[0]]; product != nil {
-			copyProduct := cloneSchemaMap(product)
+		if product, ok := loaded.Index.Product(tokens[0]); ok {
+			payload, err := product.ToSummaryPayload()
+			if err != nil {
+				return nil, err
+			}
 			return map[string]any{
 				"kind":    "schema",
 				"level":   "product",
-				"count":   schemaProductToolCount(copyProduct),
-				"product": copyProduct,
+				"count":   len(product.Tools),
+				"product": payload,
 				"source":  "embedded-command-catalog",
 			}, nil
 		}
 	}
 	if len(tokens) > 1 {
 		path := strings.Join(tokens, " ")
-		if product := loaded.Products[tokens[0]]; product != nil {
+		if product, ok := loaded.Index.Product(tokens[0]); ok {
 			matched := make([]map[string]any, 0)
-			for _, summary := range schemaMapSlice(product["tools"]) {
-				if schemaSummaryUnderGroup(summary, path) {
-					matched = append(matched, cloneSchemaMap(summary))
+			for _, tool := range product.Tools {
+				if schemaToolUnderGroup(tool, path) {
+					summary, err := tool.ToSummaryPayload()
+					if err != nil {
+						return nil, err
+					}
+					matched = append(matched, summary)
 				}
 			}
 			if len(matched) > 0 {
@@ -476,48 +307,6 @@ func embeddedSchemaPayload(args []string) (map[string]any, error) {
 	return nil, apperrors.NewValidation("unknown runtime schema path " + strconvQuote(raw))
 }
 
-func matchingSchemaAlias(detail map[string]any, raw string) string {
-	normalized := strings.Join(splitSchemaPathTokens(raw), " ")
-	for _, alias := range schemaStringSlice(detail["aliases"]) {
-		if normalized == strings.Join(splitSchemaPathTokens(alias), " ") {
-			return alias
-		}
-	}
-	return ""
-}
-
-func schemaSummaryUnderGroup(summary map[string]any, path string) bool {
-	prefix := path + " "
-	paths := []string{
-		schemaString(summary["cli_path"]),
-		schemaString(summary["primary_cli_path"]),
-	}
-	paths = append(paths, schemaStringSlice(summary["aliases"])...)
-	for _, candidate := range paths {
-		if strings.HasPrefix(strings.Join(splitSchemaPathTokens(candidate), " "), prefix) {
-			return true
-		}
-	}
-	return false
-}
-
-func registerSchemaLookup(index map[string]string, raw, canonical string) {
-	raw = strings.TrimSpace(raw)
-	canonical = strings.TrimSpace(canonical)
-	if raw == "" || canonical == "" {
-		return
-	}
-	index[raw] = canonical
-	index[strings.Join(splitSchemaPathTokens(raw), " ")] = canonical
-}
-
-func resolveSchemaLookup(index map[string]string, raw string) string {
-	if canonical := index[strings.TrimSpace(raw)]; canonical != "" {
-		return canonical
-	}
-	return index[strings.Join(splitSchemaPathTokens(raw), " ")]
-}
-
 func schemaCatalogSnapshotHash(snapshot SchemaCatalogSnapshot) string {
 	payload := struct {
 		Version     int                       `json:"version"`
@@ -528,16 +317,6 @@ func schemaCatalogSnapshotHash(snapshot SchemaCatalogSnapshot) string {
 	encoded, _ := json.Marshal(payload)
 	sum := sha256.Sum256(encoded)
 	return "sha256:" + hex.EncodeToString(sum[:])
-}
-
-func cloneSchemaMap(input map[string]any) map[string]any {
-	if input == nil {
-		return nil
-	}
-	encoded, _ := json.Marshal(input)
-	var output map[string]any
-	_ = json.Unmarshal(encoded, &output)
-	return output
 }
 
 func schemaMapSlice(value any) []map[string]any {
@@ -593,22 +372,6 @@ func schemaStringSlice(value any) []string {
 	}
 }
 
-func schemaBool(value any) bool {
-	result, _ := value.(bool)
-	return result
-}
-
-func schemaScalarString(value any) string {
-	switch typed := value.(type) {
-	case string:
-		return typed
-	case float64, bool:
-		return fmt.Sprint(typed)
-	default:
-		return ""
-	}
-}
-
 func firstNonEmptySchemaString(values ...any) string {
 	for _, value := range values {
 		if text := strings.TrimSpace(schemaString(value)); text != "" {
@@ -616,11 +379,4 @@ func firstNonEmptySchemaString(values ...any) string {
 		}
 	}
 	return ""
-}
-
-func decodeSchemaValue(value any, target any) {
-	encoded, err := json.Marshal(value)
-	if err == nil {
-		_ = json.Unmarshal(encoded, target)
-	}
 }

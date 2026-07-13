@@ -45,6 +45,7 @@ type RuntimeSchemaCompletenessReport struct {
 	Missing           []string
 	InvalidExclusions []string
 	StaleExclusions   []string
+	DeliveryErrors    []string
 }
 
 // EmbeddedRuntimeSchemaExclusions returns the exact, reviewed list of public
@@ -89,6 +90,9 @@ func ValidateEmbeddedRuntimeSchemaCompleteness(root *cobra.Command) error {
 		return err
 	}
 	report := RuntimeSchemaCompleteness(root, exclusions)
+	if len(report.DeliveryErrors) > 0 {
+		return fmt.Errorf("invalid effective Schema command registry: %s", strings.Join(report.DeliveryErrors, "; "))
+	}
 	if len(report.Missing) > 0 {
 		return fmt.Errorf("public Cobra leaves missing from Schema or reviewed exclusions: %s", strings.Join(report.Missing, ", "))
 	}
@@ -114,7 +118,22 @@ func ValidateSchemaCatalogDeliveryCompleteness(root *cobra.Command, snapshot Sch
 	if err != nil {
 		return err
 	}
-	report := SchemaCatalogDeliveryCompleteness(root, snapshot, exclusions)
+	return validateSchemaCatalogDeliveryCompleteness(root, snapshot, exclusions)
+}
+
+func validateSchemaCatalogDeliveryCompleteness(root *cobra.Command, snapshot SchemaCatalogSnapshot, exclusions []RuntimeSchemaExclusion) error {
+	encoded, err := json.Marshal(snapshot)
+	if err != nil {
+		return fmt.Errorf("encode final Schema Catalog for delivery validation: %w", err)
+	}
+	loaded, err := decodeSchemaCatalogSnapshot(encoded)
+	if err != nil {
+		return fmt.Errorf("load final Schema Catalog through production loader: %w", err)
+	}
+	report := schemaCatalogDeliveryCompletenessAgainstLoaded(root, loaded, exclusions)
+	if len(report.DeliveryErrors) > 0 {
+		return fmt.Errorf("invalid final Schema Catalog delivery: %s", strings.Join(report.DeliveryErrors, "; "))
+	}
 	if len(report.Missing) > 0 {
 		return fmt.Errorf("public Cobra leaves missing from final Schema Catalog or reviewed exclusions: %s", strings.Join(report.Missing, ", "))
 	}
@@ -128,11 +147,16 @@ func ValidateSchemaCatalogDeliveryCompleteness(root *cobra.Command, snapshot Sch
 }
 
 // RuntimeSchemaCompleteness scans the real command tree in the reverse
-// direction: every public executable leaf must either carry a Schema identity
-// or have a reviewed exclusion with a non-empty reason.
+// direction: every public executable leaf must either belong to the effective
+// reviewed CommandRegistry or have a reviewed exclusion with a non-empty
+// reason.
 func RuntimeSchemaCompleteness(root *cobra.Command, exclusions []RuntimeSchemaExclusion) RuntimeSchemaCompletenessReport {
 	coveredPaths := map[string]bool{}
-	for _, entry := range collectRuntimeSchemaEntries(root) {
+	entries, err := collectRuntimeSchemaEntries(root)
+	if err != nil {
+		return RuntimeSchemaCompletenessReport{DeliveryErrors: []string{err.Error()}}
+	}
+	for _, entry := range entries {
 		addSchemaCoveredPath(coveredPaths, entry.CLIPath)
 		addSchemaCoveredPath(coveredPaths, entry.PrimaryCLIPath)
 		for _, alias := range entry.Aliases {
@@ -144,18 +168,254 @@ func RuntimeSchemaCompleteness(root *cobra.Command, exclusions []RuntimeSchemaEx
 
 // SchemaCatalogDeliveryCompleteness scans the real command tree against paths
 // present in the final generated snapshot. A runtime annotation alone is not
-// sufficient: the command must survive the reviewed surface filter and be
+// sufficient: the command must belong to the EffectiveCommandRegistry and be
 // addressable through its primary CLI path or an alias.
 func SchemaCatalogDeliveryCompleteness(root *cobra.Command, snapshot SchemaCatalogSnapshot, exclusions []RuntimeSchemaExclusion) RuntimeSchemaCompletenessReport {
+	loaded, err := loadSchemaCatalogSnapshot(snapshot)
+	if err != nil {
+		return RuntimeSchemaCompletenessReport{DeliveryErrors: []string{err.Error()}}
+	}
+	return schemaCatalogDeliveryCompletenessAgainstLoaded(root, loaded, exclusions)
+}
+
+func schemaCatalogDeliveryCompletenessAgainstLoaded(root *cobra.Command, loaded loadedSchemaCatalog, exclusions []RuntimeSchemaExclusion) RuntimeSchemaCompletenessReport {
+	expectedByPath, mappingErrors := runtimeSchemaIdentityByCLIPath(root)
+	return schemaCatalogDeliveryCompletenessAgainstLoadedAndIdentity(root, loaded, exclusions, expectedByPath, mappingErrors)
+}
+
+func schemaCatalogDeliveryCompletenessAgainstLoadedAndIdentity(
+	root *cobra.Command,
+	loaded loadedSchemaCatalog,
+	exclusions []RuntimeSchemaExclusion,
+	expectedByPath map[string]runtimeSchemaResolvedIdentity,
+	mappingErrors []string,
+) RuntimeSchemaCompletenessReport {
 	coveredPaths := map[string]bool{}
-	for _, detail := range snapshot.Tools {
-		addSchemaCoveredPath(coveredPaths, schemaString(detail["cli_path"]))
-		addSchemaCoveredPath(coveredPaths, schemaString(detail["primary_cli_path"]))
-		for _, alias := range schemaStringSlice(detail["aliases"]) {
-			addSchemaCoveredPath(coveredPaths, alias)
+	deliveryErrors := append([]string(nil), mappingErrors...)
+	deliveryErrors = append(deliveryErrors, schemaDeliveryInvariantErrors(loaded)...)
+
+	// Public completeness is intentionally limited to visible runnable leaves.
+	// A hidden compatibility leaf may still be a valid primary path or alias and
+	// is checked separately against all resolved runtime Schema entries below.
+	walkPublicRunnableLeaves(root, func(leaf *cobra.Command) {
+		path := normalizeSchemaCLIPath(strings.Join(commandPathParts(leaf), " "))
+		expected := expectedByPath[path]
+		if expected.CanonicalPath == "" {
+			return
+		}
+		payload, err := schemaPayloadFromLoadedCatalog(loaded, []string{path})
+		if err != nil {
+			return
+		}
+		if got := strings.TrimSpace(schemaString(payload["canonical_path"])); got == expected.CanonicalPath {
+			coveredPaths[path] = true
+		} else {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("public CLI path %q resolves to %q, want %q", path, got, expected.CanonicalPath))
+		}
+	})
+
+	canonicals := loaded.Index.CanonicalPaths()
+	for _, canonical := range canonicals {
+		tool, ok := loaded.Index.Resolve(canonical)
+		if !ok {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("typed Schema index lost canonical %q", canonical))
+			continue
+		}
+		primaryPath := normalizeSchemaCLIPath(tool.Identity.PrimaryCLIPath)
+		if expected := expectedByPath[primaryPath]; expected.CanonicalPath == canonical && expected.Source != "" {
+			if gotSource := strings.TrimSpace(tool.Identity.Source); gotSource != expected.Source {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s identity source is %q, want resolved source %q", canonical, gotSource, expected.Source))
+			}
+		}
+		if payload, err := schemaPayloadFromLoadedCatalog(loaded, []string{canonical}); err != nil {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("canonical %q is not queryable: %v", canonical, err))
+		} else if got := strings.TrimSpace(schemaString(payload["canonical_path"])); got != canonical {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("canonical %q resolves to %q", canonical, got))
+		} else if expectedPayload, renderErr := tool.ToPayload(); renderErr != nil {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("canonical %q cannot render typed payload: %v", canonical, renderErr))
+		} else if !schemaJSONEqual(payload, expectedPayload) {
+			deliveryErrors = append(deliveryErrors, fmt.Sprintf("canonical %q query differs from final ToolSpec", canonical))
+		}
+
+		paths := []string{tool.Identity.CLIPath, tool.Identity.PrimaryCLIPath}
+		paths = append(paths, tool.Identity.Aliases...)
+		seenPaths := map[string]bool{}
+		for _, rawPath := range paths {
+			path := normalizeSchemaCLIPath(rawPath)
+			if path == "" || seenPaths[path] {
+				continue
+			}
+			seenPaths[path] = true
+			expected := expectedByPath[path]
+			if expected.CanonicalPath == "" {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s advertises non-executable Schema path %q", canonical, path))
+				continue
+			}
+			if expected.CanonicalPath != canonical {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s advertises path %q owned by %s", canonical, path, expected.CanonicalPath))
+				continue
+			}
+			payload, err := schemaPayloadFromLoadedCatalog(loaded, []string{path})
+			if err != nil {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s path %q is not queryable: %v", canonical, path, err))
+				continue
+			}
+			if got := strings.TrimSpace(schemaString(payload["canonical_path"])); got != canonical {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s path %q resolves to %q", canonical, path, got))
+				continue
+			}
+			expectedTool := schemaToolForResolvedPath(tool, path)
+			expectedPayload, renderErr := expectedTool.ToPayload()
+			if renderErr != nil {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s path %q cannot render typed payload: %v", canonical, path, renderErr))
+			} else if !schemaJSONEqual(payload, expectedPayload) {
+				deliveryErrors = append(deliveryErrors, fmt.Sprintf("tool %s path %q query differs from final ToolSpec", canonical, path))
+			}
 		}
 	}
-	return runtimeSchemaCompletenessAgainstPaths(root, exclusions, coveredPaths)
+
+	report := runtimeSchemaCompletenessAgainstPaths(root, exclusions, coveredPaths)
+	report.DeliveryErrors = sortedUniqueSchemaStrings(deliveryErrors)
+	return report
+}
+
+// schemaRegistryProjectionErrors proves every public view is a pure
+// projection of the final typed registry: product/group summaries and --all
+// must never re-resolve annotations or metadata independently from leaf
+// lookup.
+func schemaRegistryProjectionErrors(loaded loadedSchemaCatalog) []string {
+	var problems []string
+	all, err := loaded.Registry.ToPayload()
+	if err != nil {
+		return []string{fmt.Sprintf("render final Schema --all projection: %v", err)}
+	}
+	allByCanonical := map[string]map[string]any{}
+	for _, product := range schemaMapSlice(all["products"]) {
+		for _, tool := range schemaMapSlice(product["tools"]) {
+			canonical := strings.TrimSpace(schemaString(tool["canonical_path"]))
+			if canonical == "" {
+				problems = append(problems, "Schema --all contains a tool without canonical_path")
+				continue
+			}
+			if _, exists := allByCanonical[canonical]; exists {
+				problems = append(problems, fmt.Sprintf("Schema --all contains duplicate tool %s", canonical))
+			}
+			allByCanonical[canonical] = tool
+		}
+	}
+
+	groupPaths := map[string]bool{}
+	for _, product := range loaded.Registry.Products {
+		expectedProduct, renderErr := product.ToSummaryPayload()
+		if renderErr != nil {
+			problems = append(problems, fmt.Sprintf("render product %s summary: %v", product.ID, renderErr))
+		} else if actual, queryErr := schemaPayloadFromLoadedCatalog(loaded, []string{product.ID}); queryErr != nil {
+			problems = append(problems, fmt.Sprintf("product %s is not queryable: %v", product.ID, queryErr))
+		} else if !schemaJSONEqual(actual["product"], expectedProduct) {
+			problems = append(problems, fmt.Sprintf("product %s query differs from final ProductSpec", product.ID))
+		}
+		for _, tool := range product.Tools {
+			canonical := tool.Identity.CanonicalPath
+			expectedTool, renderErr := tool.ToPayload()
+			if renderErr != nil {
+				problems = append(problems, fmt.Sprintf("render final ToolSpec %s: %v", canonical, renderErr))
+			} else if actual, exists := allByCanonical[canonical]; !exists {
+				problems = append(problems, fmt.Sprintf("Schema --all is missing final ToolSpec %s", canonical))
+			} else if !schemaJSONEqual(actual, expectedTool) {
+				problems = append(problems, fmt.Sprintf("Schema --all tool %s differs from final ToolSpec", canonical))
+			}
+			paths := append([]string{tool.Identity.CLIPath, tool.Identity.PrimaryCLIPath}, tool.Identity.Aliases...)
+			for _, rawPath := range paths {
+				tokens := splitSchemaPathTokens(rawPath)
+				for length := 2; length < len(tokens); length++ {
+					groupPaths[strings.Join(tokens[:length], " ")] = true
+				}
+			}
+		}
+	}
+	if len(allByCanonical) != len(loaded.Index.CanonicalPaths()) {
+		problems = append(problems, fmt.Sprintf("Schema --all contains %d tools, typed index contains %d", len(allByCanonical), len(loaded.Index.CanonicalPaths())))
+	}
+
+	groups := make([]string, 0, len(groupPaths))
+	for path := range groupPaths {
+		groups = append(groups, path)
+	}
+	sort.Strings(groups)
+	for _, path := range groups {
+		tokens := splitSchemaPathTokens(path)
+		product, ok := loaded.Index.Product(tokens[0])
+		if !ok {
+			problems = append(problems, fmt.Sprintf("group %s has no typed product", path))
+			continue
+		}
+		expected := make([]map[string]any, 0)
+		for _, tool := range product.Tools {
+			if !schemaToolUnderGroup(tool, path) {
+				continue
+			}
+			summary, renderErr := tool.ToSummaryPayload()
+			if renderErr != nil {
+				problems = append(problems, fmt.Sprintf("render group %s tool %s: %v", path, tool.Identity.CanonicalPath, renderErr))
+				continue
+			}
+			expected = append(expected, summary)
+		}
+		actual, queryErr := schemaPayloadFromLoadedCatalog(loaded, []string{path})
+		if queryErr != nil {
+			problems = append(problems, fmt.Sprintf("group %s is not queryable: %v", path, queryErr))
+		} else if !schemaJSONEqual(actual["tools"], expected) {
+			problems = append(problems, fmt.Sprintf("group %s query differs from final ToolSpec summaries", path))
+		}
+	}
+	return sortedUniqueSchemaStrings(problems)
+}
+
+type runtimeSchemaResolvedIdentity struct {
+	CanonicalPath string
+	Source        string
+}
+
+func runtimeSchemaIdentityByCLIPath(root *cobra.Command) (map[string]runtimeSchemaResolvedIdentity, []string) {
+	identityByPath := map[string]runtimeSchemaResolvedIdentity{}
+	var conflicts []string
+	entries, err := collectRuntimeSchemaEntries(root)
+	if err != nil {
+		return identityByPath, []string{err.Error()}
+	}
+	for _, entry := range entries {
+		canonical := strings.TrimSpace(entry.ProductID + "." + entry.ToolName)
+		paths := append([]string{entry.PrimaryCLIPath, entry.CLIPath}, entry.Aliases...)
+		for _, rawPath := range paths {
+			path := normalizeSchemaCLIPath(rawPath)
+			if path == "" || canonical == "." {
+				continue
+			}
+			if existing := identityByPath[path]; existing.CanonicalPath != "" && existing.CanonicalPath != canonical {
+				conflicts = append(conflicts, fmt.Sprintf("runtime Schema path %q belongs to both %s and %s", path, existing.CanonicalPath, canonical))
+				continue
+			}
+			identityByPath[path] = runtimeSchemaResolvedIdentity{
+				CanonicalPath: canonical,
+				Source:        strings.TrimSpace(entry.Source),
+			}
+		}
+	}
+	return identityByPath, sortedUniqueSchemaStrings(conflicts)
+}
+
+func sortedUniqueSchemaStrings(values []string) []string {
+	seen := make(map[string]bool, len(values))
+	out := make([]string, 0, len(values))
+	for _, value := range values {
+		if value = strings.TrimSpace(value); value == "" || seen[value] {
+			continue
+		}
+		seen[value] = true
+		out = append(out, value)
+	}
+	sort.Strings(out)
+	return out
 }
 
 func addSchemaCoveredPath(coveredPaths map[string]bool, rawPath string) {

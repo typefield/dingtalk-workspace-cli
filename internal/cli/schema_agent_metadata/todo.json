@@ -2,553 +2,4310 @@
   "product_id": "todo",
   "tools": {
     "todo comment add": {
-      "agent_summary": "给待办添加评论",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "7. 给待办新增评论",
-        "给待办加条评论/留个备注"
-      ],
+      "agent_summary": "新增待办评论",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“删除待办的评论”请改用 dws todo comment delete",
-        "要“获取待办的评论”请改用 dws todo comment list"
+        "只需列出评论，或评论内容和目标待办未确认时不要新增评论。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo comment add --task-id \u003ctaskId\u003e --content \"评论内容\"",
-        "dws todo comment add --task-id \u003ctaskId\u003e --content \"已开始处理\" --format json"
+        "dws todo comment add --task-id \u003ctaskId\u003e --content \"评论内容\" --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "新增待办评论",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "新增待办评论",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需列出评论，或评论内容和目标待办未确认时不要新增评论。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需列出评论，或评论内容和目标待办未确认时不要新增评论。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo comment add --task-id \u003ctaskId\u003e --content \"评论内容\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo comment add --task-id \u003ctaskId\u003e --content \"评论内容\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.add_todo_comment",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.add_todo_comment",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要新增待办评论时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要新增待办评论时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "add_todo_comment"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.add_todo_comment",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo comment add",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_comment"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要新增待办评论时"
+      ]
     },
     "todo comment delete": {
-      "agent_summary": "删除待办的评论",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "9. 删除待办评论",
-        "删除这条评论"
-      ],
+      "agent_summary": "删除待办评论",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“给待办添加评论”请改用 dws todo comment add",
-        "要“获取待办的评论”请改用 dws todo comment list"
+        "用户未明确删除，评论或所属待办不确定时不要执行；新增评论应使用添加命令。"
       ],
+      "confirmation": "user_required",
       "effect": "destructive",
       "effect_source": "agent-hint",
-      "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo comment delete --task-id \u003ctaskId\u003e --comment-id \u003ccommentId\u003e"
+        "dws todo comment delete --task-id \u003ctaskId\u003e --comment-id \u003ccommentId\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "删除待办评论",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "删除待办评论",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确删除，评论或所属待办不确定时不要执行；新增评论应使用添加命令。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确删除，评论或所属待办不确定时不要执行；新增评论应使用添加命令。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "effect": {
+          "value": "destructive",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "destructive",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo comment delete --task-id \u003ctaskId\u003e --comment-id \u003ccommentId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo comment delete --task-id \u003ctaskId\u003e --comment-id \u003ccommentId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.delete_todo_comment",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.delete_todo_comment",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求删除待办评论时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求删除待办评论时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "delete_todo_comment"
+      },
+      "reviewed": true,
+      "risk": "high",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.delete_todo_comment",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo comment delete",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/destructive-safety.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo_comment"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "用户明确要求删除待办评论时"
+      ]
     },
     "todo comment list": {
-      "agent_summary": "获取待办的评论",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "8. 查看待办评论列表",
-        "看看这个待办的评论"
-      ],
+      "agent_summary": "查询待办评论列表",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“删除待办的评论”请改用 dws todo comment delete",
-        "要“给待办添加评论”请改用 dws todo comment add"
+        "需要新增或删除评论时不要使用；该命令只读取指定待办的评论列表。"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws todo comment list --task-id \u003ctaskId\u003e",
-        "dws todo comment list --task-id \u003ctaskId\u003e --page 1 --size 20"
+        "dws todo comment list --task-id \u003ctaskId\u003e --format json",
+        "dws todo comment list --task-id \u003ctaskId\u003e --page 1 --size 20 --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询待办评论列表",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "查询待办评论列表",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要新增或删除评论时不要使用；该命令只读取指定待办的评论列表。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要新增或删除评论时不要使用；该命令只读取指定待办的评论列表。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo comment list --task-id \u003ctaskId\u003e --format json",
+            "dws todo comment list --task-id \u003ctaskId\u003e --page 1 --size 20 --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo comment list --task-id \u003ctaskId\u003e --format json",
+                "dws todo comment list --task-id \u003ctaskId\u003e --page 1 --size 20 --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.list_todo_comment",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.list_todo_comment",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要查询待办评论列表时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要查询待办评论列表时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "list_todo_comment"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.list_todo_comment",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo comment list",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.list_todo_comment"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要查询待办评论列表时"
+      ]
     },
     "todo task add-attachment": {
-      "agent_summary": "添加待办任务附件",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "18. 上传附件（真实上传，先确认待办存在）— 从返回 result.attachmentIds 取 attachmentId"
-      ],
+      "agent_summary": "上传待办附件",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor",
-        "要“添加待办提醒”请改用 dws todo task add-reminder"
+        "只需读取待办，或本地附件与目标待办未确认时不要上传附件。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task add-attachment --task-id \u003ctaskId\u003e --file-path /path/to/file.pdf",
-        "dws todo task add-attachment --task-id \u003ctaskId\u003e --file-path /path/to/file.pdf --format json"
+        "dws todo task add-attachment --task-id \u003ctaskId\u003e --file-path \u003cfilePath\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "上传待办附件",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "上传待办附件",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需读取待办，或本地附件与目标待办未确认时不要上传附件。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需读取待办，或本地附件与目标待办未确认时不要上传附件。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task add-attachment --task-id \u003ctaskId\u003e --file-path \u003cfilePath\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task add-attachment --task-id \u003ctaskId\u003e --file-path \u003cfilePath\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.add_todo_attachment",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.add_todo_attachment",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要上传待办附件时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要上传待办附件时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "add_todo_attachment"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.add_todo_attachment",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task add-attachment",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_attachment"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要上传待办附件时"
+      ]
     },
     "todo task add-executor": {
       "agent_summary": "添加待办执行人",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "10. 添加待办执行人",
-        "加个执行人/添加执行者"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办提醒”请改用 dws todo task add-reminder"
+        "只需查看待办，或待办与新增执行人未确认时不要添加执行人。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task add-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e",
-        "dws todo task add-executor --task-id \u003ctaskId\u003e --executors userId1,userId2 --format json"
+        "dws todo task add-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "添加待办执行人",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "添加待办执行人",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看待办，或待办与新增执行人未确认时不要添加执行人。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看待办，或待办与新增执行人未确认时不要添加执行人。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task add-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task add-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.add_task_executors",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.add_task_executors",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要添加待办执行人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要添加待办执行人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "add_task_executors"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.add_task_executors",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task add-executor",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_executors"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要添加待办执行人时"
+      ]
     },
     "todo task add-participant": {
       "agent_summary": "添加待办参与人",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "12. 添加待办参与人",
-        "加个参与人/添加参与者"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办执行人”请改用 dws todo task add-executor",
-        "要“添加待办提醒”请改用 dws todo task add-reminder"
+        "只需查看待办，或待办与新增参与人未确认时不要添加参与人。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task add-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e",
-        "dws todo task add-participant --task-id \u003ctaskId\u003e --participants userId1,userId2 --format json"
+        "dws todo task add-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "添加待办参与人",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "添加待办参与人",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看待办，或待办与新增参与人未确认时不要添加参与人。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看待办，或待办与新增参与人未确认时不要添加参与人。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task add-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task add-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.add_task_participants",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.add_task_participants",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要添加待办参与人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要添加待办参与人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "add_task_participants"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.add_task_participants",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task add-participant",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_participants"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要添加待办参与人时"
+      ]
     },
     "todo task add-reminder": {
-      "agent_summary": "添加待办提醒",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "14. 添加待办提醒（基于截止时间偏移，待办必须有截止时间）",
-        "15. 添加待办提醒（自定义时间戳）",
-        "给待办加个提醒/设置提醒"
-      ],
+      "agent_summary": "为待办添加提醒",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "只需查看待办，或提醒时间、规则与目标待办未确认时不要添加提醒。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time dueTime --due-date-offset -30",
-        "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time customTime --reminder-time-stamp \"2026-03-10T18:00:00+08:00\""
+        "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --due-date-offset \u003cdueDateOffset\u003e --format json",
+        "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --reminder-time-stamp \u003creminderTimeStamp\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "为待办添加提醒",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "为待办添加提醒",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看待办，或提醒时间、规则与目标待办未确认时不要添加提醒。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看待办，或提醒时间、规则与目标待办未确认时不要添加提醒。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --due-date-offset \u003cdueDateOffset\u003e --format json",
+            "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --reminder-time-stamp \u003creminderTimeStamp\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --due-date-offset \u003cdueDateOffset\u003e --format json",
+                "dws todo task add-reminder --task-id \u003ctaskId\u003e --base-time \u003cbaseTime\u003e --reminder-time-stamp \u003creminderTimeStamp\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.add_todo_reminder",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.add_todo_reminder",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要为待办添加提醒时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要为待办添加提醒时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "add_todo_reminder"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.add_todo_reminder",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task add-reminder",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_reminder"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要为待办添加提醒时"
+      ]
     },
     "todo task create": {
       "agent_summary": "创建待办",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "1. 创建待办 — 从返回 result.taskId 提取任务 ID",
-        "1b. 创建按天循环的待办（必须先有 --due；recurrence 与 MCP create_personal_todo 一致）",
-        "加个待办/记一下/TODO",
-        "每天重复/循环待办/按天重复"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "只需查询现有待办，或标题、执行人等关键内容未确认时不要创建。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task create --title \"修复线上Bug\" --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --priority 40",
-        "dws todo task create --title \"每日站会\" --executors \u003cUSER_ID\u003e --due \"2026-03-20T10:00:00+08:00\" --recurrence \"DTSTART:20260320T020000Z\\nRRULE:FREQ=DAILY;INTERVAL=1\""
+        "dws todo task create --title \"修复线上Bug\" --executors userId1,userId2 --priority 40 --format json",
+        "dws todo task create --title \"提交报告\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.create_personal_todo",
-        "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "创建待办",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "创建待办",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查询现有待办，或标题、执行人等关键内容未确认时不要创建。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查询现有待办，或标题、执行人等关键内容未确认时不要创建。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task create --title \"修复线上Bug\" --executors userId1,userId2 --priority 40 --format json",
+            "dws todo task create --title \"提交报告\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task create --title \"修复线上Bug\" --executors userId1,userId2 --priority 40 --format json",
+                "dws todo task create --title \"提交报告\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.create_personal_todo",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.create_personal_todo",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "todo.create_personal_todo",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要创建待办时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要创建待办时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "todo",
         "rpc_name": "create_personal_todo"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "todo task create-sub": {
-      "agent_summary": "在当前企业组织内创建一条个人待办的子待办事项（要求父待办必须是操作者本人创建），支持设置标题、执行人列表、截止时间、优先级（如高/中/低）。",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "1c. 创建子待办（需先获取父待办 ID）",
-        "加个子任务/创建子待办"
-      ],
-      "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
-      ],
-      "effect": "write",
-      "effect_source": "command-verb",
+      "reviewed": true,
       "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
-      "examples": [
-        "dws todo task create-sub --parent-id \u003cPARENT_TASK_ID\u003e --title \"子任务标题\" --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --priority 40",
-        "dws todo task create-sub --parent-id \u003cPARENT_TASK_ID\u003e --title \"子任务标题\" --executors \u003cUSER_ID\u003e --due \"2026-03-20T10:00:00+08:00\""
-      ],
-      "reviewed": false,
       "source_refs": [
-        "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo",
-        "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "todo task delete": {
-      "agent_summary": "删除待办",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "6. 删除待办",
-        "删除待办/取消待办"
-      ],
-      "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
-      ],
-      "effect": "destructive",
-      "effect_source": "skill-explicit",
-      "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
-      "examples": [
-        "dws todo task delete --task-id \u003ctaskId\u003e"
-      ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.delete_todo",
-        "skills/mono/SKILL.md",
+        "CommandRegistry:canonical_path=todo.create_personal_todo",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task create",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.create_personal_todo",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.create_personal_todo",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_todo"
       ],
+      "use_when": [
+        "需要创建待办时"
+      ]
+    },
+    "todo task create-sub": {
+      "agent_summary": "创建子待办",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "父待办不是本人创建、父任务未确认或只需创建顶层待办时不要创建子待办。"
+      ],
+      "confirmation": "not_required",
+      "effect": "write",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+        "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "创建子待办",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "创建子待办",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "父待办不是本人创建、父任务未确认或只需创建顶层待办时不要创建子待办。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "父待办不是本人创建、父任务未确认或只需创建顶层待办时不要创建子待办。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+            "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+                "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.create_personal_sub_todo",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.create_personal_sub_todo",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要创建子待办时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要创建子待办时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "create_personal_sub_todo"
+      },
+      "reviewed": true,
+      "risk": "medium",
+      "source_refs": [
+        "CommandRegistry:canonical_path=todo.create_personal_sub_todo",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task create-sub",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo",
+        "skills/mono/references/products/todo.md",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_sub_todo"
+      ],
+      "use_when": [
+        "需要创建子待办时"
+      ]
+    },
+    "todo task delete": {
+      "agent_summary": "删除待办",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "用户未明确删除，目标待办不确定或仍需保留任务记录时不要执行。"
+      ],
+      "confirmation": "user_required",
+      "effect": "destructive",
+      "effect_source": "skill-explicit",
+      "examples": [
+        "dws todo task delete --task-id \u003ctaskId\u003e --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "删除待办",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "删除待办",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确删除，目标待办不确定或仍需保留任务记录时不要执行。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确删除，目标待办不确定或仍需保留任务记录时不要执行。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "user_required",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": false,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "effect": {
+          "value": "destructive",
+          "source": "skills/mono/SKILL.md",
+          "precedence": "skill",
+          "resolution": "highest_precedence",
+          "review_reason": "Skill danger table explicitly reviews this operation",
+          "candidates": [
+            {
+              "value": "destructive",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": true,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task delete --task-id \u003ctaskId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task delete --task-id \u003ctaskId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.delete_todo",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.delete_todo",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "todo.delete_todo",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "high",
+              "source": "skills/mono/SKILL.md",
+              "precedence": "skill",
+              "selected": false,
+              "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求删除待办时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求删除待办时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "todo",
         "rpc_name": "delete_todo"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "todo task done": {
-      "agent_summary": "修改执行者的待办完成状态",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "5. 标记待办完成",
-        "做完了/完成待办/标记完成"
-      ],
-      "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
-      ],
-      "effect": "write",
-      "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
-      "examples": [
-        "dws todo task done --task-id \u003ctaskId\u003e --status true",
-        "dws todo task done --task-id \u003ctaskId\u003e --status false"
-      ],
+      "reviewed": true,
+      "risk": "high",
       "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_done_status",
+        "CommandRegistry:canonical_path=todo.delete_todo",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task delete",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.delete_todo",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo",
+        "skills/mono/SKILL.md",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.delete_todo",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo"
       ],
+      "use_when": [
+        "用户明确要求删除待办时"
+      ]
+    },
+    "todo task done": {
+      "agent_summary": "修改执行者的待办完成状态",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "执行人、目标待办或期望完成状态未确认时不要修改；只需查看状态应使用查询命令。"
+      ],
+      "confirmation": "not_required",
+      "effect": "write",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws todo task done --task-id \u003ctaskId\u003e --status true --format json",
+        "dws todo task done --task-id \u003ctaskId\u003e --status false --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "修改执行者的待办完成状态",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "修改执行者的待办完成状态",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "执行人、目标待办或期望完成状态未确认时不要修改；只需查看状态应使用查询命令。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "执行人、目标待办或期望完成状态未确认时不要修改；只需查看状态应使用查询命令。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task done --task-id \u003ctaskId\u003e --status true --format json",
+            "dws todo task done --task-id \u003ctaskId\u003e --status false --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task done --task-id \u003ctaskId\u003e --status true --format json",
+                "dws todo task done --task-id \u003ctaskId\u003e --status false --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.update_todo_done_status",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.update_todo_done_status",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "todo.update_todo_done_status",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要修改执行者的待办完成状态时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要修改执行者的待办完成状态时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "todo",
         "rpc_name": "update_todo_done_status"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
-    },
-    "todo task get": {
-      "agent_summary": "待办详情",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "3. 查看待办详情",
-        "看看待办详情"
-      ],
-      "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
-      ],
-      "effect": "read",
-      "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
-      "examples": [
-        "dws todo task get --task-id \u003ctaskId\u003e",
-        "dws todo task get --task-id \u003ctaskId\u003e --format json"
-      ],
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.get_todo_detail",
+        "CommandRegistry:canonical_path=todo.update_todo_done_status",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task done",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_done_status",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/imported/wukong.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_done_status",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_done_status"
       ],
+      "use_when": [
+        "需要修改执行者的待办完成状态时"
+      ]
+    },
+    "todo task get": {
+      "agent_summary": "待办详情",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
+      "avoid_when": [
+        "需要按条件查多个待办时使用 todo task list；需要修改待办时使用相应写命令"
+      ],
+      "confirmation": "not_required",
+      "effect": "read",
+      "effect_source": "command-verb",
+      "examples": [
+        "dws todo task get --task-id \u003ctaskId\u003e --format json"
+      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "待办详情",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "待办详情",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "需要按条件查多个待办时使用 todo task list；需要修改待办时使用相应写命令"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要按条件查多个待办时使用 todo task list；需要修改待办时使用相应写命令"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task get --task-id \u003ctaskId\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task get --task-id \u003ctaskId\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.get_todo_detail",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.get_todo_detail",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "todo.get_todo_detail",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "已知 taskId，需要查看单个待办详情时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知 taskId，需要查看单个待办详情时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "todo",
         "rpc_name": "get_todo_detail"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "low",
+      "source_refs": [
+        "CommandRegistry:canonical_path=todo.get_todo_detail",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task get",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.get_todo_detail",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail",
+        "skills/mono/references/products/todo.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.get_todo_detail",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_todo_detail"
+      ],
+      "use_when": [
+        "已知 taskId，需要查看单个待办详情时"
+      ]
     },
     "todo task list": {
-      "agent_summary": "获取当前用户在所属组织中的个人待办事项列表，返回每项待办的标题、截止日期、优先级（如高/中/低）、完成状态。",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "2. 查看未完成待办",
-        "看看待办/我有啥要做"
-      ],
+      "agent_summary": "查询待办列表",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "已知 taskId 并需要完整单条详情时使用 todo task get"
       ],
+      "confirmation": "not_required",
       "effect": "read",
       "effect_source": "command-verb",
-      "risk": "low",
-      "confirmation": "not_required",
-      "idempotency": "idempotent",
       "examples": [
-        "dws todo task list --page 1 --size 20 --status false",
-        "dws todo task list --page 1 --size 20 --status false --format json"
+        "dws todo task list --page 1 --size 20 --status false --priority 40,30,10 --role-types creator,executor,participant --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "查询待办列表",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "查询待办列表",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "已知 taskId 并需要完整单条详情时使用 todo task get"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "已知 taskId 并需要完整单条详情时使用 todo task get"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "read",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "read",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task list --page 1 --size 20 --status false --priority 40,30,10 --role-types creator,executor,participant --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task list --page 1 --size 20 --status false --priority 40,30,10 --role-types creator,executor,participant --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "idempotent",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "idempotent",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.get_user_todos_in_current_org",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.get_user_todos_in_current_org",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "low",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "low",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要按状态、优先级、角色或截止日期查询待办列表时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要按状态、优先级、角色或截止日期查询待办列表时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "idempotent",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "get_user_todos_in_current_org"
+      },
+      "reviewed": true,
+      "risk": "low",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.get_user_todos_in_current_org",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task list",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_user_todos_in_current_org"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要按状态、优先级、角色或截止日期查询待办列表时"
+      ]
     },
     "todo task remove-executor": {
       "agent_summary": "移除待办执行人",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "11. 移除待办执行人",
-        "移除执行人/删除执行者"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "用户未明确移除，或待办与执行人未确认时不要修改执行人列表。"
       ],
+      "confirmation": "user_required",
       "effect": "destructive",
       "effect_source": "agent-hint",
-      "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e",
-        "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors userId1 --format json"
+        "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "移除待办执行人",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "移除待办执行人",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确移除，或待办与执行人未确认时不要修改执行人列表。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确移除，或待办与执行人未确认时不要修改执行人列表。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "effect": {
+          "value": "destructive",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "destructive",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.remove_task_executors",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.remove_task_executors",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求移除待办执行人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求移除待办执行人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "remove_task_executors"
+      },
+      "reviewed": true,
+      "risk": "high",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.remove_task_executors",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task remove-executor",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/destructive-safety.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_executors"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "用户明确要求移除待办执行人时"
+      ]
     },
     "todo task remove-participant": {
       "agent_summary": "移除待办参与人",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "13. 移除待办参与人",
-        "移除参与人/删除参与者"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "用户未明确移除，或待办与参与人未确认时不要修改参与人列表。"
       ],
+      "confirmation": "user_required",
       "effect": "destructive",
       "effect_source": "agent-hint",
-      "risk": "high",
-      "confirmation": "user_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e",
-        "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants userId1 --format json"
+        "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "移除待办参与人",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "移除待办参与人",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "用户未明确移除，或待办与参与人未确认时不要修改参与人列表。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户未明确移除，或待办与参与人未确认时不要修改参与人列表。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "effect": {
+          "value": "destructive",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "destructive",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.remove_task_participants",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.remove_task_participants",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "high",
+          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "precedence": "explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "precedence": "explicit",
+              "selected": true,
+              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+            },
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": false
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "用户明确要求移除待办参与人时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "用户明确要求移除待办参与人时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "remove_task_participants"
+      },
+      "reviewed": true,
+      "risk": "high",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.remove_task_participants",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task remove-participant",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/destructive-safety.json",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_participants"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "用户明确要求移除待办参与人时"
+      ]
     },
     "todo task reset-reminder": {
-      "agent_summary": "重置待办提醒",
-      "agent_summary_source": "mcp-tools-list+cli-registry@4574f7022c32",
-      "use_when": [
-        "16. 重置待办提醒",
-        "17. 重置待办提醒（指定新规则）",
-        "重置提醒/清除提醒/修改提醒规则"
-      ],
+      "agent_summary": "重置待办提醒规则",
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "只需查看提醒，或新的提醒规则与目标待办未确认时不要重置。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task reset-reminder --task-id \u003ctaskId\u003e",
-        "dws todo task reset-reminder --task-id \u003ctaskId\u003e --reminder-rules '[{\"dueDateOffset\":-30,\"baseTime\":\"dueTime\"},{\"reminderTimeStamp\":\"2026-03-10T18:00:00+08:00\",\"baseTime\":\"customTime\"}]'"
+        "dws todo task reset-reminder --task-id \u003ctaskId\u003e --format json",
+        "dws todo task reset-reminder --task-id \u003ctaskId\u003e --reminder-rules \u003creminderRules\u003e --format json"
       ],
-      "reviewed": false,
+      "field_provenance": {
+        "agent_summary": {
+          "value": "重置待办提醒规则",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "重置待办提醒规则",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需查看提醒，或新的提醒规则与目标待办未确认时不要重置。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需查看提醒，或新的提醒规则与目标待办未确认时不要重置。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task reset-reminder --task-id \u003ctaskId\u003e --format json",
+            "dws todo task reset-reminder --task-id \u003ctaskId\u003e --reminder-rules \u003creminderRules\u003e --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task reset-reminder --task-id \u003ctaskId\u003e --format json",
+                "dws todo task reset-reminder --task-id \u003ctaskId\u003e --reminder-rules \u003creminderRules\u003e --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.reset_todo_reminder",
+          "source": "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder.interface_ref",
+          "precedence": "mcp_fallback",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.reset_todo_reminder",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": true
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要重置待办提醒规则时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要重置待办提醒规则时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
+      "interface_ref": {
+        "product_id": "todo",
+        "rpc_name": "reset_todo_reminder"
+      },
+      "reviewed": true,
+      "risk": "medium",
       "source_refs": [
+        "CommandRegistry:canonical_path=todo.reset_todo_reminder",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task reset-reminder",
+        "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder",
         "skills/mono/references/products/todo.md",
         "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.reset_todo_reminder"
       ],
-      "interface_mode": "mcp",
-      "availability": "available"
+      "use_when": [
+        "需要重置待办提醒规则时"
+      ]
     },
     "todo task update": {
       "agent_summary": "修改待办任务",
-      "agent_summary_source": "dws-wukong-envelope@4574f7022c32",
-      "use_when": [
-        "4. 修改待办信息",
-        "改个待办/修改待办标题/改优先级"
-      ],
+      "agent_summary_source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+      "availability": "available",
       "avoid_when": [
-        "要“添加待办任务附件”请改用 dws todo task add-attachment",
-        "要“添加待办参与人”请改用 dws todo task add-participant",
-        "要“添加待办执行人”请改用 dws todo task add-executor"
+        "只需读取待办，或目标任务与待修改字段未确认时不要更新。"
       ],
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "command-verb",
-      "risk": "medium",
-      "confirmation": "not_required",
-      "idempotency": "unknown",
       "examples": [
-        "dws todo task update --task-id \u003ctaskId\u003e --title \"新标题\"",
-        "dws todo task update --task-id \u003ctaskId\u003e --priority 40 --due \"2026-03-10T18:00:00+08:00\""
+        "dws todo task update --task-id \u003ctaskId\u003e --title \"新标题\" --format json",
+        "dws todo task update --task-id \u003ctaskId\u003e --priority 40 --due \"2026-03-10T18:00:00+08:00\" --format json"
       ],
-      "source_refs": [
-        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_task",
-        "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
-      ],
+      "field_provenance": {
+        "agent_summary": {
+          "value": "修改待办任务",
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": "修改待办任务",
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "availability": {
+          "value": "available",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "available",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "available",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "avoid_when": {
+          "value": [
+            "只需读取待办，或目标任务与待修改字段未确认时不要更新。"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "只需读取待办，或目标任务与待修改字段未确认时不要更新。"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "confirmation": {
+          "value": "not_required",
+          "source": "risk-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "not_required",
+              "source": "risk-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "effect": {
+          "value": "write",
+          "source": "command-verb",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "write",
+              "source": "command-verb",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "examples": {
+          "value": [
+            "dws todo task update --task-id \u003ctaskId\u003e --title \"新标题\" --format json",
+            "dws todo task update --task-id \u003ctaskId\u003e --priority 40 --due \"2026-03-10T18:00:00+08:00\" --format json"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "dws todo task update --task-id \u003ctaskId\u003e --title \"新标题\" --format json",
+                "dws todo task update --task-id \u003ctaskId\u003e --priority 40 --due \"2026-03-10T18:00:00+08:00\" --format json"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "idempotency": {
+          "value": "unknown",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "unknown",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "interface_mode": {
+          "value": "mcp",
+          "source": "skills/mono/schema-hints/selection-review.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "candidates": [
+            {
+              "value": "mcp",
+              "source": "skills/mono/schema-hints/selection-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+            },
+            {
+              "value": "mcp",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "interface_ref": {
+          "value": "todo.update_todo_task",
+          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "precedence": "imported",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "todo.update_todo_task",
+              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "precedence": "imported",
+              "selected": true
+            },
+            {
+              "value": "todo.update_todo_task",
+              "source": "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task.interface_ref",
+              "precedence": "mcp_fallback",
+              "selected": false
+            }
+          ]
+        },
+        "reviewed": {
+          "value": true,
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": true,
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        },
+        "risk": {
+          "value": "medium",
+          "source": "effect-default",
+          "precedence": "inference_or_default",
+          "resolution": "highest_precedence",
+          "candidates": [
+            {
+              "value": "medium",
+              "source": "effect-default",
+              "precedence": "inference_or_default",
+              "selected": true
+            }
+          ]
+        },
+        "use_when": {
+          "value": [
+            "需要修改待办任务时"
+          ],
+          "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+          "precedence": "reviewed_manual",
+          "resolution": "highest_precedence",
+          "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
+          "candidates": [
+            {
+              "value": [
+                "需要修改待办任务时"
+              ],
+              "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
+              "precedence": "reviewed_manual",
+              "selected": true,
+              "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            }
+          ]
+        }
+      },
+      "idempotency": "unknown",
+      "interface_mode": "mcp",
       "interface_ref": {
         "product_id": "todo",
         "rpc_name": "update_todo_task"
       },
-      "interface_mode": "mcp",
-      "availability": "available"
+      "reviewed": true,
+      "risk": "medium",
+      "source_refs": [
+        "CommandRegistry:canonical_path=todo.update_todo_task",
+        "Skill:skills/mono/references/products/todo.md",
+        "cobra-help:dws todo task update",
+        "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_task",
+        "internal/cli/schema_manual_hints.json",
+        "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task",
+        "skills/mono/references/products/todo.md",
+        "skills/mono/schema-hints/imported/wukong.json",
+        "skills/mono/schema-hints/selection-review.json",
+        "skills/mono/schema-hints/sibling-disambiguation.json",
+        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_task",
+        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_task"
+      ],
+      "use_when": [
+        "需要修改待办任务时"
+      ]
     }
   }
 }

@@ -383,8 +383,6 @@ func NewRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine) 
 		fn(root, caller)
 		deduplicateCommands(root)
 	}
-	cli.AnnotateEmbeddedSchemaCommands(root)
-
 	hideNonDirectRuntimeCommands(root)
 	configureRootHelp(root)
 	// Set custom flag error handler for better UX

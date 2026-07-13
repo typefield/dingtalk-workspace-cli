@@ -10,6 +10,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+const (
+	runtimeSchemaFlagMetadataRequiredAnnotation     = "dws.schema.metadata.required"
+	runtimeSchemaFlagMetadataRequiredWhenAnnotation = "dws.schema.metadata.required_when"
+)
+
 // RuntimeSchemaParameterMetadata contains reviewed CLI parameter semantics
 // that Cobra cannot represent by itself. It is an independent generation
 // input: generated Catalog data is never read back into this registry.
@@ -42,9 +47,15 @@ func applyRuntimeSchemaParameterMetadata(cmd *cobra.Command, canonicalPath strin
 	if !ok {
 		return
 	}
-	AnnotateRuntimeRequiredFlags(cmd, metadata.Required...)
+	for _, flagName := range metadata.Required {
+		if flag := runtimeCommandFlag(cmd, flagName); flag != nil {
+			setFlagAnnotation(flag, runtimeSchemaFlagMetadataRequiredAnnotation, "true")
+		}
+	}
 	for flagName, expression := range metadata.RequiredWhen {
-		AnnotateRuntimeFlagRequiredWhen(cmd, flagName, expression)
+		if flag := runtimeCommandFlag(cmd, flagName); flag != nil {
+			setFlagAnnotation(flag, runtimeSchemaFlagMetadataRequiredWhenAnnotation, strings.TrimSpace(expression))
+		}
 	}
 	for flagName, format := range metadata.Formats {
 		AnnotateRuntimeFlagFormat(cmd, flagName, format)

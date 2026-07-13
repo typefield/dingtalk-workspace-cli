@@ -67,16 +67,16 @@ func NewMCPCommand(_ context.Context, _ CatalogLoader, _ executor.Runner, _ *pip
 	return cmd
 }
 
-// NewSchemaCommand serves the versioned embedded Command Catalog. The local
-// Cobra tree is used only when an older build has no valid embedded snapshot;
-// schema queries never contact MCP servers.
+// NewSchemaCommand serves the versioned embedded typed contract. A malformed
+// release snapshot fails closed; falling back to the live Cobra tree would
+// hide a broken delivery artifact and reintroduce a second Schema data path.
 func NewSchemaCommand(_ CatalogLoader) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "schema [path]",
 		Short: "渐进查看命令 Schema (产品 / 分组 / 工具参数)",
 		Long: `查看当前可运行命令的 Schema 元数据。
 
-不带参数时列出产品和工具数量；传产品或分组路径逐层展开；传具体工具路径输出扁平参数 Schema（对齐 GWS：parameters 内联 required，键为 CLI flag）。--all 输出完整目录。--compact 去除 provenance / debug 字段，仅保留 Agent 选参所需信息（适合 Agent 上下文）。查询不执行服务发现。`,
+不带参数时列出产品和工具数量；传产品或分组路径逐层展开；传具体工具路径输出扁平参数 Schema（对齐 GWS：parameters 内联 required，键为 CLI flag）。--all 输出全部工具的完整 leaf Schema（包括参数和约束，用于审计/CI）。--compact 去除 provenance / debug 字段，仅保留 Agent 选参所需信息（适合 Agent 上下文）。查询不执行服务发现。`,
 		Args:              cobra.MaximumNArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -96,20 +96,18 @@ func NewSchemaCommand(_ CatalogLoader) *cobra.Command {
 			if cliPath != "" {
 				args = []string{cliPath}
 			}
-			if embeddedSchemaCatalogAvailable() {
-				payload, err := embeddedSchemaPayload(args)
-				if err != nil {
-					return err
-				}
-				if len(args) == 0 && !all {
-					payload = compactSchemaOverviewPayload(payload)
-				}
-				if compact {
-					payload = stripSchemaPayloadCompact(payload)
-				}
-				return output.WriteFiltered(cmd.OutOrStdout(), output.ResolveFormat(cmd, output.FormatJSON), payload, output.ResolveFields(cmd), output.ResolveJQ(cmd))
+			if err := embeddedSchemaCatalogError(); err != nil {
+				return fmt.Errorf("load embedded typed Schema registry: %w", err)
 			}
-			payload, err := runtimeSchemaPayload(cmd.Root(), args)
+			var payload map[string]any
+			var err error
+			if all {
+				payload, err = embeddedSchemaAllPayload()
+			} else if len(args) == 0 {
+				payload, err = embeddedSchemaOverviewPayload()
+			} else {
+				payload, err = embeddedSchemaPayload(args)
+			}
 			if err != nil {
 				return err
 			}
@@ -119,7 +117,7 @@ func NewSchemaCommand(_ CatalogLoader) *cobra.Command {
 			return output.WriteFiltered(cmd.OutOrStdout(), output.ResolveFormat(cmd, output.FormatJSON), payload, output.ResolveFields(cmd), output.ResolveJQ(cmd))
 		},
 	}
-	cmd.Flags().Bool("all", false, "输出全部产品和工具摘要（用于审计/CI）")
+	cmd.Flags().Bool("all", false, "输出全部工具的完整 leaf Schema（包括参数和约束，用于审计/CI）")
 	cmd.Flags().Bool("compact", false, "去除 provenance/debug 字段，仅保留 Agent 选参所需信息")
 	cmd.Flags().String("cli-path", "", "按 CLI 命令路径查询")
 	return cmd

@@ -14,109 +14,130 @@
 package main
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"flag"
 	"fmt"
 	"os"
 	"path/filepath"
-	"sort"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/app"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/generator/outputguard"
+	"github.com/spf13/cobra"
 )
 
-type commandSurfaceSnapshot struct {
-	Version  int                     `json:"version"`
-	Products []commandSurfaceProduct `json:"products"`
-}
-
-type commandSurfaceProduct struct {
-	ID    string               `json:"id"`
-	Tools []commandSurfaceTool `json:"tools"`
-}
-
-type commandSurfaceTool struct {
-	CanonicalPath   string   `json:"canonical_path"`
-	SourceProductID string   `json:"source_product_id,omitempty"`
-	CLIPath         string   `json:"cli_path"`
-	Aliases         []string `json:"aliases,omitempty"`
-}
-
 func main() {
+	var rootPath string
 	var surfacePath string
 	var outputPath string
-	flag.StringVar(&surfacePath, "surface", "internal/cli/schema_command_surface.json", "Reviewed public command-surface snapshot")
+	flag.StringVar(&rootPath, "root", ".", "Repository root used to protect Schema generator inputs")
+	flag.StringVar(&surfacePath, "surface", "", "Deprecated compatibility input relative to --root; when set it must equal the embedded reviewed CommandRegistry")
 	flag.StringVar(&outputPath, "output", "internal/cli/schema_catalog.json", "Output embedded schema catalog")
 	flag.Parse()
-
-	surface, allowed, surfaceHash, err := loadSurface(surfacePath)
-	if err != nil {
+	resolvedSurfacePath := resolveCatalogRootPath(rootPath, surfacePath)
+	if err := validateCatalogOutputIsolation(rootPath, outputPath, resolvedSurfacePath); err != nil {
 		fail(err)
 	}
+
 	root := app.NewRootCommand()
+	if err := generateSchemaCatalog(root, resolvedSurfacePath, outputPath); err != nil {
+		fail(err)
+	}
+}
+
+func resolveCatalogRootPath(rootPath, path string) string {
+	path = strings.TrimSpace(path)
+	if path == "" || filepath.IsAbs(path) {
+		return path
+	}
+	return filepath.Join(rootPath, path)
+}
+
+func validateCatalogOutputIsolation(rootPath, outputPath, surfacePath string) error {
+	inputs := []outputguard.Input{
+		{Name: "main Skill metadata source", Path: "skills/mono/SKILL.md"},
+		{Name: "product Skill metadata source directory", Path: "skills/mono/references/products"},
+		{Name: "intent guide metadata source", Path: "skills/mono/references/intent-guide.md"},
+		{Name: "structured metadata source directory", Path: "skills/mono/schema-hints"},
+		{Name: "reviewed CommandRegistry input", Path: "internal/cli/schema_command_registry.json"},
+		{Name: "reviewed manual Schema/Agent hint input", Path: "internal/cli/schema_manual_hints.json"},
+		{Name: "generated Agent metadata input", Path: "internal/cli/schema_agent_metadata"},
+		{Name: "pinned MCP metadata input", Path: "internal/cli/schema_mcp_metadata.json"},
+		{Name: "reviewed MCP service disposition input", Path: "internal/cli/schema_mcp_service_review.json"},
+		{Name: "reviewed parameter binding input", Path: "internal/cli/schema_parameter_bindings.json"},
+		{Name: "reviewed command exclusion input", Path: "internal/cli/schema_command_exclusions.json"},
+	}
+	if strings.TrimSpace(surfacePath) != "" {
+		inputs = append(inputs, outputguard.Input{Name: "deprecated Registry compatibility input", Path: surfacePath})
+	}
+	if err := outputguard.Validate(rootPath, inputs, []outputguard.Target{{Name: "--output", Path: outputPath}}); err != nil {
+		return err
+	}
+	return outputguard.ValidateRepoTargetAllowlist(rootPath,
+		outputguard.Target{Name: "--output", Path: outputPath},
+		"internal/cli/schema_catalog.json",
+	)
+}
+
+// generateSchemaCatalog consumes the cli package's reviewed registry API. It
+// deliberately does not decode command identity itself: the compatibility
+// --surface flag is validated against the embedded registry and can never
+// replace it as an input source.
+func generateSchemaCatalog(root *cobra.Command, surfacePath, outputPath string) error {
+	if root == nil {
+		return fmt.Errorf("schema source root is nil")
+	}
+	if err := validateDeprecatedSurface(surfacePath); err != nil {
+		return err
+	}
+
+	effective, err := cli.BuildEffectiveCommandRegistry(root)
+	if err != nil {
+		return fmt.Errorf("build effective CommandRegistry: %w", err)
+	}
+	if _, err := cli.BindEffectiveCommandRegistry(root, effective); err != nil {
+		return fmt.Errorf("bind effective CommandRegistry: %w", err)
+	}
 	if err := cli.ValidateEmbeddedRuntimeSchemaCompleteness(root); err != nil {
-		fail(fmt.Errorf("validate reverse command-tree completeness: %w", err))
+		return fmt.Errorf("validate reverse command-tree completeness: %w", err)
 	}
 	snapshot, err := cli.BuildSchemaCatalogSnapshot(root, cli.SchemaCatalogBuildOptions{
-		AllowedCanonicalPaths: allowed,
-		SurfaceHash:           surfaceHash,
+		RegistryHash: effective.SourceHash(),
 	})
 	if err != nil {
-		fail(err)
+		return err
 	}
 	if err := cli.ValidateSchemaCatalogDeliveryCompleteness(root, snapshot); err != nil {
-		fail(fmt.Errorf("validate final Catalog delivery completeness: %w", err))
+		return fmt.Errorf("validate final Catalog delivery completeness: %w", err)
 	}
 	encoded, err := json.MarshalIndent(snapshot, "", "  ")
 	if err != nil {
-		fail(fmt.Errorf("encode catalog: %w", err))
+		return fmt.Errorf("encode catalog: %w", err)
 	}
 	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
-		fail(fmt.Errorf("create output directory: %w", err))
+		return fmt.Errorf("create output directory: %w", err)
 	}
 	if err := os.WriteFile(outputPath, append(encoded, '\n'), 0o644); err != nil {
-		fail(fmt.Errorf("write catalog: %w", err))
+		return fmt.Errorf("write catalog: %w", err)
 	}
-	_, _ = fmt.Fprintf(os.Stderr, "generated schema catalog: output=%s products=%d tools=%d surface_hash=%s source_hash=%s\n",
-		outputPath, len(surface.Products), len(snapshot.Tools), snapshot.SurfaceHash, snapshot.SourceHash)
+	_, _ = fmt.Fprintf(os.Stderr, "generated schema catalog: output=%s registry_commands=%d tools=%d registry_hash=%s source_hash=%s\n",
+		outputPath, len(effective.Commands), len(snapshot.Tools), snapshot.SurfaceHash, snapshot.SourceHash)
+	return nil
 }
 
-func loadSurface(path string) (commandSurfaceSnapshot, map[string]bool, string, error) {
+func validateDeprecatedSurface(path string) error {
+	if path == "" {
+		return nil
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
-		return commandSurfaceSnapshot{}, nil, "", fmt.Errorf("read surface: %w", err)
+		return fmt.Errorf("read deprecated -surface compatibility input: %w", err)
 	}
-	var snapshot commandSurfaceSnapshot
-	if err := json.Unmarshal(data, &snapshot); err != nil {
-		return commandSurfaceSnapshot{}, nil, "", fmt.Errorf("decode surface: %w", err)
+	if _, err := cli.ValidateCommandRegistrySource(data); err != nil {
+		return fmt.Errorf("validate deprecated -surface compatibility input: %w", err)
 	}
-	if snapshot.Version != 1 {
-		return commandSurfaceSnapshot{}, nil, "", fmt.Errorf("unsupported surface version %d", snapshot.Version)
-	}
-	allowed := map[string]bool{}
-	rows := make([]string, 0)
-	for _, product := range snapshot.Products {
-		productID := strings.TrimSpace(product.ID)
-		for _, tool := range product.Tools {
-			canonical := strings.TrimSpace(tool.CanonicalPath)
-			if canonical == "" {
-				return commandSurfaceSnapshot{}, nil, "", fmt.Errorf("surface tool %q has no canonical_path", tool.CLIPath)
-			}
-			if allowed[canonical] {
-				return commandSurfaceSnapshot{}, nil, "", fmt.Errorf("duplicate canonical path %s", canonical)
-			}
-			allowed[canonical] = true
-			aliases := append([]string(nil), tool.Aliases...)
-			sort.Strings(aliases)
-			rows = append(rows, productID+"\x00"+canonical+"\x00"+strings.TrimSpace(tool.SourceProductID)+"\x00"+strings.TrimSpace(tool.CLIPath)+"\x00"+strings.Join(aliases, "\x00"))
-		}
-	}
-	sort.Strings(rows)
-	sum := sha256.Sum256([]byte(strings.Join(rows, "\n")))
-	return snapshot, allowed, "sha256:" + hex.EncodeToString(sum[:]), nil
+	return nil
 }
 
 func fail(err error) {

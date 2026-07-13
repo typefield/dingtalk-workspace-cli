@@ -9,8 +9,8 @@
 3. `internal/helpers` contains the main command handlers for all product surfaces (`dev`, `chat`, `calendar`, `contact`, `aitable`, etc.).
 4. `internal/executor` and `internal/transport` execute MCP JSON-RPC calls; `internal/output` formats responses.
 5. `internal/auth` manages login state, PAT tokens, and agent-code detection.
-6. Schema generation combines the reviewed command surface, current Cobra flags, strong typed CLI constraints, sanitized MCP snapshots, Agent hints, and Skills at build time. Startup and Schema queries do not call MCP `tools/list`.
-7. The embedded Catalog may backfill canonical identity for real commands, but it cannot replay parameter metadata into the next generation. Stable flag-to-RPC property bindings come from the versioned `schema_parameter_bindings.json` (316 active bindings: a 311-row historical seed, minus 3 exclusions, plus 8 current inherited-flag additions); CLI `required` and constraints come from Cobra/typed annotations. MCP `required` remains interface-only metadata.
+6. Schema generation starts from the reviewed `CommandRegistry`, binds each identity to the exact current Cobra leaf, and then resolves typed constraints, sanitized MCP snapshots, Agent hints, and Skills into one `SchemaRegistry`. Startup and Schema queries do not call MCP `tools/list`.
+7. The embedded Catalog is a downstream release artifact and never backfills identity or participates in regeneration. Stable flag-to-RPC property bindings come from the versioned `schema_parameter_bindings.json` (314 active bindings: a 311-row historical seed, minus 3 exclusions, plus 8 current inherited-flag additions); CLI `required` and constraints come from Cobra/typed annotations. MCP `required` remains interface-only metadata.
 8. Agent selection results are fixed in versioned review inputs. Every public tool has explicit use/avoid/example and interface disposition metadata; Skill references that are not current leaves require an explicit alias/group/stale/out-of-surface review instead of fuzzy runtime matching.
 
 ## Repository Structure

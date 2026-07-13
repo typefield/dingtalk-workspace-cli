@@ -20,6 +20,16 @@
         "只需要查询开放平台文档时优先使用 devdoc"
       ]
     },
+    "devdoc": {
+      "agent_summary": "搜索钉钉开放平台开发文档并辅助排查 API 调用错误",
+      "use_when": [
+        "搜索钉钉开放平台开发、API 或 OAuth2 接入文档",
+        "排查开放平台 API 调用错误、错误码、requestId 或 traceId"
+      ],
+      "avoid_when": [
+        "搜索用户自己的钉钉文档时使用 drive search 或 wiki node search"
+      ]
+    },
     "pat": {
       "agent_summary": "管理 DWS 操作所需的行为授权和浏览器授权策略",
       "use_when": [
@@ -28,6 +38,18 @@
       ],
       "avoid_when": [
         "普通 OAuth 登录使用 auth，而不是 pat"
+      ]
+    },
+    "sheet": {
+      "agent_summary": "管理钉钉在线电子表格、工作表、单元格、筛选视图和导出任务",
+      "use_when": [
+        "创建或管理钉钉在线电子表格和工作表",
+        "读取、写入或格式化单元格区域",
+        "管理筛选视图、图表、分组或导出任务"
+      ],
+      "avoid_when": [
+        "需要多维表或 AI 表格能力时使用 aitable",
+        "无法判断 alidocs 链接节点类型时先查询节点元数据"
       ]
     },
     "wiki": {
@@ -407,7 +429,7 @@
       "effect": "write"
     },
     "sheet filter-view get-criteria": {
-      "agent_summary": "获取单列筛选条件",
+      "agent_summary": "查看筛选视图单列条件",
       "use_when": [
         "获取单列筛选条件"
       ],
@@ -415,7 +437,7 @@
       "effect": "read"
     },
     "sheet filter-view info": {
-      "agent_summary": "获取单个筛选视图详情",
+      "agent_summary": "查看单个筛选视图详情",
       "use_when": [
         "获取单个筛选视图详情"
       ],
@@ -431,7 +453,7 @@
       "effect": "read"
     },
     "sheet filter-view update-criteria": {
-      "agent_summary": "更新筛选视图列条件",
+      "agent_summary": "更新筛选视图单列条件",
       "use_when": [
         "更新筛选视图列条件"
       ],

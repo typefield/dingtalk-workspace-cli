@@ -7,8 +7,10 @@ import "testing"
 
 func TestSchemaParameterBindingsMatchEmbeddedCatalog(t *testing.T) {
 	loaded := embeddedSchemaCatalog()
+	snapshot := runtimeSchemaParameterBindingData()
+	bindingsSnapshot := snapshot.Bindings
 	count := 0
-	for canonical, bindings := range runtimeSchemaParameterBindings {
+	for canonical, bindings := range bindingsSnapshot {
 		detail, ok := loaded.Snapshot.Tools[canonical]
 		if !ok {
 			t.Errorf("binding references unknown canonical path %q", canonical)
@@ -30,15 +32,11 @@ func TestSchemaParameterBindingsMatchEmbeddedCatalog(t *testing.T) {
 	if count == 0 {
 		t.Fatal("active parameter binding count is zero")
 	}
-	snapshot := runtimeSchemaParameterBindingSnapshot
 	if snapshot.HistoricalBindingCount != 311 || len(snapshot.Migrations) != 5 || len(snapshot.Excluded) != 3 || len(snapshot.Added) != 8 {
 		t.Fatalf("binding seed audit = historical:%d migrations:%d excluded:%d added:%d",
 			snapshot.HistoricalBindingCount, len(snapshot.Migrations), len(snapshot.Excluded), len(snapshot.Added))
 	}
-	if snapshot.SourceCatalogHash != loaded.Snapshot.SourceHash {
-		t.Fatalf("binding source catalog hash = %q, want %q", snapshot.SourceCatalogHash, loaded.Snapshot.SourceHash)
-	}
-	if got := runtimeSchemaParameterBindings["calendar.get_calendar"]["id"]; got != "calendarId" {
+	if got := bindingsSnapshot["calendar.get_calendar"]["id"]; got != "calendarId" {
 		t.Fatalf("calendar.get_calendar --id property = %q, want calendarId", got)
 	}
 	for canonical, flagName := range map[string]string{
@@ -51,7 +49,7 @@ func TestSchemaParameterBindingsMatchEmbeddedCatalog(t *testing.T) {
 		"oa.list_pending_approvals":            "limit",
 		"oa.list_user_visible_process":         "limit",
 	} {
-		if runtimeSchemaParameterBindings[canonical][flagName] == "" {
+		if bindingsSnapshot[canonical][flagName] == "" {
 			t.Errorf("migrated binding %s --%s is missing", canonical, flagName)
 		}
 	}

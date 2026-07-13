@@ -17,18 +17,21 @@ import (
 	_ "embed"
 	"encoding/json"
 	"strings"
+	"sync"
+	"sync/atomic"
 
 	"github.com/spf13/cobra"
 )
 
 const schemaParameterBindingsVersion = 2
 
+const runtimeSchemaFlagBindingPropertyAnnotation = "dws.schema.binding.property"
+
 //go:embed schema_parameter_bindings.json
 var embeddedSchemaParameterBindingsJSON []byte
 
 type schemaParameterBindingSnapshot struct {
 	Version                int                          `json:"version"`
-	SourceCatalogHash      string                       `json:"source_catalog_hash"`
 	HistoricalBindingCount int                          `json:"historical_binding_count"`
 	Migrations             map[string]string            `json:"migrations"`
 	Excluded               map[string]string            `json:"excluded"`
@@ -36,8 +39,12 @@ type schemaParameterBindingSnapshot struct {
 	Bindings               map[string]map[string]string `json:"bindings"`
 }
 
-var runtimeSchemaParameterBindingSnapshot = loadSchemaParameterBindings()
-var runtimeSchemaParameterBindings = runtimeSchemaParameterBindingSnapshot.Bindings
+var runtimeSchemaParameterBindingsLazy struct {
+	once     sync.Once
+	snapshot schemaParameterBindingSnapshot
+}
+
+var runtimeSchemaParameterBindingsLazyLoadCount atomic.Uint64
 
 func loadSchemaParameterBindings() schemaParameterBindingSnapshot {
 	var snapshot schemaParameterBindingSnapshot
@@ -48,17 +55,32 @@ func loadSchemaParameterBindings() schemaParameterBindingSnapshot {
 	return snapshot
 }
 
+func runtimeSchemaParameterBindingData() schemaParameterBindingSnapshot {
+	runtimeSchemaParameterBindingsLazy.once.Do(func() {
+		runtimeSchemaParameterBindingsLazyLoadCount.Add(1)
+		runtimeSchemaParameterBindingsLazy.snapshot = loadSchemaParameterBindings()
+	})
+	return runtimeSchemaParameterBindingsLazy.snapshot
+}
+
 func applyRuntimeSchemaParameterBindings(cmd *cobra.Command, canonical string) {
-	for flagName, propertyName := range runtimeSchemaParameterBindings[strings.TrimSpace(canonical)] {
-		AnnotateRuntimeFlagProperty(cmd, flagName, propertyName)
+	applyRuntimeSchemaParameterBindingsFrom(cmd, canonical, runtimeSchemaParameterBindingData().Bindings)
+}
+
+func applyRuntimeSchemaParameterBindingsFrom(cmd *cobra.Command, canonical string, bindings map[string]map[string]string) {
+	for flagName, propertyName := range bindings[strings.TrimSpace(canonical)] {
+		if flag := runtimeCommandFlag(cmd, flagName); flag != nil {
+			setFlagAnnotation(flag, runtimeSchemaFlagBindingPropertyAnnotation, strings.TrimSpace(propertyName))
+		}
 	}
 }
 
 // EmbeddedSchemaParameterBindings returns a defensive copy of the reviewed,
 // active public flag-to-interface bindings used by Catalog generation.
 func EmbeddedSchemaParameterBindings() map[string]map[string]string {
-	bindings := make(map[string]map[string]string, len(runtimeSchemaParameterBindings))
-	for canonical, parameters := range runtimeSchemaParameterBindings {
+	source := runtimeSchemaParameterBindingData().Bindings
+	bindings := make(map[string]map[string]string, len(source))
+	for canonical, parameters := range source {
 		bindings[canonical] = make(map[string]string, len(parameters))
 		for flagName, propertyName := range parameters {
 			bindings[canonical][flagName] = propertyName

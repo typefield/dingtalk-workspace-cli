@@ -42,8 +42,9 @@ type interfaceMetadataFile struct {
 }
 
 type interfaceMetadataTool struct {
-	Title       string `json:"title,omitempty"`
-	Description string `json:"description,omitempty"`
+	Title        string        `json:"title,omitempty"`
+	Description  string        `json:"description,omitempty"`
+	InterfaceRef *InterfaceRef `json:"interface_ref,omitempty"`
 }
 
 func applyInterfaceMetadataFallback(out *File, files map[string]sourceFile, opts Options, stats *Stats, origins sourceTracker) error {
@@ -88,6 +89,44 @@ func applyInterfaceMetadataFallback(out *File, files map[string]sourceFile, opts
 		}
 		audit.SurfaceTools++
 		incoming := source.Tools[path]
+		metadata := out.Tools[path]
+		sourceRef := display + "#tools." + path
+		if incoming.InterfaceRef != nil {
+			candidate := ToolMetadata{
+				InterfaceRef:        incoming.InterfaceRef,
+				interfaceRefRank:    selectionRankMCPFallback,
+				interfaceRefOrigin:  sourceRef + ".interface_ref",
+				InterfaceMode:       "mcp",
+				interfaceModeRank:   selectionRankMCPFallback,
+				interfaceModeOrigin: sourceRef + ".interface_ref",
+				Availability:        "available",
+				availabilityRank:    selectionRankMCPFallback,
+				availabilityOrigin:  sourceRef + ".interface_ref",
+			}
+			recordFieldCandidate(&candidate, "interface_ref", incoming.InterfaceRef.ProductID+"."+incoming.InterfaceRef.RPCName,
+				selectionRankMCPFallback, candidate.interfaceRefOrigin, "")
+			if err := mergeRankedInterfaceRef(&metadata, candidate, path); err != nil {
+				return err
+			}
+			for _, field := range []struct {
+				name   string
+				target *string
+				rank   *int
+				origin *string
+				value  string
+			}{
+				{name: "interface_mode", target: &metadata.InterfaceMode, rank: &metadata.interfaceModeRank, origin: &metadata.interfaceModeOrigin, value: candidate.InterfaceMode},
+				{name: "availability", target: &metadata.Availability, rank: &metadata.availabilityRank, origin: &metadata.availabilityOrigin, value: candidate.Availability},
+			} {
+				recordFieldCandidate(&metadata, field.name, field.value, selectionRankMCPFallback, candidate.interfaceRefOrigin, "")
+				if err := mergeRankedString(field.target, field.rank, field.origin, field.value, selectionRankMCPFallback, candidate.interfaceRefOrigin, path, field.name); err != nil {
+					return err
+				}
+			}
+			metadata.SourceRefs = append(metadata.SourceRefs, sourceRef)
+			out.Tools[path] = metadata
+			origins.add(path, display, 0)
+		}
 		summary := summarizeInterfaceDescription(incoming.Description, maxRunes)
 		if summary == "" {
 			audit.RejectedTools = append(audit.RejectedTools, path)
@@ -99,14 +138,21 @@ func applyInterfaceMetadataFallback(out *File, files map[string]sourceFile, opts
 			continue
 		}
 
-		metadata := out.Tools[path]
+		metadata = out.Tools[path]
 		metadata.AgentSummary = summary
+		metadata.agentSummaryPresent = true
 		metadata.AgentSummarySource = interfaceSummarySource(source)
+		metadata.agentSummaryRank = selectionRankMCPFallback
+		metadata.agentSummaryOrigin = display + "#tools." + path
+		recordFieldCandidate(&metadata, "agent_summary", summary, selectionRankMCPFallback, metadata.agentSummaryOrigin, "")
 		if metadata.Reviewed == nil {
 			reviewed := false
 			metadata.Reviewed = &reviewed
+			metadata.reviewedRank = selectionRankMCPFallback
+			metadata.reviewedOrigin = sourceRef
+			recordTypedFieldCandidateValue(&metadata, "reviewed", false, true, metadata.reviewedRank, metadata.reviewedOrigin, "")
 		}
-		metadata.SourceRefs = append(metadata.SourceRefs, display+"#tools."+path)
+		metadata.SourceRefs = append(metadata.SourceRefs, sourceRef)
 		out.Tools[path] = metadata
 		origins.add(path, display, 0)
 		audit.AppliedSummaries++
@@ -122,7 +168,7 @@ func hasSurfaceAgentSummary(file File, paths map[string]string, canonical string
 		livePath = resolved
 	}
 	for path, metadata := range file.Tools {
-		if strings.TrimSpace(metadata.AgentSummary) == "" {
+		if !scalarIsPresent(metadata.AgentSummary, metadata.agentSummaryPresent) {
 			continue
 		}
 		candidate := path

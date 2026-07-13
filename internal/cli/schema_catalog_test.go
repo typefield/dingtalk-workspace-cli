@@ -8,9 +8,8 @@
 package cli
 
 import (
+	"sort"
 	"testing"
-
-	"github.com/spf13/cobra"
 )
 
 func TestEmbeddedSchemaCatalogIntegrity(t *testing.T) {
@@ -18,24 +17,17 @@ func TestEmbeddedSchemaCatalogIntegrity(t *testing.T) {
 	if !embeddedSchemaCatalogAvailable() {
 		t.Fatal("embedded schema catalog is unavailable or failed integrity validation")
 	}
-	if got, want := len(loaded.Snapshot.Tools), 538; got != want {
-		t.Fatalf("embedded tools = %d, want %d", got, want)
-	}
-	if got, want := len(loaded.Products), 20; got != want {
-		t.Fatalf("embedded products = %d, want %d", got, want)
-	}
 	if got := schemaString(loaded.Snapshot.Catalog["source"]); got != "embedded-command-catalog" {
 		t.Fatalf("catalog source = %q", got)
 	}
 }
 
 func TestEmbeddedSchemaCatalogProgressiveQueries(t *testing.T) {
-	overview, err := embeddedSchemaPayload(nil)
+	overview, err := embeddedSchemaOverviewPayload()
 	if err != nil {
 		t.Fatal(err)
 	}
-	compact := compactSchemaOverviewPayload(overview)
-	if got, want := schemaProductToolCount(map[string]any{"tools": compact["products"]}), 20; got != want {
+	if got, want := schemaProductToolCount(map[string]any{"tools": overview["products"]}), len(embeddedSchemaCatalog().Registry.Products); got != want {
 		t.Fatalf("compact product count = %d, want %d", got, want)
 	}
 
@@ -73,19 +65,70 @@ func TestEmbeddedSchemaCatalogProgressiveQueries(t *testing.T) {
 	}
 }
 
-func TestEmbeddedCatalogPreservesManualSchemaHintContract(t *testing.T) {
+func TestEmbeddedSchemaAllPayloadContainsEveryFullLeaf(t *testing.T) {
+	loaded := embeddedSchemaCatalog()
+	payload, err := embeddedSchemaAllPayload()
+	if err != nil {
+		t.Fatal(err)
+	}
+
+	expanded := 0
+	parameterized := 0
+	for _, product := range schemaMapSlice(payload["products"]) {
+		for _, tool := range schemaMapSlice(product["tools"]) {
+			canonical := schemaString(tool["canonical_path"])
+			expected, ok := loaded.Snapshot.Tools[canonical]
+			if !ok {
+				t.Fatalf("full export contains unknown tool %q", canonical)
+			}
+			parameters, ok := tool["parameters"].(map[string]any)
+			if !ok {
+				t.Fatalf("full export tool %s has no parameters object", canonical)
+			}
+			if len(parameters) > 0 {
+				parameterized++
+			}
+			if !schemaJSONEqual(tool, expected) {
+				t.Fatalf("full export tool %s differs from stored leaf Schema", canonical)
+			}
+			expanded++
+		}
+	}
+	if got, want := expanded, len(loaded.Snapshot.Tools); got != want {
+		t.Fatalf("full export tools = %d, want %d", got, want)
+	}
+	if parameterized == 0 {
+		t.Fatal("full export contains no parameterized tools")
+	}
+}
+
+func TestEmbeddedCatalogPreservesRegistryIdentityAndManualParameterContract(t *testing.T) {
 	leaf, err := embeddedSchemaPayload([]string{"chat category create-smart"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	if got := schemaString(leaf["source"]); got != "manual-schema-hint" {
-		t.Fatalf("source = %q, want manual-schema-hint", got)
+	if got := schemaString(leaf["source"]); got != "reviewed_command_registry" {
+		t.Fatalf("source = %q, want reviewed_command_registry", got)
+	}
+	identity := schemaMap(leaf["field_provenance"])["canonical_path"]
+	if identity["source"] != "reviewed_command_registry" || identity["precedence"] != "command_registry" {
+		t.Fatalf("canonical identity provenance = %#v", identity)
 	}
 	parameters := schemaMap(leaf["parameters"])
+	assertReviewedManual := func(flagName, field string) {
+		t.Helper()
+		provenance := schemaMap(parameters[flagName]["field_provenance"])
+		winner := provenance[field]
+		if winner["source"] != "reviewed_manual_hint" || winner["precedence"] != "reviewed_manual" {
+			t.Fatalf("%s.%s provenance = %#v", flagName, field, winner)
+		}
+	}
 	name := parameters["name"]
 	if name["property"] != "categoryName" || name["required"] != true {
 		t.Fatalf("name parameter = %#v", name)
 	}
+	assertReviewedManual("name", "property")
+	assertReviewedManual("name", "required")
 	for flagName, property := range map[string]string{
 		"keywords": "groupNameKeywords",
 		"members":  "memberOpenDingTalkIds",
@@ -94,52 +137,9 @@ func TestEmbeddedCatalogPreservesManualSchemaHintContract(t *testing.T) {
 		if parameter["property"] != property || parameter["interface_type"] != "array" || parameter["required"] != false {
 			t.Fatalf("%s parameter = %#v", flagName, parameter)
 		}
-	}
-}
-
-func TestCompatibleSchemaCommandPrefersMatchingAnnotatedAlias(t *testing.T) {
-	root := &cobra.Command{Use: "dws"}
-	chat := &cobra.Command{Use: "chat"}
-	message := &cobra.Command{Use: "message"}
-	send := &cobra.Command{Use: "send", Run: func(*cobra.Command, []string) {}}
-	reply := &cobra.Command{Use: "reply", Run: func(*cobra.Command, []string) {}}
-	AttachRuntimeSchema(send, "chat", "send_personal_message", "hardcoded:chat")
-	AttachRuntimeSchema(reply, "chat", "reply_personal_message", "hardcoded:chat")
-	message.AddCommand(send, reply)
-	chat.AddCommand(message)
-	root.AddCommand(chat)
-
-	definition := CatalogCommandDefinition{
-		ProductID: "chat",
-		ToolName:  "send_personal_message",
-		CLIPath:   "chat message reply",
-		Aliases:   []string{"chat message send"},
-	}
-	if got := compatibleSchemaCommand(root, definition.CLIPath, definition); got != nil {
-		t.Fatalf("conflicting primary matched %s", got.CommandPath())
-	}
-	if got := compatibleSchemaCommand(root, definition.Aliases[0], definition); got != send {
-		t.Fatalf("matching alias = %v, want send", got)
-	}
-}
-
-func TestEmbeddedCatalogBackfillsIdentityWithoutReplayingRealFlags(t *testing.T) {
-	root := &cobra.Command{Use: "dws"}
-	aitable := &cobra.Command{Use: "aitable"}
-	workflow := &cobra.Command{Use: "workflow"}
-	list := &cobra.Command{Use: "list", Run: func(*cobra.Command, []string) {}}
-	list.Flags().Int("limit", 20, "optional page size")
-	workflow.AddCommand(list)
-	aitable.AddCommand(workflow)
-	root.AddCommand(aitable)
-
-	AnnotateEmbeddedSchemaCommands(root)
-	productID, toolName, _ := runtimeSchemaAnnotations(list)
-	if productID != "aitable" || toolName != "workflow_list" {
-		t.Fatalf("identity = %s.%s", productID, toolName)
-	}
-	if _, annotated := runtimeFlagRequiredState(list.Flags().Lookup("limit")); annotated {
-		t.Fatal("embedded Catalog replayed stale required metadata onto a real Cobra flag")
+		for _, field := range []string{"property", "interface_type", "required"} {
+			assertReviewedManual(flagName, field)
+		}
 	}
 }
 
@@ -182,12 +182,48 @@ func TestStripSchemaPayloadCompactLeaf(t *testing.T) {
 	}
 }
 
-func TestStripSchemaPayloadCompactOverview(t *testing.T) {
-	overview, err := embeddedSchemaPayload(nil)
+func TestStripSchemaPayloadCompactPreservesParameterIdentity(t *testing.T) {
+	leaf, err := embeddedSchemaPayload([]string{"chat category create-smart"})
 	if err != nil {
 		t.Fatal(err)
 	}
-	overview = compactSchemaOverviewPayload(overview)
+	full := schemaMap(leaf["parameters"])
+	compact := schemaMap(stripSchemaPayloadCompact(leaf)["parameters"])
+	if len(compact) != len(full) {
+		t.Fatalf("compact parameter count = %d, want %d: full=%v compact=%v", len(compact), len(full), sortedSchemaKeys(full), sortedSchemaKeys(compact))
+	}
+	name := compact["name"]
+	if name["required"] != true || name["type"] != "string" {
+		t.Fatalf("compact --name parameter = %#v", name)
+	}
+
+	synthetic := map[string]any{"parameters": map[string]any{}}
+	parameters := synthetic["parameters"].(map[string]any)
+	for _, parameterName := range []string{"name", "path", "source", "title", "group", "aliases"} {
+		parameters[parameterName] = map[string]any{"type": "string", "required": false, "field_provenance": map[string]any{"source": "test"}}
+	}
+	stripped := schemaMap(stripSchemaPayloadCompact(synthetic)["parameters"])
+	for parameterName := range parameters {
+		if _, ok := stripped[parameterName]; !ok {
+			t.Errorf("compact projection dropped parameter identity %q", parameterName)
+		}
+	}
+}
+
+func sortedSchemaKeys(values map[string]map[string]any) []string {
+	keys := make([]string, 0, len(values))
+	for key := range values {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	return keys
+}
+
+func TestStripSchemaPayloadCompactOverview(t *testing.T) {
+	overview, err := embeddedSchemaOverviewPayload()
+	if err != nil {
+		t.Fatal(err)
+	}
 	stripped := stripSchemaPayloadCompact(overview)
 
 	// Overview must keep kind/level/count/products.

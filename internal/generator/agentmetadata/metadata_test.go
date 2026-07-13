@@ -16,6 +16,7 @@ package agentmetadata
 import (
 	"os"
 	"path/filepath"
+	"strings"
 	"testing"
 )
 
@@ -57,7 +58,7 @@ func TestGenerateCompilesSkillSemantics(t *testing.T) {
 		"dws dev app delete --unified-app-id app --yes\n"+
 		"```\n")
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -108,7 +109,7 @@ func TestGenerateCompilesSkillSemantics(t *testing.T) {
 		t.Fatalf("stats = %#v", stats)
 	}
 
-	again, _, err := Generate(Options{
+	again, _, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -156,7 +157,7 @@ func TestGenerateRecursesProductReferencesAndJoinsMultilineExamples(t *testing.T
 		"  --sheet-id sheet-1 --range A1:B2 --bg-color '#FFFFFF'\n"+
 		"```\n")
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -201,7 +202,7 @@ func TestGenerateReportsUnmatchedReferenceLocationsAndCandidates(t *testing.T) {
 		"Usage:\n"+
 		"  dws sheet range set-style [flags]\n")
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -237,6 +238,60 @@ func TestGenerateReportsUnmatchedReferenceLocationsAndCandidates(t *testing.T) {
 	}
 }
 
+func TestValidateEffectiveToolProjectionKeepsManualOnlyCommand(t *testing.T) {
+	opts := Options{
+		ToolPaths: map[string]string{
+			"base.get_item":         "base item get",
+			"base item get":         "base item get",
+			"base item legacy":      "base item get",
+			"helper.add_item":       "helper item add",
+			"helper item add":       "helper item add",
+			"helper item add-alias": "helper item add",
+		},
+		SurfaceToolCount: 2,
+	}
+	file := File{Tools: map[string]ToolMetadata{
+		"base item get":   {AgentSummary: "Get an item"},
+		"helper item add": {AgentSummary: "Add an item"},
+	}}
+	if err := validateEffectiveToolProjection(file, opts); err != nil {
+		t.Fatalf("validateEffectiveToolProjection() error = %v", err)
+	}
+
+	delete(file.Tools, "helper item add")
+	err := validateEffectiveToolProjection(file, opts)
+	if err == nil || !strings.Contains(err.Error(), "missing=[helper item add]") {
+		t.Fatalf("missing manual-only metadata error = %v", err)
+	}
+	seedEffectiveToolProjection(&file, opts.ToolPaths)
+	if _, ok := file.Tools["helper item add"]; !ok {
+		t.Fatal("manual-only command was not materialized in Agent metadata")
+	}
+	if err := validateEffectiveToolProjection(file, opts); err != nil {
+		t.Fatalf("seeded manual-only projection error = %v", err)
+	}
+}
+
+func TestValidateEffectiveToolProjectionRejectsCountOnlyFalseGreen(t *testing.T) {
+	opts := Options{
+		ToolPaths: map[string]string{
+			"base.get_item":   "base item get",
+			"base item get":   "base item get",
+			"helper.add_item": "helper item add",
+			"helper item add": "helper item add",
+		},
+		SurfaceToolCount: 1,
+	}
+	file := File{Tools: map[string]ToolMetadata{
+		"base item get":   {},
+		"helper item add": {},
+	}}
+	err := validateEffectiveToolProjection(file, opts)
+	if err == nil || !strings.Contains(err.Error(), "count 1 disagrees with unique projected tools 2") {
+		t.Fatalf("count mismatch error = %v", err)
+	}
+}
+
 func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
 	root := t.TempDir()
 	writeFixture(t, root, "skills/mono/SKILL.md", "# DWS\n## 意图判断决策树\n用户提到\"日程\" → `calendar`\n")
@@ -266,17 +321,20 @@ func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
       "use_when": ["已经取得 eventId，需要查看详情"],
 	  "avoid_when": ["需要修改日程时不要使用"],
 	  "examples": ["dws calendar event get --id reviewed"],
+	  "interface_ref": {"product_id": "calendar", "rpc_name": "get_calendar_detail"},
 	  "interface_mode": "mcp",
 	  "availability": "available",
       "reviewed": true
     },
     "aitable.base_copy": {
-      "interface_ref": {"product_id": "aitable", "rpc_name": "copy_base"}
+	  "interface_ref": {"product_id": "aitable", "rpc_name": "copy_base"},
+	  "interface_mode": "mcp",
+	  "availability": "available"
     }
   }
 }`)
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -322,21 +380,29 @@ func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
 	}
 }
 
-func TestMergeToolMetadataPreservesStricterSafetyAcrossAliases(t *testing.T) {
-	merged := mergeToolMetadata(
-		ToolMetadata{Risk: "medium", Confirmation: "not_required"},
-		ToolMetadata{Risk: "high", Confirmation: "user_required"},
+func TestMergeToolMetadataUsesSourcePrecedenceAcrossAliases(t *testing.T) {
+	merged, err := mergeToolMetadata(
+		ToolMetadata{Risk: "medium", riskRank: selectionRankImported, Confirmation: "not_required", confirmationRank: selectionRankImported},
+		ToolMetadata{Risk: "high", riskRank: selectionRankExplicit, Confirmation: "user_required", confirmationRank: selectionRankExplicit},
+		"calendar event delete",
 	)
+	if err != nil {
+		t.Fatalf("mergeToolMetadata() error = %v", err)
+	}
 	if merged.Risk != "high" || merged.Confirmation != "user_required" {
 		t.Fatalf("merged safety = %s/%s, want high/user_required", merged.Risk, merged.Confirmation)
 	}
 
-	merged = mergeToolMetadata(
-		ToolMetadata{Risk: "high", Confirmation: "user_required"},
-		ToolMetadata{Risk: "low", Confirmation: "not_required"},
+	merged, err = mergeToolMetadata(
+		ToolMetadata{Risk: "high", riskRank: selectionRankReviewedExplicit, Confirmation: "user_required", confirmationRank: selectionRankReviewedExplicit},
+		ToolMetadata{Risk: "low", riskRank: selectionRankImported, Confirmation: "not_required", confirmationRank: selectionRankImported},
+		"calendar event delete",
 	)
+	if err != nil {
+		t.Fatalf("mergeToolMetadata() error = %v", err)
+	}
 	if merged.Risk != "high" || merged.Confirmation != "user_required" {
-		t.Fatalf("strict safety was downgraded to %s/%s", merged.Risk, merged.Confirmation)
+		t.Fatalf("lower-precedence safety replaced the winner: %s/%s", merged.Risk, merged.Confirmation)
 	}
 }
 
@@ -356,7 +422,7 @@ func TestGenerateAppliesReviewedSkillReferenceDispositions(t *testing.T) {
   }
 }`)
 
-	metadata, stats, err := Generate(Options{
+	metadata, stats, err := generateFromSources(Options{
 		Root:            root,
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
@@ -409,7 +475,7 @@ func TestClassifyEffectPathUsesActionSegment(t *testing.T) {
 	}
 }
 
-func TestApplyDefaultSafetyPreservesExplicitHighRisk(t *testing.T) {
+func TestApplyDefaultSafetyFillsOnlyMissingFields(t *testing.T) {
 	read := ToolMetadata{Effect: "read"}
 	applyDefaultSafety(&read)
 	if read.Risk != "low" || read.Confirmation != "not_required" || read.Idempotency != "idempotent" {
@@ -430,7 +496,7 @@ func TestApplyDefaultSafetyPreservesExplicitHighRisk(t *testing.T) {
 
 	downgradedDanger := ToolMetadata{Effect: "destructive", Risk: "medium", Confirmation: "not_required"}
 	applyDefaultSafety(&downgradedDanger)
-	if downgradedDanger.Risk != "high" || downgradedDanger.Confirmation != "user_required" {
-		t.Fatalf("destructive safety invariant = %#v", downgradedDanger)
+	if downgradedDanger.Risk != "medium" || downgradedDanger.Confirmation != "not_required" {
+		t.Fatalf("explicit safety values were overwritten by defaults: %#v", downgradedDanger)
 	}
 }
