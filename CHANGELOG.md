@@ -8,7 +8,40 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ### Changed
 
+- **`event consume` AI-subprocess contract** — aligns personal event streaming with the contract an orchestrator can drive without guessing: a fixed stderr ready line `[event] ready event_key=<key> bus_pid=<pid>` (block on it, don't `sleep`); a final `[event] exited — received N event(s) in Xs (reason: limit|timeout|signal|bus_shutdown)` line with exit code 0 on controlled exit and non-zero (no `exited` line) on failure; stdin-EOF as a graceful shutdown signal, armed only for a parent-controlled pipe stdin on an unbounded run (an interactive TTY and `< /dev/null` never trigger it), with a self-explaining diagnostic when it fires; and ownership-based subscription cleanup — a subscription this run created is unsubscribed on any clean exit while a `--subscribe-id`-reused one is left intact (`--ephemeral` still forces cleanup), so `kill -9` is the only way to leak a server-side subscription. Skill docs (mono + `dingtalk-event`) document the contract; design notes in `docs/event-subprocess-contract.md`.
+
+### Added
+
+- **`dws schema` for registered local commands** — `dws schema "event consume"` (or `event.consume`) now returns a machine-readable input schema synthesized from the command's cobra flags, in the same flat shape helper subtrees emit: `{description, path, source, parameters{<flag>:{type, required, description, default?}}}` plus an `arguments` array for positional inputs, with `source: "cobra"` distinguishing flag-synthesized schema from MCP-fetched (`mcp:<server>`). Intermediate nodes (`dws schema event`) list their subcommands. The mechanism is a reusable registry (`cobraSchemaRoots`); `event` is the first consumer and more command trees can opt in without further wiring. Inherited global flags and hidden internal flags are excluded so the schema describes just that command.
+- **Safe macOS Keychain → file-DEK migration** — `dws auth migrate-keychain --to file-dek` preflights every legacy/profile auth entry before rewriting, ignores unrelated application secrets, supports side-effect-free `--dry-run`, requires explicit `--yes`, and lets sandboxed and normal processes share an existing login without exposing tokens.
+
+### Fixed
+
+- **Cross-platform auth regression coverage** — dedicated macOS CI now runs the Darwin-only auth/keychain regression suite with race detection, Windows CI builds and tests the native DPAPI path, and recovery guidance prefers safe migration or per-profile cleanup over destructive global reset.
+
+## [1.0.51] - 2026-07-10
+
+This release promotes the sealed `v1.0.51-beta.1` contents to stable. It syncs the hardcoded Wukong command surface, prevents `dev connect` conversations from blocking on messages received mid-turn, and makes local credential failures diagnosable without mutating key material.
+
+### Added
+
+- **Agoal product commands** (#585) — adds `dws agoal` strategy, contract, scorecard, user-objective, report, and objective-template command groups, together with static routing and the bundled mono/multi Agoal skills.
+- **Wukong chat command parity** (#585) — adds `chat group notice create|edit|get|list`, `group share-invite`, `text translate`, `category create-smart`, and `message list-emotion-replies`.
+- **Wukong document import commands** (#585) — adds `doc import` for starting imports and `doc import get` for querying import tasks.
+- **Wukong mail command parity** (#585) — adds mailbox profile, message batch-get, sent-message recall and recall-detail, auto-reply update, plus allow-list and block-list management.
+- **Wukong sheet grouping commands** (#585) — adds `sheet group-dimension` and `sheet ungroup-dimension` for whole-row or whole-column ranges.
+- **Keychain health diagnostics** (#578) — `dws doctor` now includes a keychain check, while `dws auth status` distinguishes ordinary logged-out state from `keychain_unavailable` and `dek_missing` failures and returns remediation hints in table and JSON output.
+
+### Changed
+
 - **`dws pat chmod` defaults to permanent grants** (#584) — running `dws pat chmod <scope>` without `--grant-type` now requests a `permanent` grant instead of `session`, aligning the direct CLI path with the recommend-authorization helper. Session grants remain available by passing `--grant-type session --session-id <id>`.
+- **The `dev connect --channel gemini` path now uses the Gemini `generateContent` API** (#587) — configure it with `GEMINI_API_KEY` or `GOOGLE_API_KEY`, optionally override the compatible endpoint with `GEMINI_API_BASE_URL` or `GOOGLE_GEMINI_API_BASE_URL`, and select a model with `--agent-model` or `GEMINI_MODEL`; a local `gemini` executable is no longer required.
+
+### Fixed
+
+- **Non-blocking `dev connect` turn scheduling** (#587) — stream and `@`-poll callbacks no longer wait for the active turn to finish. Turns stay serialized per conversation, messages received mid-turn are coalesced into one pending follow-up, and different conversations can continue in parallel.
+- **Connect agent recovery and headless execution** (#587) — stale addressable sessions retry once with a fresh session, unsupported Qoder control requests receive an immediate response instead of hanging, OpenCode and bypass-mode channels receive non-interactive permission settings, and backend/API failures are no longer posted as successful assistant replies.
+- **Side-effect-free credential reads** (#578) — keychain reads inspect encrypted credential data before looking up the DEK and never generate a replacement key on a read path. Missing DEKs and unavailable macOS Keychains are surfaced as explicit diagnostic failures instead of silently mutating credential state.
 
 ## [1.0.50] - 2026-07-08
 

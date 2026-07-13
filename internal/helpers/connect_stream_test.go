@@ -162,3 +162,52 @@ func TestEnvDurationMS(t *testing.T) {
 		t.Fatalf("invalid env falls back to default = %v, want %v", got, def)
 	}
 }
+
+func TestMergeConnectQueuedTurnsBuildsSinglePrompt(t *testing.T) {
+	merged := mergeConnectQueuedTurns([]connectQueuedTurn{
+		{convID: "conv-1", text: "第一条", msgID: "m1"},
+		{convID: "conv-1", text: "补充：按今天的数据", msgID: "m2"},
+		{convID: "conv-1", text: "最后改成周报口径", msgID: "m3"},
+	})
+	if merged.msgID != "m3" {
+		t.Fatalf("merged msgID = %q, want latest m3", merged.msgID)
+	}
+	for _, want := range []string{"连续发送", "1. 第一条", "2. 补充：按今天的数据", "3. 最后改成周报口径"} {
+		if !strings.Contains(merged.text, want) {
+			t.Fatalf("merged prompt missing %q:\n%s", want, merged.text)
+		}
+	}
+}
+
+func TestMergeConnectQueuedTurnsPreservesAllPictures(t *testing.T) {
+	merged := mergeConnectQueuedTurns([]connectQueuedTurn{
+		{convID: "conv-1", text: "第一张", picCodes: []string{"pic-1"}, msgID: "m1"},
+		{convID: "conv-1", text: "再补两张", picCodes: []string{"pic-2", "pic-3"}, msgID: "m2"},
+	})
+	want := []string{"pic-1", "pic-2", "pic-3"}
+	if len(merged.picCodes) != len(want) {
+		t.Fatalf("merged picCodes = %v, want %v", merged.picCodes, want)
+	}
+	for i := range want {
+		if merged.picCodes[i] != want[i] {
+			t.Fatalf("merged picCodes = %v, want %v", merged.picCodes, want)
+		}
+	}
+	for _, text := range []string{"第一张 [同时附有图片]", "再补两张 [同时附有图片]"} {
+		if !strings.Contains(merged.text, text) {
+			t.Fatalf("merged prompt missing %q:\n%s", text, merged.text)
+		}
+	}
+}
+
+func TestMergeConnectQueuedTurnsKeepsControlMessagesStandalone(t *testing.T) {
+	for _, text := range []string{"/clear", "同意", "拒绝", "重试"} {
+		merged := mergeConnectQueuedTurns([]connectQueuedTurn{
+			{convID: "conv-1", text: "先查一下", msgID: "m1"},
+			{convID: "conv-1", text: text, msgID: "m2"},
+		})
+		if merged.text != text || merged.msgID != "m2" {
+			t.Fatalf("control %q merged to (%q,%q), want standalone latest", text, merged.text, merged.msgID)
+		}
+	}
+}
