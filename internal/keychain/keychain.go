@@ -42,10 +42,16 @@ const (
 	DisableKeychainEnv = "DWS_DISABLE_KEYCHAIN"
 )
 
-// ErrDEKMissing means encrypted local data may exist, but the Data Encryption
-// Key needed to decrypt it is missing. Read paths must not create a new DEK,
-// because a fresh key cannot decrypt existing ciphertext.
-var ErrDEKMissing = errors.New("dek missing")
+var (
+	// ErrDEKMissing means encrypted local data may exist, but the Data Encryption
+	// Key needed to decrypt it is missing. Read paths must not create a new DEK,
+	// because a fresh key cannot decrypt existing ciphertext.
+	ErrDEKMissing = errors.New("dek missing")
+
+	// ErrCiphertextKeyMismatch means encrypted data exists but none of the
+	// available DEKs can decrypt it. Write paths must not overwrite the data.
+	ErrCiphertextKeyMismatch = errors.New("ciphertext key mismatch")
+)
 
 // KeychainAccess abstracts keychain Get/Set/Remove for dependency injection.
 type KeychainAccess interface {
@@ -108,6 +114,10 @@ func IsDEKMissing(err error) bool {
 	return errors.Is(err, ErrDEKMissing)
 }
 
+func IsCiphertextKeyMismatch(err error) bool {
+	return errors.Is(err, ErrCiphertextKeyMismatch)
+}
+
 func Diagnose() Diagnostic {
 	return platformDiagnose()
 }
@@ -127,6 +137,21 @@ func Set(service, account, data string) error {
 // Returns nil if the entry does not exist.
 func Remove(service, account string) error {
 	return platformRemove(service, account)
+}
+
+// MigrateToFileDEK re-encrypts the legacy and profile-scoped auth token entries
+// for service with the macOS file DEK. It is supported only on macOS and must
+// be invoked from a process that can still access the system Keychain. When
+// dryRun is true, all selected entries are validated without modifying data.
+func MigrateToFileDEK(service string, dryRun bool) (int, error) {
+	return platformMigrateToFileDEK(service, dryRun)
+}
+
+// ValidateAuthTokenEntries verifies every persisted auth-token ciphertext,
+// including profile slots not yet registered in profiles.json, without
+// creating or rotating key material.
+func ValidateAuthTokenEntries(service string) error {
+	return platformValidateAuthTokenEntries(service)
 }
 
 // Exists checks if an entry exists in the keychain.
