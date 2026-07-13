@@ -116,10 +116,10 @@ func TestClientCreateActionSubscriptionsUsesDocumentedRuleParam(t *testing.T) {
 	}{
 		{EventReadO2O, RuleOptions{UserID: "staff-1"}, map[string]any{"targetUid": "staff-1", "targetUidType": "staffId"}},
 		{EventRecallO2O, RuleOptions{UserID: "staff-1"}, map[string]any{"targetUid": "staff-1", "targetUidType": "staffId"}},
-		{EventEmotionO2O, RuleOptions{UserID: "staff-1"}, map[string]any{"targetUid": "staff-1", "targetUidType": "staffId"}},
+		{EventReactionO2O, RuleOptions{UserID: "staff-1"}, map[string]any{"targetUid": "staff-1", "targetUidType": "staffId"}},
 		{EventReadGroup, RuleOptions{GroupID: "cid-1"}, map[string]any{"openConversationId": "cid-1"}},
 		{EventRecallGroup, RuleOptions{GroupID: "cid-1"}, map[string]any{"openConversationId": "cid-1"}},
-		{EventEmotionGroup, RuleOptions{GroupID: "cid-1"}, map[string]any{"openConversationId": "cid-1"}},
+		{EventReactionGroup, RuleOptions{GroupID: "cid-1"}, map[string]any{"openConversationId": "cid-1"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.eventKey, func(t *testing.T) {

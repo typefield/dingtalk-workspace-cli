@@ -22,8 +22,8 @@ dws event schema user_im_message_read_o2o
 dws event schema user_im_message_read_group
 dws event schema user_im_message_recall_o2o
 dws event schema user_im_message_recall_group
-dws event schema user_im_message_emotion_o2o
-dws event schema user_im_message_emotion_group
+dws event schema user_im_message_reaction_o2o
+dws event schema user_im_message_reaction_group
 ```
 
 schema 默认 JSON。业务字段说明在 `schema.properties`，当前业务 payload 解析起点看 `jq_root_path`。
@@ -39,8 +39,8 @@ schema 默认 JSON。业务字段说明在 `schema.properties`，当前业务 pa
 | `user_im_message_read_group` | `group` | 指定群聊中当前用户发送的消息被已读 | `--group` |
 | `user_im_message_recall_o2o` | `singleChat` | 指定单聊中的消息被撤回 | `--user` |
 | `user_im_message_recall_group` | `group` | 指定群聊中的消息被撤回 | `--group` |
-| `user_im_message_emotion_o2o` | `singleChat` | 指定单聊中的消息收到表情回应 | `--user` |
-| `user_im_message_emotion_group` | `group` | 指定群聊中的消息收到表情回应 | `--group` |
+| `user_im_message_reaction_o2o` | `singleChat` | 指定单聊中的消息收到表情回应 | `--user` |
+| `user_im_message_reaction_group` | `group` | 指定群聊中的消息收到表情回应 | `--group` |
 
 默认身份就是当前用户。不要额外加身份切换 flag，不要使用应用凭证模式，不要使用本表以外的事件码。
 
@@ -90,12 +90,12 @@ dws event consume user_im_message_recall_group \
   -f ndjson
 
 # 指定单聊表情回应事件
-dws event consume user_im_message_emotion_o2o \
+dws event consume user_im_message_reaction_o2o \
   --user 507971 \
   -f ndjson
 
 # 指定群聊表情回应事件
-dws event consume user_im_message_emotion_group \
+dws event consume user_im_message_reaction_group \
   --group cidxxxxxxxx \
   -f ndjson
 ```
@@ -111,8 +111,8 @@ dws event consume user_im_message_emotion_group \
 | `user_im_message_read_group` | `--group <openConversationId> --duration 10m -f ndjson` | 当前用户在群内发送消息，再让群成员打开并阅读 |
 | `user_im_message_recall_o2o` | `--user <userId> --duration 10m -f ndjson` | 在指定单聊中发送并撤回一条消息 |
 | `user_im_message_recall_group` | `--group <openConversationId> --duration 10m -f ndjson` | 在指定群聊中发送并撤回一条消息 |
-| `user_im_message_emotion_o2o` | `--user <userId> --duration 10m -f ndjson` | 在指定单聊中给消息添加表情回应 |
-| `user_im_message_emotion_group` | `--group <openConversationId> --duration 10m -f ndjson` | 在指定群聊中给消息添加表情回应 |
+| `user_im_message_reaction_o2o` | `--user <userId> --duration 10m -f ndjson` | 在指定单聊中给消息添加表情回应 |
+| `user_im_message_reaction_group` | `--group <openConversationId> --duration 10m -f ndjson` | 在指定群聊中给消息添加表情回应 |
 
 stderr 出现 `connected bus pid=...` 表示本地 consume 已连接到事件 bus。stdout 每行是一个事件 JSON。
 
@@ -190,7 +190,7 @@ dws event status --event user_im_message_receive_o2o
 dws event status --event user_im_message_receive_group
 dws event status --event user_im_message_read_o2o
 dws event status --event user_im_message_recall_group
-dws event status --event user_im_message_emotion_o2o
+dws event status --event user_im_message_reaction_o2o
 ```
 
 `status` 同时展示服务端 `Subscriptions` 和本地 `Consumers`。`Consumers` 表里的 PID、事件码、`subscribe_id`、received/dropped 计数用于确认当前前台 consume 是否还挂在 personal bus 上。

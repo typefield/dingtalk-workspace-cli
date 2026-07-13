@@ -23,8 +23,8 @@
 | `user_im_message_read_group` | 指定群聊中当前用户发送的消息被已读 | `--group` |
 | `user_im_message_recall_o2o` | 指定单聊中的消息被撤回 | `--user` |
 | `user_im_message_recall_group` | 指定群聊中的消息被撤回 | `--group` |
-| `user_im_message_emotion_o2o` | 指定单聊中的消息收到表情回应 | `--user` |
-| `user_im_message_emotion_group` | 指定群聊中的消息收到表情回应 | `--group` |
+| `user_im_message_reaction_o2o` | 指定单聊中的消息收到表情回应 | `--user` |
+| `user_im_message_reaction_group` | 指定群聊中的消息收到表情回应 | `--group` |
 
 只承认上表 9 个事件码。默认身份就是当前用户，不要额外加身份切换 flag。
 
@@ -39,8 +39,8 @@
 | "监听 XX 群消息已读" | 先解析群 ID，再 consume `user_im_message_read_group --group <id>` |
 | "监听我和 userId 507971 的消息撤回" | `event consume`，事件码 `user_im_message_recall_o2o`，参数 `--user 507971 -f ndjson` |
 | "监听 XX 群消息撤回" | 先解析群 ID，再 consume `user_im_message_recall_group --group <id>` |
-| "监听我和 userId 507971 的消息贴表情" | `event consume`，事件码 `user_im_message_emotion_o2o`，参数 `--user 507971 -f ndjson` |
-| "监听 XX 群消息表情回应" | 先解析群 ID，再 consume `user_im_message_emotion_group --group <id>` |
+| "监听我和 userId 507971 的消息贴表情" | `event consume`，事件码 `user_im_message_reaction_o2o`，参数 `--user 507971 -f ndjson` |
+| "监听 XX 群消息表情回应" | 先解析群 ID，再 consume `user_im_message_reaction_group --group <id>` |
 | "监听并自动回复某人的单聊消息" | 先解析对端 userId，再启动 o2o consume；不要写轮询脚本 |
 | "查看个人消息事件 schema" | `dws event schema <event_key>` |
 | "看个人事件订阅状态" | `dws event status --event <event_key>` |
@@ -69,8 +69,8 @@ dws event schema user_im_message_read_o2o
 dws event schema user_im_message_read_group
 dws event schema user_im_message_recall_o2o
 dws event schema user_im_message_recall_group
-dws event schema user_im_message_emotion_o2o
-dws event schema user_im_message_emotion_group
+dws event schema user_im_message_reaction_o2o
+dws event schema user_im_message_reaction_group
 ```
 
 ```bash
@@ -94,8 +94,8 @@ dws event consume user_im_message_read_o2o --user 507971 -f ndjson
 dws event consume user_im_message_read_group --group <openConversationId> -f ndjson
 dws event consume user_im_message_recall_o2o --user 507971 -f ndjson
 dws event consume user_im_message_recall_group --group <openConversationId> -f ndjson
-dws event consume user_im_message_emotion_o2o --user 507971 -f ndjson
-dws event consume user_im_message_emotion_group --group <openConversationId> -f ndjson
+dws event consume user_im_message_reaction_o2o --user 507971 -f ndjson
+dws event consume user_im_message_reaction_group --group <openConversationId> -f ndjson
 ```
 
 ```bash

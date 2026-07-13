@@ -51,8 +51,8 @@ func TestPersonalEventListHidesSchemaIDs(t *testing.T) {
 				personal.EventReadGroup,
 				personal.EventRecallO2O,
 				personal.EventRecallGroup,
-				personal.EventEmotionO2O,
-				personal.EventEmotionGroup,
+				personal.EventReactionO2O,
+				personal.EventReactionGroup,
 			} {
 				if !strings.Contains(got, eventKey) {
 					t.Fatalf("list output missing %s: %s", eventKey, got)
@@ -282,8 +282,8 @@ func TestPersonalActionEventSchemaUsesConservativeJSONSchema(t *testing.T) {
 		personal.EventReadGroup,
 		personal.EventRecallO2O,
 		personal.EventRecallGroup,
-		personal.EventEmotionO2O,
-		personal.EventEmotionGroup,
+		personal.EventReactionO2O,
+		personal.EventReactionGroup,
 	} {
 		t.Run(eventKey, func(t *testing.T) {
 			cmd := newEventSchemaCommand()

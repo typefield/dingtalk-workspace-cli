@@ -29,8 +29,8 @@ description: 钉钉个人 IM 事件长连接监听、订阅与消费，覆盖消
 | `user_im_message_read_group` | 指定群聊中当前用户发送的消息被已读 | `--group` |
 | `user_im_message_recall_o2o` | 指定单聊中的消息被撤回 | `--user` |
 | `user_im_message_recall_group` | 指定群聊中的消息被撤回 | `--group` |
-| `user_im_message_emotion_o2o` | 指定单聊中的消息收到表情回应 | `--user` |
-| `user_im_message_emotion_group` | 指定群聊中的消息收到表情回应 | `--group` |
+| `user_im_message_reaction_o2o` | 指定单聊中的消息收到表情回应 | `--user` |
+| `user_im_message_reaction_group` | 指定群聊中的消息收到表情回应 | `--group` |
 
 只承认上表 9 个事件码。其它身份模式、应用凭证模式、非个人 IM 事件不在本 skill 范围内。
 
@@ -92,7 +92,7 @@ dws event consume user_im_message_recall_group \
   -f ndjson
 
 # 指定单聊消息收到表情回应
-dws event consume user_im_message_emotion_o2o \
+dws event consume user_im_message_reaction_o2o \
   --user 507971 \
   -f ndjson
 

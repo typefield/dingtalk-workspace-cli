@@ -37,8 +37,8 @@ func TestCatalogEnabledEvents(t *testing.T) {
 		EventReadGroup,
 		EventRecallO2O,
 		EventRecallGroup,
-		EventEmotionO2O,
-		EventEmotionGroup,
+		EventReactionO2O,
+		EventReactionGroup,
 	}
 	if !reflect.DeepEqual(keys, want) {
 		t.Fatalf("keys = %#v, want %#v", keys, want)
@@ -66,6 +66,10 @@ func TestLegacyEventKeysAreUnknown(t *testing.T) {
 		"im_message_recall_group",
 		"im_message_emotion_o2o",
 		"im_message_emotion_group",
+		"im_message_reaction_o2o",
+		"im_message_reaction_group",
+		"user_im_message_emotion_o2o",
+		"user_im_message_emotion_group",
 	}
 	for _, key := range legacyKeys {
 		if _, ok := Lookup(key); ok {
@@ -285,7 +289,7 @@ func TestBuildRuleParamGroup(t *testing.T) {
 }
 
 func TestBuildRuleParamActionEvents(t *testing.T) {
-	for _, eventKey := range []string{EventReadO2O, EventRecallO2O, EventEmotionO2O} {
+	for _, eventKey := range []string{EventReadO2O, EventRecallO2O, EventReactionO2O} {
 		t.Run(eventKey, func(t *testing.T) {
 			if _, _, err := BuildRuleParam(eventKey, RuleOptions{}); err == nil || !strings.Contains(err.Error(), "--user is required for "+eventKey) {
 				t.Fatalf("missing user error = %v", err)
@@ -303,7 +307,7 @@ func TestBuildRuleParamActionEvents(t *testing.T) {
 		})
 	}
 
-	for _, eventKey := range []string{EventReadGroup, EventRecallGroup, EventEmotionGroup} {
+	for _, eventKey := range []string{EventReadGroup, EventRecallGroup, EventReactionGroup} {
 		t.Run(eventKey, func(t *testing.T) {
 			if _, _, err := BuildRuleParam(eventKey, RuleOptions{}); err == nil || !strings.Contains(err.Error(), "--group is required for "+eventKey) {
 				t.Fatalf("missing group error = %v", err)
@@ -340,8 +344,8 @@ func actionEventKeysForTest() []string {
 		EventReadGroup,
 		EventRecallO2O,
 		EventRecallGroup,
-		EventEmotionO2O,
-		EventEmotionGroup,
+		EventReactionO2O,
+		EventReactionGroup,
 	}
 }
 

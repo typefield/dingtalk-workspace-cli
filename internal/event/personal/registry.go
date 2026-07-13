@@ -23,16 +23,16 @@ import (
 )
 
 const (
-	EventMention      = "user_im_message_receive_at"
-	EventSingleChat   = "user_im_message_receive_o2o"
-	EventInChat       = "user_im_message_receive_group"
-	EventFromUser     = "user_im_message_receive_user"
-	EventReadO2O      = "user_im_message_read_o2o"
-	EventReadGroup    = "user_im_message_read_group"
-	EventRecallO2O    = "user_im_message_recall_o2o"
-	EventRecallGroup  = "user_im_message_recall_group"
-	EventEmotionO2O   = "user_im_message_emotion_o2o"
-	EventEmotionGroup = "user_im_message_emotion_group"
+	EventMention       = "user_im_message_receive_at"
+	EventSingleChat    = "user_im_message_receive_o2o"
+	EventInChat        = "user_im_message_receive_group"
+	EventFromUser      = "user_im_message_receive_user"
+	EventReadO2O       = "user_im_message_read_o2o"
+	EventReadGroup     = "user_im_message_read_group"
+	EventRecallO2O     = "user_im_message_recall_o2o"
+	EventRecallGroup   = "user_im_message_recall_group"
+	EventReactionO2O   = "user_im_message_reaction_o2o"
+	EventReactionGroup = "user_im_message_reaction_group"
 )
 
 const (
@@ -156,7 +156,7 @@ var definitions = []Definition{
 		Public:         true,
 	},
 	{
-		EventKey:       EventEmotionO2O,
+		EventKey:       EventReactionO2O,
 		DisplayName:    "指定单聊消息表情回应",
 		Description:    "指定单聊中的消息收到表情回应（贴表情）",
 		Category:       "im",
@@ -167,7 +167,7 @@ var definitions = []Definition{
 		Public:         true,
 	},
 	{
-		EventKey:       EventEmotionGroup,
+		EventKey:       EventReactionGroup,
 		DisplayName:    "指定群消息表情回应",
 		Description:    "指定群聊中的消息收到表情回应（贴表情）",
 		Category:       "im",

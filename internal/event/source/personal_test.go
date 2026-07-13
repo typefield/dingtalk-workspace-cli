@@ -613,8 +613,8 @@ func TestPersonalSourceParsedHeadersPassNormalBusFilter(t *testing.T) {
 
 func TestPersonalSourceActionEventPassesNormalBusFilter(t *testing.T) {
 	const (
-		eventKey    = "user_im_message_emotion_group"
-		subscribeID = "sub-emotion-group"
+		eventKey    = "user_im_message_reaction_group"
+		subscribeID = "sub-reaction-group"
 	)
 	src := personalSourceForRawEventTests()
 	raw := src.rawEventFromDataFrame(&payload.DataFrame{
@@ -622,7 +622,7 @@ func TestPersonalSourceActionEventPassesNormalBusFilter(t *testing.T) {
 			"EVENT_TYPE": eventKey,
 			"SUB_ID":     subscribeID,
 		},
-		Data: `{"eventKey":"user_im_message_emotion_group","subId":"sub-emotion-group","payload":{}}`,
+		Data: `{"eventKey":"user_im_message_reaction_group","subId":"sub-reaction-group","payload":{}}`,
 	})
 	h := bus.NewHub(10)
 	consumer, err := h.Register(transport.Hello{
