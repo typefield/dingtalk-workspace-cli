@@ -2744,7 +2744,7 @@ CLI 内部自动完成全部流程:
 			if !exists {
 				return fmt.Errorf("文档版本 %d 不存在，已停止回滚；请先执行 dws doc version list --node %s --format json 获取可回滚版本", version, nodeID)
 			}
-			if !confirmDelete("文档版本回滚", nodeID) {
+			if !confirmDangerousAction(cmd, fmt.Sprintf("revert document to version %d", version), nodeID) {
 				return nil
 			}
 			return callMCPToolOnServer("doc", "revert_doc_version", map[string]any{

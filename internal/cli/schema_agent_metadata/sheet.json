@@ -1029,7 +1029,7 @@
       "avoid_when": [
         "当用户实际需要获取钉钉电子表格指定工作表中的浮动图表时，改用 dws sheet chart list。"
       ],
-      "confirmation": "not_required",
+      "confirmation": "user_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -1087,16 +1087,24 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "not_required",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "not_required",
@@ -1108,15 +1116,23 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "write",
@@ -1148,15 +1164,23 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "unknown",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "unknown",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "unknown",
@@ -1225,6 +1249,13 @@
               "review_reason": "依据 reviewed CommandRegistry、dws sheet chart delete --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。"
             },
             {
+              "value": true,
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
+            {
               "value": false,
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
@@ -1233,16 +1264,24 @@
           ]
         },
         "risk": {
-          "value": "medium",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "high",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "medium",
@@ -1277,14 +1316,15 @@
       "interface_mode": "local",
       "interface_reason": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "cobra-help:dws sheet chart delete --help",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/sheet.md",
         "skills/mono/references/products/sheet/sheet-chart.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/schema-hints/runtime-surface-completeness.json",
+        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
       ],
       "use_when": [
         "当用户需要删除钉钉电子表格中指定的浮动图表，并能提供命令所需的查询条件时使用。"

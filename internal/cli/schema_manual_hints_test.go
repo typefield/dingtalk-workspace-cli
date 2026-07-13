@@ -404,6 +404,303 @@ func TestValidateManualAgentHintExamplesRejectsUnsafeOrNonExecutingArgv(t *testi
 	}
 }
 
+func TestBuildManualAgentExampleExecutionPlanUsesExplicitReviewedDispositions(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	boundSpec := BoundCommandSpec{
+		CommandSpec: CommandSpec{
+			CanonicalPath:  "sample.search_items",
+			PrimaryCLIPath: "sample item search",
+		},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	hints := manualAgentHintSetFixture()
+	tool := hints.Tools["sample.search_items"]
+	tool.Examples = []string{
+		"dws sample item search --query first",
+		"dws sample item search --query second",
+	}
+	hints.Tools["sample.search_items"] = tool
+
+	registry := manualAgentExampleSchemaRegistry("sample.search_items", SafetySpec{})
+	plan, err := BuildManualAgentExampleExecutionPlan(bound, registry, hints)
+	if err != nil {
+		t.Fatalf("BuildManualAgentExampleExecutionPlan() error = %v", err)
+	}
+	if plan.Total != 2 || plan.DryRun != 2 || plan.ContractOnly != 0 {
+		t.Fatalf("default plan counts = total:%d dry_run:%d contract_only:%d", plan.Total, plan.DryRun, plan.ContractOnly)
+	}
+	for _, execution := range plan.Examples {
+		if execution.Mode != ManualAgentExampleModeDryRun {
+			t.Fatalf("default example mode = %q, want %q", execution.Mode, ManualAgentExampleModeDryRun)
+		}
+	}
+
+	index := 1
+	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
+		Index:      &index,
+		Mode:       ManualAgentExampleModeContractOnly,
+		ReasonCode: ManualAgentExampleReasonStatefulPreflight,
+		Reason:     "The command checks an authenticated tenant before its dry-run branch.",
+		Reviewed:   true,
+	}}
+	hints.Tools["sample.search_items"] = tool
+	plan, err = BuildManualAgentExampleExecutionPlan(bound, registry, hints)
+	if err != nil {
+		t.Fatalf("BuildManualAgentExampleExecutionPlan() with disposition error = %v", err)
+	}
+	if plan.Total != 2 || plan.DryRun != 1 || plan.ContractOnly != 1 || plan.ReviewedContractOnly != 1 || plan.ContractOnlyByReason[ManualAgentExampleReasonStatefulPreflight] != 1 {
+		t.Fatalf("reviewed plan = %#v", plan)
+	}
+	if plan.Examples[0].Mode != ManualAgentExampleModeDryRun || plan.Examples[1].Mode != ManualAgentExampleModeContractOnly {
+		t.Fatalf("resolved example modes = %#v", plan.Examples)
+	}
+
+	tool.ExampleDispositions = nil
+	hints.Tools["sample.search_items"] = tool
+	registry = manualAgentExampleSchemaRegistry("sample.search_items", SafetySpec{Risk: "high", Confirmation: "user_required"})
+	plan, err = BuildManualAgentExampleExecutionPlan(bound, registry, hints)
+	if err != nil {
+		t.Fatalf("BuildManualAgentExampleExecutionPlan() with typed safety error = %v", err)
+	}
+	if plan.DryRun != 0 || plan.ContractOnly != 2 || plan.TypedSafetyContractOnly != 2 || plan.ContractOnlyByReason[ManualAgentExampleReasonConfirmationRequired] != 2 {
+		t.Fatalf("typed safety plan = %#v", plan)
+	}
+	for _, execution := range plan.Examples {
+		if execution.Source != ManualAgentExampleDispositionTypedSafety {
+			t.Fatalf("typed safety execution source = %q", execution.Source)
+		}
+	}
+	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
+		Index:      &index,
+		Mode:       ManualAgentExampleModeContractOnly,
+		ReasonCode: ManualAgentExampleReasonStatefulPreflight,
+		Reason:     "A manual exception must not shadow typed confirmation.",
+		Reviewed:   true,
+	}}
+	hints.Tools["sample.search_items"] = tool
+	if _, err := BuildManualAgentExampleExecutionPlan(bound, registry, hints); err == nil || !strings.Contains(err.Error(), "typed safety already requires confirmation") {
+		t.Fatalf("redundant manual disposition error = %v", err)
+	}
+}
+
+func TestBuildManualAgentExampleExecutionPlanRejectsInvalidDisposition(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	boundSpec := BoundCommandSpec{
+		CommandSpec:    CommandSpec{CanonicalPath: "sample.search_items", PrimaryCLIPath: "sample item search"},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	zero, one := 0, 1
+	tests := []struct {
+		name         string
+		dispositions []ManualAgentExampleDisposition
+		wantErr      string
+	}{
+		{name: "missing index", dispositions: []ManualAgentExampleDisposition{{Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}}, wantErr: "requires index"},
+		{name: "out of range", dispositions: []ManualAgentExampleDisposition{{Index: &one, Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}}, wantErr: "out of range"},
+		{name: "duplicate", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}, {Index: &zero, Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}}, wantErr: "duplicate"},
+		{name: "not reviewed", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state"}}, wantErr: "must be reviewed"},
+		{name: "stores default", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: ManualAgentExampleModeDryRun, ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}}, wantErr: "invalid mode"},
+		{name: "unknown mode", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: "skip", ReasonCode: ManualAgentExampleReasonLocalState, Reason: "Requires local state", Reviewed: true}}, wantErr: "invalid mode"},
+		{name: "unknown reason code", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: ManualAgentExampleModeContractOnly, ReasonCode: "safe", Reason: "Skip a safe example", Reviewed: true}}, wantErr: "invalid reason_code"},
+		{name: "empty reason", dispositions: []ManualAgentExampleDisposition{{Index: &zero, Mode: ManualAgentExampleModeContractOnly, ReasonCode: ManualAgentExampleReasonLocalState, Reviewed: true}}, wantErr: "non-empty reason"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			hints := manualAgentHintSetFixture()
+			tool := hints.Tools["sample.search_items"]
+			tool.ExampleDispositions = test.dispositions
+			hints.Tools["sample.search_items"] = tool
+			err := ValidateManualAgentHintExamples(bound, hints)
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("error = %v, want containing %q", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestManualAgentExampleContractRequiresCobraFlagsAndPositionalsEvenWhenContractOnly(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	if err := leaf.MarkFlagRequired("query"); err != nil {
+		t.Fatalf("MarkFlagRequired(query): %v", err)
+	}
+	leaf.Args = cobra.ExactArgs(1)
+	boundSpec := BoundCommandSpec{
+		CommandSpec:    CommandSpec{CanonicalPath: "sample.search_items", PrimaryCLIPath: "sample item search"},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	index := 0
+	hints := manualAgentHintSetFixture()
+	tool := hints.Tools["sample.search_items"]
+	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
+		Index:      &index,
+		Mode:       ManualAgentExampleModeContractOnly,
+		ReasonCode: ManualAgentExampleReasonInteractiveInput,
+		Reason:     "Reviewed interactive precondition",
+		Reviewed:   true,
+	}}
+
+	tool.Examples = []string{"dws sample item search item-id"}
+	hints.Tools["sample.search_items"] = tool
+	if err := ValidateManualAgentHintExamples(bound, hints); err == nil || !strings.Contains(err.Error(), "missing required flag") {
+		t.Fatalf("missing required flag error = %v", err)
+	}
+
+	tool.Examples = []string{"dws sample item search --query value"}
+	hints.Tools["sample.search_items"] = tool
+	if err := ValidateManualAgentHintExamples(bound, hints); err == nil || !strings.Contains(err.Error(), "invalid positional arguments") {
+		t.Fatalf("missing positional error = %v", err)
+	}
+
+	tool.Examples = []string{"dws sample item search --query value item-id"}
+	hints.Tools["sample.search_items"] = tool
+	if err := ValidateManualAgentHintExamples(bound, hints); err != nil {
+		t.Fatalf("valid contract-only example error = %v", err)
+	}
+}
+
+func TestManualAgentExampleContractEnforcesTypedFlagGroupsBeforeDisposition(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	leaf.Flags().String("robot-client-id", "", "robot client ID")
+	leaf.Flags().String("unified-app-id", "", "unified app ID")
+	leaf.Flags().String("start", "", "start value")
+	leaf.Flags().String("end", "", "end value")
+	leaf.Flags().String("brief", "", "brief output")
+	leaf.Flags().String("verbose-output", "", "verbose output")
+	AnnotateRuntimeConstraints(leaf, RuntimeSchemaConstraints{
+		RequireOneOf:      [][]string{{"robot-client-id", "unified-app-id"}},
+		RequireTogether:   [][]string{{"start", "end"}},
+		MutuallyExclusive: [][]string{{"brief", "verbose-output"}},
+	})
+	boundSpec := BoundCommandSpec{
+		CommandSpec:    CommandSpec{CanonicalPath: "sample.search_items", PrimaryCLIPath: "sample item search"},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	index := 0
+	hints := manualAgentHintSetFixture()
+	tool := hints.Tools["sample.search_items"]
+	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
+		Index:      &index,
+		Mode:       ManualAgentExampleModeContractOnly,
+		ReasonCode: ManualAgentExampleReasonStatefulPreflight,
+		Reason:     "A reviewed local connection is required after argument validation.",
+		Reviewed:   true,
+	}}
+
+	tests := []struct {
+		name    string
+		example string
+		wantErr string
+	}{
+		{name: "require one of", example: "dws sample item search --query value", wantErr: "missing require_one_of"},
+		{name: "require together", example: "dws sample item search --query value --robot-client-id robot --start now", wantErr: "incomplete require_together"},
+		{name: "mutually exclusive", example: "dws sample item search --query value --robot-client-id robot --brief yes --verbose-output yes", wantErr: "mutually_exclusive"},
+		{name: "valid", example: "dws sample item search --query value --unified-app-id app --start now --end later --brief yes"},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			tool.Examples = []string{test.example}
+			hints.Tools["sample.search_items"] = tool
+			err := ValidateManualAgentHintExamples(bound, hints)
+			if test.wantErr == "" {
+				if err != nil {
+					t.Fatalf("ValidateManualAgentHintExamples() error = %v", err)
+				}
+				return
+			}
+			if err == nil || !strings.Contains(err.Error(), test.wantErr) {
+				t.Fatalf("error = %v, want containing %q", err, test.wantErr)
+			}
+		})
+	}
+}
+
+func TestManualAgentExampleExecutionPlanEnforcesFinalTypedConstraints(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	leaf.Flags().String("robot-client-id", "", "robot client ID")
+	leaf.Flags().String("unified-app-id", "", "unified app ID")
+	boundSpec := BoundCommandSpec{
+		CommandSpec:    CommandSpec{CanonicalPath: "sample.search_items", PrimaryCLIPath: "sample item search"},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	hints := manualAgentHintSetFixture()
+	registry := manualAgentExampleSchemaRegistry("sample.search_items", SafetySpec{})
+	registry.Products[0].Tools[0].Constraints = RuntimeSchemaConstraints{
+		RequireOneOf: [][]string{{"robot-client-id", "unified-app-id"}},
+	}
+
+	if _, err := BuildManualAgentExampleExecutionPlan(bound, registry, hints); err == nil || !strings.Contains(err.Error(), "missing require_one_of") {
+		t.Fatalf("final typed constraint error = %v", err)
+	}
+	tool := hints.Tools["sample.search_items"]
+	tool.Examples = []string{"dws sample item search --query value --unified-app-id app"}
+	hints.Tools["sample.search_items"] = tool
+	if _, err := BuildManualAgentExampleExecutionPlan(bound, registry, hints); err != nil {
+		t.Fatalf("valid final typed constraint error = %v", err)
+	}
+}
+
+func TestManualAgentExampleExecutionPlanRejectsManualConfirmationClassification(t *testing.T) {
+	_, leaf := manualSchemaHintTestTree()
+	boundSpec := BoundCommandSpec{
+		CommandSpec:    CommandSpec{CanonicalPath: "sample.search_items", PrimaryCLIPath: "sample item search"},
+		PrimaryCommand: leaf,
+	}
+	bound := BoundCommandRegistry{
+		Commands:    []BoundCommandSpec{boundSpec},
+		ByCanonical: map[string]BoundCommandSpec{"sample.search_items": boundSpec},
+		ByCLIPath:   map[string]BoundCommandSpec{"sample item search": boundSpec},
+	}
+	index := 0
+	hints := manualAgentHintSetFixture()
+	tool := hints.Tools["sample.search_items"]
+	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
+		Index:      &index,
+		Mode:       ManualAgentExampleModeContractOnly,
+		ReasonCode: ManualAgentExampleReasonConfirmationRequired,
+		Reason:     "Do not author a typed safety fact manually.",
+		Reviewed:   true,
+	}}
+	hints.Tools["sample.search_items"] = tool
+	if err := ValidateManualAgentHintExamples(bound, hints); err == nil || !strings.Contains(err.Error(), "invalid reason_code") {
+		t.Fatalf("manual confirmation disposition error = %v", err)
+	}
+}
+
+func manualAgentExampleSchemaRegistry(canonical string, safety SafetySpec) SchemaRegistry {
+	return SchemaRegistry{Products: []ProductSpec{{
+		ID: "sample",
+		Tools: []ToolSpec{{
+			Identity: ToolIdentitySpec{CanonicalPath: canonical},
+			Safety:   safety,
+		}},
+	}}}
+}
+
 func manualAgentHintSetFixture() ManualAgentHintSet {
 	const revision = "ai-agent-contract-v1"
 	return ManualAgentHintSet{

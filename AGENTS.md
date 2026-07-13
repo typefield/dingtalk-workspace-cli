@@ -162,6 +162,14 @@ semantically concatenate Markdown into the selected Agent prose. They may only
 read, validate, resolve, and project the committed values. Markdown and Help
 are evidence for authoring and drift checks, not hidden description winners.
 
+`make generate-schema` is a full deterministic snapshot rebuild, not an
+incremental patch over the previous Catalog. It rereads every reviewed input,
+removes stale generated product metadata, and rewrites the exact metadata and
+Catalog projections. Incremental work happens only when an Agent or human
+edits selected reviewed Manual Hint entries; the next publication still
+recomputes all outputs. Generated files must never be read back as merge input,
+and byte guards fail generation if it changes the Manual Hint or CommandRegistry.
+
 The initial AI-authored baseline must cover the exact Effective
 CommandRegistry tool set and all published products in one revision. Each
 product/tool entry references a declared revision record. Later human or Agent
@@ -176,6 +184,31 @@ change parameter facts, invent an RPC/interface, alter safety metadata, or
 bypass command completeness. Examples must use an executable primary/alias
 path and flags accepted by the live Cobra command; never add `--yes` to stored
 examples.
+
+Every example is always checked against its real `BoundCommand`: exact path,
+accepted flags, Cobra required flags/positionals, and the effective
+`require_one_of`, `require_together`, and `mutually_exclusive` constraints must
+all pass before execution eligibility is considered. A missing required value,
+constraint failure, runtime error, or MCP resolution error is a contract bug;
+none is a valid reason to skip an example.
+
+Example execution defaults to `dry_run`. Final typed safety with `risk=high`
+or `confirmation=user_required` automatically selects `contract_only`, because
+a test must never inject `--yes`. A narrow runtime precondition that cannot be
+derived from the typed contract may use an exact zero-based
+`example_dispositions` entry with `mode=contract_only`, `reviewed=true`, one of
+the schema-enumerated reason codes, and a concrete non-empty reason. Manual
+confirmation dispositions are forbidden because confirmation comes from typed
+safety. Duplicate, missing, and out-of-range indexes fail validation. Never
+catch a dry-run failure and dynamically downgrade it to `contract_only`.
+
+Normal Go tests run the exhaustive contract gate. Run
+`make test-schema-agent-examples` to additionally execute the eligible subset
+through the real Cobra `--dry-run` path with isolated HOME and blocked proxies.
+The test reports stable `total`, `dry_run`, `contract_only`, `typed_safety`,
+`reviewed_manual`, and per-reason counts; changing those counts requires a
+review of the corresponding manual hint or typed safety change. This target is
+also part of `make policy`.
 
 Treat every tool `use_when` entry as a reviewed positive selection scenario
 whose expected result is that tool's canonical path, and every `avoid_when`

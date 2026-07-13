@@ -3661,7 +3661,9 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 			// 服务端 set_group_member_mute_list 的 uids（staffId）入参存在缺陷：
 			// 即使传了 uids 仍返回 "uids is required"，而 openDingTalkIds 路径正常。
 			// 与 message send 一致：先把 userId 解析为 openDingTalkId；解析失败再降级透传 uids。
-			if len(userIDs) > 0 {
+			// Resolving userId to openDingTalkId is a remote preflight. A dry-run
+			// must preserve the supplied uids in its preview without calling MCP.
+			if len(userIDs) > 0 && !deps.Caller.DryRun() {
 				if resolved, err := resolveOpenDingTalkIDs(cmd.Context(), userIDs); err == nil {
 					openDingTalkIDs = append(openDingTalkIDs, resolved...)
 					userIDs = nil

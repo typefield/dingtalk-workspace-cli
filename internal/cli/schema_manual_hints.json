@@ -1288,6 +1288,15 @@
         "examples": [
           "dws aitable form get --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the existing remote Base, Table, and form View metadata required by this command.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2088,6 +2097,15 @@
         "examples": [
           "dws aitable view get aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current aggregate configuration.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2107,6 +2125,15 @@
         ],
         "examples": [
           "dws aitable view get card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View type and current card configuration.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2128,6 +2155,15 @@
         "examples": [
           "dws aitable view get field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current field-width configuration.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2148,6 +2184,15 @@
         "examples": [
           "dws aitable view get fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current conditional fill-color rules.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2167,6 +2212,15 @@
         ],
         "examples": [
           "dws aitable view get filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current filter configuration.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2207,6 +2261,15 @@
         ],
         "examples": [
           "dws aitable view get group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current group configuration.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2268,6 +2331,15 @@
         "examples": [
           "dws aitable view get sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current sort configuration.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2288,6 +2360,15 @@
         "examples": [
           "dws aitable view get timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote Gantt View's current timebar configuration.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2307,6 +2388,15 @@
         ],
         "examples": [
           "dws aitable view get visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current visible fields and column order.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2366,7 +2456,16 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update aggregate --view-id VIEW_ID --field-id fldX --action SUM"
+          "dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup of the remote View type; the isolated environment has neither state.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2386,7 +2485,16 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update card --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
+          "dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup to distinguish a remote Kanban from Gallery View.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2406,7 +2514,16 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update field-widths --view-id VIEW_ID --field-id fldX --width 200"
+          "dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup that validates the remote View type.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2426,7 +2543,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update fill-color-rule --view-id VIEW_ID --json '[]'"
+          "dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[]'"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2446,7 +2563,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
+          "dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2466,7 +2583,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update frozen-cols --view-id VIEW_ID --count 1"
+          "dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2486,7 +2603,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update group --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+          "dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2506,7 +2623,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update name --view-id VIEW_ID --name \"新视图名\""
+          "dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name \"新视图名\""
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2526,7 +2643,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update row-height --view-id VIEW_ID --cell-height 32"
+          "dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 32"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2546,7 +2663,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update sort --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+          "dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2566,7 +2683,16 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update timebar --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
+          "dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup confirming that the remote View is Gantt.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2586,7 +2712,7 @@
           "skills/mono/references/products/aitable.md"
         ],
         "examples": [
-          "dws aitable view update visible-fields --view-id VIEW_ID --field-ids fld1,fld2,fld3"
+          "dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3"
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -3278,7 +3404,7 @@
           "skills/mono/references/products/attendance-schedule.md"
         ],
         "examples": [
-          "dws attendance schedule get --users USER_IDS --start BEGIN_DATE --end END_DATE"
+          "dws attendance schedule get --users user001,user002 --start 2026-04-01 --end 2026-04-30"
         ],
         "reason": "依据 reviewed CommandRegistry、dws attendance schedule get --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。",
         "reviewed": true,
@@ -3299,7 +3425,7 @@
           "skills/mono/references/products/attendance-schedule.md"
         ],
         "examples": [
-          "dws attendance schedule import --groupId GROUP_ID --scheduleVOS JSON_STRING"
+          "dws attendance schedule import --groupId 123456 --scheduleVOS '[{\"userId\":\"user001\",\"workDate\":\"2026-04-22 09:00:00\",\"classId\":123,\"isRest\":\"N\"}]'"
         ],
         "reason": "依据 reviewed CommandRegistry、dws attendance schedule import --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。",
         "reviewed": true,
@@ -3746,6 +3872,15 @@
         "examples": [
           "dws calendar room search --room-name 永澄亭"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot query the organization's remote meeting-room inventory and availability state.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -3765,6 +3900,15 @@
         ],
         "examples": [
           "dws calendar busy search --users userId1,userId2 --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\""
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot query remote calendar busy-time state for the requested users.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -4013,6 +4157,15 @@
         ],
         "examples": [
           "dws chat group create --name \"项目冲刺群\" --users userId1,userId2"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Before dry-run output, group creation resolves the authenticated current user and remote member identities, which are absent in the isolated environment.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -4306,7 +4459,7 @@
           "skills/mono/references/products/chat.md"
         ],
         "examples": [
-          "dws chat message list-direct --user <userId> --time \"2026-07-01 00:00:00\" --direction forward --limit 50"
+          "dws chat message list-direct --user <userId> --time \"2026-07-01 00:00:00\" --direction newer --limit 50"
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -4727,6 +4880,15 @@
         ],
         "examples": [
           "dws chat message reply --conversation-id <openConversationId> --ref-msg-id <openMessageId> --ref-sender <openDingTalkId> --text \"收到\""
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login or remote conversation and referenced-message state required to prepare this reply.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -5637,7 +5799,16 @@
           "skills/mono/references/products/dev.md"
         ],
         "examples": [
-          "dws dev connect status --json"
+          "dws dev connect status --unified-app-id <unifiedAppId> --json"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "local_state",
+            "reason": "This status command inspects the local connector daemon heartbeat and supervisor state, which do not exist in the isolated test HOME.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -5659,6 +5830,15 @@
         ],
         "examples": [
           "dws dev connect stop --unified-app-id <unifiedAppId>"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "local_state",
+            "reason": "Stopping a connector depends on a locally running daemon and its PID or supervisor state, which the isolated test HOME intentionally lacks.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -6601,7 +6781,7 @@
           "structured-hint:skills/mono/schema-hints/selection-review.json#doc.download_file"
         ],
         "examples": [
-          "dws doc download --node NODE_ID --format json",
+          "dws doc download --node NODE_ID --output ./downloads/ --format json",
           "dws doc download --node NODE_ID --output ./report.pdf --format json"
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
@@ -7024,6 +7204,22 @@
           "dws doc update --node DOC_ID --content \"# 新内容\" --mode append --format json",
           "dws doc update --node DOC_ID --content \"# 完整替换\" --mode overwrite --format json"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The append example requires tenant login plus an existing remote document node and edit permission before its dry-run path can be reached.",
+            "reviewed": true
+          },
+          {
+            "index": 1,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The overwrite example requires tenant login plus an existing remote document node and edit permission before its dry-run path can be reached.",
+            "reviewed": true
+          }
+        ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -7305,6 +7501,15 @@
         ],
         "examples": [
           "dws drive info --node <dentryUuid> --format json"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot resolve the existing remote dentry and its access permissions.",
+            "reviewed": true
+          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -7626,6 +7831,15 @@
           "dws drive search --query \"季度汇报\" --format json",
           "dws drive search --query \"合同\" --target file --extensions pdf,docx --format json"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Drive search requires tenant login and the user's remote drive index, neither of which is available in the isolated dry-run.",
+            "reviewed": true
+          }
+        ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -7754,6 +7968,15 @@
         "examples": [
           "dws mail attachment download --email user@company.com --message-id <messageId> --attachment-id <attachmentId> --name report.pdf --output ."
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Creating an attachment download session requires tenant login and an existing remote mailbox, message, and attachment before dry-run can proceed.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -7795,6 +8018,15 @@
         ],
         "examples": [
           "dws mail message forward --from user@company.com --to colleague@company.com --id <messageId> --subject \"Fwd: 周报\""
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Forward-draft creation requires tenant login and an existing remote source message in the specified mailbox before dry-run can proceed.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -7838,6 +8070,15 @@
         "examples": [
           "dws mail message reply --from user@company.com --id <messageId> --subject \"Re: 周报\" --content \"已收到\""
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Reply-draft creation requires tenant login and an existing remote source message in the specified mailbox before dry-run can proceed.",
+            "reviewed": true
+          }
+        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -7858,6 +8099,15 @@
         ],
         "examples": [
           "dws mail message reply-all --from user@company.com --id <messageId> --subject \"Re: 周报\" --content \"感谢大家\""
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "Reply-all draft creation requires tenant login and an existing remote source message with recipient state before dry-run can proceed.",
+            "reviewed": true
+          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -9301,6 +9551,22 @@
           "dws pat browser-policy --enabled --format json",
           "dws pat browser-policy --enabled=false --agentCode <AGENT_CODE> --format json"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "local_state",
+            "reason": "This example inspects and changes browser policy state on the local machine, which is intentionally absent from the isolated test HOME.",
+            "reviewed": true
+          },
+          {
+            "index": 1,
+            "mode": "contract_only",
+            "reason_code": "local_state",
+            "reason": "This agent-scoped example depends on the local browser installation and its existing policy state, which the isolated test HOME does not provide.",
+            "reviewed": true
+          }
+        ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -10486,6 +10752,15 @@
         "examples": [
           "dws sheet range read --node NODE_ID"
         ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot resolve the remote spreadsheet node, default sheet, and readable range state.",
+            "reviewed": true
+          }
+        ],
         "reason": "依据 reviewed CommandRegistry、dws sheet range read --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -11031,8 +11306,8 @@
           "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_sub_todo"
         ],
         "examples": [
-          "dws todo task create-sub --parent-id <parentId> --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
-          "dws todo task create-sub --parent-id <parentId> --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+          "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+          "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -11121,6 +11396,15 @@
         ],
         "examples": [
           "dws todo task get --task-id <taskId> --format json"
+        ],
+        "example_dispositions": [
+          {
+            "index": 0,
+            "mode": "contract_only",
+            "reason_code": "stateful_preflight",
+            "reason": "The isolated dry-run has no tenant login and cannot resolve the existing remote task or verify that the current user may view it.",
+            "reviewed": true
+          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,

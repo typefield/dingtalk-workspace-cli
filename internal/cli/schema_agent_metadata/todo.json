@@ -2007,8 +2007,8 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
-        "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+        "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+        "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -2099,8 +2099,8 @@
         },
         "examples": {
           "value": [
-            "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
-            "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+            "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+            "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -2109,8 +2109,8 @@
           "candidates": [
             {
               "value": [
-                "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
-                "dws todo task create-sub --parent-id \u003cparentId\u003e --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
+                "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
+                "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1 --due \"2026-03-10T18:00:00+08:00\" --format json"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",

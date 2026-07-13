@@ -8660,7 +8660,7 @@
       "effect": "read",
       "effect_source": "agent-hint",
       "examples": [
-        "dws dev connect status --json"
+        "dws dev connect status --unified-app-id \u003cunifiedAppId\u003e --json"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -8753,7 +8753,7 @@
         },
         "examples": {
           "value": [
-            "dws dev connect status --json"
+            "dws dev connect status --unified-app-id \u003cunifiedAppId\u003e --json"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -8762,7 +8762,7 @@
           "candidates": [
             {
               "value": [
-                "dws dev connect status --json"
+                "dws dev connect status --unified-app-id \u003cunifiedAppId\u003e --json"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",

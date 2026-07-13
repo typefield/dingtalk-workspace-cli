@@ -3627,7 +3627,7 @@
       "avoid_when": [
         "只需查询公开状态或关闭公开发布时不要使用；目标文件和公开范围未明确时不要开启"
       ],
-      "confirmation": "not_required",
+      "confirmation": "user_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -3686,16 +3686,24 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "not_required",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "not_required",
@@ -3707,15 +3715,23 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "write",
@@ -3749,15 +3765,23 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "unknown",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "unknown",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "unknown",
@@ -3826,6 +3850,13 @@
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
             },
             {
+              "value": true,
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
+            {
               "value": false,
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
@@ -3834,16 +3865,24 @@
           ]
         },
         "risk": {
-          "value": "medium",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "high",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "medium",
@@ -3878,14 +3917,15 @@
       "interface_mode": "local",
       "interface_reason": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "CommandRegistry:canonical_path=drive.publish_set",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish set",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/schema-hints/runtime-surface-completeness.json",
+        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
       ],
       "use_when": [
         "用户明确要求开启文件的互联网公开发布时"
@@ -3898,7 +3938,7 @@
       "avoid_when": [
         "只需查询公开状态或开启公开发布时不要使用；目标文件未明确时不要关闭"
       ],
-      "confirmation": "not_required",
+      "confirmation": "user_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -3956,16 +3996,24 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "user_required",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "not_required",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "not_required",
@@ -3977,15 +4025,23 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "write",
@@ -4017,15 +4073,23 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "unknown",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "unknown",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "unknown",
@@ -4094,6 +4158,13 @@
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
             },
             {
+              "value": true,
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
+            {
               "value": false,
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
@@ -4102,16 +4173,24 @@
           ]
         },
         "risk": {
-          "value": "medium",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
-          "precedence": "unreviewed_explicit",
+          "value": "high",
+          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
-              "selected": true
+              "selected": false
             },
             {
               "value": "medium",
@@ -4146,14 +4225,15 @@
       "interface_mode": "local",
       "interface_reason": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "CommandRegistry:canonical_path=drive.publish_unset",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish unset",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/schema-hints/runtime-surface-completeness.json",
+        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
       ],
       "use_when": [
         "用户明确要求关闭文件的互联网公开发布时"

@@ -2447,7 +2447,7 @@
       "avoid_when": [
         "当用户实际需要按当前用户权限分页搜索可管理的班次定义时，改用 dws attendance class search。"
       ],
-      "confirmation": "not_required",
+      "confirmation": "user_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -2505,14 +2505,14 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
+          "value": "user_required",
           "source": "skills/mono/schema-hints/zz-attendance-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "attendance-agent-review-v1 marks this tool as reviewed",
           "candidates": [
             {
-              "value": "not_required",
+              "value": "user_required",
               "source": "skills/mono/schema-hints/zz-attendance-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
@@ -2682,14 +2682,14 @@
           ]
         },
         "risk": {
-          "value": "medium",
+          "value": "high",
           "source": "skills/mono/schema-hints/zz-attendance-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "attendance-agent-review-v1 marks this tool as reviewed",
           "candidates": [
             {
-              "value": "medium",
+              "value": "high",
               "source": "skills/mono/schema-hints/zz-attendance-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
@@ -2734,7 +2734,7 @@
       "interface_mode": "local",
       "interface_reason": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "cobra-help:dws attendance class create --help",
         "internal/cli/schema_command_registry.json",
@@ -3368,7 +3368,7 @@
       "avoid_when": [
         "当用户实际需要根据班次 ID 查询班次详情时，改用 dws attendance class get。"
       ],
-      "confirmation": "not_required",
+      "confirmation": "user_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -3426,14 +3426,14 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
+          "value": "user_required",
           "source": "skills/mono/schema-hints/zz-attendance-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "attendance-agent-review-v1 marks this tool as reviewed",
           "candidates": [
             {
-              "value": "not_required",
+              "value": "user_required",
               "source": "skills/mono/schema-hints/zz-attendance-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
@@ -3603,14 +3603,14 @@
           ]
         },
         "risk": {
-          "value": "medium",
+          "value": "high",
           "source": "skills/mono/schema-hints/zz-attendance-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "attendance-agent-review-v1 marks this tool as reviewed",
           "candidates": [
             {
-              "value": "medium",
+              "value": "high",
               "source": "skills/mono/schema-hints/zz-attendance-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
@@ -3655,7 +3655,7 @@
       "interface_mode": "local",
       "interface_reason": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "cobra-help:dws attendance class update --help",
         "internal/cli/schema_command_registry.json",
@@ -8233,7 +8233,7 @@
       "effect": "read",
       "effect_source": "agent-hint",
       "examples": [
-        "dws attendance schedule get --users USER_IDS --start BEGIN_DATE --end END_DATE"
+        "dws attendance schedule get --users user001,user002 --start 2026-04-01 --end 2026-04-30"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -8344,7 +8344,7 @@
         },
         "examples": {
           "value": [
-            "dws attendance schedule get --users USER_IDS --start BEGIN_DATE --end END_DATE"
+            "dws attendance schedule get --users user001,user002 --start 2026-04-01 --end 2026-04-30"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -8353,7 +8353,7 @@
           "candidates": [
             {
               "value": [
-                "dws attendance schedule get --users USER_IDS --start BEGIN_DATE --end END_DATE"
+                "dws attendance schedule get --users user001,user002 --start 2026-04-01 --end 2026-04-30"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -8541,7 +8541,7 @@
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
-        "dws attendance schedule import --groupId GROUP_ID --scheduleVOS JSON_STRING"
+        "dws attendance schedule import --groupId 123456 --scheduleVOS '[{\"userId\":\"user001\",\"workDate\":\"2026-04-22 09:00:00\",\"classId\":123,\"isRest\":\"N\"}]'"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -8652,7 +8652,7 @@
         },
         "examples": {
           "value": [
-            "dws attendance schedule import --groupId GROUP_ID --scheduleVOS JSON_STRING"
+            "dws attendance schedule import --groupId 123456 --scheduleVOS '[{\"userId\":\"user001\",\"workDate\":\"2026-04-22 09:00:00\",\"classId\":123,\"isRest\":\"N\"}]'"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -8661,7 +8661,7 @@
           "candidates": [
             {
               "value": [
-                "dws attendance schedule import --groupId GROUP_ID --scheduleVOS JSON_STRING"
+                "dws attendance schedule import --groupId 123456 --scheduleVOS '[{\"userId\":\"user001\",\"workDate\":\"2026-04-22 09:00:00\",\"classId\":123,\"isRest\":\"N\"}]'"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",

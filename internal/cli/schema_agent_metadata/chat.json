@@ -10955,7 +10955,7 @@
       "effect": "read",
       "effect_source": "command-verb",
       "examples": [
-        "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction forward --limit 50"
+        "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction newer --limit 50"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -11046,7 +11046,7 @@
         },
         "examples": {
           "value": [
-            "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction forward --limit 50"
+            "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction newer --limit 50"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -11055,7 +11055,7 @@
           "candidates": [
             {
               "value": [
-                "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction forward --limit 50"
+                "dws chat message list-direct --user \u003cuserId\u003e --time \"2026-07-01 00:00:00\" --direction newer --limit 50"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",

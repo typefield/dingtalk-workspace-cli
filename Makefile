@@ -1,6 +1,6 @@
 GO ?= go
 
-.PHONY: all help build rebuild test lint fmt policy edition-test generate-schema generate-schema-agent-metadata generate-schema-catalog package release publish-homebrew-formula setup-hooks
+.PHONY: all help build rebuild test lint fmt policy edition-test test-schema-agent-examples generate-schema generate-schema-agent-metadata generate-schema-catalog package release publish-homebrew-formula setup-hooks
 
 all: setup-hooks fmt lint build test rebuild
 
@@ -11,6 +11,7 @@ help:
 	@printf "  make lint          - Run formatting checks and golangci-lint when available\n"
 	@printf "  make fmt           - Format Go source files\n"
 	@printf "  make policy        - Run open-source asset and Schema registry checks\n"
+	@printf "  make test-schema-agent-examples - Contract-check all Agent examples and dry-run the eligible subset\n"
 	@printf "  make generate-schema - Regenerate embedded Agent metadata and the release Catalog\n"
 	@printf "  make generate-schema-agent-metadata - Regenerate versioned Agent metadata\n"
 	@printf "  make generate-schema-catalog - Regenerate the embedded release Catalog\n"
@@ -40,9 +41,13 @@ policy:
 	@./scripts/policy/check-generated-drift.sh
 	@./scripts/policy/check-schema-catalog.sh
 	@./scripts/policy/check-schema-binary.sh
+	@$(MAKE) test-schema-agent-examples
 
 edition-test:
 	$(GO) test -v -count=1 ./pkg/editiontest/...
+
+test-schema-agent-examples:
+	DWS_AGENT_EXAMPLES_DRY_RUN=1 $(GO) test -v -count=1 ./internal/app -run '^TestManualAgentExamplesDryRun$$'
 
 generate-schema:
 	@set -e; \

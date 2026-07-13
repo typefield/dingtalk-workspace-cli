@@ -198,8 +198,8 @@
         "导入员工排班时使用 attendance schedule import"
       ],
       "effect": "write",
-      "risk": "medium",
-      "confirmation": "not_required",
+      "risk": "high",
+      "confirmation": "user_required",
       "idempotency": "unknown",
       "reviewed": true
     },
@@ -214,8 +214,8 @@
         "调整员工排班时使用 attendance schedule import"
       ],
       "effect": "write",
-      "risk": "medium",
-      "confirmation": "not_required",
+      "risk": "high",
+      "confirmation": "user_required",
       "idempotency": "unknown",
       "reviewed": true
     },

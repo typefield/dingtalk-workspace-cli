@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "runtime-confirmation-review-v1",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "coverage": {
+    "source_tools": 4,
+    "matched_tools": 4
+  },
+  "tools": {
+    "doc.version_revert": {
+      "agent_summary": "将文档回滚到指定版本",
+      "use_when": [
+        "用户明确要求并确认将文档回滚到指定历史版本时"
+      ],
+      "avoid_when": [
+        "只需查看版本或保存快照时不要使用；未明确目标版本时不要回滚"
+      ],
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "idempotency": "unknown",
+      "reviewed": true
+    },
+    "drive.publish_set": {
+      "agent_summary": "开启文件的互联网公开发布",
+      "use_when": [
+        "用户明确要求开启文件的互联网公开发布时"
+      ],
+      "avoid_when": [
+        "只需查询公开状态或关闭公开发布时不要使用；目标文件和公开范围未明确时不要开启"
+      ],
+      "effect": "write",
+      "risk": "high",
+      "confirmation": "user_required",
+      "idempotency": "unknown",
+      "reviewed": true
+    },
+    "drive.publish_unset": {
+      "agent_summary": "关闭文件的互联网公开发布",
+      "use_when": [
+        "用户明确要求关闭文件的互联网公开发布时"
+      ],
+      "avoid_when": [
+        "只需查询公开状态或开启公开发布时不要使用；目标文件未明确时不要关闭"
+      ],
+      "effect": "write",
+      "risk": "high",
+      "confirmation": "user_required",
+      "idempotency": "unknown",
+      "reviewed": true
+    },
+    "sheet.chart_delete": {
+      "agent_summary": "删除钉钉电子表格中指定的浮动图表。",
+      "use_when": [
+        "当用户需要删除钉钉电子表格中指定的浮动图表，并能提供命令所需的查询条件时使用。"
+      ],
+      "avoid_when": [
+        "当用户实际需要获取钉钉电子表格指定工作表中的浮动图表时，改用 dws sheet chart list。"
+      ],
+      "effect": "write",
+      "risk": "high",
+      "confirmation": "user_required",
+      "idempotency": "unknown",
+      "reviewed": true
+    }
+  }
+}

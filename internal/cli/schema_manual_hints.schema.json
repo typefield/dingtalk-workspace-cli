@@ -143,12 +143,61 @@
             "examples": {
               "$ref": "#/$defs/nonEmptyStringArray",
               "maxItems": 2,
-              "description": "Executable examples using a reviewed primary/alias path and real Cobra flags. Do not include --yes or a help-only example."
+              "description": "Executable examples using a reviewed primary/alias path and real Cobra flags and required arguments. Do not include --yes or a help-only example."
+            },
+            "example_dispositions": {
+              "type": "array",
+              "uniqueItems": true,
+              "items": {
+                "$ref": "#/$defs/agentExampleDisposition"
+              },
+              "description": "Exact reviewed exceptions by zero-based example index. An omitted index always defaults to dry_run; runtime failures must never create an implicit exception."
             }
           }
         }
       ],
       "unevaluatedProperties": false
+    },
+    "agentExampleDisposition": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": [
+        "index",
+        "mode",
+        "reason_code",
+        "reason",
+        "reviewed"
+      ],
+      "properties": {
+        "index": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "Zero-based index into the enclosing tool's examples array. Go validation rejects duplicate and out-of-range indexes."
+        },
+        "mode": {
+          "const": "contract_only",
+          "description": "The only explicit override. dry_run is the default and is never stored as a disposition."
+        },
+        "reason_code": {
+          "enum": [
+            "interactive_input",
+            "file_input",
+            "file_output",
+            "stdin_input",
+            "local_state",
+            "stateful_preflight"
+          ],
+          "description": "Narrow manual exception taxonomy. confirmation_required is derived automatically from final typed high-risk/user-confirmed safety and cannot be authored here; runtime errors, MCP resolution errors, and missing required arguments are never valid exceptions."
+        },
+        "reason": {
+          "type": "string",
+          "minLength": 1,
+          "description": "Concrete reviewed explanation of why isolated dry-run execution is unsafe or nondeterministic."
+        },
+        "reviewed": {
+          "const": true
+        }
+      }
     },
     "agentHintCommon": {
       "type": "object",

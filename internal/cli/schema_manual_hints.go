@@ -83,18 +83,94 @@ type ManualAgentProductHint struct {
 	Evidence     []string `json:"evidence"`
 }
 
-// ManualAgentToolHint defines the four reviewed fields used to select and
-// demonstrate one existing effective command. It deliberately has no fields
-// for identity, parameters, safety, or interface disposition.
+// ManualAgentToolHint defines the reviewed prose used to select and
+// demonstrate one existing effective command. ExampleDispositions contains
+// only test eligibility exceptions; it cannot change identity, parameters,
+// safety, or interface disposition.
 type ManualAgentToolHint struct {
-	AgentSummary string   `json:"agent_summary"`
-	UseWhen      []string `json:"use_when"`
-	AvoidWhen    []string `json:"avoid_when"`
-	Examples     []string `json:"examples"`
-	Reviewed     bool     `json:"reviewed"`
-	Revision     string   `json:"revision"`
-	Reason       string   `json:"reason"`
-	Evidence     []string `json:"evidence"`
+	AgentSummary        string                          `json:"agent_summary"`
+	UseWhen             []string                        `json:"use_when"`
+	AvoidWhen           []string                        `json:"avoid_when"`
+	Examples            []string                        `json:"examples"`
+	ExampleDispositions []ManualAgentExampleDisposition `json:"example_dispositions,omitempty"`
+	Reviewed            bool                            `json:"reviewed"`
+	Revision            string                          `json:"revision"`
+	Reason              string                          `json:"reason"`
+	Evidence            []string                        `json:"evidence"`
+}
+
+// ManualAgentExampleMode controls only how an already contract-validated
+// example is exercised. Every example defaults to dry_run. contract_only is a
+// precise reviewed exception for examples whose runtime preconditions cannot
+// be exercised safely and deterministically in the isolated test process.
+type ManualAgentExampleMode string
+
+const (
+	ManualAgentExampleModeDryRun       ManualAgentExampleMode = "dry_run"
+	ManualAgentExampleModeContractOnly ManualAgentExampleMode = "contract_only"
+)
+
+// ManualAgentExampleReasonCode is a closed taxonomy for reviewed
+// contract-only exceptions. There is deliberately no generic "skip" or
+// "unsupported" value: a reviewer must identify the concrete precondition.
+type ManualAgentExampleReasonCode string
+
+const (
+	// confirmation_required is assigned automatically from final typed safety;
+	// it is not accepted as a manual disposition reason.
+	ManualAgentExampleReasonConfirmationRequired ManualAgentExampleReasonCode = "confirmation_required"
+	ManualAgentExampleReasonInteractiveInput     ManualAgentExampleReasonCode = "interactive_input"
+	ManualAgentExampleReasonFileInput            ManualAgentExampleReasonCode = "file_input"
+	ManualAgentExampleReasonFileOutput           ManualAgentExampleReasonCode = "file_output"
+	ManualAgentExampleReasonStdinInput           ManualAgentExampleReasonCode = "stdin_input"
+	ManualAgentExampleReasonLocalState           ManualAgentExampleReasonCode = "local_state"
+	ManualAgentExampleReasonStatefulPreflight    ManualAgentExampleReasonCode = "stateful_preflight"
+)
+
+// ManualAgentExampleDisposition changes one exact example index from the
+// default dry-run mode to contract-only. Index is a pointer so a missing JSON
+// field cannot silently select example zero.
+type ManualAgentExampleDisposition struct {
+	Index      *int                         `json:"index"`
+	Mode       ManualAgentExampleMode       `json:"mode"`
+	ReasonCode ManualAgentExampleReasonCode `json:"reason_code"`
+	Reason     string                       `json:"reason"`
+	Reviewed   bool                         `json:"reviewed"`
+}
+
+// ManualAgentExampleExecution is one resolved example and its effective test
+// mode. Contract validation has already succeeded when this value is returned.
+type ManualAgentExampleExecution struct {
+	CanonicalPath string
+	Index         int
+	Example       string
+	Mode          ManualAgentExampleMode
+	ReasonCode    ManualAgentExampleReasonCode
+	Reason        string
+	Source        ManualAgentExampleDispositionSource
+}
+
+// ManualAgentExampleDispositionSource makes automatic typed-safety
+// classification distinguishable from narrow reviewed manual exceptions.
+type ManualAgentExampleDispositionSource string
+
+const (
+	ManualAgentExampleDispositionDefault        ManualAgentExampleDispositionSource = "default"
+	ManualAgentExampleDispositionTypedSafety    ManualAgentExampleDispositionSource = "typed_safety"
+	ManualAgentExampleDispositionReviewedManual ManualAgentExampleDispositionSource = "reviewed_manual"
+)
+
+// ManualAgentExampleExecutionPlan is a stable, typed report used by the
+// exhaustive real-Cobra dry-run test. Counts are derived only from committed
+// reviewed dispositions; runtime failures can never add implicit skips.
+type ManualAgentExampleExecutionPlan struct {
+	Examples                []ManualAgentExampleExecution
+	Total                   int
+	DryRun                  int
+	ContractOnly            int
+	TypedSafetyContractOnly int
+	ReviewedContractOnly    int
+	ContractOnlyByReason    map[ManualAgentExampleReasonCode]int
 }
 
 // ManualSchemaCommandHint opts one exact existing Cobra leaf into
@@ -245,6 +321,9 @@ func ValidateManualAgentHintSet(hints ManualAgentHintSet, expectedProducts, expe
 				}
 			}
 		}
+		if err := validateManualAgentExampleDispositions(canonical, hint.Examples, hint.ExampleDispositions); err != nil {
+			return err
+		}
 	}
 
 	if err := validateManualAgentHintExactSet("products", expectedProducts, mapKeysManualAgentProducts(hints.Products)); err != nil {
@@ -254,6 +333,50 @@ func ValidateManualAgentHintSet(hints ManualAgentHintSet, expectedProducts, expe
 		return err
 	}
 	return nil
+}
+
+func validateManualAgentExampleDispositions(canonical string, examples []string, dispositions []ManualAgentExampleDisposition) error {
+	seen := make(map[int]bool, len(dispositions))
+	for _, disposition := range dispositions {
+		if disposition.Index == nil {
+			return fmt.Errorf("agent_hints tool %s example disposition requires index", canonical)
+		}
+		index := *disposition.Index
+		if index < 0 || index >= len(examples) {
+			return fmt.Errorf("agent_hints tool %s example disposition index %d is out of range for %d examples", canonical, index, len(examples))
+		}
+		if seen[index] {
+			return fmt.Errorf("agent_hints tool %s has duplicate example disposition index %d", canonical, index)
+		}
+		seen[index] = true
+		if !disposition.Reviewed {
+			return fmt.Errorf("agent_hints tool %s example disposition index %d must be reviewed", canonical, index)
+		}
+		if disposition.Mode != ManualAgentExampleModeContractOnly {
+			return fmt.Errorf("agent_hints tool %s example disposition index %d has invalid mode %q; only %q overrides the default %q mode", canonical, index, disposition.Mode, ManualAgentExampleModeContractOnly, ManualAgentExampleModeDryRun)
+		}
+		if !validManualAgentExampleReasonCode(disposition.ReasonCode) {
+			return fmt.Errorf("agent_hints tool %s example disposition index %d has invalid reason_code %q", canonical, index, disposition.ReasonCode)
+		}
+		if strings.TrimSpace(disposition.Reason) == "" {
+			return fmt.Errorf("agent_hints tool %s example disposition index %d requires a non-empty reason", canonical, index)
+		}
+	}
+	return nil
+}
+
+func validManualAgentExampleReasonCode(code ManualAgentExampleReasonCode) bool {
+	switch code {
+	case ManualAgentExampleReasonInteractiveInput,
+		ManualAgentExampleReasonFileInput,
+		ManualAgentExampleReasonFileOutput,
+		ManualAgentExampleReasonStdinInput,
+		ManualAgentExampleReasonLocalState,
+		ManualAgentExampleReasonStatefulPreflight:
+		return true
+	default:
+		return false
+	}
 }
 
 func validateManualAgentHintFields(scope, summary string, useWhen, avoidWhen, examples []string, reviewed bool, revision, reason string, evidence []string, revisions map[string]ManualAgentHintRevision) error {
@@ -342,10 +465,56 @@ func mapKeysManualAgentTools(values map[string]ManualAgentToolHint) map[string]b
 	return keys
 }
 
-// ValidateManualAgentHintExamples binds every authored example to the exact
-// reviewed primary/alias path and rejects flags not accepted by the live Cobra
-// command. It validates syntax only and never executes an example.
+// ValidateManualAgentHintExamples is the pre-generation validation layer. It
+// binds every authored example to the exact reviewed primary/alias path and
+// rejects flags and required arguments not accepted by the live Cobra command.
+// Final typed constraints, safety, and exact delivery coverage are validated
+// later by BuildManualAgentExampleExecutionPlan after generated Agent metadata
+// exists. It never executes an example.
 func ValidateManualAgentHintExamples(bound BoundCommandRegistry, hints ManualAgentHintSet) error {
+	_, err := buildManualAgentExampleExecutionPlan(bound, nil, hints)
+	return err
+}
+
+// ValidateEmbeddedManualAgentExampleDelivery is the final generation gate. It
+// validates the committed Manual Agent hints against the fully assembled typed
+// SchemaRegistry, after generated Agent metadata has been compiled in. This is
+// deliberately stronger than the pre-generation path/flag validation above.
+func ValidateEmbeddedManualAgentExampleDelivery(bound BoundCommandRegistry, registry SchemaRegistry) (ManualAgentExampleExecutionPlan, error) {
+	snapshot, err := embeddedManualSchemaHints()
+	if err != nil {
+		return ManualAgentExampleExecutionPlan{}, err
+	}
+	return BuildManualAgentExampleExecutionPlan(bound, registry, snapshot.AgentHints)
+}
+
+// BuildManualAgentExampleExecutionPlan validates every example against its
+// real BoundCommand/Cobra contract. High-risk or user-confirmed operations are
+// classified automatically from the final typed SchemaRegistry; only
+// non-safety runtime preconditions may use exact reviewed manual dispositions.
+// Missing dispositions always remain dry_run, and callers must never turn a
+// runtime failure into an implicit skip.
+func BuildManualAgentExampleExecutionPlan(bound BoundCommandRegistry, registry SchemaRegistry, hints ManualAgentHintSet) (ManualAgentExampleExecutionPlan, error) {
+	tools := make(map[string]ToolSpec, len(bound.Commands))
+	for _, product := range registry.Products {
+		for _, tool := range product.Tools {
+			canonical := strings.TrimSpace(tool.Identity.CanonicalPath)
+			if canonical == "" {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("typed SchemaRegistry contains a tool with empty canonical path")
+			}
+			if _, duplicate := tools[canonical]; duplicate {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("typed SchemaRegistry contains duplicate tool %q", canonical)
+			}
+			tools[canonical] = tool
+		}
+	}
+	return buildManualAgentExampleExecutionPlan(bound, tools, hints)
+}
+
+func buildManualAgentExampleExecutionPlan(bound BoundCommandRegistry, typedTools map[string]ToolSpec, hints ManualAgentHintSet) (ManualAgentExampleExecutionPlan, error) {
+	plan := ManualAgentExampleExecutionPlan{
+		ContractOnlyByReason: map[ManualAgentExampleReasonCode]int{},
+	}
 	canonicalPaths := make([]string, 0, len(hints.Tools))
 	for canonical := range hints.Tools {
 		canonicalPaths = append(canonicalPaths, canonical)
@@ -354,7 +523,23 @@ func ValidateManualAgentHintExamples(bound BoundCommandRegistry, hints ManualAge
 	for _, canonical := range canonicalPaths {
 		spec, ok := bound.ByCanonical[canonical]
 		if !ok {
-			return fmt.Errorf("agent_hints example references unknown canonical tool %q", canonical)
+			return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints example references unknown canonical tool %q", canonical)
+		}
+		hint := hints.Tools[canonical]
+		var typedTool ToolSpec
+		if typedTools != nil {
+			var found bool
+			typedTool, found = typedTools[canonical]
+			if !found {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints example tool %q is missing from final typed SchemaRegistry", canonical)
+			}
+		}
+		if err := validateManualAgentExampleDispositions(canonical, hint.Examples, hint.ExampleDispositions); err != nil {
+			return ManualAgentExampleExecutionPlan{}, err
+		}
+		dispositions := make(map[int]ManualAgentExampleDisposition, len(hint.ExampleDispositions))
+		for _, disposition := range hint.ExampleDispositions {
+			dispositions[*disposition.Index] = disposition
 		}
 		paths := []manualAgentExamplePath{{Path: spec.PrimaryCLIPath, Argv: strings.Fields(spec.PrimaryCLIPath), Command: spec.PrimaryCommand}}
 		for _, alias := range spec.AliasCommands {
@@ -366,24 +551,85 @@ func ValidateManualAgentHintExamples(bound BoundCommandRegistry, hints ManualAge
 			}
 			return paths[i].Path < paths[j].Path
 		})
-		for _, example := range hints.Tools[canonical].Examples {
+		for index, example := range hint.Examples {
 			argv, err := tokenizeManualAgentExample(example)
 			if err != nil {
-				return fmt.Errorf("agent_hints tool %s example has invalid argv syntax: %w", canonical, err)
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example has invalid argv syntax: %w", canonical, err)
 			}
 			remainder, matched, ok := matchManualAgentExamplePath(argv, paths)
 			if !ok {
-				return fmt.Errorf("agent_hints tool %s example does not use its reviewed primary/alias path: %q", canonical, example)
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example does not use its reviewed primary/alias path: %q", canonical, example)
 			}
 			if matched.Command == nil {
-				return fmt.Errorf("agent_hints tool %s reviewed path %q has no bound Cobra command", canonical, matched.Path)
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s reviewed path %q has no bound Cobra command", canonical, matched.Path)
 			}
-			if err := validateManualAgentExampleFlags(matched.Command, remainder); err != nil {
-				return fmt.Errorf("agent_hints tool %s example for %q: %w", canonical, matched.Path, err)
+			constraints, err := strictCompatibilityConstraints(matched.Command, canonical)
+			if err != nil {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example for %q has invalid executable constraints: %w", canonical, matched.Path, err)
 			}
+			if typedTools != nil {
+				constraints.MutuallyExclusive = append(constraints.MutuallyExclusive, typedTool.Constraints.MutuallyExclusive...)
+				constraints.RequireOneOf = append(constraints.RequireOneOf, typedTool.Constraints.RequireOneOf...)
+				constraints.RequireTogether = append(constraints.RequireTogether, typedTool.Constraints.RequireTogether...)
+				constraints = normalizeRuntimeSchemaConstraints(constraints)
+			}
+			positionals, err := strictCompatibilityPositionals(matched.Command)
+			if err != nil {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example for %q has invalid executable positionals: %w", canonical, matched.Path, err)
+			}
+			if typedTools != nil {
+				positionals = mergeManualAgentExamplePositionals(positionals, typedTool.Positionals)
+			}
+			if err := validateManualAgentExampleCobraContract(matched.Command, remainder, constraints, positionals); err != nil {
+				return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example for %q: %w", canonical, matched.Path, err)
+			}
+
+			execution := ManualAgentExampleExecution{
+				CanonicalPath: canonical,
+				Index:         index,
+				Example:       example,
+				Mode:          ManualAgentExampleModeDryRun,
+				Source:        ManualAgentExampleDispositionDefault,
+			}
+			disposition, hasManualDisposition := dispositions[index]
+			confirmationRequired := typedTools != nil && manualAgentExampleNeedsTypedConfirmation(typedTool)
+			if confirmationRequired {
+				if hasManualDisposition {
+					return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example disposition index %d is redundant: final typed safety already requires confirmation", canonical, index)
+				}
+				execution.Mode = ManualAgentExampleModeContractOnly
+				execution.ReasonCode = ManualAgentExampleReasonConfirmationRequired
+				execution.Reason = "Final typed safety marks the operation high risk or requires explicit user confirmation; tests must not inject --yes."
+				execution.Source = ManualAgentExampleDispositionTypedSafety
+				plan.ContractOnly++
+				plan.TypedSafetyContractOnly++
+				plan.ContractOnlyByReason[execution.ReasonCode]++
+			} else if hasManualDisposition {
+				execution.Mode = disposition.Mode
+				execution.ReasonCode = disposition.ReasonCode
+				execution.Reason = strings.TrimSpace(disposition.Reason)
+				execution.Source = ManualAgentExampleDispositionReviewedManual
+				plan.ContractOnly++
+				plan.ReviewedContractOnly++
+				plan.ContractOnlyByReason[disposition.ReasonCode]++
+			} else {
+				plan.DryRun++
+			}
+			plan.Examples = append(plan.Examples, execution)
+			plan.Total++
 		}
 	}
-	return nil
+	for canonical := range typedTools {
+		if _, ok := hints.Tools[canonical]; !ok {
+			return ManualAgentExampleExecutionPlan{}, fmt.Errorf("final typed SchemaRegistry tool %q has no Manual Agent hint examples", canonical)
+		}
+	}
+	return plan, nil
+}
+
+func manualAgentExampleNeedsTypedConfirmation(tool ToolSpec) bool {
+	return strings.EqualFold(strings.TrimSpace(tool.Safety.Risk), "high") ||
+		strings.EqualFold(strings.TrimSpace(tool.Safety.Confirmation), "user_required")
 }
 
 type manualAgentExamplePath struct {
@@ -529,7 +775,12 @@ func manualAgentPlaceholderAt(input string, start int) (string, int, bool) {
 	return input[start : end+1], end, true
 }
 
-func validateManualAgentExampleFlags(command *cobra.Command, arguments []string) error {
+func validateManualAgentExampleCobraContract(command *cobra.Command, arguments []string, constraints RuntimeSchemaConstraints, positionalSpecs []RuntimeSchemaPositional) error {
+	if command == nil {
+		return fmt.Errorf("bound Cobra command is nil")
+	}
+	providedFacts := map[string]bool{}
+	positionals := make([]string, 0)
 	for index := 0; index < len(arguments); index++ {
 		argument := arguments[index]
 		if argument == "--" {
@@ -548,6 +799,7 @@ func validateManualAgentExampleFlags(command *cobra.Command, arguments []string)
 			if flag == nil {
 				return fmt.Errorf("uses unknown flag --%s", name)
 			}
+			providedFacts[flag.Name] = true
 			if !hasValue && flag.NoOptDefVal == "" {
 				if index+1 >= len(arguments) {
 					return fmt.Errorf("flag --%s requires a value", name)
@@ -557,6 +809,7 @@ func validateManualAgentExampleFlags(command *cobra.Command, arguments []string)
 			continue
 		}
 		if !strings.HasPrefix(argument, "-") || argument == "-" {
+			positionals = append(positionals, argument)
 			continue
 		}
 
@@ -577,6 +830,7 @@ func validateManualAgentExampleFlags(command *cobra.Command, arguments []string)
 			if flag == nil {
 				return fmt.Errorf("uses unknown shorthand flag -%s", shorthand)
 			}
+			providedFacts[flag.Name] = true
 			if flag.NoOptDefVal == "" {
 				if offset+1 < len(shorthands) || hasExplicitValue {
 					break
@@ -589,7 +843,139 @@ func validateManualAgentExampleFlags(command *cobra.Command, arguments []string)
 			}
 		}
 	}
+	missingRequired := make([]string, 0)
+	visitManualAgentCommandFlags(command, func(flag *pflag.Flag) {
+		if flag != nil && len(flag.Annotations[cobra.BashCompOneRequiredFlag]) > 0 && !providedFacts[flag.Name] {
+			missingRequired = append(missingRequired, "--"+flag.Name)
+		}
+	})
+	if len(missingRequired) != 0 {
+		sort.Strings(missingRequired)
+		return fmt.Errorf("missing required flag(s): %s", strings.Join(missingRequired, ", "))
+	}
+	missingPositionals := make([]string, 0)
+	for _, positional := range positionalSpecs {
+		provided := positional.Index >= 0 && positional.Index < len(positionals)
+		if positional.Variadic {
+			provided = positional.Index >= 0 && len(positionals) > positional.Index
+		}
+		if provided && strings.TrimSpace(positional.Name) != "" {
+			providedFacts[strings.TrimLeft(strings.TrimSpace(positional.Name), "-")] = true
+		}
+		if positional.Required && !provided {
+			missingPositionals = append(missingPositionals, strings.TrimSpace(positional.Name))
+		}
+	}
+	if len(missingPositionals) != 0 {
+		sort.Strings(missingPositionals)
+		return fmt.Errorf("missing required positional argument(s): %s", strings.Join(missingPositionals, ", "))
+	}
+	if err := validateManualAgentExampleConstraints(providedFacts, constraints); err != nil {
+		return err
+	}
+	// Runtime positional annotations are the stable Cobra contract and can
+	// express flag/positional alternatives. Do not call a closure-backed Args
+	// validator in that case: invoking it without mutating the live FlagSet
+	// would observe default captured flag values (for example pat chmod's
+	// --products alternative) and report a false missing positional. Commands
+	// without typed positional facts still use their real Cobra Args validator.
+	if command.Args != nil && len(positionalSpecs) == 0 {
+		if err := command.Args(command, positionals); err != nil {
+			return fmt.Errorf("invalid positional arguments: %w", err)
+		}
+	}
 	return nil
+}
+
+func mergeManualAgentExamplePositionals(groups ...[]RuntimeSchemaPositional) []RuntimeSchemaPositional {
+	byIdentity := map[string]RuntimeSchemaPositional{}
+	for _, group := range groups {
+		for _, positional := range group {
+			key := fmt.Sprintf("%d\x00%s", positional.Index, strings.TrimSpace(positional.Name))
+			if _, exists := byIdentity[key]; !exists {
+				byIdentity[key] = positional
+			}
+		}
+	}
+	result := make([]RuntimeSchemaPositional, 0, len(byIdentity))
+	for _, positional := range byIdentity {
+		result = append(result, positional)
+	}
+	sort.Slice(result, func(i, j int) bool {
+		if result[i].Index != result[j].Index {
+			return result[i].Index < result[j].Index
+		}
+		return result[i].Name < result[j].Name
+	})
+	return result
+}
+
+func validateManualAgentExampleConstraints(provided map[string]bool, constraints RuntimeSchemaConstraints) error {
+	for _, group := range constraints.RequireOneOf {
+		if !manualAgentExampleAnyFlagProvided(provided, group) {
+			return fmt.Errorf("missing require_one_of flags: %s", manualAgentExampleFlagGroup(group))
+		}
+	}
+	for _, group := range constraints.RequireTogether {
+		providedCount := manualAgentExampleProvidedFlagCount(provided, group)
+		if providedCount != 0 && providedCount != len(group) {
+			return fmt.Errorf("incomplete require_together flags: %s", manualAgentExampleFlagGroup(group))
+		}
+	}
+	for _, group := range constraints.MutuallyExclusive {
+		if manualAgentExampleProvidedFlagCount(provided, group) > 1 {
+			return fmt.Errorf("mutually_exclusive flags used together: %s", manualAgentExampleFlagGroup(group))
+		}
+	}
+	return nil
+}
+
+func manualAgentExampleAnyFlagProvided(provided map[string]bool, group []string) bool {
+	return manualAgentExampleProvidedFlagCount(provided, group) > 0
+}
+
+func manualAgentExampleProvidedFlagCount(provided map[string]bool, group []string) int {
+	count := 0
+	seen := map[string]bool{}
+	for _, raw := range group {
+		name := strings.TrimLeft(strings.TrimSpace(raw), "-")
+		if name != "" && !seen[name] && provided[name] {
+			seen[name] = true
+			count++
+		}
+	}
+	return count
+}
+
+func manualAgentExampleFlagGroup(group []string) string {
+	flags := make([]string, 0, len(group))
+	for _, raw := range group {
+		if name := strings.TrimLeft(strings.TrimSpace(raw), "-"); name != "" {
+			flags = append(flags, "--"+name)
+		}
+	}
+	sort.Strings(flags)
+	return strings.Join(flags, ", ")
+}
+
+func visitManualAgentCommandFlags(command *cobra.Command, visit func(*pflag.Flag)) {
+	seen := map[string]bool{}
+	visitSet := func(flags *pflag.FlagSet) {
+		if flags == nil {
+			return
+		}
+		flags.VisitAll(func(flag *pflag.Flag) {
+			if flag == nil || seen[flag.Name] {
+				return
+			}
+			seen[flag.Name] = true
+			visit(flag)
+		})
+	}
+	visitSet(command.Flags())
+	for current := command; current != nil; current = current.Parent() {
+		visitSet(current.PersistentFlags())
+	}
 }
 
 func runtimeCommandFlagByShorthand(command *cobra.Command, shorthand string) *pflag.Flag {

@@ -96,8 +96,16 @@ func generateSchemaCatalog(root *cobra.Command, surfacePath, outputPath string) 
 	if err != nil {
 		return fmt.Errorf("build effective CommandRegistry: %w", err)
 	}
-	if _, err := cli.BindEffectiveCommandRegistry(root, effective); err != nil {
+	bound, err := cli.BindEffectiveCommandRegistry(root, effective)
+	if err != nil {
 		return fmt.Errorf("bind effective CommandRegistry: %w", err)
+	}
+	registry, err := cli.AssembleSchemaRegistryFromBound(bound)
+	if err != nil {
+		return fmt.Errorf("assemble final typed SchemaRegistry: %w", err)
+	}
+	if _, err := cli.ValidateEmbeddedManualAgentExampleDelivery(bound, registry); err != nil {
+		return fmt.Errorf("validate final Manual Agent example delivery: %w", err)
 	}
 	if err := cli.ValidateEmbeddedRuntimeSchemaCompleteness(root); err != nil {
 		return fmt.Errorf("validate reverse command-tree completeness: %w", err)

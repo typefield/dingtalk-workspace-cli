@@ -24998,7 +24998,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update aggregate --view-id VIEW_ID --field-id fldX --action SUM"
+        "dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -25089,7 +25089,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update aggregate --view-id VIEW_ID --field-id fldX --action SUM"
+            "dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -25098,7 +25098,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update aggregate --view-id VIEW_ID --field-id fldX --action SUM"
+                "dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -25258,7 +25258,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update card --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
+        "dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -25349,7 +25349,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update card --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
+            "dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -25358,7 +25358,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update card --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
+                "dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -25518,7 +25518,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update field-widths --view-id VIEW_ID --field-id fldX --width 200"
+        "dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -25609,7 +25609,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update field-widths --view-id VIEW_ID --field-id fldX --width 200"
+            "dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -25618,7 +25618,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update field-widths --view-id VIEW_ID --field-id fldX --width 200"
+                "dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -25778,7 +25778,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update fill-color-rule --view-id VIEW_ID --json '[]'"
+        "dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[]'"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -25869,7 +25869,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update fill-color-rule --view-id VIEW_ID --json '[]'"
+            "dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[]'"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -25878,7 +25878,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update fill-color-rule --view-id VIEW_ID --json '[]'"
+                "dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[]'"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -26030,7 +26030,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
+        "dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -26121,7 +26121,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
+            "dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -26130,7 +26130,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
+                "dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -26290,7 +26290,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update frozen-cols --view-id VIEW_ID --count 1"
+        "dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -26381,7 +26381,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update frozen-cols --view-id VIEW_ID --count 1"
+            "dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -26390,7 +26390,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update frozen-cols --view-id VIEW_ID --count 1"
+                "dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -26542,7 +26542,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update group --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+        "dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -26633,7 +26633,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update group --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+            "dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -26642,7 +26642,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update group --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+                "dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -26802,7 +26802,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update name --view-id VIEW_ID --name \"新视图名\""
+        "dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name \"新视图名\""
       ],
       "field_provenance": {
         "agent_summary": {
@@ -26893,7 +26893,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update name --view-id VIEW_ID --name \"新视图名\""
+            "dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name \"新视图名\""
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -26902,7 +26902,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update name --view-id VIEW_ID --name \"新视图名\""
+                "dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name \"新视图名\""
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -27062,7 +27062,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update row-height --view-id VIEW_ID --cell-height 32"
+        "dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 32"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -27153,7 +27153,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update row-height --view-id VIEW_ID --cell-height 32"
+            "dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 32"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -27162,7 +27162,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update row-height --view-id VIEW_ID --cell-height 32"
+                "dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 32"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -27314,7 +27314,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update sort --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+        "dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -27405,7 +27405,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update sort --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+            "dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -27414,7 +27414,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update sort --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+                "dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -27574,7 +27574,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update timebar --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
+        "dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -27665,7 +27665,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update timebar --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
+            "dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -27674,7 +27674,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update timebar --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
+                "dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",
@@ -27834,7 +27834,7 @@
       "effect": "write",
       "effect_source": "command-verb",
       "examples": [
-        "dws aitable view update visible-fields --view-id VIEW_ID --field-ids fld1,fld2,fld3"
+        "dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3"
       ],
       "field_provenance": {
         "agent_summary": {
@@ -27925,7 +27925,7 @@
         },
         "examples": {
           "value": [
-            "dws aitable view update visible-fields --view-id VIEW_ID --field-ids fld1,fld2,fld3"
+            "dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3"
           ],
           "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
           "precedence": "reviewed_manual",
@@ -27934,7 +27934,7 @@
           "candidates": [
             {
               "value": [
-                "dws aitable view update visible-fields --view-id VIEW_ID --field-ids fld1,fld2,fld3"
+                "dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3"
               ],
               "source": "internal/cli/schema_manual_hints.json#agent_hints@ai-agent-contract-2026-07-13-v1",
               "precedence": "reviewed_manual",

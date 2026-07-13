@@ -358,6 +358,50 @@ func TestCalendarAttendeeDeleteSchemaRequiresUserConfirmation(t *testing.T) {
 	}
 }
 
+func TestPromptingWritesRequireUserConfirmation(t *testing.T) {
+	wantEffects := map[string]string{
+		"attendance.class_create": "write",
+		"attendance.class_update": "write",
+		"doc.version_revert":      "destructive",
+		"drive.publish_set":       "write",
+		"drive.publish_unset":     "write",
+		"sheet.chart_delete":      "write",
+	}
+	wantSources := map[string]string{
+		"attendance.class_create": "skills/mono/schema-hints/zz-attendance-review.json",
+		"attendance.class_update": "skills/mono/schema-hints/zz-attendance-review.json",
+		"doc.version_revert":      "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+		"drive.publish_set":       "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+		"drive.publish_unset":     "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+		"sheet.chart_delete":      "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+	}
+	canonicals := make([]string, 0, len(wantEffects))
+	for canonical := range wantEffects {
+		canonicals = append(canonicals, canonical)
+	}
+	sort.Strings(canonicals)
+	snapshot := schemaContractPayloadForBoundCanonicals(t, NewRootCommand(), canonicals...)
+	for _, canonical := range canonicals {
+		tool := snapshot.Tools[canonical]
+		if got := tool["effect"]; got != wantEffects[canonical] {
+			t.Errorf("%s effect = %#v, want %s", canonical, got, wantEffects[canonical])
+		}
+		if got := tool["risk"]; got != "high" {
+			t.Errorf("%s risk = %#v, want high", canonical, got)
+		}
+		if got := tool["confirmation"]; got != "user_required" {
+			t.Errorf("%s confirmation = %#v, want user_required", canonical, got)
+		}
+		provenance, _ := tool["field_provenance"].(map[string]any)
+		for _, field := range []string{"effect", "risk", "confirmation"} {
+			selected, _ := provenance[field].(map[string]any)
+			if got := selected["source"]; got != wantSources[canonical] {
+				t.Errorf("%s %s provenance source = %#v, want %s", canonical, field, got, wantSources[canonical])
+			}
+		}
+	}
+}
+
 func TestDefaultedPaginationSchemaFlagsAreOptional(t *testing.T) {
 	wants := map[string][]string{
 		"chat.search_messages_by_time_range": {"limit"},
