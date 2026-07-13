@@ -364,3 +364,68 @@ func TestReleaseWorkflowUploadsPostProcessedDarwinAssets(t *testing.T) {
 		}
 	}
 }
+
+func TestReleaseWorkflowConfiguresDeveloperIDSigning(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	prepare := strings.Index(workflow, "Prepare Apple Developer ID certificate")
+	postProcess := strings.Index(workflow, "./scripts/release/post-goreleaser.sh")
+	cleanup := strings.Index(workflow, "Remove Apple Developer ID certificate")
+	if prepare == -1 || postProcess == -1 || cleanup == -1 || prepare > postProcess || cleanup < postProcess {
+		t.Fatalf("Developer ID material must be prepared before and removed after post-processing")
+	}
+
+	for _, required := range []string{
+		`RCS_VERSION="0.29.0"`,
+		"secrets.APPLE_CERTIFICATE_P12_BASE64",
+		"secrets.APPLE_CERTIFICATE_PASSWORD",
+		"base64 --decode",
+		"openssl pkcs12 -legacy",
+		"DWS_APPLE_CERTIFICATE_P12",
+		"DWS_APPLE_CERTIFICATE_PASSWORD_FILE",
+		"DWS_REQUIRE_DEVELOPER_ID_SIGNING",
+		`GITHUB_REPOSITORY_OWNER" = "DingTalk-Real-AI`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("release workflow is missing Developer ID configuration %q", required)
+		}
+	}
+}
+
+func TestPostGoreleaserSupportsDeveloperIDSigning(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	script := string(data)
+
+	for _, required := range []string{
+		`APPLE_CERTIFICATE_P12="${DWS_APPLE_CERTIFICATE_P12:-}"`,
+		`APPLE_CERTIFICATE_PASSWORD_FILE="${DWS_APPLE_CERTIFICATE_PASSWORD_FILE:-}"`,
+		`REQUIRE_DEVELOPER_ID_SIGNING="${DWS_REQUIRE_DEVELOPER_ID_SIGNING:-false}"`,
+		`--p12-file "$APPLE_CERTIFICATE_P12"`,
+		`--p12-password-file "$APPLE_CERTIFICATE_PASSWORD_FILE"`,
+		"--for-notarization",
+		`rcodesign verify "$bin"`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Errorf("post-goreleaser.sh is missing Developer ID signing behavior %q", required)
+		}
+	}
+}

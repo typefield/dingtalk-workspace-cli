@@ -40,10 +40,10 @@ jobs:
       - name: Multi Profile E2E
         run: bash scripts/dev/test-multi-profile-e2e.sh
 
-      - name: Install rcodesign (ad-hoc sign darwin binaries from Linux)
+      - name: Install rcodesign (sign darwin binaries from Linux)
         run: |
           set -eu
-          RCS_VERSION="0.27.0"
+          RCS_VERSION="0.29.0"
           curl -fsSL -o /tmp/rcodesign.tar.gz \
             "https://github.com/indygreg/apple-platform-rs/releases/download/apple-codesign%2F${RCS_VERSION}/apple-codesign-${RCS_VERSION}-x86_64-unknown-linux-musl.tar.gz"
           mkdir -p /tmp/rcodesign
@@ -59,10 +59,47 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 
+      - name: Prepare Apple Developer ID certificate
+        env:
+          APPLE_CERTIFICATE_P12_BASE64: ${{ secrets.APPLE_CERTIFICATE_P12_BASE64 }}
+          APPLE_CERTIFICATE_PASSWORD: ${{ secrets.APPLE_CERTIFICATE_PASSWORD }}
+        run: |
+          set -euo pipefail
+
+          if [ -z "${APPLE_CERTIFICATE_P12_BASE64:-}" ] || [ -z "${APPLE_CERTIFICATE_PASSWORD:-}" ]; then
+            if [ "$GITHUB_REPOSITORY_OWNER" = "DingTalk-Real-AI" ]; then
+              echo "APPLE_CERTIFICATE_P12_BASE64 and APPLE_CERTIFICATE_PASSWORD are required for official releases" >&2
+              exit 1
+            fi
+            echo "Developer ID secrets are unavailable; fork release will use ad-hoc signing."
+            exit 0
+          fi
+
+          umask 077
+          certificate_path="$RUNNER_TEMP/dws-developer-id.p12"
+          password_path="$RUNNER_TEMP/dws-developer-id-password"
+          printf '%s' "$APPLE_CERTIFICATE_P12_BASE64" | base64 --decode > "$certificate_path"
+          printf '%s' "$APPLE_CERTIFICATE_PASSWORD" > "$password_path"
+
+          # Fail before packaging if the secret is corrupt or the password is wrong.
+          # The exported P12 may use legacy PKCS#12 ciphers; OpenSSL 3 requires
+          # -legacy to validate those containers even though rcodesign can read them.
+          openssl pkcs12 -legacy -in "$certificate_path" -passin "file:$password_path" -noout
+
+          echo "DWS_APPLE_CERTIFICATE_P12=$certificate_path" >> "$GITHUB_ENV"
+          echo "DWS_APPLE_CERTIFICATE_PASSWORD_FILE=$password_path" >> "$GITHUB_ENV"
+
       - name: Post-release packaging
         run: ./scripts/release/post-goreleaser.sh
         env:
           DWS_PACKAGE_VERSION: ${{ github.ref_name }}
+          DWS_REQUIRE_DEVELOPER_ID_SIGNING: ${{ github.repository_owner == 'DingTalk-Real-AI' }}
+
+      - name: Remove Apple Developer ID certificate
+        if: ${{ always() }}
+        run: |
+          rm -f "$RUNNER_TEMP/dws-developer-id.p12"
+          rm -f "$RUNNER_TEMP/dws-developer-id-password"
 
       # GoReleaser publishes the original archives before post-goreleaser.sh
       # replaces the Darwin binaries with their rcodesign output. Re-upload all
