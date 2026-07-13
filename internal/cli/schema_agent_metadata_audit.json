@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_hash": "sha256:d5e50061b16dcfc6dcd29605fab69484ff045ef75f54220bfd5a0fa5a75b0a29",
+  "source_hash": "sha256:5e7e7d9d492b1cc83c1c17e28a38bad3a5a701b9a51ed0f31adc6f88a29740f8",
   "surface_hash": "sha256:be28fa5be59b27f5cd141a64487710f29e2e7361b1555a3a64818942e4327d37",
   "source_files": 105,
   "hint_files": 16,
@@ -259,7 +259,7 @@
     {
       "tool_path": "calendar participant delete",
       "source": "skills/mono/SKILL.md",
-      "line": 97,
+      "line": 99,
       "candidates": [
         "calendar attendee delete",
         "calendar event delete",

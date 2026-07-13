@@ -307,7 +307,11 @@ func effectiveCompatibilityFlagContracts(command *cobra.Command, canonicalPath s
 	// not guaranteed to have been merged into Flags() yet.
 	command.InheritedFlags()
 	visit := func(flag *pflag.Flag) {
-		if flag == nil {
+		// Cobra materializes --help lazily on only the command being executed.
+		// It is framework scaffolding, not part of a leaf's executable/Schema
+		// parameter contract, and must not make compatibility equivalence depend
+		// on which alias happened to run before binding.
+		if flag == nil || flag.Name == "help" {
 			return
 		}
 		flagType := ""
@@ -348,6 +352,17 @@ func effectiveCompatibilityFlagContracts(command *cobra.Command, canonicalPath s
 // binding order-independent while still exposing path-specific drift.
 func effectiveCompatibilityFlagAnnotations(flag *pflag.Flag, bindings map[string]string, metadata RuntimeSchemaParameterMetadata) map[string][]string {
 	annotations := cloneCompatibilityFlagAnnotations(flag.Annotations)
+	// Reviewed Manual Schema hints are canonical ToolSpec projection inputs,
+	// not executable facts owned by each Cobra path. They are intentionally
+	// attached to and resolved from the primary command once; a compatibility
+	// leaf remains a navigation view of that same ToolSpec. Keep every other
+	// native/typed annotation in the equivalence check so real command drift
+	// still fails closed.
+	delete(annotations, runtimeSchemaManualParameterAnnotation)
+	delete(annotations, runtimeSchemaManualReasonAnnotation)
+	if len(annotations) == 0 {
+		annotations = nil
+	}
 	set := func(key, value string) {
 		if value = strings.TrimSpace(value); value != "" {
 			if annotations == nil {

@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -137,14 +137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -233,11 +233,11 @@
       "source_refs": [
         "Cobra help: dws aisearch behavior --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise_behavior",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/aisearch.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/aisearch.md"
       ],
       "use_when": [
         "用户明确询问某人发送、接收、创建、分享或编辑过什么时。"
@@ -275,14 +275,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -379,14 +379,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -475,11 +475,11 @@
       "source_refs": [
         "Cobra help: dws aisearch enterprise --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.search_enterprise",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/aisearch.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/aisearch.md"
       ],
       "use_when": [
         "需要按关键词、内容类型或时间范围检索企业内部知识时。"
@@ -517,14 +517,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -621,14 +621,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -717,12 +717,12 @@
       "source_refs": [
         "Cobra help: dws aisearch person --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.aisearch.enterprise_person_search",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/aisearch.md",
-        "skills/mono/references/products/mail.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/mail.md"
       ],
       "use_when": [
         "需要按姓名、部门、职位等维度搜索企业内人员时。"

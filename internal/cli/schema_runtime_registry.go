@@ -114,6 +114,10 @@ func runtimeToolSpec(entry runtimeSchemaEntry) (ToolSpec, error) {
 
 func runtimeToolSpecFromMetadata(entry runtimeSchemaEntry, metadata runtimeSchemaMetadataSources) (ToolSpec, error) {
 	canonicalPath := entry.ProductID + "." + entry.ToolName
+	dryRun, err := reviewedDryRunCapability(canonicalPath)
+	if err != nil {
+		return ToolSpec{}, fmt.Errorf("resolve reviewed dry-run capability for %s: %w", canonicalPath, err)
+	}
 	hint := runtimeSchemaHintForEntry(entry)
 	embeddedMeta, hasEmbeddedMeta := embeddedMCPMetadataForEntryFrom(entry, metadata.Agent, metadata.MCP)
 	title, description, metadataSource, textProvenance, err := runtimeToolTextMetadataFromMetadata(entry, metadata)
@@ -139,6 +143,16 @@ func runtimeToolSpecFromMetadata(entry runtimeSchemaEntry, metadata runtimeSchem
 		provenance[field] = fieldProvenance
 	}
 	provenance["canonical_path"] = entry.IdentityField
+	if dryRun != nil {
+		provenance["dry_run"] = resolvedFieldProvenance(
+			*dryRun,
+			"reviewed_dry_run_registry",
+			"internal/cli/schema_dry_run_capabilities.go",
+			"reviewed_explicit",
+			"exact_canonical_lookup",
+			"reviewed positive dry-run capability",
+		)
+	}
 
 	sourceProductID := strings.TrimSpace(entry.SourceProductID)
 	if sourceProductID == entry.ProductID {
@@ -166,6 +180,7 @@ func runtimeToolSpecFromMetadata(entry runtimeSchemaEntry, metadata runtimeSchem
 		Parameters:      parameters,
 		Constraints:     constraints,
 		Positionals:     runtimeCommandPositionals(entry.Command),
+		DryRun:          dryRun,
 		Safety:          safety,
 		Interface:       interfaceSpec,
 		Selection:       selection,
@@ -401,6 +416,9 @@ func validateFinalSchemaProvenanceCoverage(registry SchemaRegistry) error {
 			}
 			for _, field := range requiredToolProvenanceFields {
 				require("tool "+canonical, field, tool.FieldProvenance)
+			}
+			if tool.DryRun != nil {
+				require("tool "+canonical, "dry_run", tool.FieldProvenance)
 			}
 			// interface_reason is part of the final interface contract only when
 			// the disposition requires or actually delivers a reason. An MCP or

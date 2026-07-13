@@ -180,14 +180,10 @@
         },
         "reason_code": {
           "enum": [
-            "interactive_input",
-            "file_input",
-            "file_output",
-            "stdin_input",
             "local_state",
             "stateful_preflight"
           ],
-          "description": "Narrow manual exception taxonomy. confirmation_required is derived automatically from final typed high-risk/user-confirmed safety and cannot be authored here; runtime errors, MCP resolution errors, and missing required arguments are never valid exceptions."
+          "description": "Narrow manual exception taxonomy for genuinely unavoidable local-state or stateful-preflight requirements. High-risk/user-confirmed operations still require fail-closed runtime dry-run without --yes; runtime errors, MCP resolution errors, and missing required arguments are never valid exceptions."
         },
         "reason": {
           "type": "string",

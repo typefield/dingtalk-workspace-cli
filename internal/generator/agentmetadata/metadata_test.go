@@ -297,7 +297,7 @@ func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
 	writeFixture(t, root, "skills/mono/SKILL.md", "# DWS\n## 意图判断决策树\n用户提到\"日程\" → `calendar`\n")
 	writeFixture(t, root, "skills/mono/references/intent-guide.md", "# Intent guide\n")
 	writeFixture(t, root, "skills/mono/references/products/calendar.md", "# Calendar\n")
-	writeFixture(t, root, "skills/mono/schema-hints/imported/wukong.json", `{
+	writeFixture(t, root, "internal/cli/schema_hints/imported/wukong.json", `{
   "version": 1,
   "source": {"kind": "imported", "name": "dws-wukong", "revision": "1234567890abcdef"},
   "products": {
@@ -312,7 +312,7 @@ func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
     }
   }
 }`)
-	writeFixture(t, root, "skills/mono/schema-hints/calendar.json", `{
+	writeFixture(t, root, "internal/cli/schema_hints/calendar.json", `{
   "version": 1,
   "source": {"kind": "explicit", "name": "schema-review"},
   "tools": {
@@ -339,7 +339,7 @@ func TestGenerateMergesVersionedHintsByCanonicalPath(t *testing.T) {
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
 		IntentGuidePath: "skills/mono/references/intent-guide.md",
-		HintsDir:        "skills/mono/schema-hints",
+		HintsDir:        "internal/cli/schema_hints",
 		ToolPaths: map[string]string{
 			"calendar.get_calendar_detail": "calendar event get",
 			"calendar event get":           "calendar event get",
@@ -413,7 +413,7 @@ func TestGenerateAppliesReviewedSkillReferenceDispositions(t *testing.T) {
 	writeFixture(t, root, "skills/mono/references/products/sheet.md", "# Sheet\n"+
 		"dws sheet range old --node NODE\n"+
 		"dws sheet range removed --node NODE\n")
-	writeFixture(t, root, "skills/mono/schema-hints/reference-review.json", `{
+	writeFixture(t, root, "internal/cli/schema_hints/reference-review.json", `{
   "version": 1,
   "source": {"kind": "explicit", "name": "reference-review"},
   "reference_review": {
@@ -427,7 +427,7 @@ func TestGenerateAppliesReviewedSkillReferenceDispositions(t *testing.T) {
 		SkillPath:       "skills/mono/SKILL.md",
 		ProductsDir:     "skills/mono/references/products",
 		IntentGuidePath: "skills/mono/references/intent-guide.md",
-		HintsDir:        "skills/mono/schema-hints",
+		HintsDir:        "internal/cli/schema_hints",
 		ToolPaths: map[string]string{
 			"sheet.range_read": "sheet range read",
 			"sheet range read": "sheet range read",

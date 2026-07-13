@@ -119,7 +119,7 @@ When adding or changing an Agent-visible command, review all relevant inputs:
 - `internal/cli/schema_manual_hints.schema.json` is the machine-readable
   editing contract for Manual Schema hints; read it before changing the JSON.
 - Flag-to-interface property mappings and required/default semantics.
-- `skills/mono/schema-hints/` for selection, interface, and safety metadata.
+- `internal/cli/schema_hints/` for selection, interface, and safety metadata.
 - Generated files under `internal/cli/schema_agent_metadata/` and
   `internal/cli/schema_catalog.json` after running generation.
 

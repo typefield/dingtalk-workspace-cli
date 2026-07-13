@@ -30,7 +30,7 @@ schema_command_registry.json           (reviewed CommandRegistry source)
                          |
                          +----------------------+
                                                 |
-Skills/Markdown + schema-hints/*.json            |
+skills/mono Markdown + internal/cli/schema_hints/*.json |
   + schema_mcp_metadata.json                     |
                          |                       |
                          v                       |
@@ -127,7 +127,7 @@ DWS 当前对外仍保留兼容 wire：leaf 使用 flat `parameters`，安全和
 | typed parameter metadata / constraints | `required_when`、one-of、互斥、联动、格式、枚举、位置参数 | 命令 identity |
 | `schema_parameter_bindings.json` | 稳定 CLI flag 到 RPC property 的映射 | 命令发现、risk 推断 |
 | `schema_mcp_metadata.json` | pinned RPC identity、接口描述和脱敏参数事实 | CLI identity、运行时路由、risk 推断 |
-| `schema-hints/*.json` | reviewed selection、effect、risk、confirmation、idempotency、examples、interface disposition | 创建 Cobra 命令或参数 |
+| `internal/cli/schema_hints/*.json` | reviewed selection、effect、risk、confirmation、idempotency、examples、interface disposition | 创建 Cobra 命令或参数 |
 | Skills/Markdown | 产品路由、工作流和使用建议 | 命令存在性和 flag 事实 |
 | `schema_catalog.json` 及其他 generated JSON | resolved registry 的兼容发布序列化；运行时由 production loader 解回 typed registry/index | generation/source resolution 输入、identity fallback、手工修复源 |
 

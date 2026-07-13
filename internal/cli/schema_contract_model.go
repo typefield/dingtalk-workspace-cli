@@ -78,11 +78,42 @@ type ToolSpec struct {
 	Parameters      []ParameterSpec
 	Constraints     RuntimeSchemaConstraints
 	Positionals     []RuntimeSchemaPositional
+	DryRun          *DryRunSpec
 	Safety          SafetySpec
 	Interface       InterfaceSpec
 	Selection       SelectionSpec
 	FieldProvenance map[string]FieldProvenance
 	Extensions      map[string]json.RawMessage
+}
+
+// DryRunSpec is a positive capability declaration. A nil ToolSpec.DryRun
+// means the command has not declared reviewed --dry-run support; the Schema
+// does not publish a negative or inferred capability in that case.
+//
+// The whole object is one atomic contract field. Runtime execution remains
+// owned by the command runner; Schema only projects the reviewed capability.
+type DryRunSpec struct {
+	PreviewKind string `json:"preview_kind"`
+	RemoteReads bool   `json:"remote_reads,omitempty"`
+}
+
+const (
+	DryRunPreviewInvocation = "invocation"
+	DryRunPreviewRequest    = "request"
+	DryRunPreviewPlan       = "plan"
+	DryRunPreviewDiff       = "diff"
+)
+
+func (d DryRunSpec) Validate(canonical string) error {
+	canonical = defaultString(strings.TrimSpace(canonical), "<unknown>")
+	switch strings.TrimSpace(d.PreviewKind) {
+	case DryRunPreviewInvocation, DryRunPreviewRequest, DryRunPreviewPlan, DryRunPreviewDiff:
+		return nil
+	case "":
+		return fmt.Errorf("Schema tool %s dry_run has no preview_kind", canonical)
+	default:
+		return fmt.Errorf("Schema tool %s dry_run has unknown preview_kind %q", canonical, d.PreviewKind)
+	}
 }
 
 // ParameterSpec is one resolved CLI flag projection. Name is the CLI flag key
@@ -302,6 +333,7 @@ type RuntimeToolSpecInput struct {
 	Parameters      []ParameterSpec
 	Constraints     RuntimeSchemaConstraints
 	Positionals     []RuntimeSchemaPositional
+	DryRun          *DryRunSpec
 	Safety          SafetySpec
 	Interface       InterfaceSpec
 	Selection       SelectionSpec
@@ -372,6 +404,7 @@ func toolSpecFromResolvedInput(input RuntimeToolSpecInput) (ToolSpec, error) {
 		Parameters:      input.Parameters,
 		Constraints:     input.Constraints,
 		Positionals:     input.Positionals,
+		DryRun:          input.DryRun,
 		Safety:          input.Safety,
 		Interface:       input.Interface,
 		Selection:       input.Selection,
@@ -394,6 +427,8 @@ func (t ToolSpec) provenanceValue(field string) (any, bool) {
 		return t.Description, true
 	case "metadata_source":
 		return t.MetadataSource, true
+	case "dry_run":
+		return t.DryRun, true
 	case "effect":
 		return t.Safety.Effect, true
 	case "effect_source":
@@ -699,6 +734,11 @@ func (t ToolSpec) Validate() error {
 			return fmt.Errorf("tool %s has incomplete interface_ref", id.CanonicalPath)
 		}
 	}
+	if t.DryRun != nil {
+		if err := t.DryRun.Validate(id.CanonicalPath); err != nil {
+			return err
+		}
+	}
 	if t.Interface.Mode != "" || t.Interface.Availability != "" || t.Interface.Reason != "" || t.Interface.Ref != nil {
 		if err := t.Interface.Validate(id.CanonicalPath); err != nil {
 			return err
@@ -876,6 +916,11 @@ func (t ToolSpec) normalized() ToolSpec {
 		return out.Parameters[i].Name < out.Parameters[j].Name
 	})
 	out.Constraints = normalizeRuntimeSchemaConstraints(t.Constraints)
+	if t.DryRun != nil {
+		dryRun := *t.DryRun
+		dryRun.PreviewKind = strings.TrimSpace(dryRun.PreviewKind)
+		out.DryRun = &dryRun
+	}
 	out.Positionals = append([]RuntimeSchemaPositional(nil), t.Positionals...)
 	sort.Slice(out.Positionals, func(i, j int) bool {
 		if out.Positionals[i].Index != out.Positionals[j].Index {
@@ -1167,6 +1212,13 @@ func (t ToolSpec) ToPayload() (map[string]any, error) {
 			return nil, valueErr
 		}
 		payload["positionals"] = value
+	}
+	if t.DryRun != nil {
+		value, valueErr := typedJSONValue(t.DryRun)
+		if valueErr != nil {
+			return nil, valueErr
+		}
+		payload["dry_run"] = value
 	}
 	applySafetyPayload(payload, t.Safety)
 	applyInterfacePayload(payload, t.Interface)

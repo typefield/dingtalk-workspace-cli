@@ -98,7 +98,7 @@ func TestFinalizeUnavailableDispositionClearsRefAndRecordsNoneWinner(t *testing.
 func TestGenerateRejectsLegacyUnavailableModeWithMigrationError(t *testing.T) {
 	root := t.TempDir()
 	writePrecedenceFixture(t, root, "calendar event get")
-	writeFixture(t, root, "skills/mono/schema-hints/legacy.json", hintFixture("explicit", "legacy-interface", "calendar event get", `{
+	writeFixture(t, root, "internal/cli/schema_hints/legacy.json", hintFixture("explicit", "legacy-interface", "calendar event get", `{
       "interface_mode": "unavailable",
       "availability": "unavailable",
       "interface_reason": "legacy fixture"

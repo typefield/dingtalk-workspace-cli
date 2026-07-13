@@ -1294,15 +1294,6 @@
         "examples": [
           "dws aitable form get --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the existing remote Base, Table, and form View metadata required by this command.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2103,15 +2094,6 @@
         "examples": [
           "dws aitable view get aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current aggregate configuration.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2131,15 +2113,6 @@
         ],
         "examples": [
           "dws aitable view get card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View type and current card configuration.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2161,15 +2134,6 @@
         "examples": [
           "dws aitable view get field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current field-width configuration.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2190,15 +2154,6 @@
         "examples": [
           "dws aitable view get fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current conditional fill-color rules.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2218,15 +2173,6 @@
         ],
         "examples": [
           "dws aitable view get filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current filter configuration.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2267,15 +2213,6 @@
         ],
         "examples": [
           "dws aitable view get group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current group configuration.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2337,15 +2274,6 @@
         "examples": [
           "dws aitable view get sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current sort configuration.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2366,15 +2294,6 @@
         "examples": [
           "dws aitable view get timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote Gantt View's current timebar configuration.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2394,15 +2313,6 @@
         ],
         "examples": [
           "dws aitable view get visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot read the remote View's current visible fields and column order.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2464,15 +2374,6 @@
         "examples": [
           "dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup of the remote View type; the isolated environment has neither state.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2493,15 +2394,6 @@
         "examples": [
           "dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup to distinguish a remote Kanban from Gallery View.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -2521,15 +2413,6 @@
         ],
         "examples": [
           "dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup that validates the remote View type.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -2690,15 +2573,6 @@
         ],
         "examples": [
           "dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Before its dry-run branch, this command requires tenant login and a get_views lookup confirming that the remote View is Gantt.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 AITable 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -3878,15 +3752,6 @@
         "examples": [
           "dws calendar room search --room-name 永澄亭"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot query the organization's remote meeting-room inventory and availability state.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -3906,15 +3771,6 @@
         ],
         "examples": [
           "dws calendar busy search --users userId1,userId2 --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\""
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot query remote calendar busy-time state for the requested users.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。",
         "reviewed": true,
@@ -4163,15 +4019,6 @@
         ],
         "examples": [
           "dws chat group create --name \"项目冲刺群\" --users userId1,userId2"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Before dry-run output, group creation resolves the authenticated current user and remote member identities, which are absent in the isolated environment.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -4887,15 +4734,6 @@
         "examples": [
           "dws chat message reply --conversation-id <openConversationId> --ref-msg-id <openMessageId> --ref-sender <openDingTalkId> --text \"收到\""
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login or remote conversation and referenced-message state required to prepare this reply.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -5500,7 +5338,7 @@
           "CommandRegistry:canonical_path=contact.get_authorized_emp_rosterInfo",
           "cobra-help:dws contact user profile get",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_authorized_emp_rosterInfo"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_authorized_emp_rosterInfo"
         ],
         "examples": [
           "dws contact user profile get --staff-id STAFF_ID --format json",
@@ -5522,8 +5360,8 @@
           "CommandRegistry:canonical_path=contact.get_current_user_profile",
           "cobra-help:dws contact user get-self",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_current_user_profile",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.get_current_user_profile"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_current_user_profile",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.get_current_user_profile"
         ],
         "examples": [
           "dws contact user get-self --format json"
@@ -5544,7 +5382,7 @@
           "CommandRegistry:canonical_path=contact.get_dept_info_by_dept_id",
           "cobra-help:dws contact dept get-info",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_dept_info_by_dept_id"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_dept_info_by_dept_id"
         ],
         "examples": [
           "dws contact dept get-info --dept 12345 --format json"
@@ -5565,8 +5403,8 @@
           "CommandRegistry:canonical_path=contact.get_dept_members_by_deptId",
           "cobra-help:dws contact dept list-members",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_dept_members_by_deptId",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.get_dept_members_by_deptId"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_dept_members_by_deptId",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.get_dept_members_by_deptId"
         ],
         "examples": [
           "dws contact dept list-members --depts 12345,67890 --format json"
@@ -5587,7 +5425,7 @@
           "CommandRegistry:canonical_path=contact.get_sub_depts_by_dept_id",
           "cobra-help:dws contact dept list-children",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_sub_depts_by_dept_id"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_sub_depts_by_dept_id"
         ],
         "examples": [
           "dws contact dept list-children --dept 12345 --format json"
@@ -5608,8 +5446,8 @@
           "CommandRegistry:canonical_path=contact.get_user_info_by_user_ids",
           "cobra-help:dws contact user get",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.get_user_info_by_user_ids",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.get_user_info_by_user_ids"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.get_user_info_by_user_ids",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.get_user_info_by_user_ids"
         ],
         "examples": [
           "dws contact user get --ids userId1,userId2 --format json"
@@ -5630,7 +5468,7 @@
           "CommandRegistry:canonical_path=contact.list_authorized_roster_fields",
           "cobra-help:dws contact user profile fields",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.list_authorized_roster_fields"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.list_authorized_roster_fields"
         ],
         "examples": [
           "dws contact user profile fields --format json"
@@ -5651,7 +5489,7 @@
           "CommandRegistry:canonical_path=contact.list_my_followings",
           "cobra-help:dws contact relation list-my-followings",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.list_my_followings"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.list_my_followings"
         ],
         "examples": [
           "dws contact relation list-my-followings --format json"
@@ -5672,7 +5510,7 @@
           "CommandRegistry:canonical_path=contact.query_dismission_employee_list",
           "cobra-help:dws contact user dismission search",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.query_dismission_employee_list"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.query_dismission_employee_list"
         ],
         "examples": [
           "dws contact user dismission search --format json",
@@ -5694,8 +5532,8 @@
           "CommandRegistry:canonical_path=contact.search_contact_by_key_word",
           "cobra-help:dws contact user search",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.search_contact_by_key_word",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.search_contact_by_key_word"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.search_contact_by_key_word",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.search_contact_by_key_word"
         ],
         "examples": [
           "dws contact user search --query \"张三\" --format json"
@@ -5716,8 +5554,8 @@
           "CommandRegistry:canonical_path=contact.search_dept_by_keyword",
           "cobra-help:dws contact dept search",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.search_dept_by_keyword",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.search_dept_by_keyword"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.search_dept_by_keyword",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.search_dept_by_keyword"
         ],
         "examples": [
           "dws contact dept search --query \"技术部\" --format json"
@@ -5738,8 +5576,8 @@
           "CommandRegistry:canonical_path=contact.search_user_by_mobile",
           "cobra-help:dws contact user search-mobile",
           "Skill:skills/mono/references/products/contact.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#contact.search_user_by_mobile",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#contact.search_user_by_mobile"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#contact.search_user_by_mobile",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#contact.search_user_by_mobile"
         ],
         "examples": [
           "dws contact user search-mobile --mobile 13800138000 --format json"
@@ -5807,15 +5645,6 @@
         "examples": [
           "dws dev connect status --unified-app-id <unifiedAppId> --json"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "local_state",
-            "reason": "This status command inspects the local connector daemon heartbeat and supervisor state, which do not exist in the isolated test HOME.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -5836,15 +5665,6 @@
         ],
         "examples": [
           "dws dev connect stop --unified-app-id <unifiedAppId>"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "local_state",
-            "reason": "Stopping a connector depends on a locally running daemon and its PID or supervisor state, which the isolated test HOME intentionally lacks.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -6492,8 +6312,8 @@
           "CommandRegistry:canonical_path=devdoc.search_open_platform_docs_rag",
           "cobra-help:dws devdoc article search",
           "Skill:skills/mono/references/products/devdoc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#devdoc.search_open_platform_docs_rag",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#devdoc.search_open_platform_docs_rag"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#devdoc.search_open_platform_docs_rag",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#devdoc.search_open_platform_docs_rag"
         ],
         "examples": [
           "dws devdoc article search \"MCP\" --format json",
@@ -6515,8 +6335,8 @@
           "CommandRegistry:canonical_path=ding.recall_ding_message",
           "cobra-help:dws ding message recall",
           "Skill:skills/mono/references/products/ding.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#ding.recall_ding_message",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#ding.recall_ding_message"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#ding.recall_ding_message",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#ding.recall_ding_message"
         ],
         "examples": [
           "dws ding message recall --robot-code <robot-code> --id <open-ding-id> --format json"
@@ -6537,8 +6357,8 @@
           "CommandRegistry:canonical_path=ding.send_ding_message",
           "cobra-help:dws ding message send",
           "Skill:skills/mono/references/products/ding.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#ding.send_ding_message",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#ding.send_ding_message"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#ding.send_ding_message",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#ding.send_ding_message"
         ],
         "examples": [
           "dws ding message send --robot-code <robot-code> --users userId1,userId2 --content \"请查看\" --format json",
@@ -6560,7 +6380,7 @@
           "CommandRegistry:canonical_path=doc.add_permission",
           "cobra-help:dws doc permission add",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.add_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.add_permission"
         ],
         "examples": [
           "dws doc permission add --node DOC_ID --users uid1 --role READER --format json",
@@ -6582,7 +6402,7 @@
           "CommandRegistry:canonical_path=doc.copy_document",
           "cobra-help:dws doc copy",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.copy_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.copy_document"
         ],
         "examples": [
           "dws doc copy --node DOC_ID --folder TARGET_DOC_FOLDER_NODE_ID --format json",
@@ -6604,8 +6424,8 @@
           "CommandRegistry:canonical_path=doc.create_comment",
           "cobra-help:dws doc comment create",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.create_comment",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.create_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.create_comment",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.create_comment"
         ],
         "examples": [
           "dws doc comment create --node DOC_ID --content \"这里需要修改\" --format json",
@@ -6627,8 +6447,8 @@
           "CommandRegistry:canonical_path=doc.create_document",
           "cobra-help:dws doc create",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.create_document",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.create_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.create_document",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.create_document"
         ],
         "examples": [
           "dws doc create --name \"项目周报\" --format json",
@@ -6650,8 +6470,8 @@
           "CommandRegistry:canonical_path=doc.create_file",
           "cobra-help:dws doc file create",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.create_file",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.create_file"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.create_file",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.create_file"
         ],
         "examples": [
           "dws doc file create --name \"项目周报\" --type adoc --format json",
@@ -6673,8 +6493,8 @@
           "CommandRegistry:canonical_path=doc.create_folder",
           "cobra-help:dws doc folder create",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.create_folder",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.create_folder"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.create_folder",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.create_folder"
         ],
         "examples": [
           "dws doc folder create --name \"项目资料\" --format json",
@@ -6696,7 +6516,7 @@
           "CommandRegistry:canonical_path=doc.create_inline_comment",
           "cobra-help:dws doc comment create-inline",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.create_inline_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.create_inline_comment"
         ],
         "examples": [
           "dws doc comment create-inline --node DOC_ID --block-id BLOCK_ID --start 0 --end 10 --content \"这里需要修改\" --format json",
@@ -6718,7 +6538,7 @@
           "CommandRegistry:canonical_path=doc.delete_document",
           "cobra-help:dws doc delete",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.delete_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.delete_document"
         ],
         "examples": [
           "dws doc delete --node DOC_ID --format json",
@@ -6740,8 +6560,8 @@
           "CommandRegistry:canonical_path=doc.delete_document_block",
           "cobra-help:dws doc block delete",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.delete_document_block",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.delete_document_block"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.delete_document_block",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.delete_document_block"
         ],
         "examples": [
           "dws doc block delete --node DOC_ID --block-id BLOCK_ID --format json"
@@ -6762,7 +6582,7 @@
           "CommandRegistry:canonical_path=doc.download_doc_attachment",
           "cobra-help:dws doc media download",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.download_doc_attachment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.download_doc_attachment"
         ],
         "examples": [
           "dws doc media download --node DOC_ID --resource-id RESOURCE_ID --format json",
@@ -6784,7 +6604,7 @@
           "CommandRegistry:canonical_path=doc.download_file",
           "cobra-help:dws doc download",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.download_file"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.download_file"
         ],
         "examples": [
           "dws doc download --node NODE_ID --output ./downloads/ --format json",
@@ -6806,8 +6626,8 @@
           "CommandRegistry:canonical_path=doc.get_document_content",
           "cobra-help:dws doc read",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.get_document_content",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.get_document_content"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.get_document_content",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.get_document_content"
         ],
         "examples": [
           "dws doc read --node DOC_ID --format json",
@@ -6829,8 +6649,8 @@
           "CommandRegistry:canonical_path=doc.get_document_info",
           "cobra-help:dws doc info",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.get_document_info",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.get_document_info"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.get_document_info",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.get_document_info"
         ],
         "examples": [
           "dws doc info --node DOC_ID --format json",
@@ -6872,7 +6692,7 @@
           "CommandRegistry:canonical_path=doc.insert_document_block",
           "cobra-help:dws doc block insert",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.insert_document_block"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.insert_document_block"
         ],
         "examples": [
           "dws doc block insert --node DOC_ID --text \"这是一段文字\" --format json",
@@ -6894,8 +6714,8 @@
           "CommandRegistry:canonical_path=doc.list_comments",
           "cobra-help:dws doc comment list",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.list_comments",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.list_comments"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.list_comments",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.list_comments"
         ],
         "examples": [
           "dws doc comment list --node DOC_ID --format json",
@@ -6917,8 +6737,8 @@
           "CommandRegistry:canonical_path=doc.list_document_blocks",
           "cobra-help:dws doc block list",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.list_document_blocks",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.list_document_blocks"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.list_document_blocks",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.list_document_blocks"
         ],
         "examples": [
           "dws doc block list --node DOC_ID --format json",
@@ -6940,8 +6760,8 @@
           "CommandRegistry:canonical_path=doc.list_nodes",
           "cobra-help:dws doc list",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.list_nodes",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.list_nodes"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.list_nodes",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.list_nodes"
         ],
         "examples": [
           "dws doc list --format json",
@@ -6963,7 +6783,7 @@
           "CommandRegistry:canonical_path=doc.list_permission",
           "cobra-help:dws doc permission list",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.list_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.list_permission"
         ],
         "examples": [
           "dws doc permission list --node DOC_ID --format json",
@@ -6985,7 +6805,7 @@
           "CommandRegistry:canonical_path=doc.media_insert",
           "cobra-help:dws doc media insert",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.media_insert"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.media_insert"
         ],
         "examples": [
           "dws doc media insert --node DOC_ID --file ./report.pdf --format json",
@@ -7007,7 +6827,7 @@
           "CommandRegistry:canonical_path=doc.move_document",
           "cobra-help:dws doc move",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.move_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.move_document"
         ],
         "examples": [
           "dws doc move --node DOC_ID --folder TARGET_DOC_FOLDER_NODE_ID --format json",
@@ -7029,7 +6849,7 @@
           "CommandRegistry:canonical_path=doc.query_export_job",
           "cobra-help:dws doc export get",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.query_export_job"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.query_export_job"
         ],
         "examples": [
           "dws doc export get --job-id <JOB_ID> --format json"
@@ -7050,7 +6870,7 @@
           "CommandRegistry:canonical_path=doc.remove_permission",
           "cobra-help:dws doc permission remove",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.remove_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.remove_permission"
         ],
         "examples": [
           "dws doc permission remove --node DOC_ID --users uid1 --format json",
@@ -7072,7 +6892,7 @@
           "CommandRegistry:canonical_path=doc.rename_document",
           "cobra-help:dws doc rename",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.rename_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.rename_document"
         ],
         "examples": [
           "dws doc rename --node DOC_ID --name \"新名称\" --format json",
@@ -7094,8 +6914,8 @@
           "CommandRegistry:canonical_path=doc.reply_comment",
           "cobra-help:dws doc comment reply",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.reply_comment",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.reply_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.reply_comment",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.reply_comment"
         ],
         "examples": [
           "dws doc comment reply --node DOC_ID --comment-key COMMENT_KEY --content \"同意\" --format json",
@@ -7117,8 +6937,8 @@
           "CommandRegistry:canonical_path=doc.search_documents",
           "cobra-help:dws doc search",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.search_documents",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.search_documents"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.search_documents",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.search_documents"
         ],
         "examples": [
           "dws doc search --query \"会议纪要\" --format json",
@@ -7203,28 +7023,12 @@
           "CommandRegistry:canonical_path=doc.update_document",
           "cobra-help:dws doc update",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.update_document",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#doc.update_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.update_document",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.update_document"
         ],
         "examples": [
           "dws doc update --node DOC_ID --content \"# 新内容\" --mode append --format json",
           "dws doc update --node DOC_ID --content \"# 完整替换\" --mode overwrite --format json"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The append example requires tenant login plus an existing remote document node and edit permission before its dry-run path can be reached.",
-            "reviewed": true
-          },
-          {
-            "index": 1,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The overwrite example requires tenant login plus an existing remote document node and edit permission before its dry-run path can be reached.",
-            "reviewed": true
-          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -7242,7 +7046,7 @@
           "CommandRegistry:canonical_path=doc.update_document_block",
           "cobra-help:dws doc block update",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.update_document_block"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.update_document_block"
         ],
         "examples": [
           "dws doc block update --node DOC_ID --block-id BLOCK_ID --text \"新内容\" --format json",
@@ -7264,7 +7068,7 @@
           "CommandRegistry:canonical_path=doc.update_permission",
           "cobra-help:dws doc permission update",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.update_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.update_permission"
         ],
         "examples": [
           "dws doc permission update --node DOC_ID --users uid1 --role EDITOR --format json",
@@ -7286,7 +7090,7 @@
           "CommandRegistry:canonical_path=doc.upload",
           "cobra-help:dws doc upload",
           "Skill:skills/mono/references/products/doc.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#doc.upload"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#doc.upload"
         ],
         "examples": [
           "dws doc upload --file ./report.pdf --format json",
@@ -7369,7 +7173,7 @@
           "CommandRegistry:canonical_path=drive.add_permission",
           "cobra-help:dws drive permission add",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.add_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.add_permission"
         ],
         "examples": [
           "dws drive permission add --node DOC_ID --users uid1 --role READER --format json",
@@ -7391,8 +7195,8 @@
           "CommandRegistry:canonical_path=drive.commit_upload",
           "cobra-help:dws drive commit",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.commit_upload",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.commit_upload"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.commit_upload",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.commit_upload"
         ],
         "examples": [
           "dws drive commit --file-name \"报告.pdf\" --file-size 102400 --upload-id <uploadId> --format json"
@@ -7413,7 +7217,7 @@
           "CommandRegistry:canonical_path=drive.copy_document",
           "cobra-help:dws drive copy",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.copy_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.copy_document"
         ],
         "examples": [
           "dws drive copy --node DOC_ID --folder TARGET_FOLDER_ID --format json",
@@ -7435,8 +7239,8 @@
           "CommandRegistry:canonical_path=drive.create_folder",
           "cobra-help:dws drive mkdir",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.create_folder",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.create_folder"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.create_folder",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.create_folder"
         ],
         "examples": [
           "dws drive mkdir --name \"项目资料\" --format json",
@@ -7458,7 +7262,7 @@
           "CommandRegistry:canonical_path=drive.delete_document",
           "cobra-help:dws drive delete",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.delete_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.delete_document"
         ],
         "examples": [
           "dws drive delete --node <dentryUuid> --format json"
@@ -7479,8 +7283,8 @@
           "CommandRegistry:canonical_path=drive.download_file",
           "cobra-help:dws drive download",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.download_file",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.download_file"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.download_file",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.download_file"
         ],
         "examples": [
           "dws drive download --node <dentryUuid> --output ./report.pdf --format json",
@@ -7502,20 +7306,11 @@
           "CommandRegistry:canonical_path=drive.get_file_info",
           "cobra-help:dws drive info",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.get_file_info",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.get_file_info"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.get_file_info",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.get_file_info"
         ],
         "examples": [
           "dws drive info --node <dentryUuid> --format json"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot resolve the existing remote dentry and its access permissions.",
-            "reviewed": true
-          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -7533,8 +7328,8 @@
           "CommandRegistry:canonical_path=drive.get_upload_info",
           "cobra-help:dws drive upload-info",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.get_upload_info",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.get_upload_info"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.get_upload_info",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.get_upload_info"
         ],
         "examples": [
           "dws drive upload-info --file-name \"报告.pdf\" --file-size 102400 --format json",
@@ -7556,8 +7351,8 @@
           "CommandRegistry:canonical_path=drive.list_files",
           "cobra-help:dws drive list",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_files",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.list_files"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_files",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.list_files"
         ],
         "examples": [
           "dws drive list --limit 20 --format json",
@@ -7579,7 +7374,7 @@
           "CommandRegistry:canonical_path=drive.list_permission",
           "cobra-help:dws drive permission list",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_permission"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_permission"
         ],
         "examples": [
           "dws drive permission list --node DOC_ID --format json",
@@ -7601,7 +7396,7 @@
           "CommandRegistry:canonical_path=drive.list_spaces",
           "cobra-help:dws drive list-spaces",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_spaces"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_spaces"
         ],
         "examples": [
           "dws drive list-spaces --format json"
@@ -7622,7 +7417,7 @@
           "CommandRegistry:canonical_path=drive.move_document",
           "cobra-help:dws drive move",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.move_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.move_document"
         ],
         "examples": [
           "dws drive move --node DOC_ID --folder TARGET_FOLDER_ID --format json",
@@ -7644,7 +7439,7 @@
           "CommandRegistry:canonical_path=drive.permission_remove",
           "cobra-help:dws drive permission remove",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.permission_remove"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.permission_remove"
         ],
         "examples": [
           "dws drive permission remove --node DOC_ID --users uid1 --format json",
@@ -7666,7 +7461,7 @@
           "CommandRegistry:canonical_path=drive.permission_update",
           "cobra-help:dws drive permission update",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.permission_update"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.permission_update"
         ],
         "examples": [
           "dws drive permission update --node DOC_ID --users uid1 --role EDITOR --format json"
@@ -7810,7 +7605,7 @@
           "CommandRegistry:canonical_path=drive.rename_document",
           "cobra-help:dws drive rename",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.rename_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.rename_document"
         ],
         "examples": [
           "dws drive rename --node DOC_ID --name \"新名称\" --format json"
@@ -7831,20 +7626,11 @@
           "CommandRegistry:canonical_path=drive.search_files",
           "cobra-help:dws drive search",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.search_files"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.search_files"
         ],
         "examples": [
           "dws drive search --query \"季度汇报\" --format json",
           "dws drive search --query \"合同\" --target file --extensions pdf,docx --format json"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Drive search requires tenant login and the user's remote drive index, neither of which is available in the isolated dry-run.",
-            "reviewed": true
-          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -7862,7 +7648,7 @@
           "CommandRegistry:canonical_path=drive.upload",
           "cobra-help:dws drive upload",
           "Skill:skills/mono/references/products/drive.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#drive.upload"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#drive.upload"
         ],
         "examples": [
           "dws drive upload --file ./report.pdf --format json",
@@ -7884,8 +7670,8 @@
           "CommandRegistry:canonical_path=live.get_my_lives",
           "cobra-help:dws live stream list",
           "Skill:skills/multi/dingtalk-live/SKILL.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#live.get_my_lives",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#live.get_my_lives"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#live.get_my_lives",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#live.get_my_lives"
         ],
         "examples": [
           "dws live stream list --format json"
@@ -7974,15 +7760,6 @@
         "examples": [
           "dws mail attachment download --email user@company.com --message-id <messageId> --attachment-id <attachmentId> --name report.pdf --output ."
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Creating an attachment download session requires tenant login and an existing remote mailbox, message, and attachment before dry-run can proceed.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -8024,15 +7801,6 @@
         ],
         "examples": [
           "dws mail message forward --from user@company.com --to colleague@company.com --id <messageId> --subject \"Fwd: 周报\""
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Forward-draft creation requires tenant login and an existing remote source message in the specified mailbox before dry-run can proceed.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -8076,15 +7844,6 @@
         "examples": [
           "dws mail message reply --from user@company.com --id <messageId> --subject \"Re: 周报\" --content \"已收到\""
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Reply-draft creation requires tenant login and an existing remote source message in the specified mailbox before dry-run can proceed.",
-            "reviewed": true
-          }
-        ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -8105,15 +7864,6 @@
         ],
         "examples": [
           "dws mail message reply-all --from user@company.com --id <messageId> --subject \"Re: 周报\" --content \"感谢大家\""
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "Reply-all draft creation requires tenant login and an existing remote source message with recipient state before dry-run can proceed.",
-            "reviewed": true
-          }
         ],
         "reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。",
         "reviewed": true,
@@ -9202,8 +8952,8 @@
           "CommandRegistry:canonical_path=oa.approve_processInstance",
           "cobra-help:dws oa approval approve",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.approve_processInstance",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.approve_processInstance"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.approve_processInstance",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.approve_processInstance"
         ],
         "examples": [
           "dws oa approval approve --instance-id <id> --task-id <taskId> --format json",
@@ -9225,7 +8975,7 @@
           "CommandRegistry:canonical_path=oa.dingflow_comments",
           "cobra-help:dws oa approval oa-comments",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.dingflow_comments"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.dingflow_comments"
         ],
         "examples": [
           "dws oa approval oa-comments --instance-id <processInstanceId> --content \"同意，请尽快处理\" --format json"
@@ -9246,7 +8996,7 @@
           "CommandRegistry:canonical_path=oa.get_done_tasks",
           "cobra-help:dws oa approval list-executed",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_done_tasks"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.get_done_tasks"
         ],
         "examples": [
           "dws oa approval list-executed  --limit 20 --page 1 --query 关键词 --format json"
@@ -9267,7 +9017,7 @@
           "CommandRegistry:canonical_path=oa.get_noticed_instances",
           "cobra-help:dws oa approval list-cc",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_noticed_instances"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.get_noticed_instances"
         ],
         "examples": [
           "dws oa approval list-cc --limit 20 --page 1 --query 关键词 --format json"
@@ -9288,8 +9038,8 @@
           "CommandRegistry:canonical_path=oa.get_processInstance_detail",
           "cobra-help:dws oa approval detail",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_processInstance_detail",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.get_processInstance_detail"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.get_processInstance_detail",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.get_processInstance_detail"
         ],
         "examples": [
           "dws oa approval detail --instance-id <processInstanceId> --format json"
@@ -9310,8 +9060,8 @@
           "CommandRegistry:canonical_path=oa.get_processInstance_records",
           "cobra-help:dws oa approval records",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_processInstance_records",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.get_processInstance_records"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.get_processInstance_records",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.get_processInstance_records"
         ],
         "examples": [
           "dws oa approval records --instance-id <processInstanceId> --format json"
@@ -9332,7 +9082,7 @@
           "CommandRegistry:canonical_path=oa.get_submitted_instances",
           "cobra-help:dws oa approval list-submitted",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.get_submitted_instances"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.get_submitted_instances"
         ],
         "examples": [
           "dws oa approval list-submitted --limit 20 --page 1 --query 关键词 --format json"
@@ -9353,8 +9103,8 @@
           "CommandRegistry:canonical_path=oa.list_initiated_instances",
           "cobra-help:dws oa approval list-initiated",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_initiated_instances",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_initiated_instances"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.list_initiated_instances",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.list_initiated_instances"
         ],
         "examples": [
           "dws oa approval list-initiated --process-code <code> --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --limit 20 --format json"
@@ -9375,8 +9125,8 @@
           "CommandRegistry:canonical_path=oa.list_pending_approvals",
           "cobra-help:dws oa approval list-pending",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_pending_approvals",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_pending_approvals"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.list_pending_approvals",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.list_pending_approvals"
         ],
         "examples": [
           "dws oa approval list-pending --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --query 关键词 --format json"
@@ -9397,8 +9147,8 @@
           "CommandRegistry:canonical_path=oa.list_pending_tasks",
           "cobra-help:dws oa approval tasks",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_pending_tasks",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_pending_tasks"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.list_pending_tasks",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.list_pending_tasks"
         ],
         "examples": [
           "dws oa approval tasks --instance-id <processInstanceId> --format json"
@@ -9419,8 +9169,8 @@
           "CommandRegistry:canonical_path=oa.list_user_visible_process",
           "cobra-help:dws oa approval list-forms",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.list_user_visible_process",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.list_user_visible_process"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.list_user_visible_process",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.list_user_visible_process"
         ],
         "examples": [
           "dws oa approval list-forms --cursor 0 --limit 100 --format json"
@@ -9441,7 +9191,7 @@
           "CommandRegistry:canonical_path=oa.oa_cc_noticer",
           "cobra-help:dws oa approval oa-cc-noticer",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.oa_cc_noticer"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.oa_cc_noticer"
         ],
         "examples": [
           "dws oa approval oa-cc-noticer --instance-id <processInstanceId> --users \"68674200835816\" --format json",
@@ -9463,7 +9213,7 @@
           "CommandRegistry:canonical_path=oa.redirect_task",
           "cobra-help:dws oa approval redirect-task",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.redirect_task"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.redirect_task"
         ],
         "examples": [
           "dws oa approval redirect-task --task-id <taskId> --to-actioner-id <userId> --format json",
@@ -9485,8 +9235,8 @@
           "CommandRegistry:canonical_path=oa.reject_processInstance",
           "cobra-help:dws oa approval reject",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.reject_processInstance",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.reject_processInstance"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.reject_processInstance",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.reject_processInstance"
         ],
         "examples": [
           "dws oa approval reject --instance-id <id> --task-id <taskId> --remark \"不同意\" --format json"
@@ -9507,8 +9257,8 @@
           "CommandRegistry:canonical_path=oa.revoke_processInstance",
           "cobra-help:dws oa approval revoke",
           "Skill:skills/mono/references/products/oa.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#oa.revoke_processInstance",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#oa.revoke_processInstance"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#oa.revoke_processInstance",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#oa.revoke_processInstance"
         ],
         "examples": [
           "dws oa approval revoke --instance-id <id> --format json",
@@ -9530,7 +9280,7 @@
           "CommandRegistry:canonical_path=pat.batch_grant",
           "cobra-help:dws pat chmod",
           "Skill:skills/mono/references/products/pat.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#pat.batch_grant"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#pat.batch_grant"
         ],
         "examples": [
           "dws pat chmod --products calendar,aitable --grant-type session --session-id <SESSION_ID> --dry-run --format json"
@@ -9551,27 +9301,11 @@
           "CommandRegistry:canonical_path=pat.browser_policy",
           "cobra-help:dws pat browser-policy",
           "Skill:skills/mono/references/products/pat.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#pat.browser_policy"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#pat.browser_policy"
         ],
         "examples": [
           "dws pat browser-policy --enabled --format json",
           "dws pat browser-policy --enabled=false --agentCode <AGENT_CODE> --format json"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "local_state",
-            "reason": "This example inspects and changes browser policy state on the local machine, which is intentionally absent from the isolated test HOME.",
-            "reviewed": true
-          },
-          {
-            "index": 1,
-            "mode": "contract_only",
-            "reason_code": "local_state",
-            "reason": "This agent-scoped example depends on the local browser installation and its existing policy state, which the isolated test HOME does not provide.",
-            "reviewed": true
-          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -9589,8 +9323,8 @@
           "CommandRegistry:canonical_path=report.create_report",
           "cobra-help:dws report entry submit",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.create_report",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.create_report"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.create_report",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.create_report"
         ],
         "examples": [
           "dws report entry submit --template-id TPL_ID --contents '[{\"content\":\"完成开发\",\"sort\":\"0\",\"key\":\"今日完成\",\"contentType\":\"markdown\",\"type\":\"1\"}]' --format json",
@@ -9612,8 +9346,8 @@
           "CommandRegistry:canonical_path=report.get_available_report_templates",
           "cobra-help:dws report template list",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_available_report_templates",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_available_report_templates"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_available_report_templates",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_available_report_templates"
         ],
         "examples": [
           "dws report template list --format json"
@@ -9634,8 +9368,8 @@
           "CommandRegistry:canonical_path=report.get_received_report_list",
           "cobra-help:dws report inbox list",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_received_report_list",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_received_report_list"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_received_report_list",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_received_report_list"
         ],
         "examples": [
           "dws report inbox list --start \"2026-03-10T00:00:00+08:00\" --end \"2026-03-10T23:59:59+08:00\" --cursor 0 --size 20 --format json"
@@ -9656,8 +9390,8 @@
           "CommandRegistry:canonical_path=report.get_report_entry_details",
           "cobra-help:dws report entry get",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_report_entry_details",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_report_entry_details"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_report_entry_details",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_report_entry_details"
         ],
         "examples": [
           "dws report entry get --report-id <reportId> --format json"
@@ -9678,8 +9412,8 @@
           "CommandRegistry:canonical_path=report.get_report_statistics_by_id",
           "cobra-help:dws report entry stats",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_report_statistics_by_id",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_report_statistics_by_id"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_report_statistics_by_id",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_report_statistics_by_id"
         ],
         "examples": [
           "dws report entry stats --report-id <reportId> --format json"
@@ -9700,8 +9434,8 @@
           "CommandRegistry:canonical_path=report.get_send_report_list",
           "cobra-help:dws report outbox list",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_send_report_list",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_send_report_list"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_send_report_list",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_send_report_list"
         ],
         "examples": [
           "dws report outbox list --cursor 0 --size 20 --format json",
@@ -9723,8 +9457,8 @@
           "CommandRegistry:canonical_path=report.get_template_details_by_name",
           "cobra-help:dws report template get",
           "Skill:skills/mono/references/products/report.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#report.get_template_details_by_name",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#report.get_template_details_by_name"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#report.get_template_details_by_name",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#report.get_template_details_by_name"
         ],
         "examples": [
           "dws report template get --name <templateName> --format json"
@@ -10758,15 +10492,6 @@
         "examples": [
           "dws sheet range read --node NODE_ID"
         ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot resolve the remote spreadsheet node, default sheet, and readable range state.",
-            "reviewed": true
-          }
-        ],
         "reason": "依据 reviewed CommandRegistry、dws sheet range read --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。",
         "reviewed": true,
         "revision": "ai-agent-contract-2026-07-13-v1",
@@ -11203,7 +10928,7 @@
           "CommandRegistry:canonical_path=todo.add_task_executors",
           "cobra-help:dws todo task add-executor",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_executors"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_task_executors"
         ],
         "examples": [
           "dws todo task add-executor --task-id <taskId> --executors <USER_ID_1>,<USER_ID_2> --format json"
@@ -11224,7 +10949,7 @@
           "CommandRegistry:canonical_path=todo.add_task_participants",
           "cobra-help:dws todo task add-participant",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_participants"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_task_participants"
         ],
         "examples": [
           "dws todo task add-participant --task-id <taskId> --participants <USER_ID_1>,<USER_ID_2> --format json"
@@ -11245,7 +10970,7 @@
           "CommandRegistry:canonical_path=todo.add_todo_attachment",
           "cobra-help:dws todo task add-attachment",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_attachment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_attachment"
         ],
         "examples": [
           "dws todo task add-attachment --task-id <taskId> --file-path <filePath> --format json"
@@ -11266,7 +10991,7 @@
           "CommandRegistry:canonical_path=todo.add_todo_comment",
           "cobra-help:dws todo comment add",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_comment"
         ],
         "examples": [
           "dws todo comment add --task-id <taskId> --content \"评论内容\" --format json"
@@ -11287,7 +11012,7 @@
           "CommandRegistry:canonical_path=todo.add_todo_reminder",
           "cobra-help:dws todo task add-reminder",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_reminder"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_reminder"
         ],
         "examples": [
           "dws todo task add-reminder --task-id <taskId> --base-time <baseTime> --due-date-offset <dueDateOffset> --format json",
@@ -11309,7 +11034,7 @@
           "CommandRegistry:canonical_path=todo.create_personal_sub_todo",
           "cobra-help:dws todo task create-sub",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_sub_todo"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.create_personal_sub_todo"
         ],
         "examples": [
           "dws todo task create-sub --parent-id 1234567890 --title \"子任务标题\" --executors userId1,userId2 --priority 40 --format json",
@@ -11331,8 +11056,8 @@
           "CommandRegistry:canonical_path=todo.create_personal_todo",
           "cobra-help:dws todo task create",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_todo",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.create_personal_todo"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.create_personal_todo",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.create_personal_todo"
         ],
         "examples": [
           "dws todo task create --title \"修复线上Bug\" --executors userId1,userId2 --priority 40 --format json",
@@ -11354,8 +11079,8 @@
           "CommandRegistry:canonical_path=todo.delete_todo",
           "cobra-help:dws todo task delete",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.delete_todo"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.delete_todo",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.delete_todo"
         ],
         "examples": [
           "dws todo task delete --task-id <taskId> --format json"
@@ -11376,7 +11101,7 @@
           "CommandRegistry:canonical_path=todo.delete_todo_comment",
           "cobra-help:dws todo comment delete",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.delete_todo_comment"
         ],
         "examples": [
           "dws todo comment delete --task-id <taskId> --comment-id <commentId> --format json"
@@ -11397,20 +11122,11 @@
           "CommandRegistry:canonical_path=todo.get_todo_detail",
           "cobra-help:dws todo task get",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_todo_detail",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.get_todo_detail"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.get_todo_detail",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.get_todo_detail"
         ],
         "examples": [
           "dws todo task get --task-id <taskId> --format json"
-        ],
-        "example_dispositions": [
-          {
-            "index": 0,
-            "mode": "contract_only",
-            "reason_code": "stateful_preflight",
-            "reason": "The isolated dry-run has no tenant login and cannot resolve the existing remote task or verify that the current user may view it.",
-            "reviewed": true
-          }
         ],
         "reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。",
         "reviewed": true,
@@ -11428,7 +11144,7 @@
           "CommandRegistry:canonical_path=todo.get_user_todos_in_current_org",
           "cobra-help:dws todo task list",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_user_todos_in_current_org"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.get_user_todos_in_current_org"
         ],
         "examples": [
           "dws todo task list --page 1 --size 20 --status false --priority 40,30,10 --role-types creator,executor,participant --format json"
@@ -11449,7 +11165,7 @@
           "CommandRegistry:canonical_path=todo.list_todo_comment",
           "cobra-help:dws todo comment list",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.list_todo_comment"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.list_todo_comment"
         ],
         "examples": [
           "dws todo comment list --task-id <taskId> --format json",
@@ -11471,7 +11187,7 @@
           "CommandRegistry:canonical_path=todo.remove_task_executors",
           "cobra-help:dws todo task remove-executor",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_executors"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.remove_task_executors"
         ],
         "examples": [
           "dws todo task remove-executor --task-id <taskId> --executors <USER_ID_1>,<USER_ID_2> --format json"
@@ -11492,7 +11208,7 @@
           "CommandRegistry:canonical_path=todo.remove_task_participants",
           "cobra-help:dws todo task remove-participant",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_participants"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.remove_task_participants"
         ],
         "examples": [
           "dws todo task remove-participant --task-id <taskId> --participants <USER_ID_1>,<USER_ID_2> --format json"
@@ -11513,7 +11229,7 @@
           "CommandRegistry:canonical_path=todo.reset_todo_reminder",
           "cobra-help:dws todo task reset-reminder",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.reset_todo_reminder"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.reset_todo_reminder"
         ],
         "examples": [
           "dws todo task reset-reminder --task-id <taskId> --format json",
@@ -11535,8 +11251,8 @@
           "CommandRegistry:canonical_path=todo.update_todo_done_status",
           "cobra-help:dws todo task done",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_done_status",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_done_status"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.update_todo_done_status",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.update_todo_done_status"
         ],
         "examples": [
           "dws todo task done --task-id <taskId> --status true --format json",
@@ -11558,8 +11274,8 @@
           "CommandRegistry:canonical_path=todo.update_todo_task",
           "cobra-help:dws todo task update",
           "Skill:skills/mono/references/products/todo.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_task",
-          "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_task"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#todo.update_todo_task",
+          "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.update_todo_task"
         ],
         "examples": [
           "dws todo task update --task-id <taskId> --title \"新标题\" --format json",
@@ -11581,7 +11297,7 @@
           "CommandRegistry:canonical_path=wiki.add_member",
           "cobra-help:dws wiki member add",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.add_member"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.add_member"
         ],
         "examples": [
           "dws wiki member add --workspace <workspaceId> --users uid1 --role READER --format json",
@@ -11603,7 +11319,7 @@
           "CommandRegistry:canonical_path=wiki.create_file",
           "cobra-help:dws wiki node create",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.create_file"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.create_file"
         ],
         "examples": [
           "dws wiki node create --workspace <workspaceId> --name \"新文档\" --format json",
@@ -11625,7 +11341,7 @@
           "CommandRegistry:canonical_path=wiki.create_wikiSpace",
           "cobra-help:dws wiki space create",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.create_wikiSpace"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.create_wikiSpace"
         ],
         "examples": [
           "dws wiki space create --name \"产品文档库\" --format json",
@@ -11647,7 +11363,7 @@
           "CommandRegistry:canonical_path=wiki.delete_document",
           "cobra-help:dws wiki node delete",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.delete_document"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.delete_document"
         ],
         "examples": [
           "dws wiki node delete --workspace <workspaceId> --node <nodeId> --format json"
@@ -11668,7 +11384,7 @@
           "CommandRegistry:canonical_path=wiki.delete_wikiSpace",
           "cobra-help:dws wiki space delete",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.delete_wikiSpace"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.delete_wikiSpace"
         ],
         "examples": [
           "dws wiki space delete --workspace <workspaceId> --format json",
@@ -11690,7 +11406,7 @@
           "CommandRegistry:canonical_path=wiki.get_wikiSpace",
           "cobra-help:dws wiki space get",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.get_wikiSpace"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.get_wikiSpace"
         ],
         "examples": [
           "dws wiki space get --workspace <workspaceId> --format json",
@@ -11712,7 +11428,7 @@
           "CommandRegistry:canonical_path=wiki.list_member",
           "cobra-help:dws wiki member list",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_member"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_member"
         ],
         "examples": [
           "dws wiki member list --workspace <workspaceId> --format json",
@@ -11734,7 +11450,7 @@
           "CommandRegistry:canonical_path=wiki.list_nodes",
           "cobra-help:dws wiki node list",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_nodes"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_nodes"
         ],
         "examples": [
           "dws wiki node list --workspace <workspaceId> --format json",
@@ -11756,7 +11472,7 @@
           "CommandRegistry:canonical_path=wiki.list_wikiSpaces",
           "cobra-help:dws wiki space list",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_wikiSpaces"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_wikiSpaces"
         ],
         "examples": [
           "dws wiki space list --format json",
@@ -11778,7 +11494,7 @@
           "CommandRegistry:canonical_path=wiki.node_copy",
           "cobra-help:dws wiki node copy",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_copy"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_copy"
         ],
         "examples": [
           "dws wiki node copy --workspace <workspaceId> --node <nodeId> --format json",
@@ -11800,7 +11516,7 @@
           "CommandRegistry:canonical_path=wiki.node_move",
           "cobra-help:dws wiki node move",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_move"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_move"
         ],
         "examples": [
           "dws wiki node move --workspace <workspaceId> --node <nodeId> --folder <targetFolderId> --format json",
@@ -11822,7 +11538,7 @@
           "CommandRegistry:canonical_path=wiki.node_search",
           "cobra-help:dws wiki node search",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_search"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_search"
         ],
         "examples": [
           "dws wiki node search --workspace <workspaceId> --query \"产品方案\" --format json",
@@ -11844,7 +11560,7 @@
           "CommandRegistry:canonical_path=wiki.remove_member",
           "cobra-help:dws wiki member remove",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.remove_member"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.remove_member"
         ],
         "examples": [
           "dws wiki member remove --workspace <workspaceId> --users uid1 --format json",
@@ -11866,7 +11582,7 @@
           "CommandRegistry:canonical_path=wiki.search_wikiSpaces",
           "cobra-help:dws wiki space search",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.search_wikiSpaces"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.search_wikiSpaces"
         ],
         "examples": [
           "dws wiki space search --query \"产品文档\" --format json",
@@ -11888,7 +11604,7 @@
           "CommandRegistry:canonical_path=wiki.update_member",
           "cobra-help:dws wiki member update",
           "Skill:skills/mono/references/products/wiki.md",
-          "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.update_member"
+          "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.update_member"
         ],
         "examples": [
           "dws wiki member update --workspace <workspaceId> --users uid1 --role EDITOR --format json",
@@ -12204,6 +11920,324 @@
     }
   },
   "commands": [
+    {
+      "canonical_path": "aisearch.search_enterprise",
+      "cli_path": "aisearch enterprise",
+      "parameters": {
+        "queries": {
+          "required": false
+        },
+        "time-range": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI supports an all-content search with default --types all, while --queries and --time-range are optional filters; imported MCP required markers must not turn them into mandatory CLI input.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "aitable.query_records",
+      "cli_path": "aitable record query",
+      "parameters": {
+        "record-ids": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed query command supports both an optional ID lookup mode and a table scan/filter mode, so --record-ids is not unconditionally required.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "aitable.view_update_aggregate",
+      "cli_path": "aitable view update aggregate",
+      "parameters": {
+        "json": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI accepts --json, a --field-id/--action pair, or --clear-field-id; the registered typed constraints describe those alternatives.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "aitable.view_update_card",
+      "cli_path": "aitable view update card",
+      "parameters": {
+        "json": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI merges optional typed card flags over an optional --json block; the registered typed constraints require at least one real update field.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "aitable.view_update_field_widths",
+      "cli_path": "aitable view update field-widths",
+      "parameters": {
+        "json": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI accepts either --json or the paired --field-id/--width form, which is represented by typed require-one-of and require-together constraints.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "aitable.view_update_timebar",
+      "cli_path": "aitable view update timebar",
+      "parameters": {
+        "json": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI accepts either a complete --json block or one or more typed Gantt timebar fields; --json is therefore not unconditionally required.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "attendance.group_search",
+      "cli_path": "attendance group search",
+      "parameters": {
+        "limit": {
+          "required": false
+        },
+        "page": {
+          "required": false
+        }
+      },
+      "reason": "Cobra supplies reviewed page=1 and limit=20 defaults and RunE materializes both PageQuery fields when omitted, so callers need not pass either flag.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.add_emoji_reaction",
+      "cli_path": "chat message add-emoji",
+      "parameters": {
+        "chat": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "conversation-id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "group": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "id": {
+          "property": "openConversationId",
+          "required": false
+        }
+      },
+      "reason": "The four reviewed conversation locator flags are aliases for one openConversationId property; the typed require-one-of constraint owns their conditional requirement.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.add_text_emotion",
+      "cli_path": "chat message add-text-emotion",
+      "parameters": {
+        "chat": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "conversation-id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "group": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "id": {
+          "property": "openConversationId",
+          "required": false
+        }
+      },
+      "reason": "The four reviewed conversation locator flags are aliases for one openConversationId property; the typed require-one-of constraint owns their conditional requirement.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.remove_emoji_reaction",
+      "cli_path": "chat message remove-emoji",
+      "parameters": {
+        "chat": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "conversation-id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "group": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "id": {
+          "property": "openConversationId",
+          "required": false
+        }
+      },
+      "reason": "The four reviewed conversation locator flags are aliases for one openConversationId property; the typed require-one-of constraint owns their conditional requirement.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.remove_text_emotion",
+      "cli_path": "chat message remove-text-emotion",
+      "parameters": {
+        "chat": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "conversation-id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "group": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "id": {
+          "property": "openConversationId",
+          "required": false
+        }
+      },
+      "reason": "The four reviewed conversation locator flags are aliases for one openConversationId property; the typed require-one-of constraint owns their conditional requirement.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.set_group_mute",
+      "cli_path": "chat group-mute",
+      "parameters": {
+        "off": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed optional --off switch selects unmute; omission deliberately selects mute, so false is a valid default rather than missing required input.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.set_top_conversation",
+      "cli_path": "chat set-top",
+      "parameters": {
+        "off": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed optional --off switch selects unpin; omission deliberately selects pin, so false is a valid default rather than missing required input.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.update_conv_member_roles",
+      "cli_path": "chat group set-admin",
+      "parameters": {
+        "off": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed optional --off switch selects administrator removal; omission deliberately selects administrator assignment.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.update_notification_off",
+      "cli_path": "chat mute",
+      "parameters": {
+        "chat": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "conversation-id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "id": {
+          "property": "openConversationId",
+          "required": false
+        },
+        "off": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed locator aliases feed one openConversationId property, while optional --off selects unmute; typed constraints require one locator without making the mode switch mandatory.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "contact.get_authorized_emp_rosterInfo",
+      "cli_path": "contact user profile get",
+      "parameters": {
+        "fields": {
+          "required": false
+        },
+        "staff-id": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed helper deliberately permits either or both optional filters and passes an empty request to query the caller's authorized roster scope.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "devdoc.search_open_platform_docs_rag",
+      "cli_path": "devdoc article search",
+      "parameters": {
+        "keyword": {
+          "property": "query",
+          "required": false
+        },
+        "query": {
+          "property": "query",
+          "required": false
+        }
+      },
+      "reason": "Search text may be supplied as positional argument 0, --query, or --keyword; the reviewed positional and require-one-of contracts express the alternatives.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "mail.search_mail_users",
+      "cli_path": "mail user search",
+      "parameters": {
+        "employee-no": {
+          "required": false
+        },
+        "keyword": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed CLI accepts either a fuzzy keyword or an exact employee number, represented by a typed require-one-of constraint rather than two unconditional requirements.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "mail.update_user_message_template",
+      "cli_path": "mail template update",
+      "parameters": {
+        "content": {
+          "required": false
+        },
+        "name": {
+          "required": false
+        },
+        "subject": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed patch command accepts any non-empty subset of mutable template fields; a typed require-one-of constraint owns that requirement.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "report.create_report",
+      "cli_path": "report entry submit",
+      "parameters": {
+        "to-chat": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed optional --to-chat switch defaults to false and only controls post-submit delivery; it is not required to create a report.",
+      "reviewed": true
+    },
+    {
+      "canonical_path": "chat.set_group_member_mute_list",
+      "cli_path": "chat group-mute-member",
+      "parameters": {
+        "off": {
+          "required": false
+        }
+      },
+      "reason": "The reviewed Cobra contract makes --off an optional mode switch: omission adds members to the mute list, while --off removes them. The shared MCP schema incorrectly marks the boolean as unconditionally required.",
+      "reviewed": true
+    },
     {
       "canonical_path": "chat.create_smart_conv_category",
       "cli_path": "chat category create-smart",

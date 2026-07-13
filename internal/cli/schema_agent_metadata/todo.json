@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -137,14 +137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -234,12 +234,12 @@
         "CommandRegistry:canonical_path=todo.add_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment add",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_comment"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_comment"
       ],
       "use_when": [
         "需要新增待办评论时"
@@ -277,14 +277,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -319,14 +319,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -341,14 +341,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -397,14 +397,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -449,14 +449,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -502,13 +502,13 @@
         "CommandRegistry:canonical_path=todo.delete_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment delete",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo_comment"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.delete_todo_comment"
       ],
       "use_when": [
         "用户明确要求删除待办评论时"
@@ -547,14 +547,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -653,14 +653,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -750,12 +750,12 @@
         "CommandRegistry:canonical_path=todo.list_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment list",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.list_todo_comment"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.list_todo_comment"
       ],
       "use_when": [
         "需要查询待办评论列表时"
@@ -793,14 +793,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -897,14 +897,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -994,12 +994,12 @@
         "CommandRegistry:canonical_path=todo.add_todo_attachment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-attachment",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_attachment"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_attachment"
       ],
       "use_when": [
         "需要上传待办附件时"
@@ -1037,14 +1037,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1141,14 +1141,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1238,12 +1238,12 @@
         "CommandRegistry:canonical_path=todo.add_task_executors",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-executor",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_executors"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_task_executors"
       ],
       "use_when": [
         "需要添加待办执行人时"
@@ -1281,14 +1281,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1385,14 +1385,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1482,12 +1482,12 @@
         "CommandRegistry:canonical_path=todo.add_task_participants",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-participant",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_task_participants"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_task_participants"
       ],
       "use_when": [
         "需要添加待办参与人时"
@@ -1526,14 +1526,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1632,14 +1632,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1729,12 +1729,12 @@
         "CommandRegistry:canonical_path=todo.add_todo_reminder",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-reminder",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.add_todo_reminder"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.add_todo_reminder"
       ],
       "use_when": [
         "需要为待办添加提醒时"
@@ -1773,14 +1773,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1879,14 +1879,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1901,13 +1901,13 @@
         },
         "interface_ref": {
           "value": "todo.create_personal_todo",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "todo.create_personal_todo",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1983,14 +1983,14 @@
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.create_personal_todo",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.create_personal_todo",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_todo"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.create_personal_todo",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.create_personal_todo"
       ],
       "use_when": [
         "需要创建待办时"
@@ -2029,14 +2029,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2135,14 +2135,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2232,12 +2232,12 @@
         "CommandRegistry:canonical_path=todo.create_personal_sub_todo",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task create-sub",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.create_personal_sub_todo"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.create_personal_sub_todo"
       ],
       "use_when": [
         "需要创建子待办时"
@@ -2275,14 +2275,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2317,13 +2317,13 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2388,14 +2388,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2410,13 +2410,13 @@
         },
         "interface_ref": {
           "value": "todo.delete_todo",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "todo.delete_todo",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2446,13 +2446,13 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2499,15 +2499,15 @@
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task delete",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.delete_todo",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.delete_todo",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.delete_todo"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.delete_todo",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.delete_todo"
       ],
       "use_when": [
         "用户明确要求删除待办时"
@@ -2546,14 +2546,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2652,14 +2652,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2674,13 +2674,13 @@
         },
         "interface_ref": {
           "value": "todo.update_todo_done_status",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "todo.update_todo_done_status",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2756,14 +2756,14 @@
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task done",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_done_status",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_done_status",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_done_status"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.update_todo_done_status",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.update_todo_done_status"
       ],
       "use_when": [
         "需要修改执行者的待办完成状态时"
@@ -2801,14 +2801,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2905,14 +2905,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2927,13 +2927,13 @@
         },
         "interface_ref": {
           "value": "todo.get_todo_detail",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "todo.get_todo_detail",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -3009,14 +3009,14 @@
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task get",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.get_todo_detail",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.get_todo_detail",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_todo_detail"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.get_todo_detail",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.get_todo_detail"
       ],
       "use_when": [
         "已知 taskId，需要查看单个待办详情时"
@@ -3054,14 +3054,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3158,14 +3158,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3255,12 +3255,12 @@
         "CommandRegistry:canonical_path=todo.get_user_todos_in_current_org",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task list",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.get_user_todos_in_current_org"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.get_user_todos_in_current_org"
       ],
       "use_when": [
         "需要按状态、优先级、角色或截止日期查询待办列表时"
@@ -3298,14 +3298,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3340,14 +3340,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3362,14 +3362,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3418,14 +3418,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3470,14 +3470,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3523,13 +3523,13 @@
         "CommandRegistry:canonical_path=todo.remove_task_executors",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task remove-executor",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_executors"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.remove_task_executors"
       ],
       "use_when": [
         "用户明确要求移除待办执行人时"
@@ -3567,14 +3567,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3609,14 +3609,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3631,14 +3631,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3687,14 +3687,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3739,14 +3739,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3792,13 +3792,13 @@
         "CommandRegistry:canonical_path=todo.remove_task_participants",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task remove-participant",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.remove_task_participants"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.remove_task_participants"
       ],
       "use_when": [
         "用户明确要求移除待办参与人时"
@@ -3837,14 +3837,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3943,14 +3943,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4040,12 +4040,12 @@
         "CommandRegistry:canonical_path=todo.reset_todo_reminder",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task reset-reminder",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.reset_todo_reminder"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.reset_todo_reminder"
       ],
       "use_when": [
         "需要重置待办提醒规则时"
@@ -4084,14 +4084,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4190,14 +4190,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4212,13 +4212,13 @@
         },
         "interface_ref": {
           "value": "todo.update_todo_task",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "todo.update_todo_task",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4294,14 +4294,14 @@
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task update",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_task",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task",
         "skills/mono/references/products/todo.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#todo.update_todo_task",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#todo.update_todo_task"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#todo.update_todo_task",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#todo.update_todo_task"
       ],
       "use_when": [
         "需要修改待办任务时"

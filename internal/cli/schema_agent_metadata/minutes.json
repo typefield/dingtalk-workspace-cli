@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -137,14 +137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -233,12 +233,12 @@
       "source_refs": [
         "cobra-help:dws minutes get audio --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_minutes_audio_url",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询听记的音频/视频文件地址（OSS 链接），并能提供命令所需的查询条件时使用。"
@@ -276,14 +276,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -380,14 +380,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -402,13 +402,13 @@
         },
         "interface_ref": {
           "value": "minutes.batch_get_minutes_details",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.batch_get_minutes_details",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -483,13 +483,13 @@
         "cobra-help:dws minutes get batch --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.batch_get_minutes_details",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.batch_get_minutes_details",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要根据 taskUuid 列表批量查询听记详情，并能提供命令所需的查询条件时使用。"
@@ -527,14 +527,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -631,14 +631,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -653,13 +653,13 @@
         },
         "interface_ref": {
           "value": "minutes.get_minutes_basic_info",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.get_minutes_basic_info",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -734,13 +734,13 @@
         "cobra-help:dws minutes get info --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_basic_info",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_basic_info",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要获取指定听记的基础元数据信息，并能提供命令所需的查询条件时使用。"
@@ -778,14 +778,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -882,14 +882,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -904,13 +904,13 @@
         },
         "interface_ref": {
           "value": "minutes.get_minutes_keywords",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.get_minutes_keywords",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -985,13 +985,13 @@
         "cobra-help:dws minutes get keywords --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_keywords",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_keywords",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要获取指定听记的关键字列表，并能提供命令所需的查询条件时使用。"
@@ -1029,14 +1029,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1133,14 +1133,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1155,13 +1155,13 @@
         },
         "interface_ref": {
           "value": "minutes.get_minutes_ai_summary",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.get_minutes_ai_summary",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1236,13 +1236,13 @@
         "cobra-help:dws minutes get summary --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_ai_summary",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_ai_summary",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要获取由 AI 对听记转写原文进行结构化提炼生成的摘要，返回 Markdown 格式，并能提供命令所需的查询条件时使用。"
@@ -1280,14 +1280,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1384,14 +1384,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1406,13 +1406,13 @@
         },
         "interface_ref": {
           "value": "minutes.list_minutes_todos",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.list_minutes_todos",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1487,13 +1487,13 @@
         "cobra-help:dws minutes get todos --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.list_minutes_todos",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_minutes_todos",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询指定听记中由系统提取的待办事项列表，并能提供命令所需的查询条件时使用。"
@@ -1531,14 +1531,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1635,14 +1635,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1657,13 +1657,13 @@
         },
         "interface_ref": {
           "value": "minutes.get_minutes_transcription",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.get_minutes_transcription",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1738,13 +1738,13 @@
         "cobra-help:dws minutes get transcription --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_transcription",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_transcription",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要获取指定听记的语音转写原文，并能提供命令所需的查询条件时使用。"
@@ -1782,14 +1782,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1886,14 +1886,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1908,13 +1908,13 @@
         },
         "interface_ref": {
           "value": "minutes.add_personal_hot_word",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.add_personal_hot_word",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1989,13 +1989,13 @@
         "cobra-help:dws minutes hot-word add --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.add_personal_hot_word",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.add_personal_hot_word",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求添加听记个人热词，用于优化语音识别中专有名词、人名等的识别准确率，且已确认目标对象和所需参数时使用。"
@@ -2033,14 +2033,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2137,14 +2137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2233,12 +2233,12 @@
       "source_refs": [
         "cobra-help:dws minutes hot-word list --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_my_hotwords",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询当前用户配置的所有听记热词列表，并能提供命令所需的查询条件时使用。"
@@ -2276,14 +2276,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2380,14 +2380,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2476,11 +2476,11 @@
       "source_refs": [
         "cobra-help:dws minutes list mine --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_by_keyword_and_time_range",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询我创建的听记列表，支持分页，支持按关键字和时间范围筛选，并能提供命令所需的查询条件时使用。"
@@ -2518,14 +2518,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2622,14 +2622,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2644,13 +2644,13 @@
         },
         "interface_ref": {
           "value": "minutes.create_mind_graph",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.create_mind_graph",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2725,13 +2725,13 @@
         "cobra-help:dws minutes mind-graph create --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.create_mind_graph",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_mind_graph",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求触发创建听记思维导图任务。触发成功后，可通过 query_mind_graph_status 轮询任务状态，且已确认目标对象和所需参数时使用。"
@@ -2769,14 +2769,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2873,14 +2873,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2895,13 +2895,13 @@
         },
         "interface_ref": {
           "value": "minutes.query_mind_graph_status",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.query_mind_graph_status",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2976,13 +2976,13 @@
         "cobra-help:dws minutes mind-graph status --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.query_mind_graph_status",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_mind_graph_status",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询指定听记的思维导图生成状态，并能提供命令所需的查询条件时使用。"
@@ -3020,14 +3020,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3124,14 +3124,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3220,12 +3220,12 @@
       "source_refs": [
         "cobra-help:dws minutes permission add --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.add_member_permission",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求批量给多个听记增加成员，并设置成员的权限，且已确认目标对象和所需参数时使用。"
@@ -3263,14 +3263,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3305,14 +3305,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3327,14 +3327,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3383,14 +3383,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3435,14 +3435,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3487,13 +3487,13 @@
       "source_refs": [
         "cobra-help:dws minutes permission remove --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.remove_member_permission",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求批量移除多个听记的成员权限。移除后，对应成员将失去对这些听记的访问权限，且已确认目标对象和所需参数时使用。"
@@ -3531,14 +3531,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3629,14 +3629,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3645,14 +3645,14 @@
         },
         "interface_reason": {
           "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3661,14 +3661,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -3677,7 +3677,7 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": false,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -3700,14 +3700,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3757,14 +3757,14 @@
       "source_refs": [
         "cobra-help:dws minutes record pause --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求暂停正在进行的听记录音，且已确认目标对象和所需参数时使用。"
@@ -3802,14 +3802,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3900,14 +3900,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3916,14 +3916,14 @@
         },
         "interface_reason": {
           "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -3932,14 +3932,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -3948,7 +3948,7 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": false,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -3971,14 +3971,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4028,14 +4028,14 @@
       "source_refs": [
         "cobra-help:dws minutes record resume --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求恢复已暂停的听记录音，且已确认目标对象和所需参数时使用。"
@@ -4073,14 +4073,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4123,14 +4123,14 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/catalog-completeness.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "dws-command-surface-review marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
@@ -4179,14 +4179,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4195,14 +4195,14 @@
         },
         "interface_reason": {
           "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4211,14 +4211,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4227,7 +4227,7 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": false,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -4250,14 +4250,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4307,14 +4307,14 @@
       "source_refs": [
         "cobra-help:dws minutes record start --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求发起听记并开始录音，且已确认目标对象和所需参数时使用。"
@@ -4352,14 +4352,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4402,14 +4402,14 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/catalog-completeness.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "dws-command-surface-review marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
@@ -4458,14 +4458,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4474,14 +4474,14 @@
         },
         "interface_reason": {
           "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4490,14 +4490,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4506,7 +4506,7 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": false,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -4529,14 +4529,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -4586,14 +4586,14 @@
       "source_refs": [
         "cobra-help:dws minutes record stop --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求结束正在进行的听记录音，且已确认目标对象和所需参数时使用。"
@@ -4631,14 +4631,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4739,14 +4739,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4761,13 +4761,13 @@
         },
         "interface_ref": {
           "value": "minutes.replace_minutes_text",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.replace_minutes_text",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4844,13 +4844,13 @@
         "cobra-help:dws minutes replace-text --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.replace_minutes_text",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.replace_minutes_text",
         "skills/mono/SKILL.md",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求把听记中所有出现的原文字替换为目标文字，包括转写段落和纪要摘要中出现的原文字都会被替换，且已确认目标对象和所需参数时使用。"
@@ -4888,14 +4888,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4992,14 +4992,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5014,13 +5014,13 @@
         },
         "interface_ref": {
           "value": "minutes.replace_speaker",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.replace_speaker",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -5095,12 +5095,12 @@
         "cobra-help:dws minutes speaker replace --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.replace_speaker",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.replace_speaker",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求批量替换听记转写中指定发言人，将源发言人（speakerNick）精确匹配的所有段落替换为目标发言人，且已确认目标对象和所需参数时使用。"
@@ -5138,14 +5138,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5242,14 +5242,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5338,12 +5338,12 @@
       "source_refs": [
         "cobra-help:dws minutes speaker summary create --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_speaker_summary",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求触发创建发言人的段落总结任务，将听记中每位发言人的所有发言内容汇总总结，且已确认目标对象和所需参数时使用。"
@@ -5381,14 +5381,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5485,14 +5485,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5581,12 +5581,12 @@
       "source_refs": [
         "cobra-help:dws minutes speaker summary get --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_speaker_summary",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询发言人段落总结任务的结果，返回每位发言人的发言汇总，并能提供命令所需的查询条件时使用。"
@@ -5624,14 +5624,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5728,14 +5728,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5824,12 +5824,12 @@
       "source_refs": [
         "cobra-help:dws minutes tag list --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_user_tag_list",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要查询当前用户的听记标签或分组列表，并能提供命令所需的查询条件时使用。"
@@ -5867,14 +5867,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5971,14 +5971,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6067,12 +6067,12 @@
       "source_refs": [
         "cobra-help:dws minutes tag query --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_minutes_by_tag_id",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户需要根据用户的标签或分组 ID 查询该标签下的听记列表，并能提供命令所需的查询条件时使用。"
@@ -6110,14 +6110,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6214,14 +6214,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6236,13 +6236,13 @@
         },
         "interface_ref": {
           "value": "minutes.update_minutes_summary",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.update_minutes_summary",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -6317,13 +6317,13 @@
         "cobra-help:dws minutes update summary --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.update_minutes_summary",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.update_minutes_summary",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求用传入的摘要文本全量覆盖听记的纪要内容，不触发 AI 重新生成，且已确认目标对象和所需参数时使用。"
@@ -6361,14 +6361,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6465,14 +6465,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6487,13 +6487,13 @@
         },
         "interface_ref": {
           "value": "minutes.update_minutes_title",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.update_minutes_title",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -6568,13 +6568,13 @@
         "cobra-help:dws minutes update title --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.update_minutes_title",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.update_minutes_title",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求修改指定听记的标题，且已确认目标对象和所需参数时使用。"
@@ -6612,14 +6612,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6716,14 +6716,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6738,13 +6738,13 @@
         },
         "interface_ref": {
           "value": "minutes.cancel_upload_session",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.cancel_upload_session",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -6819,13 +6819,13 @@
         "cobra-help:dws minutes upload cancel --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.cancel_upload_session",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.cancel_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求取消 create 创建的上传会话，传入要取消的会话 ID，且已确认目标对象和所需参数时使用。"
@@ -6863,14 +6863,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6967,14 +6967,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6989,13 +6989,13 @@
         },
         "interface_ref": {
           "value": "minutes.complete_upload_session",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.complete_upload_session",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -7070,13 +7070,13 @@
         "cobra-help:dws minutes upload complete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.complete_upload_session",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.complete_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求文件上传完成后，创建听记，且已确认目标对象和所需参数时使用。"
@@ -7114,14 +7114,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -7218,14 +7218,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -7240,13 +7240,13 @@
         },
         "interface_ref": {
           "value": "minutes.create_upload_session",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "minutes.create_upload_session",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -7321,13 +7321,13 @@
         "cobra-help:dws minutes upload create --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.create_upload_session",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "当用户明确要求创建文件上传会话，获取预签名上传URL，且已确认目标对象和所需参数时使用。"

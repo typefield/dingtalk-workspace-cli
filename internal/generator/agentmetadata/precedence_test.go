@@ -64,18 +64,18 @@ func TestReviewedHintSourceRanksEveryAuthoredFieldWithoutPerToolDuplication(t *t
 func TestGenerateUsesSourcePrecedenceForSelectionAndSafety(t *testing.T) {
 	root := t.TempDir()
 	writePrecedenceFixture(t, root, "calendar attendee update")
-	writeFixture(t, root, "skills/mono/schema-hints/10-imported.json", hintFixture("imported", "imported-review", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/10-imported.json", hintFixture("imported", "imported-review", "calendar attendee update", `{
       "agent_summary": "imported summary",
       "risk": "high",
       "confirmation": "user_required"
     }`))
-	writeFixture(t, root, "skills/mono/schema-hints/20-unreviewed.json", hintFixture("explicit", "generated-baseline", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/20-unreviewed.json", hintFixture("explicit", "generated-baseline", "calendar attendee update", `{
       "agent_summary": "unreviewed baseline summary",
       "risk": "medium",
       "confirmation": "not_required",
       "reviewed": false
     }`))
-	writeFixture(t, root, "skills/mono/schema-hints/30-reviewed.json", hintFixture("explicit", "reviewed-selection", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/30-reviewed.json", hintFixture("explicit", "reviewed-selection", "calendar attendee update", `{
       "agent_summary": "reviewed explicit summary",
       "risk": "low",
       "confirmation": "not_required",
@@ -96,20 +96,20 @@ func TestGenerateUsesSourcePrecedenceForSelectionAndSafety(t *testing.T) {
 		t.Fatalf("reviewed explicit safety did not override imported values: %s/%s", tool.Risk, tool.Confirmation)
 	}
 	riskProvenance := tool.FieldProvenance["risk"]
-	if riskProvenance.Value != "low" || riskProvenance.Source != "skills/mono/schema-hints/30-reviewed.json" || riskProvenance.Precedence != "reviewed_explicit" || riskProvenance.Resolution != "highest_precedence" {
+	if riskProvenance.Value != "low" || riskProvenance.Source != "internal/cli/schema_hints/30-reviewed.json" || riskProvenance.Precedence != "reviewed_explicit" || riskProvenance.Resolution != "highest_precedence" {
 		t.Fatalf("risk provenance = %#v", riskProvenance)
 	}
 	if riskProvenance.ReviewReason == "" {
 		t.Fatalf("risk provenance has no review reason: %#v", riskProvenance)
 	}
-	if !hasCandidate(riskProvenance.Candidates, "high", "skills/mono/schema-hints/10-imported.json", "imported", false) {
+	if !hasCandidate(riskProvenance.Candidates, "high", "internal/cli/schema_hints/10-imported.json", "imported", false) {
 		t.Fatalf("risk provenance lost imported candidate: %#v", riskProvenance)
 	}
-	if !hasCandidate(riskProvenance.Candidates, "low", "skills/mono/schema-hints/30-reviewed.json", "reviewed_explicit", true) {
+	if !hasCandidate(riskProvenance.Candidates, "low", "internal/cli/schema_hints/30-reviewed.json", "reviewed_explicit", true) {
 		t.Fatalf("risk provenance did not mark its winner: %#v", riskProvenance)
 	}
 	confirmationProvenance := tool.FieldProvenance["confirmation"]
-	if confirmationProvenance.Source != "skills/mono/schema-hints/30-reviewed.json" || confirmationProvenance.Precedence != "reviewed_explicit" {
+	if confirmationProvenance.Source != "internal/cli/schema_hints/30-reviewed.json" || confirmationProvenance.Precedence != "reviewed_explicit" {
 		t.Fatalf("confirmation provenance = %#v", confirmationProvenance)
 	}
 }
@@ -129,8 +129,8 @@ func TestGenerateRejectsSamePrecedenceScalarConflict(t *testing.T) {
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			writePrecedenceFixture(t, root, "calendar attendee update")
-			writeFixture(t, root, "skills/mono/schema-hints/a.json", hintFixture("explicit", "review-a", "calendar attendee update", test.first))
-			writeFixture(t, root, "skills/mono/schema-hints/b.json", hintFixture("explicit", "review-b", "calendar attendee update", test.second))
+			writeFixture(t, root, "internal/cli/schema_hints/a.json", hintFixture("explicit", "review-a", "calendar attendee update", test.first))
+			writeFixture(t, root, "internal/cli/schema_hints/b.json", hintFixture("explicit", "review-b", "calendar attendee update", test.second))
 
 			_, _, err := generateFromSources(precedenceOptions(root, map[string]string{
 				"calendar attendee update": "calendar attendee update",
@@ -155,13 +155,13 @@ func TestGenerateRejectsLowerPrecedenceConflictHiddenByHigherWinner(t *testing.T
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			writePrecedenceFixture(t, root, "calendar attendee update")
-			writeFixture(t, root, "skills/mono/schema-hints/10-import-a.json", hintFixture(
+			writeFixture(t, root, "internal/cli/schema_hints/10-import-a.json", hintFixture(
 				"imported", "import-a", "calendar.attendee_update_a", fmt.Sprintf(`{"risk":%q}`, test.left),
 			))
-			writeFixture(t, root, "skills/mono/schema-hints/20-import-b.json", hintFixture(
+			writeFixture(t, root, "internal/cli/schema_hints/20-import-b.json", hintFixture(
 				"imported", "import-b", "calendar.attendee_update_b", fmt.Sprintf(`{"risk":%q}`, test.right),
 			))
-			writeFixture(t, root, "skills/mono/schema-hints/30-reviewed.json", `{
+			writeFixture(t, root, "internal/cli/schema_hints/30-reviewed.json", `{
   "version": 1,
   "source": {"kind": "explicit", "name": "reviewed-winner"},
   "tools": {
@@ -208,7 +208,7 @@ func TestGenerateRejectsSamePrecedenceInterfaceConflictAfterAliasReconciliation(
 		t.Run(test.name, func(t *testing.T) {
 			root := t.TempDir()
 			writePrecedenceFixture(t, root, "calendar attendee update")
-			writeFixture(t, root, "skills/mono/schema-hints/aliases.json", fmt.Sprintf(`{
+			writeFixture(t, root, "internal/cli/schema_hints/aliases.json", fmt.Sprintf(`{
   "version": 1,
   "source": {"kind": "explicit", "name": "alias-review"},
   "tools": {
@@ -232,12 +232,12 @@ func TestGenerateRejectsSamePrecedenceInterfaceConflictAfterAliasReconciliation(
 func TestReviewedLocalDispositionClearsLowerPrecedenceMCPRef(t *testing.T) {
 	root := t.TempDir()
 	writePrecedenceFixture(t, root, "calendar attendee update")
-	writeFixture(t, root, "skills/mono/schema-hints/10-imported.json", hintFixture("imported", "imported-interface", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/10-imported.json", hintFixture("imported", "imported-interface", "calendar attendee update", `{
       "interface_ref": {"product_id": "calendar", "rpc_name": "update_attendee"},
       "interface_mode": "mcp",
       "availability": "available"
     }`))
-	writeFixture(t, root, "skills/mono/schema-hints/20-reviewed.json", hintFixture("explicit", "reviewed-interface", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/20-reviewed.json", hintFixture("explicit", "reviewed-interface", "calendar attendee update", `{
       "interface_mode": "local",
       "interface_reason": "The CLI wrapper is executable but has no pinned MCP operation.",
       "availability": "available",
@@ -259,7 +259,7 @@ func TestReviewedLocalDispositionClearsLowerPrecedenceMCPRef(t *testing.T) {
 		t.Fatalf("interface_ref disposition provenance = %#v", refProvenance)
 	}
 	provenance := tool.FieldProvenance["interface_mode"]
-	if provenance.Value != "local" || provenance.Source != "skills/mono/schema-hints/20-reviewed.json" || provenance.Precedence != "reviewed_explicit" {
+	if provenance.Value != "local" || provenance.Source != "internal/cli/schema_hints/20-reviewed.json" || provenance.Precedence != "reviewed_explicit" {
 		t.Fatalf("interface_mode provenance = %#v", provenance)
 	}
 }
@@ -267,13 +267,13 @@ func TestReviewedLocalDispositionClearsLowerPrecedenceMCPRef(t *testing.T) {
 func TestInterfaceDispositionResolutionSurvivesAliasReconciliation(t *testing.T) {
 	root := t.TempDir()
 	writePrecedenceFixture(t, root, "calendar attendee update")
-	writeFixture(t, root, "skills/mono/schema-hints/10-imported.json", hintFixture("imported", "legacy-local", "calendar.update_legacy", `{
+	writeFixture(t, root, "internal/cli/schema_hints/10-imported.json", hintFixture("imported", "legacy-local", "calendar.update_legacy", `{
       "interface_ref": {"product_id": "calendar", "rpc_name": "update_attendee"},
       "interface_mode": "local",
       "availability": "available",
       "interface_reason": "legacy wrapper"
     }`))
-	writeFixture(t, root, "skills/mono/schema-hints/20-reviewed.json", hintFixture("explicit", "reviewed-mcp", "calendar.update_current", `{
+	writeFixture(t, root, "internal/cli/schema_hints/20-reviewed.json", hintFixture("explicit", "reviewed-mcp", "calendar.update_current", `{
       "interface_mode": "mcp",
       "availability": "available",
       "reviewed": true
@@ -384,7 +384,7 @@ func TestSafetyPrecedenceAllowsExplicitDowngrade(t *testing.T) {
 func TestReviewedAuthoredEmptyScalarsOverrideLowerValues(t *testing.T) {
 	root := t.TempDir()
 	writePrecedenceFixture(t, root, "calendar attendee update")
-	writeFixture(t, root, "skills/mono/schema-hints/10-imported.json", hintFixture("imported", "legacy", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/10-imported.json", hintFixture("imported", "legacy", "calendar attendee update", `{
       "agent_summary": "legacy summary",
       "effect": "write",
       "risk": "high",
@@ -394,7 +394,7 @@ func TestReviewedAuthoredEmptyScalarsOverrideLowerValues(t *testing.T) {
       "availability": "available",
       "interface_reason": "legacy wrapper"
     }`))
-	writeFixture(t, root, "skills/mono/schema-hints/20-reviewed.json", hintFixture("explicit", "reviewed-empty", "calendar attendee update", `{
+	writeFixture(t, root, "internal/cli/schema_hints/20-reviewed.json", hintFixture("explicit", "reviewed-empty", "calendar attendee update", `{
       "agent_summary": "",
       "effect": "",
       "risk": "",
@@ -425,7 +425,7 @@ func TestReviewedAuthoredEmptyScalarsOverrideLowerValues(t *testing.T) {
 			t.Errorf("%s = %q, want authored empty", field, value)
 		}
 		provenance := tool.FieldProvenance[field]
-		if provenance.Value != "" || provenance.Source != "skills/mono/schema-hints/20-reviewed.json" || provenance.Precedence != "reviewed_explicit" {
+		if provenance.Value != "" || provenance.Source != "internal/cli/schema_hints/20-reviewed.json" || provenance.Precedence != "reviewed_explicit" {
 			t.Errorf("%s provenance = %#v", field, provenance)
 			continue
 		}
@@ -511,7 +511,7 @@ func precedenceOptions(root string, toolPaths map[string]string) Options {
 		SkillPath:        "skills/mono/SKILL.md",
 		ProductsDir:      "skills/mono/references/products",
 		IntentGuidePath:  "skills/mono/references/intent-guide.md",
-		HintsDir:         "skills/mono/schema-hints",
+		HintsDir:         "internal/cli/schema_hints",
 		ToolPaths:        toolPaths,
 		ProductIDs:       map[string]bool{"calendar": true},
 		SurfaceToolCount: 1,

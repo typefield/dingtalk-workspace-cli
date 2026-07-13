@@ -59,7 +59,7 @@ func validateCatalogOutputIsolation(rootPath, outputPath, surfacePath string) er
 		{Name: "main Skill metadata source", Path: "skills/mono/SKILL.md"},
 		{Name: "product Skill metadata source directory", Path: "skills/mono/references/products"},
 		{Name: "intent guide metadata source", Path: "skills/mono/references/intent-guide.md"},
-		{Name: "structured metadata source directory", Path: "skills/mono/schema-hints"},
+		{Name: "structured metadata source directory", Path: "internal/cli/schema_hints"},
 		{Name: "reviewed CommandRegistry input", Path: "internal/cli/schema_command_registry.json"},
 		{Name: "reviewed manual Schema/Agent hint input", Path: "internal/cli/schema_manual_hints.json"},
 		{Name: "generated Agent metadata input", Path: "internal/cli/schema_agent_metadata"},
@@ -103,6 +103,9 @@ func generateSchemaCatalog(root *cobra.Command, surfacePath, outputPath string) 
 	registry, err := cli.AssembleSchemaRegistryFromBound(bound)
 	if err != nil {
 		return fmt.Errorf("assemble final typed SchemaRegistry: %w", err)
+	}
+	if err := cli.ValidateReviewedDryRunCapabilityDelivery(registry); err != nil {
+		return fmt.Errorf("validate reviewed dry-run capability delivery: %w", err)
 	}
 	if _, err := cli.ValidateEmbeddedManualAgentExampleDelivery(bound, registry); err != nil {
 		return fmt.Errorf("validate final Manual Agent example delivery: %w", err)

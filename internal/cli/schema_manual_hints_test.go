@@ -467,24 +467,28 @@ func TestBuildManualAgentExampleExecutionPlanUsesExplicitReviewedDispositions(t 
 	if err != nil {
 		t.Fatalf("BuildManualAgentExampleExecutionPlan() with typed safety error = %v", err)
 	}
-	if plan.DryRun != 0 || plan.ContractOnly != 2 || plan.TypedSafetyContractOnly != 2 || plan.ContractOnlyByReason[ManualAgentExampleReasonConfirmationRequired] != 2 {
+	if plan.DryRun != 2 || plan.ContractOnly != 0 {
 		t.Fatalf("typed safety plan = %#v", plan)
 	}
 	for _, execution := range plan.Examples {
-		if execution.Source != ManualAgentExampleDispositionTypedSafety {
-			t.Fatalf("typed safety execution source = %q", execution.Source)
+		if execution.Mode != ManualAgentExampleModeDryRun || execution.Source != ManualAgentExampleDispositionDefault {
+			t.Fatalf("typed safety execution = %#v, want default dry_run", execution)
 		}
 	}
 	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
 		Index:      &index,
 		Mode:       ManualAgentExampleModeContractOnly,
 		ReasonCode: ManualAgentExampleReasonStatefulPreflight,
-		Reason:     "A manual exception must not shadow typed confirmation.",
+		Reason:     "The command performs an authenticated stateful lookup before its dry-run branch.",
 		Reviewed:   true,
 	}}
 	hints.Tools["sample.search_items"] = tool
-	if _, err := BuildManualAgentExampleExecutionPlan(bound, registry, hints); err == nil || !strings.Contains(err.Error(), "typed safety already requires confirmation") {
-		t.Fatalf("redundant manual disposition error = %v", err)
+	plan, err = BuildManualAgentExampleExecutionPlan(bound, registry, hints)
+	if err != nil {
+		t.Fatalf("high-risk plan with reviewed stateful preflight disposition error = %v", err)
+	}
+	if plan.DryRun != 1 || plan.ContractOnly != 1 || plan.ReviewedContractOnly != 1 {
+		t.Fatalf("high-risk reviewed disposition plan = %#v", plan)
 	}
 }
 
@@ -549,7 +553,7 @@ func TestManualAgentExampleContractRequiresCobraFlagsAndPositionalsEvenWhenContr
 	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
 		Index:      &index,
 		Mode:       ManualAgentExampleModeContractOnly,
-		ReasonCode: ManualAgentExampleReasonInteractiveInput,
+		ReasonCode: ManualAgentExampleReasonStatefulPreflight,
 		Reason:     "Reviewed interactive precondition",
 		Reviewed:   true,
 	}}
@@ -681,7 +685,7 @@ func TestManualAgentExampleExecutionPlanRejectsManualConfirmationClassification(
 	tool.ExampleDispositions = []ManualAgentExampleDisposition{{
 		Index:      &index,
 		Mode:       ManualAgentExampleModeContractOnly,
-		ReasonCode: ManualAgentExampleReasonConfirmationRequired,
+		ReasonCode: "confirmation_required",
 		Reason:     "Do not author a typed safety fact manually.",
 		Reviewed:   true,
 	}}

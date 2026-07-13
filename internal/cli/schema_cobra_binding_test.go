@@ -228,6 +228,26 @@ func TestBindEffectiveCommandRegistryAcceptsEquivalentCompatibilityLeafContract(
 	}
 }
 
+func TestBindEffectiveCommandRegistryIgnoresLazilyMaterializedHelpFlag(t *testing.T) {
+	root := commandRegistryTestRoot("item get", "item legacy")
+	primary := exactSchemaCommand(root, "item get")
+	alias := exactSchemaCommand(root, "item legacy")
+	alias.Hidden = true
+	// Cobra does this only for the command selected by Execute. Binding after
+	// parsing must remain independent of whether the primary or compatibility
+	// path was selected first.
+	primary.InitDefaultHelpFlag()
+
+	effective := mustEffectiveCommandRegistry(t, []CommandSpec{{
+		CanonicalPath:  "item.get_item",
+		PrimaryCLIPath: "item get",
+		Aliases:        []string{"item legacy"},
+	}})
+	if _, err := BindEffectiveCommandRegistry(root, effective); err != nil {
+		t.Fatalf("lazy Cobra --help flag changed compatibility contract: %v", err)
+	}
+}
+
 func TestBindEffectiveCommandRegistryCompatibilityGateIsOrderIndependentOfCanonicalMetadataMaterialization(t *testing.T) {
 	const canonical = "compat.get_item"
 	previousMetadata, hadMetadata := runtimeSchemaParameterMetadataByCanonical[canonical]
@@ -270,6 +290,36 @@ func TestBindEffectiveCommandRegistryCompatibilityGateIsOrderIndependentOfCanoni
 	}})
 	if _, err := BindEffectiveCommandRegistry(root, effective); err != nil {
 		t.Fatalf("BindEffectiveCommandRegistry() after canonical metadata materialization error = %v", err)
+	}
+}
+
+func TestBindEffectiveCommandRegistryTreatsManualParameterHintsAsCanonicalProjection(t *testing.T) {
+	root := commandRegistryTestRoot("item get", "item legacy")
+	primary := exactSchemaCommand(root, "item get")
+	alias := exactSchemaCommand(root, "item legacy")
+	alias.Hidden = true
+	primary.Flags().Bool("include-archived", false, "include archived items")
+	alias.Flags().Bool("include-archived", false, "include archived items")
+
+	required := false
+	if err := annotateManualSchemaParameter(
+		primary.Flags().Lookup("include-archived"),
+		ManualSchemaParameterHint{Required: &required},
+		"Reviewed canonical projection may lower the Agent-facing required value.",
+	); err != nil {
+		t.Fatalf("annotateManualSchemaParameter() error = %v", err)
+	}
+
+	effective := mustEffectiveCommandRegistry(t, []CommandSpec{{
+		CanonicalPath:  "item.get_item",
+		PrimaryCLIPath: "item get",
+		Aliases:        []string{"item legacy"},
+	}})
+	if _, err := BindEffectiveCommandRegistry(root, effective); err != nil {
+		t.Fatalf("manual canonical projection must not create compatibility-leaf executable drift: %v", err)
+	}
+	if _, _, ok, err := runtimeManualSchemaParameter(alias.Flags().Lookup("include-archived")); err != nil || ok {
+		t.Fatalf("manual projection was copied to compatibility leaf: present=%t err=%v", ok, err)
 	}
 }
 

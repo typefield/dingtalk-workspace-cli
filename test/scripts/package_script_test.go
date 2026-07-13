@@ -363,6 +363,19 @@ func TestPostGoreleaserSkillsZipLayout(t *testing.T) {
 	if _, err := os.Stat(filepath.Join(extractDir, "mono", "SKILL.md")); err != nil {
 		t.Fatalf("zip missing mono/SKILL.md: %v", err)
 	}
+	// Schema hints are shared build-only inputs, not mono Skill content. They
+	// must not leak into either backward-compatible copy of the mono bundle.
+	for _, rel := range []string{
+		"schema-hints",
+		filepath.Join("mono", "schema-hints"),
+		filepath.Join("multi", "schema-hints"),
+	} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err == nil {
+			t.Fatalf("zip unexpectedly contains build-only %s", rel)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("Stat(%s) error = %v", rel, err)
+		}
+	}
 	// multi/ subtree with at least one per-product skill.
 	multiEntries, err := os.ReadDir(filepath.Join(extractDir, "multi"))
 	if err != nil {

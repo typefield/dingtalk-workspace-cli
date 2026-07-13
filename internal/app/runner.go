@@ -156,6 +156,18 @@ type runtimeRunner struct {
 }
 
 func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation) (executor.Result, error) {
+	// Global dry-run is an execution barrier, not merely a transport option.
+	// Return a deterministic local preview before profile resolution, catalog
+	// discovery, Keychain/token prefetch, auth, stateful preflight or transport.
+	// Use the non-injectable EchoRunner rather than r.fallback so tests and
+	// edition overlays cannot accidentally turn this path into real execution.
+	if invocation.DryRun || (r != nil && r.globalFlags != nil && r.globalFlags.DryRun) {
+		invocation.DryRun = true
+		return (executor.EchoRunner{}).Run(ctx, invocation)
+	}
+	if r == nil {
+		return executor.Result{}, fmt.Errorf("runtime runner is not configured")
+	}
 	// Emit the one-shot host-owned PAT decision log. Placed here (not in
 	// the constructor) so it fires AFTER PersistentPreRunE has configured
 	// slog level per --debug / --verbose. The Once guard makes repeat

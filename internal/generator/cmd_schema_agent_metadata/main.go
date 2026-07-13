@@ -49,7 +49,7 @@ func main() {
 	flag.StringVar(&skillPath, "skill", "skills/mono/SKILL.md", "Main DWS SKILL.md path")
 	flag.StringVar(&productsDir, "products", "skills/mono/references/products", "Product skill reference directory")
 	flag.StringVar(&intentGuidePath, "intent-guide", "skills/mono/references/intent-guide.md", "Cross-product intent guide path")
-	flag.StringVar(&hintsDir, "hints", "skills/mono/schema-hints", "Versioned Agent hint JSON directory")
+	flag.StringVar(&hintsDir, "hints", "internal/cli/schema_hints", "Versioned Agent hint JSON directory")
 	flag.StringVar(&manualHintsPath, "manual-hints", "internal/cli/schema_manual_hints.json", "Reviewed Manual Schema/Agent hint input; read-only")
 	flag.StringVar(&interfaceMetadataPath, "interface-metadata", "internal/cli/schema_mcp_metadata.json", "Sanitized versioned MCP metadata used only for fallback Agent summaries")
 	flag.StringVar(&outputPath, "output", "", "Output embedded Agent metadata JSON file (legacy single-file mode)")
@@ -69,7 +69,7 @@ func main() {
 		{Name: "canonical main Skill input", Path: "skills/mono/SKILL.md"},
 		{Name: "canonical product Skill input directory", Path: "skills/mono/references/products"},
 		{Name: "canonical intent guide input", Path: "skills/mono/references/intent-guide.md"},
-		{Name: "canonical structured hint input directory", Path: "skills/mono/schema-hints"},
+		{Name: "canonical structured hint input directory", Path: "internal/cli/schema_hints"},
 		{Name: "canonical reviewed manual Agent hint input", Path: "internal/cli/schema_manual_hints.json"},
 		{Name: "canonical reviewed CommandRegistry input", Path: "internal/cli/schema_command_registry.json"},
 		{Name: "canonical pinned interface metadata input", Path: "internal/cli/schema_mcp_metadata.json"},

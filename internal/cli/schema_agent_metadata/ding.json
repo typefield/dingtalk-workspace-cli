@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -153,14 +153,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -175,13 +175,13 @@
         },
         "interface_ref": {
           "value": "ding.recall_ding_message",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "ding.recall_ding_message",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -265,16 +265,16 @@
         "Skill:skills/mono/references/products/ding.md",
         "cobra-help:dws ding message recall",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json#ding.recall_ding_message",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.ding.recall_ding_message",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/ding.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#ding.recall_ding_message",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#ding.recall_ding_message"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#ding.recall_ding_message",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#ding.recall_ding_message"
       ],
       "use_when": [
         "用户明确要撤回一个已知 openDingId 的机器人 DING 时"
@@ -313,14 +313,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -419,14 +419,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -441,13 +441,13 @@
         },
         "interface_ref": {
           "value": "ding.send_ding_message",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "ding.send_ding_message",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -523,15 +523,15 @@
         "Skill:skills/mono/references/products/ding.md",
         "cobra-help:dws ding message send",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json#ding.send_ding_message",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.ding.send_ding_message",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/ding.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#ding.send_ding_message",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#ding.send_ding_message"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#ding.send_ding_message",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#ding.send_ding_message"
       ],
       "use_when": [
         "用户明确要以机器人身份发送应用内、短信或电话 DING 时"

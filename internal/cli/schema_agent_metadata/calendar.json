@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -137,14 +137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -233,10 +233,10 @@
       "source_refs": [
         "Cobra help: dws calendar acl list --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_acls",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查询当前用户主日历的访问控制列表——即\"我的日历共享给了哪些人、各自什么权限\"时。"
@@ -274,14 +274,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -378,14 +378,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -474,10 +474,10 @@
       "source_refs": [
         "Cobra help: dws calendar attachment add --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_attachments",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要为指定日程添加附件时。"
@@ -515,14 +515,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -619,14 +619,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -641,13 +641,13 @@
         },
         "interface_ref": {
           "value": "calendar.add_calendar_participant",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.add_calendar_participant",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -722,12 +722,12 @@
         "Cobra help: dws calendar attendee add --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.add_calendar_participant",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_calendar_participant",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要添加日程的参会人时。"
@@ -765,14 +765,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -807,13 +807,13 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -875,14 +875,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -897,13 +897,13 @@
         },
         "interface_ref": {
           "value": "calendar.remove_calendar_participant",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.remove_calendar_participant",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -933,13 +933,13 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -984,12 +984,12 @@
         "Cobra help: dws calendar attendee delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.remove_calendar_participant",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.remove_calendar_participant",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要移除日程的参会人时。"
@@ -1027,14 +1027,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1131,14 +1131,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1153,13 +1153,13 @@
         },
         "interface_ref": {
           "value": "calendar.get_calendar_participants",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.get_calendar_participants",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1234,12 +1234,12 @@
         "Cobra help: dws calendar attendee list --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.get_calendar_participants",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar_participants",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查看日程的参会人列表时。"
@@ -1277,14 +1277,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1381,14 +1381,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1477,11 +1477,11 @@
       "source_refs": [
         "Cobra help: dws calendar book get --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要根据日历id查询指定日历的信息时。"
@@ -1519,14 +1519,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1623,14 +1623,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1719,11 +1719,11 @@
       "source_refs": [
         "Cobra help: dws calendar book list --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_calendars",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查询当前用户的所有日历，结果范围：用户自己的日历、已订阅的公共/团队日历、他人共享的日历时。"
@@ -1761,14 +1761,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1865,14 +1865,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1961,11 +1961,11 @@
       "source_refs": [
         "Cobra help: dws calendar book search --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.search_calendar",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要搜索当前用户拥有的日历本，支持按日历本名模糊搜索时。"
@@ -2003,14 +2003,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2107,14 +2107,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2129,13 +2129,13 @@
         },
         "interface_ref": {
           "value": "calendar.query_busy_status",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.query_busy_status",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2210,11 +2210,11 @@
         "Cobra help: dws calendar busy search --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.query_busy_status",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.query_busy_status",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查询指定用户或会议室在给定时间范围内的闲忙状态时。"
@@ -2252,14 +2252,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2356,14 +2356,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2452,12 +2452,12 @@
       "source_refs": [
         "Cobra help: dws calendar event create --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.create_calendar_event",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要创建日程时。"
@@ -2495,14 +2495,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2537,13 +2537,13 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2608,14 +2608,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2630,13 +2630,13 @@
         },
         "interface_ref": {
           "value": "calendar.delete_calendar_event",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.delete_calendar_event",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2666,13 +2666,13 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2718,13 +2718,13 @@
         "Cobra help: dws calendar event delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.delete_calendar_event",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.delete_calendar_event",
         "skills/mono/SKILL.md",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要删除日程时。"
@@ -2762,14 +2762,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2866,14 +2866,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2888,13 +2888,13 @@
         },
         "interface_ref": {
           "value": "calendar.get_calendar_detail",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.get_calendar_detail",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2969,12 +2969,12 @@
         "Cobra help: dws calendar event get --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.get_calendar_detail",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar_detail",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要获取日程详情时。"
@@ -3012,14 +3012,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3116,14 +3116,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3212,11 +3212,11 @@
       "source_refs": [
         "Cobra help: dws calendar event list --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_calendar_events",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查询当前用户可访问的日程列表；未指定起止时间时默认查询当天日程时。"
@@ -3254,14 +3254,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3358,14 +3358,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3454,11 +3454,11 @@
       "source_refs": [
         "Cobra help: dws calendar event respond --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.respond",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要作为日程参会人，设置自己的响应状态（接受、拒绝、暂定）时。"
@@ -3496,14 +3496,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3600,14 +3600,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3622,13 +3622,13 @@
         },
         "interface_ref": {
           "value": "calendar.list_suggested_event_times",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.list_suggested_event_times",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -3703,12 +3703,12 @@
         "Cobra help: dws calendar event suggest --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.list_suggested_event_times",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_suggested_event_times",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要对于非明确时间或一段时间范围的约会场景，可基于所有参会人的忙闲状态，推荐多个可用的时间块方案，用于解决会议时间协调问题时。"
@@ -3746,14 +3746,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3850,14 +3850,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3946,11 +3946,11 @@
       "source_refs": [
         "Cobra help: dws calendar event update --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.update_calendar_event",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要支持修改标题、描述、时间、地点、忙碌状态等时。"
@@ -3988,14 +3988,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4092,14 +4092,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4114,13 +4114,13 @@
         },
         "interface_ref": {
           "value": "calendar.add_meeting_room",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.add_meeting_room",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4195,12 +4195,12 @@
         "Cobra help: dws calendar room add --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.add_meeting_room",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_meeting_room",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要为已有日程预订并添加一个或多个线下会议室时。"
@@ -4238,14 +4238,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4280,13 +4280,13 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4351,14 +4351,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4373,13 +4373,13 @@
         },
         "interface_ref": {
           "value": "calendar.delete_meeting_room",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.delete_meeting_room",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4409,13 +4409,13 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4461,13 +4461,13 @@
         "Cobra help: dws calendar room delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.delete_meeting_room",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.delete_meeting_room",
         "skills/mono/SKILL.md",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要移除会议室时。"
@@ -4505,14 +4505,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4609,14 +4609,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4631,13 +4631,13 @@
         },
         "interface_ref": {
           "value": "calendar.list_meeting_room_groups",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "calendar.list_meeting_room_groups",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -4712,12 +4712,12 @@
         "Cobra help: dws calendar room list-groups --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.list_meeting_room_groups",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_meeting_room_groups",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要会议室分组列表时。"
@@ -4755,14 +4755,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4859,14 +4859,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -4955,11 +4955,11 @@
       "source_refs": [
         "Cobra help: dws calendar room search --help",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.query_available_meeting_room",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要按名称检索会议室，或按时间、会议室组和名称查询可用会议室时。"

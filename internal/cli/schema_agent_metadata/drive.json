@@ -33,14 +33,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -137,14 +137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -159,13 +159,13 @@
         },
         "interface_ref": {
           "value": "drive.commit_upload",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.commit_upload",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -241,13 +241,13 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive commit",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.commit_upload",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.commit_upload",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.commit_upload",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.commit_upload"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.commit_upload",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.commit_upload"
       ],
       "use_when": [
         "需要提交文件上传时"
@@ -286,14 +286,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -392,14 +392,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -414,14 +414,14 @@
         },
         "interface_ref": {
           "value": "doc.copy_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.copy_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -497,12 +497,12 @@
         "CommandRegistry:canonical_path=drive.copy_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive copy",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.copy_document",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.copy_document"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.copy_document"
       ],
       "use_when": [
         "需要将文档空间中的文档或文件复制到指定文件夹或知识库时"
@@ -540,14 +540,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -582,14 +582,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -604,14 +604,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -660,14 +660,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -682,14 +682,14 @@
         },
         "interface_ref": {
           "value": "doc.delete_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.delete_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -720,14 +720,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -773,13 +773,13 @@
         "CommandRegistry:canonical_path=drive.delete_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive delete",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.delete_document",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.delete_document"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.delete_document"
       ],
       "use_when": [
         "需要将钉盘中的文件或文件夹移入回收站时"
@@ -818,14 +818,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -924,14 +924,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -946,13 +946,13 @@
         },
         "interface_ref": {
           "value": "drive.download_file",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.download_file",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1028,15 +1028,15 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive download",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.download_file",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.download_file",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.download_file",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.download_file"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.download_file",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.download_file"
       ],
       "use_when": [
         "需要下载钉盘或文档空间文件到本地时"
@@ -1074,14 +1074,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1178,14 +1178,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1200,13 +1200,13 @@
         },
         "interface_ref": {
           "value": "drive.get_file_info",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.get_file_info",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1282,13 +1282,13 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive info",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.get_file_info",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.get_file_info",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.get_file_info",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.get_file_info"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.get_file_info",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.get_file_info"
       ],
       "use_when": [
         "已知文件节点 ID，需要判断文件类型或读取元数据时"
@@ -1327,14 +1327,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1433,14 +1433,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1455,13 +1455,13 @@
         },
         "interface_ref": {
           "value": "drive.list_files",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.list_files",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -1537,15 +1537,15 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.list_files",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_files",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.list_files",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_files"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.list_files",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_files"
       ],
       "use_when": [
         "需要按目录浏览钉盘或文档空间文件时"
@@ -1583,14 +1583,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1687,14 +1687,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1784,12 +1784,12 @@
         "CommandRegistry:canonical_path=drive.list_spaces",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive list-spaces",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_spaces",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_spaces"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_spaces"
       ],
       "use_when": [
         "兼容场景下需要枚举钉盘空间时"
@@ -1828,14 +1828,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1934,14 +1934,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1956,13 +1956,13 @@
         },
         "interface_ref": {
           "value": "drive.create_folder",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.create_folder",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -2038,14 +2038,14 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive mkdir",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.create_folder",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.create_folder",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.create_folder",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.create_folder"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.create_folder",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.create_folder"
       ],
       "use_when": [
         "需要创建文件夹时"
@@ -2084,14 +2084,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2190,14 +2190,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2212,14 +2212,14 @@
         },
         "interface_ref": {
           "value": "doc.move_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.move_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2295,12 +2295,12 @@
         "CommandRegistry:canonical_path=drive.move_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive move",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.move_document",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.move_document"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.move_document"
       ],
       "use_when": [
         "需要将文档空间中的文档或文件移动到指定文件夹或知识库时"
@@ -2339,14 +2339,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2445,14 +2445,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2467,14 +2467,14 @@
         },
         "interface_ref": {
           "value": "doc.add_permission",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.add_permission",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2550,13 +2550,13 @@
         "CommandRegistry:canonical_path=drive.add_permission",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission add",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.add_permission",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.add_permission"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.add_permission"
       ],
       "use_when": [
         "需要为文档空间节点添加协作成员并授予指定角色时"
@@ -2595,14 +2595,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2701,14 +2701,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2723,14 +2723,14 @@
         },
         "interface_ref": {
           "value": "doc.list_permission",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.list_permission",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2806,13 +2806,13 @@
         "CommandRegistry:canonical_path=drive.list_permission",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission list",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_permission",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.list_permission"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.list_permission"
       ],
       "use_when": [
         "需要查询文档空间节点的协作者列表时"
@@ -2851,14 +2851,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2893,14 +2893,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -2915,14 +2915,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -2973,14 +2973,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2995,14 +2995,14 @@
         },
         "interface_ref": {
           "value": "doc.remove_permission",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.remove_permission",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -3033,14 +3033,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3086,14 +3086,14 @@
         "CommandRegistry:canonical_path=drive.permission_remove",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission remove",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.permission_remove",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.permission_remove"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.permission_remove"
       ],
       "use_when": [
         "需要从文档空间节点移除协作成员的权限时"
@@ -3131,14 +3131,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3235,14 +3235,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3257,14 +3257,14 @@
         },
         "interface_ref": {
           "value": "doc.update_permission",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.update_permission",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -3340,13 +3340,13 @@
         "CommandRegistry:canonical_path=drive.permission_update",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission update",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.permission_update",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.permission_update"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.permission_update"
       ],
       "use_when": [
         "需要更新文档空间节点已有协作者的权限角色时"
@@ -3384,13 +3384,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3418,13 +3418,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3438,13 +3438,13 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3478,13 +3478,13 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "unknown",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3498,13 +3498,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3512,13 +3512,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3526,14 +3526,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -3556,7 +3556,7 @@
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -3564,13 +3564,13 @@
         },
         "risk": {
           "value": "medium",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "medium",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3612,9 +3612,9 @@
         "CommandRegistry:canonical_path=drive.publish_get",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish get",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "需要确认文件是否已互联网公开及其公开权限时"
@@ -3653,13 +3653,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3687,21 +3687,21 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -3715,21 +3715,21 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -3765,21 +3765,21 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "unknown",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -3793,13 +3793,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3807,13 +3807,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3821,14 +3821,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -3851,14 +3851,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -3866,21 +3866,21 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "medium",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -3922,10 +3922,10 @@
         "CommandRegistry:canonical_path=drive.publish_set",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish set",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
+        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json",
-        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "用户明确要求开启文件的互联网公开发布时"
@@ -3963,13 +3963,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -3997,21 +3997,21 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -4025,21 +4025,21 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -4073,21 +4073,21 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "unknown",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -4101,13 +4101,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4115,13 +4115,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4129,14 +4129,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4159,14 +4159,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4174,21 +4174,21 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
             },
             {
               "value": "medium",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             },
@@ -4230,10 +4230,10 @@
         "CommandRegistry:canonical_path=drive.publish_unset",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish unset",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
+        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json",
-        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "用户明确要求关闭文件的互联网公开发布时"
@@ -4272,13 +4272,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4306,13 +4306,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4320,13 +4320,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4356,13 +4356,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4370,13 +4370,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4384,13 +4384,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4398,14 +4398,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4428,7 +4428,7 @@
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4436,13 +4436,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4478,9 +4478,9 @@
         "CommandRegistry:canonical_path=drive.recent",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recent",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "需要查看当前用户最近访问或编辑过的文档时"
@@ -4519,13 +4519,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4553,13 +4553,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4573,13 +4573,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4615,13 +4615,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4635,13 +4635,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4649,13 +4649,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4663,14 +4663,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4693,7 +4693,7 @@
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4701,13 +4701,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4749,9 +4749,9 @@
         "CommandRegistry:canonical_path=drive.recycle_list",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recycle list",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "需要查看回收站条目并取得恢复所需 ID 时"
@@ -4789,13 +4789,13 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4823,13 +4823,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4837,13 +4837,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4871,13 +4871,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4885,13 +4885,13 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4899,13 +4899,13 @@
         },
         "interface_reason": {
           "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "当前命令来自本地 Cobra 命令树或复合 helper，无固定 MCP interface_ref",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4913,14 +4913,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -4943,7 +4943,7 @@
             },
             {
               "value": false,
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4951,13 +4951,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "skills/mono/schema-hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4993,9 +4993,9 @@
         "CommandRegistry:canonical_path=drive.recycle_restore",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recycle restore",
+        "internal/cli/schema_hints/runtime-surface-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/runtime-surface-completeness.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "需要还原回收站文件时"
@@ -5033,14 +5033,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5137,14 +5137,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5159,14 +5159,14 @@
         },
         "interface_ref": {
           "value": "doc.rename_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.rename_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -5242,12 +5242,12 @@
         "CommandRegistry:canonical_path=drive.rename_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive rename",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.rename_document",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.rename_document"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.rename_document"
       ],
       "use_when": [
         "需要修改文档空间中文档或文件的名称时"
@@ -5286,14 +5286,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5392,14 +5392,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -5489,14 +5489,14 @@
         "CommandRegistry:canonical_path=drive.search_files",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive search",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.search_files",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/drive.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.search_files"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.search_files"
       ],
       "use_when": [
         "不知道文件位置，需要按名称或条件全局搜索时"
@@ -5534,14 +5534,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5570,14 +5570,14 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
@@ -5586,14 +5586,14 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
@@ -5622,14 +5622,14 @@
         },
         "idempotency": {
           "value": "non_idempotent",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "non_idempotent",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
@@ -5638,14 +5638,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5654,14 +5654,14 @@
         },
         "interface_reason": {
           "value": "The reviewed CLI wrapper is executable, but drive/create_shortcut is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "The reviewed CLI wrapper is executable, but drive/create_shortcut is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5670,14 +5670,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -5700,14 +5700,14 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
@@ -5716,14 +5716,14 @@
         },
         "risk": {
           "value": "medium",
-          "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "medium",
-              "source": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "runtime-confirmation-review-v1 marks this tool as reviewed"
@@ -5759,10 +5759,10 @@
       "source_refs": [
         "cobra-help:dws drive shortcut --help",
         "internal/cli/schema_command_registry.json#drive.create_shortcut",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json",
-        "skills/mono/schema-hints/zz-runtime-confirmation-review.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "用户要在另一个位置放置现有节点的快捷入口，而不是复制或移动原节点时。"
@@ -5800,14 +5800,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5898,14 +5898,14 @@
         },
         "interface_mode": {
           "value": "local",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5914,14 +5914,14 @@
         },
         "interface_reason": {
           "value": "The reviewed CLI wrapper is executable, but drive/get_node_stats is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed",
           "candidates": [
             {
               "value": "The reviewed CLI wrapper is executable, but drive/get_node_stats is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -5930,14 +5930,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -5960,7 +5960,7 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "unverified-direct-interface-review-v1 marks this tool as reviewed"
@@ -6010,9 +6010,9 @@
       "source_refs": [
         "cobra-help:dws drive stats --help",
         "internal/cli/schema_command_registry.json#drive.get_node_stats",
+        "internal/cli/schema_hints/zz-interface-disposition-review.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/zz-interface-disposition-review.json"
+        "skills/mono/references/products/drive.md"
       ],
       "use_when": [
         "已知节点 ID 或 URL，需要分析该节点的访问和协作统计时。"
@@ -6051,14 +6051,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6101,14 +6101,14 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/schema-hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/catalog-completeness.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "dws-command-surface-review marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
@@ -6159,14 +6159,14 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6175,14 +6175,14 @@
         },
         "interface_reason": {
           "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6191,14 +6191,14 @@
         },
         "interface_ref": {
           "value": null,
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -6221,7 +6221,7 @@
             },
             {
               "value": true,
-              "source": "skills/mono/schema-hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/catalog-completeness.json",
               "precedence": "reviewed_explicit",
               "selected": false,
               "review_reason": "dws-command-surface-review marks this tool as reviewed"
@@ -6272,12 +6272,12 @@
         "CommandRegistry:canonical_path=drive.upload",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive upload",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.upload"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.upload"
       ],
       "use_when": [
         "需要上传本地文件到钉盘或文档空间时"
@@ -6316,14 +6316,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6422,14 +6422,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -6444,13 +6444,13 @@
         },
         "interface_ref": {
           "value": "drive.get_upload_info",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "drive.get_upload_info",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -6526,13 +6526,13 @@
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive upload-info",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.get_upload_info",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.get_upload_info",
         "skills/mono/references/products/drive.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#drive.get_upload_info",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#drive.get_upload_info"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#drive.get_upload_info",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#drive.get_upload_info"
       ],
       "use_when": [
         "需要获取文件上传信息时"

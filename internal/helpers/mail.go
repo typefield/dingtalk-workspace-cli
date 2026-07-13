@@ -815,7 +815,8 @@ func newMailCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "email", "id"); err != nil {
 				return err
 			}
-			if !cmd.Flags().Changed("yes") {
+			yes, _ := cmd.Flags().GetBool("yes")
+			if !yes && !commandDryRun(cmd) {
 				return fmt.Errorf("此操作将删除会话且不可撤销，请添加 --yes 确认执行")
 			}
 			return callMCPTool("trash_mailbox_thread", map[string]any{
@@ -845,7 +846,8 @@ func newMailCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "email", "ids"); err != nil {
 				return err
 			}
-			if !cmd.Flags().Changed("yes") {
+			yes, _ := cmd.Flags().GetBool("yes")
+			if !yes && !commandDryRun(cmd) {
 				return fmt.Errorf("此操作将批量删除会话且不可撤销，请添加 --yes 确认执行")
 			}
 			ids := parseRecipients(mustGetFlag(cmd, "ids"))

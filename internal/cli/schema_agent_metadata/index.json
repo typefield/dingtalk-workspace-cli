@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_hash": "sha256:d5e50061b16dcfc6dcd29605fab69484ff045ef75f54220bfd5a0fa5a75b0a29",
+  "source_hash": "sha256:5e7e7d9d492b1cc83c1c17e28a38bad3a5a701b9a51ed0f31adc6f88a29740f8",
   "surface_hash": "sha256:be28fa5be59b27f5cd141a64487710f29e2e7361b1555a3a64818942e4327d37",
   "coverage": {
     "surface_products": 20,
@@ -76,10 +76,10 @@
       },
       "source_refs": [
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/products/aisearch.md",
-        "skills/mono/schema-hints/catalog-completeness.json"
+        "skills/mono/references/products/aisearch.md"
       ],
       "use_when": [
         "需要检索企业知识、行为记录或组织人员时。"
@@ -146,11 +146,11 @@
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.aitable.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/aitable.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/aitable.md"
       ],
       "use_when": [
         "需要读取或管理 AI 表格中的结构、数据、视图、权限、导入导出或工作流时。"
@@ -218,10 +218,10 @@
         "cobra-help:dws attendance --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.attendance.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/products/attendance.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/attendance.md"
       ],
       "use_when": [
         "用户要查询或管理钉钉考勤数据、规则、排班、考勤组、审批表单或假期余额。"
@@ -288,11 +288,11 @@
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/calendar.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/calendar.md"
       ],
       "use_when": [
         "需要查询或管理钉钉日历、日程、参与人、会议室和闲忙信息时。"
@@ -359,11 +359,11 @@
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.chat.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/chat.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/chat.md"
       ],
       "use_when": [
         "请求涉及群聊管理、聊天记录、消息发送、会话设置或群机器人时"
@@ -431,10 +431,10 @@
         "CommandRegistry:product=contact",
         "Skill:skills/mono/references/products/contact.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.contact.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/intent-guide.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/intent-guide.md"
       ],
       "use_when": [
         "按姓名、手机号、用户 ID 或部门条件查找组织人员与部门信息时"
@@ -500,9 +500,9 @@
       },
       "source_refs": [
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/references/products/dev.md",
-        "skills/mono/schema-hints/catalog-completeness.json"
+        "skills/mono/references/products/dev.md"
       ],
       "use_when": [
         "请求涉及创建或配置开放平台应用、机器人建号、版本审批发布或本地连接器时"
@@ -570,11 +570,11 @@
         "CommandRegistry:product=devdoc",
         "Skill:skills/mono/references/products/devdoc.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.devdoc.prod.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/intent-guide.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/intent-guide.md"
       ],
       "use_when": [
         "查询 OpenAPI、字段、错误码、SDK、鉴权、回调或配额等开发问题时"
@@ -642,9 +642,9 @@
         "CommandRegistry:product=ding",
         "Skill:skills/mono/references/products/ding.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/SKILL.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/SKILL.md"
       ],
       "use_when": [
         "需要通过应用内、短信或电话方式发送机器人 DING，或撤回机器人 DING 时"
@@ -712,10 +712,10 @@
         "CommandRegistry:product=doc",
         "Skill:skills/mono/references/products/doc.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/intent-guide.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/intent-guide.md"
       ],
       "use_when": [
         "创建、读取或编辑在线文档内容，或处理文档块、评论、导入导出、模板和版本时"
@@ -783,9 +783,9 @@
         "CommandRegistry:product=drive",
         "Skill:skills/mono/references/products/drive.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/SKILL.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/SKILL.md"
       ],
       "use_when": [
         "浏览、搜索、上传、下载或整理钉盘和文档空间文件时"
@@ -853,8 +853,8 @@
         "CommandRegistry:product=live",
         "Skill:skills/multi/dingtalk-live/SKILL.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.live.prod.json",
-        "internal/cli/schema_manual_hints.json",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
         "用户要查看自己的直播或直播列表时"
@@ -921,11 +921,11 @@
       "source_refs": [
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/mail.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/mail.md"
       ],
       "use_when": [
         "请求涉及查收、搜索、阅读、回复、发送或整理邮件时"
@@ -993,10 +993,10 @@
         "cobra-help:dws minutes --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/products/minutes.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/minutes.md"
       ],
       "use_when": [
         "用户要查找、读取、编辑或管理钉钉听记及其录音、转写、摘要和衍生内容。"
@@ -1064,9 +1064,9 @@
         "CommandRegistry:product=oa",
         "Skill:skills/mono/references/products/oa.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.oa.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/SKILL.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/SKILL.md"
       ],
       "use_when": [
         "查看待审、已办、已发起或抄送审批，并执行同意、拒绝、撤销、转交等审批动作时"
@@ -1133,8 +1133,9 @@
       "source_refs": [
         "CommandRegistry:product=pat",
         "Skill:skills/mono/references/products/pat.md",
+        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/schema-hints/catalog-completeness.json"
+        "skills/mono/SKILL.md"
       ],
       "use_when": [
         "配置 PAT 授权浏览器策略，或预览、授予 Agent 行为 scope 时"
@@ -1202,10 +1203,10 @@
         "CommandRegistry:product=report",
         "Skill:skills/mono/references/products/report.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/intent-guide.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/intent-guide.md"
       ],
       "use_when": [
         "查看或提交日报、周报等钉钉日志时"
@@ -1273,12 +1274,12 @@
         "cobra-help:dws sheet --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.sheet.prod.json",
         "internal/cli/schema_command_registry.json",
+        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
-        "skills/mono/references/products/sheet.md",
-        "skills/mono/schema-hints/catalog-completeness.json",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/products/sheet.md"
       ],
       "use_when": [
         "用户要处理钉钉在线电子表格中的工作表、单元格、范围、筛选、图表、图片或格式。"
@@ -1346,10 +1347,10 @@
         "CommandRegistry:product=todo",
         "Skill:skills/mono/references/products/todo.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json",
+        "internal/cli/schema_hints/imported/wukong.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
-        "skills/mono/references/intent-guide.md",
-        "skills/mono/schema-hints/imported/wukong.json"
+        "skills/mono/references/intent-guide.md"
       ],
       "use_when": [
         "查询、创建或更新个人待办及其协作信息时"
@@ -1416,9 +1417,9 @@
       "source_refs": [
         "CommandRegistry:product=wiki",
         "Skill:skills/mono/references/products/wiki.md",
+        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_manual_hints.json",
-        "skills/mono/SKILL.md",
-        "skills/mono/schema-hints/catalog-completeness.json"
+        "skills/mono/SKILL.md"
       ],
       "use_when": [
         "查找或管理知识库、知识库内节点及知识库成员时"

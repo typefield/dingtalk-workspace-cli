@@ -264,7 +264,10 @@ func TestValidateManualHintsOutputIsolationAllowsSeparateTargets(t *testing.T) {
 func TestValidateAgentMetadataOutputIsolationProtectsAllSourceKinds(t *testing.T) {
 	root := t.TempDir()
 	skillPath := filepath.Join(root, "skills/mono/SKILL.md")
-	hintsDir := filepath.Join(root, "skills/mono/schema-hints")
+	hintsDir := filepath.Join(root, "internal/cli/schema_hints")
+	if err := os.MkdirAll(filepath.Dir(skillPath), 0o755); err != nil {
+		t.Fatal(err)
+	}
 	if err := os.MkdirAll(hintsDir, 0o755); err != nil {
 		t.Fatal(err)
 	}
@@ -276,7 +279,7 @@ func TestValidateAgentMetadataOutputIsolationProtectsAllSourceKinds(t *testing.T
 	}
 	inputs := []outputguard.Input{
 		{Name: "main Skill input", Path: "skills/mono/SKILL.md"},
-		{Name: "structured hint input directory", Path: "skills/mono/schema-hints"},
+		{Name: "structured hint input directory", Path: "internal/cli/schema_hints"},
 	}
 	for _, test := range []struct {
 		name      string
@@ -333,7 +336,7 @@ func TestValidateAgentMetadataOutputAllowlist(t *testing.T) {
 	if err := validateAgentMetadataOutputAllowlist(root, "", canonicalDir, canonicalAudit); err != nil {
 		t.Fatalf("canonical outputs rejected: %v", err)
 	}
-	if err := validateAgentMetadataOutputAllowlist(root, "", filepath.Join(root, "skills/mono/schema-hints"), ""); err == nil || !strings.Contains(err.Error(), "not a canonical generated delivery target") {
+	if err := validateAgentMetadataOutputAllowlist(root, "", filepath.Join(root, "internal/cli/schema_hints"), ""); err == nil || !strings.Contains(err.Error(), "not a canonical generated delivery target") {
 		t.Fatalf("non-canonical repository output error = %v", err)
 	}
 	if err := validateAgentMetadataOutputAllowlist(root, "", filepath.Join(t.TempDir(), "metadata"), ""); err != nil {

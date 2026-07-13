@@ -370,14 +370,14 @@ func TestPromptingWritesRequireUserConfirmation(t *testing.T) {
 		"sheet.delete_pivot_table": "destructive",
 	}
 	wantSources := map[string]string{
-		"attendance.class_create":  "skills/mono/schema-hints/zz-attendance-review.json",
-		"attendance.class_update":  "skills/mono/schema-hints/zz-attendance-review.json",
-		"doc.delete_comment":       "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
-		"doc.version_revert":       "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
-		"drive.publish_set":        "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
-		"drive.publish_unset":      "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
-		"sheet.chart_delete":       "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
-		"sheet.delete_pivot_table": "skills/mono/schema-hints/zz-runtime-confirmation-review.json",
+		"attendance.class_create":  "internal/cli/schema_hints/zz-attendance-review.json",
+		"attendance.class_update":  "internal/cli/schema_hints/zz-attendance-review.json",
+		"doc.delete_comment":       "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+		"doc.version_revert":       "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+		"drive.publish_set":        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+		"drive.publish_unset":      "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+		"sheet.chart_delete":       "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+		"sheet.delete_pivot_table": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
 	}
 	canonicals := make([]string, 0, len(wantEffects))
 	for canonical := range wantEffects {

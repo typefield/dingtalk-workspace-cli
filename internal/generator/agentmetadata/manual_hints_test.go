@@ -19,12 +19,12 @@ func TestGenerateUsesReviewedManualAgentProseAsSingleDeliverySource(t *testing.T
 	writeManualFixtureFile(t, root, "skills/mono/SKILL.md", "# Skill\n")
 	writeManualFixtureFile(t, root, "skills/mono/references/intent-guide.md", "# Intent\n")
 	writeManualFixtureFile(t, root, "skills/mono/references/products/sample.md", "# Sample\n")
-	writeManualFixtureFile(t, root, "skills/mono/schema-hints/a.json", `{
+	writeManualFixtureFile(t, root, "internal/cli/schema_hints/a.json", `{
   "version":1,
   "source":{"kind":"explicit","name":"legacy-a","reviewed":true},
   "tools":{"sample.search_items":{"agent_summary":"legacy A","use_when":["legacy A"],"avoid_when":["legacy A"],"examples":["dws sample item search --legacy-a"]}}
 }`)
-	writeManualFixtureFile(t, root, "skills/mono/schema-hints/b.json", `{
+	writeManualFixtureFile(t, root, "internal/cli/schema_hints/b.json", `{
   "version":1,
   "source":{"kind":"explicit","name":"legacy-b","reviewed":true},
   "tools":{"sample.search_items":{"agent_summary":"legacy B","use_when":["legacy B"],"avoid_when":["legacy B"],"examples":["dws sample item search --legacy-b"]}}
@@ -90,7 +90,7 @@ func TestGenerateRejectsMaxExamplesThatWouldTruncateReviewedManualHints(t *testi
 	if err := os.MkdirAll(filepath.Join(root, "skills/mono/references/products"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, "skills/mono/schema-hints"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "internal/cli/schema_hints"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	opts := manualAgentFixtureOptions(root)
@@ -109,7 +109,7 @@ func TestGenerateRejectsIncompleteManualAgentCoverage(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "skills/mono/references/products"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, "skills/mono/schema-hints"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "internal/cli/schema_hints"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	_, _, err := Generate(manualAgentFixtureOptions(root))
@@ -149,7 +149,7 @@ func TestGenerateValidatesManualExamplesAgainstBoundCobra(t *testing.T) {
 	if err := os.MkdirAll(filepath.Join(root, "skills/mono/references/products"), 0o755); err != nil {
 		t.Fatal(err)
 	}
-	if err := os.MkdirAll(filepath.Join(root, "skills/mono/schema-hints"), 0o755); err != nil {
+	if err := os.MkdirAll(filepath.Join(root, "internal/cli/schema_hints"), 0o755); err != nil {
 		t.Fatal(err)
 	}
 	_, _, err = Generate(manualAgentFixtureOptions(root))
@@ -170,7 +170,7 @@ func manualAgentFixtureOptions(root string) Options {
 		SkillPath:          "skills/mono/SKILL.md",
 		ProductsDir:        "skills/mono/references/products",
 		IntentGuidePath:    "skills/mono/references/intent-guide.md",
-		HintsDir:           "skills/mono/schema-hints",
+		HintsDir:           "internal/cli/schema_hints",
 		ManualHintsPath:    "internal/cli/schema_manual_hints.json",
 		ToolPaths:          map[string]string{"sample.search_items": "sample item search", "sample item search": "sample item search"},
 		CanonicalToolPaths: map[string]string{"sample.search_items": "sample item search"},

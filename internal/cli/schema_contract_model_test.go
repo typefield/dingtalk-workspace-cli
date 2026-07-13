@@ -140,6 +140,149 @@ func TestToolSpecFromRuntimeBuildsOneTypedResolvedContract(t *testing.T) {
 	}
 }
 
+func TestToolSpecDryRunCapabilityProjectsAndRoundTripsAtomically(t *testing.T) {
+	dryRun := &DryRunSpec{PreviewKind: DryRunPreviewDiff, RemoteReads: true}
+	spec, err := ToolSpecFromRuntime(RuntimeToolSpecInput{
+		Identity: ToolIdentitySpec{
+			ProductID: "doc",
+			Name:      "update",
+			CLIName:   "update",
+			CLIPath:   "doc update",
+		},
+		DryRun: dryRun,
+		FieldProvenance: map[string]FieldProvenance{
+			"dry_run": resolvedFieldProvenance(
+				dryRun,
+				"reviewed_manual_hint",
+				"schema_manual_hints.json",
+				"reviewed_manual",
+				"highest_precedence",
+				"reviewed dry-run capability",
+			),
+		},
+	})
+	if err != nil {
+		t.Fatalf("ToolSpecFromRuntime() error = %v", err)
+	}
+
+	full, err := spec.ToPayload()
+	if err != nil {
+		t.Fatalf("ToPayload() error = %v", err)
+	}
+	delivered, ok := full["dry_run"].(map[string]any)
+	if !ok {
+		t.Fatalf("dry_run = %#v", full["dry_run"])
+	}
+	if got := schemaString(delivered["preview_kind"]); got != DryRunPreviewDiff {
+		t.Fatalf("dry_run.preview_kind = %q", got)
+	}
+	if got, ok := delivered["remote_reads"].(bool); !ok || !got {
+		t.Fatalf("dry_run.remote_reads = %#v", delivered["remote_reads"])
+	}
+
+	summary, err := spec.ToSummaryPayload()
+	if err != nil {
+		t.Fatalf("ToSummaryPayload() error = %v", err)
+	}
+	if !schemaJSONEqual(summary["dry_run"], full["dry_run"]) {
+		t.Fatalf("summary dry_run = %#v, want %#v", summary["dry_run"], full["dry_run"])
+	}
+
+	registry, err := SchemaRegistryFromRuntime("runtime-command", []ProductSpec{{
+		ID:    "doc",
+		Name:  "Document",
+		Tools: []ToolSpec{spec},
+	}})
+	if err != nil {
+		t.Fatalf("SchemaRegistryFromRuntime() error = %v", err)
+	}
+	snapshotPayload, err := registry.ToSnapshotPayload()
+	if err != nil {
+		t.Fatalf("ToSnapshotPayload() error = %v", err)
+	}
+	loaded, _, err := schemaRegistryFromSnapshot(SchemaCatalogSnapshot{
+		Catalog: snapshotPayload.Catalog,
+		Tools:   snapshotPayload.Tools,
+	})
+	if err != nil {
+		t.Fatalf("schemaRegistryFromSnapshot() error = %v", err)
+	}
+	loadedTool := loaded.Products[0].Tools[0]
+	if loadedTool.DryRun == nil || *loadedTool.DryRun != *dryRun {
+		t.Fatalf("round-tripped dry_run = %#v, want %#v", loadedTool.DryRun, dryRun)
+	}
+}
+
+func TestToolSpecDryRunCapabilityIsPositiveOnlyAndStrict(t *testing.T) {
+	base := RuntimeToolSpecInput{Identity: ToolIdentitySpec{
+		ProductID: "sample",
+		Name:      "run",
+		CLIName:   "run",
+		CLIPath:   "sample run",
+	}}
+
+	withoutCapability, err := ToolSpecFromRuntime(base)
+	if err != nil {
+		t.Fatalf("ToolSpecFromRuntime() error = %v", err)
+	}
+	payload, err := withoutCapability.ToPayload()
+	if err != nil {
+		t.Fatalf("ToPayload() error = %v", err)
+	}
+	if _, ok := payload["dry_run"]; ok {
+		t.Fatalf("nil capability unexpectedly emitted dry_run: %#v", payload["dry_run"])
+	}
+
+	base.DryRun = &DryRunSpec{PreviewKind: "unsupported"}
+	if _, err := ToolSpecFromRuntime(base); err == nil || !strings.Contains(err.Error(), "unknown preview_kind") {
+		t.Fatalf("invalid preview_kind error = %v", err)
+	}
+
+	base.DryRun = &DryRunSpec{PreviewKind: DryRunPreviewInvocation}
+	withCapability, err := ToolSpecFromRuntime(base)
+	if err != nil {
+		t.Fatalf("ToolSpecFromRuntime(valid dry_run) error = %v", err)
+	}
+	payload, err = withCapability.ToPayload()
+	if err != nil {
+		t.Fatalf("ToPayload(valid dry_run) error = %v", err)
+	}
+	dryRun := payload["dry_run"].(map[string]any)
+	if _, ok := dryRun["remote_reads"]; ok {
+		t.Fatalf("false remote_reads should be omitted: %#v", dryRun)
+	}
+	dryRun["unexpected"] = true
+	if _, err := schemaToolSpecFromPayload(payload); err == nil || !strings.Contains(err.Error(), `unknown field "unexpected"`) {
+		t.Fatalf("strict dry_run decode error = %v", err)
+	}
+}
+
+func TestToolSpecDryRunProvenanceRejectsAtomicDrift(t *testing.T) {
+	selected := true
+	dryRun := &DryRunSpec{PreviewKind: DryRunPreviewRequest}
+	_, err := ToolSpecFromRuntime(RuntimeToolSpecInput{
+		Identity: ToolIdentitySpec{ProductID: "sample", Name: "run", CLIPath: "sample run"},
+		DryRun:   dryRun,
+		FieldProvenance: map[string]FieldProvenance{
+			"dry_run": {
+				Value:      json.RawMessage(`{"preview_kind":"plan"}`),
+				Source:     "reviewed_manual_hint",
+				Precedence: "reviewed_manual",
+				Resolution: "highest_precedence",
+				Candidates: []FieldCandidateProvenance{{
+					Value:      json.RawMessage(`{"preview_kind":"plan"}`),
+					Source:     "reviewed_manual_hint",
+					Precedence: "reviewed_manual",
+					Selected:   &selected,
+				}},
+			},
+		},
+	})
+	if err == nil || !strings.Contains(err.Error(), "provenance winner does not equal final value") {
+		t.Fatalf("dry_run provenance drift error = %v", err)
+	}
+}
+
 func TestToolSpecToPayloadKeepsCompatibleFlatShape(t *testing.T) {
 	selected := true
 	reviewed := true

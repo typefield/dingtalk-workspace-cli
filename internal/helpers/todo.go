@@ -547,7 +547,7 @@ func newTodoCommand() *cobra.Command {
 			}
 			taskId := mustGetFlag(cmd, "task-id")
 			attachmentId := mustGetFlag(cmd, "attachment-id")
-			if !confirmDelete("附件", attachmentId) {
+			if !commandDryRun(cmd) && !confirmDelete("附件", attachmentId) {
 				return nil
 			}
 			return callMCPTool("remove_todo_attachment", map[string]any{

@@ -73,7 +73,7 @@ func TestAgentMetadataTypedAccessorRoundTripsProvenance(t *testing.T) {
       "workflow_refs": ["calendar-update"],
       "examples": ["dws calendar attendee update --event-id e1"],
       "reviewed": true,
-      "source_refs": ["skills/mono/schema-hints/calendar.json"],
+      "source_refs": ["internal/cli/schema_hints/calendar.json"],
       "interface_ref": {"product_id": "calendar", "rpc_name": "update_attendee"},
       "interface_mode": "mcp",
       "availability": "available",

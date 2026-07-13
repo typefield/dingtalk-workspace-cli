@@ -48,7 +48,7 @@ fi
 
 if ! jq -e '
   .coverage.source_tools == (.tools | length)
-' skills/mono/schema-hints/selection-review.json >/dev/null; then
+' internal/cli/schema_hints/selection-review.json >/dev/null; then
 	printf '%s\n' 'reviewed Agent selection coverage is stale' >&2
 	exit 1
 fi
@@ -56,7 +56,7 @@ fi
 if ! jq -e '
   .coverage.source_tools == (.tools | length) and
   .coverage.matched_tools == (.tools | length)
-' skills/mono/schema-hints/sibling-disambiguation.json >/dev/null; then
+' internal/cli/schema_hints/sibling-disambiguation.json >/dev/null; then
 	printf '%s\n' 'reviewed sibling-disambiguation source coverage is stale' >&2
 	exit 1
 fi
@@ -65,7 +65,7 @@ if ! jq -e --arg registry_count "$registry_count" '
   .coverage.source_tools == ($registry_count | tonumber) and
   .coverage.matched_tools == (.tools | length) and
   all(.tools[]; ((.interface_mode // "") | length) > 0)
-' skills/mono/schema-hints/runtime-surface-completeness.json >/dev/null; then
+' internal/cli/schema_hints/runtime-surface-completeness.json >/dev/null; then
 	printf '%s\n' 'runtime-surface interface disposition coverage is stale' >&2
 	exit 1
 fi
@@ -199,7 +199,7 @@ if policy_search_paths 'mcp-gw\.dingtalk\.com|mcp\.dingtalk\.com/server|Authoriz
 	internal/cli/schema_mcp_service_review.json \
 	internal/cli/schema_agent_metadata \
 	internal/cli/schema_parameter_bindings.json \
-	skills/mono/schema-hints; then
+	internal/cli/schema_hints; then
 	printf '%s\n' 'schema assets contain endpoint or credential material' >&2
 	exit 1
 fi

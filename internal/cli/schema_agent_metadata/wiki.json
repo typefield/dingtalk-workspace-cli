@@ -34,14 +34,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -140,14 +140,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -237,13 +237,13 @@
         "CommandRegistry:canonical_path=wiki.add_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member add",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.add_member",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.add_member"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.add_member"
       ],
       "use_when": [
         "需要为指定知识库添加一个或多个成员，并授予指定角色时"
@@ -282,14 +282,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -388,14 +388,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -485,12 +485,12 @@
         "CommandRegistry:canonical_path=wiki.list_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member list",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_member",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_member"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_member"
       ],
       "use_when": [
         "需要查看指定知识库当前成员和角色时"
@@ -529,14 +529,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -571,14 +571,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -593,14 +593,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -651,14 +651,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -703,14 +703,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -756,13 +756,13 @@
         "CommandRegistry:canonical_path=wiki.remove_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member remove",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.remove_member",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.remove_member"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.remove_member"
       ],
       "use_when": [
         "需要从指定知识库中移除一个或多个成员（仅支持 USER 类型）时"
@@ -801,14 +801,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -907,14 +907,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1004,12 +1004,12 @@
         "CommandRegistry:canonical_path=wiki.update_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member update",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.update_member",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.update_member"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.update_member"
       ],
       "use_when": [
         "需要更新指定知识库已有成员的角色时"
@@ -1048,14 +1048,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1154,14 +1154,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1176,14 +1176,14 @@
         },
         "interface_ref": {
           "value": "doc.copy_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.copy_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -1259,13 +1259,13 @@
         "CommandRegistry:canonical_path=wiki.node_copy",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node copy",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_copy",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_copy"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_copy"
       ],
       "use_when": [
         "需要将知识库中的节点复制到指定位置时"
@@ -1304,14 +1304,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1410,14 +1410,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1432,14 +1432,14 @@
         },
         "interface_ref": {
           "value": "doc.create_file",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.create_file",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -1515,15 +1515,15 @@
         "CommandRegistry:canonical_path=wiki.create_file",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node create",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.create_file",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.create_file"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.create_file"
       ],
       "use_when": [
         "需要在指定知识库中创建文档、文件夹或其他类型的节点时"
@@ -1561,14 +1561,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1603,14 +1603,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -1625,14 +1625,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -1681,14 +1681,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1703,14 +1703,14 @@
         },
         "interface_ref": {
           "value": "doc.delete_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.delete_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -1741,14 +1741,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -1794,14 +1794,14 @@
         "CommandRegistry:canonical_path=wiki.delete_document",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node delete",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.delete_document",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.delete_document"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.delete_document"
       ],
       "use_when": [
         "需要将知识库中的节点移入回收站时"
@@ -1840,14 +1840,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1946,14 +1946,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -1968,14 +1968,14 @@
         },
         "interface_ref": {
           "value": "doc.list_nodes",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.list_nodes",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2051,14 +2051,14 @@
         "CommandRegistry:canonical_path=wiki.list_nodes",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node list",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_nodes",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_nodes"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_nodes"
       ],
       "use_when": [
         "需要浏览指定知识库或文件夹的直接子节点时"
@@ -2097,14 +2097,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2203,14 +2203,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2225,14 +2225,14 @@
         },
         "interface_ref": {
           "value": "doc.move_document",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.move_document",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2308,13 +2308,13 @@
         "CommandRegistry:canonical_path=wiki.node_move",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node move",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_move",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_move"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_move"
       ],
       "use_when": [
         "需要将知识库中的节点移动到指定位置时"
@@ -2353,14 +2353,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2459,14 +2459,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2481,14 +2481,14 @@
         },
         "interface_ref": {
           "value": "doc.search_documents",
-          "source": "skills/mono/schema-hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/interface-refs.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.search_documents",
-              "source": "skills/mono/schema-hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/interface-refs.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
@@ -2564,14 +2564,14 @@
         "CommandRegistry:canonical_path=wiki.node_search",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node search",
+        "internal/cli/schema_hints/interface-refs.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_search",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/interface-refs.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.node_search"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.node_search"
       ],
       "use_when": [
         "已知 workspace，需要在该知识库内按关键词搜索节点时"
@@ -2610,14 +2610,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2716,14 +2716,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2813,12 +2813,12 @@
         "CommandRegistry:canonical_path=wiki.create_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space create",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.create_wikiSpace",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.create_wikiSpace"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.create_wikiSpace"
       ],
       "use_when": [
         "需要创建一个新的钉钉文档知识库（WikiSpace）时"
@@ -2857,14 +2857,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -2899,14 +2899,14 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "user_required",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -2921,14 +2921,14 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "destructive",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -2979,14 +2979,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3031,14 +3031,14 @@
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/schema-hints/destructive-safety.json",
+          "source": "internal/cli/schema_hints/destructive-safety.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
           "review_reason": "destructive-safety-review is an explicit Agent hint source",
           "candidates": [
             {
               "value": "high",
-              "source": "skills/mono/schema-hints/destructive-safety.json",
+              "source": "internal/cli/schema_hints/destructive-safety.json",
               "precedence": "explicit",
               "selected": true,
               "review_reason": "destructive-safety-review is an explicit Agent hint source"
@@ -3084,13 +3084,13 @@
         "CommandRegistry:canonical_path=wiki.delete_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space delete",
+        "internal/cli/schema_hints/destructive-safety.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.delete_wikiSpace",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/destructive-safety.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.delete_wikiSpace"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.delete_wikiSpace"
       ],
       "use_when": [
         "需要将指定知识库移入回收站时"
@@ -3129,14 +3129,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3235,14 +3235,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3332,12 +3332,12 @@
         "CommandRegistry:canonical_path=wiki.get_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space get",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.get_wikiSpace",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.get_wikiSpace"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.get_wikiSpace"
       ],
       "use_when": [
         "已知 workspace，需要查看知识库详情时"
@@ -3376,14 +3376,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3482,14 +3482,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3579,14 +3579,14 @@
         "CommandRegistry:canonical_path=wiki.list_wikiSpaces",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space list",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_wikiSpaces",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/drive.md",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.list_wikiSpaces"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.list_wikiSpaces"
       ],
       "use_when": [
         "需要枚举当前用户可访问的知识库或钉盘空间时"
@@ -3625,14 +3625,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3731,14 +3731,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -3828,12 +3828,12 @@
         "CommandRegistry:canonical_path=wiki.search_wikiSpaces",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space search",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.search_wikiSpaces",
         "skills/mono/references/products/wiki.md",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#wiki.search_wikiSpaces"
+        "structured-hint:internal/cli/schema_hints/selection-review.json#wiki.search_wikiSpaces"
       ],
       "use_when": [
         "只知道名称或关键词，需要定位知识库时"

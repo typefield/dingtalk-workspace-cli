@@ -111,20 +111,15 @@ const (
 )
 
 // ManualAgentExampleReasonCode is a closed taxonomy for reviewed
-// contract-only exceptions. There is deliberately no generic "skip" or
-// "unsupported" value: a reviewer must identify the concrete precondition.
+// contract-only exceptions. High-risk/user-confirmed operations are not an
+// exception: they must still prove their fail-closed --dry-run path without
+// injecting --yes. There is deliberately no generic "skip" or "unsupported"
+// value: a reviewer must identify the concrete precondition.
 type ManualAgentExampleReasonCode string
 
 const (
-	// confirmation_required is assigned automatically from final typed safety;
-	// it is not accepted as a manual disposition reason.
-	ManualAgentExampleReasonConfirmationRequired ManualAgentExampleReasonCode = "confirmation_required"
-	ManualAgentExampleReasonInteractiveInput     ManualAgentExampleReasonCode = "interactive_input"
-	ManualAgentExampleReasonFileInput            ManualAgentExampleReasonCode = "file_input"
-	ManualAgentExampleReasonFileOutput           ManualAgentExampleReasonCode = "file_output"
-	ManualAgentExampleReasonStdinInput           ManualAgentExampleReasonCode = "stdin_input"
-	ManualAgentExampleReasonLocalState           ManualAgentExampleReasonCode = "local_state"
-	ManualAgentExampleReasonStatefulPreflight    ManualAgentExampleReasonCode = "stateful_preflight"
+	ManualAgentExampleReasonLocalState        ManualAgentExampleReasonCode = "local_state"
+	ManualAgentExampleReasonStatefulPreflight ManualAgentExampleReasonCode = "stateful_preflight"
 )
 
 // ManualAgentExampleDisposition changes one exact example index from the
@@ -145,6 +140,7 @@ type ManualAgentExampleExecution struct {
 	Index         int
 	Example       string
 	Mode          ManualAgentExampleMode
+	DryRun        *DryRunSpec
 	ReasonCode    ManualAgentExampleReasonCode
 	Reason        string
 	Source        ManualAgentExampleDispositionSource
@@ -156,7 +152,6 @@ type ManualAgentExampleDispositionSource string
 
 const (
 	ManualAgentExampleDispositionDefault        ManualAgentExampleDispositionSource = "default"
-	ManualAgentExampleDispositionTypedSafety    ManualAgentExampleDispositionSource = "typed_safety"
 	ManualAgentExampleDispositionReviewedManual ManualAgentExampleDispositionSource = "reviewed_manual"
 )
 
@@ -164,13 +159,12 @@ const (
 // exhaustive real-Cobra dry-run test. Counts are derived only from committed
 // reviewed dispositions; runtime failures can never add implicit skips.
 type ManualAgentExampleExecutionPlan struct {
-	Examples                []ManualAgentExampleExecution
-	Total                   int
-	DryRun                  int
-	ContractOnly            int
-	TypedSafetyContractOnly int
-	ReviewedContractOnly    int
-	ContractOnlyByReason    map[ManualAgentExampleReasonCode]int
+	Examples             []ManualAgentExampleExecution
+	Total                int
+	DryRun               int
+	ContractOnly         int
+	ReviewedContractOnly int
+	ContractOnlyByReason map[ManualAgentExampleReasonCode]int
 }
 
 // ManualSchemaCommandHint opts one exact existing Cobra leaf into
@@ -367,11 +361,7 @@ func validateManualAgentExampleDispositions(canonical string, examples []string,
 
 func validManualAgentExampleReasonCode(code ManualAgentExampleReasonCode) bool {
 	switch code {
-	case ManualAgentExampleReasonInteractiveInput,
-		ManualAgentExampleReasonFileInput,
-		ManualAgentExampleReasonFileOutput,
-		ManualAgentExampleReasonStdinInput,
-		ManualAgentExampleReasonLocalState,
+	case ManualAgentExampleReasonLocalState,
 		ManualAgentExampleReasonStatefulPreflight:
 		return true
 	default:
@@ -489,11 +479,11 @@ func ValidateEmbeddedManualAgentExampleDelivery(bound BoundCommandRegistry, regi
 }
 
 // BuildManualAgentExampleExecutionPlan validates every example against its
-// real BoundCommand/Cobra contract. High-risk or user-confirmed operations are
-// classified automatically from the final typed SchemaRegistry; only
-// non-safety runtime preconditions may use exact reviewed manual dispositions.
-// Missing dispositions always remain dry_run, and callers must never turn a
-// runtime failure into an implicit skip.
+// real BoundCommand/Cobra contract. High-risk or user-confirmed operations
+// remain dry_run and must demonstrate a fail-closed preview without --yes.
+// Only unavoidable local-state or stateful-preflight requirements may use an
+// exact reviewed manual disposition. Missing dispositions always remain
+// dry_run, and callers must never turn a runtime failure into an implicit skip.
 func BuildManualAgentExampleExecutionPlan(bound BoundCommandRegistry, registry SchemaRegistry, hints ManualAgentHintSet) (ManualAgentExampleExecutionPlan, error) {
 	tools := make(map[string]ToolSpec, len(bound.Commands))
 	for _, product := range registry.Products {
@@ -591,20 +581,12 @@ func buildManualAgentExampleExecutionPlan(bound BoundCommandRegistry, typedTools
 				Mode:          ManualAgentExampleModeDryRun,
 				Source:        ManualAgentExampleDispositionDefault,
 			}
+			if typedTool.DryRun != nil {
+				dryRun := *typedTool.DryRun
+				execution.DryRun = &dryRun
+			}
 			disposition, hasManualDisposition := dispositions[index]
-			confirmationRequired := typedTools != nil && manualAgentExampleNeedsTypedConfirmation(typedTool)
-			if confirmationRequired {
-				if hasManualDisposition {
-					return ManualAgentExampleExecutionPlan{}, fmt.Errorf("agent_hints tool %s example disposition index %d is redundant: final typed safety already requires confirmation", canonical, index)
-				}
-				execution.Mode = ManualAgentExampleModeContractOnly
-				execution.ReasonCode = ManualAgentExampleReasonConfirmationRequired
-				execution.Reason = "Final typed safety marks the operation high risk or requires explicit user confirmation; tests must not inject --yes."
-				execution.Source = ManualAgentExampleDispositionTypedSafety
-				plan.ContractOnly++
-				plan.TypedSafetyContractOnly++
-				plan.ContractOnlyByReason[execution.ReasonCode]++
-			} else if hasManualDisposition {
+			if hasManualDisposition {
 				execution.Mode = disposition.Mode
 				execution.ReasonCode = disposition.ReasonCode
 				execution.Reason = strings.TrimSpace(disposition.Reason)
@@ -625,11 +607,6 @@ func buildManualAgentExampleExecutionPlan(bound BoundCommandRegistry, typedTools
 		}
 	}
 	return plan, nil
-}
-
-func manualAgentExampleNeedsTypedConfirmation(tool ToolSpec) bool {
-	return strings.EqualFold(strings.TrimSpace(tool.Safety.Risk), "high") ||
-		strings.EqualFold(strings.TrimSpace(tool.Safety.Confirmation), "user_required")
 }
 
 type manualAgentExamplePath struct {

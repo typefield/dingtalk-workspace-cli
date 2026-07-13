@@ -34,14 +34,14 @@
         },
         "availability": {
           "value": "available",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -140,14 +140,14 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "skills/mono/schema-hints/selection-review.json",
+          "source": "internal/cli/schema_hints/selection-review.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
           "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "skills/mono/schema-hints/selection-review.json",
+              "source": "internal/cli/schema_hints/selection-review.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
@@ -162,13 +162,13 @@
         },
         "interface_ref": {
           "value": "devdoc.search_open_platform_docs",
-          "source": "skills/mono/schema-hints/imported/wukong.json",
+          "source": "internal/cli/schema_hints/imported/wukong.json",
           "precedence": "imported",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "devdoc.search_open_platform_docs",
-              "source": "skills/mono/schema-hints/imported/wukong.json",
+              "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
               "selected": true
             },
@@ -244,15 +244,15 @@
         "Skill:skills/mono/references/products/devdoc.md",
         "cobra-help:dws devdoc article search",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.devdoc.prod.json#devdoc.search_open_platform_docs",
+        "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/sibling-disambiguation.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.devdoc.search_open_platform_docs_rag",
         "skills/mono/references/products/devdoc.md",
         "skills/mono/references/products/simple.md",
-        "skills/mono/schema-hints/imported/wukong.json",
-        "skills/mono/schema-hints/selection-review.json",
-        "skills/mono/schema-hints/sibling-disambiguation.json",
-        "structured-hint:skills/mono/schema-hints/imported/wukong.json#devdoc.search_open_platform_docs_rag",
-        "structured-hint:skills/mono/schema-hints/selection-review.json#devdoc.search_open_platform_docs_rag"
+        "structured-hint:internal/cli/schema_hints/imported/wukong.json#devdoc.search_open_platform_docs_rag",
+        "structured-hint:internal/cli/schema_hints/selection-review.json#devdoc.search_open_platform_docs_rag"
       ],
       "use_when": [
         "需要查找钉钉 OpenAPI、字段、错误码或接入指南时"

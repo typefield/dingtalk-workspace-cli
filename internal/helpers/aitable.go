@@ -3814,7 +3814,7 @@ message: "the current user must be a manager (administrator) of this base to man
 				return err
 			}
 			// 先确认 baseID 合法再进入二次确认提示，避免对无效请求弹无意义的确认。
-			if !confirmDelete("高级权限（关闭后所有自定义角色失效）", baseID) {
+			if !commandDryRun(cmd) && !confirmDelete("高级权限（关闭后所有自定义角色失效）", baseID) {
 				return nil
 			}
 			return callAitableHelperTool("set_advanced_permission", map[string]any{

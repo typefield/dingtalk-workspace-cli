@@ -1,0 +1,323 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "unverified-direct-interface-review-v1",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "chat.create_smart_conv_category": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.add_dev_app_members": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.apply_dev_app_permissions": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.create_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.create_dev_app_version": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.delete_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.disable_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.disable_dev_app_robot": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.enable_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.enable_dev_app_robot": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_dev_app_credentials": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_dev_app_version_detail": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_dev_app_version_status": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_extension_robot_config": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.get_extension_webapp_config": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.list_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.list_dev_app_events": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.list_dev_app_members": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.list_dev_app_permissions": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.list_dev_app_versions": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.publish_dev_app_version": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.query_robot_create_result": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.remove_dev_app_members": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.remove_dev_app_permissions": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.set_extension_robot_config": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.set_extension_webapp_config": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.submit_robot_create_task": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.subscribe_dev_app_events": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.unsubscribe_dev_app_events": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.update_dev_app": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "dev.update_dev_app_security_config": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "minutes.record_pause": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "minutes.record_resume": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "minutes.record_start": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "minutes.record_stop": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.filter_view_update_criteria": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "CLI helper is executable, but its backing RPC is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "chat.add_message_favorite": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but im/add_message_favorite is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "chat.list_message_favorites": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but im/list_message_favorites is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "chat.remove_message_favorite": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but im/remove_message_favorite is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "doc.delete_comment": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but doc-comment/delete_comment is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "doc.update_comment": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but doc-comment/update_comment is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "drive.create_shortcut": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but drive/create_shortcut is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "drive.get_node_stats": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but drive/get_node_stats is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.create_pivot_table": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/create_pivot_table is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.delete_pivot_table": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/delete_pivot_table is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.hide_gridline": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper fixes visibility=hidden, but sheet/set_gridline_visibility is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.list_pivot_tables": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/list_pivot_tables is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.show_gridline": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper fixes visibility=visible, but sheet/set_gridline_visibility is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.table_get": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/table_get is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.table_put": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/table_put is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    },
+    "sheet.update_pivot_table": {
+      "interface_mode": "local",
+      "availability": "available",
+      "interface_reason": "The reviewed CLI wrapper is executable, but sheet/update_pivot_table is absent from the pinned MCP metadata snapshot; do not advertise a direct MCP interface.",
+      "reviewed": true
+    }
+  }
+}

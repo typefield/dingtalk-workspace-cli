@@ -63,6 +63,7 @@ type schemaToolWire struct {
 	ParameterCount      int                        `json:"parameter_count"`
 	Constraints         RuntimeSchemaConstraints   `json:"constraints"`
 	Positionals         []RuntimeSchemaPositional  `json:"positionals"`
+	DryRun              *DryRunSpec                `json:"dry_run"`
 	Effect              string                     `json:"effect"`
 	EffectSource        string                     `json:"effect_source"`
 	Risk                string                     `json:"risk"`
@@ -234,6 +235,7 @@ func schemaToolSpecFromPayload(payload map[string]any) (ToolSpec, error) {
 		Parameters:     parameters,
 		Constraints:    wire.Constraints,
 		Positionals:    wire.Positionals,
+		DryRun:         wire.DryRun,
 		Safety: SafetySpec{
 			Effect:       wire.Effect,
 			EffectSource: wire.EffectSource,
