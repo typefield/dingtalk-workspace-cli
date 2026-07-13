@@ -1,0 +1,1936 @@
+<!DOCTYPE html><html lang="zh-CN"><head><meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>DWS Shortcut 三方对照（dws vs lark-cli vs 原生 MCP）</title>
+<style>
+:root{--bg:#0f1420;--card:#161d2c;--ink:#e6edf6;--muted:#93a1b5;--line:#26314a;--accent:#6ea8fe;--green:#3fb950;--yellow:#d5a429;--red:#f25c5c}
+*{box-sizing:border-box} body{margin:0;background:#0f1420;color:var(--ink);font:14px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC",sans-serif;padding-bottom:70px}
+header{padding:40px 22px 22px;text-align:center;border-bottom:1px solid var(--line);background:radial-gradient(1000px 260px at 50% -50px,rgba(79,156,255,.15),transparent)}
+h1{margin:0 0 6px;font-size:25px} .sub{color:var(--muted);font-size:13px}
+.wrap{max-width:1280px;margin:0 auto;padding:0 18px}
+.stats{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin:20px 0 4px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:12px 18px;min-width:120px}
+.stat .n{font-size:24px;font-weight:700;color:var(--accent)} .stat .l{color:var(--muted);font-size:12px}
+.note{background:var(--card);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:12px 16px;margin:22px 0;color:var(--muted);font-size:13px}
+.note b{color:var(--ink)}
+h2{font-size:18px;margin:34px 0 4px;padding-top:10px} h2 .c{color:var(--muted);font-size:14px;font-weight:400}
+table{width:100%;border-collapse:collapse;margin:10px 0 6px;background:var(--card);border:1px solid var(--line);border-radius:10px;overflow:hidden;table-layout:fixed}
+th,td{padding:9px 11px;text-align:left;border-bottom:1px solid var(--line);vertical-align:top;word-break:break-all}
+th{background:#1b2536;color:var(--muted);font-size:12px;font-weight:600}
+tr:last-child td{border-bottom:none}
+col.c1{width:29%} col.c2{width:38%} col.c3{width:33%}
+code{font-family:"SF Mono",Menlo,Consolas,monospace;font-size:12.5px}
+.sc code{color:#8fd3ff} .raw code{color:#c7cfdb} .lk-hit code{color:#84e39a}
+.desc{color:var(--muted);font-size:11.5px;margin-top:3px}
+.rk{display:inline-block;font-size:10px;padding:0 6px;border-radius:10px;margin-left:6px;vertical-align:1px}
+.rk-r{background:#12321d;color:#66d38a} .rk-w{background:#3a2f10;color:#e2b23c} .rk-h{background:#3a1414;color:#f27272}
+.lk-none{color:#6b7890} .lk-miss{color:var(--yellow)} .lk-hit{color:var(--green)}
+footer{color:var(--muted);text-align:center;font-size:12px;margin-top:36px}
+</style></head><body>
+<header><h1>DWS Shortcut 三方指令对照</h1>
+<div class="sub">每个 shortcut：<b style="color:#8fd3ff">dws +命令</b> vs <b style="color:#84e39a">lark-cli</b> vs <b style="color:#c7cfdb">dws 原生 MCP 组合</b>　·　源码自动提取</div>
+<div class="stats">
+<div class="stat"><div class="n">366</div><div class="l">shortcut 总数</div></div>
+<div class="stat"><div class="n">16</div><div class="l">服务</div></div>
+<div class="stat"><div class="n">51</div><div class="l">lark 同名可对齐</div></div>
+<div class="stat"><div class="n">53</div><div class="l">钉钉特有(无 lark)</div></div>
+</div></header>
+<div class="wrap">
+<div class="note"><b>读表说明</b>：① <b style="color:#8fd3ff">dws shortcut</b> = 新增的精选命令（<code>&lt;xxx&gt;</code> 为参数占位）。
+② <b style="color:#c7cfdb">dws 原生 MCP 组合</b> = 该 shortcut 底层等价的裸命令，需手拼 JSON —— 直观体现 shortcut 的收敛价值。
+③ <b style="color:#84e39a">lark-cli</b> = 飞书对应命令：<span class="lk-hit">绿色</span>=同名可对齐；<span class="lk-miss">黄色</span>=lark 有该服务但命名/能力不同；<span class="lk-none">灰色</span>=钉钉特有服务，lark 无对应。因两边 API 不同，仅同名项做逐一对齐。</div>
+
+<h2>chat <span class="c">· 89 个 · ↔ lark im</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws chat +at-me --days &lt;days&gt;</code><span class="rk rk-r">read</span><div class="desc">查最近 @我 的消息（自动算时间窗，投影发送人/时间/内容/会话）</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +bot-find --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">搜索全部可用机器人（含他人/官方，返回 openDingTalkId 可发单聊）</div></td>
+<td class="raw"><code>dws mcp bot &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +bot-search --page &lt;page&gt; --size &lt;size&gt; --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">搜索当前用户自己创建的机器人</div></td>
+<td class="raw"><code>dws mcp bot &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +broadcast --to &lt;to&gt; --text &lt;text&gt;</code><span class="rk rk-w">write</span><div class="desc">按姓名逐一给多个人群发同一条单聊消息（自动解析 userId、逐个发送）</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-add-conversation --group &lt;group&gt; --category-ids &lt;category-ids&gt;</code><span class="rk rk-w">write</span><div class="desc">将会话移动到指定的自定义分组中</div></td>
+<td class="raw"><code>dws mcp im add_conv_to_categories --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;categoryIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-create --title &lt;title&gt;</code><span class="rk rk-w">write</span><div class="desc">创建用户自定义会话分组</div></td>
+<td class="raw"><code>dws mcp im create_conv_category --json &#x27;{&quot;title&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-delete --category-id &lt;category-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除用户自定义会话分组</div></td>
+<td class="raw"><code>dws mcp im delete_conv_category --json &#x27;{&quot;categoryId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-list</code><span class="rk rk-r">read</span><div class="desc">获取用户自定义会话分组</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-list-conversations --category-id &lt;category-id&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取指定自定义会话分组下的会话</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-remove-conversation --group &lt;group&gt; --category-ids &lt;category-ids&gt;</code><span class="rk rk-w">write</span><div class="desc">将会话从指定的自定义分组中移出</div></td>
+<td class="raw"><code>dws mcp im remove_conv_from_categories --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;categoryIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +category-rename --category-id &lt;category-id&gt; --title &lt;title&gt;</code><span class="rk rk-w">write</span><div class="desc">更新用户自定义会话分组的名称</div></td>
+<td class="raw"><code>dws mcp im rename_conv_category --json &#x27;{&quot;categoryId&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-add-bot --robot-code &lt;robot-code&gt; --id &lt;id&gt;</code><span class="rk rk-w">write</span><div class="desc">将机器人添加到群中</div></td>
+<td class="raw"><code>dws mcp bot add_robot_to_group --json &#x27;{&quot;robotCode&quot;:&lt;..&gt;, &quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-audit-join --group &lt;group&gt; --record-id &lt;record-id&gt; --applicant &lt;applicant&gt; --inviter &lt;inviter&gt; --status &lt;status&gt; --description &lt;description&gt;</code><span class="rk rk-w">write</span><div class="desc">审批入群验证（通过/拒绝/删除/忽略/拉黑）</div></td>
+<td class="raw"><code>dws mcp im audit_join_group --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;applyRecordId&quot;:&lt;..&gt;, &quot;applicantOpenDingTalkId&quot;:&lt;..&gt;, &quot;inviterOpenDingTalkId&quot;:&lt;..&gt;, &quot;status&quot;:&lt;..&gt;, &quot;auditDescription&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-bots --group &lt;group&gt;</code><span class="rk rk-r">read</span><div class="desc">查看群内所有机器人</div></td>
+<td class="raw"><code>dws mcp bot &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-dismiss --group &lt;group&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">解散群聊（不可逆，需群主权限）</div></td>
+<td class="raw"><code>dws mcp im dismiss_group --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-get-by-id --group-id &lt;group-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据群号获取群聊信息</div></td>
+<td class="raw"><code>dws mcp im get_conv_info_by_group_id --json &#x27;{&quot;groupId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-invite-url --group &lt;group&gt; --expires-seconds &lt;expires-seconds&gt;</code><span class="rk rk-r">read</span><div class="desc">获取群邀请链接</div></td>
+<td class="raw"><code>dws mcp im get_group_invite_url --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;expiresSeconds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-list-all --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">分页拉取我加入的所有群列表</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-list-join-requests --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">分页拉取入群验证记录</div></td>
+<td class="raw"><code>dws mcp im list_apply_join_group_records --json &#x27;{&quot;limit&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-list-mine --role &lt;role&gt; --limit &lt;limit&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取我创建/管理的群</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-members-get --id &lt;id&gt; --users &lt;users&gt;</code><span class="rk rk-r">read</span><div class="desc">根据成员 openDingTalkId 批量查询群成员详情</div></td>
+<td class="raw"><code>dws mcp im list_group_member_by_ids --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;memberOpenDingTalkIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-messages --group &lt;group&gt; --user &lt;user&gt; --time &lt;time&gt; --limit &lt;limit&gt; --direction &lt;direction&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取某个会话（群聊或单聊）的消息列表并投影出发言人/文本/时间</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-mute --group &lt;group&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">全员禁言 / 取消全员禁言</div></td>
+<td class="raw"><code>dws mcp im set_group_mute --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;mute&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-mute-member --group &lt;group&gt; --users &lt;users&gt; --mute-time &lt;mute-time&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">指定群成员禁言 / 取消禁言</div></td>
+<td class="raw"><code>dws mcp im set_group_member_mute_list --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;mute&quot;:&lt;..&gt;, &quot;uids&quot;:&lt;..&gt;, &quot;openDingTalkIds&quot;:&lt;..&gt;, &quot;muteTime&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-quit --group &lt;group&gt;</code><span class="rk rk-w">write</span><div class="desc">退出群聊</div></td>
+<td class="raw"><code>dws mcp im quit_group --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-remove-bot --id &lt;id&gt; --bot-id &lt;bot-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">从群内移除机器人</div></td>
+<td class="raw"><code>dws mcp bot remove_robot_in_group --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openBotId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-add --group &lt;group&gt; --name &lt;name&gt;</code><span class="rk rk-w">write</span><div class="desc">添加群身份</div></td>
+<td class="raw"><code>dws mcp im add_custom_group_role --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-list --group &lt;group&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取会话的群身份列表</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-query-user --group &lt;group&gt; --user &lt;user&gt;</code><span class="rk rk-r">read</span><div class="desc">查询群成员的群身份</div></td>
+<td class="raw"><code>dws mcp im query_custom_user_roles --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openDingTalkId&quot;:&lt;..&gt;, &quot;userId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-remove --group &lt;group&gt; --role-id &lt;role-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除群身份</div></td>
+<td class="raw"><code>dws mcp im remove_custom_group_role --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openRoleId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-remove-user --group &lt;group&gt; --user &lt;user&gt; --role-ids &lt;role-ids&gt;</code><span class="rk rk-w">write</span><div class="desc">移除用户的指定群身份</div></td>
+<td class="raw"><code>dws mcp im remove_custom_user_roles --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openRoleIds&quot;:&lt;..&gt;, &quot;openDingTalkId&quot;:&lt;..&gt;, &quot;userId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-set-user --group &lt;group&gt; --user &lt;user&gt; --role-ids &lt;role-ids&gt;</code><span class="rk rk-w">write</span><div class="desc">设置用户的群身份（覆盖该用户的全部群身份）</div></td>
+<td class="raw"><code>dws mcp im set_custom_user_roles --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openRoleIds&quot;:&lt;..&gt;, &quot;openDingTalkId&quot;:&lt;..&gt;, &quot;userId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-role-update --group &lt;group&gt; --role-id &lt;role-id&gt; --name &lt;name&gt;</code><span class="rk rk-w">write</span><div class="desc">更新群身份名称</div></td>
+<td class="raw"><code>dws mcp im update_custom_group_role --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openRoleId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-search --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索群聊</div></td>
+<td class="raw"><code>dws mcp im search_groups --json &#x27;{&quot;keyword&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;, &quot;excludeMuted&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli im +chat-search</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-set-admin --group &lt;group&gt; --users &lt;users&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">设置 / 取消群管理员</div></td>
+<td class="raw"><code>dws mcp im update_conv_member_roles --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;admin&quot;:&lt;..&gt;, &quot;uids&quot;:&lt;..&gt;, &quot;openDingTalkIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-set-history --group &lt;group&gt; --option &lt;option&gt;</code><span class="rk rk-w">write</span><div class="desc">设置新成员入群可查看历史消息范围</div></td>
+<td class="raw"><code>dws mcp im update_show_history_msg_option --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;option&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-transfer-owner --group &lt;group&gt; --new-owner &lt;new-owner&gt;</code><span class="rk rk-w">write</span><div class="desc">转让群主</div></td>
+<td class="raw"><code>dws mcp im transfer_group_owner --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;newOwnerOpenDingTalkId&quot;:&lt;..&gt;, &quot;newOwnerUid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-update-alias --group &lt;group&gt; --alias-title &lt;alias-title&gt;</code><span class="rk rk-w">write</span><div class="desc">设置群备注（仅自己可见）</div></td>
+<td class="raw"><code>dws mcp im update_user_group_alias --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;aliasTitle&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-update-icon --group &lt;group&gt; --icon-media-id &lt;icon-media-id&gt;</code><span class="rk rk-w">write</span><div class="desc">更新群头像</div></td>
+<td class="raw"><code>dws mcp im update_group_icon --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;iconMediaId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-update-nick --group &lt;group&gt; --nick &lt;nick&gt;</code><span class="rk rk-w">write</span><div class="desc">设置当前用户在群内的群昵称</div></td>
+<td class="raw"><code>dws mcp im update_group_nick --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;nick&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +chat-update-settings --group &lt;group&gt; --setting-key &lt;setting-key&gt; --status &lt;status&gt;</code><span class="rk rk-w">write</span><div class="desc">更新群设置（settingKey + status）</div></td>
+<td class="raw"><code>dws mcp im update_group_settings --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;settingKey&quot;:&lt;..&gt;, &quot;status&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-clear-all-red-point</code><span class="rk rk-w">write</span><div class="desc">清除所有会话红点（全部已读）</div></td>
+<td class="raw"><code>dws mcp im clear_all_red_point</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-clear-messages --conversation-id &lt;conversation-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">清空当前用户指定会话的聊天记录（仅本人视角，不可逆）</div></td>
+<td class="raw"><code>dws mcp im clear_conversation_messages --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-clear-red-point --conversation-id &lt;conversation-id&gt;</code><span class="rk rk-w">write</span><div class="desc">清除会话红点</div></td>
+<td class="raw"><code>dws mcp im clear_conversation_red_point --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-hide --conversation-id &lt;conversation-id&gt;</code><span class="rk rk-w">write</span><div class="desc">会话列表中隐藏会话（收到新消息会重新出现）</div></td>
+<td class="raw"><code>dws mcp im hide_conversation --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-info --group &lt;group&gt; --open-dingtalk-id &lt;open-dingtalk-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取会话信息（群聊传 --group，单聊传 --open-dingtalk-id）</div></td>
+<td class="raw"><code>dws mcp chat get_conversation_info --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openDingTalkId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-list --limit &lt;limit&gt; --cursor &lt;cursor&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">分页获取当前用户的全部会话列表（单聊+群聊）</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-list-top --limit &lt;limit&gt; --cursor &lt;cursor&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取置顶会话列表</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-mark-read --conversation-id &lt;conversation-id&gt; --message-id &lt;message-id&gt;</code><span class="rk rk-w">write</span><div class="desc">标记消息已读（该消息及之前的消息都标记为已读）</div></td>
+<td class="raw"><code>dws mcp im mark_message_read --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-mark-unread --conversation-id &lt;conversation-id&gt;</code><span class="rk rk-w">write</span><div class="desc">标记会话为未读</div></td>
+<td class="raw"><code>dws mcp im mark_conversation_unread --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-mute --conversation-id &lt;conversation-id&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">会话消息免打扰（支持单聊/群聊）</div></td>
+<td class="raw"><code>dws mcp im update_notification_off --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;mute&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-mute-at-all --conversation-id &lt;conversation-id&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">关闭/开启 @所有人消息提醒</div></td>
+<td class="raw"><code>dws mcp im update_at_all_notification_off --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;mute&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-mute-red-envelope --conversation-id &lt;conversation-id&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">关闭/开启红包消息提醒</div></td>
+<td class="raw"><code>dws mcp im update_red_env_notification_off --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;mute&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +conversation-set-top --conversation-id &lt;conversation-id&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">会话置顶 / 取消置顶（支持单聊/群聊）</div></td>
+<td class="raw"><code>dws mcp im set_top_conversation --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;top&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +dm --to &lt;to&gt; --text &lt;text&gt;</code><span class="rk rk-w">write</span><div class="desc">按姓名直接给某人发单聊消息（自动解析 userId）</div></td>
+<td class="raw"><code>dws mcp chat send_personal_message --json &#x27;{&quot;title&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;receiverUserId&quot;:&lt;..&gt;, &quot;msgType&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +group-members --group &lt;group&gt;</code><span class="rk rk-r">read</span><div class="desc">按群名列出群成员（自动搜群解析 openConversationId）</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-add-emoji --conversation-id &lt;conversation-id&gt; --msg-id &lt;msg-id&gt; --emoji &lt;emoji&gt;</code><span class="rk rk-w">write</span><div class="desc">对消息添加 emoji 表情回应</div></td>
+<td class="raw"><code>dws mcp im add_emoji_reaction --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMsgId&quot;:&lt;..&gt;, &quot;emojiName&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-add-text-emotion --conversation-id &lt;conversation-id&gt; --msg-id &lt;msg-id&gt; --emotion-id &lt;emotion-id&gt; --emotion-name &lt;emotion-name&gt; --text &lt;text&gt; --background-id &lt;background-id&gt;</code><span class="rk rk-w">write</span><div class="desc">对消息添加文字表情回应</div></td>
+<td class="raw"><code>dws mcp im add_text_emotion --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMsgId&quot;:&lt;..&gt;, &quot;emotionId&quot;:&lt;..&gt;, &quot;emotionName&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;backgroundId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-batch-recall-by-bot --robot-code &lt;robot-code&gt; --keys &lt;keys&gt;</code><span class="rk rk-w">write</span><div class="desc">机器人撤回单聊消息</div></td>
+<td class="raw"><code>dws mcp bot batch_recall_robot_users_msg --json &#x27;{&quot;robotCode&quot;:&lt;..&gt;, &quot;processQueryKeys&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-batch-send-by-bot --robot-code &lt;robot-code&gt; --title &lt;title&gt; --text &lt;text&gt; --users &lt;users&gt; --open-dingtalk-ids &lt;open-dingtalk-ids&gt; --at-all &lt;at-all&gt;</code><span class="rk rk-w">write</span><div class="desc">机器人批量向用户发送单聊 Markdown 消息</div></td>
+<td class="raw"><code>dws mcp bot batch_send_robot_msg_to_users --json &#x27;{&quot;robotCode&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;markdown&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;openDingtalkIds&quot;:&lt;..&gt;, &quot;isAtAll&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-combine-forward --src-conversation-id &lt;src-conversation-id&gt; --msg-ids &lt;msg-ids&gt; --dest-conversation-id &lt;dest-conversation-id&gt; --uuid &lt;uuid&gt;</code><span class="rk rk-w">write</span><div class="desc">合并转发多条消息</div></td>
+<td class="raw"><code>dws mcp im combine_forward_messages --json &#x27;{&quot;srcOpenCid&quot;:&lt;..&gt;, &quot;srcOpenMessageIds&quot;:&lt;..&gt;, &quot;destOpenCid&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-create-text-emotion --emotion-name &lt;emotion-name&gt; --text &lt;text&gt; --background-id &lt;background-id&gt;</code><span class="rk rk-w">write</span><div class="desc">创建文字表情（获取 emotionId）</div></td>
+<td class="raw"><code>dws mcp im create_text_emotion --json &#x27;{&quot;emotionName&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;backgroundId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-forward --src-conversation-id &lt;src-conversation-id&gt; --msg-id &lt;msg-id&gt; --dest-conversation-id &lt;dest-conversation-id&gt; --uuid &lt;uuid&gt;</code><span class="rk rk-w">write</span><div class="desc">转发单条消息</div></td>
+<td class="raw"><code>dws mcp im forward_message --json &#x27;{&quot;srcOpenCid&quot;:&lt;..&gt;, &quot;srcOpenMessageId&quot;:&lt;..&gt;, &quot;destOpenCid&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-forward-topic --src-msg-id &lt;src-msg-id&gt; --src-conversation-id &lt;src-conversation-id&gt; --src-thread-id &lt;src-thread-id&gt; --dest-conversation-id &lt;dest-conversation-id&gt;</code><span class="rk rk-w">write</span><div class="desc">转发话题消息到目标会话</div></td>
+<td class="raw"><code>dws mcp im forward_topic --json &#x27;{&quot;srcOpenMessageId&quot;:&lt;..&gt;, &quot;srcOpenConversationId&quot;:&lt;..&gt;, &quot;srcOpenConvThreadId&quot;:&lt;..&gt;, &quot;destOpenConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-list --group &lt;group&gt; --time &lt;time&gt; --forward &lt;forward&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取群聊会话消息</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-list-direct --user &lt;user&gt; --open-dingtalk-id &lt;open-dingtalk-id&gt; --time &lt;time&gt; --forward &lt;forward&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取单聊会话消息</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-list-pin --open-conversation-id &lt;open-conversation-id&gt; --cursor &lt;cursor&gt; --size &lt;size&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取会话中钉住的消息列表</div></td>
+<td class="raw"><code>dws mcp im &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-list-unread-conversations --count &lt;count&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">获取有未读消息的会话列表</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-mget --msg-ids &lt;msg-ids&gt;</code><span class="rk rk-r">read</span><div class="desc">根据消息 ID 批量查询消息（最多 50 条）</div></td>
+<td class="raw"><code>dws mcp im list_messages_by_ids --json &#x27;{&quot;openMsgIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli im +messages-mget</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-query-send-status --open-task-id &lt;open-task-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询消息发送状态</div></td>
+<td class="raw"><code>dws mcp im query_message_send_status --json &#x27;{&quot;openTaskId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-read-status --conversation-id &lt;conversation-id&gt; --message-id &lt;message-id&gt; --users &lt;users&gt;</code><span class="rk rk-r">read</span><div class="desc">查询消息的已读/未读状态</div></td>
+<td class="raw"><code>dws mcp im query_msg_read_status --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;, &quot;targetUserIds&quot;:&lt;..&gt;, &quot;targetOpenDingTalkIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-recall --conversation-id &lt;conversation-id&gt; --msg-id &lt;msg-id&gt;</code><span class="rk rk-w">write</span><div class="desc">撤回当前用户发送的消息</div></td>
+<td class="raw"><code>dws mcp im recall_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-recall-by-bot --robot-code &lt;robot-code&gt; --group &lt;group&gt; --keys &lt;keys&gt;</code><span class="rk rk-w">write</span><div class="desc">机器人撤回群消息</div></td>
+<td class="raw"><code>dws mcp bot recall_robot_group_message --json &#x27;{&quot;robotCode&quot;:&lt;..&gt;, &quot;openConversationId&quot;:&lt;..&gt;, &quot;processQueryKeys&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-remove-emoji --conversation-id &lt;conversation-id&gt; --msg-id &lt;msg-id&gt; --emoji &lt;emoji&gt;</code><span class="rk rk-w">write</span><div class="desc">移除消息的 emoji 表情回应</div></td>
+<td class="raw"><code>dws mcp im remove_emoji_reaction --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMsgId&quot;:&lt;..&gt;, &quot;emojiName&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-remove-text-emotion --conversation-id &lt;conversation-id&gt; --msg-id &lt;msg-id&gt; --emotion-id &lt;emotion-id&gt; --emotion-name &lt;emotion-name&gt; --text &lt;text&gt; --background-id &lt;background-id&gt;</code><span class="rk rk-w">write</span><div class="desc">移除消息的文字表情回应</div></td>
+<td class="raw"><code>dws mcp im remove_text_emotion --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMsgId&quot;:&lt;..&gt;, &quot;emotionId&quot;:&lt;..&gt;, &quot;emotionName&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;backgroundId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-resource-url --type &lt;type&gt; --resource-id &lt;resource-id&gt; --message-id &lt;message-id&gt; --open-conversation-id &lt;open-conversation-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取消息资源（图片/视频/语音）下载链接</div></td>
+<td class="raw"><code>dws mcp im get_resource_download_url --json &#x27;{&quot;resourceType&quot;:&lt;..&gt;, &quot;resourceId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;, &quot;openConversationId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-send-by-bot --robot-code &lt;robot-code&gt; --group &lt;group&gt; --title &lt;title&gt; --text &lt;text&gt; --at-user-ids &lt;at-user-ids&gt; --at-open-dingtalk-ids &lt;at-open-dingtalk-ids&gt; --at-all &lt;at-all&gt;</code><span class="rk rk-w">write</span><div class="desc">机器人向群聊发送 Markdown 消息</div></td>
+<td class="raw"><code>dws mcp bot send_robot_group_message --json &#x27;{&quot;robotCode&quot;:&lt;..&gt;, &quot;openConversationId&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;markdown&quot;:&lt;..&gt;, &quot;atUserIds&quot;:&lt;..&gt;, &quot;atOpendingtalkIds&quot;:&lt;..&gt;, &quot;isAtAll&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-send-by-webhook --token &lt;token&gt; --title &lt;title&gt; --text &lt;text&gt; --at-all &lt;at-all&gt; --at-mobiles &lt;at-mobiles&gt; --at-users &lt;at-users&gt;</code><span class="rk rk-w">write</span><div class="desc">自定义机器人 Webhook 发送群消息</div></td>
+<td class="raw"><code>dws mcp bot send_message_by_custom_robot --json &#x27;{&quot;robotToken&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;isAtAll&quot;:&lt;..&gt;, &quot;atMobiles&quot;:&lt;..&gt;, &quot;atUserIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-send-card --group &lt;group&gt; --receiver &lt;receiver&gt;</code><span class="rk rk-w">write</span><div class="desc">创建并推送流式卡片（需配合 messages-update-card）</div></td>
+<td class="raw"><code>dws mcp im create_and_send_card --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;receiverOpenDingTalkId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-set-pin --open-conversation-id &lt;open-conversation-id&gt; --msg-id &lt;msg-id&gt;</code><span class="rk rk-w">write</span><div class="desc">钉住消息（Pin）</div></td>
+<td class="raw"><code>dws mcp im set_pin_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-set-top --open-conversation-id &lt;open-conversation-id&gt; --msg-id &lt;msg-id&gt;</code><span class="rk rk-w">write</span><div class="desc">置顶消息</div></td>
+<td class="raw"><code>dws mcp im set_top_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-unset-pin --open-conversation-id &lt;open-conversation-id&gt; --msg-id &lt;msg-id&gt;</code><span class="rk rk-w">write</span><div class="desc">取消钉住消息（Unpin）</div></td>
+<td class="raw"><code>dws mcp im unset_pin_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-unset-top --open-conversation-id &lt;open-conversation-id&gt; --msg-id &lt;msg-id&gt;</code><span class="rk rk-w">write</span><div class="desc">取消置顶消息</div></td>
+<td class="raw"><code>dws mcp im unset_top_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +messages-update-card --biz-id &lt;biz-id&gt; --content &lt;content&gt; --flow-status &lt;flow-status&gt;</code><span class="rk rk-w">write</span><div class="desc">流式更新卡片内容（最后一次 --flow-status 应为 3）</div></td>
+<td class="raw"><code>dws mcp im update_streaming_card --json &#x27;{&quot;bizId&quot;:&lt;..&gt;, &quot;msgContent&quot;:&lt;..&gt;, &quot;flowStatus&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +my-groups --type &lt;type&gt;</code><span class="rk rk-r">read</span><div class="desc">列出我加入的群，可按类型过滤并投影关键字段</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +search-msg --group &lt;group&gt; --query &lt;query&gt; --days &lt;days&gt;</code><span class="rk rk-r">read</span><div class="desc">在群内按关键词搜消息（默认近 7 天，投影发送人/时间/内容/messageId）</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +send-to-group --group &lt;group&gt; --text &lt;text&gt;</code><span class="rk rk-w">write</span><div class="desc">按群名直接给群发消息（自动搜群解析 openConversationId）</div></td>
+<td class="raw"><code>dws mcp chat send_personal_message --json &#x27;{&quot;keyword&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;openConversationId&quot;:&lt;..&gt;, &quot;msgType&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +thread-replies --group &lt;group&gt; --topic-id &lt;topic-id&gt; --time &lt;time&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">拉取某条话题消息的全部回复并投影出发言人/文本/时间</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws chat +unread-chats --count &lt;count&gt; --exclude-muted &lt;exclude-muted&gt;</code><span class="rk rk-r">read</span><div class="desc">列出我有未读消息的会话（投影会话名/未读数/会话ID）</div></td>
+<td class="raw"><code>dws mcp chat &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark im 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>aitable <span class="c">· 82 个 · ↔ lark base</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws aitable +advperm-disable --base-id &lt;base-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">关闭指定 Base 的高级权限总开关（所有自定义角色失效）</div></td>
+<td class="raw"><code>dws mcp aitable set_advanced_permission --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;enabled&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +advperm-disable</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +advperm-enable --base-id &lt;base-id&gt;</code><span class="rk rk-w">write</span><div class="desc">开启指定 Base 的高级权限总开关</div></td>
+<td class="raw"><code>dws mcp aitable set_advanced_permission --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;enabled&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +advperm-enable</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +attachment-upload --base-id &lt;base-id&gt; --file-name &lt;file-name&gt; --size &lt;size&gt; --mime-type &lt;mime-type&gt;</code><span class="rk rk-w">write</span><div class="desc">为 attachment 字段申请 OSS 直传地址（uploadUrl / fileToken）</div></td>
+<td class="raw"><code>dws mcp aitable prepare_attachment_upload --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;fileName&quot;:&lt;..&gt;, &quot;size&quot;:&lt;..&gt;, &quot;mimeType&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-copy --base-id &lt;base-id&gt; --target-folder-id &lt;target-folder-id&gt; --only-struct &lt;only-struct&gt;</code><span class="rk rk-w">write</span><div class="desc">复制 AI 表格到指定目录（可仅复制结构）</div></td>
+<td class="raw"><code>dws mcp aitable copy_base --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;, &quot;onlyCopyMeta&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +base-copy</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-delete --base-id &lt;base-id&gt; --reason &lt;reason&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定 Base（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_base --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;reason&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-get --base-id &lt;base-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取指定 Base 的目录信息（tables / dashboards summary）</div></td>
+<td class="raw"><code>dws mcp aitable get_base --json &#x27;{&quot;baseId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +base-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-get-primary-doc-id --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-id &lt;record-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据 baseId/tableId/recordId 获取主键文档的 dentryUuid</div></td>
+<td class="raw"><code>dws mcp aitable get_base_primary_doc_id --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-list --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-search --query &lt;query&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称关键词搜索 AI 表格 Base</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +base-update --base-id &lt;base-id&gt; --name &lt;name&gt; --desc &lt;desc&gt;</code><span class="rk rk-w">write</span><div class="desc">更新 Base 名称（可选备注）</div></td>
+<td class="raw"><code>dws mcp aitable update_base --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;newBaseName&quot;:&lt;..&gt;, &quot;description&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-delete --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --chart-id &lt;chart-id&gt; --reason &lt;reason&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定 chart 及其布局项（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_chart --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;chartId&quot;:&lt;..&gt;, &quot;reason&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-get --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --chart-id &lt;chart-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取指定 chart 的详细信息</div></td>
+<td class="raw"><code>dws mcp aitable get_chart --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;chartId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-share-get --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --chart-id &lt;chart-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询 chart 的分享配置</div></td>
+<td class="raw"><code>dws mcp aitable get_chart_share --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;chartId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-share-update --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --chart-id &lt;chart-id&gt; --enabled &lt;enabled&gt; --share-type &lt;share-type&gt; --allow-back-to-doc &lt;allow-back-to-doc&gt;</code><span class="rk rk-w">write</span><div class="desc">开启/关闭 chart 分享并可设置分享类型</div></td>
+<td class="raw"><code>dws mcp aitable update_chart_share --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;chartId&quot;:&lt;..&gt;, &quot;enabled&quot;:&lt;..&gt;, &quot;shareType&quot;:&lt;..&gt;, &quot;allowBackToDoc&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-update --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --chart-id &lt;chart-id&gt; --config &lt;config&gt; --layout &lt;layout&gt;</code><span class="rk rk-w">write</span><div class="desc">更新指定 chart 的配置或布局（--config 必填）</div></td>
+<td class="raw"><code>dws mcp aitable update_chart --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;chartId&quot;:&lt;..&gt;, &quot;config&quot;:&lt;..&gt;, &quot;layout&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +chart-widgets-example</code><span class="rk rk-r">read</span><div class="desc">获取所有图表类型的 widget config 示例</div></td>
+<td class="raw"><code>dws mcp aitable get_dashboard_widgets_example</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-arrange --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt;</code><span class="rk rk-w">write</span><div class="desc">对指定仪表盘做服务端智能布局重排</div></td>
+<td class="raw"><code>dws mcp aitable align_dashboard --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +dashboard-arrange</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-config-example</code><span class="rk rk-r">read</span><div class="desc">获取 dashboard config 的结构示例</div></td>
+<td class="raw"><code>dws mcp aitable get_dashboard_config_example</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-delete --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --reason &lt;reason&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定 dashboard（级联删除其 chart，不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_dashboard --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;reason&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +dashboard-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-get --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取指定 dashboard 的详细信息（含 charts summary）</div></td>
+<td class="raw"><code>dws mcp aitable get_dashboard --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +dashboard-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-share-get --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询 dashboard 的分享配置</div></td>
+<td class="raw"><code>dws mcp aitable get_dashboard_share --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-share-update --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --enabled &lt;enabled&gt; --share-type &lt;share-type&gt; --allow-back-to-doc &lt;allow-back-to-doc&gt;</code><span class="rk rk-w">write</span><div class="desc">开启/关闭 dashboard 分享并可设置分享类型</div></td>
+<td class="raw"><code>dws mcp aitable update_dashboard_share --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;enabled&quot;:&lt;..&gt;, &quot;shareType&quot;:&lt;..&gt;, &quot;allowBackToDoc&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +dashboard-update --base-id &lt;base-id&gt; --dashboard-id &lt;dashboard-id&gt; --config &lt;config&gt; --name &lt;name&gt;</code><span class="rk rk-w">write</span><div class="desc">更新指定 dashboard 的配置</div></td>
+<td class="raw"><code>dws mcp aitable update_dashboard --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;dashboardId&quot;:&lt;..&gt;, &quot;config&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +dashboard-update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +export-data --base-id &lt;base-id&gt; --task-id &lt;task-id&gt; --scope &lt;scope&gt; --format &lt;format&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --timeout-ms &lt;timeout-ms&gt;</code><span class="rk rk-r">read</span><div class="desc">导出 AI 表格数据（创建导出任务或按 taskId 续等）</div></td>
+<td class="raw"><code>dws mcp aitable export_data --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;taskId&quot;:&lt;..&gt;, &quot;scope&quot;:&lt;..&gt;, &quot;format&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;timeoutMs&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +field-delete --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --field-id &lt;field-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定字段（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_field --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;fieldId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +field-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +field-get --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --field-ids &lt;field-ids&gt;</code><span class="rk rk-r">read</span><div class="desc">批量获取字段详情（含类型相关完整配置）</div></td>
+<td class="raw"><code>dws mcp aitable get_fields --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;fieldIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +field-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +field-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --field-id &lt;field-id&gt; --name &lt;name&gt; --config &lt;config&gt; --ai-config &lt;ai-config&gt;</code><span class="rk rk-w">write</span><div class="desc">更新字段名称 / 配置 / AI 配置（类型不可改）</div></td>
+<td class="raw"><code>dws mcp aitable update_field --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;fieldId&quot;:&lt;..&gt;, &quot;newFieldName&quot;:&lt;..&gt;, &quot;config&quot;:&lt;..&gt;, &quot;aiConfig&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +field-update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +find-record --base &lt;base&gt; --table &lt;table&gt; --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">在指定多维表里按关键词查记录（只读）</div></td>
+<td class="raw"><code>dws mcp aitable query_records --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;keyword&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-delete --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定表单视图（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_form_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +form-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-field-hide --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --field-id &lt;field-id&gt; --hidden &lt;hidden&gt;</code><span class="rk rk-w">write</span><div class="desc">切换表单字段的隐藏/显示状态</div></td>
+<td class="raw"><code>dws mcp aitable update_form_field_hidden --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;fieldId&quot;:&lt;..&gt;, &quot;hidden&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-field-list --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">列出表单视图当前可见的字段及其配置</div></td>
+<td class="raw"><code>dws mcp aitable list_form_fields --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-field-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --field-id &lt;field-id&gt; --required &lt;required&gt; --field-description &lt;field-description&gt;</code><span class="rk rk-w">write</span><div class="desc">更新表单字段的必填状态或描述</div></td>
+<td class="raw"><code>dws mcp aitable update_form_field --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;fieldId&quot;:&lt;..&gt;, &quot;required&quot;:&lt;..&gt;, &quot;fieldDescription&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-list --base-id &lt;base-id&gt; --table-id &lt;table-id&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定数据表下的所有表单视图</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +form-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-share-get --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">读取视图当前的分享表单配置</div></td>
+<td class="raw"><code>dws mcp aitable get_share_form_config --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-share-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --enabled &lt;enabled&gt;</code><span class="rk rk-w">write</span><div class="desc">开启或关闭指定视图的分享表单</div></td>
+<td class="raw"><code>dws mcp aitable update_share_form --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;enabled&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +form-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --title &lt;title&gt; --description &lt;description&gt;</code><span class="rk rk-w">write</span><div class="desc">更新表单标题 / 描述</div></td>
+<td class="raw"><code>dws mcp aitable update_form_info --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;description&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +form-update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +import-data --import-id &lt;import-id&gt; --table-id &lt;table-id&gt; --timeout &lt;timeout&gt; --header-row &lt;header-row&gt; --src-sheet-name &lt;src-sheet-name&gt; --field-mapping &lt;field-mapping&gt;</code><span class="rk rk-w">write</span><div class="desc">将已上传文件导入 AI 表格（新建表或追加到已有表）</div></td>
+<td class="raw"><code>dws mcp aitable import_data --json &#x27;{&quot;importId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;timeout&quot;:&lt;..&gt;, &quot;headerRow&quot;:&lt;..&gt;, &quot;srcSheetName&quot;:&lt;..&gt;, &quot;fieldMapping&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +import-upload --base-id &lt;base-id&gt; --file-name &lt;file-name&gt; --file-size &lt;file-size&gt;</code><span class="rk rk-w">write</span><div class="desc">为导入任务申请 OSS 直传地址（uploadUrl / importId）</div></td>
+<td class="raw"><code>dws mcp aitable prepare_import_upload --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;fileName&quot;:&lt;..&gt;, &quot;fileSize&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +list-tables --base &lt;base&gt;</code><span class="rk rk-r">read</span><div class="desc">列出某个多维表(base)里的所有数据表（只读，投影 tableId/tableName）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-delete --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-ids &lt;record-ids&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">批量删除记录（不可逆），单次最多 100 条</div></td>
+<td class="raw"><code>dws mcp aitable delete_records --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +record-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-history-list --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-id &lt;record-id&gt; --offset &lt;offset&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">按 recordId 查询单条记录的变更历史</div></td>
+<td class="raw"><code>dws mcp aitable query_record_history --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordId&quot;:&lt;..&gt;, &quot;offset&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +record-history-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-primary-doc-create --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --field-id &lt;field-id&gt; --record-id &lt;record-id&gt;</code><span class="rk rk-w">write</span><div class="desc">为记录创建主键文档（幂等），fieldId 须为 primaryDoc 类型</div></td>
+<td class="raw"><code>dws mcp aitable create_primary_doc --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;fieldId&quot;:&lt;..&gt;, &quot;recordId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-primary-doc-get --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-id &lt;record-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询记录关联的主键文档 nodeId</div></td>
+<td class="raw"><code>dws mcp aitable get_primary_doc --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-query --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-ids &lt;record-ids&gt; --field-ids &lt;field-ids&gt; --filters &lt;filters&gt; --sort &lt;sort&gt; --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">查询表格记录（按 ID 取 / 条件筛选 / 关键词 / 分页）</div></td>
+<td class="raw"><code>dws mcp aitable query_records --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordIds&quot;:&lt;..&gt;, &quot;fieldIds&quot;:&lt;..&gt;, &quot;filters&quot;:&lt;..&gt;, &quot;sort&quot;:&lt;..&gt;, &quot;keyword&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-query-empty --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">扫描并过滤出完全没填用户字段的空行</div></td>
+<td class="raw"><code>dws mcp aitable query_empty_records --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-share-links --base &lt;base&gt; --table &lt;table&gt; --record-ids &lt;record-ids&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">批量（可 &gt;20 条）获取多维表记录分享链接：去重+分片+合并</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-share-url --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --record-ids &lt;record-ids&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">按 recordId 批量获取记录分享链接，单次最多 20 条</div></td>
+<td class="raw"><code>dws mcp aitable get_record_share_url --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;recordIds&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --records &lt;records&gt;</code><span class="rk rk-w">write</span><div class="desc">批量更新记录（每条含 recordId 与 cells），单次最多 100 条</div></td>
+<td class="raw"><code>dws mcp aitable update_records --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;records&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +record-upsert --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --records &lt;records&gt;</code><span class="rk rk-w">write</span><div class="desc">按 records 是否带 recordId 自动拆分 create / update</div></td>
+<td class="raw"><code>dws mcp aitable record_upsert --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;records&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +record-upsert</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +resolve-base --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称搜索多维表 Base 并解析出唯一 baseId（只读）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +resolve-table --base &lt;base&gt; --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +role-create --base-id &lt;base-id&gt; --name &lt;name&gt; --role-type &lt;role-type&gt; --flow-type &lt;flow-type&gt; --sub-roles &lt;sub-roles&gt;</code><span class="rk rk-w">write</span><div class="desc">在指定 Base 下创建自定义角色</div></td>
+<td class="raw"><code>dws mcp aitable create_role --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;roleType&quot;:&lt;..&gt;, &quot;flowType&quot;:&lt;..&gt;, &quot;subRoles&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +role-create</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +role-delete --base-id &lt;base-id&gt; --role-id &lt;role-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除 Base 下指定的自定义角色（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_role --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;roleId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +role-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +role-get --base-id &lt;base-id&gt; --role-id &lt;role-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取单个角色的完整配置</div></td>
+<td class="raw"><code>dws mcp aitable get_role --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;roleId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +role-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +role-list --base-id &lt;base-id&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定 Base 下的全部角色</div></td>
+<td class="raw"><code>dws mcp aitable list_roles --json &#x27;{&quot;baseId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +role-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +role-update --base-id &lt;base-id&gt; --role-id &lt;role-id&gt; --name &lt;name&gt; --role-type &lt;role-type&gt; --flow-type &lt;flow-type&gt; --sub-roles &lt;sub-roles&gt;</code><span class="rk rk-w">write</span><div class="desc">按 PATCH 语义增量更新自定义角色</div></td>
+<td class="raw"><code>dws mcp aitable patch_role --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;roleId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;roleType&quot;:&lt;..&gt;, &quot;flowType&quot;:&lt;..&gt;, &quot;subRoles&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +role-update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-create --base-id &lt;base-id&gt; --name &lt;name&gt; --parent-section-id &lt;parent-section-id&gt; --index &lt;index&gt;</code><span class="rk rk-w">write</span><div class="desc">在指定 Base 下创建文件夹（组织 table / dashboard）</div></td>
+<td class="raw"><code>dws mcp aitable create_section --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;parentSectionId&quot;:&lt;..&gt;, &quot;index&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-delete --base-id &lt;base-id&gt; --section-id &lt;section-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定文件夹（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_section --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;sectionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-list-empty --base-id &lt;base-id&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定 Base 下所有没有子节点的空文件夹</div></td>
+<td class="raw"><code>dws mcp aitable list_empty_sections --json &#x27;{&quot;baseId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-list-nodes --base-id &lt;base-id&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定 Base 当前版本下的全部 nsheet 节点</div></td>
+<td class="raw"><code>dws mcp aitable list_nsheet_nodes --json &#x27;{&quot;baseId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-move-node --base-id &lt;base-id&gt; --node-id &lt;node-id&gt; --new-parent-section-id &lt;new-parent-section-id&gt; --target-index &lt;target-index&gt;</code><span class="rk rk-w">write</span><div class="desc">把任意 nsheet 节点移动到目标文件夹下（可选调整位置）</div></td>
+<td class="raw"><code>dws mcp aitable move_nsheet_node --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;nodeId&quot;:&lt;..&gt;, &quot;newParentSectionId&quot;:&lt;..&gt;, &quot;targetIndex&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-rename --base-id &lt;base-id&gt; --section-id &lt;section-id&gt; --new-name &lt;new-name&gt;</code><span class="rk rk-w">write</span><div class="desc">重命名指定文件夹</div></td>
+<td class="raw"><code>dws mcp aitable rename_section --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;sectionId&quot;:&lt;..&gt;, &quot;newName&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +section-reorder --base-id &lt;base-id&gt; --section-id &lt;section-id&gt; --target-index &lt;target-index&gt;</code><span class="rk rk-w">write</span><div class="desc">在当前父文件夹下调整文件夹的展示顺序</div></td>
+<td class="raw"><code>dws mcp aitable reorder_section --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;sectionId&quot;:&lt;..&gt;, &quot;targetIndex&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +table-delete --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --reason &lt;reason&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定数据表（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_table --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;reason&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +table-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +table-get --base-id &lt;base-id&gt; --table-ids &lt;table-ids&gt;</code><span class="rk rk-r">read</span><div class="desc">批量获取指定数据表的表级信息、字段目录与视图目录</div></td>
+<td class="raw"><code>dws mcp aitable get_tables --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +table-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +table-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --name &lt;name&gt; --description &lt;description&gt; --record-name-key &lt;record-name-key&gt;</code><span class="rk rk-w">write</span><div class="desc">更新数据表名称 / 备注 / 行命名规则</div></td>
+<td class="raw"><code>dws mcp aitable update_table --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;newTableName&quot;:&lt;..&gt;, &quot;description&quot;:&lt;..&gt;, &quot;recordNameKey&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +table-update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +template-search --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称关键词搜索 AI 表格模板</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-delete --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除指定视图（不可逆）</div></td>
+<td class="raw"><code>dws mcp aitable delete_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +view-delete</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-duplicate --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --new-name &lt;new-name&gt;</code><span class="rk rk-w">write</span><div class="desc">复制视图，生成配置相同的新视图</div></td>
+<td class="raw"><code>dws mcp aitable duplicate_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;sourceViewId&quot;:&lt;..&gt;, &quot;newViewName&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-get --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-ids &lt;view-ids&gt;</code><span class="rk rk-r">read</span><div class="desc">获取视图完整信息（列顺序、筛选、排序、分组等）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +view-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-get-frozen-cols --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取视图当前冻结的左侧列数</div></td>
+<td class="raw"><code>dws mcp aitable get_frozen_columns_of_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-get-lock --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取视图锁定状态</div></td>
+<td class="raw"><code>dws mcp aitable get_view_lock_status --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-get-row-height --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取视图单元格行高（像素）</div></td>
+<td class="raw"><code>dws mcp aitable get_cell_height_of_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-lock --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --off &lt;off&gt;</code><span class="rk rk-w">write</span><div class="desc">锁定视图（默认）或解锁（--off）</div></td>
+<td class="raw"><code>dws mcp aitable lock_or_unlock_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;action&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-set-fill-color-rule --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --json &lt;json&gt;</code><span class="rk rk-w">write</span><div class="desc">全量覆盖 Grid 视图的条件填色规则（传 &#x27;[]&#x27; 清空）</div></td>
+<td class="raw"><code>dws mcp aitable set_view_fill_color_rule --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;conditionalFormats&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-set-frozen-cols --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --count &lt;count&gt;</code><span class="rk rk-w">write</span><div class="desc">设置视图冻结列数（0 表示取消冻结）</div></td>
+<td class="raw"><code>dws mcp aitable set_frozen_columns_of_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;count&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-set-row-height --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --cell-height &lt;cell-height&gt;</code><span class="rk rk-w">write</span><div class="desc">设置视图单元格行高（像素，合法档位 32/56/88/128）</div></td>
+<td class="raw"><code>dws mcp aitable set_cell_height_of_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;cellHeight&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +view-update --base-id &lt;base-id&gt; --table-id &lt;table-id&gt; --view-id &lt;view-id&gt; --name &lt;name&gt; --desc &lt;desc&gt; --config &lt;config&gt;</code><span class="rk rk-w">write</span><div class="desc">更新视图名称 / 描述 / 配置（visibleFieldIds、filter、sort、group 等）</div></td>
+<td class="raw"><code>dws mcp aitable update_view --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;tableId&quot;:&lt;..&gt;, &quot;viewId&quot;:&lt;..&gt;, &quot;newViewName&quot;:&lt;..&gt;, &quot;viewDescription&quot;:&lt;..&gt;, &quot;config&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark base 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +workflow-disable --base-id &lt;base-id&gt; --workflow-id &lt;workflow-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">禁用指定 Base 中的自动化工作流（影响业务自动化）</div></td>
+<td class="raw"><code>dws mcp aitable disable_workflow --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;workflowId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +workflow-disable</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +workflow-enable --base-id &lt;base-id&gt; --workflow-id &lt;workflow-id&gt;</code><span class="rk rk-w">write</span><div class="desc">启用指定 Base 中的自动化工作流</div></td>
+<td class="raw"><code>dws mcp aitable enable_workflow --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;workflowId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +workflow-enable</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +workflow-get --base-id &lt;base-id&gt; --workflow-id &lt;workflow-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取单个自动化工作流的详细信息</div></td>
+<td class="raw"><code>dws mcp aitable get_workflow --json &#x27;{&quot;baseId&quot;:&lt;..&gt;, &quot;workflowId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +workflow-get</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws aitable +workflow-list --base-id &lt;base-id&gt; --limit &lt;limit&gt; --offset &lt;offset&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定 Base 中的自动化工作流（分页）</div></td>
+<td class="raw"><code>dws mcp aitable &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli base +workflow-list</code></span></td>
+</tr>
+</tbody></table>
+<h2>attendance <span class="c">· 35 个 · 钉钉特有 · lark 无对应</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws attendance +boss-check --plan-id &lt;plan-id&gt; --result-id &lt;result-id&gt; --time &lt;time&gt; --result &lt;result&gt; --absent-min &lt;absent-min&gt; --remark &lt;remark&gt;</code><span class="rk rk-w">write</span><div class="desc">BOSS 改签打卡记录（管理员修改打卡时间/结果）</div></td>
+<td class="raw"><code>dws mcp attendance boss_check --json &#x27;{&quot;BossCheckMcpRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +check-record --users &lt;users&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询用户打卡流水（打卡时间/地点/定位方式）</div></td>
+<td class="raw"><code>dws mcp attendance query_check_record --json &#x27;{&quot;QueryCheckRecordRequest&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;checkDateFrom&quot;:&lt;..&gt;, &quot;checkDateTo&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +check-result --users &lt;users&gt; --start &lt;start&gt; --end &lt;end&gt; --offset &lt;offset&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询用户打卡结果（迟到/早退/缺卡等）</div></td>
+<td class="raw"><code>dws mcp attendance query_check_result --json &#x27;{&quot;QueryCheckResultRequest&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;workDateFrom&quot;:&lt;..&gt;, &quot;workDateTo&quot;:&lt;..&gt;, &quot;offset&quot;:&lt;..&gt;, &quot;limit&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +create-class --name &lt;name&gt; --owner &lt;owner&gt; --class-vo &lt;class-vo&gt;</code><span class="rk rk-w">write</span><div class="desc">创建班次（checkTime 用 HH:mm，自动转时间戳）</div></td>
+<td class="raw"><code>dws mcp attendance create_class_setting --json &#x27;{&quot;TopAtClassVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +create-group --name &lt;name&gt; --type &lt;type&gt; --owner &lt;owner&gt; --group-vo &lt;group-vo&gt;</code><span class="rk rk-w">write</span><div class="desc">创建考勤组（复杂子对象用 --group-vo JSON 传入）</div></td>
+<td class="raw"><code>dws mcp attendance create_group_setting --json &#x27;{&quot;groupVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-adjustment-rule --adjustment-id &lt;adjustment-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据补卡规则主键 ID 查询补卡规则详情</div></td>
+<td class="raw"><code>dws mcp attendance get_adjustment_rule_detail --json &#x27;{&quot;adjustmentId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-approve-template --type &lt;type&gt;</code><span class="rk rk-r">read</span><div class="desc">查询补卡/请假/加班/外出/出差审批提交链接</div></td>
+<td class="raw"><code>dws mcp attendance query_at_approve_template --json &#x27;{&quot;OUT&quot;:&lt;..&gt;, &quot;approveType&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-checkin-record --operator-corp-id &lt;operator-corp-id&gt; --operator-staff-id &lt;operator-staff-id&gt; --staff-ids &lt;staff-ids&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询指定员工一段时间内的签到记录</div></td>
+<td class="raw"><code>dws mcp attendance get_checkin_record --json &#x27;{&quot;QueryMcpUserRecordRequest&quot;:&lt;..&gt;, &quot;operatorCorpId&quot;:&lt;..&gt;, &quot;operatorStaffId&quot;:&lt;..&gt;, &quot;staffIds&quot;:&lt;..&gt;, &quot;startTime&quot;:&lt;..&gt;, &quot;endTime&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-class --class-id &lt;class-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据班次 ID 查询班次详情</div></td>
+<td class="raw"><code>dws mcp attendance get_class_detail --json &#x27;{&quot;classId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-global-setting --setting-scene &lt;setting-scene&gt; --scope &lt;scope&gt;</code><span class="rk rk-r">read</span><div class="desc">查询全局规则设置（仅管理员）</div></td>
+<td class="raw"><code>dws mcp attendance query_global_setting --json &#x27;{&quot;RuleMcpQueryGlobalSettingRequest&quot;:&lt;..&gt;, &quot;settingScene&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-group --group-id &lt;group-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据考勤组 ID 查询考勤组全量信息</div></td>
+<td class="raw"><code>dws mcp attendance get_group_detail --json &#x27;{&quot;groupId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-group-filtered --group-id &lt;group-id&gt; --member &lt;member&gt; --position &lt;position&gt; --wifi &lt;wifi&gt; --bles &lt;bles&gt;</code><span class="rk rk-r">read</span><div class="desc">按需查询考勤组成员/打卡地址/蓝牙/Wifi 子集</div></td>
+<td class="raw"><code>dws mcp attendance get_group_filtered_detail --json &#x27;{&quot;groupId&quot;:&lt;..&gt;, &quot;GroupResultFilter&quot;:&lt;..&gt;, &quot;includeMember&quot;:&lt;..&gt;, &quot;includePosition&quot;:&lt;..&gt;, &quot;includeWifi&quot;:&lt;..&gt;, &quot;includeBles&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-leave-balance --users &lt;users&gt; --leave-code &lt;leave-code&gt;</code><span class="rk rk-r">read</span><div class="desc">查询指定员工的假期余额</div></td>
+<td class="raw"><code>dws mcp attendance get_leave_balance_quota --json &#x27;{&quot;targetUserIds&quot;:&lt;..&gt;, &quot;McpLeaveBalanceRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-leave-records --user &lt;user&gt; --leave-code &lt;leave-code&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询指定员工的假期余额变更记录</div></td>
+<td class="raw"><code>dws mcp attendance get_leave_balance_records_v2 --json &#x27;{&quot;targetUserId&quot;:&lt;..&gt;, &quot;startTimeStamp&quot;:&lt;..&gt;, &quot;endTimeStamp&quot;:&lt;..&gt;, &quot;McpLeaveRecordRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-overtime-rule --overtime-id &lt;overtime-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据加班规则主键 ID 查询加班规则详情</div></td>
+<td class="raw"><code>dws mcp attendance get_overtime_rule_detail --json &#x27;{&quot;overtimeId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-schedule --users &lt;users&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">获取指定用户一段时间内的排班记录</div></td>
+<td class="raw"><code>dws mcp attendance getScheduleByRange --json &#x27;{&quot;GetScheduleByRangeRequest&quot;:&lt;..&gt;, &quot;userIdList&quot;:&lt;..&gt;, &quot;workDateBegin&quot;:&lt;..&gt;, &quot;workDateEnd&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-self-setting --setting-scene &lt;setting-scene&gt; --user &lt;user&gt;</code><span class="rk rk-r">read</span><div class="desc">查询个人规则设置（打卡提醒/极速打卡/缺卡提醒等）</div></td>
+<td class="raw"><code>dws mcp attendance query_self_setting --json &#x27;{&quot;RuleMcpQuerySelfSettingRequest&quot;:&lt;..&gt;, &quot;settingScene&quot;:&lt;..&gt;, &quot;userId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +get-summary --user &lt;user&gt; --date &lt;date&gt; --stats-type &lt;stats-type&gt;</code><span class="rk rk-r">read</span><div class="desc">查询某个人的考勤统计摘要（周/月）</div></td>
+<td class="raw"><code>dws mcp attendance get_user_attendance_summary --json &#x27;{&quot;userId&quot;:&lt;..&gt;, &quot;queryDate&quot;:&lt;..&gt;, &quot;statsType&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +import-schedule --group-id &lt;group-id&gt; --schedules &lt;schedules&gt;</code><span class="rk rk-w">write</span><div class="desc">导入排班记录到排班制考勤组</div></td>
+<td class="raw"><code>dws mcp attendance generateTurnSchedule --json &#x27;{&quot;GenerateTurnScheduleRequest&quot;:&lt;..&gt;, &quot;groupId&quot;:&lt;..&gt;, &quot;scheduleVOS&quot;:&lt;..&gt;, &quot;param&quot;:&lt;..&gt;, &quot;useHistoryGroupAndShift&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +list-approve --users &lt;users&gt; --types &lt;types&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询用户考勤审批单（补卡/加班/请假/出差外出）</div></td>
+<td class="raw"><code>dws mcp attendance query_user_approve --json &#x27;{&quot;QueryUserApproveRequest&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;bizTypes&quot;:&lt;..&gt;, &quot;fromDate&quot;:&lt;..&gt;, &quot;toDate&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +list-leave-types</code><span class="rk rk-r">read</span><div class="desc">查询当前用户可用的假期规则列表</div></td>
+<td class="raw"><code>dws mcp attendance get_leave_types --json &#x27;{&quot;McpLeaveTypeRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +list-report-columns</code><span class="rk rk-r">read</span><div class="desc">获取企业考勤报表字段列表（仅管理员）</div></td>
+<td class="raw"><code>dws mcp attendance get_report_columns</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +my-attendance</code><span class="rk rk-r">read</span><div class="desc">查我今天的考勤打卡记录（打卡流水，自动解析当前用户）</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +query-report-data --users &lt;users&gt; --columns &lt;columns&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">根据字段查询考勤报表数据（仅管理员）</div></td>
+<td class="raw"><code>dws mcp attendance get_report_columns_value --json &#x27;{&quot;McpQueryParam&quot;:&lt;..&gt;, &quot;targetUserIds&quot;:&lt;..&gt;, &quot;columnIds&quot;:&lt;..&gt;, &quot;fromDate&quot;:&lt;..&gt;, &quot;toDate&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +query-report-leave --users &lt;users&gt; --leave-names &lt;leave-names&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询用户假期数据（仅管理员）</div></td>
+<td class="raw"><code>dws mcp attendance get_leave_time_by_leave_names --json &#x27;{&quot;McpLeaveQueryParam&quot;:&lt;..&gt;, &quot;targetUserIds&quot;:&lt;..&gt;, &quot;leaveNames&quot;:&lt;..&gt;, &quot;fromDate&quot;:&lt;..&gt;, &quot;toDate&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +save-leave-balance --target &lt;target&gt; --leave-code &lt;leave-code&gt; --num &lt;num&gt; --reason &lt;reason&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-w">write</span><div class="desc">设置员工假期余额（SET 覆盖，非累加）</div></td>
+<td class="raw"><code>dws mcp attendance update_leave_balance --json &#x27;{&quot;targetUserId&quot;:&lt;..&gt;, &quot;leaveCode&quot;:&lt;..&gt;, &quot;quotaNum&quot;:&lt;..&gt;, &quot;reason&quot;:&lt;..&gt;, &quot;McpUpdateLeaveBalanceRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +search-adjustment-rule --query &lt;query&gt; --page &lt;page&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询当前用户可管理的补卡规则列表</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +search-class --query &lt;query&gt; --filter-type &lt;filter-type&gt; --page &lt;page&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询当前用户可管理的班次详情列表</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +search-group --query &lt;query&gt; --type &lt;type&gt; --query-position &lt;query-position&gt; --query-ble &lt;query-ble&gt; --page &lt;page&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询当前用户可管理的考勤组列表</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +search-overtime-rule --query &lt;query&gt; --page &lt;page&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询当前用户可管理的加班规则列表</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +this-month</code><span class="rk rk-r">read</span><div class="desc">查我本月的考勤打卡记录（打卡流水，自动解析当前用户）</div></td>
+<td class="raw"><code>dws mcp attendance &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +update-class --class-id &lt;class-id&gt; --name &lt;name&gt; --owner &lt;owner&gt; --class-vo &lt;class-vo&gt;</code><span class="rk rk-w">write</span><div class="desc">更新已有班次（仅传要修改的字段）</div></td>
+<td class="raw"><code>dws mcp attendance update_class_setting --json &#x27;{&quot;TopAtClassVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +update-group --group-id &lt;group-id&gt; --name &lt;name&gt; --type &lt;type&gt; --owner &lt;owner&gt; --enable-outside-check &lt;enable-outside-check&gt; --class-ids &lt;class-ids&gt; --group-vo &lt;group-vo&gt;</code><span class="rk rk-w">write</span><div class="desc">更新考勤组配置（仅修改需要变更的字段）</div></td>
+<td class="raw"><code>dws mcp attendance update_group_setting --json &#x27;{&quot;groupId&quot;:&lt;..&gt;, &quot;groupVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +update-group-members --group-id &lt;group-id&gt; --add-users &lt;add-users&gt; --remove-users &lt;remove-users&gt; --add-extra-users &lt;add-extra-users&gt; --remove-extra-users &lt;remove-extra-users&gt; --add-depts &lt;add-depts&gt; --remove-depts &lt;remove-depts&gt;</code><span class="rk rk-w">write</span><div class="desc">更新考勤组成员（增删考勤人员/部门/无需考勤人员）</div></td>
+<td class="raw"><code>dws mcp attendance update_group_member --json &#x27;{&quot;groupId&quot;:&lt;..&gt;, &quot;updateParam&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws attendance +update-leave-type --leave-code &lt;leave-code&gt; --name &lt;name&gt; --unit &lt;unit&gt; --paid &lt;paid&gt; --per-hours &lt;per-hours&gt; --when-can-leave &lt;when-can-leave&gt; --visibility-rules &lt;visibility-rules&gt;</code><span class="rk rk-w">write</span><div class="desc">更新已有假期规则（仅传要修改的字段）</div></td>
+<td class="raw"><code>dws mcp attendance save_leave_type --json &#x27;{&quot;leaveCode&quot;:&lt;..&gt;, &quot;McpSaveLeaveTypeRequest&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+</tbody></table>
+<h2>devapp <span class="c">· 30 个 · ↔ lark apps</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws devapp +create --name &lt;name&gt; --desc &lt;desc&gt; --icon-media-id &lt;icon-media-id&gt;</code><span class="rk rk-w">write</span><div class="desc">创建开放平台企业内部应用</div></td>
+<td class="raw"><code>dws mcp devapp create_dev_app --json &#x27;{&quot;name&quot;:&lt;..&gt;, &quot;desc&quot;:&lt;..&gt;, &quot;iconMediaId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli apps +create</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +credentials-get --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">读取开放平台应用凭证</div></td>
+<td class="raw"><code>dws mcp devapp get_dev_app_credentials --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +delete --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">删除开放平台企业内部应用（不可逆）</div></td>
+<td class="raw"><code>dws mcp devapp delete_dev_app --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +disable --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">停用开放平台企业内部应用</div></td>
+<td class="raw"><code>dws mcp devapp disable_dev_app --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +enable --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-w">write</span><div class="desc">启用开放平台企业内部应用</div></td>
+<td class="raw"><code>dws mcp devapp enable_dev_app --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +event-list --unified-app-id &lt;unified-app-id&gt; --keyword &lt;keyword&gt;</code><span class="rk rk-r">read</span><div class="desc">查询应用已订阅的事件列表</div></td>
+<td class="raw"><code>dws mcp devapp &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +event-subscribe --unified-app-id &lt;unified-app-id&gt; --event-codes &lt;event-codes&gt;</code><span class="rk rk-w">write</span><div class="desc">订阅应用事件回调</div></td>
+<td class="raw"><code>dws mcp devapp subscribe_dev_app_events --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;eventCodes&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +event-unsubscribe --unified-app-id &lt;unified-app-id&gt; --event-codes &lt;event-codes&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">取消订阅应用事件</div></td>
+<td class="raw"><code>dws mcp devapp unsubscribe_dev_app_events --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;eventCodes&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +get --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询开放平台企业内部应用详情</div></td>
+<td class="raw"><code>dws mcp devapp get_dev_app --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +list --name &lt;name&gt; --app-key &lt;app-key&gt; --app-group-id &lt;app-group-id&gt; --creator &lt;creator&gt; --robot-name &lt;robot-name&gt; --develop-type &lt;develop-type&gt; --filter-cool-app &lt;filter-cool-app&gt; --sort-type &lt;sort-type&gt; --sort-order &lt;sort-order&gt;</code><span class="rk rk-r">read</span><div class="desc">查询开放平台企业内部应用列表</div></td>
+<td class="raw"><code>dws mcp devapp &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli apps +list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +member-add --unified-app-id &lt;unified-app-id&gt; --user-ids &lt;user-ids&gt; --member-type &lt;member-type&gt;</code><span class="rk rk-w">write</span><div class="desc">添加开放平台应用成员</div></td>
+<td class="raw"><code>dws mcp devapp add_dev_app_members --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;memberType&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +member-list --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询开放平台应用成员</div></td>
+<td class="raw"><code>dws mcp devapp list_dev_app_members --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +member-remove --unified-app-id &lt;unified-app-id&gt; --user-ids &lt;user-ids&gt; --member-type &lt;member-type&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">移除开放平台应用成员</div></td>
+<td class="raw"><code>dws mcp devapp remove_dev_app_members --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;memberType&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +permission-add --unified-app-id &lt;unified-app-id&gt; --scope-values &lt;scope-values&gt;</code><span class="rk rk-w">write</span><div class="desc">申请开放平台应用权限点</div></td>
+<td class="raw"><code>dws mcp devapp apply_dev_app_permissions --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;scopeValues&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +permission-list --unified-app-id &lt;unified-app-id&gt; --keyword &lt;keyword&gt; --scope-value &lt;scope-value&gt; --auth-status &lt;auth-status&gt; --scope-type &lt;scope-type&gt; --api-status &lt;api-status&gt;</code><span class="rk rk-r">read</span><div class="desc">查询开放平台应用权限列表</div></td>
+<td class="raw"><code>dws mcp devapp &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +permission-remove --unified-app-id &lt;unified-app-id&gt; --scope-values &lt;scope-values&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">取消开放平台应用权限点</div></td>
+<td class="raw"><code>dws mcp devapp remove_dev_app_permissions --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;scopeValues&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +robot-config --unified-app-id &lt;unified-app-id&gt; --name &lt;name&gt; --brief &lt;brief&gt; --desc &lt;desc&gt; --icon-media-id &lt;icon-media-id&gt; --outgoing-url &lt;outgoing-url&gt; --event-callback-url &lt;event-callback-url&gt; --mode &lt;mode&gt; --skills &lt;skills&gt; --add-scope &lt;add-scope&gt; --disable-ssl-verify &lt;disable-ssl-verify&gt;</code><span class="rk rk-w">write</span><div class="desc">创建或更新现有应用的机器人配置（upsert）</div></td>
+<td class="raw"><code>dws mcp devapp set_extension_robot_config --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;brief&quot;:&lt;..&gt;, &quot;desc&quot;:&lt;..&gt;, &quot;iconMediaId&quot;:&lt;..&gt;, &quot;outgoingUrl&quot;:&lt;..&gt;, &quot;eventCallbackUrl&quot;:&lt;..&gt;, &quot;mode&quot;:&lt;..&gt;, &quot;skills&quot;:&lt;..&gt;, &quot;addScope&quot;:&lt;..&gt;, &quot;disableSSLVerify&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +robot-disable --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">停用现有应用的机器人能力</div></td>
+<td class="raw"><code>dws mcp devapp disable_dev_app_robot --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +robot-enable --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-w">write</span><div class="desc">启用现有应用机器人能力（纯启用，无需配置字段）</div></td>
+<td class="raw"><code>dws mcp devapp enable_dev_app_robot --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +robot-get --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询现有应用的机器人配置</div></td>
+<td class="raw"><code>dws mcp devapp get_extension_robot_config --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +security-config --unified-app-id &lt;unified-app-id&gt; --ip-whitelist &lt;ip-whitelist&gt; --redirect-urls &lt;redirect-urls&gt; --sso-urls &lt;sso-urls&gt;</code><span class="rk rk-w">write</span><div class="desc">更新开放平台应用安全配置（整组覆盖，非追加）</div></td>
+<td class="raw"><code>dws mcp devapp update_dev_app_security_config --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;ipWhitelist&quot;:&lt;..&gt;, &quot;redirectUrls&quot;:&lt;..&gt;, &quot;ssoUrls&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +update --unified-app-id &lt;unified-app-id&gt; --name &lt;name&gt; --desc &lt;desc&gt; --icon-media-id &lt;icon-media-id&gt;</code><span class="rk rk-w">write</span><div class="desc">修改开放平台企业内部应用基础信息</div></td>
+<td class="raw"><code>dws mcp devapp update_dev_app --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;desc&quot;:&lt;..&gt;, &quot;iconMediaId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli apps +update</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-check-approval --unified-app-id &lt;unified-app-id&gt; --version-id &lt;version-id&gt;</code><span class="rk rk-r">read</span><div class="desc">预检版本发布是否需要审批（不实际发布）</div></td>
+<td class="raw"><code>dws mcp devapp publish_dev_app_version --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;versionId&quot;:&lt;..&gt;, &quot;precheckOnly&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-create --unified-app-id &lt;unified-app-id&gt; --version &lt;version&gt; --desc &lt;desc&gt;</code><span class="rk rk-w">write</span><div class="desc">基于当前配置创建应用新版本</div></td>
+<td class="raw"><code>dws mcp devapp create_dev_app_version --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;version&quot;:&lt;..&gt;, &quot;desc&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-get --unified-app-id &lt;unified-app-id&gt; --version-id &lt;version-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询指定版本详情</div></td>
+<td class="raw"><code>dws mcp devapp get_dev_app_version_detail --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;versionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-list --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">分页查询应用版本列表</div></td>
+<td class="raw"><code>dws mcp devapp &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-publish --unified-app-id &lt;unified-app-id&gt; --version-id &lt;version-id&gt; --confirmed-sensitive &lt;confirmed-sensitive&gt; --approver-user-id &lt;approver-user-id&gt;</code><span class="rk rk-w">write</span><div class="desc">发布指定版本（含高敏权限需 --confirmed-sensitive）</div></td>
+<td class="raw"><code>dws mcp devapp publish_dev_app_version --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;versionId&quot;:&lt;..&gt;, &quot;precheckOnly&quot;:&lt;..&gt;, &quot;confirmedSensitive&quot;:&lt;..&gt;, &quot;approverUserId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +version-status --unified-app-id &lt;unified-app-id&gt; --version-id &lt;version-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询版本发布/审批状态</div></td>
+<td class="raw"><code>dws mcp devapp get_dev_app_version_status --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;versionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +webapp-config --unified-app-id &lt;unified-app-id&gt; --h5-page-type &lt;h5-page-type&gt; --homepage-url &lt;homepage-url&gt; --pc-homepage-url &lt;pc-homepage-url&gt; --omp-url &lt;omp-url&gt;</code><span class="rk rk-w">write</span><div class="desc">配置网页应用能力</div></td>
+<td class="raw"><code>dws mcp devapp set_extension_webapp_config --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;, &quot;h5PageType&quot;:&lt;..&gt;, &quot;homepageUrl&quot;:&lt;..&gt;, &quot;pcHomepageUrl&quot;:&lt;..&gt;, &quot;ompUrl&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws devapp +webapp-get --unified-app-id &lt;unified-app-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询网页应用配置</div></td>
+<td class="raw"><code>dws mcp devapp get_extension_webapp_config --json &#x27;{&quot;unifiedAppId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark apps 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>calendar <span class="c">· 23 个 · ↔ lark calendar</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws calendar +agenda --start &lt;start&gt; --end &lt;end&gt; --calendar-id &lt;calendar-id&gt; --cursor &lt;cursor&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">查询日程列表（不传时间默认查询今天）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli calendar +agenda</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +attendee-list --event &lt;event&gt; --calendar-id &lt;calendar-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查看日程参会人</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +book --title &lt;title&gt; --start &lt;start&gt; --end &lt;end&gt; --with &lt;with&gt;</code><span class="rk rk-w">write</span><div class="desc">创建日程，并可按姓名邀请参会人（自动解析 userId，失败自动回滚删除日程）</div></td>
+<td class="raw"><code>dws mcp calendar create_calendar_event --json &#x27;{&quot;summary&quot;:&lt;..&gt;, &quot;startDateTime&quot;:&lt;..&gt;, &quot;endDateTime&quot;:&lt;..&gt;, &quot;eventId&quot;:&lt;..&gt;, &quot;attendeesToAdd&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +book-list</code><span class="rk rk-r">read</span><div class="desc">查询用户的日历本列表</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +book-search --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称模糊搜索日历本</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +cancel-event --event &lt;event&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">取消（删除）一个已有日程（删除前先确认它真实存在）</div></td>
+<td class="raw"><code>dws mcp calendar delete_calendar_event --json &#x27;{&quot;eventId&quot;:&lt;..&gt;, &quot;title&quot;:&lt;..&gt;, &quot;action&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +conflicts --in-days &lt;in-days&gt;</code><span class="rk rk-r">read</span><div class="desc">检测我某天日程的时间冲突（重叠/双重预订，默认今天）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +find-room --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询指定时间段内所有可用的会议室</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +free --who &lt;who&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">按姓名查询某人在指定时间段内的忙闲状态（自动解析 userId）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +free-slots --in-days &lt;in-days&gt; --from &lt;from&gt; --to &lt;to&gt;</code><span class="rk rk-r">read</span><div class="desc">找我某天工作时段内的空闲时间段（默认今天 09:00-18:00）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +freebusy --users &lt;users&gt; --rooms &lt;rooms&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询用户 / 会议室闲忙状态（--users 与 --rooms 至少其一）</div></td>
+<td class="raw"><code>dws mcp calendar query_busy_status --json &#x27;{&quot;startTime&quot;:&lt;..&gt;, &quot;endTime&quot;:&lt;..&gt;, &quot;userIds&quot;:&lt;..&gt;, &quot;roomIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli calendar +freebusy</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +invite --event &lt;event&gt; --with &lt;with&gt;</code><span class="rk rk-w">write</span><div class="desc">按姓名把参会人加入已有日程（自动解析 userId 后批量添加）</div></td>
+<td class="raw"><code>dws mcp calendar add_calendar_participant --json &#x27;{&quot;eventId&quot;:&lt;..&gt;, &quot;attendeesToAdd&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +my-free --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-r">read</span><div class="desc">查我自己在某时间段的忙闲（默认今天，无需输入姓名）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +next-event</code><span class="rk rk-r">read</span><div class="desc">查看接下来最近的一个日程（默认扫描未来 7 天）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +reschedule --event &lt;event&gt; --start &lt;start&gt; --end &lt;end&gt;</code><span class="rk rk-w">write</span><div class="desc">改一个已有日程的时间（只动开始/结束时间，其他字段不变）</div></td>
+<td class="raw"><code>dws mcp calendar update_calendar_event --json &#x27;{&quot;eventId&quot;:&lt;..&gt;, &quot;startDateTime&quot;:&lt;..&gt;, &quot;endDateTime&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +respond-event --event &lt;event&gt; --response &lt;response&gt;</code><span class="rk rk-w">write</span><div class="desc">接受 / 拒绝 / 暂定回复一个日程邀请（作为参会人设置自己的响应状态）</div></td>
+<td class="raw"><code>dws mcp calendar respond --json &#x27;{&quot;accept&quot;:&lt;..&gt;, &quot;decline&quot;:&lt;..&gt;, &quot;tentative&quot;:&lt;..&gt;, &quot;eventId&quot;:&lt;..&gt;, &quot;responseStatus&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +room-find --start &lt;start&gt; --end &lt;end&gt; --available &lt;available&gt; --group-id &lt;group-id&gt; --room-name &lt;room-name&gt; --limit &lt;limit&gt; --page &lt;page&gt;</code><span class="rk rk-r">read</span><div class="desc">按时间段搜索可用会议室（不传时间默认当前起 1 小时）</div></td>
+<td class="raw"><code>dws mcp calendar query_available_meeting_room --json &#x27;{&quot;startTime&quot;:&lt;..&gt;, &quot;endTime&quot;:&lt;..&gt;, &quot;needAvailable&quot;:&lt;..&gt;, &quot;groupId&quot;:&lt;..&gt;, &quot;roomName&quot;:&lt;..&gt;, &quot;pageSize&quot;:&lt;..&gt;, &quot;pageIndex&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli calendar +room-find</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +room-groups --limit &lt;limit&gt; --page &lt;page&gt;</code><span class="rk rk-r">read</span><div class="desc">会议室分组列表</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +room-search --room-name &lt;room-name&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称模糊搜索会议室（不检查可用性）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +suggest-time --with &lt;with&gt; --start &lt;start&gt; --end &lt;end&gt; --duration &lt;duration&gt;</code><span class="rk rk-r">read</span><div class="desc">按姓名解析多位参与者，推荐大家都有空的可开会时间段（自动解析 userId）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +today</code><span class="rk rk-r">read</span><div class="desc">列出我今天的日程（自动计算今天的起止时间，无需手动填时间范围）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +tomorrow</code><span class="rk rk-r">read</span><div class="desc">列出我明天的日程（自动计算明天的起止时间，无需手动填时间范围）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws calendar +week</code><span class="rk rk-r">read</span><div class="desc">列出我本周的日程（自动按周一为周首计算本周起止时间，无需手动填时间范围）</div></td>
+<td class="raw"><code>dws mcp calendar &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark calendar 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>doc <span class="c">· 19 个 · ↔ lark doc</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws doc +comment-create --node &lt;node&gt; --content &lt;content&gt; --mention &lt;mention&gt;</code><span class="rk rk-w">write</span><div class="desc">在文档上创建一条评论</div></td>
+<td class="raw"><code>dws mcp doc create_comment --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;, &quot;mentionedUserIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +comment-create-inline --node &lt;node&gt; --content &lt;content&gt; --block-id &lt;block-id&gt; --start &lt;start&gt; --end &lt;end&gt; --selected-text &lt;selected-text&gt; --mention &lt;mention&gt;</code><span class="rk rk-w">write</span><div class="desc">在文档选中文本区域上创建划词评论</div></td>
+<td class="raw"><code>dws mcp doc create_inline_comment --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;, &quot;blockId&quot;:&lt;..&gt;, &quot;start&quot;:&lt;..&gt;, &quot;end&quot;:&lt;..&gt;, &quot;selectedText&quot;:&lt;..&gt;, &quot;mentionedUserIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +comment-list --node &lt;node&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt; --type &lt;type&gt; --resolve-status &lt;resolve-status&gt;</code><span class="rk rk-r">read</span><div class="desc">查询文档评论列表</div></td>
+<td class="raw"><code>dws mcp doc list_comments --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;pageSize&quot;:&lt;..&gt;, &quot;nextToken&quot;:&lt;..&gt;, &quot;commentType&quot;:&lt;..&gt;, &quot;resolveStatus&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +comment-reply --node &lt;node&gt; --content &lt;content&gt; --comment-key &lt;comment-key&gt; --emoji &lt;emoji&gt; --mention &lt;mention&gt;</code><span class="rk rk-w">write</span><div class="desc">回复文档中的一条评论</div></td>
+<td class="raw"><code>dws mcp doc reply_comment --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;, &quot;replyCommentKey&quot;:&lt;..&gt;, &quot;emoji&quot;:&lt;..&gt;, &quot;mentionedUserIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +copy --node &lt;node&gt; --folder &lt;folder&gt; --workspace &lt;workspace&gt;</code><span class="rk rk-w">write</span><div class="desc">复制文档/文件到指定文件夹或知识库</div></td>
+<td class="raw"><code>dws mcp doc copy_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +doc-append --doc &lt;doc&gt; --text &lt;text&gt;</code><span class="rk rk-w">write</span><div class="desc">在文档末尾追加一段文本（安全追加，不改动原有内容）</div></td>
+<td class="raw"><code>dws mcp doc update_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;markdown&quot;:&lt;..&gt;, &quot;mode&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +export-get --job-id &lt;job-id&gt;</code><span class="rk rk-r">read</span><div class="desc">根据 jobId 查询文档导出任务结果</div></td>
+<td class="raw"><code>dws mcp doc query_export_job --json &#x27;{&quot;jobId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +export-submit --node &lt;node&gt; --export-format &lt;export-format&gt;</code><span class="rk rk-r">read</span><div class="desc">提交在线文档导出任务 (docx/markdown/pdf)，返回 jobId</div></td>
+<td class="raw"><code>dws mcp doc submit_export_job --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;exportFormat&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +find-doc --query &lt;query&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索云文档并投影关键字段（只读）</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +list --folder &lt;folder&gt; --workspace &lt;workspace&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出文件夹或知识库下的直接子节点</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +move --node &lt;node&gt; --folder &lt;folder&gt; --workspace &lt;workspace&gt;</code><span class="rk rk-w">write</span><div class="desc">移动文档/文件到指定文件夹或知识库</div></td>
+<td class="raw"><code>dws mcp doc move_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +search --query &lt;query&gt; --extensions &lt;extensions&gt; --created-from &lt;created-from&gt; --created-to &lt;created-to&gt; --visited-from &lt;visited-from&gt; --visited-to &lt;visited-to&gt; --creator-uids &lt;creator-uids&gt; --editor-uids &lt;editor-uids&gt; --mentioned-uids &lt;mentioned-uids&gt; --workspace-ids &lt;workspace-ids&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索有权限的文档 (不传则返回最近访问)</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli doc +search</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +share-doc --to &lt;to&gt; --url &lt;url&gt; --note &lt;note&gt;</code><span class="rk rk-w">write</span><div class="desc">按姓名把文档链接私信发给某人（自动解析 userId）</div></td>
+<td class="raw"><code>dws mcp chat send_personal_message --json &#x27;{&quot;title&quot;:&lt;..&gt;, &quot;text&quot;:&lt;..&gt;, &quot;receiverUserId&quot;:&lt;..&gt;, &quot;msgType&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +template-apply --template-id &lt;template-id&gt; --name &lt;name&gt; --folder &lt;folder&gt; --workspace &lt;workspace&gt;</code><span class="rk rk-w">write</span><div class="desc">使用指定模板创建新文档</div></td>
+<td class="raw"><code>dws mcp doc apply_doc_template --json &#x27;{&quot;templateId&quot;:&lt;..&gt;, &quot;name&quot;:&lt;..&gt;, &quot;folderId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +template-list --source &lt;source&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">获取文档模板列表</div></td>
+<td class="raw"><code>dws mcp doc list_doc_templates --json &#x27;{&quot;templateSource&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;nextCursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +template-search --query &lt;query&gt; --source &lt;source&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">根据关键词搜索文档模板</div></td>
+<td class="raw"><code>dws mcp doc search_doc_templates --json &#x27;{&quot;searchName&quot;:&lt;..&gt;, &quot;templateSource&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;nextCursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +version-list --node &lt;node&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">查看文档历史版本列表</div></td>
+<td class="raw"><code>dws mcp doc list_doc_versions --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;nextCursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +version-revert --node &lt;node&gt; --version &lt;version&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">回滚文档到指定历史版本</div></td>
+<td class="raw"><code>dws mcp doc revert_doc_version --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;version&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws doc +version-save --node &lt;node&gt;</code><span class="rk rk-w">write</span><div class="desc">手动保存文档版本快照</div></td>
+<td class="raw"><code>dws mcp doc save_doc_version --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark doc 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>contact <span class="c">· 16 个 · ↔ lark contact</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws contact +by-mobile --mobile &lt;mobile&gt;</code><span class="rk rk-r">read</span><div class="desc">按手机号查询某人的完整资料（自动解析 userId 后取详情）</div></td>
+<td class="raw"><code>dws mcp contact get_user_info_by_user_ids --json &#x27;{&quot;mobile&quot;:&lt;..&gt;, &quot;user_id_list&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +dept-members --dept &lt;dept&gt;</code><span class="rk rk-r">read</span><div class="desc">按部门名列出部门成员（自动解析 deptId）</div></td>
+<td class="raw"><code>dws mcp contact get_dept_members_by_deptId --json &#x27;{&quot;query&quot;:&lt;..&gt;, &quot;deptIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +get-roster --staff-id &lt;staff-id&gt; --fields &lt;fields&gt;</code><span class="rk rk-r">read</span><div class="desc">查询员工花名册字段信息（学历、家庭、银行卡、合同等）</div></td>
+<td class="raw"><code>dws mcp hrmregister get_authorized_emp_rosterInfo --json &#x27;{&quot;staffId&quot;:&lt;..&gt;, &quot;fieldCodeList&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-dept-members --depts &lt;depts&gt;</code><span class="rk rk-r">read</span><div class="desc">查看部门成员（仅本部门，不含下级）</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-followings</code><span class="rk rk-r">read</span><div class="desc">获取当前用户的特别关注列表</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-role-members --id &lt;id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询角色下的成员列表</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-roles</code><span class="rk rk-r">read</span><div class="desc">获取企业所有角色（标签）列表</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-roster-fields</code><span class="rk rk-r">read</span><div class="desc">查询花名册有权限的字段列表</div></td>
+<td class="raw"><code>dws mcp hrmregister list_authorized_roster_fields</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +list-sub-depts --dept &lt;dept&gt;</code><span class="rk rk-r">read</span><div class="desc">查看指定部门的子部门</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +lookup --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按姓名查询某人的完整资料（自动解析 userId 后取详情）</div></td>
+<td class="raw"><code>dws mcp contact get_user_info_by_user_ids --json &#x27;{&quot;user_id_list&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +me</code><span class="rk rk-r">read</span><div class="desc">查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影）</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +org --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按姓名查某人所在部门的详情（自动解析 userId 与 deptId）</div></td>
+<td class="raw"><code>dws mcp contact get_dept_info_by_dept_id --json &#x27;{&quot;user_id_list&quot;:&lt;..&gt;, &quot;deptId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +resolve-dept --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称搜索部门并解析出唯一 deptId（只读）</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +search-mobile --mobile &lt;mobile&gt;</code><span class="rk rk-r">read</span><div class="desc">按手机号搜索通讯录用户</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +search-user --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索通讯录用户</div></td>
+<td class="raw"><code>dws mcp contact &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli contact +search-user</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws contact +team --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按姓名列出某人所在部门的成员（自动解析 userId 与 deptId）</div></td>
+<td class="raw"><code>dws mcp contact get_dept_members_by_deptId --json &#x27;{&quot;user_id_list&quot;:&lt;..&gt;, &quot;deptIds&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark contact 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>minutes <span class="c">· 13 个 · ↔ lark minutes</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws minutes +action-items</code><span class="rk rk-r">read</span><div class="desc">取我最新一条妙记里的待办事项</div></td>
+<td class="raw"><code>dws mcp minutes list_minutes_todos --json &#x27;{&quot;belongingConditionId&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;taskUuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +detail --id &lt;id&gt; --artifacts &lt;artifacts&gt; --direction &lt;direction&gt;</code><span class="rk rk-r">read</span><div class="desc">一条命令聚合取一条妙记（听记）的多项产物（基础信息/摘要/关键词/逐字稿/待办）</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli minutes +detail</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +latest-minutes --keyword &lt;keyword&gt;</code><span class="rk rk-r">read</span><div class="desc">取我最新的一条妙记（听记）详情</div></td>
+<td class="raw"><code>dws mcp minutes get_minutes_basic_info --json &#x27;{&quot;belongingConditionId&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;taskUuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +list-all --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">查询我有权限访问的所有听记列表</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +list-mine --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">查询我创建的听记列表</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +list-shared --query &lt;query&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">查询他人共享给我的听记列表</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +minutes-search --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索我的妙记并投影列表</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +record-pause --id &lt;id&gt; --session-id &lt;session-id&gt;</code><span class="rk rk-w">write</span><div class="desc">暂停听记录音</div></td>
+<td class="raw"><code>dws mcp minutes 执行听记指令-发起AI听记录音 --json &#x27;{&quot;cmd&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;, &quot;sessionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +record-resume --id &lt;id&gt; --session-id &lt;session-id&gt;</code><span class="rk rk-w">write</span><div class="desc">恢复听记录音</div></td>
+<td class="raw"><code>dws mcp minutes 执行听记指令-发起AI听记录音 --json &#x27;{&quot;cmd&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;, &quot;sessionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +record-start --session-id &lt;session-id&gt;</code><span class="rk rk-w">write</span><div class="desc">发起听记（开始录音）</div></td>
+<td class="raw"><code>dws mcp minutes 执行听记指令-发起AI听记录音 --json &#x27;{&quot;cmd&quot;:&lt;..&gt;, &quot;sessionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +record-stop --id &lt;id&gt; --session-id &lt;session-id&gt;</code><span class="rk rk-w">write</span><div class="desc">结束听记录音</div></td>
+<td class="raw"><code>dws mcp minutes 执行听记指令-发起AI听记录音 --json &#x27;{&quot;cmd&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;, &quot;sessionId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +replace-batch --id &lt;id&gt; --pair &lt;pair&gt;</code><span class="rk rk-w">write</span><div class="desc">对一条妙记（听记）批量执行多组文字替换（原文=&gt;替换）</div></td>
+<td class="raw"><code>dws mcp minutes &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws minutes +transcript --keyword &lt;keyword&gt; --direction &lt;direction&gt;</code><span class="rk rk-r">read</span><div class="desc">取我最新一条妙记（听记）的逐字稿（语音转写原文）</div></td>
+<td class="raw"><code>dws mcp minutes get_minutes_transcription --json &#x27;{&quot;belongingConditionId&quot;:&lt;..&gt;, &quot;maxResults&quot;:&lt;..&gt;, &quot;taskUuid&quot;:&lt;..&gt;, &quot;direction&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark minutes 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>todo <span class="c">· 13 个 · ↔ lark task</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws todo +assign --to &lt;to&gt; --task &lt;task&gt; --due &lt;due&gt;</code><span class="rk rk-w">write</span><div class="desc">按姓名给某人创建并指派一条待办（自动解析 userId）</div></td>
+<td class="raw"><code>dws mcp todo create_personal_todo --json &#x27;{&quot;subject&quot;:&lt;..&gt;, &quot;executorIds&quot;:&lt;..&gt;, &quot;PersonalTodoCreateVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli task +assign</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +assign-multi --to &lt;to&gt; --task &lt;task&gt;</code><span class="rk rk-w">write</span><div class="desc">把一条待办按姓名一次性指派给多个人（自动把每个姓名解析成 userId）</div></td>
+<td class="raw"><code>dws mcp todo create_personal_todo --json &#x27;{&quot;PersonalTodoCreateVO&quot;:&lt;..&gt;, &quot;subject&quot;:&lt;..&gt;, &quot;executorIds&quot;:&lt;..&gt;, &quot;executors&quot;:&lt;..&gt;, &quot;count&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +created-todos</code><span class="rk rk-r">read</span><div class="desc">列出我创建的待办（我作为创建人 creator 发起的待办，而非分配给我执行的）</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +due-today</code><span class="rk rk-r">read</span><div class="desc">列出我今天到期的待办</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +get --task-id &lt;task-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询待办详情</div></td>
+<td class="raw"><code>dws mcp todo get_todo_detail --json &#x27;{&quot;taskId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +get-my-tasks --page &lt;page&gt; --size &lt;size&gt; --status &lt;status&gt; --priority &lt;priority&gt; --role-types &lt;role-types&gt; --plan-finish-start &lt;plan-finish-start&gt; --plan-finish-end &lt;plan-finish-end&gt;</code><span class="rk rk-r">read</span><div class="desc">查询当前组织下我的待办列表</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli task +get-my-tasks</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +list-attachment --task-id &lt;task-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询待办任务的附件列表</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +list-comment --task-id &lt;task-id&gt; --page &lt;page&gt; --size &lt;size&gt;</code><span class="rk rk-r">read</span><div class="desc">查询待办评论列表</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +list-sub --task-id &lt;task-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询子待办列表</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +overdue</code><span class="rk rk-r">read</span><div class="desc">列出我已过期未完成的待办</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +related-tasks</code><span class="rk rk-r">read</span><div class="desc">一次性列出与我相关的全部待办（我作为创建人/执行人/参与人三种角色的并集，按 taskId 去重）</div></td>
+<td class="raw"><code>dws mcp todo &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +remind --task &lt;task&gt; --at &lt;at&gt;</code><span class="rk rk-w">write</span><div class="desc">给自己创建一条带截止/提醒时间的待办</div></td>
+<td class="raw"><code>dws mcp todo create_personal_todo --json &#x27;{&quot;subject&quot;:&lt;..&gt;, &quot;PersonalTodoCreateVO&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws todo +todo-done --task &lt;task&gt;</code><span class="rk rk-w">write</span><div class="desc">按标题关键词把我的某条待办标记完成（自动定位 taskId）</div></td>
+<td class="raw"><code>dws mcp todo update_todo_done_status --json &#x27;{&quot;pageNum&quot;:&lt;..&gt;, &quot;pageSize&quot;:&lt;..&gt;, &quot;roleTypes&quot;:&lt;..&gt;, &quot;taskId&quot;:&lt;..&gt;, &quot;isDone&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark task 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>mail <span class="c">· 10 个 · ↔ lark mail</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws mail +contact-list --email &lt;email&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定邮箱的所有邮件联系人</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +find-mail-user --query &lt;query&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词搜索邮箱联系人并投影列表（姓名/昵称/邮箱/工号等）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +folder-list --email &lt;email&gt; --folder &lt;folder&gt;</code><span class="rk rk-r">read</span><div class="desc">列出顶层文件夹或指定父文件夹下的子文件夹</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +recent-mail --limit &lt;limit&gt; --email &lt;email&gt; --folder &lt;folder&gt;</code><span class="rk rk-r">read</span><div class="desc">列出收件箱近期邮件会话并投影列表（主题/发件人/时间/threadId）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +search-mail --query &lt;query&gt; --email &lt;email&gt; --size &lt;size&gt;</code><span class="rk rk-r">read</span><div class="desc">按 KQL 关键词搜索邮件并投影列表（主题/发件人/时间/messageId）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +tag-list --email &lt;email&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定邮箱下的所有邮件标签</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +template-list --email &lt;email&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定邮箱的所有邮件模板</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +thread-list --email &lt;email&gt; --folder &lt;folder&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt; --start &lt;start&gt; --end &lt;end&gt; --ascending &lt;ascending&gt;</code><span class="rk rk-r">read</span><div class="desc">列出指定邮箱文件夹下的邮件会话（thread）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +unread-mail --email &lt;email&gt; --size &lt;size&gt;</code><span class="rk rk-r">read</span><div class="desc">列出未读邮件并投影列表（主题/发件人/时间/messageId）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws mail +user-search --keyword &lt;keyword&gt; --employee-no &lt;employee-no&gt; --email &lt;email&gt; --cursor &lt;cursor&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键词或工号搜索邮箱用户（仅企业邮箱）</div></td>
+<td class="raw"><code>dws mcp mail &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark mail 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>oa <span class="c">· 10 个 · 钉钉特有 · lark 无对应</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws oa +approve-by --keyword &lt;keyword&gt; --comment &lt;comment&gt;</code><span class="rk rk-w">write</span><div class="desc">按关键词把我的一条待审批单据一键通过（自动定位实例与任务 ID）</div></td>
+<td class="raw"><code>dws mcp oa approve_processInstance --json &#x27;{&quot;starTime&quot;:&lt;..&gt;, &quot;endTime&quot;:&lt;..&gt;, &quot;query&quot;:&lt;..&gt;, &quot;processInstanceId&quot;:&lt;..&gt;, &quot;taskId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +done-approvals --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">只读列出我已处理过的审批任务（审批历史）并投影为可读列表</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +list-cc --page &lt;page&gt; --limit &lt;limit&gt; --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">获取抄送当前用户的审批单列表</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +list-executed --page &lt;page&gt; --limit &lt;limit&gt; --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">获取当前用户已经处理过的审批单列表</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +list-forms --cursor &lt;cursor&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">获取当前用户可见的审批表单列表</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +list-pending --start &lt;start&gt; --end &lt;end&gt; --page &lt;page&gt; --limit &lt;limit&gt; --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">查询待我处理的审批（时间范围为 epoch 毫秒）</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +list-submitted --page &lt;page&gt; --limit &lt;limit&gt; --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">获取当前用户已发起的审批单列表</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +my-initiated --query &lt;query&gt; --page &lt;page&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">列出我发起（提交）的审批单据</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +pending --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">只读列出待我审批的审批任务并投影为可读列表（只看不批）</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws oa +search-forms --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">按关键字模糊搜索当前用户可见的审批表单</div></td>
+<td class="raw"><code>dws mcp oa &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+</tbody></table>
+<h2>drive <span class="c">· 9 个 · ↔ lark drive</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws drive +copy --node &lt;node&gt; --folder &lt;folder&gt; --workspace &lt;workspace&gt;</code><span class="rk rk-w">write</span><div class="desc">复制文件/文档到指定位置</div></td>
+<td class="raw"><code>dws mcp doc copy_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +download --node &lt;node&gt; --space-id &lt;space-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取钉盘文件下载链接</div></td>
+<td class="raw"><code>dws mcp drive download_file --json &#x27;{&quot;fileId&quot;:&lt;..&gt;, &quot;spaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli drive +download</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +find-file --query &lt;query&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称关键词搜索钉盘文件并投影关键字段（只读）</div></td>
+<td class="raw"><code>dws mcp drive &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +info --node &lt;node&gt; --space-id &lt;space-id&gt;</code><span class="rk rk-r">read</span><div class="desc">获取钉盘文件/文件夹元数据</div></td>
+<td class="raw"><code>dws mcp drive get_file_info --json &#x27;{&quot;fileId&quot;:&lt;..&gt;, &quot;spaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +list --space-id &lt;space-id&gt; --folder &lt;folder&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt; --order-by &lt;order-by&gt; --order &lt;order&gt; --thumbnail &lt;thumbnail&gt;</code><span class="rk rk-r">read</span><div class="desc">列出钉盘文件/文件夹</div></td>
+<td class="raw"><code>dws mcp drive &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +move --node &lt;node&gt; --folder &lt;folder&gt; --workspace &lt;workspace&gt;</code><span class="rk rk-w">write</span><div class="desc">移动文件/文档到指定位置</div></td>
+<td class="raw"><code>dws mcp doc move_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli drive +move</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +recent --operate-type &lt;operate-type&gt; --creator-type &lt;creator-type&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">获取最近访问/编辑的文档列表</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +search --query &lt;query&gt; --target &lt;target&gt; --file-types &lt;file-types&gt; --extensions &lt;extensions&gt; --creator-uids &lt;creator-uids&gt; --created-from &lt;created-from&gt; --created-to &lt;created-to&gt; --modified-from &lt;modified-from&gt; --modified-to &lt;modified-to&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">搜索钉盘文件</div></td>
+<td class="raw"><code>dws mcp drive &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli drive +search</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws drive +search-docs --query &lt;query&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">搜索文档空间文档</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark drive 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>wiki <span class="c">· 7 个 · ↔ lark wiki</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws wiki +move --workspace &lt;workspace&gt; --node &lt;node&gt; --folder &lt;folder&gt;</code><span class="rk rk-w">write</span><div class="desc">移动知识库节点</div></td>
+<td class="raw"><code>dws mcp doc move_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli wiki +move</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +node-copy --workspace &lt;workspace&gt; --node &lt;node&gt; --folder &lt;folder&gt;</code><span class="rk rk-w">write</span><div class="desc">复制知识库节点</div></td>
+<td class="raw"><code>dws mcp doc copy_document --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;workspaceId&quot;:&lt;..&gt;, &quot;targetFolderId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-hit"><code>lark-cli wiki +node-copy</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +node-list --workspace &lt;workspace&gt; --folder &lt;folder&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出知识库节点</div></td>
+<td class="raw"><code>dws mcp doc &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli wiki +node-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +resolve-space --name &lt;name&gt;</code><span class="rk rk-r">read</span><div class="desc">按名称搜索知识空间并解析出唯一 spaceId（只读）</div></td>
+<td class="raw"><code>dws mcp wiki &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark wiki 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +space-list --type &lt;type&gt; --limit &lt;limit&gt; --cursor &lt;cursor&gt;</code><span class="rk rk-r">read</span><div class="desc">列出组织 / 个人知识库</div></td>
+<td class="raw"><code>dws mcp wiki &lt;tool&gt;</code></td>
+<td><span class="lk-hit"><code>lark-cli wiki +space-list</code></span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +space-search --query &lt;query&gt; --limit &lt;limit&gt;</code><span class="rk rk-r">read</span><div class="desc">搜索知识库</div></td>
+<td class="raw"><code>dws mcp wiki &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark wiki 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws wiki +wiki-new-doc --space &lt;space&gt; --title &lt;title&gt;</code><span class="rk rk-w">write</span><div class="desc">在指定名称的知识库下新建一个文档节点（自动按空间名解析 workspaceId）</div></td>
+<td class="raw"><code>dws mcp wiki &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark wiki 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<h2>ding <span class="c">· 5 个 · 钉钉特有 · lark 无对应</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws ding +list --cursor &lt;cursor&gt; --type &lt;type&gt;</code><span class="rk rk-r">read</span><div class="desc">查询 DING 消息列表</div></td>
+<td class="raw"><code>dws mcp im list_ding_messages --json &#x27;{&quot;type&quot;:&lt;..&gt;, &quot;cursor&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws ding +recall-personal --id &lt;id&gt;</code><span class="rk rk-h">high-risk-write</span><div class="desc">撤回本人发起的 DING</div></td>
+<td class="raw"><code>dws mcp im recall_personal_ding --json &#x27;{&quot;openDingId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws ding +receiver-status --ding-id &lt;ding-id&gt;</code><span class="rk rk-r">read</span><div class="desc">查询 DING 消息接收人已读状态</div></td>
+<td class="raw"><code>dws mcp im list_ding_receiver_status --json &#x27;{&quot;openDingId&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws ding +send-by-message --group &lt;group&gt; --message-id &lt;message-id&gt; --users &lt;users&gt; --type &lt;type&gt; --uuid &lt;uuid&gt;</code><span class="rk rk-w">write</span><div class="desc">针对某条消息发起 DING 提醒</div></td>
+<td class="raw"><code>dws mcp im send_ding_by_message --json &#x27;{&quot;openConversationId&quot;:&lt;..&gt;, &quot;openMessageId&quot;:&lt;..&gt;, &quot;receiverOpenDingTalkIds&quot;:&lt;..&gt;, &quot;remindType&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws ding +send-personal --users &lt;users&gt; --content &lt;content&gt; --type &lt;type&gt; --uuid &lt;uuid&gt;</code><span class="rk rk-w">write</span><div class="desc">以本人身份发送 DING 给指定人</div></td>
+<td class="raw"><code>dws mcp im send_personal_ding --json &#x27;{&quot;receiverOpenDingTalkIds&quot;:&lt;..&gt;, &quot;content&quot;:&lt;..&gt;, &quot;remindType&quot;:&lt;..&gt;, &quot;uuid&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+</tbody></table>
+<h2>report <span class="c">· 3 个 · 钉钉特有 · lark 无对应</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws report +inbox-list --start &lt;start&gt; --end &lt;end&gt; --cursor &lt;cursor&gt; --size &lt;size&gt; --sender-user-ids &lt;sender-user-ids&gt;</code><span class="rk rk-r">read</span><div class="desc">列出我收到的日报（按时间范围分页）</div></td>
+<td class="raw"><code>dws mcp report &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws report +outbox-list --cursor &lt;cursor&gt; --size &lt;size&gt; --start &lt;start&gt; --end &lt;end&gt; --modified-start &lt;modified-start&gt; --modified-end &lt;modified-end&gt; --template-name &lt;template-name&gt;</code><span class="rk rk-r">read</span><div class="desc">列出我发出的日报（可选时间/模版名过滤）</div></td>
+<td class="raw"><code>dws mcp report &lt;tool&gt;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws report +report-latest --keyword &lt;keyword&gt;</code><span class="rk rk-r">read</span><div class="desc">取我最新提交的一篇日志/汇报详情（钉钉原生）</div></td>
+<td class="raw"><code>dws mcp report get_report_entry_details --json &#x27;{&quot;cursor&quot;:&lt;..&gt;, &quot;size&quot;:&lt;..&gt;, &quot;startTime&quot;:&lt;..&gt;, &quot;endTime&quot;:&lt;..&gt;, &quot;report_id&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-none">无对应（钉钉特有服务）</span></td>
+</tr>
+</tbody></table>
+<h2>sheet <span class="c">· 2 个 · ↔ lark sheets</span></h2>
+<table><colgroup><col class="c1"><col class="c2"><col class="c3"></colgroup>
+<thead><tr><th>dws shortcut（新增）</th><th>dws 原生 MCP 组合（等价裸命令）</th><th>lark-cli 对应</th></tr></thead><tbody>
+<tr>
+<td class="sc"><code>dws sheet +list-sheets --node &lt;node&gt;</code><span class="rk rk-r">read</span><div class="desc">获取表格文档中全部工作表列表</div></td>
+<td class="raw"><code>dws mcp sheet &lt;tool&gt;</code></td>
+<td><span class="lk-miss">lark sheets 无同名命令（能力/命名不同）</span></td>
+</tr>
+<tr>
+<td class="sc"><code>dws sheet +read --node &lt;node&gt; --sheet-id &lt;sheet-id&gt; --range &lt;range&gt; --value-render-option &lt;value-render-option&gt;</code><span class="rk rk-r">read</span><div class="desc">读取工作表指定范围的结构化单元格数据</div></td>
+<td class="raw"><code>dws mcp sheet get_cell_infos --json &#x27;{&quot;nodeId&quot;:&lt;..&gt;, &quot;sheetId&quot;:&lt;..&gt;, &quot;range&quot;:&lt;..&gt;, &quot;valueRenderOption&quot;:&lt;..&gt;}&#x27;</code></td>
+<td><span class="lk-miss">lark sheets 无同名命令（能力/命名不同）</span></td>
+</tr>
+</tbody></table>
+<footer>由 scripts/gen_shortcut_comparison.py 从源码自动生成 · 数据随 shortcut 演进刷新</footer></div></body></html>

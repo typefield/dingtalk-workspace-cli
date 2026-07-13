@@ -16,7 +16,6 @@ package usage
 import (
 	"fmt"
 	"os"
-	"path/filepath"
 	"strings"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
@@ -244,12 +243,14 @@ func newAddCommand() *cobra.Command {
 				}, output.FormatJSON)
 			}
 
+			path, err := userdef.FilePath(service, command)
+			if err != nil {
+				return apperrors.NewValidation(err.Error())
+			}
 			dir := userdef.Dir()
 			if err := os.MkdirAll(dir, 0o700); err != nil {
 				return err
 			}
-			name := service + "." + strings.TrimPrefix(command, "+") + ".yaml"
-			path := filepath.Join(dir, name)
 			if err := os.WriteFile(path, out, 0o600); err != nil {
 				return err
 			}

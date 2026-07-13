@@ -276,7 +276,7 @@ var NodeCopy = shortcut.Shortcut{
 // NodeMove → move_document (doc)
 var NodeMove = shortcut.Shortcut{
 	Service:     "wiki",
-	Command:     "+move",
+	Command:     "+node-move",
 	Product:     "doc",
 	Description: "移动知识库节点",
 	Intent:      "当你要重新整理知识库目录、把某个文档或文件夹从当前位置挪到另一个文件夹（或根目录）下时使用；指定源 node 和目标 folder，会实际改变该节点在知识库中的所属位置。",
@@ -286,7 +286,7 @@ var NodeMove = shortcut.Shortcut{
 		{Name: "node", Type: shortcut.FlagString, Desc: "源节点 ID", Required: true},
 		{Name: "folder", Type: shortcut.FlagString, Desc: "目标文件夹 nodeId (不传则移动到根目录)"},
 	},
-	Tips: []string{`dws wiki +move --workspace <workspaceId> --node <nodeId> --folder <targetFolderId>`},
+	Tips: []string{`dws wiki +node-move --workspace <workspaceId> --node <nodeId> --folder <targetFolderId>`},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		params := map[string]any{
 			"nodeId":      rt.Str("node"),

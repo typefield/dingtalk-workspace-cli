@@ -52,7 +52,14 @@ var Assign = shortcut.Shortcut{
 			"executorIds": []string{user.userID},
 		}
 		if rt.Changed("due") {
-			vo["dueTime"] = rt.Str("due")
+			// create_personal_todo stores dueTime as epoch millis (int64); the todo
+			// helper feeds --due through parseISOTimeToMillis, so mirror that here
+			// (shared with +remind's --at) rather than passing a raw ISO string.
+			ms, err := shortcutRemindParseMillis("due", rt.Str("due"))
+			if err != nil {
+				return err
+			}
+			vo["dueTime"] = ms
 		}
 		return rt.CallMCP("create_personal_todo", map[string]any{
 			"PersonalTodoCreateVO": vo,

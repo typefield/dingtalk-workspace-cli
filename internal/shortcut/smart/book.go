@@ -86,6 +86,18 @@ var Book = shortcut.Shortcut{
 			return apperrors.NewValidation("--with 需要至少一个有效的参会人姓名")
 		}
 
+		// Under --dry-run we resolved names (reads) to validate them, but must not
+		// create the event or send invites: the create/invite/rollback steps below
+		// go through CallMCPData (which, unlike CallMCP, does not honour --dry-run).
+		// Preview what would happen and return.
+		if rt.DryRun() {
+			return rt.Output(map[string]any{
+				"dryRun":      true,
+				"wouldCreate": createArgs,
+				"wouldInvite": userIDs,
+			})
+		}
+
 		// Step 2 — create the event and pull the eventId from the response.
 		created, err := rt.CallMCPData("calendar", "create_calendar_event", createArgs)
 		if err != nil {

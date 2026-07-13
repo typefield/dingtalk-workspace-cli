@@ -23,7 +23,7 @@ import (
 // multiple matches) → fetch full detail. Replaces `contact +search-user` (copy
 // userId) → `contact +get-user --ids <id>`.
 //
-//	dws contact +lookup 张三
+//	dws contact +lookup --name 张三
 var Lookup = shortcut.Shortcut{
 	Service:     "contact",
 	Command:     "+lookup",
@@ -35,7 +35,7 @@ var Lookup = shortcut.Shortcut{
 	Flags: []shortcut.Flag{
 		{Name: "name", Type: shortcut.FlagString, Desc: "姓名/花名", Required: true},
 	},
-	Tips: []string{`dws contact +lookup 张三`},
+	Tips: []string{`dws contact +lookup --name 张三`},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		// Step 1 — resolve the name to a unique userId.
 		user, err := resolveUser(rt, rt.Str("name"))

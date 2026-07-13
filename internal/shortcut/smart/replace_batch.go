@@ -64,6 +64,21 @@ var ReplaceBatch = shortcut.Shortcut{
 		if err != nil {
 			return err // already validated, but stay defensive
 		}
+		if rt.DryRun() {
+			replacements := make([]map[string]any, 0, len(pairs))
+			for _, p := range pairs {
+				replacements = append(replacements, map[string]any{
+					"originalText": p.orig,
+					"replacedText": p.repl,
+				})
+			}
+			return rt.Output(map[string]any{
+				"dryRun":       true,
+				"taskUuid":     taskUUID,
+				"total":        len(pairs),
+				"replacements": replacements,
+			})
+		}
 
 		results := make([]map[string]any, 0, len(pairs))
 		applied := 0

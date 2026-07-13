@@ -91,14 +91,14 @@ var DueToday = shortcut.Shortcut{
 		}
 
 		params := map[string]any{
-			"pageNum":             "1",
-			"pageSize":            "50",
 			"roleTypes":           roleTypes,
 			"planFinishDateStart": startMs,
 			"planFinishDateEnd":   endMs,
 		}
 
-		data, err := rt.CallMCPData("todo", "get_user_todos_in_current_org", params)
+		// List ALL matching cards across pages so a todo due today beyond the
+		// first page is not silently dropped.
+		cards, err := shortcutListAllTodoCards(rt, params)
 		if err != nil {
 			return err
 		}
@@ -106,7 +106,6 @@ var DueToday = shortcut.Shortcut{
 		// Step 3 — project the cards. The server already filtered to today's
 		// window; we keep a defensive local guard against any planFinishDate that
 		// leaks outside [startMs, endMs).
-		cards := shortcutTodoCards(data) // reused from todo_done.go
 		results := make([]map[string]any, 0, len(cards))
 		for _, m := range cards {
 			if due, ok := shortcutOverdueDueTime(m); ok { // reused from overdue.go

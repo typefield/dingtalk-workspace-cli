@@ -88,8 +88,6 @@ var RelatedTasks = shortcut.Shortcut{
 		}
 
 		params := map[string]any{
-			"pageNum":   "1",
-			"pageSize":  "50",
 			"roleTypes": roleTypes,
 		}
 		if rt.Changed("status") {
@@ -98,13 +96,14 @@ var RelatedTasks = shortcut.Shortcut{
 			}
 		}
 
-		data, err := rt.CallMCPData("todo", "get_user_todos_in_current_org", params)
+		// List ALL related cards across pages so a todo beyond the first page is
+		// not silently dropped from the union/dedupe.
+		cards, err := shortcutListAllTodoCards(rt, params)
 		if err != nil {
 			return err
 		}
 
 		// Step 2 — dedupe by taskId and project.
-		cards := shortcutTodoCards(data)
 		seen := make(map[string]bool, len(cards))
 		results := make([]map[string]any, 0, len(cards))
 		for _, m := range cards {

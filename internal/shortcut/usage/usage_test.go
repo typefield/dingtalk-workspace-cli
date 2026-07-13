@@ -41,6 +41,13 @@ func TestSampleArgsRedaction(t *testing.T) {
 		"text":                 "hi there 你好",                  // sensitive key → dropped
 		"keyword":              "cid_abc123",                   // sensitive key → dropped even if ID-like
 		"note":                 "a long free text with spaces", // whitespace → dropped
+		"name":                 "Alice",                        // short content → dropped
+		"fileName":             "roadmap.md",                   // short content → dropped
+		"originalText":         "Q2",                           // short content → dropped
+		"replacedText":         "第二季度",                         // short content → dropped
+		"clientId":             "oauth-client",                 // credential metadata → dropped
+		"authCode":             "one-time-code",                // credential → dropped
+		"amount":               1000,                           // unknown numeric user data → dropped
 		"tags":                 []string{"a", "b"},             // composite → dropped
 	}
 	got := sampleArgs(args)
@@ -50,10 +57,27 @@ func TestSampleArgsRedaction(t *testing.T) {
 			t.Errorf("expected %s=%q kept, got %q", k, v, got[k])
 		}
 	}
-	for _, k := range []string{"text", "keyword", "note", "tags"} {
+	for _, k := range []string{
+		"text", "keyword", "note", "name", "fileName", "originalText",
+		"replacedText", "clientId", "authCode", "amount", "tags",
+	} {
 		if _, ok := got[k]; ok {
 			t.Errorf("expected %s to be redacted/dropped, but it was recorded", k)
 		}
+	}
+}
+
+func TestAggregateRequiresSampleOnEveryOccurrenceForFixedArg(t *testing.T) {
+	recs := []Record{
+		{Product: "chat", Tool: "send", ArgKeys: []string{"conversationId"}, SampleArgs: map[string]string{"conversationId": "cid_x"}},
+		{Product: "chat", Tool: "send", ArgKeys: []string{"conversationId"}},
+	}
+	groups := Aggregate(recs)
+	if len(groups) != 1 {
+		t.Fatalf("groups = %d, want 1", len(groups))
+	}
+	if _, fixed := groups[0].FixedArgs["conversationId"]; fixed {
+		t.Fatalf("partially sampled value must not become fixed: %#v", groups[0].FixedArgs)
 	}
 }
 

@@ -38,6 +38,7 @@ type fakeCaller struct {
 	product string
 	tool    string
 	args    map[string]any
+	dryRun  bool
 }
 
 func (f *fakeCaller) reset() { f.called, f.product, f.tool, f.args = false, "", "", nil }
@@ -47,7 +48,7 @@ func (f *fakeCaller) CallTool(_ context.Context, product, tool string, args map[
 	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{"ok":true}`}}}, nil
 }
 func (f *fakeCaller) Format() string { return "json" }
-func (f *fakeCaller) DryRun() bool   { return false } // false => CallTool records real args
+func (f *fakeCaller) DryRun() bool   { return f.dryRun }
 
 // realToolSet scans the helper sources (the ground truth) and returns the set of
 // snake_case identifiers found there. Every tool a shortcut invokes must appear
@@ -169,6 +170,29 @@ func TestAllShortcutsAssemble(t *testing.T) {
 	t.Logf("validated(自校验拦截) 明细: %s", strings.Join(validatedNames, " "))
 	if assembled == 0 {
 		t.Fatal("no shortcut assembled an MCP call — harness likely broken")
+	}
+}
+
+func TestReplaceBatchDryRunDoesNotCallTool(t *testing.T) {
+	fake := &fakeCaller{dryRun: true}
+	helpers.InitDeps(fake)
+
+	root := &cobra.Command{Use: "dws", SilenceUsage: true, SilenceErrors: true}
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	root.AddCommand(builtin.Commands()...)
+	root.SetArgs([]string{
+		"minutes", "+replace-batch", "--id", "task-1",
+		"--pair", "Q2=>第二季度", "--dry-run", "--yes",
+	})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if fake.called {
+		t.Fatalf("dry-run called real tool %s/%s with %#v", fake.product, fake.tool, fake.args)
 	}
 }
 

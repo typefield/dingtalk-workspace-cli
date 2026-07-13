@@ -52,11 +52,10 @@ var Overdue = shortcut.Shortcut{
 		`dws todo +overdue`,
 	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
-		// Step 1 — list my todos. pageNum/pageSize are strings and roleTypes
-		// mirror helpers.buildListTodoTaskArgs (default executor).
-		data, err := rt.CallMCPData("todo", "get_user_todos_in_current_org", map[string]any{
-			"pageNum":   "1",
-			"pageSize":  "50",
+		// Step 1 — list ALL my todos across pages (roleTypes defaults to executor,
+		// mirroring helpers.buildListTodoTaskArgs) so an overdue todo beyond the
+		// first page is not silently undercounted.
+		cards, err := shortcutListAllTodoCards(rt, map[string]any{
 			"roleTypes": []string{"executor"},
 		})
 		if err != nil {
@@ -65,7 +64,6 @@ var Overdue = shortcut.Shortcut{
 
 		// Step 2 — filter locally: dueTime present, in the past, not done.
 		now := time.Now().UnixMilli()
-		cards := shortcutTodoCards(data) // reused from todo_done.go
 		overdue := make([]map[string]any, 0, len(cards))
 		for _, m := range cards {
 			due, ok := shortcutOverdueDueTime(m)

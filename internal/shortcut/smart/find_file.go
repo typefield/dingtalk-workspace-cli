@@ -55,7 +55,7 @@ var FindFile = shortcut.Shortcut{
 	},
 	Validate: func(rt *shortcut.RuntimeContext) error {
 		if strings.TrimSpace(rt.Str("query")) == "" {
-			return apperrors.NewValidation("flag --query is required")
+			return apperrors.NewValidation("请用 --query 提供文件名关键词")
 		}
 		return nil
 	},

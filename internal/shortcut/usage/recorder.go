@@ -53,14 +53,24 @@ type Record struct {
 	OK         bool              `json:"ok"`
 }
 
-// sensitiveKey matches argument keys whose VALUES must never be recorded even if
+// sensitiveKeyParts match argument keys whose VALUES must never be recorded even if
 // they look short — they routinely carry user content or secrets.
-var sensitiveKeys = map[string]bool{
-	"text": true, "content": true, "body": true, "message": true,
-	"subject": true, "title": true, "desc": true, "description": true,
-	"keyword": true, "query": true, "comment": true, "remark": true,
-	"summary": true, "token": true, "secret": true, "password": true,
-	"mobile": true, "email": true, "phone": true,
+var sensitiveKeyParts = []string{
+	"text", "content", "body", "message", "subject", "title", "name",
+	"desc", "keyword", "query", "comment", "remark", "summary", "token",
+	"secret", "password", "credential", "clientid", "mobile", "email",
+	"phone", "address", "code", "url", "path",
+}
+
+// safeScalarKeys is the small set of non-ID scalars whose values are known
+// enums or pagination controls. Sampling is deliberately an
+// allowlist: a denylist cannot uphold the promise that free text is never
+// recorded as new MCP schemas introduce new field names.
+var safeScalarKeys = map[string]bool{
+	"type": true, "status": true, "state": true, "role": true,
+	"action": true, "format": true, "sort": true, "order": true,
+	"cursor": true, "page": true, "pagenum": true, "pagesize": true,
+	"limit": true, "offset": true,
 }
 
 var noticeOnce sync.Once
@@ -135,7 +145,8 @@ func argKeys(args map[string]any) []string {
 func sampleArgs(args map[string]any) map[string]string {
 	out := map[string]string{}
 	for k, v := range args {
-		if sensitiveKeys[strings.ToLower(k)] {
+		normalized := normalizeKey(k)
+		if isSensitiveKey(normalized) || !safeSampleKey(normalized) {
 			continue
 		}
 		s, ok := safeScalar(v)
@@ -148,6 +159,28 @@ func sampleArgs(args map[string]any) map[string]string {
 		return nil
 	}
 	return out
+}
+
+func normalizeKey(k string) string {
+	k = strings.ToLower(strings.TrimSpace(k))
+	k = strings.NewReplacer("_", "", "-", "").Replace(k)
+	return k
+}
+
+func isSensitiveKey(normalized string) bool {
+	for _, part := range sensitiveKeyParts {
+		if strings.Contains(normalized, part) {
+			return true
+		}
+	}
+	return false
+}
+
+func safeSampleKey(normalized string) bool {
+	return safeScalarKeys[normalized] || strings.HasSuffix(normalized, "id") ||
+		strings.HasSuffix(normalized, "uuid") || strings.HasPrefix(normalized, "is") ||
+		strings.HasPrefix(normalized, "has") || strings.HasPrefix(normalized, "enable") ||
+		strings.HasPrefix(normalized, "include")
 }
 
 // safeScalar renders v as a recordable string, or returns ok=false if it is a

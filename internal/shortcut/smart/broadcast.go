@@ -72,7 +72,13 @@ var Broadcast = shortcut.Shortcut{
 				continue
 			}
 
-			// Step 2 — send the single-chat message to this recipient.
+			// Step 2 — send the single-chat message to this recipient. Under
+			// --dry-run we still resolve names (a read) but never send: record the
+			// resolved recipient as "would send" and move on.
+			if rt.DryRun() {
+				sent = append(sent, user.name)
+				continue
+			}
 			if _, err := rt.CallMCPData("chat", "send_personal_message", map[string]any{
 				"receiverUserId": user.userID,
 				"msgType":        "markdown",

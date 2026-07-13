@@ -23,10 +23,15 @@ var List = shortcut.Shortcut{
 	Description: "查询 DING 消息列表", Intent: "当你想查看当前身份收到或发出的 DING 消息、回顾有哪些强提醒或获取某条 DING 的 openDingId 以便后续查已读或撤回时使用；可选按类型过滤并用 cursor 翻页，只读不产生副作用。", Risk: shortcut.RiskRead,
 	Flags: []shortcut.Flag{
 		{Name: "cursor", Type: shortcut.FlagInt, Desc: "分页游标 (可选)"},
-		{Name: "type", Type: shortcut.FlagString, Desc: "类型 (可选)"},
+		{Name: "type", Type: shortcut.FlagString, Default: "ALL", Desc: "类型 (可选，默认 ALL)"},
 	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
-		params := map[string]any{"type": rt.Str("type")}
+		// type 是服务端必填，空值会报错；不传或传空时兜底为 ALL（对齐 helper）。
+		msgType := rt.Str("type")
+		if msgType == "" {
+			msgType = "ALL"
+		}
+		params := map[string]any{"type": msgType}
 		if rt.Changed("cursor") {
 			params["cursor"] = rt.Int("cursor")
 		}

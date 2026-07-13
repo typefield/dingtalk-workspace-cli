@@ -55,11 +55,10 @@ var TodoDone = shortcut.Shortcut{
 			return apperrors.NewValidation("请用 --task 提供待办标题关键词")
 		}
 
-		// Step 1 — list my todos. pageNum/pageSize are strings and roleTypes
-		// defaults to executor, mirroring helpers.buildListTodoTaskArgs.
-		data, err := rt.CallMCPData("todo", "get_user_todos_in_current_org", map[string]any{
-			"pageNum":   "1",
-			"pageSize":  "50",
+		// Step 1 — list ALL my todos across pages (roleTypes defaults to executor,
+		// mirroring helpers.buildListTodoTaskArgs) so a match beyond the first page
+		// is still found instead of yielding a false "没找到匹配待办".
+		cards, err := shortcutListAllTodoCards(rt, map[string]any{
 			"roleTypes": []string{"executor"},
 		})
 		if err != nil {
@@ -67,7 +66,7 @@ var TodoDone = shortcut.Shortcut{
 		}
 
 		// Step 2 — match by subject substring.
-		matches := shortcutTodoMatch(data, keyword)
+		matches := shortcutTodoMatch(cards, keyword)
 		switch {
 		case len(matches) == 0:
 			return apperrors.NewValidation(fmt.Sprintf("没找到匹配待办：标题里没有 %q 的待办。", keyword))
@@ -92,11 +91,9 @@ type shortcutTodoCard struct {
 	subject string
 }
 
-// shortcutTodoMatch walks a get_user_todos_in_current_org response
-// ({"result": {"todoCards": [ {subject, taskId, ...} ]}}) and returns the cards
-// whose subject contains keyword (case-insensitive).
-func shortcutTodoMatch(data map[string]any, keyword string) []shortcutTodoCard {
-	cards := shortcutTodoCards(data)
+// shortcutTodoMatch walks the todoCards ({subject, taskId, ...}) and returns the
+// cards whose subject contains keyword (case-insensitive).
+func shortcutTodoMatch(cards []map[string]any, keyword string) []shortcutTodoCard {
 	kw := strings.ToLower(keyword)
 	var out []shortcutTodoCard
 	for _, m := range cards {

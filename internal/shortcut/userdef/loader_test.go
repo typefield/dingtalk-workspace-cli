@@ -14,12 +14,26 @@
 package userdef
 
 import (
+	"context"
+	"io"
 	"os"
 	"path/filepath"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
+	"github.com/spf13/cobra"
 )
+
+type captureCaller struct{ args map[string]any }
+
+func (c *captureCaller) CallTool(_ context.Context, _, _ string, args map[string]any) (*edition.ToolResult, error) {
+	c.args = args
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{"ok":true}`}}}, nil
+}
+func (c *captureCaller) Format() string { return "json" }
+func (c *captureCaller) DryRun() bool   { return false }
 
 func TestValidate(t *testing.T) {
 	cases := []struct {
@@ -73,6 +87,50 @@ func TestFlagRef(t *testing.T) {
 	}
 	if _, ok := flagRef("cid_x"); ok {
 		t.Error("constant must not be a flag ref")
+	}
+}
+
+func TestCompileBindsOptionalDefault(t *testing.T) {
+	s := Spec{
+		Service: "defaulttest", Command: "+run", Product: "chat",
+		Exec:  ExecSpec{Tool: "send_message", Bind: map[string]string{"limit": "${limit}"}},
+		Flags: []FlagSpec{{Name: "limit", Type: "int", Default: "20"}},
+	}
+	caller := &captureCaller{}
+	helpers.InitDeps(caller)
+	shortcut.Register(Compile(s))
+
+	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	root.AddCommand(shortcut.Commands()...)
+	root.SetArgs([]string{"defaulttest", "+run"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if got := caller.args["limit"]; got != 20 {
+		t.Fatalf("default limit = %#v, want 20", got)
+	}
+}
+
+func TestFilePathRejectsTraversal(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	if _, err := FilePath("../../outside", "+run"); err == nil {
+		t.Fatal("expected traversal service to be rejected")
+	}
+	if _, err := FilePath("chat", "+../../outside"); err == nil {
+		t.Fatal("expected traversal command to be rejected")
+	}
+	path, err := FilePath("my-team", "+notify.v2")
+	if err != nil {
+		t.Fatal(err)
+	}
+	want := filepath.Join(Dir(), "my-team.notify.v2.yaml")
+	if path != want {
+		t.Fatalf("path = %q, want %q", path, want)
 	}
 }
 

@@ -69,6 +69,7 @@ func Aggregate(recs []Record) []Group {
 	type acc struct {
 		g         Group
 		valueSets map[string]map[string]struct{}
+		samples   map[string]int
 	}
 	byKey := map[string]*acc{}
 	for _, r := range recs {
@@ -78,6 +79,7 @@ func Aggregate(recs []Record) []Group {
 			a = &acc{
 				g:         Group{Product: r.Product, Tool: r.Tool, ArgKeys: r.ArgKeys},
 				valueSets: map[string]map[string]struct{}{},
+				samples:   map[string]int{},
 			}
 			byKey[key] = a
 		}
@@ -89,6 +91,7 @@ func Aggregate(recs []Record) []Group {
 			a.g.LastSeen = r.TS
 		}
 		for k, v := range r.SampleArgs {
+			a.samples[k]++
 			if a.valueSets[k] == nil {
 				a.valueSets[k] = map[string]struct{}{}
 			}
@@ -101,7 +104,7 @@ func Aggregate(recs []Record) []Group {
 		fixed := map[string]string{}
 		for k, set := range a.valueSets {
 			// A value is "fixed" only if it appeared in every occurrence and never varied.
-			if len(set) == 1 {
+			if a.samples[k] == a.g.Count && len(set) == 1 {
 				for v := range set {
 					fixed[k] = v
 				}

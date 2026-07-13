@@ -23,12 +23,15 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"regexp"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"gopkg.in/yaml.v3"
 )
+
+var commandSegmentRE = regexp.MustCompile(`^[\p{L}\p{N}_-][\p{L}\p{N}._-]*$`)
 
 // Spec is the on-disk YAML form of a user-defined shortcut. It mirrors
 // shortcut.Shortcut but expresses the Execute step declaratively via Exec.Bind.
@@ -118,10 +121,32 @@ func Validate(s Spec) error {
 	if !strings.HasPrefix(s.Command, "+") {
 		return fmt.Errorf("command 必须以 + 开头，当前 %q", s.Command)
 	}
+	if !commandSegmentRE.MatchString(s.Service) ||
+		!commandSegmentRE.MatchString(strings.TrimPrefix(s.Command, "+")) {
+		return fmt.Errorf("service 和 command 只能包含字母、数字、点、下划线和连字符，且不能以点开头")
+	}
 	if s.Exec.Tool == "" {
 		return fmt.Errorf("execute.tool 为必填")
 	}
 	return nil
+}
+
+// FilePath returns the safe on-disk path for a user-defined shortcut. Validate
+// already constrains both components, while the Rel check is a final defense
+// against future validation changes reintroducing directory traversal.
+func FilePath(service, command string) (string, error) {
+	probe := Spec{Service: service, Command: command, Exec: ExecSpec{Tool: "path-check"}}
+	if err := Validate(probe); err != nil {
+		return "", err
+	}
+	dir := Dir()
+	name := service + "." + strings.TrimPrefix(command, "+") + ".yaml"
+	path := filepath.Join(dir, name)
+	rel, err := filepath.Rel(dir, path)
+	if err != nil || rel == ".." || strings.HasPrefix(rel, ".."+string(filepath.Separator)) {
+		return "", fmt.Errorf("shortcut 文件路径超出配置目录")
+	}
+	return path, nil
 }
 
 // Compile turns a validated Spec into a runnable shortcut.Shortcut. Its Execute
@@ -132,6 +157,7 @@ func Compile(s Spec) shortcut.Shortcut {
 	flags := make([]shortcut.Flag, 0, len(s.Flags))
 	flagType := map[string]shortcut.FlagType{}
 	flagRequired := map[string]bool{}
+	flagHasDefault := map[string]bool{}
 	for _, f := range s.Flags {
 		t := shortcut.FlagType(f.Type)
 		if t == "" {
@@ -139,6 +165,7 @@ func Compile(s Spec) shortcut.Shortcut {
 		}
 		flagType[f.Name] = t
 		flagRequired[f.Name] = f.Required
+		flagHasDefault[f.Name] = f.Default != ""
 		flags = append(flags, shortcut.Flag{
 			Name: f.Name, Type: t, Default: f.Default,
 			Desc: f.Desc, Required: f.Required, Enum: f.Enum,
@@ -173,7 +200,7 @@ func Compile(s Spec) shortcut.Shortcut {
 			params := map[string]any{}
 			for key, tmpl := range bind {
 				if name, ok := flagRef(tmpl); ok {
-					if !rt.Changed(name) && !flagRequired[name] {
+					if !rt.Changed(name) && !flagRequired[name] && !flagHasDefault[name] {
 						continue // optional flag not provided → omit param
 					}
 					params[key] = readFlag(rt, name, flagType[name])
