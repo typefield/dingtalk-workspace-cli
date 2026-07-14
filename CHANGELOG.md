@@ -8,6 +8,7 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ### Changed
 
+- **Wukong IM read-result parity** — `chat message list` now documents and regression-tests quoted-message context for merged forwards and images; message-search entitlement errors preserve the server-provided friendly hint and action URL; and `ding message list` exposes each DING's content alongside its ID and status.
 - **`event consume` AI-subprocess contract** — aligns personal event streaming with the contract an orchestrator can drive without guessing: a fixed stderr ready line `[event] ready event_key=<key> bus_pid=<pid>` (block on it, don't `sleep`); a final `[event] exited — received N event(s) in Xs (reason: limit|timeout|signal|bus_shutdown)` line with exit code 0 on controlled exit and non-zero (no `exited` line) on failure; stdin-EOF as a graceful shutdown signal, armed only for a parent-controlled pipe stdin on an unbounded run (an interactive TTY and `< /dev/null` never trigger it), with a self-explaining diagnostic when it fires; and ownership-based subscription cleanup — a subscription this run created is unsubscribed on any clean exit while a `--subscribe-id`-reused one is left intact (`--ephemeral` still forces cleanup), so `kill -9` is the only way to leak a server-side subscription. Skill docs (mono + `dingtalk-event`) document the contract; design notes in `docs/event-subprocess-contract.md`.
 
 ### Added
