@@ -208,7 +208,7 @@ func newDevMCPURLGetCommand(runner executor.Runner) *cobra.Command {
 func newDevMCPServiceListCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "list",
-		Short:             "查询有开发权限的 MCP 服务列表",
+		Short:             "查询有开发权限的 MCP 服务列表（含 serverName）",
 		Example:           "  dws connector mcp service list --keyword 客户 --page-size 20 --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,

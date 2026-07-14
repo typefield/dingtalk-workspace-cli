@@ -117,6 +117,7 @@ dws connector mcp published --help
 - DWS 会缓存已发布 MCP 的工具描述，TTL 10 分钟。
 - `refresh` 会主动拉取预发/线上 Portal 发现接口并重建缓存。
 - 发布或更新工具后，可以立即 `refresh`，再看 `published --help`。
+- `service list` / `listMyMCP` 返回 `result.list[].serverName`；它是 kebab-case CLI 一级命令名，未设置时为空。动态发现必须优先使用该字段，不能始终从中文服务名推导。
 - 不要根据 `mcpId` 自行猜 `/server/org-{mcpId}`；应使用发现接口返回的 `mcpUrl`，或 `url get --source PUBLISHED` 返回的真实接入地址。
 
 指定接入地址的只读探测：

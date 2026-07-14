@@ -59,7 +59,7 @@ MCP 开发脚手架（mcpdev 管理面）
 - 工具创建或更新后只是草稿，必须调试通过并发布后才对使用方生效。**publish ≠ 上架市场**：publish 后企业内即可用，`url get --source PUBLISHED` 即可自助取地址。
 - `draft` 只有草稿；`published` 只有线上版本；`published_with_draft` 线上有发布版同时存在更新草稿。
 - `tool debug` 不传 `versionId` 时，已发布工具默认调线上版本；调试草稿必须传草稿 `versionId`。
-- DWS 动态命令来自已发布 MCP 的发现结果，一级命令优先用 `serverName`，缺失时用 MCP 服务 `name`，再缺失退到工具 `name`；不要凭 `mcpId` 手拼接入地址。
+- `service list` 返回的 `serverName` 是 DWS 动态命令一级路径；未设置时为空。DWS 一级命令优先用 `serverName`，缺失时用服务 `name`，再缺失退到工具 `name`；不要凭 `mcpId` 手拼接入地址。
 
 ## Shortcut
 
@@ -88,7 +88,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | 用户说 | 命令 |
 |--------|------|
 | "把这个接口做成 MCP / 给 agent 用" | 走 Shortcut 第一行全流程（从 API 材料一键建 MCP） |
-| "列出 MCP 服务 / 找回 mcpId" | `dws connector mcp service list --keyword <关键词> --format json` |
+| "列出 MCP 服务 / 找回 mcpId 或 serverName" | `dws connector mcp service list --keyword <关键词> --format json`；读取 `result.list[].mcpId/serverName` |
 | "查看 MCP 服务详情" | `dws connector mcp service get --mcp-id <mcpId> --format json` |
 | "创建 MCP 服务" | `dws connector mcp service create --name <名称> --description <描述> --dry-run --format json` |
 | "列出某服务工具 / 找回 actionId" | `dws connector mcp tool list --mcp-id <mcpId> --page-size 100 --format json` |

@@ -170,6 +170,7 @@ func TestFetchMCPHTTPCommandListFromPublishedDiscovery(t *testing.T) {
 				"result": map[string]any{
 					"values": []map[string]any{{
 						"mcpId":       1001,
+						"serverName":  "weather-cli",
 						"name":        "Weather MCP",
 						"description": "Weather service",
 						"icon":        "",
@@ -221,8 +222,8 @@ func TestFetchMCPHTTPCommandListFromPublishedDiscovery(t *testing.T) {
 	if len(commands) != 2 {
 		t.Fatalf("len(commands) = %d, want 2", len(commands))
 	}
-	fixedPath := []string{"weather-mcp", "get-weather"}
-	debugPath := []string{"connector", "mcp", "published", "weather-mcp", "get-weather"}
+	fixedPath := []string{"weather-cli", "get-weather"}
+	debugPath := []string{"connector", "mcp", "published", "weather-cli", "get-weather"}
 	cmd := findMCPHTTPTestCommandByPath(commands, fixedPath)
 	if cmd == nil {
 		t.Fatalf("fixed path command missing: %#v", commands)

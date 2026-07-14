@@ -133,7 +133,7 @@ dws connector mcp --help
 dws connector mcp service --help
 dws connector mcp tool --help
 
-# 服务
+# 服务；list 返回 result.list[].serverName，作为动态命令一级路径
 dws connector mcp service list --keyword <关键词> --format json
 dws connector mcp service get --mcp-id <mcpId> --format json
 dws connector mcp service create --name <服务名> --description <描述> --server-name <kebab-case> --dry-run --format json
