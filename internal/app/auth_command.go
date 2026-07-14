@@ -82,6 +82,7 @@ func buildAuthCommand(patCaller edition.ToolCaller) *cobra.Command {
 	cmd.AddCommand(
 		newAuthLogoutCommand(),
 		newAuthStatusCommand(),
+		newAuthMigrateKeychainCommand(),
 		newAuthExportCommand(),
 		newAuthImportCommand(),
 		newAuthExchangeCommand(),
@@ -283,6 +284,7 @@ var (
 	loginRecommendScopeModeSelector = selectLoginRecommendScopeMode
 	loginRecommendProductSelector   = selectLoginRecommendProducts
 	authLoginInteractiveTerminal    = isInteractiveTerminal
+	migrateKeychainToFileDEK        = authpkg.MigrateKeychainToFileDEK
 )
 
 func selectAuthLoginGuideAction() (authLoginGuideAction, error) {
@@ -521,6 +523,65 @@ func newAuthStatusCommand() *cobra.Command {
 	return cmd
 }
 
+func newAuthMigrateKeychainCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "migrate-keychain",
+		Short: "将 macOS 系统 Keychain 登录态安全迁移到 file-DEK",
+		Long: `将 dws-cli 的 legacy 与 profile 登录 token 统一重加密为 file-DEK，使 Codex 等沙箱进程与普通终端共享同一登录态。
+
+迁移必须从仍可读取原登录态的系统 Keychain 模式运行。命令会先验证全部认证密文；任何认证条目不可解密时均不会写入。应用密钥等无关条目不在迁移范围内。
+先用 --dry-run 预检，确认后加 --yes 执行。`,
+		Example: `  env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run --format json
+  env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --yes --format json`,
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			target, err := cmd.Flags().GetString("to")
+			if err != nil {
+				return apperrors.NewInternal("failed to read --to")
+			}
+			if strings.TrimSpace(target) != "file-dek" {
+				return apperrors.NewValidation("--to 当前仅支持 file-dek")
+			}
+			if os.Getenv(keychain.DisableKeychainEnv) != "" {
+				return apperrors.NewValidation(fmt.Sprintf(
+					"迁移必须从系统 Keychain 模式运行；请使用 `env -u %s dws auth migrate-keychain --to file-dek ...`",
+					keychain.DisableKeychainEnv,
+				))
+			}
+
+			dryRun, _ := cmd.Root().PersistentFlags().GetBool("dry-run")
+			yes, _ := cmd.Root().PersistentFlags().GetBool("yes")
+			if !dryRun && !yes {
+				return apperrors.NewValidation("迁移会重加密全部本地登录 token；请先使用 --dry-run 预检，确认后加 --yes 执行")
+			}
+			count, err := migrateKeychainToFileDEK(defaultConfigDir(), dryRun)
+			if err != nil {
+				return apperrors.NewInternal(fmt.Sprintf("keychain migration failed: %v", err))
+			}
+
+			result := struct {
+				Success bool   `json:"success"`
+				DryRun  bool   `json:"dry_run"`
+				Target  string `json:"target"`
+				Entries int    `json:"entries"`
+			}{Success: true, DryRun: dryRun, Target: "file-dek", Entries: count}
+			format, _ := cmd.Root().PersistentFlags().GetString("format")
+			if strings.EqualFold(strings.TrimSpace(format), "json") {
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+			}
+			if dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "预检通过：%d 个本地认证条目可迁移到 file-DEK\n", count)
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "迁移完成：%d 个本地认证条目已统一使用 file-DEK\n", count)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().String("to", "file-dek", "目标密钥后端（当前仅支持 file-dek）")
+	return cmd
+}
+
 func logoutOneProfile(_ *cobra.Command, ctx context.Context, configDir, selector string) error {
 	if _, err := authpkg.ResolveProfile(configDir, selector); err != nil {
 		return apperrors.NewValidation(err.Error())
@@ -596,7 +657,7 @@ func newAuthExportCommand() *cobra.Command {
 			}
 			if !authpkg.PortableExportSupported() {
 				return apperrors.NewValidation(fmt.Sprintf(
-					"macOS 默认将 DEK 存在系统 Keychain，导出的包无法在其它机器解密；请设置 %s=1 后重新登录再导出",
+					"macOS 导出认证包需要 file-DEK 模式；请先设置 %s=1 并运行 dws auth status 验证，只有提示密钥不匹配且确认可丢弃旧登录态时，才执行 dws auth reset 后重新登录",
 					keychain.DisableKeychainEnv,
 				))
 			}
@@ -1229,11 +1290,18 @@ func authStatusDiagnosticFromError(err error) *authStatusDiagnostic {
 	if err == nil {
 		return nil
 	}
+	if keychain.IsCiphertextKeyMismatch(err) {
+		return &authStatusDiagnostic{
+			Reason:  "ciphertext_key_mismatch",
+			Message: "本地登录态与可用登录密钥不匹配，已拒绝覆盖现有凭证",
+			Hint:    "macOS 请先在系统 Keychain 模式运行 `env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run`，预检通过后加 --yes 迁移；只有密文损坏且确认无法恢复时才按 profile 退出或执行 auth reset。",
+		}
+	}
 	if keychain.IsDEKMissing(err) {
 		return &authStatusDiagnostic{
 			Reason:  "dek_missing",
 			Message: "本地登录密钥缺失，无法解密已保存的登录态",
-			Hint:    "重新登录以生成新的本地登录密钥；如仍异常，可先清理本地登录态后再登录。",
+			Hint:    "请先恢复或统一原登录密钥；确认旧登录态不可恢复后，执行 dws auth reset，再重新登录。",
 		}
 	}
 	if !keychain.IsUnavailable(err) {

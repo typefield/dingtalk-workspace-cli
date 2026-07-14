@@ -23,7 +23,7 @@ import (
 )
 
 func TestApplyPersonalConsumeFiltersDebugRawEvents(t *testing.T) {
-	cfg := consume.Config{ReadyEventKey: personal.EventSingleChat, ReadySubscribeID: "sub-1"}
+	cfg := consume.Config{EventKey: personal.EventSingleChat, ReadySubscribeID: "sub-1"}
 	opts := personalConsumeOptions{
 		DebugRawEvents: true,
 		Common: commonConsumeOptions{
@@ -35,8 +35,8 @@ func TestApplyPersonalConsumeFiltersDebugRawEvents(t *testing.T) {
 	if cfg.EventTypes != nil || cfg.Filter != "" || cfg.SubscribeID != "" {
 		t.Fatalf("raw debug filters = eventTypes=%#v filter=%q subscribeID=%q, want catch-all", cfg.EventTypes, cfg.Filter, cfg.SubscribeID)
 	}
-	if cfg.ReadyEventKey != personal.EventSingleChat || cfg.ReadySubscribeID != "sub-1" {
-		t.Fatalf("raw debug cleared ready identity: eventKey=%q subscribeID=%q", cfg.ReadyEventKey, cfg.ReadySubscribeID)
+	if cfg.EventKey != personal.EventSingleChat || cfg.ReadySubscribeID != "sub-1" {
+		t.Fatalf("raw debug cleared ready identity: eventKey=%q subscribeID=%q", cfg.EventKey, cfg.ReadySubscribeID)
 	}
 }
 

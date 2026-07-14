@@ -165,19 +165,7 @@ func platformDiagnose() Diagnostic {
 	}
 }
 
-// getDEK retrieves or generates the Data Encryption Key.
-// When DWS_DISABLE_KEYCHAIN=1 (set in sandboxed runtimes like Codex App
-// where Keychain APIs are blocked), falls back to a file-based DEK
-// identical to the Linux scheme. See DisableKeychainEnv docs for the
-// security tradeoff.
-func getDEK(service string) ([]byte, error) {
-	return getOrCreateDEK(service)
-}
-
-func getDEKReadOnly(service string) ([]byte, error) {
-	if os.Getenv(DisableKeychainEnv) != "" {
-		return fileDEKReadOnly(service)
-	}
+func getSystemDEKReadOnly(service string) ([]byte, error) {
 	if err := checkDefaultKeychainAvailable(); err != nil {
 		return nil, err
 	}
@@ -320,6 +308,71 @@ func decryptData(data []byte, key []byte) (string, error) {
 	return string(plaintext), nil
 }
 
+// decryptWithAvailableDEK decrypts an existing entry without creating or
+// migrating key material. In normal macOS mode, entries previously written by
+// the explicit file-DEK fallback remain readable so another local process
+// cannot replace them with ciphertext encrypted by a different key.
+func decryptWithAvailableDEK(service string, data []byte) (string, []byte, error) {
+	if os.Getenv(DisableKeychainEnv) != "" {
+		key, err := fileDEKReadOnly(service)
+		if err != nil {
+			return "", nil, err
+		}
+		plaintext, err := decryptData(data, key)
+		if err != nil {
+			return "", nil, fmt.Errorf("%w: file-DEK cannot decrypt existing entry", ErrCiphertextKeyMismatch)
+		}
+		return plaintext, key, nil
+	}
+
+	systemKey, systemKeyErr := getSystemDEKReadOnly(service)
+	if IsUnavailable(systemKeyErr) {
+		return "", nil, systemKeyErr
+	}
+	if systemKeyErr == nil {
+		if plaintext, err := decryptData(data, systemKey); err == nil {
+			return plaintext, systemKey, nil
+		}
+	}
+
+	fileKey, fileKeyErr := fileDEKReadOnly(service)
+	if fileKeyErr == nil {
+		if plaintext, err := decryptData(data, fileKey); err == nil {
+			return plaintext, fileKey, nil
+		}
+	}
+
+	if systemKeyErr != nil && fileKeyErr != nil {
+		return "", nil, systemKeyErr
+	}
+	return "", nil, fmt.Errorf("%w: available DEKs cannot decrypt existing entry", ErrCiphertextKeyMismatch)
+}
+
+// keyForNewEntry preserves the backend used by the canonical auth-token entry
+// when a related account is added from a normal macOS process. This prevents
+// profile-scoped token slots from mixing DEK backends without allowing an
+// unrelated file-backed secret to downgrade a system-Keychain-backed login.
+func keyForNewEntry(service, account string) ([]byte, error) {
+	if os.Getenv(DisableKeychainEnv) != "" {
+		return getOrCreateDEK(service)
+	}
+	if account != AccountToken && !strings.HasPrefix(account, AccountToken+":") {
+		return getOrCreateDEK(service)
+	}
+
+	anchorPath := filepath.Join(StorageDir(service), safeFileName(AccountToken))
+	anchor, err := os.ReadFile(anchorPath)
+	if err == nil {
+		_, key, decryptErr := decryptWithAvailableDEK(service, anchor)
+		return key, decryptErr
+	}
+	if !os.IsNotExist(err) {
+		return nil, err
+	}
+
+	return getOrCreateDEK(service)
+}
+
 func platformGet(service, account string) (string, error) {
 	data, err := os.ReadFile(filepath.Join(StorageDir(service), safeFileName(account)))
 	if err != nil {
@@ -328,11 +381,7 @@ func platformGet(service, account string) (string, error) {
 		}
 		return "", err
 	}
-	key, err := getDEKReadOnly(service)
-	if err != nil {
-		return "", err
-	}
-	plaintext, err := decryptData(data, key)
+	plaintext, _, err := decryptWithAvailableDEK(service, data)
 	if err != nil {
 		return "", err
 	}
@@ -340,11 +389,26 @@ func platformGet(service, account string) (string, error) {
 }
 
 func platformSet(service, account, data string) error {
-	key, err := getOrCreateDEK(service)
+	dir := StorageDir(service)
+	targetPath := filepath.Join(dir, safeFileName(account))
+
+	var (
+		key []byte
+		err error
+	)
+	existing, readErr := os.ReadFile(targetPath)
+	switch {
+	case readErr == nil:
+		_, key, err = decryptWithAvailableDEK(service, existing)
+	case os.IsNotExist(readErr):
+		key, err = keyForNewEntry(service, account)
+	default:
+		return readErr
+	}
 	if err != nil {
 		return err
 	}
-	dir := StorageDir(service)
+
 	if err := os.MkdirAll(dir, 0700); err != nil {
 		return err
 	}
@@ -353,7 +417,6 @@ func platformSet(service, account, data string) error {
 		return err
 	}
 
-	targetPath := filepath.Join(dir, safeFileName(account))
 	tmpPath := filepath.Join(dir, safeFileName(account)+"."+uuid.New().String()+".tmp")
 	defer os.Remove(tmpPath)
 
@@ -364,6 +427,23 @@ func platformSet(service, account, data string) error {
 	// Atomic rename to prevent file corruption during multi-process writes
 	if err := os.Rename(tmpPath, targetPath); err != nil {
 		return err
+	}
+	return nil
+}
+
+func platformValidateAuthTokenEntries(service string) error {
+	paths, err := authTokenCiphertextPaths(service)
+	if err != nil {
+		return err
+	}
+	for _, path := range paths {
+		ciphertext, err := os.ReadFile(path)
+		if err != nil {
+			return fmt.Errorf("read keychain entry %q: %w", filepath.Base(path), err)
+		}
+		if _, _, err := decryptWithAvailableDEK(service, ciphertext); err != nil {
+			return fmt.Errorf("validate keychain entry %q: %w", filepath.Base(path), err)
+		}
 	}
 	return nil
 }

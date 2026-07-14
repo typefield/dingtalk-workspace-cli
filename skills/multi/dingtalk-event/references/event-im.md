@@ -123,7 +123,7 @@ dws event consume user_im_message_reaction_group \
 | `user_im_message_reaction_o2o` | `--user <userId> --duration 10m -f ndjson` | 在指定单聊中给消息添加表情回应 |
 | `user_im_message_reaction_group` | `--group <openConversationId> --duration 10m -f ndjson` | 在指定群聊中给消息添加表情回应 |
 
-stderr 出现 `[event] ready event_key=<event_key> subscribe_id=<subscribe_id>` 表示该订阅已连接并可以处理 stdout。`connected bus pid=...` 是额外的人工诊断信息，不作为 Agent 的就绪协议。
+stderr 出现固定就绪行 `[event] ready event_key=<key> bus_pid=<pid> subscribe_id=<id>` 表示本地 consume 已连接到事件 bus；父进程等这行再读 stdout。stdout 每行是一个扁平事件 JSON。
 
 ## Runtime flags
 
@@ -136,6 +136,7 @@ stderr 出现 `[event] ready event_key=<event_key> subscribe_id=<subscribe_id>` 
 | `--output-dir <dir>` | 每个事件写入一个文件 |
 | `--route '<regex>=dir:<path>'` | 按事件类型路由到目录 |
 | `--subscribe-id <id>` | 复用已有个人订阅 |
+| `--ephemeral` | 即使复用已有订阅，也在 consume 退出时取消订阅 |
 | `--query <csv>` | 按消息正文关键词过滤，逗号分隔 |
 | `--filter-json <json>` | 使用个人事件 Filter DSL 过滤 |
 | `--debug-raw-events` | 联调用：绕过本地过滤，输出当前 personal stream 实际收到的可解析事件 |
@@ -224,11 +225,11 @@ dws event stop <subscribe_id>
 dws event stop --all
 ```
 
-裸 `dws event stop` 不会取消订阅。前台 `consume` 进程用 Ctrl+C 只会停止本地进程；需要取消服务端订阅时，使用事件输出或 `status` 里的 `subscribe_id` 执行 `dws event stop <subscribe_id>`。
+裸 `dws event stop` 不会取消订阅。本次 consume 新建的订阅会在 SIGTERM、Ctrl+C、stdin EOF、duration 或 max-events 等干净退出时自动取消；通过 `--subscribe-id` 复用的订阅默认保留，需要时使用事件输出或 `status` 里的 `subscribe_id` 执行 `dws event stop <subscribe_id>`。不要使用 `kill -9`，它会跳过清理。
 
 ## Troubleshooting
 
-- 没有输出：先确认 stderr 已出现 `[event] ready event_key=... subscribe_id=...`。
+- 没有输出：先确认 stderr 已出现 `[event] ready event_key=... bus_pid=... subscribe_id=...`。
 - 参数缺失：所有 o2o 事件必须有对端 ID，所有 group 事件必须有 openConversationId。
 - 收到非预期消息：检查 stdout 的 `subscribe_id` 是否等于当前命令创建/复用的订阅 ID。
 - 需要判断服务端是否推到当前连接：临时加 `--debug --debug-raw-events`，排查后去掉。

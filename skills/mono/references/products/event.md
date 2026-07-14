@@ -2,15 +2,24 @@
 
 通过个人 Stream 长连接监听当前用户的钉钉消息接收、已读、撤回和表情回应事件，NDJSON 输出到 stdout，用于驱动事件触发的 Agent。实时监听、自动回复、订阅事件都必须使用 `dws event consume`，不要写脚本轮询消息历史。
 
+## 运行方式
+
+- bus 后台进程持有对钉钉的个人 Stream 长连；consume 从 bus 读事件、按 NDJSON 打到 stdout。consume 只读，不发消息（回复用 `dws chat message send`）。
+- 没有 bus 时 consume 自动拉起；通常只跑 consume。
+- 一个组织一个 bus，互不干扰、可同时跑；同组织内多个 consume 共享一个 bus。
+- 非默认组织加全局 `--profile <corpId 或 profile 名>`；漏传会退回默认 profile 而失败。
+
 ## Core commands
 
 | Command | Purpose |
 |---|---|
-| `dws event schema <event_key>` | 查看事件参数和输出字段 schema，默认 JSON |
-| `dws event consume <event_key> [flags]` | 阻塞消费；事件写到 stdout，推荐 `-f ndjson` |
-| `dws event status --event <event_key>` | 查看个人订阅、personal bus 和本地 consume |
-| `dws event stop <subscribe_id>` | 取消个人订阅并停止对应本地消费 |
-| `dws event stop --all` | 清理当前身份下本地记录的全部个人订阅 |
+| `dws event schema <event_key>` | 查看事件参数和输出字段 schema |
+| `dws event consume <event_key> [flags]` | 阻塞消费，事件写到 stdout，用 `-f ndjson` |
+| `dws event status --event <event_key>` | 查看个人订阅、bus、本地 consume |
+| `dws event stop <subscribe_id>` | 取消订阅并停止对应本地消费 |
+| `dws event stop --all` | 清理当前身份下全部个人订阅 |
+
+注意区分两个 schema：`dws event schema <event_key>` 查事件的输出字段；`dws schema "event consume"` 查 consume 命令自身的入参（机读结构，source=cobra，含 parameters + 位置参数）。
 
 ## Event catalog
 
@@ -48,7 +57,7 @@
 | "看个人事件订阅状态" | `dws event status --event <event_key>` |
 | "停止这个个人事件订阅" | `dws event stop <subscribe_id>` |
 
-多候选必须让用户确认。缺少必填 ID 且无法解析时先追问，不要猜测。
+多候选让用户确认。缺必填 ID 且解析不出先追问，不要猜。
 
 “我和某人的单聊”使用 `receive_o2o`；“某人发给我的消息/某人发送的消息”使用 `receive_user`，后者覆盖该发送人的单聊和群聊消息。用户要求执行“撤回消息”时走 `dws chat`；只有“监听/订阅消息撤回”才走 `dws event`。“贴标签”表示给消息贴表情时，对应 `reaction` 表情回应事件。
 
@@ -56,12 +65,12 @@
 
 1. 从用户意图选择事件码；人名或群名先解析成必填 ID。
 2. 需要了解字段时运行 `dws event schema <event_key>`，读取 `schema.properties`；`jq_root_path` 当前固定为 `.`。
-3. 启动 `dws event consume <event_key> ... -f ndjson`，等待 stderr 出现 `[event] ready event_key=<event_key> subscribe_id=<subscribe_id>` 后开始处理 stdout。
+3. 启动 `dws event consume <event_key> ... -f ndjson`，等待 stderr 出现 `[event] ready event_key=<key> bus_pid=<pid> subscribe_id=<id>` 后开始处理 stdout，不要用 `sleep` 猜测。
 4. stdout 每行是一个扁平事件 JSON；直接按该事件的 `schema.properties` 读取顶层字段。
 5. 需要确认监听状态时运行 `dws event status --event <event_key>`，查看 `Subscriptions` 和 `Consumers`。
-6. 任务完成后用 `dws event stop <subscribe_id>` 取消订阅；临时测试可以在 consume 上加 `--max-events` 或 `--duration`。
+6. 任务完成后优雅结束 consume；本次新建的订阅会自动取消。复用已有订阅时，用 `dws event stop <subscribe_id>` 显式取消。
 
-## Common commands
+## Commands
 
 ```bash
 dws event schema user_im_message_receive_at
@@ -78,27 +87,9 @@ dws event schema user_im_message_reaction_group
 
 ```bash
 dws event consume user_im_message_receive_at -f ndjson
-```
-
-```bash
-dws event consume user_im_message_receive_o2o \
-  --user 507971 \
-  -f ndjson
-```
-
-```bash
-dws event consume user_im_message_receive_group \
-  --group <openConversationId> \
-  -f ndjson
-```
-
-```bash
-dws event consume user_im_message_receive_user \
-  --user 507971 \
-  -f ndjson
-```
-
-```bash
+dws event consume user_im_message_receive_o2o --user 507971 -f ndjson
+dws event consume user_im_message_receive_group --group <openConversationId> -f ndjson
+dws event consume user_im_message_receive_user --user 507971 -f ndjson
 dws event consume user_im_message_read_o2o --user 507971 -f ndjson
 dws event consume user_im_message_read_group --group <openConversationId> -f ndjson
 dws event consume user_im_message_recall_o2o --user 507971 -f ndjson
@@ -113,11 +104,16 @@ dws event status --event user_im_message_receive_o2o
 dws event status --event user_im_message_receive_group
 dws event status --event user_im_message_receive_user
 dws event stop <subscribe_id>
+dws event stop --all
 ```
 
-`status` 的 `Consumers` 表展示本地 consume 的 PID、事件码、`subscribe_id` 和 received/dropped 计数，可用于确认监听是否仍在 personal bus 上。
+## Subprocess contract
 
-裸 `dws event stop` 不会取消订阅；批量清理必须显式使用 `dws event stop --all`。Ctrl+C、`--duration`、`--max-events` 只结束本地前台消费进程，不等价于取消服务端订阅。
+- 就绪：连上后 stderr 打 `[event] ready event_key=<key> bus_pid=<pid> subscribe_id=<id>`，父进程等这行再读 stdout。不要 `--quiet`（会抑制它）。
+- 退出：末行 `[event] exited — received N event(s) in Xs (reason: limit|timeout|signal|bus_shutdown)`；受控退出码 0，失败非 0 且无 exited 行、有 Error 行。
+- stdin 关闭 = 停机：仅当 stdin 是管道且未设 `--max-events/--duration` 时生效；交互终端和 `< /dev/null` 不触发。用管道 stdin 又要常驻就喂 `< <(tail -f /dev/null)`。
+- 订阅清理：本次新建的订阅任意退出即自动退订；`--subscribe-id` 复用的保留；`--ephemeral` 强制退订。优雅停用 SIGTERM、关 stdin，或外部 `dws event stop <subscribe_id>`。不要 `kill -9`（跳过退订、泄漏服务端订阅）。
+- 一 consume 一 event_key；监听 N 个就起 N 个 consume，共用一个 bus。
 
 ## Output parsing
 
@@ -130,7 +126,16 @@ dws event stop <subscribe_id>
 - 表情回应事件直接读取 `operator/operator_open_dingtalk_id/reaction_name/reaction_text/operation_type/operation_time`。
 - 图片、文件等媒体消息的 `content` 可能是可读描述；需要实际媒体文件时调用 `dws chat message download-media`。
 - 正常动作事件输出不含内部 `payload/uid/corpid/clientId/filterSubId/bizid`；原始排查才使用 `-f raw` 或 `--debug-raw-events`。
+- 自己发的消息不作为事件回来（`isSelfLoop` 过滤）；自发验证会看到 0 事件，测试投递使用别人或机器人发消息。
+- `--jq <表达式>` 可进一步过滤或投影扁平输出。
 - `--debug-raw-events` 仅用于服务端联调，正常消费不要使用。
+
+## Troubleshooting
+
+- consume 报 bus 启动失败：报错已带子进程真实原因。多为登录问题，`dws --profile <x> auth status` 看登录态（非默认组织带对 `--profile`），过期就 `auth login` 重登。
+- 本地日志：`~/.dws/events/<edition>/personal_stream/<hash>/bus.log`（`edition` 一般 `open`，`hash` 见 `dws event status` 的 Workdir）；极早期失败可能无日志，以 consume 报错为准。
+- 有残留 / 连不上：`dws event status` 查 stale，`dws event stop --all` 清理重试。
+- 挂住无输出：多是误加 `--foreground`（跑 bus、不打印事件），去掉。
 
 ## Full reference
 
