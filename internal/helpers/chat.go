@@ -15,6 +15,7 @@ import (
 	"strings"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -1018,17 +1019,6 @@ func firstStringField(data map[string]any, keys ...string) string {
 		}
 	}
 	return ""
-}
-
-func printMCPText(text string) error {
-	if deps.Caller.Format() == "json" {
-		var parsed any
-		if err := json.Unmarshal([]byte(text), &parsed); err == nil {
-			return deps.Out.PrintJSONUnescaped(parsed)
-		}
-	}
-	deps.Out.PrintRaw(text)
-	return nil
 }
 
 // ──────────────────────────────────────────────────────────
@@ -2473,6 +2463,20 @@ func newChatCommand() *cobra.Command {
 	_ = chatMessageSendCmd.Flags().MarkHidden("file-size")
 	chatMessageSendCmd.Flags().Bool("ai-tag", true, "消息是否带 AI 发送角标（默认 true）")
 	chatMessageSendCmd.Flags().String("uuid", "", "幂等 UUID，相同 uuid 在 24h 内不会重复发送（可选）")
+	cli.AttachRuntimeSchema(chatMessageSendCmd, "chat", "send_personal_message", "hardcoded:chat")
+	cli.AnnotateRuntimeConstraints(chatMessageSendCmd, cli.RuntimeSchemaConstraints{
+		MutuallyExclusive: [][]string{{"group", "user", "open-dingtalk-id"}},
+		RequireOneOf:      [][]string{{"group", "user", "open-dingtalk-id"}},
+	})
+	cli.AnnotateRuntimePositionals(chatMessageSendCmd, cli.RuntimeSchemaPositional{
+		Name:        "content",
+		Type:        "string",
+		Description: "消息内容（也可使用 --text；富媒体消息可省略）",
+		Required:    false,
+		Index:       0,
+	})
+	cli.AnnotateRuntimeFlagEnum(chatMessageSendCmd, "msg-type", "image", "file", "audio", "video")
+	cli.AnnotateRuntimeFlagFormat(chatMessageSendCmd, "file-path", "file-path")
 
 	chatMessageSendByBotCmd.Flags().String("robot-code", "", "机器人 Code (必填)")
 	_ = chatMessageSendByBotCmd.MarkFlagRequired("robot-code")
@@ -2523,7 +2527,7 @@ func newChatCommand() *cobra.Command {
 	_ = chatMessageListAllCmd.MarkFlagRequired("start")
 	chatMessageListAllCmd.Flags().String("end", "", "结束时间，格式: yyyy-MM-dd HH:mm:ss (必填)")
 	_ = chatMessageListAllCmd.MarkFlagRequired("end")
-	chatMessageListAllCmd.Flags().Int("limit", 50, "每页返回数量 (必填，默认 50)")
+	chatMessageListAllCmd.Flags().Int("limit", 50, "每页返回数量（默认 50）")
 	chatMessageListAllCmd.Flags().Int("size", 0, "--limit 的旧版别名")
 	_ = chatMessageListAllCmd.Flags().MarkHidden("size")
 	chatMessageListAllCmd.Flags().String("cursor", "0", "分页游标（首页传 \"0\"，后续从响应中获取）")
@@ -3530,6 +3534,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 	_ = chatMessageReplyCmd.MarkFlagRequired("text")
 	chatMessageReplyCmd.Flags().String("uuid", "", "幂等键（可选）")
 	chatMessageReplyCmd.Flags().Bool("ai-tag", true, "消息是否带 AI 发送角标（默认 true）")
+	cli.AttachRuntimeSchema(chatMessageReplyCmd, "chat", "reply_personal_message", "hardcoded:chat")
 
 	// ── message forward: 转发单条消息 ────────────────────────
 
@@ -3650,7 +3655,9 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 			// 服务端 set_group_member_mute_list 的 uids（staffId）入参存在缺陷：
 			// 即使传了 uids 仍返回 "uids is required"，而 openDingTalkIds 路径正常。
 			// 与 message send 一致：先把 userId 解析为 openDingTalkId；解析失败再降级透传 uids。
-			if len(userIDs) > 0 {
+			// Resolving userId to openDingTalkId is a remote preflight. A dry-run
+			// must preserve the supplied uids in its preview without calling MCP.
+			if len(userIDs) > 0 && !deps.Caller.DryRun() {
 				if resolved, err := resolveOpenDingTalkIDs(cmd.Context(), userIDs); err == nil {
 					openDingTalkIDs = append(openDingTalkIDs, resolved...)
 					userIDs = nil
@@ -4050,12 +4057,20 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 	chatGroupDismissCmd := &cobra.Command{
 		Use:   "dismiss",
 		Short: "解散群聊",
-		Long:  `解散指定群聊。该操作不可逆，需要群主权限。`,
-		Example: `  dws chat group dismiss --group <openConversationId>
+		Long:  `解散指定群聊。该操作不可逆，需要群主权限；必须先获得用户确认，再追加 --yes 执行。`,
+		Example: `  dws chat group dismiss --group <openConversationId> --yes
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "group"); err != nil {
 				return err
+			}
+			if !commandBoolFlag(cmd, "yes") {
+				return apperrors.NewValidation(
+					"解散群聊不可逆；获得用户确认后加 --yes 执行",
+					apperrors.WithReason("confirmation_required"),
+					apperrors.WithHint("先确认目标群聊及影响范围；用户明确同意后以相同参数追加 --yes"),
+					apperrors.WithActions("确认目标群聊", "获得用户确认后使用 --yes 执行"),
+				)
 			}
 			return callMCPToolOnServer("im", "dismiss_group", map[string]any{
 				"openConversationId": mustGetFlag(cmd, "group"),
@@ -4337,6 +4352,9 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 		RunE: func(cmd *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
 			if v, _ := cmd.Flags().GetString("role"); v != "" {
+				if v != "OWNER" && v != "ADMIN" {
+					return apperrors.NewValidation("--role must be one of OWNER or ADMIN")
+				}
 				toolArgs["roleFilter"] = v
 			}
 			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
@@ -5035,7 +5053,6 @@ status 可选值:
 	_ = chatCategoryCreateSmartCmd.MarkFlagRequired("name")
 	chatCategoryCreateSmartCmd.Flags().String("keywords", "", "群名称关键词列表，逗号分隔（可选）")
 	chatCategoryCreateSmartCmd.Flags().String("members", "", "群内成员 openDingTalkId 列表，逗号分隔（可选）")
-
 	chatMessageListEmotionRepliesCmd := &cobra.Command{
 		Use:   "list-emotion-replies",
 		Short: "批量拉取消息的表情回复和文字回复",

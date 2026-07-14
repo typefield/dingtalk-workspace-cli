@@ -941,18 +941,6 @@ func applyModelArg(argv []string, flag, model string) []string {
 	return append(out[:1:1], append([]string{flag, model}, out[1:]...)...)
 }
 
-func insertBeforeArg(argv []string, marker string, values ...string) []string {
-	for i := 1; i < len(argv); i++ {
-		if argv[i] == marker {
-			out := append([]string(nil), argv[:i]...)
-			out = append(out, values...)
-			return append(out, argv[i:]...)
-		}
-	}
-	out := append([]string(nil), argv...)
-	return append(out, values...)
-}
-
 // msgDedup tracks recently-seen MsgIds so a redelivered message is not
 // processed (and replied to) twice. Memory is bounded: once the set reaches
 // limit it is cleared (the chance of a very old MsgId being redelivered after a

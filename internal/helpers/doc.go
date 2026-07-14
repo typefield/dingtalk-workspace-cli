@@ -701,7 +701,7 @@ func buildNodeTransferRunE(mcpToolName string) func(cmd *cobra.Command, args []s
 }
 
 func docFolderFlag(cmd *cobra.Command, extraAliases ...string) string {
-	aliases := append([]string{"parent-id", "parent-folder", "parent-folder-id"}, extraAliases...)
+	aliases := append([]string{"parent-id", "parent-folder", "parent-node-id", "parent-folder-id"}, extraAliases...)
 	return flagOrFallback(cmd, "folder", aliases...)
 }
 
@@ -2000,7 +2000,7 @@ commentKey可从 dws doc comment create 或 dws doc comment list 返回结果中
 				return err
 			}
 			commentKey := mustGetFlag(cmd, "comment-key")
-			if !confirmDelete("文档评论", commentKey) {
+			if !confirmDangerousAction(cmd, "delete 文档评论", commentKey) {
 				return nil
 			}
 			return callMCPToolOnServer("doc-comment", "delete_comment", map[string]any{
@@ -2805,7 +2805,7 @@ CLI 内部自动完成全部流程:
 			if !exists {
 				return fmt.Errorf("文档版本 %d 不存在，已停止回滚；请先执行 dws doc version list --node %s --format json 获取可回滚版本", version, nodeID)
 			}
-			if !confirmDelete("文档版本回滚", nodeID) {
+			if !confirmDangerousAction(cmd, fmt.Sprintf("revert document to version %d", version), nodeID) {
 				return nil
 			}
 			return callMCPToolOnServer("doc", "revert_doc_version", map[string]any{

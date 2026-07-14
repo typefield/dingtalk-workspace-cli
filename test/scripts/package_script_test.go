@@ -2,6 +2,7 @@ package scripts_test
 
 import (
 	"archive/tar"
+	"archive/zip"
 	"compress/gzip"
 	"crypto/sha256"
 	"fmt"
@@ -32,41 +33,10 @@ var expectedPackagedSkillTargets = []string{
 	".hermes/skills/dws",
 }
 
-func writeDarwinArchive(t *testing.T, path string) {
-	t.Helper()
-
-	archive, err := os.Create(path)
-	if err != nil {
-		t.Fatalf("Create(%s) error = %v", path, err)
-	}
-	gzipWriter := gzip.NewWriter(archive)
-	tarWriter := tar.NewWriter(gzipWriter)
-	binary := []byte("#!/bin/sh\nexit 0\n")
-	if err := tarWriter.WriteHeader(&tar.Header{
-		Name: "dws",
-		Mode: 0o755,
-		Size: int64(len(binary)),
-	}); err != nil {
-		t.Fatalf("WriteHeader(%s) error = %v", path, err)
-	}
-	if _, err := tarWriter.Write(binary); err != nil {
-		t.Fatalf("Write(%s) error = %v", path, err)
-	}
-	if err := tarWriter.Close(); err != nil {
-		t.Fatalf("tar Close(%s) error = %v", path, err)
-	}
-	if err := gzipWriter.Close(); err != nil {
-		t.Fatalf("gzip Close(%s) error = %v", path, err)
-	}
-	if err := archive.Close(); err != nil {
-		t.Fatalf("Close(%s) error = %v", path, err)
-	}
-}
-
 // seedDistArtifacts creates minimal goreleaser output archives and a
 // checksums.txt stub so post-goreleaser.sh can run without a real build.
-// Darwin archives must be valid tar.gz files because the packaging script
-// extracts and signs their dws binaries.
+// Every archive is valid so the packaging tests exercise extraction for all
+// platforms; Darwin archives are additionally processed by the signing path.
 func seedDistArtifacts(t *testing.T, distDir string, targets []string) {
 	t.Helper()
 	if err := os.MkdirAll(distDir, 0o755); err != nil {
@@ -75,13 +45,7 @@ func seedDistArtifacts(t *testing.T, distDir string, targets []string) {
 
 	for _, target := range targets {
 		p := filepath.Join(distDir, target)
-		if strings.HasPrefix(target, "dws-darwin-") && strings.HasSuffix(target, ".tar.gz") {
-			writeDarwinArchive(t, p)
-			continue
-		}
-		if err := os.WriteFile(p, []byte("fake-archive"), 0o644); err != nil {
-			t.Fatalf("WriteFile(%s) error = %v", p, err)
-		}
+		seedDistArchive(t, p)
 	}
 
 	// Create empty checksums.txt (goreleaser creates this)
@@ -92,6 +56,50 @@ func seedDistArtifacts(t *testing.T, distDir string, targets []string) {
 	}
 	if err := os.WriteFile(checksums, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
 		t.Fatalf("WriteFile(%s) error = %v", checksums, err)
+	}
+}
+
+func seedDistArchive(t *testing.T, path string) {
+	t.Helper()
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("Create(%s) error = %v", path, err)
+	}
+	defer file.Close()
+
+	content := []byte("#!/bin/sh\nexit 0\n")
+	switch {
+	case strings.HasSuffix(path, ".tar.gz"):
+		gzipWriter := gzip.NewWriter(file)
+		tarWriter := tar.NewWriter(gzipWriter)
+		if err := tarWriter.WriteHeader(&tar.Header{Name: "dws", Mode: 0o755, Size: int64(len(content))}); err != nil {
+			t.Fatalf("WriteHeader(%s) error = %v", path, err)
+		}
+		if _, err := tarWriter.Write(content); err != nil {
+			t.Fatalf("Write(%s) error = %v", path, err)
+		}
+		if err := tarWriter.Close(); err != nil {
+			t.Fatalf("Close tar(%s) error = %v", path, err)
+		}
+		if err := gzipWriter.Close(); err != nil {
+			t.Fatalf("Close gzip(%s) error = %v", path, err)
+		}
+	case strings.HasSuffix(path, ".zip"):
+		zipWriter := zip.NewWriter(file)
+		header := &zip.FileHeader{Name: "dws.exe", Method: zip.Store}
+		header.SetMode(0o755)
+		entry, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			t.Fatalf("CreateHeader(%s) error = %v", path, err)
+		}
+		if _, err := entry.Write(content); err != nil {
+			t.Fatalf("Write(%s) error = %v", path, err)
+		}
+		if err := zipWriter.Close(); err != nil {
+			t.Fatalf("Close zip(%s) error = %v", path, err)
+		}
+	default:
+		t.Fatalf("unsupported archive path %s", path)
 	}
 }
 
@@ -354,6 +362,19 @@ func TestPostGoreleaserSkillsZipLayout(t *testing.T) {
 	// Explicit mono/ subdir.
 	if _, err := os.Stat(filepath.Join(extractDir, "mono", "SKILL.md")); err != nil {
 		t.Fatalf("zip missing mono/SKILL.md: %v", err)
+	}
+	// Schema hints are shared build-only inputs, not mono Skill content. They
+	// must not leak into either backward-compatible copy of the mono bundle.
+	for _, rel := range []string{
+		"schema-hints",
+		filepath.Join("mono", "schema-hints"),
+		filepath.Join("multi", "schema-hints"),
+	} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err == nil {
+			t.Fatalf("zip unexpectedly contains build-only %s", rel)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("Stat(%s) error = %v", rel, err)
+		}
 	}
 	// multi/ subtree with at least one per-product skill.
 	multiEntries, err := os.ReadDir(filepath.Join(extractDir, "multi"))
