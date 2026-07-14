@@ -129,4 +129,3 @@ func TestCloseAuditSinkDrainsOnErrorPath(t *testing.T) {
 	// Idempotent: the success-path PersistentPostRunE and the defer both call it.
 	CloseAuditSink()
 }
-
