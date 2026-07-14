@@ -49,14 +49,16 @@
       "reviewed": true
     },
     "event.stop": {
-      "effect": "write",
-      "risk": "medium",
-      "confirmation": "not_required",
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "runtime_gate": "typed_yes",
       "idempotency": "unknown",
       "interface_mode": "composite",
       "availability": "available",
       "interface_reason": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
-      "reviewed": true
+      "reviewed": true,
+      "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
     }
   }
 }

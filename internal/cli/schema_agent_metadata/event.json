@@ -1083,8 +1083,8 @@
         "只需检查状态时用 event status",
         "目标订阅不明确或用户未确认时不要停止"
       ],
-      "confirmation": "not_required",
-      "effect": "write",
+      "confirmation": "user_required",
+      "effect": "destructive",
       "effect_source": "agent-hint",
       "examples": [
         "dws event stop SUBSCRIBE_ID --dry-run"
@@ -1111,14 +1111,14 @@
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
               "value": "available",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             }
           ]
         },
@@ -1145,18 +1145,18 @@
           ]
         },
         "confirmation": {
-          "value": "not_required",
+          "value": "user_required",
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
-              "value": "not_required",
+              "value": "user_required",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             },
             {
               "value": "not_required",
@@ -1167,18 +1167,18 @@
           ]
         },
         "effect": {
-          "value": "write",
+          "value": "destructive",
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
-              "value": "write",
+              "value": "destructive",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             },
             {
               "value": "write",
@@ -1213,14 +1213,14 @@
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
               "value": "unknown",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             },
             {
               "value": "unknown",
@@ -1235,14 +1235,14 @@
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
               "value": "composite",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             }
           ]
         },
@@ -1251,14 +1251,14 @@
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
               "value": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             }
           ]
         },
@@ -1283,14 +1283,14 @@
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
               "value": true,
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             },
             {
               "value": true,
@@ -1302,18 +1302,18 @@
           ]
         },
         "risk": {
-          "value": "medium",
+          "value": "high",
           "source": "internal/cli/schema_hints/metadata/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-tool-metadata/event marks this tool as reviewed",
+          "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate.",
           "candidates": [
             {
-              "value": "medium",
+              "value": "high",
               "source": "internal/cli/schema_hints/metadata/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-tool-metadata/event marks this tool as reviewed"
+              "review_reason": "Runtime already requires --yes (or --dry-run preview) before cancelling subscriptions / stopping the bus; align Schema safety and runtime_gate with that gate."
             },
             {
               "value": "medium",
@@ -1348,7 +1348,7 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
       "reviewed": true,
-      "risk": "medium",
+      "risk": "high",
       "source_refs": [
         "cobra-help:dws event stop --help",
         "internal/cli/schema_command_registry.json#event.stop",
