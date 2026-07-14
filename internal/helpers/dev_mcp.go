@@ -29,7 +29,7 @@ import (
 const (
 	devMCPProduct = "mcpdev"
 
-	devMCPGetServerURLTool = "mcp_get_server_url"
+	devMCPServerURLGetTool = "mcp_server_url_get"
 
 	devMCPServiceCreateTool = "mcp_service_create"
 	devMCPServiceDeleteTool = "mcp_service_delete"
@@ -174,7 +174,7 @@ func newDevMCPCommandGroup(name, short string) *cobra.Command {
 func newDevMCPURLGetCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get",
-		Short:             "获取 MCP Streamable HTTP 接入地址",
+		Short:             "获取 MCP 实例接入地址（按调用者个人身份生成，含个人 key 勿外发）",
 		Example:           "  dws connector mcp url get --mcp-id 10487 --source MARKET --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
@@ -195,13 +195,13 @@ func newDevMCPURLGetCommand(runner executor.Runner) *cobra.Command {
 				"mcpId":  mcpID,
 				"source": source,
 			}
-			return runDevMCPTool(runner, cmd, devMCPGetServerURLTool, params)
+			return runDevMCPTool(runner, cmd, devMCPServerURLGetTool, params)
 		},
 	}
 	cmd.Flags().Int("mcp-id", 0, "MCP 服务 ID")
 	cmd.Flags().String("source", "MARKET", "服务来源：MARKET 或 PUBLISHED")
 	preferLegacyLeaf(cmd)
-	annotateDevMCPTool(cmd, devMCPGetServerURLTool)
+	annotateDevMCPTool(cmd, devMCPServerURLGetTool)
 	return cmd
 }
 
@@ -395,7 +395,7 @@ func newDevMCPToolGetCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "get",
 		Short:             "读取 MCP 工具定义",
-		Example:           "  dws connector mcp tool get --mcp-id 10487 --action-id G-ACT-xxx --format json",
+		Example:           "  dws connector mcp tool get --mcp-id 10487 --tool-id G-ACT-xxx --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -418,7 +418,7 @@ func newDevMCPToolCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "create",
 		Short:             "新建 MCP 工具草稿",
-		Example:           "  dws connector mcp tool create --mcp-id 10487 --name get_weather --http '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
+		Example:           "  dws connector mcp tool create --mcp-id 10487 --name get_weather --http-info '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -442,7 +442,7 @@ func newDevMCPToolUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "update",
 		Short:             "编辑 MCP 工具并保存为草稿",
-		Example:           "  dws connector mcp tool update --mcp-id 10487 --action-id G-ACT-xxx --name get_weather --http '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
+		Example:           "  dws connector mcp tool update --mcp-id 10487 --tool-id G-ACT-xxx --name get_weather --http-info '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -466,7 +466,7 @@ func newDevMCPToolDebugCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "debug",
 		Short:             "调试 MCP 工具",
-		Example:           "  dws connector mcp tool debug --mcp-id 10487 --action-id G-ACT-xxx --value '{\"city\":\"杭州\"}' --dry-run --format json",
+		Example:           "  dws connector mcp tool debug --mcp-id 10487 --tool-id G-ACT-xxx --value '{\"city\":\"杭州\"}' --credential-id 10518 --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -483,12 +483,14 @@ func newDevMCPToolDebugCommand(runner executor.Runner) *cobra.Command {
 			}
 			params["value"] = value
 			devMCPPutString(params, "versionId", devMCPStringFlag(cmd, "version-id"))
+			devMCPPutInt(params, "credentialId", devMCPIntFlag(cmd, "credential-id"))
 			return runDevMCPTool(runner, cmd, devMCPToolDebugTool, params)
 		},
 	}
 	addDevMCPToolLocatorFlags(cmd)
 	cmd.Flags().String("value", "", "调试入参 JSON 对象")
 	cmd.Flags().String("version-id", "", "指定调试的版本 ID")
+	cmd.Flags().Int("credential-id", 0, "凭证账号 ID；调试带鉴权的工具必须显式指定（debug 不使用 bind 绑定的凭证）")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPToolDebugTool)
 	return cmd
@@ -498,7 +500,7 @@ func newDevMCPToolPublishCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "publish",
 		Short:             "发布 MCP 工具草稿",
-		Example:           "  dws connector mcp tool publish --mcp-id 10487 --action-id G-ACT-xxx --dry-run --format json",
+		Example:           "  dws connector mcp tool publish --mcp-id 10487 --tool-id G-ACT-xxx --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -522,7 +524,7 @@ func newDevMCPToolDeleteCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "delete",
 		Short:             "删除 MCP 工具（不可恢复）",
-		Example:           "  dws connector mcp tool delete --mcp-id 10487 --action-id G-ACT-xxx --dry-run --format json",
+		Example:           "  dws connector mcp tool delete --mcp-id 10487 --tool-id G-ACT-xxx --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -546,7 +548,7 @@ func newDevMCPToolVersionsCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "versions",
 		Short:             "查询 MCP 工具版本历史",
-		Example:           "  dws connector mcp tool versions --mcp-id 10487 --action-id G-ACT-xxx --format json",
+		Example:           "  dws connector mcp tool versions --mcp-id 10487 --tool-id G-ACT-xxx --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -881,7 +883,22 @@ func addDevMCPMCPIDFlag(cmd *cobra.Command) {
 
 func addDevMCPToolLocatorFlags(cmd *cobra.Command) {
 	addDevMCPMCPIDFlag(cmd)
-	cmd.Flags().String("action-id", "", "MCP 工具 ID，G-ACT- 开头")
+	addDevMCPToolIDFlag(cmd)
+}
+
+func addDevMCPToolIDFlag(cmd *cobra.Command) {
+	cmd.Flags().String("tool-id", "", "MCP 工具 ID，G-ACT- 开头")
+	cmd.Flags().String("action-id", "", "已更名为 --tool-id")
+	_ = cmd.Flags().MarkHidden("action-id")
+}
+
+// devMCPRequiredToolID reads --tool-id and rejects the pre-0714 --action-id
+// spelling with a rename hint instead of silently ignoring it.
+func devMCPRequiredToolID(cmd *cobra.Command) (string, error) {
+	if cmd.Flags().Changed("action-id") {
+		return "", apperrors.NewValidation("--action-id 已更名为 --tool-id（脚手架 0714 契约变更），请改用 --tool-id")
+	}
+	return devMCPRequiredString(cmd, "tool-id")
 }
 
 func addDevMCPPagingFlags(cmd *cobra.Command) {
@@ -889,15 +906,17 @@ func addDevMCPPagingFlags(cmd *cobra.Command) {
 	cmd.Flags().Int("page-size", 0, "每页条数，最大 100")
 }
 
-func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeActionID bool) {
+func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 	addDevMCPMCPIDFlag(cmd)
-	if includeActionID {
-		cmd.Flags().String("action-id", "", "MCP 工具 ID，G-ACT- 开头")
+	if includeToolID {
+		addDevMCPToolIDFlag(cmd)
 	}
 	cmd.Flags().String("name", "", "工具唯一标识，snake_case")
 	cmd.Flags().String("title", "", "工具中文标题")
 	cmd.Flags().String("description", "", "工具功能描述")
-	cmd.Flags().String("http", "", "HTTP 配置 JSON 对象")
+	cmd.Flags().String("http-info", "", "HTTP 接口配置 JSON 对象（toolType=http 时必填）")
+	cmd.Flags().String("http", "", "已更名为 --http-info")
+	_ = cmd.Flags().MarkHidden("http")
 	cmd.Flags().String("api-inputs", "", "接口真实入参 JSON 对象")
 	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象")
 	cmd.Flags().String("tool-inputs", "", "暴露给 LLM 的入参 JSON 数组")
@@ -935,17 +954,17 @@ func devMCPToolLocatorParams(cmd *cobra.Command) (map[string]any, error) {
 	if err != nil {
 		return nil, err
 	}
-	actionID, err := devMCPRequiredString(cmd, "action-id")
+	toolID, err := devMCPRequiredToolID(cmd)
 	if err != nil {
 		return nil, err
 	}
 	return map[string]any{
-		"mcpId":    mcpID,
-		"actionId": actionID,
+		"mcpId":  mcpID,
+		"toolId": toolID,
 	}, nil
 }
 
-func devMCPToolUpsertParams(cmd *cobra.Command, includeActionID bool) (map[string]any, error) {
+func devMCPToolUpsertParams(cmd *cobra.Command, includeToolID bool) (map[string]any, error) {
 	mcpID, err := devMCPRequiredInt(cmd, "mcp-id")
 	if err != nil {
 		return nil, err
@@ -958,19 +977,24 @@ func devMCPToolUpsertParams(cmd *cobra.Command, includeActionID bool) (map[strin
 		"mcpId": mcpID,
 		"name":  name,
 	}
-	if includeActionID {
-		actionID, err := devMCPRequiredString(cmd, "action-id")
+	if includeToolID {
+		toolID, err := devMCPRequiredToolID(cmd)
 		if err != nil {
 			return nil, err
 		}
-		params["actionId"] = actionID
+		params["toolId"] = toolID
 	}
 
-	http, err := devMCPRequiredJSONObjectFlag(cmd, "http")
+	if cmd.Flags().Changed("http") {
+		return nil, apperrors.NewValidation("--http 已更名为 --http-info（脚手架 0714 契约变更：请求体键名 http→httpInfo，并新增必填 toolType），请改用 --http-info")
+	}
+	httpInfo, err := devMCPRequiredJSONObjectFlag(cmd, "http-info")
 	if err != nil {
 		return nil, err
 	}
-	params["http"] = http
+	// 0714 契约：toolType 必填，当前枚举仅 http；后续扩展 hsf 等类型时随契约调整。
+	params["toolType"] = "http"
+	params["httpInfo"] = httpInfo
 
 	devMCPPutString(params, "title", devMCPStringFlag(cmd, "title"))
 	devMCPPutString(params, "description", devMCPStringFlag(cmd, "description"))

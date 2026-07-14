@@ -8,13 +8,13 @@
 
 1. **API 材料**：OpenAPI/Postman/curl/文档，至少一种；
 2. **业务目标**：这些接口给 agent 干什么——决定工具怎么拆、description 怎么写；
-3. **鉴权方式**：不确定就问，别默认 NO_AUTH 蒙混。`http.auth` 三型：无鉴权 `{"type":"NO_AUTH"}`；Basic `{"type":"BASIC","username":"..","password":".."}`；API Secret `{"type":"API_SECRET","apiSecret":".."}`。
+3. **鉴权方式**：不确定就问，别默认 NO_AUTH 蒙混。`http-info.auth` 三型：无鉴权 `{"type":"NO_AUTH"}`；Basic `{"type":"BASIC","username":"..","password":".."}`；API Secret `{"type":"API_SECRET","apiSecret":".."}`。
 
 ## 2. 从不同材料提取
 
 | 材料 | 提取规则 |
 |------|----------|
-| **OpenAPI/Swagger** | `paths.{path}.{method}` → 候选工具；`operationId` → name（不合 snake_case 动词开头就改名）；`summary/description` → title/description 素材；`parameters` 按 in=query/path/header 分组进 apiInputs 对应组 + `requestBody` → apiInputs.body；`responses.200.schema` → apiOutputs.body；`servers[0].url` + path → http.url |
+| **OpenAPI/Swagger** | `paths.{path}.{method}` → 候选工具；`operationId` → name（不合 snake_case 动词开头就改名）；`summary/description` → title/description 素材；`parameters` 按 in=query/path/header 分组进 apiInputs 对应组 + `requestBody` → apiInputs.body；`responses.200.schema` → apiOutputs.body；`servers[0].url` + path → http-info.url |
 | **Postman Collection** | `item[].request` → method/url/headers/body；`item[].name` → title 素材；`response`/example → 测试入参 + apiOutputs 素材 |
 | **curl 样例** | `-X` → method；URL 的 query 串拆进 apiInputs.query；`-H` → headers；`-d/--data/--form` → body |
 | **文档文本** | 逐接口提取；字段含义不确定处**问用户，禁止编** |
@@ -38,4 +38,4 @@
 
 ## 5. 设计整表先过目
 
-每个工具产出：name/title/description、http、apiInputs、toolInputs、inputMappings、outputMappings + **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。
+每个工具产出：name/title/description、http-info（CLI 自动附加 toolType:"http"）、apiInputs、toolInputs、inputMappings、outputMappings + **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。

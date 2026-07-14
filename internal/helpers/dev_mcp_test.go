@@ -61,7 +61,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 		{
 			name:     "url get",
 			args:     []string{"connector", "mcp", "url", "get", "--mcp-id", "10487", "--source", "MARKET"},
-			wantTool: devMCPGetServerURLTool,
+			wantTool: devMCPServerURLGetTool,
 			wantParams: map[string]any{
 				"mcpId":  10487,
 				"source": "MARKET",
@@ -89,16 +89,17 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "get_weather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
 			wantTool: devMCPToolCreateTool,
 			wantParams: map[string]any{
-				"mcpId": 10487,
-				"name":  "get_weather",
-				"http": map[string]any{
+				"mcpId":    10487,
+				"name":     "get_weather",
+				"toolType": "http",
+				"httpInfo": map[string]any{
 					"method": "GET",
 					"url":    "https://example.com",
 					"auth": map[string]any{
@@ -114,12 +115,55 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			},
 		},
 		{
+			name: "tool update sends toolId",
+			args: []string{
+				"connector", "mcp", "tool", "update",
+				"--mcp-id", "10487",
+				"--tool-id", "G-ACT-1",
+				"--name", "get_weather",
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--dry-run",
+			},
+			wantTool: devMCPToolUpdateTool,
+			wantParams: map[string]any{
+				"mcpId":    10487,
+				"toolId":   "G-ACT-1",
+				"name":     "get_weather",
+				"toolType": "http",
+				"httpInfo": map[string]any{
+					"method": "GET",
+					"url":    "https://example.com",
+					"auth": map[string]any{
+						"type": "NO_AUTH",
+					},
+				},
+			},
+		},
+		{
+			name: "tool debug with credential",
+			args: []string{
+				"connector", "mcp", "tool", "debug",
+				"--mcp-id", "10487",
+				"--tool-id", "G-ACT-1",
+				"--value", `{"city":"杭州"}`,
+				"--credential-id", "10518",
+				"--dry-run",
+			},
+			wantTool: devMCPToolDebugTool,
+			wantParams: map[string]any{
+				"mcpId":        10487,
+				"toolId":       "G-ACT-1",
+				"value":        map[string]any{"city": "杭州"},
+				"credentialId": 10518,
+			},
+		},
+		{
 			name:     "tool versions",
-			args:     []string{"connector", "mcp", "tool", "versions", "--mcp-id", "10487", "--action-id", "G-ACT-1", "--page-size", "10"},
+			args:     []string{"connector", "mcp", "tool", "versions", "--mcp-id", "10487", "--tool-id", "G-ACT-1", "--page-size", "10"},
 			wantTool: devMCPToolVersionsTool,
 			wantParams: map[string]any{
 				"mcpId":    10487,
-				"actionId": "G-ACT-1",
+				"toolId":   "G-ACT-1",
 				"pageSize": 10,
 			},
 		},
@@ -223,7 +267,7 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "GetWeather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--dry-run",
 			},
 			wantErr: "--name 必须是 snake_case",
@@ -245,7 +289,7 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "get_weather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"city","type":"string"}]`,
 				"--dry-run",
 			},
@@ -257,7 +301,7 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "get_weather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"cities","type":"array","description":"City names, for example: Hangzhou."}]`,
 				"--dry-run",
 			},
@@ -269,7 +313,7 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "get_weather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
 				"--output-mappings", `[]`,
 				"--dry-run",
@@ -282,11 +326,64 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"connector", "mcp", "tool", "create",
 				"--mcp-id", "10487",
 				"--name", "get_weather",
-				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--input-mappings", `[{"type":"reference","source":"$.node_start.city"}]`,
 				"--dry-run",
 			},
 			wantErr: "--input-mappings[0].target 为必填",
+		},
+	}
+
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			runner := &captureRunner{}
+			root := newDevAppTestRoot(runner)
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs(tc.args)
+
+			err := root.Execute()
+			if err == nil || !strings.Contains(err.Error(), tc.wantErr) {
+				t.Fatalf("Execute() error = %v, want %q\noutput:\n%s", err, tc.wantErr, out.String())
+			}
+		})
+	}
+}
+
+func TestConnectorMCPLegacyFlagRenameHints(t *testing.T) {
+	cases := []struct {
+		name    string
+		args    []string
+		wantErr string
+	}{
+		{
+			name:    "tool get rejects action-id",
+			args:    []string{"connector", "mcp", "tool", "get", "--mcp-id", "10487", "--action-id", "G-ACT-1"},
+			wantErr: "--action-id 已更名为 --tool-id",
+		},
+		{
+			name: "tool update rejects action-id",
+			args: []string{
+				"connector", "mcp", "tool", "update",
+				"--mcp-id", "10487",
+				"--action-id", "G-ACT-1",
+				"--name", "get_weather",
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--dry-run",
+			},
+			wantErr: "--action-id 已更名为 --tool-id",
+		},
+		{
+			name: "tool create rejects legacy http flag",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--dry-run",
+			},
+			wantErr: "--http 已更名为 --http-info",
 		},
 	}
 
@@ -331,12 +428,12 @@ func TestConnectorMCPInvalidJSON(t *testing.T) {
 		"connector", "mcp", "tool", "create",
 		"--mcp-id", "10487",
 		"--name", "get_weather",
-		"--http", "[]",
+		"--http-info", "[]",
 		"--dry-run",
 	})
 
 	err := root.Execute()
-	if err == nil || !strings.Contains(err.Error(), "--http 必须是 JSON 对象") {
+	if err == nil || !strings.Contains(err.Error(), "--http-info 必须是 JSON 对象") {
 		t.Fatalf("Execute() error = %v, want JSON object validation\noutput:\n%s", err, out.String())
 	}
 }

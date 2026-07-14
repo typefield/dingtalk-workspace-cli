@@ -140,16 +140,16 @@ dws connector mcp service create --name <服务名> --description <描述> --ser
 dws connector mcp service update --mcp-id <mcpId> --description <新描述> --server-name <kebab-case> --dry-run --format json
 dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
-# 工具
+# 工具（0714 契约起工具 ID flag 统一 --tool-id；create/update 用 --http-info，CLI 自动附加 toolType:"http"）
 dws connector mcp tool list --mcp-id <mcpId> --page-size 100 --format json
-dws connector mcp tool get --mcp-id <mcpId> --action-id <actionId> --format json
-dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --http '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
-dws connector mcp tool update --mcp-id <mcpId> --action-id <actionId> --name <snake_case_name> --http '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
-dws connector mcp tool debug --mcp-id <mcpId> --action-id <actionId> --value '{}' --dry-run --format json
-dws connector mcp tool publish --mcp-id <mcpId> --action-id <actionId> --dry-run --format json
-dws connector mcp tool versions --mcp-id <mcpId> --action-id <actionId> --format json
+dws connector mcp tool get --mcp-id <mcpId> --tool-id <toolId> --format json
+dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
+dws connector mcp tool update --mcp-id <mcpId> --tool-id <toolId> --name <snake_case_name> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
+dws connector mcp tool debug --mcp-id <mcpId> --tool-id <toolId> --value '{}' --credential-id <credentialId> --dry-run --format json
+dws connector mcp tool publish --mcp-id <mcpId> --tool-id <toolId> --dry-run --format json
+dws connector mcp tool versions --mcp-id <mcpId> --tool-id <toolId> --format json
 
-# 接入地址，返回含 ?key= 的敏感 URL，不要外传
+# 接入地址：按调用者个人身份生成的实例地址（非组织公共地址），含 ?key= 个人敏感凭证，勿外发
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
 # 下游鉴权配置、凭证账号、开发协作者
