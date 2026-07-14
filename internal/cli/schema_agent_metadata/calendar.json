@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -233,7 +233,7 @@
       "source_refs": [
         "Cobra help: dws calendar acl list --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_acls",
         "skills/mono/references/products/calendar.md"
@@ -274,17 +274,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -378,17 +378,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -474,7 +474,7 @@
       "source_refs": [
         "Cobra help: dws calendar attachment add --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_attachments",
         "skills/mono/references/products/calendar.md"
@@ -515,17 +515,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -619,17 +619,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -723,8 +723,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.add_calendar_participant",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_calendar_participant",
         "skills/mono/references/products/calendar.md"
@@ -740,9 +739,9 @@
       "avoid_when": [
         "仅查询或仍需保留目标资源时不要使用；执行前应确认目标标识和影响范围。"
       ],
-      "confirmation": "user_required",
+      "confirmation": "not_required",
       "effect": "write",
-      "effect_source": "command-verb",
+      "effect_source": "agent-hint",
       "examples": [
         "dws calendar attendee delete --event EVENT_ID --attendees userId1"
       ],
@@ -765,17 +764,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -806,16 +805,24 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "not_required",
@@ -827,15 +834,23 @@
         },
         "effect": {
           "value": "write",
-          "source": "command-verb",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "command-verb",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -875,17 +890,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -928,20 +943,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "medium",
@@ -979,14 +1009,13 @@
         "rpc_name": "remove_calendar_participant"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "Cobra help: dws calendar attendee delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.remove_calendar_participant",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.remove_calendar_participant",
         "skills/mono/references/products/calendar.md"
@@ -1027,17 +1056,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1131,17 +1160,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1235,8 +1264,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.get_calendar_participants",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar_participants",
         "skills/mono/references/products/calendar.md"
@@ -1277,17 +1305,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1381,17 +1409,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1477,8 +1505,7 @@
       "source_refs": [
         "Cobra help: dws calendar book get --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar",
         "skills/mono/references/products/calendar.md"
@@ -1519,17 +1546,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1623,17 +1650,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1719,8 +1746,7 @@
       "source_refs": [
         "Cobra help: dws calendar book list --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_calendars",
         "skills/mono/references/products/calendar.md"
@@ -1761,17 +1787,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1865,17 +1891,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1961,8 +1987,7 @@
       "source_refs": [
         "Cobra help: dws calendar book search --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.search_calendar",
         "skills/mono/references/products/calendar.md"
@@ -2003,17 +2028,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2107,17 +2132,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2211,7 +2236,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.query_busy_status",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.query_busy_status",
         "skills/mono/references/products/calendar.md"
@@ -2252,17 +2277,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2356,17 +2381,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2452,8 +2477,7 @@
       "source_refs": [
         "Cobra help: dws calendar event create --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.create_calendar_event",
         "skills/mono/references/intent-guide.md",
@@ -2470,9 +2494,9 @@
       "avoid_when": [
         "仅查询或仍需保留目标资源时不要使用；执行前应确认目标标识和影响范围。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "confirmation": "not_required",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "examples": [
         "dws calendar event delete --id EVENT_ID"
       ],
@@ -2495,17 +2519,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -2536,16 +2560,24 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "user_required",
@@ -2557,17 +2589,24 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -2608,17 +2647,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -2661,20 +2700,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "high",
@@ -2682,6 +2736,26 @@
               "precedence": "skill",
               "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
+            }
+          ]
+        },
+        "tips": {
+          "value": [
+            "Runtime 无确认门禁；删除后所有参与者同步取消，调用前请自行确认"
+          ],
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
+          "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
+          "candidates": [
+            {
+              "value": [
+                "Runtime 无确认门禁；删除后所有参与者同步取消，调用前请自行确认"
+              ],
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             }
           ]
         },
@@ -2713,18 +2787,20 @@
         "rpc_name": "delete_calendar_event"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "Cobra help: dws calendar event delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.delete_calendar_event",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.delete_calendar_event",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/calendar.md"
+      ],
+      "tips": [
+        "Runtime 无确认门禁；删除后所有参与者同步取消，调用前请自行确认"
       ],
       "use_when": [
         "需要删除日程时。"
@@ -2762,17 +2838,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2866,17 +2942,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2970,8 +3046,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.get_calendar_detail",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.get_calendar_detail",
         "skills/mono/references/products/calendar.md"
@@ -3012,17 +3087,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3116,17 +3191,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3212,8 +3287,7 @@
       "source_refs": [
         "Cobra help: dws calendar event list --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_calendar_events",
         "skills/mono/references/products/calendar.md"
@@ -3254,17 +3328,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3358,17 +3432,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3454,8 +3528,7 @@
       "source_refs": [
         "Cobra help: dws calendar event respond --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.respond",
         "skills/mono/references/products/calendar.md"
@@ -3496,17 +3569,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3600,17 +3673,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3704,8 +3777,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.list_suggested_event_times",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_suggested_event_times",
         "skills/mono/references/products/calendar.md"
@@ -3746,17 +3818,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3850,17 +3922,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3946,8 +4018,7 @@
       "source_refs": [
         "Cobra help: dws calendar event update --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.update_calendar_event",
         "skills/mono/references/products/calendar.md"
@@ -3988,17 +4059,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4092,17 +4163,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4196,8 +4267,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.add_meeting_room",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.add_meeting_room",
         "skills/mono/references/products/calendar.md"
@@ -4213,9 +4283,9 @@
       "avoid_when": [
         "仅查询或仍需保留目标资源时不要使用；执行前应确认目标标识和影响范围。"
       ],
-      "confirmation": "user_required",
+      "confirmation": "not_required",
       "effect": "write",
-      "effect_source": "skill-explicit",
+      "effect_source": "agent-hint",
       "examples": [
         "dws calendar room delete --event EVENT_ID --rooms roomId1"
       ],
@@ -4238,17 +4308,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -4279,16 +4349,24 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "user_required",
@@ -4301,16 +4379,23 @@
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -4351,17 +4436,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/calendar.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/calendar.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -4404,20 +4489,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 语义审阅：依据 Registry 主路径、Cobra help 与 Calendar 参考文档明确命令选择边界并校验示例。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/calendar marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/calendar marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "high",
@@ -4456,14 +4556,13 @@
         "rpc_name": "delete_meeting_room"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "Cobra help: dws calendar room delete --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.delete_meeting_room",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.delete_meeting_room",
         "skills/mono/SKILL.md",
@@ -4505,17 +4604,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4609,17 +4708,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4713,8 +4812,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.calendar.prod.json#calendar.list_meeting_room_groups",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.list_meeting_room_groups",
         "skills/mono/references/products/calendar.md"
@@ -4755,17 +4853,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4859,17 +4957,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/calendar.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/calendar.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/calendar is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4955,8 +5053,7 @@
       "source_refs": [
         "Cobra help: dws calendar room search --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/calendar.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.calendar.query_available_meeting_room",
         "skills/mono/references/products/calendar.md"

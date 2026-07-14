@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -233,8 +233,7 @@
       "source_refs": [
         "cobra-help:dws mail attachment download",
         "internal/cli/schema_command_registry.json#mail.create_download_session",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_download_session",
         "skills/mono/SKILL.md",
@@ -276,17 +275,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -380,17 +379,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -476,8 +475,7 @@
       "source_refs": [
         "cobra-help:dws mail attachment list",
         "internal/cli/schema_command_registry.json#mail.list_mail_attachments",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_mail_attachments",
         "skills/mono/SKILL.md",
@@ -494,8 +492,8 @@
       "avoid_when": [
         "删除邮件或查询企业通讯录用户时不要使用"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws mail contact batch-delete --email user@company.com --contact-ids \u003cid1\u003e,\u003cid2\u003e"
@@ -519,17 +517,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -560,18 +558,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -582,18 +580,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -639,17 +637,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -686,22 +684,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -739,13 +744,11 @@
         "rpc_name": "batch_delete_user_mail_contacts"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws mail contact batch-delete",
         "internal/cli/schema_command_registry.json#mail.batch_delete_user_mail_contacts",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.batch_delete_user_mail_contacts",
         "skills/mono/SKILL.md",
@@ -787,17 +790,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -891,17 +894,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -987,8 +990,7 @@
       "source_refs": [
         "cobra-help:dws mail contact create",
         "internal/cli/schema_command_registry.json#mail.create_user_mail_contact",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_user_mail_contact",
         "skills/mono/SKILL.md",
@@ -1030,17 +1032,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1134,17 +1136,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1230,8 +1232,7 @@
       "source_refs": [
         "cobra-help:dws mail contact list",
         "internal/cli/schema_command_registry.json#mail.list_user_mail_contacts",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_user_mail_contacts",
         "skills/mono/SKILL.md",
@@ -1273,17 +1274,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1377,17 +1378,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1473,8 +1474,7 @@
       "source_refs": [
         "cobra-help:dws mail contact update",
         "internal/cli/schema_command_registry.json#mail.update_user_mail_contact",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.update_user_mail_contact",
         "skills/mono/SKILL.md",
@@ -1516,17 +1516,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1620,17 +1620,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1716,8 +1716,7 @@
       "source_refs": [
         "cobra-help:dws mail draft create",
         "internal/cli/schema_command_registry.json#mail.create_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_draft",
         "skills/mono/SKILL.md",
@@ -1759,17 +1758,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1863,17 +1862,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1959,8 +1958,7 @@
       "source_refs": [
         "cobra-help:dws mail draft send",
         "internal/cli/schema_command_registry.json#mail.send_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.send_draft",
         "skills/mono/SKILL.md",
@@ -2002,17 +2000,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2106,17 +2104,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2202,8 +2200,7 @@
       "source_refs": [
         "cobra-help:dws mail draft update",
         "internal/cli/schema_command_registry.json#mail.update_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.update_draft",
         "skills/mono/SKILL.md",
@@ -2245,17 +2242,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2349,17 +2346,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2453,8 +2450,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.create_mail_folder",
         "internal/cli/schema_command_registry.json#mail.create_mail_folder",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_mail_folder",
         "skills/mono/SKILL.md",
@@ -2471,8 +2467,8 @@
       "avoid_when": [
         "只是清理文件夹内邮件或重命名时不要使用"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws mail folder delete --email user@company.com --id \u003cfolderId\u003e"
@@ -2496,17 +2492,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -2537,18 +2533,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -2559,18 +2555,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -2616,17 +2612,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -2669,22 +2665,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -2722,15 +2725,13 @@
         "rpc_name": "delete_mail_folder"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws mail folder delete",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.delete_mail_folder",
         "internal/cli/schema_command_registry.json#mail.delete_mail_folder",
-        "internal/cli/schema_hints/destructive-safety.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.delete_mail_folder",
         "skills/mono/SKILL.md",
@@ -2772,17 +2773,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2876,17 +2877,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2980,8 +2981,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.list_folders",
         "internal/cli/schema_command_registry.json#mail.list_folders",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_folders",
         "skills/mono/SKILL.md",
@@ -3023,17 +3023,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3127,17 +3127,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3231,8 +3231,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.update_mail_folder",
         "internal/cli/schema_command_registry.json#mail.update_mail_folder",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.update_mail_folder",
         "skills/mono/SKILL.md",
@@ -3274,17 +3273,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3378,17 +3377,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3482,7 +3481,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.list_user_mailboxes",
         "internal/cli/schema_command_registry.json#mail.list_user_mailboxes",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_user_mailboxes",
         "skills/mono/SKILL.md",
@@ -3499,8 +3498,8 @@
       "avoid_when": [
         "仅移动到其他文件夹时使用 mail message batch-move"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws mail message batch-delete --email user@company.com --ids \u003cid1\u003e,\u003cid2\u003e"
@@ -3524,17 +3523,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -3565,18 +3564,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -3587,18 +3586,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -3644,17 +3643,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3691,22 +3690,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3744,13 +3750,11 @@
         "rpc_name": "batch_delete_message"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws mail message batch-delete",
         "internal/cli/schema_command_registry.json#mail.batch_delete_message",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.batch_delete_message",
         "skills/mono/SKILL.md",
@@ -3792,17 +3796,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3896,17 +3900,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3992,8 +3996,7 @@
       "source_refs": [
         "cobra-help:dws mail message batch-move",
         "internal/cli/schema_command_registry.json#mail.batch_move_message",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.batch_move_message",
         "skills/mono/SKILL.md",
@@ -4035,17 +4038,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4139,17 +4142,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4235,8 +4238,7 @@
       "source_refs": [
         "cobra-help:dws mail message forward",
         "internal/cli/schema_command_registry.json#mail.create_forward_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_forward_draft",
         "skills/mono/SKILL.md",
@@ -4278,17 +4280,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4382,17 +4384,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4486,8 +4488,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.get_email_by_message_id",
         "internal/cli/schema_command_registry.json#mail.get_email_by_message_id",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.get_email_by_message_id",
         "skills/mono/SKILL.md",
@@ -4529,17 +4530,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
@@ -4565,17 +4566,17 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -4587,17 +4588,17 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "read",
@@ -4629,17 +4630,17 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "idempotent",
@@ -4651,46 +4652,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "CLI wrapper converts the reviewed folder selection into a KQL query and maps pagination before calling the pinned search_emails RPC; the local transform plus RPC call is not a one-to-one interface contract",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "CLI wrapper converts the reviewed folder selection into a KQL query and maps pagination before calling the pinned search_emails RPC; the local transform plus RPC call is not a one-to-one interface contract",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -4713,26 +4714,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "low",
@@ -4771,7 +4772,7 @@
       "source_refs": [
         "cobra-help:dws mail message list",
         "internal/cli/schema_command_registry.json#mail.list_emails",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/mail.md"
@@ -4812,17 +4813,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4916,17 +4917,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5012,8 +5013,7 @@
       "source_refs": [
         "cobra-help:dws mail message reply",
         "internal/cli/schema_command_registry.json#mail.create_reply_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_reply_draft",
         "skills/mono/SKILL.md",
@@ -5055,17 +5055,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5159,17 +5159,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5255,8 +5255,7 @@
       "source_refs": [
         "cobra-help:dws mail message reply-all",
         "internal/cli/schema_command_registry.json#mail.create_replyall_draft",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_replyall_draft",
         "skills/mono/SKILL.md",
@@ -5298,17 +5297,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5402,17 +5401,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5506,8 +5505,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.search_emails",
         "internal/cli/schema_command_registry.json#mail.search_emails",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.search_emails",
         "skills/mono/SKILL.md",
@@ -5549,17 +5547,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5653,17 +5651,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5757,8 +5755,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.send_email",
         "internal/cli/schema_command_registry.json#mail.send_email",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.send_email",
         "skills/mono/SKILL.md",
@@ -5800,17 +5797,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5904,17 +5901,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6008,7 +6005,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.list_tags",
         "internal/cli/schema_command_registry.json#mail.list_tags",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_tags",
         "skills/mono/SKILL.md",
@@ -6050,17 +6047,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6154,17 +6151,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6250,8 +6247,7 @@
       "source_refs": [
         "cobra-help:dws mail template create",
         "internal/cli/schema_command_registry.json#mail.create_user_message_template",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.create_user_message_template",
         "skills/mono/SKILL.md",
@@ -6268,8 +6264,8 @@
       "avoid_when": [
         "只修改模板内容时使用 mail template update"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws mail template delete --email user@company.com --id \u003ctemplateId\u003e"
@@ -6293,17 +6289,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -6334,18 +6330,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -6356,18 +6352,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -6413,17 +6409,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/mail.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/mail.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -6460,22 +6456,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "AI 生成并复核的 Agent 选择语义，依据精确 CommandRegistry identity、真实 Cobra help 与产品参考，不改写执行、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/mail marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/mail marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -6513,13 +6516,11 @@
         "rpc_name": "delete_user_message_template"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws mail template delete",
         "internal/cli/schema_command_registry.json#mail.delete_user_message_template",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.delete_user_message_template",
         "skills/mono/SKILL.md",
@@ -6561,17 +6562,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6665,17 +6666,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6761,8 +6762,7 @@
       "source_refs": [
         "cobra-help:dws mail template get",
         "internal/cli/schema_command_registry.json#mail.get_user_message_template",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.get_user_message_template",
         "skills/mono/SKILL.md",
@@ -6804,17 +6804,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6908,17 +6908,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7004,8 +7004,7 @@
       "source_refs": [
         "cobra-help:dws mail template list",
         "internal/cli/schema_command_registry.json#mail.list_user_message_templates",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.list_user_message_templates",
         "skills/mono/SKILL.md",
@@ -7047,17 +7046,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7151,17 +7150,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7247,8 +7246,7 @@
       "source_refs": [
         "cobra-help:dws mail template update",
         "internal/cli/schema_command_registry.json#mail.update_user_message_template",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.update_user_message_template",
         "skills/mono/SKILL.md",
@@ -7290,17 +7288,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7394,17 +7392,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7498,7 +7496,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.mail.prod.json#mail.get_thread",
         "internal/cli/schema_command_registry.json#mail.get_thread",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.get_thread",
         "skills/mono/SKILL.md",
@@ -7540,17 +7538,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7644,17 +7642,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/mail.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/mail is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/mail.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/mail is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7740,7 +7738,7 @@
       "source_refs": [
         "cobra-help:dws mail user search",
         "internal/cli/schema_command_registry.json#mail.search_mail_users",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/mail.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.mail.search_mail_users",
         "skills/mono/SKILL.md",

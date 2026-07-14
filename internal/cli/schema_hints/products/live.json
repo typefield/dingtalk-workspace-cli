@@ -1,0 +1,24 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/live",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "live.get_my_lives": {
+      "use_when": [
+        "查看我的直播列表"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“查看我的直播列表”"
+      ],
+      "examples": [
+        "dws live stream list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  }
+}

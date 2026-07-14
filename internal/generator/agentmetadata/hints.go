@@ -22,6 +22,7 @@ import (
 )
 
 const HintFileVersion = 1
+const HintIndexFormat = "dws-agent-hint-index"
 
 // HintFile is a versioned source contract. Imported files provide a reviewed
 // baseline; explicit files can override scalar fields while Skills continue to
@@ -33,6 +34,19 @@ type HintFile struct {
 	Products        map[string]HintProduct     `json:"products,omitempty"`
 	Tools           map[string]HintTool        `json:"tools,omitempty"`
 	ReferenceReview map[string]ReferenceReview `json:"reference_review,omitempty"`
+}
+
+// HintIndex is the single human-hint entrypoint: an index plus per-product
+// HintFile paths. RuntimeGates is audit-only metadata for CI and is not applied
+// as Agent tool fields.
+type HintIndex struct {
+	Version         int                        `json:"version"`
+	Format          string                     `json:"format"`
+	Source          HintSource                 `json:"source"`
+	Coverage        HintCoverage               `json:"coverage,omitempty"`
+	Products        map[string]string          `json:"products"`
+	ReferenceReview map[string]ReferenceReview `json:"reference_review,omitempty"`
+	RuntimeGates    map[string]string          `json:"runtime_gates,omitempty"`
 }
 
 type HintSource struct {
@@ -141,12 +155,92 @@ func parseHintSources(out *File, files []sourceFile, opts Options, stats *Stats,
 	}
 	hintsRoot := filepath.Clean(resolvePath(opts.Root, opts.HintsDir))
 	hintsPrefix := hintsRoot + string(filepath.Separator)
-	parsed := []parsedHintSource{}
+	byPath := map[string]sourceFile{}
 	for _, file := range files {
 		cleaned := filepath.Clean(file.path)
-		if cleaned != hintsRoot && !strings.HasPrefix(cleaned, hintsPrefix) {
-			continue
+		if cleaned == hintsRoot || strings.HasPrefix(cleaned, hintsPrefix) {
+			byPath[cleaned] = file
 		}
+	}
+
+	indexPath := filepath.Join(hintsRoot, "index.json")
+	selected := []sourceFile{}
+	if indexFile, ok := byPath[indexPath]; ok {
+		var index HintIndex
+		if err := json.Unmarshal(indexFile.data, &index); err != nil {
+			return fmt.Errorf("decode Agent hint index %s: %w", indexFile.display, err)
+		}
+		if index.Version != HintFileVersion {
+			return fmt.Errorf("decode Agent hint index %s: unsupported version %d", indexFile.display, index.Version)
+		}
+		if strings.TrimSpace(index.Format) != HintIndexFormat {
+			return fmt.Errorf("decode Agent hint index %s: unsupported format %q", indexFile.display, index.Format)
+		}
+		kind := strings.ToLower(strings.TrimSpace(index.Source.Kind))
+		if kind == "" {
+			kind = "explicit"
+		}
+		if kind != "explicit" {
+			return fmt.Errorf("decode Agent hint index %s: unsupported source kind %q", indexFile.display, index.Source.Kind)
+		}
+		productIDs := make([]string, 0, len(index.Products))
+		for productID := range index.Products {
+			productIDs = append(productIDs, productID)
+		}
+		sort.Strings(productIDs)
+		for _, productID := range productIDs {
+			rel := strings.TrimSpace(index.Products[productID])
+			if rel == "" {
+				return fmt.Errorf("decode Agent hint index %s: product %s missing path", indexFile.display, productID)
+			}
+			productPath := filepath.Clean(filepath.Join(hintsRoot, filepath.FromSlash(rel)))
+			if productPath != hintsRoot && !strings.HasPrefix(productPath, hintsPrefix) {
+				return fmt.Errorf("decode Agent hint index %s: product %s path escapes hints root", indexFile.display, productID)
+			}
+			file, ok := byPath[productPath]
+			if !ok {
+				return fmt.Errorf("decode Agent hint index %s: product %s file missing: %s", indexFile.display, productID, rel)
+			}
+			selected = append(selected, file)
+		}
+		importedRoot := filepath.Join(hintsRoot, "imported")
+		importedPrefix := importedRoot + string(filepath.Separator)
+		imported := []sourceFile{}
+		for path, file := range byPath {
+			if path == importedRoot || strings.HasPrefix(path, importedPrefix) {
+				imported = append(imported, file)
+			}
+		}
+		sort.Slice(imported, func(i, j int) bool { return imported[i].display < imported[j].display })
+		selected = append(imported, selected...)
+		if len(index.ReferenceReview) > 0 || index.Coverage != (HintCoverage{}) {
+			index.Source.Kind = kind
+			payload, err := json.Marshal(HintFile{
+				Version:         HintFileVersion,
+				Source:          index.Source,
+				Coverage:        index.Coverage,
+				ReferenceReview: index.ReferenceReview,
+			})
+			if err != nil {
+				return fmt.Errorf("encode Agent hint index projection %s: %w", indexFile.display, err)
+			}
+			selected = append(selected, sourceFile{
+				path:    indexPath,
+				display: indexFile.display,
+				data:    payload,
+			})
+		}
+	} else {
+		for _, file := range files {
+			cleaned := filepath.Clean(file.path)
+			if cleaned == hintsRoot || strings.HasPrefix(cleaned, hintsPrefix) {
+				selected = append(selected, file)
+			}
+		}
+	}
+
+	parsed := []parsedHintSource{}
+	for _, file := range selected {
 		var hint HintFile
 		if err := json.Unmarshal(file.data, &hint); err != nil {
 			return fmt.Errorf("decode Agent hint %s: %w", file.display, err)

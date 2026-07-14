@@ -8,9 +8,9 @@
       "avoid_when": [
         "需要以用户身份撤回 DING 时不要使用；本命令只撤回机器人身份发送的 DING"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "confirmation": "not_required",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "examples": [
         "dws ding message recall --robot-code \u003crobot-code\u003e --id \u003copen-ding-id\u003e --format json"
       ],
@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/ding.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/ding marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/ding.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -74,17 +74,24 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/ding.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/ding marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             },
             {
@@ -96,17 +103,24 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/ding.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/ding marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             },
             {
@@ -153,17 +167,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/ding.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/ding marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/ding.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -206,21 +220,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/ding.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/ding marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/ding marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             },
             {
@@ -259,15 +287,14 @@
         "rpc_name": "recall_ding_message"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=ding.recall_ding_message",
         "Skill:skills/mono/references/products/ding.md",
         "cobra-help:dws ding message recall",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json#ding.recall_ding_message",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/ding.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.ding.recall_ding_message",
         "skills/mono/SKILL.md",
@@ -313,17 +340,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/ding.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/ding is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/ding is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -419,17 +446,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/ding.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/ding is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/ding.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/ding is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -524,8 +551,7 @@
         "cobra-help:dws ding message send",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.ding.prod.json#ding.send_ding_message",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/ding.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.ding.send_ding_message",
         "skills/mono/references/intent-guide.md",

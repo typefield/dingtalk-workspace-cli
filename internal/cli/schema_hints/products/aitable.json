@@ -1,0 +1,2207 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/aitable",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "aitable.advperm_disable": {
+      "effect": "write",
+      "risk": "high",
+      "confirmation": "user_required",
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "set_advanced_permission"
+      },
+      "use_when": [
+        "开启或关闭指定 Base 的高级权限总开关。"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create",
+        "要“删除指定 Base 下的自定义角色;”请改用 dws aitable advperm role-delete"
+      ],
+      "examples": [
+        "dws aitable advperm disable --base-id <base-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "aitable.advperm_enable": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "set_advanced_permission"
+      },
+      "use_when": [
+        "1. 确保高级权限已开"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create",
+        "要“删除指定 Base 下的自定义角色;”请改用 dws aitable advperm role-delete"
+      ],
+      "examples": [
+        "dws aitable advperm enable --base-id BASE_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.advperm_role_create": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "create_role"
+      },
+      "use_when": [
+        "3. 创建角色 + 指定 sheet 子角色 authLevel=read",
+        "仅指定 name，子角色由服务端按默认（none）填充",
+        "创建时即指定 sub-roles（推荐——避免再走一次 role-update）"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“删除指定 Base 下的自定义角色;”请改用 dws aitable advperm role-delete"
+      ],
+      "examples": [
+        "dws aitable advperm role-create --base-id BASE_ID --name \"市场可读\" --format json",
+        "dws aitable advperm role-create --base-id BASE_ID --name \"市场可读\" --sub-roles '[{\"targetId\":\"<sheetId>\",\"targetType\":\"sheet\",\"authLevel\":\"read\"}]' --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.advperm_role_delete": {
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "delete_role"
+      },
+      "use_when": [
+        "删除指定 Base 下的自定义角色;"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create"
+      ],
+      "examples": [
+        "dws aitable advperm role-delete --base-id <base-id> --role-id <role-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "aitable.advperm_role_get": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_role"
+      },
+      "use_when": [
+        "获取指定 Base 下单个角色的完整配置,含 subRoles 与字段/行级权限。"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create"
+      ],
+      "examples": [
+        "dws aitable advperm role-get --base-id BASE_ID --role-id ROLE_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.advperm_role_list": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "list_roles"
+      },
+      "use_when": [
+        "列出指定 Base 下的全部角色,含系统角色与自定义角色,并标注 isSystem 与默认角色信息。"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create"
+      ],
+      "examples": [
+        "dws aitable advperm role-list --base-id BASE_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.advperm_role_update": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "patch_role"
+      },
+      "use_when": [
+        "只传 sub-roles，name 等其他字段保持不变（PATCH 语义）",
+        "只改 sheet 子角色 authLevel，name 不传保持不变",
+        "只改名"
+      ],
+      "avoid_when": [
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm disable",
+        "要“开启或关闭指定 Base 的高级权限总开关”请改用 dws aitable advperm enable",
+        "要“在指定 Base 下创建自定义角色;”请改用 dws aitable advperm role-create"
+      ],
+      "examples": [
+        "dws aitable advperm role-update --base-id BASE_ID --role-id ROLE_ID --name \"新名字\"",
+        "dws aitable advperm role-update --base-id BASE_ID --role-id ROLE_ID --sub-roles '[{\"targetId\":\"<sheetId>\",\"targetType\":\"sheet\",\"authLevel\":\"edit-own\"}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.attachment_upload": {
+      "use_when": [
+        "1. 获取上传凭证"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“申请 attachment 字段 OSS 直传地址（不直接上传）”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws aitable attachment upload --base-id <BASE_ID> --file-name report.xlsx --size 204800",
+        "dws aitable attachment upload --base-id <BASE_ID> --file-name photo.png --size 1024 --mime-type image/png"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_copy": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "copy_base"
+      },
+      "use_when": [
+        "复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制元数据还是只是复制表的结构不复制数据，三个参数都是必填的,如果用户传的是链接的话则需要根据实际去调用文档的DWS去获取dentryuuid信息，并且传入"
+      ],
+      "avoid_when": [
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete",
+        "要“获取 Base 资源目录（tables、dashboards s”请改用 dws aitable base get"
+      ],
+      "examples": [
+        "dws aitable base copy --base-id <base-id> --target-folder-id <target-folder-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_create": {
+      "use_when": [
+        "表格/多维表/AI表格；创建"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete",
+        "要“获取 Base 资源目录（tables、dashboards s”请改用 dws aitable base get"
+      ],
+      "examples": [
+        "dws aitable base create --name \"项目跟踪\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_delete": {
+      "use_when": [
+        "表格/多维表/AI表格；删除"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“获取 Base 资源目录（tables、dashboards s”请改用 dws aitable base get"
+      ],
+      "examples": [
+        "dws aitable base delete --base-id <base-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.base_get": {
+      "use_when": [
+        "2. 获取 Base 信息 — 提取 tableId",
+        "表格/多维表/AI表格；详情"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete"
+      ],
+      "examples": [
+        "dws aitable base get --base-id <BASE_ID> --format json",
+        "dws aitable base get --base-id BASE_ID  # 查询 baseId: dws aitable base list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_get_primary_doc_id": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_base_primary_doc_id"
+      },
+      "use_when": [
+        "根据 baseId、tableId 和 recordId 获取主键文档对应的文档信息，会返回对应的文档的dentryuuid，然后利用该uuid去获取文档的内容以及做其他操作"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete"
+      ],
+      "examples": [
+        "dws aitable base get-primary-doc-id --base-id <base-id> --record-id <record-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_list": {
+      "use_when": [
+        "获取 AI 表格列表（最近访问）"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete"
+      ],
+      "examples": [
+        "dws aitable base list",
+        "dws aitable base list --limit 5 --cursor NEXT_CURSOR"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_search": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "search_bases"
+      },
+      "use_when": [
+        "1. 搜索/列出 Base — 提取 baseId",
+        "表格/多维表/AI表格；查看/查找/列表"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete"
+      ],
+      "examples": [
+        "dws aitable base search --query \"项目\" --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.base_update": {
+      "use_when": [
+        "表格/多维表/AI表格；修改"
+      ],
+      "avoid_when": [
+        "要“复制当前AI表格到指定的路径下，支持传入目标地址以及是否需要复制”请改用 dws aitable base copy",
+        "要“创建 AI 表格 Base”请改用 dws aitable base create",
+        "要“删除 Base（高风险、不可逆）”请改用 dws aitable base delete"
+      ],
+      "examples": [
+        "dws aitable base update --base-id BASE_ID --name \"新名称\"  # 查询 baseId: dws aitable base list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_create": {
+      "use_when": [
+        "在 dashboard 下创建 chart（需 --config 与 --layout）"
+      ],
+      "avoid_when": [
+        "要“删除 chart（同步删除其 dashboard 布局项；不可逆”请改用 dws aitable chart delete",
+        "要“获取 chart 详细信息（widget.config + 布局”请改用 dws aitable chart get",
+        "要“更新 chart 配置 / 布局”请改用 dws aitable chart update"
+      ],
+      "examples": [
+        "dws aitable chart create --base-id BASE_ID --dashboard-id DASHBOARD_ID --config '{\"chartName\":\"销售柱图\",\"chartType\":\"bar\",...}' --layout '{\"x\":0,\"y\":0,\"w\":6,\"h\":4}'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_delete": {
+      "use_when": [
+        "删除 chart（同步删除其 dashboard 布局项；不可逆）"
+      ],
+      "avoid_when": [
+        "要“在 dashboard 下创建 chart（需 --config”请改用 dws aitable chart create",
+        "要“获取 chart 详细信息（widget.config + 布局”请改用 dws aitable chart get",
+        "要“更新 chart 配置 / 布局”请改用 dws aitable chart update"
+      ],
+      "examples": [
+        "dws aitable chart delete --base-id <base-id> --chart-id <chart-id> --dashboard-id <dashboard-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.chart_get": {
+      "use_when": [
+        "2) 先拿 dashboard，再拿 chart 详情"
+      ],
+      "avoid_when": [
+        "要“在 dashboard 下创建 chart（需 --config”请改用 dws aitable chart create",
+        "要“删除 chart（同步删除其 dashboard 布局项；不可逆”请改用 dws aitable chart delete",
+        "要“更新 chart 配置 / 布局”请改用 dws aitable chart update"
+      ],
+      "examples": [
+        "dws aitable chart get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --chart-id <CHART_ID> --format json",
+        "dws aitable chart get --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_share_get": {
+      "use_when": [
+        "获取 chart 分享配置"
+      ],
+      "avoid_when": [
+        "要“更新 chart 分享开关与类型”请改用 dws aitable chart share update"
+      ],
+      "examples": [
+        "dws aitable chart share get --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_share_update": {
+      "use_when": [
+        "更新 chart 分享开关与类型"
+      ],
+      "avoid_when": [
+        "要“获取 chart 分享配置”请改用 dws aitable chart share get"
+      ],
+      "examples": [
+        "dws aitable chart share update --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID --enabled true --share-type ORG",
+        "dws aitable chart share update --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID --enabled false"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_update": {
+      "use_when": [
+        "更新 chart 配置 / 布局"
+      ],
+      "avoid_when": [
+        "要“在 dashboard 下创建 chart（需 --config”请改用 dws aitable chart create",
+        "要“删除 chart（同步删除其 dashboard 布局项；不可逆”请改用 dws aitable chart delete",
+        "要“获取 chart 详细信息（widget.config + 布局”请改用 dws aitable chart get"
+      ],
+      "examples": [
+        "dws aitable chart update --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID --config '{\"chartName\":\"新柱图名\",...}'",
+        "dws aitable chart update --base-id BASE_ID --dashboard-id DASHBOARD_ID --chart-id CHART_ID --layout '{\"x\":0,\"y\":4,\"w\":12,\"h\":4}'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.chart_widgets_example": {
+      "use_when": [
+        "1) 先看配置模板（JSONC）"
+      ],
+      "avoid_when": [
+        "要“在 dashboard 下创建 chart（需 --config”请改用 dws aitable chart create",
+        "要“删除 chart（同步删除其 dashboard 布局项；不可逆”请改用 dws aitable chart delete",
+        "要“获取 chart 详细信息（widget.config + 布局”请改用 dws aitable chart get"
+      ],
+      "examples": [
+        "dws aitable chart widgets-example --format json",
+        "dws aitable chart widgets-example"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.create": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "create_base"
+      },
+      "use_when": [
+        "创建 AI 表格（dws aitable base create 的别名）"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“创建 AI 表格（dws aitable base create 的别名）”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws aitable create --name <name>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_arrange": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "align_dashboard"
+      },
+      "use_when": [
+        "自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排。"
+      ],
+      "avoid_when": [
+        "要“返回 dashboard config 结构示例（JSONC）”请改用 dws aitable dashboard config-example",
+        "要“在指定 Base 下创建 dashboard”请改用 dws aitable dashboard create",
+        "要“删除 dashboard（级联删除其下 chart；不可逆）”请改用 dws aitable dashboard delete"
+      ],
+      "examples": [
+        "dws aitable dashboard arrange --base-id <base-id> --dashboard-id <dashboard-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_config_example": {
+      "use_when": [
+        "1) 先看配置模板（JSONC）"
+      ],
+      "avoid_when": [
+        "要“自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排”请改用 dws aitable dashboard arrange",
+        "要“在指定 Base 下创建 dashboard”请改用 dws aitable dashboard create",
+        "要“删除 dashboard（级联删除其下 chart；不可逆）”请改用 dws aitable dashboard delete"
+      ],
+      "examples": [
+        "dws aitable dashboard config-example --format json",
+        "dws aitable dashboard config-example"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_create": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "create_dashboard"
+      },
+      "use_when": [
+        "在指定 Base 下创建 dashboard。"
+      ],
+      "avoid_when": [
+        "要“自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排”请改用 dws aitable dashboard arrange",
+        "要“返回 dashboard config 结构示例（JSONC）”请改用 dws aitable dashboard config-example",
+        "要“删除 dashboard（级联删除其下 chart；不可逆）”请改用 dws aitable dashboard delete"
+      ],
+      "examples": [
+        "dws aitable dashboard create --base-id <base-id> --name <name>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_delete": {
+      "use_when": [
+        "删除 dashboard（级联删除其下 chart；不可逆）"
+      ],
+      "avoid_when": [
+        "要“自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排”请改用 dws aitable dashboard arrange",
+        "要“返回 dashboard config 结构示例（JSONC）”请改用 dws aitable dashboard config-example",
+        "要“在指定 Base 下创建 dashboard”请改用 dws aitable dashboard create"
+      ],
+      "examples": [
+        "dws aitable dashboard delete --base-id <base-id> --dashboard-id <dashboard-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.dashboard_get": {
+      "use_when": [
+        "2) 先拿 dashboard，再拿 chart 详情"
+      ],
+      "avoid_when": [
+        "要“自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排”请改用 dws aitable dashboard arrange",
+        "要“返回 dashboard config 结构示例（JSONC）”请改用 dws aitable dashboard config-example",
+        "要“在指定 Base 下创建 dashboard”请改用 dws aitable dashboard create"
+      ],
+      "examples": [
+        "dws aitable dashboard get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --format json",
+        "dws aitable dashboard get --base-id BASE_ID --dashboard-id DASHBOARD_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_share_get": {
+      "use_when": [
+        "获取 dashboard 分享配置"
+      ],
+      "avoid_when": [
+        "要“更新 dashboard 分享开关与类型”请改用 dws aitable dashboard share update"
+      ],
+      "examples": [
+        "dws aitable dashboard share get --base-id BASE_ID --dashboard-id DASHBOARD_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_share_update": {
+      "use_when": [
+        "更新 dashboard 分享开关与类型"
+      ],
+      "avoid_when": [
+        "要“获取 dashboard 分享配置”请改用 dws aitable dashboard share get"
+      ],
+      "examples": [
+        "dws aitable dashboard share update --base-id BASE_ID --dashboard-id DASHBOARD_ID --enabled true --share-type PUBLIC",
+        "dws aitable dashboard share update --base-id BASE_ID --dashboard-id DASHBOARD_ID --enabled false"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.dashboard_update": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_dashboard"
+      },
+      "use_when": [
+        "更新指定 dashboard 的配置。"
+      ],
+      "avoid_when": [
+        "要“自动对齐仪表盘中的图表布局，对错乱的图表进行全局重排”请改用 dws aitable dashboard arrange",
+        "要“返回 dashboard config 结构示例（JSONC）”请改用 dws aitable dashboard config-example",
+        "要“在指定 Base 下创建 dashboard”请改用 dws aitable dashboard create"
+      ],
+      "examples": [
+        "dws aitable dashboard update --base-id <base-id> --dashboard-id <dashboard-id> --name <name>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.export_data": {
+      "use_when": [
+        "第一步：创建任务（按 scope 传必要参数）",
+        "第一步：创建任务时使用 --export-format 指定导出格式，并保持 --format json 作为结构化输出",
+        "第二步：拿 taskId 继续轮询，直到返回 downloadUrl",
+        "续等导出：拿到 downloadUrl 后再 curl 下载（见下方警告）"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“导出数据（不传 --task-id 创建新任务并等待，传入 --task-id 继续等待）”"
+      ],
+      "examples": [
+        "dws aitable export data --base-id <BASE_ID> --scope table --table-id <TABLE_ID> --export-format excel --timeout-ms 1000 --format json",
+        "dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 3000 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.field_create": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "create_fields"
+      },
+      "use_when": [
+        "字段/列/column；添加",
+        "或者使用批量创建模式:"
+      ],
+      "avoid_when": [
+        "要“删除字段（不可逆，禁止删除主字段与最后一个字段）”请改用 dws aitable field delete",
+        "要“批量获取字段详细信息（含完整配置）”请改用 dws aitable field get",
+        "要“批量获取指定字段的详细信息，包括 fieldId、名称、类型、d”请改用 dws aitable field list"
+      ],
+      "examples": [
+        "dws aitable field create --base-id <BASE_ID> --table-id <TABLE_ID> --name \"状态\" --type \"singleSelect\" --config '{\"options\":[{\"name\":\"待办\"},{\"name\":\"进行中\"},{\"name\":\"已完成\"}]}'",
+        "dws aitable field create --base-id <BASE_ID> --table-id <TABLE_ID> --fields '[{\"fieldName\":\"状态\",\"type\":\"singleSelect\",\"config\":{\"options\":[{\"name\":\"待办\"}]}}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.field_delete": {
+      "use_when": [
+        "字段/列/column；删除"
+      ],
+      "avoid_when": [
+        "要“在已有表格中批量新增字段”请改用 dws aitable field create",
+        "要“批量获取字段详细信息（含完整配置）”请改用 dws aitable field get",
+        "要“批量获取指定字段的详细信息，包括 fieldId、名称、类型、d”请改用 dws aitable field list"
+      ],
+      "examples": [
+        "dws aitable field delete --base-id <base-id> --field-id <field-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.field_get": {
+      "use_when": [
+        "字段/列/column；查看"
+      ],
+      "avoid_when": [
+        "要“在已有表格中批量新增字段”请改用 dws aitable field create",
+        "要“删除字段（不可逆，禁止删除主字段与最后一个字段）”请改用 dws aitable field delete",
+        "要“批量获取指定字段的详细信息，包括 fieldId、名称、类型、d”请改用 dws aitable field list"
+      ],
+      "examples": [
+        "dws aitable field get --base-id <BASE_ID> --table-id <TABLE_ID>",
+        "dws aitable field get --base-id <BASE_ID> --table-id <TABLE_ID> --field-ids fld1,fld2"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.field_list": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_fields"
+      },
+      "use_when": [
+        "批量获取指定字段的详细信息，包括 fieldId、名称、类型、description 以及类型相关完整配置（如格式化、选项、AI 配置等）。"
+      ],
+      "avoid_when": [
+        "要“在已有表格中批量新增字段”请改用 dws aitable field create",
+        "要“删除字段（不可逆，禁止删除主字段与最后一个字段）”请改用 dws aitable field delete",
+        "要“批量获取字段详细信息（含完整配置）”请改用 dws aitable field get"
+      ],
+      "examples": [
+        "dws aitable field list --base-id <base-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.field_search_options": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "search_field_options"
+      },
+      "use_when": [
+        "搜索指定单选/多选字段的 options 列表，支持按关键词模糊匹配（大小写不敏感、contains 模式）。"
+      ],
+      "avoid_when": [
+        "要“在已有表格中批量新增字段”请改用 dws aitable field create",
+        "要“删除字段（不可逆，禁止删除主字段与最后一个字段）”请改用 dws aitable field delete",
+        "要“批量获取字段详细信息（含完整配置）”请改用 dws aitable field get"
+      ],
+      "examples": [
+        "dws aitable field search-options --base-id <base-id> --field-id <field-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.field_update": {
+      "use_when": [
+        "字段/列/column；修改"
+      ],
+      "avoid_when": [
+        "要“在已有表格中批量新增字段”请改用 dws aitable field create",
+        "要“删除字段（不可逆，禁止删除主字段与最后一个字段）”请改用 dws aitable field delete",
+        "要“批量获取字段详细信息（含完整配置）”请改用 dws aitable field get"
+      ],
+      "examples": [
+        "dws aitable field update --base-id <BASE_ID> --table-id <TABLE_ID> --field-id <FIELD_ID> --name \"新字段名\"",
+        "dws aitable field update --base-id <BASE_ID> --table-id <TABLE_ID> --field-id <FIELD_ID> --config '{\"options\":[{\"name\":\"A\"},{\"name\":\"B\"}]}'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.form_create": {
+      "agent_summary": "在指定数据表下创建一个新的表单视图（FormDesigner 类型）",
+      "use_when": [
+        "1) 创建表单 → 取返回的 data.viewId 作为 VIEW_ID"
+      ],
+      "avoid_when": [
+        "不需要在指定数据表下创建一个新的表单视图（FormDesigner 类型）时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form create --base-id BASE_ID --table-id TABLE_ID --name \"员工信息收集\" --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed composite wrapper: the CLI constrains pinned aitable/create_view to FormDesigner and applies form-specific argument semantics, so it is not a direct parameter-equivalent RPC projection."
+    },
+    "aitable.form_delete": {
+      "agent_summary": "删除指定数据表下的表单视图（不可逆）",
+      "use_when": [
+        "删除指定数据表下的表单视图（不可逆）"
+      ],
+      "avoid_when": [
+        "不需要删除指定数据表下的表单视图（不可逆）时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form delete --help"
+      ],
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_field_hide": {
+      "agent_summary": "切换表单视图中某个字段的隐藏/显示状态",
+      "use_when": [
+        "5) 隐藏不需要的题目"
+      ],
+      "avoid_when": [
+        "不需要切换表单视图中某个字段的隐藏/显示状态时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form field hide --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id FIELD_ID --hidden true --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": true,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_field_list": {
+      "agent_summary": "列出指定表单视图当前可见的字段及其配置",
+      "use_when": [
+        "3) 查看表单字段配置"
+      ],
+      "avoid_when": [
+        "不需要列出指定表单视图当前可见的字段及其配置时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form field list --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --format json"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_field_update": {
+      "agent_summary": "更新表单视图中某个字段的必填状态或描述",
+      "use_when": [
+        "4) 设置题目必填（FIELD_ID 来自步骤 2）"
+      ],
+      "avoid_when": [
+        "不需要更新表单视图中某个字段的必填状态或描述时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form field update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id FIELD_ID --required true --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_get": {
+      "agent_summary": "按 viewId 获取单个表单视图的元信息（name/title/createdAt/shareFormUuid）",
+      "use_when": [
+        "2) 查看单个表单详情"
+      ],
+      "avoid_when": [
+        "不需要按 viewId 获取单个表单视图的元信息（name/title/createdAt/shareFormUuid）时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form get --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --format json"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_list": {
+      "agent_summary": "列出指定数据表下的所有表单视图",
+      "use_when": [
+        "1) 列出数据表下的表单视图"
+      ],
+      "avoid_when": [
+        "不需要列出指定数据表下的所有表单视图时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form list --base-id BASE_ID --table-id TABLE_ID --format json"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_questions_create": {
+      "agent_summary": "在数据表中创建字段，即向表单添加题目",
+      "use_when": [
+        "2) 添加题目 → 取返回的 data.results[].fieldId 作为 FIELD_ID"
+      ],
+      "avoid_when": [
+        "不需要在数据表中创建字段，即向表单添加题目时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form questions create --base-id BASE_ID --table-id TABLE_ID --fields '[{\"fieldName\":\"姓名\",\"type\":\"text\"},{\"fieldName\":\"邮箱\",\"type\":\"text\"}]' --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed composite wrapper: the CLI converts single-question flags or batch JSON into the pinned aitable/create_fields request, so it is not a direct parameter-equivalent RPC projection."
+    },
+    "aitable.form_questions_delete": {
+      "agent_summary": "删除指定字段（即表单题目）",
+      "use_when": [
+        "删除指定字段（即表单题目）"
+      ],
+      "avoid_when": [
+        "不需要删除指定字段（即表单题目）时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form questions delete --help"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "mcp",
+      "availability": "available",
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "delete_field"
+      }
+    },
+    "aitable.form_share_get": {
+      "agent_summary": "读取指定视图当前的分享表单配置",
+      "use_when": [
+        "4) 查看分享配置"
+      ],
+      "avoid_when": [
+        "不需要读取指定视图当前的分享表单配置时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form share get --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --format json"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_share_update": {
+      "agent_summary": "开启或关闭指定视图的分享表单",
+      "use_when": [
+        "6) 开启分享（注意：开启后需 UI 刷新页面才会看到分享面板）"
+      ],
+      "avoid_when": [
+        "不需要开启或关闭指定视图的分享表单时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form share update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --enabled true --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.form_update": {
+      "agent_summary": "更新表单整体配置（标题、描述）",
+      "use_when": [
+        "3) 配置表单标题与描述"
+      ],
+      "avoid_when": [
+        "不需要更新表单整体配置（标题、描述）时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable form update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --title \"员工信息收集\" --description \"请填写您的基本信息\" --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "aitable.import_data": {
+      "use_when": [
+        "第 3 步（替代）：追加到已有表",
+        "第 3 步：触发导入（新建表模式）",
+        "续等导入"
+      ],
+      "avoid_when": [
+        "要“申请导入文件 OSS 直传地址，返回 uploadUrl 与 i”请改用 dws aitable import upload"
+      ],
+      "examples": [
+        "dws aitable import data --import-id <importId> --format json",
+        "dws aitable import data --import-id <importId> --table-id <TABLE_ID> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.import_upload": {
+      "use_when": [
+        "第 1 步：申请上传凭证"
+      ],
+      "avoid_when": [
+        "要“触发导入并等待结果；每个 Sheet 新建为独立表”请改用 dws aitable import data"
+      ],
+      "examples": [
+        "dws aitable import upload --base-id <BASE_ID> --file-name data.xlsx --file-size <字节数> --format json",
+        "dws aitable import upload --base-id BASE_ID --file-name data.xlsx --file-size 204800"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.info": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_base"
+      },
+      "use_when": [
+        "获取指定 Base 的资源目录级信息，返回 baseName、tables、dashboards 的 summary 信息（不含字段与记录详情）。"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“获取指定 Base 的资源目录级信息，返回 baseName、tables、dashboards 的 summary 信息（不含字段与记录详情）。”"
+      ],
+      "examples": [
+        "dws aitable info --base-id <base-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.list": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "list_bases"
+      },
+      "use_when": [
+        "列出当前用户可访问的 AI 表格 Base。"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“列出当前用户可访问的 AI 表格 Base。”"
+      ],
+      "examples": [
+        "dws aitable list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.query_records": {
+      "use_when": [
+        "4. 查询记录",
+        "从上次断点继续",
+        "关键词搜索",
+        "按 ID 查询",
+        "无限制（拉完为止）",
+        "游标分页",
+        "示例：基础条件查询模板（可改内部 operator 为 contain 等）",
+        "记录/行/数据/row；查看/搜索",
+        "默认（最多 50 页 = 5000 条）"
+      ],
+      "avoid_when": [
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete",
+        "要“查询指定表格中的记录，支持两种模式： 按 ID 取：传入 rec”请改用 dws aitable record get"
+      ],
+      "examples": [
+        "dws aitable record query --base-id <BASE_ID> --table-id <TABLE_ID> --format json",
+        "dws aitable record query --base-id <BASE_ID> --table-id <TABLE_ID> --filters '{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fld_state\",\"进行中\"]}]}' --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_batch_update": {
+      "agent_summary": "将同一份 cells JSON 批量应用到多条记录上",
+      "use_when": [
+        "将同一份 cells JSON 批量应用到多条记录上"
+      ],
+      "avoid_when": [
+        "不需要将同一份 cells JSON 批量应用到多条记录上时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws aitable record batch-update --help"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed composite wrapper: the CLI expands record IDs and shared cells into the pinned aitable/update_records request, so it is not a direct parameter-equivalent RPC projection."
+    },
+    "aitable.record_create": {
+      "use_when": [
+        "5. 新增记录 (cells 用 fieldId 作 key)",
+        "再用 fieldId 写入记录",
+        "单条",
+        "多条",
+        "步骤 2: 在 record create/update 中使用 fileToken 写入",
+        "步骤 2: 在 record create/update 中使用 fileToken 写入附件字段",
+        "记录/行/数据/row；添加/写入"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete",
+        "要“查询指定表格中的记录，支持两种模式： 按 ID 取：传入 rec”请改用 dws aitable record get"
+      ],
+      "examples": [
+        "dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> --records '[{\"cells\":{\"fldABC\":\"完成设计\",\"fldDEF\":\"进行中\"}}]' --format json",
+        "dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> --records '["
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_delete": {
+      "use_when": [
+        "记录/行/数据/row；删除"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“查询指定表格中的记录，支持两种模式： 按 ID 取：传入 rec”请改用 dws aitable record get"
+      ],
+      "examples": [
+        "dws aitable record delete --base-id <base-id> --record-ids <record-ids> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.record_get": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "query_records"
+      },
+      "use_when": [
+        "记录/行/数据/row；已知 recordId 反查字段值"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record get --base-id <base-id> --record-ids <record-ids> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_history_list": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "query_record_history"
+      },
+      "use_when": [
+        "第 1 页（最新 20 条）",
+        "第 2 页"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record history-list --base-id BASE_ID --table-id TABLE_ID --record-id REC_ID [--offset N] [--limit M]",
+        "dws aitable record history-list --base-id BASE --table-id TBL --record-id REC --format json | jq '.data.histories[] | {version, action, operateTime}'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_primary_doc_create": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "create_primary_doc"
+      },
+      "use_when": [
+        "2. 为某条记录创建主键文档"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record primary-doc-create --base-id BASE_ID --table-id TABLE_ID --field-id FIELD_ID --record-id RECORD_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_primary_doc_get": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_primary_doc"
+      },
+      "use_when": [
+        "查询指定记录的主键文档信息。"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record primary-doc-get --base-id BASE_ID --table-id TABLE_ID --record-id RECORD_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_query_empty": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "query_empty_records"
+      },
+      "use_when": [
+        "查询指定表格中\"完全没填用户字段\"的空行。"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record query-empty --base-id <base-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_share_url": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_record_share_url"
+      },
+      "use_when": [
+        "一次拿一条记录的链接",
+        "带视图上下文（链接打开时落在指定视图）",
+        "批量拿，配合 jq 过滤出 url"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record share-url --base-id BASE_ID --table-id TABLE_ID --record-ids rec1,rec2,rec3 [--view-id VIEW_ID]",
+        "dws aitable record share-url --base-id BASE --table-id TBL --record-ids rec1"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_update": {
+      "use_when": [
+        "3. 写入记录",
+        "记录/行/数据/row；修改/更新"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record update --base-id <BASE_ID> --table-id <TABLE_ID> --records '[{\"recordId\":\"rec001\",\"cells\":{\"fldDEF\":\"已完成\"}}]' --format json",
+        "dws aitable record update --base-id <BASE_ID> --table-id <TABLE_ID> --records '[{\"recordId\":\"recXXX\",\"cells\":{\"fldAttachId\":[{\"fileToken\":\"ft_xxx\"}]}}]' --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.record_upsert": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "record_upsert"
+      },
+      "use_when": [
+        "1) 全部新建：所有项都不带 recordId",
+        "2) 全部更新：所有项都带 recordId",
+        "3) 混合：第 1 条更新（带 recordId），第 2 条创建（不带）",
+        "4) 长 JSON 用文件"
+      ],
+      "avoid_when": [
+        "要“查询记录（支持按 ID 取或 filters/sort/分页遍历”请改用 dws aitable record query",
+        "要“批量新增记录（单次最多 100 条）”请改用 dws aitable record create",
+        "要“批量删除记录（不可逆，单次最多 100 条）”请改用 dws aitable record delete"
+      ],
+      "examples": [
+        "dws aitable record upsert --base-id BASE_ID --table-id TABLE_ID --records '[{\"recordId\":\"<可选>\",\"cells\":{...}}, ...]'",
+        "dws aitable record upsert --base-id BASE --table-id TBL --records '["
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.search": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "search_bases"
+      },
+      "use_when": [
+        "按名称关键词搜索 AI 表格 Base。"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“按名称关键词搜索 AI 表格 Base。”"
+      ],
+      "examples": [
+        "dws aitable search --query <query>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_create": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "create_section"
+      },
+      "use_when": [
+        "在指定 Base 下创建分区(用于在导航树中组织 table / dashboard,类似文件夹)。"
+      ],
+      "avoid_when": [
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty",
+        "要“列出指定 Base 当前版本下的全部 nsheet 节点,包括分”请改用 dws aitable section list-nodes"
+      ],
+      "examples": [
+        "dws aitable section create --base-id <BASE_ID> --name 我的文件夹",
+        "dws aitable section create --base-id <BASE_ID> --name 子文件夹 --parent-section-id <SECTION_ID> --index 0"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_delete": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "delete_section"
+      },
+      "use_when": [
+        "删除指定分区。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty",
+        "要“列出指定 Base 当前版本下的全部 nsheet 节点,包括分”请改用 dws aitable section list-nodes"
+      ],
+      "examples": [
+        "dws aitable section delete --base-id <BASE_ID> --section-id <SECTION_ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "tips": [
+        "Runtime 无确认门禁；删除文件夹后不可恢复，调用前请自行确认目标 sectionId"
+      ],
+      "reviewed": true
+    },
+    "aitable.section_list_empty": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "list_empty_sections"
+      },
+      "use_when": [
+        "列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于清理或诊断导航树。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 当前版本下的全部 nsheet 节点,包括分”请改用 dws aitable section list-nodes"
+      ],
+      "examples": [
+        "dws aitable section list-empty --base-id <BASE_ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_list_nodes": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "list_nsheet_nodes"
+      },
+      "use_when": [
+        "列出指定 Base 当前版本下的全部 nsheet 节点,包括分区、AI 表格、表单视图、仪表盘、文档、查询视图等。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty"
+      ],
+      "examples": [
+        "dws aitable section list-nodes --base-id <BASE_ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_move_node": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "move_nsheet_node"
+      },
+      "use_when": [
+        "把任意 nsheet 节点(分区 / 多维表 / 表单视图 / 仪表盘 / 文档 / 查询视图)移动到目标分区下,可选同时调整全局位置。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty"
+      ],
+      "examples": [
+        "dws aitable section move-node --base-id <BASE_ID> --node-id <NODE_ID> --new-parent-section-id <SECTION_ID>",
+        "dws aitable section move-node --base-id <BASE_ID> --node-id <NODE_ID> --new-parent-section-id \"\" --target-index 0"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_rename": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "rename_section"
+      },
+      "use_when": [
+        "重命名指定分区。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty"
+      ],
+      "examples": [
+        "dws aitable section rename --base-id <BASE_ID> --section-id <SECTION_ID> --new-name 新名称"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.section_reorder": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "reorder_section"
+      },
+      "use_when": [
+        "在当前父分区下调整分区的展示顺序。"
+      ],
+      "avoid_when": [
+        "要“在指定 Base 下创建分区(用于在导航树中组织 table /”请改用 dws aitable section create",
+        "要“删除指定分区”请改用 dws aitable section delete",
+        "要“列出指定 Base 下所有没有任何子节点的分区(空文件夹),用于”请改用 dws aitable section list-empty"
+      ],
+      "examples": [
+        "dws aitable section reorder --base-id <BASE_ID> --section-id <SECTION_ID> --target-index 0"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.table_create": {
+      "use_when": [
+        "数据表/子表/table；创建"
+      ],
+      "avoid_when": [
+        "要“删除数据表（不可逆，高风险）”请改用 dws aitable table delete",
+        "要“批量获取数据表目录与字段、视图 summary”请改用 dws aitable table get",
+        "要“批量获取指定 Tables（数据表）的表级信息、字段目录与视图目”请改用 dws aitable table list"
+      ],
+      "examples": [
+        "dws aitable table create --base-id BASE_ID --name \"任务表\" --fields '[{\"fieldName\":\"任务名称\",\"type\":\"text\"},{\"fieldName\":\"优先级\",\"type\":\"singleSelect\",\"config\":{\"options\":[{\"name\":\"高\"},{\"name\":\"中\"},{\"name\":\"低\"}]}}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.table_delete": {
+      "use_when": [
+        "数据表/子表/table；删除"
+      ],
+      "avoid_when": [
+        "要“创建数据表并附带初始字段（最多 15 个）”请改用 dws aitable table create",
+        "要“批量获取数据表目录与字段、视图 summary”请改用 dws aitable table get",
+        "要“批量获取指定 Tables（数据表）的表级信息、字段目录与视图目”请改用 dws aitable table list"
+      ],
+      "examples": [
+        "dws aitable table delete --base-id <base-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.table_get": {
+      "use_when": [
+        "1. 查询表结构，拿到 primaryDoc 字段的 fieldId",
+        "2. 拿目标 sheet 的 tableId",
+        "3. 获取表结构 — 提取 fieldId",
+        "先获取 fieldId",
+        "数据表/子表/table；查看"
+      ],
+      "avoid_when": [
+        "要“创建数据表并附带初始字段（最多 15 个）”请改用 dws aitable table create",
+        "要“删除数据表（不可逆，高风险）”请改用 dws aitable table delete",
+        "要“批量获取指定 Tables（数据表）的表级信息、字段目录与视图目”请改用 dws aitable table list"
+      ],
+      "examples": [
+        "dws aitable table get --base-id <BASE_ID> --table-id <TABLE_ID> --format json",
+        "dws aitable table get --base-id BASE_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.table_list": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_tables"
+      },
+      "use_when": [
+        "批量获取指定 Tables（数据表）的表级信息、字段目录与视图目录。"
+      ],
+      "avoid_when": [
+        "要“创建数据表并附带初始字段（最多 15 个）”请改用 dws aitable table create",
+        "要“删除数据表（不可逆，高风险）”请改用 dws aitable table delete",
+        "要“批量获取数据表目录与字段、视图 summary”请改用 dws aitable table get"
+      ],
+      "examples": [
+        "dws aitable table list --base-id <base-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.table_update": {
+      "use_when": [
+        "数据表/子表/table；重命名",
+        "用户说\"恢复成默认（记录）\" → 传 ji_lu",
+        "用户说\"把这张表的行叫'任务'吧\" → 传 task",
+        "用户说\"换成项目\" → 传 project"
+      ],
+      "avoid_when": [
+        "要“创建数据表并附带初始字段（最多 15 个）”请改用 dws aitable table create",
+        "要“删除数据表（不可逆，高风险）”请改用 dws aitable table delete",
+        "要“批量获取数据表目录与字段、视图 summary”请改用 dws aitable table get"
+      ],
+      "examples": [
+        "dws aitable table update --base-id BASE --table-id TBL --record-name-key task",
+        "dws aitable table update --base-id BASE --table-id TBL --record-name-key project"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.template_search": {
+      "use_when": [
+        "模板"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“按关键词搜索 AI 表格模板（不传返回热门模板）”"
+      ],
+      "examples": [
+        "dws aitable template search --query \"项目管理\"",
+        "dws aitable template search"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_create": {
+      "use_when": [
+        "第 1 步：创建 Gantt 视图"
+      ],
+      "avoid_when": [
+        "要“删除视图（不可逆；禁止删除最后一个视图或锁定视图）”请改用 dws aitable view delete",
+        "要“复制指定视图(View),生成一个与源视图结构一致的新视图(包含”请改用 dws aitable view duplicate",
+        "要“获取指定数据表（Table）中的视图（View）完整信息，包括列”请改用 dws aitable view list"
+      ],
+      "examples": [
+        "dws aitable view create --base-id BASE_ID --table-id TABLE_ID --view-type Gantt --name \"项目甘特图\" -f json",
+        "dws aitable view create --base-id BASE_ID --table-id TABLE_ID --view-type Grid"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_delete": {
+      "use_when": [
+        "删除视图（不可逆；禁止删除最后一个视图或锁定视图）"
+      ],
+      "avoid_when": [
+        "要“创建视图（Grid/FormDesigner/Gantt/Cal”请改用 dws aitable view create",
+        "要“复制指定视图(View),生成一个与源视图结构一致的新视图(包含”请改用 dws aitable view duplicate",
+        "要“获取指定数据表（Table）中的视图（View）完整信息，包括列”请改用 dws aitable view list"
+      ],
+      "examples": [
+        "dws aitable view delete --base-id <base-id> --table-id <table-id> --view-id <view-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "aitable.view_duplicate": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "duplicate_view"
+      },
+      "use_when": [
+        "显式命名",
+        "系统自动命名（一般是 \"原视图名 (副本)\"）"
+      ],
+      "avoid_when": [
+        "要“创建视图（Grid/FormDesigner/Gantt/Cal”请改用 dws aitable view create",
+        "要“删除视图（不可逆；禁止删除最后一个视图或锁定视图）”请改用 dws aitable view delete",
+        "要“获取指定数据表（Table）中的视图（View）完整信息，包括列”请改用 dws aitable view list"
+      ],
+      "examples": [
+        "dws aitable view duplicate --view-id VIEW_ID --new-name \"副本视图\"",
+        "dws aitable view duplicate --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_aggregate": {
+      "agent_summary": "查询视图的聚合统计（汇总行）",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths",
+        "要“查询视图的条件填色规则”请改用 dws aitable view get fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view get aggregate --view-id VIEW_ID --format json       # Grid"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_card": {
+      "agent_summary": "查询视图的卡片视图样式",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths",
+        "要“查询视图的条件填色规则”请改用 dws aitable view get fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view get card --view-id VIEW_ID --format json            # Kanban / Gallery",
+        "dws aitable view get card --view-id KANBAN_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_field_widths": {
+      "agent_summary": "查询视图的各列列宽",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的条件填色规则”请改用 dws aitable view get fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view get field-widths --view-id VIEW_ID --format json    # Grid"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_fill_color_rule": {
+      "agent_summary": "查询视图的条件填色规则",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "3) 查询当前规则",
+        "看实际生效的 conditionalFormats"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get fill-color-rule --view-id GRID_ID --format json",
+        "dws aitable view get fill-color-rule --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_filter": {
+      "agent_summary": "查询视图的筛选条件",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get filter --view-id VIEW_ID --format json          # 所有"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_frozen_cols": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_frozen_columns_of_view"
+      },
+      "use_when": [
+        "查询当前冻结列数"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get frozen-cols --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_group": {
+      "agent_summary": "查询视图的分组",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get group --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_lock": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_view_lock_status"
+      },
+      "use_when": [
+        "查询当前是否锁定"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get lock --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_row_height": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_cell_height_of_view"
+      },
+      "use_when": [
+        "查询当前行高"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get row-height --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_sort": {
+      "agent_summary": "查询视图的排序规则",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get sort --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_timebar": {
+      "agent_summary": "查询视图的时间条（甘特/时间轴）",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get timebar --view-id VIEW_ID --format json         # Gantt"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_get_visible_fields": {
+      "agent_summary": "查询视图的可见字段及顺序",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“查询视图的聚合统计（汇总行）”请改用 dws aitable view get aggregate",
+        "要“查询视图的卡片视图样式”请改用 dws aitable view get card",
+        "要“查询视图的各列列宽”请改用 dws aitable view get field-widths"
+      ],
+      "examples": [
+        "dws aitable view get visible-fields --view-id VIEW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_list": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "get_views"
+      },
+      "use_when": [
+        "获取指定数据表（Table）中的视图（View）完整信息，包括列顺序、筛选、排序、分组、条件格式、自定义配置等。"
+      ],
+      "avoid_when": [
+        "要“创建视图（Grid/FormDesigner/Gantt/Cal”请改用 dws aitable view create",
+        "要“删除视图（不可逆；禁止删除最后一个视图或锁定视图）”请改用 dws aitable view delete",
+        "要“复制指定视图(View),生成一个与源视图结构一致的新视图(包含”请改用 dws aitable view duplicate"
+      ],
+      "examples": [
+        "dws aitable view list --base-id <base-id> --table-id <table-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_lock": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "lock_or_unlock_view"
+      },
+      "use_when": [
+        "4) 锁定视图，防止他人改坏",
+        "解锁",
+        "锁定（默认）"
+      ],
+      "avoid_when": [
+        "要“创建视图（Grid/FormDesigner/Gantt/Cal”请改用 dws aitable view create",
+        "要“删除视图（不可逆；禁止删除最后一个视图或锁定视图）”请改用 dws aitable view delete",
+        "要“复制指定视图(View),生成一个与源视图结构一致的新视图(包含”请改用 dws aitable view duplicate"
+      ],
+      "examples": [
+        "dws aitable view lock --view-id VIEW_ID",
+        "dws aitable view lock --view-id VIEW_ID --off"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_aggregate": {
+      "agent_summary": "更新视图的聚合统计（汇总行）",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths",
+        "要“设置指定表格视图（Grid View）的条件填色规则（全量覆盖）”请改用 dws aitable view update fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view update aggregate --view-id GRID_ID --field-id fldX --action SUM"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI performs an aitable/get_views preflight, locally transforms the requested configuration, and then calls aitable/update_view; the two-call workflow has no single direct MCP interface."
+    },
+    "aitable.view_update_card": {
+      "agent_summary": "更新视图的卡片视图样式",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths",
+        "要“设置指定表格视图（Grid View）的条件填色规则（全量覆盖）”请改用 dws aitable view update fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view update card --view-id KANBAN_ID --cover-field-id fldAttachment --cover-resize-mode contain",
+        "dws aitable view update card --view-id KANBAN_ID --no-cover"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI performs an aitable/get_views preflight, locally transforms the requested configuration, and then calls aitable/update_view; the two-call workflow has no single direct MCP interface."
+    },
+    "aitable.view_update_field_widths": {
+      "agent_summary": "更新视图的各列列宽",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“设置指定表格视图（Grid View）的条件填色规则（全量覆盖）”请改用 dws aitable view update fill-color-rule"
+      ],
+      "examples": [
+        "dws aitable view update field-widths --view-id GRID_ID --field-id fldX --width 200",
+        "dws aitable view update field-widths --view-id GRID_ID --json '{\"fldA\":120,\"fldB\":200}'"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI performs an aitable/get_views preflight, locally transforms the requested configuration, and then calls aitable/update_view; the two-call workflow has no single direct MCP interface."
+    },
+    "aitable.view_update_fill_color_rule": {
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "set_view_fill_color_rule"
+      },
+      "use_when": [
+        "1) 给金额字段 > 100 的单元格上 firstLine5 色",
+        "2) 清空所有规则",
+        "3) 金额 > 100 的单元格上色"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update fill-color-rule --view-id GRID_ID --json '[",
+        "dws aitable view update fill-color-rule --view-id GRID_ID --json '[]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_filter": {
+      "agent_summary": "更新视图的筛选条件",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_frozen_cols": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "set_frozen_columns_of_view"
+      },
+      "use_when": [
+        "1) 关键字段冻结，避免横向滚动看不到",
+        "冻结从首列起 1 列",
+        "取消冻结"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update frozen-cols --view-id VIEW_ID --count 1",
+        "dws aitable view update frozen-cols --view-id VIEW_ID --count 0"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_group": {
+      "agent_summary": "更新视图的分组",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update group  --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_name": {
+      "agent_summary": "重命名视图（修改视图名称）",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update name --view-id VIEW_ID --name \"新视图名\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_row_height": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "set_cell_height_of_view"
+      },
+      "use_when": [
+        "2) 加大行高让数据更易读",
+        "设置行高 — 推荐档位 32 / 56 / 88 / 128"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update row-height --view-id VIEW_ID --cell-height 56",
+        "dws aitable view update row-height --base-id $BASE --table-id $TABLE --view-id $VIEW --cell-height 56"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_sort": {
+      "agent_summary": "更新视图的排序规则",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "更新指定视图（View）的名称、描述或配置。"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update sort   --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.view_update_timebar": {
+      "agent_summary": "更新视图的时间条（甘特/时间轴）",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "第 2 步（必须）：绑定日期字段，否则视图为空"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update timebar --view-id GANTT_ID --start-field fldStart --end-field fldEnd --timeline-scale month",
+        "dws aitable view update timebar --view-id GANTT_ID --official-holiday=true"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI performs an aitable/get_views preflight, locally transforms the requested configuration, and then calls aitable/update_view; the two-call workflow has no single direct MCP interface."
+    },
+    "aitable.view_update_visible_fields": {
+      "agent_summary": "更新视图的可见字段及顺序",
+      "reviewed": true,
+      "interface_ref": {
+        "product_id": "aitable",
+        "rpc_name": "update_view"
+      },
+      "use_when": [
+        "传回全量列表解除隐藏",
+        "只保留首列和 fldA，其余字段被隐藏"
+      ],
+      "avoid_when": [
+        "要“更新视图的聚合统计（汇总行）”请改用 dws aitable view update aggregate",
+        "要“更新视图的卡片视图样式”请改用 dws aitable view update card",
+        "要“更新视图的各列列宽”请改用 dws aitable view update field-widths"
+      ],
+      "examples": [
+        "dws aitable view update visible-fields --view-id VIEW_ID --field-ids fldPrimary,fldA",
+        "dws aitable view update visible-fields --view-id VIEW_ID --json '[\"fldPrimary\",\"fldA\",\"fldB\"]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.workflow_disable": {
+      "effect": "write",
+      "risk": "high",
+      "confirmation": "user_required",
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "disable_workflow"
+      },
+      "use_when": [
+        "2. 禁用"
+      ],
+      "avoid_when": [
+        "要“启用指定 Base 中的自动化工作流”请改用 dws aitable workflow enable",
+        "要“获取指定 Base 中某个自动化工作流的详细信息，直接返回下游”请改用 dws aitable workflow get",
+        "要“列出指定 Base 中的自动化工作流，直接返回下游 search”请改用 dws aitable workflow list"
+      ],
+      "examples": [
+        "dws aitable workflow disable --base-id <base-id> --workflow-id <workflow-id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "aitable.workflow_enable": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "enable_workflow"
+      },
+      "use_when": [
+        "3. 调试做完后重启"
+      ],
+      "avoid_when": [
+        "要“禁用指定 Base 中的自动化工作流”请改用 dws aitable workflow disable",
+        "要“获取指定 Base 中某个自动化工作流的详细信息，直接返回下游”请改用 dws aitable workflow get",
+        "要“列出指定 Base 中的自动化工作流，直接返回下游 search”请改用 dws aitable workflow list"
+      ],
+      "examples": [
+        "dws aitable workflow enable --base-id BASE_ID --workflow-id WORKFLOW_ID --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.workflow_get": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "get_workflow"
+      },
+      "use_when": [
+        "1. 留底当前状态"
+      ],
+      "avoid_when": [
+        "要“禁用指定 Base 中的自动化工作流”请改用 dws aitable workflow disable",
+        "要“启用指定 Base 中的自动化工作流”请改用 dws aitable workflow enable",
+        "要“列出指定 Base 中的自动化工作流，直接返回下游 search”请改用 dws aitable workflow list"
+      ],
+      "examples": [
+        "dws aitable workflow get --base-id BASE_ID --workflow-id WORKFLOW_ID --format json",
+        "dws aitable workflow get --base-id BASE_ID --workflow-id WORKFLOW_ID --format json > /tmp/wf-backup.json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "aitable.workflow_list": {
+      "interface_ref": {
+        "product_id": "aitable-helper",
+        "rpc_name": "list_workflows"
+      },
+      "use_when": [
+        "4. 确认 status=RUNNING"
+      ],
+      "avoid_when": [
+        "要“禁用指定 Base 中的自动化工作流”请改用 dws aitable workflow disable",
+        "要“启用指定 Base 中的自动化工作流”请改用 dws aitable workflow enable",
+        "要“获取指定 Base 中某个自动化工作流的详细信息，直接返回下游”请改用 dws aitable workflow get"
+      ],
+      "examples": [
+        "dws aitable workflow list --base-id BASE_ID --format json",
+        "dws aitable workflow list --base-id BASE_ID --limit 50 --offset 100"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  }
+}

@@ -34,17 +34,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -140,17 +140,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -237,8 +237,7 @@
         "CommandRegistry:canonical_path=wiki.add_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member add",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.add_member",
         "skills/mono/references/products/doc.md",
@@ -282,17 +281,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -388,17 +387,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -485,8 +484,7 @@
         "CommandRegistry:canonical_path=wiki.list_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member list",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_member",
         "skills/mono/references/products/wiki.md",
@@ -503,8 +501,8 @@
       "avoid_when": [
         "用户未明确移除，或知识库与成员身份未确认时不要撤销访问权限。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws wiki member remove --workspace \u003cworkspaceId\u003e --users uid1 --format json",
@@ -529,17 +527,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -570,18 +568,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -592,18 +590,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -651,17 +649,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -698,22 +696,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -751,14 +756,12 @@
         "rpc_name": "remove_member"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=wiki.remove_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member remove",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.remove_member",
         "skills/mono/references/products/wiki.md",
@@ -801,17 +804,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -907,17 +910,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1004,8 +1007,7 @@
         "CommandRegistry:canonical_path=wiki.update_member",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki member update",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.update_member",
         "skills/mono/references/products/wiki.md",
@@ -1048,17 +1050,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1154,17 +1156,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1176,17 +1178,17 @@
         },
         "interface_ref": {
           "value": "doc.copy_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.copy_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "doc.copy_document",
@@ -1259,9 +1261,7 @@
         "CommandRegistry:canonical_path=wiki.node_copy",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node copy",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_copy",
         "skills/mono/references/products/wiki.md",
@@ -1304,17 +1304,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1410,17 +1410,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1432,17 +1432,17 @@
         },
         "interface_ref": {
           "value": "doc.create_file",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.create_file",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "doc.create_file",
@@ -1515,9 +1515,7 @@
         "CommandRegistry:canonical_path=wiki.create_file",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node create",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.create_file",
         "skills/mono/references/intent-guide.md",
@@ -1561,17 +1559,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -1603,17 +1601,17 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -1625,17 +1623,17 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -1681,17 +1679,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -1703,17 +1701,17 @@
         },
         "interface_ref": {
           "value": "doc.delete_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "doc.delete_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "doc.delete_document",
@@ -1736,22 +1734,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -1794,10 +1799,7 @@
         "CommandRegistry:canonical_path=wiki.delete_document",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node delete",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.delete_document",
         "skills/mono/references/products/wiki.md",
@@ -1840,17 +1842,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1946,17 +1948,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1968,17 +1970,17 @@
         },
         "interface_ref": {
           "value": "doc.list_nodes",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.list_nodes",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "doc.list_nodes",
@@ -2051,9 +2053,7 @@
         "CommandRegistry:canonical_path=wiki.list_nodes",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node list",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_nodes",
         "skills/mono/references/intent-guide.md",
@@ -2097,17 +2097,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2203,17 +2203,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2225,17 +2225,17 @@
         },
         "interface_ref": {
           "value": "doc.move_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.move_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "doc.move_document",
@@ -2308,9 +2308,7 @@
         "CommandRegistry:canonical_path=wiki.node_move",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node move",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_move",
         "skills/mono/references/products/wiki.md",
@@ -2353,17 +2351,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2459,17 +2457,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2481,17 +2479,17 @@
         },
         "interface_ref": {
           "value": "doc.search_documents",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.search_documents",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "doc.search_documents",
@@ -2564,9 +2562,7 @@
         "CommandRegistry:canonical_path=wiki.node_search",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki node search",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.node_search",
         "skills/mono/references/intent-guide.md",
@@ -2610,17 +2606,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2716,17 +2712,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2813,8 +2809,7 @@
         "CommandRegistry:canonical_path=wiki.create_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space create",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.create_wikiSpace",
         "skills/mono/references/products/wiki.md",
@@ -2857,17 +2852,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -2899,17 +2894,17 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -2921,17 +2916,17 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -2979,17 +2974,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/wiki.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/wiki.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3026,22 +3021,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/wiki marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/wiki marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3084,9 +3086,7 @@
         "CommandRegistry:canonical_path=wiki.delete_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space delete",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.delete_wikiSpace",
         "skills/mono/references/products/wiki.md",
@@ -3129,17 +3129,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3235,17 +3235,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3332,8 +3332,7 @@
         "CommandRegistry:canonical_path=wiki.get_wikiSpace",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space get",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.get_wikiSpace",
         "skills/mono/references/products/wiki.md",
@@ -3376,17 +3375,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3482,17 +3481,17 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3504,31 +3503,31 @@
         },
         "interface_reason": {
           "value": "The CLI command routes by --type between wiki/list_wikiSpaces and drive/list_spaces, so the reviewed executable wrapper has no single direct MCP interface.",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "The CLI command routes by --type between wiki/list_wikiSpaces and drive/list_spaces, so the reviewed executable wrapper has no single direct MCP interface.",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -3602,8 +3601,7 @@
         "CommandRegistry:canonical_path=wiki.list_wikiSpaces",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space list",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.list_wikiSpaces",
         "skills/mono/references/intent-guide.md",
@@ -3648,17 +3646,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3754,17 +3752,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/wiki.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/wiki.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/wiki is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3851,8 +3849,7 @@
         "CommandRegistry:canonical_path=wiki.search_wikiSpaces",
         "Skill:skills/mono/references/products/wiki.md",
         "cobra-help:dws wiki space search",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.wiki.search_wikiSpaces",
         "skills/mono/references/products/wiki.md",

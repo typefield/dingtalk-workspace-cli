@@ -1,6 +1,6 @@
 {
   "version": 1,
-  "source_hash": "sha256:5a7c35d3732f8d47b42c3542cf70ee95abccc60ad7c379194b63760f5785f1ef",
+  "source_hash": "sha256:542394a00de91e13d1efecaae5a9ae9bdee106eb8b7fde4d8913002f49732894",
   "surface_hash": "sha256:efb97fcad7968fe1375d729a232df9978adcb1ec71eeaca1e18326d047906a99",
   "coverage": {
     "surface_products": 21,
@@ -12,7 +12,7 @@
     "tools_with_avoid_when": 561,
     "tools_with_examples": 561,
     "tools_with_interface_mode": 561,
-    "unmatched_skill_tools": 154,
+    "unmatched_skill_tools": 158,
     "unreviewed_skill_tools": 40
   },
   "products": {
@@ -76,7 +76,7 @@
       },
       "source_refs": [
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/products/aisearch.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/aisearch.md"
@@ -500,7 +500,7 @@
       },
       "source_refs": [
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/products/dev.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/dev.md"
       ],
@@ -570,8 +570,8 @@
         "CommandRegistry:product=devdoc",
         "Skill:skills/mono/references/products/devdoc.md",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.devdoc.prod.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/products/devdoc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md"
@@ -1202,7 +1202,7 @@
       "source_refs": [
         "CommandRegistry:product=pat",
         "Skill:skills/mono/references/products/pat.md",
-        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/products/pat.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md"
       ],
@@ -1343,8 +1343,8 @@
         "cobra-help:dws sheet --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.sheet.prod.json",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
         "internal/cli/schema_hints/imported/wukong.json",
+        "internal/cli/schema_hints/products/sheet.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/intent-guide.md",
@@ -1486,7 +1486,7 @@
       "source_refs": [
         "CommandRegistry:product=wiki",
         "Skill:skills/mono/references/products/wiki.md",
-        "internal/cli/schema_hints/catalog-completeness.json",
+        "internal/cli/schema_hints/products/wiki.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md"
       ],

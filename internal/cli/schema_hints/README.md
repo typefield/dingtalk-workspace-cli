@@ -6,6 +6,19 @@ excluded from embedded binaries and release Skill bundles. Files generate
 `internal/cli/schema_agent_metadata/`; generated runtime metadata must not be
 edited directly.
 
+## Layout
+
+Human Agent hint authority lives in:
+
+- `index.json` (`format: dws-agent-hint-index`) — product file map, reference
+  review, and `runtime_gates` (CI-only; not projected as tool fields)
+- `products/<product>.json` — per-product explicit tool/product hints
+- `imported/` — sanitized baseline from a fixed external revision
+
+When `index.json` is present, the generator loads only `imported/` plus the
+product files listed in the index. Sibling review JSON files in this directory
+remain CI/audit inputs and are not applied as Agent metadata sources.
+
 ## Source kinds
 
 - `reviewed_manual`: the selected Agent prose committed under

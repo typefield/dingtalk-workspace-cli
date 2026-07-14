@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -69,33 +69,33 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -121,62 +121,62 @@
         },
         "idempotency": {
           "value": "non_idempotent",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "non_idempotent",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed composite workflow: the command creates or reuses a remote personal-event subscription and coordinates the local event bus and Stream consumer; no single pinned RPC represents the workflow.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed composite workflow: the command creates or reuses a remote personal-event subscription and coordinates the local event bus and Stream consumer; no single pinned RPC represents the workflow.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -199,26 +199,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -251,8 +251,7 @@
       "source_refs": [
         "cobra-help:dws event consume --help",
         "internal/cli/schema_command_registry.json#event.consume",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/event.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/event.md"
@@ -293,17 +292,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -329,33 +328,33 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -381,62 +380,62 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "local",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "命令读取 CLI 内置的个人事件目录，不绑定 pinned MCP RPC",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "命令读取 CLI 内置的个人事件目录，不绑定 pinned MCP RPC",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -459,26 +458,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -511,7 +510,7 @@
       "source_refs": [
         "cobra-help:dws event list --help",
         "internal/cli/schema_command_registry.json#event.list",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/event.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/event.md"
@@ -552,17 +551,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -588,33 +587,33 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -640,62 +639,62 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "local",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "local",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "命令读取 CLI 内置的个人事件 payload 定义，不绑定 pinned MCP RPC",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "命令读取 CLI 内置的个人事件 payload 定义，不绑定 pinned MCP RPC",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode local forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode local forbids a direct MCP interface_ref"
@@ -718,26 +717,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -770,7 +769,7 @@
       "source_refs": [
         "cobra-help:dws event schema --help",
         "internal/cli/schema_command_registry.json#event.schema",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/event.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/event.md"
@@ -811,17 +810,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -847,17 +846,17 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -869,17 +868,17 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "read",
@@ -911,17 +910,17 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "idempotent",
@@ -933,46 +932,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed composite workflow: the command reads the remote personal-event subscription control plane and combines it with local bus and consumer state; no single pinned RPC represents the result.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed composite workflow: the command reads the remote personal-event subscription control plane and combines it with local bus and consumer state; no single pinned RPC represents the result.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -995,26 +994,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "low",
@@ -1053,8 +1052,7 @@
       "source_refs": [
         "cobra-help:dws event status --help",
         "internal/cli/schema_command_registry.json#event.status",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/event.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/event.md"
@@ -1070,8 +1068,8 @@
       "avoid_when": [
         "只需检查运行状态时使用 event status；目标订阅不明确或用户尚未确认取消订阅时不要使用。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws event stop SUBSCRIBE_ID"
@@ -1095,17 +1093,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
@@ -1130,18 +1128,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -1152,18 +1150,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -1195,17 +1193,17 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "unknown",
@@ -1217,46 +1215,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -1279,26 +1277,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/event.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/event marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/event.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/event marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -1333,12 +1331,11 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed composite workflow: the command deletes remote personal-event subscriptions, interrupts local consumers, updates local state, and may stop the local bus; no single pinned RPC represents the workflow.",
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws event stop --help",
         "internal/cli/schema_command_registry.json#event.stop",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/event.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/SKILL.md",
         "skills/mono/references/products/event.md"

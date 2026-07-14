@@ -1,0 +1,344 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/calendar",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "calendar.add_attachments": {
+      "use_when": [
+        "把附件挂到指定日程",
+        "日程附件/给会议加文件/上传日程材料；添加"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“为日程添加附件。”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws calendar attachment add --event <EVENT_ID> --files <FILE_ID>:report.pdf,<FILE_ID2>:slides.pptx",
+        "dws calendar attachment add --event <EVENT_ID> --files <FILE_ID>:report.pdf,<FILE_ID2>:slides.pptx --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.add_calendar_participant": {
+      "use_when": [
+        "参会人/与会者；邀请/添加",
+        "添加参会人（必须用 Step 1 返回的 eventId）"
+      ],
+      "avoid_when": [
+        "要“查看参与者”请改用 dws calendar attendee list",
+        "要“移除参与者”请改用 dws calendar attendee delete"
+      ],
+      "examples": [
+        "dws calendar attendee add --event <EVENT_ID> --attendees <USER_ID_1>,<USER_ID_2>",
+        "dws calendar attendee add --event <EVENT_ID> --attendees <USER_ID> --optional"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.add_meeting_room": {
+      "use_when": [
+        "会议室/订会议室；给已有日程订会议室",
+        "预定会议室"
+      ],
+      "avoid_when": [
+        "要“移除会议室”请改用 dws calendar room delete",
+        "要“会议室分组列表”请改用 dws calendar room list-groups",
+        "要“查询 [startTime, endTime] 时间段内所有可用”请改用 dws calendar room search"
+      ],
+      "examples": [
+        "dws calendar room add --event <EVENT_ID> --rooms <ROOM_ID>",
+        "dws calendar room add --event <EVENT_ID> --rooms <ROOM_ID> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.create_calendar_event": {
+      "use_when": [
+        "会议室/订会议室；创建新日程并订会议室",
+        "创建日程 — 提取 eventId",
+        "创建日程时直接指定参会人 + 会议室",
+        "日程/会议/约会/日历；创建/约/给自己留时间块/个人日程",
+        "给自己留一个明天下午的时间块/建个个人日程；创建个人日程"
+      ],
+      "avoid_when": [
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“获取日程详情”请改用 dws calendar event get",
+        "要“查询当前用户指定日历本下的日程列表，按起止时间检索”请改用 dws calendar event list"
+      ],
+      "examples": [
+        "dws calendar event create --title \"Q1 复盘会\" --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T15:00:00+08:00\"",
+        "dws calendar event create --title \"周会\" --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T15:00:00+08:00\" --attendees userId1,userId2"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.delete_calendar_event": {
+      "use_when": [
+        "日程/会议/约会/日历；取消/删除"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“获取日程详情”请改用 dws calendar event get",
+        "要“查询当前用户指定日历本下的日程列表，按起止时间检索”请改用 dws calendar event list"
+      ],
+      "examples": [
+        "dws calendar event delete --id <id>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "write",
+      "confirmation": "not_required",
+      "risk": "medium",
+      "tips": [
+        "Runtime 无确认门禁；删除后所有参与者同步取消，调用前请自行确认"
+      ],
+      "reviewed": true
+    },
+    "calendar.delete_meeting_room": {
+      "use_when": [
+        "会议室/订会议室；取消预定"
+      ],
+      "avoid_when": [
+        "要“预定会议室”请改用 dws calendar room add",
+        "要“会议室分组列表”请改用 dws calendar room list-groups",
+        "要“查询 [startTime, endTime] 时间段内所有可用”请改用 dws calendar room search"
+      ],
+      "examples": [
+        "dws calendar room delete --event <event> --rooms <rooms>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "write",
+      "confirmation": "not_required",
+      "risk": "medium",
+      "reviewed": true
+    },
+    "calendar.get_calendar": {
+      "use_when": [
+        "我有几个日历/查所有日历/别人共享给我的日历/他人共享给我的日历本；查指定日历本"
+      ],
+      "avoid_when": [
+        "要“查询用户的所有日历，其中id = \"primary\"为主日历（n”请改用 dws calendar book list",
+        "要“搜索当前用户拥有的日历本，支持按日历本名模糊搜索”请改用 dws calendar book search"
+      ],
+      "examples": [
+        "dws calendar book get --id primary",
+        "dws calendar book get --id CALENDAR_ID"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.get_calendar_detail": {
+      "use_when": [
+        "日程/会议/约会/日历；详情"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“查询当前用户指定日历本下的日程列表，按起止时间检索”请改用 dws calendar event list"
+      ],
+      "examples": [
+        "dws calendar event get --id <EVENT_ID>",
+        "dws calendar event get --id <EVENT_ID> --calendar-id primary"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.get_calendar_participants": {
+      "use_when": [
+        "参会人/与会者；查看"
+      ],
+      "avoid_when": [
+        "要“添加参与者”请改用 dws calendar attendee add",
+        "要“移除参与者”请改用 dws calendar attendee delete"
+      ],
+      "examples": [
+        "dws calendar attendee list --event <EVENT_ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.list_acls": {
+      "use_when": [
+        "我的日历共享给了谁/谁能看我日历/日历权限/取消共享/把日历分享给xxx；查看我共享出去的情况（即谁有权访问我的日历）"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“调用本接口，获取用户主日历的访问控制列表。”"
+      ],
+      "examples": [
+        "dws calendar acl list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.list_calendar_events": {
+      "use_when": [
+        "日程/会议/约会/日历；查看"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“获取日程详情”请改用 dws calendar event get"
+      ],
+      "examples": [
+        "dws calendar event list --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\"",
+        "dws calendar event list --calendar-id primary"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.list_calendars": {
+      "use_when": [
+        "我有几个日历/查所有日历/别人共享给我的日历/他人共享给我的日历本；列表",
+        "查下xxx的日程安排；查询是否有共享关系"
+      ],
+      "avoid_when": [
+        "要“根据日历id查询指定日历的信息”请改用 dws calendar book get",
+        "要“搜索当前用户拥有的日历本，支持按日历本名模糊搜索”请改用 dws calendar book search"
+      ],
+      "examples": [
+        "dws calendar book list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.list_meeting_room_groups": {
+      "use_when": [
+        "会议室/订会议室；分组"
+      ],
+      "avoid_when": [
+        "要“预定会议室”请改用 dws calendar room add",
+        "要“移除会议室”请改用 dws calendar room delete",
+        "要“查询 [startTime, endTime] 时间段内所有可用”请改用 dws calendar room search"
+      ],
+      "examples": [
+        "dws calendar room list-groups",
+        "dws calendar room list-groups --limit 20 --page 0"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.list_suggested_event_times": {
+      "use_when": [
+        "日程/会议/约会/日历；推荐时间/什么时候有空/协调时间"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“获取日程详情”请改用 dws calendar event get"
+      ],
+      "examples": [
+        "dws calendar event suggest --users userId1,userId2 --duration 60",
+        "dws calendar event suggest --start \"2026-03-10T09:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\" --users userId1"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.query_available_meeting_room": {
+      "use_when": [
+        "会议室/订会议室；哪个空闲",
+        "会议室/订会议室；按名找会议室（如「永澄亭」「永澄亭会议室」「约西湖厅」）",
+        "搜索空闲会议室",
+        "搜索空闲会议室，记下 roomId"
+      ],
+      "avoid_when": [
+        "要“预定会议室”请改用 dws calendar room add",
+        "要“移除会议室”请改用 dws calendar room delete",
+        "要“会议室分组列表”请改用 dws calendar room list-groups"
+      ],
+      "examples": [
+        "dws calendar room search --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T15:00:00+08:00\"",
+        "dws calendar room search --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T15:00:00+08:00\" --group-id <GROUP_ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.query_busy_status": {
+      "use_when": [
+        "同时查用户 + 会议室",
+        "有空吗/忙不忙/闲忙；查询会议室闲忙",
+        "有空吗/忙不忙/闲忙；查询用户闲忙",
+        "有空吗/忙不忙/闲忙；用户 + 会议室一起查",
+        "查会议室闲忙",
+        "查用户闲忙"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“查询用户闲忙状态”"
+      ],
+      "examples": [
+        "dws calendar busy search --users <USER_ID_1>,<USER_ID_2> --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\"",
+        "dws calendar busy search --rooms <ROOM_ID_1>,<ROOM_ID_2> --start \"2026-03-10T14:00:00+08:00\" --end \"2026-03-10T18:00:00+08:00\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.remove_calendar_participant": {
+      "use_when": [
+        "参会人/与会者；移除"
+      ],
+      "avoid_when": [
+        "要“添加参与者”请改用 dws calendar attendee add",
+        "要“查看参与者”请改用 dws calendar attendee list"
+      ],
+      "examples": [
+        "dws calendar attendee delete --attendees <attendees> --event <event>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "write",
+      "confirmation": "not_required",
+      "risk": "medium",
+      "reviewed": true
+    },
+    "calendar.respond": {
+      "use_when": [
+        "日程/会议/约会/日历；接受/拒绝/暂定日程"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“获取日程详情”请改用 dws calendar event get"
+      ],
+      "examples": [
+        "dws calendar event respond --id <EVENT_ID> --status accepted",
+        "dws calendar event respond --id <EVENT_ID> --status declined"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.search_calendar": {
+      "use_when": [
+        "我有几个日历/查所有日历/别人共享给我的日历/他人共享给我的日历本；按名称搜索日历本"
+      ],
+      "avoid_when": [
+        "要“根据日历id查询指定日历的信息”请改用 dws calendar book get",
+        "要“查询用户的所有日历，其中id = \"primary\"为主日历（n”请改用 dws calendar book list"
+      ],
+      "examples": [
+        "dws calendar book search --query \"项目\"",
+        "dws calendar book search --query \"团队周报\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "calendar.update_calendar_event": {
+      "use_when": [
+        "日程/会议/约会/日历；修改/改时间/改描述"
+      ],
+      "avoid_when": [
+        "要“创建新的日程，支持设置时间、参与者、提醒，以及预定会议室等功能”请改用 dws calendar event create",
+        "要“删除日程”请改用 dws calendar event delete",
+        "要“获取日程详情”请改用 dws calendar event get"
+      ],
+      "examples": [
+        "dws calendar event update --id <EVENT_ID> --title \"新标题\"",
+        "dws calendar event update --id <EVENT_ID> --desc \"新描述\" --timezone Asia/Tokyo"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  }
+}

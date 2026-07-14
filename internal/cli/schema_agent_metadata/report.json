@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -242,8 +242,7 @@
         "cobra-help:dws report entry get",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_report_entry_details",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_report_entry_details",
         "skills/mono/references/products/report.md",
@@ -286,17 +285,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -390,17 +389,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -495,8 +494,7 @@
         "cobra-help:dws report entry stats",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_report_statistics_by_id",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_report_statistics_by_id",
         "skills/mono/references/products/report.md",
@@ -540,17 +538,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -646,17 +644,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -751,8 +749,7 @@
         "cobra-help:dws report entry submit",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.create_report",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.create_report",
         "skills/mono/references/products/report.md",
@@ -795,17 +792,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -899,17 +896,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1004,7 +1001,7 @@
         "cobra-help:dws report inbox list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_received_report_list",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_received_report_list",
         "skills/mono/references/products/report.md",
@@ -1048,17 +1045,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1154,17 +1151,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1259,7 +1256,7 @@
         "cobra-help:dws report outbox list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_send_report_list",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_send_report_list",
         "skills/mono/references/products/report.md",
@@ -1302,17 +1299,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1406,17 +1403,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1511,8 +1508,7 @@
         "cobra-help:dws report template get",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_template_details_by_name",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_template_details_by_name",
         "skills/mono/references/products/report.md",
@@ -1555,17 +1551,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1659,17 +1655,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/report.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/report is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/report.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/report is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1764,8 +1760,7 @@
         "cobra-help:dws report template list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.report.prod.json#report.get_available_report_templates",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/report.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.report.get_available_report_templates",
         "skills/mono/references/products/report.md",

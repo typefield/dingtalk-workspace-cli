@@ -1,0 +1,314 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/todo",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "todo.add_task_executors": {
+      "use_when": [
+        "10. 添加待办执行人",
+        "加个执行人/添加执行者"
+      ],
+      "avoid_when": [
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment",
+        "要“添加待办提醒”请改用 dws todo task add-reminder"
+      ],
+      "examples": [
+        "dws todo task add-executor --task-id <taskId> --executors <USER_ID_1>,<USER_ID_2>",
+        "dws todo task add-executor --task-id <taskId> --executors userId1,userId2 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.add_task_participants": {
+      "use_when": [
+        "12. 添加待办参与人",
+        "加个参与人/添加参与者"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment",
+        "要“添加待办提醒”请改用 dws todo task add-reminder"
+      ],
+      "examples": [
+        "dws todo task add-participant --task-id <taskId> --participants <USER_ID_1>,<USER_ID_2>",
+        "dws todo task add-participant --task-id <taskId> --participants userId1,userId2 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.add_todo_attachment": {
+      "use_when": [
+        "18. 上传附件（真实上传，先确认待办存在）— 从返回 result.attachmentIds 取 attachmentId"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办提醒”请改用 dws todo task add-reminder"
+      ],
+      "examples": [
+        "dws todo task add-attachment --task-id <taskId> --file-path /path/to/file.pdf",
+        "dws todo task add-attachment --task-id <taskId> --file-path /path/to/file.pdf --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.add_todo_comment": {
+      "use_when": [
+        "7. 给待办新增评论",
+        "给待办加条评论/留个备注"
+      ],
+      "avoid_when": [
+        "要“删除待办的评论”请改用 dws todo comment delete",
+        "要“获取待办的评论”请改用 dws todo comment list"
+      ],
+      "examples": [
+        "dws todo comment add --task-id <taskId> --content \"评论内容\"",
+        "dws todo comment add --task-id <taskId> --content \"已开始处理\" --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.add_todo_reminder": {
+      "use_when": [
+        "14. 添加待办提醒（基于截止时间偏移，待办必须有截止时间）",
+        "15. 添加待办提醒（自定义时间戳）",
+        "给待办加个提醒/设置提醒"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task add-reminder --task-id <taskId> --base-time dueTime --due-date-offset -30",
+        "dws todo task add-reminder --task-id <taskId> --base-time customTime --reminder-time-stamp \"2026-03-10T18:00:00+08:00\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.create_personal_sub_todo": {
+      "use_when": [
+        "1c. 创建子待办（需先获取父待办 ID）",
+        "加个子任务/创建子待办"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task create-sub --parent-id <PARENT_TASK_ID> --title \"子任务标题\" --executors <USER_ID_1>,<USER_ID_2> --priority 40",
+        "dws todo task create-sub --parent-id <PARENT_TASK_ID> --title \"子任务标题\" --executors <USER_ID> --due \"2026-03-20T10:00:00+08:00\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.create_personal_todo": {
+      "use_when": [
+        "1. 创建待办 — 从返回 result.taskId 提取任务 ID",
+        "1b. 创建按天循环的待办（必须先有 --due；recurrence 与 MCP create_personal_todo 一致）",
+        "加个待办/记一下/TODO",
+        "每天重复/循环待办/按天重复"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task create --title \"修复线上Bug\" --executors <USER_ID_1>,<USER_ID_2> --priority 40",
+        "dws todo task create --title \"每日站会\" --executors <USER_ID> --due \"2026-03-20T10:00:00+08:00\" --recurrence \"DTSTART:20260320T020000Z\\nRRULE:FREQ=DAILY;INTERVAL=1\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.delete_todo": {
+      "use_when": [
+        "6. 删除待办",
+        "删除待办/取消待办"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task delete --task-id <taskId>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "effect": "destructive",
+      "confirmation": "user_required",
+      "risk": "high",
+      "reviewed": true
+    },
+    "todo.delete_todo_comment": {
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "use_when": [
+        "9. 删除待办评论",
+        "删除这条评论"
+      ],
+      "avoid_when": [
+        "要“给待办添加评论”请改用 dws todo comment add",
+        "要“获取待办的评论”请改用 dws todo comment list"
+      ],
+      "examples": [
+        "dws todo comment delete --task-id <taskId> --comment-id <commentId>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "todo.get_todo_detail": {
+      "use_when": [
+        "3. 查看待办详情",
+        "看看待办详情"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task get --task-id <taskId>",
+        "dws todo task get --task-id <taskId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.get_user_todos_in_current_org": {
+      "use_when": [
+        "2. 查看未完成待办",
+        "看看待办/我有啥要做"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task list --page 1 --size 20 --status false",
+        "dws todo task list --page 1 --size 20 --status false --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.list_todo_comment": {
+      "use_when": [
+        "8. 查看待办评论列表",
+        "看看这个待办的评论"
+      ],
+      "avoid_when": [
+        "要“给待办添加评论”请改用 dws todo comment add",
+        "要“删除待办的评论”请改用 dws todo comment delete"
+      ],
+      "examples": [
+        "dws todo comment list --task-id <taskId>",
+        "dws todo comment list --task-id <taskId> --page 1 --size 20"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.remove_task_executors": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "use_when": [
+        "11. 移除待办执行人",
+        "移除执行人/删除执行者"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task remove-executor --task-id <taskId> --executors <USER_ID_1>,<USER_ID_2>",
+        "dws todo task remove-executor --task-id <taskId> --executors userId1 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "todo.remove_task_participants": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "use_when": [
+        "13. 移除待办参与人",
+        "移除参与人/删除参与者"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task remove-participant --task-id <taskId> --participants <USER_ID_1>,<USER_ID_2>",
+        "dws todo task remove-participant --task-id <taskId> --participants userId1 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "todo.reset_todo_reminder": {
+      "use_when": [
+        "16. 重置待办提醒",
+        "17. 重置待办提醒（指定新规则）",
+        "重置提醒/清除提醒/修改提醒规则"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task reset-reminder --task-id <taskId>",
+        "dws todo task reset-reminder --task-id <taskId> --reminder-rules '[{\"dueDateOffset\":-30,\"baseTime\":\"dueTime\"},{\"reminderTimeStamp\":\"2026-03-10T18:00:00+08:00\",\"baseTime\":\"customTime\"}]'"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.update_todo_done_status": {
+      "use_when": [
+        "5. 标记待办完成",
+        "做完了/完成待办/标记完成"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task done --task-id <taskId> --status true",
+        "dws todo task done --task-id <taskId> --status false"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "todo.update_todo_task": {
+      "use_when": [
+        "4. 修改待办信息",
+        "改个待办/修改待办标题/改优先级"
+      ],
+      "avoid_when": [
+        "要“添加待办执行人”请改用 dws todo task add-executor",
+        "要“添加待办参与人”请改用 dws todo task add-participant",
+        "要“添加待办任务附件”请改用 dws todo task add-attachment"
+      ],
+      "examples": [
+        "dws todo task update --task-id <taskId> --title \"新标题\"",
+        "dws todo task update --task-id <taskId> --priority 40 --due \"2026-03-10T18:00:00+08:00\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  }
+}

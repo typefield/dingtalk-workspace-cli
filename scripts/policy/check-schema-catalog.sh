@@ -255,6 +255,8 @@ if policy_search_go '\.ListTools\(' internal/app internal/cli; then
 	exit 1
 fi
 
+./scripts/policy/check-runtime-confirmation-truth.sh
+
 # Run the typed content gates as policy, rather than treating non-empty
 # correction/exclusion maps as proof that their exact keys and winners are
 # valid against the shipped Catalog and pinned MCP metadata.

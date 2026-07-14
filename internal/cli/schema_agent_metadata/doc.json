@@ -10,7 +10,7 @@
       ],
       "confirmation": "user_required",
       "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "effect_source": "agent-hint",
       "examples": [
         "dws doc block delete --node DOC_ID --block-id BLOCK_ID --format json"
       ],
@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -75,15 +75,23 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "user_required",
@@ -96,16 +104,23 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "destructive",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -146,17 +161,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -199,20 +214,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "high",
@@ -258,8 +288,7 @@
         "cobra-help:dws doc block delete",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.delete_document_block",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.delete_document_block",
         "skills/mono/SKILL.md",
@@ -305,17 +334,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -411,17 +440,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -508,8 +537,7 @@
         "CommandRegistry:canonical_path=doc.insert_document_block",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc block insert",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.insert_document_block",
         "skills/mono/references/products/doc.md",
@@ -555,17 +583,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -661,17 +689,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -766,8 +794,7 @@
         "cobra-help:dws doc block list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.list_document_blocks",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.list_document_blocks",
         "skills/mono/references/products/doc.md",
@@ -815,17 +842,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -921,17 +948,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1018,8 +1045,7 @@
         "CommandRegistry:canonical_path=doc.update_document_block",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc block update",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.update_document_block",
         "skills/mono/references/products/doc.md",
@@ -1065,17 +1091,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1171,17 +1197,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1193,17 +1219,17 @@
         },
         "interface_ref": {
           "value": "doc-comment.create_comment",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc-comment.create_comment",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "doc.create_comment",
@@ -1284,9 +1310,7 @@
         "cobra-help:dws doc comment create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.create_comment",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.create_comment",
         "skills/mono/references/products/doc.md",
@@ -1331,17 +1355,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1437,17 +1461,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1459,17 +1483,17 @@
         },
         "interface_ref": {
           "value": "doc-comment.create_inline_comment",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc-comment.create_inline_comment",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "doc-comment.create_inline_comment",
@@ -1542,9 +1566,7 @@
         "CommandRegistry:canonical_path=doc.create_inline_comment",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc comment create-inline",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.create_inline_comment",
         "skills/mono/references/products/doc.md",
@@ -1562,8 +1584,8 @@
       "avoid_when": [
         "只需修改或回复评论、目标评论不明确，或用户尚未确认永久删除时不要使用。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws doc comment delete --node DOC_ID --comment-key COMMENT_KEY"
@@ -1587,17 +1609,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -1622,18 +1644,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "user_required",
@@ -1645,18 +1667,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "destructive",
@@ -1695,17 +1717,17 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "unknown",
@@ -1717,46 +1739,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -1779,26 +1801,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "high",
@@ -1834,12 +1856,11 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws doc comment delete --help",
         "internal/cli/schema_command_registry.json#doc.delete_comment",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/doc/doc-comment.md"
@@ -1881,17 +1902,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1987,17 +2008,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2009,17 +2030,17 @@
         },
         "interface_ref": {
           "value": "doc-comment.list_comments",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc-comment.list_comments",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "doc.list_comments",
@@ -2100,9 +2121,7 @@
         "cobra-help:dws doc comment list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.list_comments",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.list_comments",
         "skills/mono/references/products/doc.md",
@@ -2147,17 +2166,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2253,17 +2272,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2275,17 +2294,17 @@
         },
         "interface_ref": {
           "value": "doc-comment.reply_comment",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc-comment.reply_comment",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "doc.reply_comment",
@@ -2366,9 +2385,7 @@
         "cobra-help:dws doc comment reply",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.reply_comment",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.reply_comment",
         "skills/mono/references/products/doc.md",
@@ -2412,17 +2429,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             }
           ]
         },
@@ -2510,47 +2527,47 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -2615,7 +2632,7 @@
       "source_refs": [
         "cobra-help:dws doc comment update --help",
         "internal/cli/schema_command_registry.json#doc.update_comment",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/doc/doc-comment.md"
@@ -2657,17 +2674,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2763,17 +2780,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2860,7 +2877,7 @@
         "CommandRegistry:canonical_path=doc.copy_document",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc copy",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.copy_document",
         "skills/mono/references/products/doc.md",
@@ -2904,17 +2921,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3010,17 +3027,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3115,7 +3132,7 @@
         "cobra-help:dws doc create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.create_document",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.create_document",
         "skills/mono/references/intent-guide.md",
@@ -3138,7 +3155,7 @@
       ],
       "confirmation": "user_required",
       "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "effect_source": "agent-hint",
       "examples": [
         "dws doc delete --node DOC_ID --format json",
         "dws doc delete --node \"https://alidocs.dingtalk.com/i/nodes/\u003cDOC_UUID\u003e\" --format json"
@@ -3162,17 +3179,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -3204,32 +3221,46 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "destructive",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -3272,17 +3303,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3319,21 +3350,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -3371,7 +3416,7 @@
         "CommandRegistry:canonical_path=doc.delete_document",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc delete",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.delete_document",
         "skills/mono/SKILL.md",
@@ -3416,17 +3461,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3522,17 +3567,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3619,7 +3664,7 @@
         "CommandRegistry:canonical_path=doc.download_file",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc download",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.download_file",
         "skills/mono/references/products/doc/doc-file-ops.md",
@@ -3662,17 +3707,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3766,17 +3811,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3863,7 +3908,7 @@
         "CommandRegistry:canonical_path=doc.query_export_job",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc export get",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.query_export_job",
         "skills/mono/references/products/doc.md",
@@ -3907,17 +3952,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4013,17 +4058,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4118,7 +4163,7 @@
         "cobra-help:dws doc file create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.create_file",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.create_file",
         "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.create_file",
@@ -4161,17 +4206,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4267,17 +4312,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4372,7 +4417,7 @@
         "cobra-help:dws doc folder create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.create_folder",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.create_folder",
         "skills/mono/references/products/doc/doc-file-ops.md",
@@ -4415,17 +4460,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -4451,13 +4494,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4471,13 +4514,13 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4511,13 +4554,13 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4531,47 +4574,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -4593,7 +4632,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4601,13 +4640,13 @@
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4649,8 +4688,7 @@
         "CommandRegistry:canonical_path=doc.import_get",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc import get",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/doc/doc-import.md"
@@ -4692,17 +4730,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4798,17 +4836,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4903,7 +4941,7 @@
         "cobra-help:dws doc info",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.get_document_info",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.get_document_info",
         "skills/mono/references/intent-guide.md",
@@ -4949,17 +4987,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5055,17 +5093,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5160,7 +5198,7 @@
         "cobra-help:dws doc list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.list_nodes",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.list_nodes",
         "structured-hint:internal/cli/schema_hints/imported/wukong.json#doc.list_nodes",
@@ -5203,17 +5241,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5309,17 +5347,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5406,8 +5444,7 @@
         "CommandRegistry:canonical_path=doc.download_doc_attachment",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc media download",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.download_doc_attachment",
         "skills/mono/references/products/doc.md",
@@ -5451,17 +5488,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -5501,17 +5538,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-command-surface-review marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -5559,46 +5596,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -5621,24 +5658,32 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -5672,9 +5717,7 @@
         "CommandRegistry:canonical_path=doc.media_insert",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc media insert",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/doc/doc-media.md",
@@ -5717,17 +5760,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5823,17 +5866,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5920,7 +5963,7 @@
         "CommandRegistry:canonical_path=doc.move_document",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc move",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.move_document",
         "skills/mono/references/products/doc.md",
@@ -5964,17 +6007,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6070,17 +6113,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6167,8 +6210,7 @@
         "CommandRegistry:canonical_path=doc.add_permission",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc permission add",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.add_permission",
         "skills/mono/references/products/doc.md",
@@ -6212,17 +6254,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6318,17 +6360,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6415,8 +6457,7 @@
         "CommandRegistry:canonical_path=doc.list_permission",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc permission list",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.list_permission",
         "skills/mono/references/products/doc.md",
@@ -6434,8 +6475,8 @@
       "avoid_when": [
         "常规移除文档空间协作者时使用 dws drive permission remove；仅为兼容既有 doc 命令调用时使用本入口。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws doc permission remove --node DOC_ID --users uid1 --format json",
@@ -6460,17 +6501,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -6501,34 +6542,34 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -6570,17 +6611,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -6617,22 +6658,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -6664,14 +6712,12 @@
         "rpc_name": "remove_permission"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=doc.remove_permission",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc permission remove",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.remove_permission",
         "structured-hint:internal/cli/schema_hints/selection-review.json#doc.remove_permission"
@@ -6687,9 +6733,9 @@
       "avoid_when": [
         "常规更新文档空间协作者角色时使用 dws drive permission update；仅为兼容既有 doc 命令调用时使用本入口。"
       ],
-      "confirmation": "user_required",
+      "confirmation": "not_required",
       "effect": "write",
-      "effect_source": "skill-explicit",
+      "effect_source": "agent-hint",
       "examples": [
         "dws doc permission update --node DOC_ID --users uid1 --role EDITOR --format json",
         "dws doc permission update --node DOC_ID --users uid1,uid2 --role READER --format json"
@@ -6713,17 +6759,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -6754,33 +6800,47 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
         },
         "effect": {
           "value": "write",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -6823,17 +6883,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -6870,21 +6930,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -6917,13 +6991,12 @@
         "rpc_name": "update_permission"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=doc.update_permission",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc permission update",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.update_permission",
         "skills/mono/SKILL.md",
@@ -6968,17 +7041,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7074,17 +7147,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7179,7 +7252,7 @@
         "cobra-help:dws doc read",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.get_document_content",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.get_document_content",
         "skills/mono/references/products/doc.md",
@@ -7225,17 +7298,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7331,17 +7404,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7428,7 +7501,7 @@
         "CommandRegistry:canonical_path=doc.rename_document",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc rename",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.rename_document",
         "skills/mono/references/products/doc.md",
@@ -7472,17 +7545,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7578,17 +7651,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7683,7 +7756,7 @@
         "cobra-help:dws doc search",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.search_documents",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.search_documents",
         "skills/mono/references/intent-guide.md",
@@ -7727,17 +7800,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -7763,13 +7834,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -7777,13 +7848,13 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -7813,13 +7884,13 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -7827,47 +7898,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -7889,7 +7956,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -7897,13 +7964,13 @@
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -7939,8 +8006,7 @@
         "CommandRegistry:canonical_path=doc.template_apply",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc template apply",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
@@ -7980,17 +8046,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -8016,13 +8080,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8030,13 +8094,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8066,13 +8130,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8080,47 +8144,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -8142,7 +8202,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -8150,13 +8210,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8192,8 +8252,7 @@
         "CommandRegistry:canonical_path=doc.template_list",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc template list",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
@@ -8233,17 +8292,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -8269,13 +8326,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8283,13 +8340,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8319,13 +8376,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8333,47 +8390,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -8395,7 +8448,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -8403,13 +8456,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -8445,8 +8498,7 @@
         "CommandRegistry:canonical_path=doc.template_search",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc template search",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
@@ -8462,7 +8514,7 @@
       ],
       "confirmation": "not_required",
       "effect": "write",
-      "effect_source": "command-verb",
+      "effect_source": "agent-hint",
       "examples": [
         "dws doc update --node DOC_ID --content \"# 新内容\" --mode append --format json",
         "dws doc update --node DOC_ID --content \"# 完整替换\" --mode overwrite --format json"
@@ -8486,17 +8538,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -8528,29 +8580,45 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "risk-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "not_required",
               "source": "risk-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
         "effect": {
           "value": "write",
-          "source": "command-verb",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "write",
               "source": "command-verb",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -8592,17 +8660,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -8645,20 +8713,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -8697,7 +8780,7 @@
         "cobra-help:dws doc update",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.doc.prod.json#doc.update_document",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.doc.update_document",
         "skills/mono/references/products/doc.md",
@@ -8744,17 +8827,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -8794,17 +8877,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-command-surface-review marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -8852,46 +8935,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -8914,24 +8997,32 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -8965,8 +9056,7 @@
         "CommandRegistry:canonical_path=doc.upload",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc upload",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/doc.md",
         "skills/mono/references/products/doc/doc-file-ops.md",
@@ -9009,17 +9099,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -9045,13 +9133,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9059,13 +9147,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9095,13 +9183,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9109,47 +9197,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -9171,7 +9255,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -9179,13 +9263,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9221,8 +9305,7 @@
         "CommandRegistry:canonical_path=doc.version_list",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc version list",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
@@ -9236,8 +9319,8 @@
       "avoid_when": [
         "只需查看版本或保存快照时不要使用；未明确目标版本时不要回滚"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws doc version revert --node DOC_ID --version 3 --format json"
@@ -9261,17 +9344,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -9296,46 +9379,34 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -9361,68 +9432,62 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -9445,38 +9510,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/doc marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/doc marks this tool as reviewed"
             }
           ]
         },
@@ -9505,14 +9558,12 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=doc.version_revert",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc version revert",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [
@@ -9551,17 +9602,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -9587,13 +9636,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9601,13 +9650,13 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9635,13 +9684,13 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9649,47 +9698,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/doc.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/doc.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -9711,7 +9756,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -9719,13 +9764,13 @@
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/doc.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/doc.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -9761,8 +9806,7 @@
         "CommandRegistry:canonical_path=doc.version_save",
         "Skill:skills/mono/references/products/doc.md",
         "cobra-help:dws doc version save",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/doc.json",
         "internal/cli/schema_manual_hints.json"
       ],
       "use_when": [

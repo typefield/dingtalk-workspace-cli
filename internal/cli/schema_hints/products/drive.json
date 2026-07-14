@@ -1,0 +1,462 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/drive",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "drive.add_permission": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "add_permission"
+      },
+      "use_when": [
+        "给文档授权/分享权限"
+      ],
+      "avoid_when": [
+        "要“查询知识库节点当前的成员权限列表”请改用 dws drive permission list",
+        "要“从知识库节点移除指定企业用户的权限（仅支持 USER 类型）”请改用 dws drive permission remove",
+        "要“修改企业用户在知识库节点上的角色（仅支持 USER 类型）”请改用 dws drive permission update"
+      ],
+      "examples": [
+        "dws drive permission add --node <ID> --users uid1,uid2 --role READER"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.commit_upload": {
+      "use_when": [
+        "提交文件上传"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“提交文件上传”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive commit --file-name \"report.pdf\" --file-size 102400 --upload-id <UPLOAD_ID>",
+        "dws drive commit --file-name \"报告.pdf\" --file-size 102400 --upload-id <uploadId>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.copy_document": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "copy_document"
+      },
+      "use_when": [
+        "── 场景 A: 复制钉盘文件到知识库空间根目录 ──",
+        "── 场景 C: 复制钉盘文件到钉盘 space 下的子文件夹 ──",
+        "── 场景默认: 用户未指定目标位置 → 复制/移动到「我的文件」根目录 ──",
+        "复制文件/移动文件/搬到/移到"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“将指定节点复制到目标文件夹。”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive copy --node <ID> [--folder <TARGET>] [--workspace <WS>]",
+        "dws drive copy --node <源文件dentryUuid> --folder <我的文件rootFolderId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.create_folder": {
+      "use_when": [
+        "5. 创建文件夹",
+        "新建文件夹/创建目录"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“创建文件夹”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive mkdir --name \"项目资料\"",
+        "dws drive mkdir --name \"子目录\" --folder <dentryUuid>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.create_shortcut": {
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "non_idempotent",
+      "reviewed": true
+    },
+    "drive.delete_document": {
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "delete_document"
+      },
+      "use_when": [
+        "删除文件/删除文件夹/移到回收站",
+        "正确流程：1.向用户展示\"即将删除「文件名」到回收站\" → 2.等用户确认 → 3.执行下面命令"
+      ],
+      "avoid_when": [
+        "用户未明确要求“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将被永久删除。”、目标不清楚或尚未确认时不要使用"
+      ],
+      "examples": [
+        "dws drive delete --node <dentryUuid> --format json    # 查询 fileId: dws drive list"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "drive.download_file": {
+      "use_when": [
+        "4. 下载文件到本地",
+        "下载文件",
+        "查看具体命令的完整参数说明",
+        "读一下这个 xlsx 的数据\" / xlsx 节点链接；下载本地表格文件"
+      ],
+      "avoid_when": [
+        "把这个在线表格导出为 xlsx 文件；在线表格格式转换"
+      ],
+      "examples": [
+        "dws drive download --help",
+        "dws drive download --node <dentryUuid> --output ./report.pdf"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.get_file_info": {
+      "use_when": [
+        "3. 查看文件元数据",
+        "文件详情/文件信息"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“获取文件元数据信息”"
+      ],
+      "examples": [
+        "dws drive info --node <dentryUuid>",
+        "dws drive info --node <dentryUuid> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.get_node_stats": {
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.get_upload_info": {
+      "use_when": [
+        "获取文件上传信息"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“获取文件上传信息”"
+      ],
+      "examples": [
+        "dws drive upload-info --file-name \"report.pdf\" --file-size 102400",
+        "dws drive upload-info --file-name \"slides.pptx\" --file-size 512000 --folder <dentryUuid>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.list_files": {
+      "use_when": [
+        "1. 浏览「我的文件」根目录",
+        "2. 进入子目录 — 提取 dentryUuid 作为 folder",
+        "── 场景 C: 复制钉盘文件到钉盘 space 下的子文件夹 ──",
+        "── 场景默认: 用户未指定目标位置 → 复制/移动到「我的文件」根目录 ──",
+        "我的文件/钉盘/网盘/云盘",
+        "查看具体命令的完整参数说明"
+      ],
+      "avoid_when": [
+        "帮我看看知识库里的文件；知识库节点列表"
+      ],
+      "examples": [
+        "dws drive list --help",
+        "dws drive list --limit 20"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI command routes by --workspace between drive/list_files and doc/list_nodes, so the reviewed executable wrapper has no single direct MCP interface."
+    },
+    "drive.list_permission": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "list_permission"
+      },
+      "use_when": [
+        "查询知识库节点当前的成员权限列表。"
+      ],
+      "avoid_when": [
+        "要“为知识库下的节点（文档、文件夹、文件）添加指定角色的企业用户成员”请改用 dws drive permission add",
+        "要“从知识库节点移除指定企业用户的权限（仅支持 USER 类型）”请改用 dws drive permission remove",
+        "要“修改企业用户在知识库节点上的角色（仅支持 USER 类型）”请改用 dws drive permission update"
+      ],
+      "examples": [
+        "dws drive permission list --node <ID>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.list_spaces": {
+      "use_when": [
+        "获取当前用户可访问的空间列表。"
+      ],
+      "avoid_when": [
+        "列出钉盘团队空间；列出钉盘空间"
+      ],
+      "examples": [
+        "dws drive list-spaces                   # deprecated",
+        "dws drive list-spaces --space-type orgSpace --limit 20 --cursor <TOKEN>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.move_document": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "move_document"
+      },
+      "use_when": [
+        "── 场景 B: 移动钉盘文件到另一个钉盘 space 根目录 ──"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“将指定节点移动到目标文件夹。”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive move --node <ID> [--folder <TARGET>] [--workspace <WS>]",
+        "dws drive move --node <源文件dentryUuid> --folder <目标space的rootFolderId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.permission_remove": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "remove_permission"
+      },
+      "use_when": [
+        "从知识库节点移除指定企业用户的权限（仅支持 USER 类型）。"
+      ],
+      "avoid_when": [
+        "要“为知识库下的节点（文档、文件夹、文件）添加指定角色的企业用户成员”请改用 dws drive permission add",
+        "要“查询知识库节点当前的成员权限列表”请改用 dws drive permission list",
+        "要“修改企业用户在知识库节点上的角色（仅支持 USER 类型）”请改用 dws drive permission update"
+      ],
+      "examples": [
+        "dws drive permission remove --node <ID> --users uid1"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "drive.permission_update": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "update_permission"
+      },
+      "use_when": [
+        "修改企业用户在知识库节点上的角色（仅支持 USER 类型）。"
+      ],
+      "avoid_when": [
+        "要“为知识库下的节点（文档、文件夹、文件）添加指定角色的企业用户成员”请改用 dws drive permission add",
+        "要“查询知识库节点当前的成员权限列表”请改用 dws drive permission list",
+        "要“从知识库节点移除指定企业用户的权限（仅支持 USER 类型）”请改用 dws drive permission remove"
+      ],
+      "examples": [
+        "dws drive permission update --node <ID> --users uid1 --role EDITOR"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.publish_get": {
+      "agent_summary": "查询文件当前是否处于互联网公开发布状态，以及公开发布的权限设置",
+      "use_when": [
+        "查看公开状态/是否公开/发布状态"
+      ],
+      "avoid_when": [
+        "不需要查询文件当前是否处于互联网公开发布状态，以及公开发布的权限设置时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws drive publish get --node <fileId>",
+        "dws drive publish get --node <dentryUuid>"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.publish_set": {
+      "agent_summary": "开启文件的互联网公开发布",
+      "use_when": [
+        "用户明确要求开启文件的互联网公开发布时"
+      ],
+      "avoid_when": [
+        "只需查询公开状态或关闭公开发布时不要使用；目标文件和公开范围未明确时不要开启"
+      ],
+      "examples": [
+        "dws drive publish set --node <fileId> [--permission READER|DOWNLOADER|EDITOR]",
+        "dws drive publish set --node <dentryUuid>"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": true,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.publish_unset": {
+      "agent_summary": "关闭文件的互联网公开发布",
+      "use_when": [
+        "用户明确要求关闭文件的互联网公开发布时"
+      ],
+      "avoid_when": [
+        "只需查询公开状态或开启公开发布时不要使用；目标文件未明确时不要关闭"
+      ],
+      "examples": [
+        "dws drive publish unset --node <fileId>",
+        "dws drive publish unset --node <dentryUuid>"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": true,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.recent": {
+      "agent_summary": "获取当前用户最近访问或编辑过的文档列表",
+      "use_when": [
+        "最近访问/最近打开/最近编辑/最近文档"
+      ],
+      "avoid_when": [
+        "不需要获取当前用户最近访问或编辑过的文档列表时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws drive recent",
+        "dws drive recent --operate-type 1"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.recycle_list": {
+      "agent_summary": "查看回收站文件列表",
+      "use_when": [
+        "8. 查看回收站并还原文件",
+        "回收站/查看回收站/回收站列表/回收站里有什么"
+      ],
+      "avoid_when": [
+        "不需要查看回收站文件列表时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws drive recycle list",
+        "dws drive recycle list --space-id 12345 --limit 10"
+      ],
+      "effect": "read",
+      "risk": "low",
+      "confirmation": "not_required",
+      "idempotency": "idempotent",
+      "reviewed": false,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.recycle_restore": {
+      "agent_summary": "还原回收站中的文件",
+      "use_when": [
+        "8. 查看回收站并还原文件",
+        "恢复文件/还原删除的文件/从回收站恢复/还原回收站文件"
+      ],
+      "avoid_when": [
+        "不需要还原回收站中的文件时不要使用；如仅查询状态请优先选择对应 list/get/search 命令"
+      ],
+      "examples": [
+        "dws drive recycle restore --id <recycleItemId>",
+        "dws drive recycle restore --id <recycleItemId> --format json"
+      ],
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "unknown",
+      "reviewed": true,
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command."
+    },
+    "drive.rename_document": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "rename_document"
+      },
+      "use_when": [
+        "重命名/改名"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“对指定节点进行重命名。”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive rename --node <ID> --name \"新名称\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.search_files": {
+      "use_when": [
+        "搜一下有没有叫XX的文件；全局搜索",
+        "搜索钉盘文件/钉盘里找个文件/查找某个钉盘文件/钉盘中搜索",
+        "查看具体命令的完整参数说明",
+        "钉盘/网盘/我的文件里搜"
+      ],
+      "avoid_when": [
+        "在知识库里搜方案；空间内搜索"
+      ],
+      "examples": [
+        "dws drive search --help",
+        "dws drive search --query \"季度汇报\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "drive.upload": {
+      "use_when": [
+        "6. 上传文件（首选 upload 命令，自动完成三步流程）",
+        "上传文件\"（未指定目标）；默认钉盘",
+        "上传文件/传文件到钉盘",
+        "上传文件到钉盘/我的文件；钉盘上传",
+        "上传本地文件到钉盘",
+        "帮我把这个文件传到网盘；钉盘上传",
+        "查看具体命令的完整参数说明"
+      ],
+      "avoid_when": [
+        "仅需查询状态或预览结果、不应产生“上传本地文件到钉盘”所述变更时不要使用"
+      ],
+      "examples": [
+        "dws drive upload --help",
+        "dws drive upload --file ./report.pdf"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
+      "effect": "write",
+      "reviewed": true,
+      "risk": "medium"
+    }
+  }
+}

@@ -1,0 +1,326 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/wiki",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "wiki.add_member": {
+      "use_when": [
+        "2. 添加成员",
+        "把知识库分享给某人/给某人加入知识库/邀请进知识库",
+        "查看具体命令的完整参数说明"
+      ],
+      "avoid_when": [
+        "要“查询知识库当前的成员权限列表，支持按角色过滤”请改用 dws wiki member list",
+        "要“从知识库中移除指定的企业用户成员（仅支持 USER 类型）”请改用 dws wiki member remove",
+        "要“修改成员在知识库中的角色”请改用 dws wiki member update"
+      ],
+      "examples": [
+        "dws wiki member add --help",
+        "dws wiki member add --workspace <WS_ID> --users uid1 --role READER"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.create_file": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "create_file"
+      },
+      "use_when": [
+        "1. 创建文档节点",
+        "2. 创建文件夹",
+        "3. 在指定文件夹下创建",
+        "在知识库里创建一个文档；创建空文件实体",
+        "在知识库里创建文档/新建文件夹"
+      ],
+      "avoid_when": [
+        "要“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将”请改用 dws wiki node delete",
+        "要“列出指定文件夹或知识库下的直接子节点列表（文件夹/文档/文件等）”请改用 dws wiki node list",
+        "要“将指定节点复制到目标文件夹”请改用 dws wiki node copy"
+      ],
+      "examples": [
+        "dws wiki node create --workspace <workspaceId> --name \"新文档\" --format json",
+        "dws wiki node create --workspace <workspaceId> --name \"方案目录\" --type folder --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.create_wikiSpace": {
+      "use_when": [
+        "创建知识库",
+        "创建知识库/新建知识库"
+      ],
+      "avoid_when": [
+        "要“将指定知识库移入回收站”请改用 dws wiki space delete",
+        "要“获取指定知识库的详细信息，包括名称、描述、创建者、创建时间、成员”请改用 dws wiki space get",
+        "要“获取当前用户有权访问的知识库列表，支持按类型区分”请改用 dws wiki space list"
+      ],
+      "examples": [
+        "dws wiki space create --name \"产品文档库\" --format json",
+        "dws wiki space create --name \"技术方案\" --desc \"团队技术方案归档\" --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.delete_document": {
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "delete_document"
+      },
+      "use_when": [
+        "删除知识库里的文档/节点",
+        "删除节点（会要求确认）"
+      ],
+      "avoid_when": [
+        "要“在指定位置创建一个新的文件（文档、表格、演示、白板、脑图、多维表”请改用 dws wiki node create",
+        "要“列出指定文件夹或知识库下的直接子节点列表（文件夹/文档/文件等）”请改用 dws wiki node list",
+        "要“将指定节点复制到目标文件夹”请改用 dws wiki node copy"
+      ],
+      "examples": [
+        "dws wiki node delete --workspace <workspaceId> --node <nodeId>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "wiki.delete_wikiSpace": {
+      "effect": "destructive",
+      "risk": "high",
+      "confirmation": "user_required",
+      "use_when": [
+        "2. 删除知识库",
+        "删除知识库/移除知识库/把知识库删了"
+      ],
+      "avoid_when": [
+        "要“创建一个新的钉钉文档知识库（WikiSpace）”请改用 dws wiki space create",
+        "要“获取指定知识库的详细信息，包括名称、描述、创建者、创建时间、成员”请改用 dws wiki space get",
+        "要“获取当前用户有权访问的知识库列表，支持按类型区分”请改用 dws wiki space list"
+      ],
+      "examples": [
+        "dws wiki space delete --workspace <workspaceId>",
+        "dws wiki space delete --workspace \"https://alidocs.dingtalk.com/i/spaces/xxx/overview\""
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "wiki.get_wikiSpace": {
+      "use_when": [
+        "1. 确认知识库信息",
+        "查看具体命令的完整参数说明",
+        "查看知识库/知识库详情",
+        "查看知识库详情"
+      ],
+      "avoid_when": [
+        "要“创建一个新的钉钉文档知识库（WikiSpace）”请改用 dws wiki space create",
+        "要“将指定知识库移入回收站”请改用 dws wiki space delete",
+        "要“获取当前用户有权访问的知识库列表，支持按类型区分”请改用 dws wiki space list"
+      ],
+      "examples": [
+        "dws wiki space get --help",
+        "dws wiki space get --workspace <workspaceId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.list_member": {
+      "use_when": [
+        "1. 查看当前成员（只返回 name/role/type，拿不到 userId）",
+        "3. 查看当前成员",
+        "知识库有哪些成员/查看知识库成员"
+      ],
+      "avoid_when": [
+        "要“为知识库添加指定角色的成员”请改用 dws wiki member add",
+        "要“从知识库中移除指定的企业用户成员（仅支持 USER 类型）”请改用 dws wiki member remove",
+        "要“修改成员在知识库中的角色”请改用 dws wiki member update"
+      ],
+      "examples": [
+        "dws wiki member list --workspace <WS_ID>",
+        "dws wiki member list --workspace <WS_ID> --limit 100"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.list_nodes": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "list_nodes"
+      },
+      "use_when": [
+        "2. 列出根目录节点",
+        "3. 进入子目录",
+        "帮我看看知识库里的文件；知识库节点列表",
+        "知识库下的文件/知识库里有哪些文档/浏览知识库内容",
+        "读某个知识库里的某篇文档"
+      ],
+      "avoid_when": [
+        "要“在指定位置创建一个新的文件（文档、表格、演示、白板、脑图、多维表”请改用 dws wiki node create",
+        "要“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将”请改用 dws wiki node delete",
+        "要“将指定节点复制到目标文件夹”请改用 dws wiki node copy"
+      ],
+      "examples": [
+        "dws wiki node list --workspace <workspaceId> --format json",
+        "dws wiki node list --workspace <workspaceId> --folder <parentNodeId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.list_wikiSpaces": {
+      "use_when": [
+        "1. 先确认知识库 ID（避免授权到「我的文档」）",
+        "1. 获取知识库 ID",
+        "列出我有权访问的组织知识库",
+        "列出钉盘企业空间",
+        "列出钉盘团队空间；列出钉盘空间",
+        "列出钉盘空间/钉盘团队空间",
+        "我的文档/个人空间",
+        "我的知识库/知识库列表/有哪些知识库",
+        "获取「我的文档」个人空间",
+        "获取钉盘「我的文件」"
+      ],
+      "avoid_when": [
+        "要“创建一个新的钉钉文档知识库（WikiSpace）”请改用 dws wiki space create",
+        "要“将指定知识库移入回收站”请改用 dws wiki space delete",
+        "要“获取指定知识库的详细信息，包括名称、描述、创建者、创建时间、成员”请改用 dws wiki space get"
+      ],
+      "examples": [
+        "dws wiki space list --format json                       # 组织知识库（默认）",
+        "dws wiki space list --type myWikiSpace --format json    # 我的文档"
+      ],
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "The CLI command routes by --type between wiki/list_wikiSpaces and drive/list_spaces, so the reviewed executable wrapper has no single direct MCP interface."
+    },
+    "wiki.node_copy": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "copy_document"
+      },
+      "use_when": [
+        "复制知识库里的文档",
+        "复制节点到另一个文件夹"
+      ],
+      "avoid_when": [
+        "要“在指定位置创建一个新的文件（文档、表格、演示、白板、脑图、多维表”请改用 dws wiki node create",
+        "要“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将”请改用 dws wiki node delete",
+        "要“列出指定文件夹或知识库下的直接子节点列表（文件夹/文档/文件等）”请改用 dws wiki node list"
+      ],
+      "examples": [
+        "dws wiki node copy --workspace <workspaceId> --node <nodeId> --format json",
+        "dws wiki node copy --workspace <workspaceId> --node <nodeId> --folder <targetFolderId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.node_move": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "move_document"
+      },
+      "use_when": [
+        "移动知识库里的文档",
+        "移动节点到另一个文件夹"
+      ],
+      "avoid_when": [
+        "要“在指定位置创建一个新的文件（文档、表格、演示、白板、脑图、多维表”请改用 dws wiki node create",
+        "要“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将”请改用 dws wiki node delete",
+        "要“列出指定文件夹或知识库下的直接子节点列表（文件夹/文档/文件等）”请改用 dws wiki node list"
+      ],
+      "examples": [
+        "dws wiki node move --workspace <workspaceId> --node <nodeId> --folder <targetFolderId> --format json",
+        "dws wiki node move --workspace <workspaceId> --node <nodeId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.node_search": {
+      "interface_ref": {
+        "product_id": "doc",
+        "rpc_name": "search_documents"
+      },
+      "use_when": [
+        "在指定知识库内搜索",
+        "在知识库里搜文档/空间内搜索",
+        "在知识库里搜方案；空间内搜索",
+        "按文件类型过滤"
+      ],
+      "avoid_when": [
+        "要“在指定位置创建一个新的文件（文档、表格、演示、白板、脑图、多维表”请改用 dws wiki node create",
+        "要“将指定节点移入回收站，30 天内可从回收站恢复，超过 30 天将”请改用 dws wiki node delete",
+        "要“列出指定文件夹或知识库下的直接子节点列表（文件夹/文档/文件等）”请改用 dws wiki node list"
+      ],
+      "examples": [
+        "dws wiki node search --workspace <workspaceId> --query \"方案\" --format json",
+        "dws wiki node search --workspace <workspaceId> --query \"周报\" --limit 10 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.remove_member": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "use_when": [
+        "3. 移除成员",
+        "移除知识库成员/把某人从知识库移除/删除知识库成员"
+      ],
+      "avoid_when": [
+        "要“为知识库添加指定角色的成员”请改用 dws wiki member add",
+        "要“查询知识库当前的成员权限列表，支持按角色过滤”请改用 dws wiki member list",
+        "要“修改成员在知识库中的角色”请改用 dws wiki member update"
+      ],
+      "examples": [
+        "dws wiki member remove --workspace <WS_ID> --users uid1",
+        "dws wiki member remove --workspace <WS_ID> --users uid1,uid2"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available",
+      "reviewed": true
+    },
+    "wiki.search_wikiSpaces": {
+      "use_when": [
+        "搜索知识库",
+        "搜索知识库/找知识库"
+      ],
+      "avoid_when": [
+        "要“创建一个新的钉钉文档知识库（WikiSpace）”请改用 dws wiki space create",
+        "要“将指定知识库移入回收站”请改用 dws wiki space delete",
+        "要“获取指定知识库的详细信息，包括名称、描述、创建者、创建时间、成员”请改用 dws wiki space get"
+      ],
+      "examples": [
+        "dws wiki space search --query \"产品文档\" --format json",
+        "dws wiki space search --query \"技术方案\" --limit 20 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "wiki.update_member": {
+      "use_when": [
+        "修改某人在知识库的权限/调整成员角色"
+      ],
+      "avoid_when": [
+        "要“为知识库添加指定角色的成员”请改用 dws wiki member add",
+        "要“查询知识库当前的成员权限列表，支持按角色过滤”请改用 dws wiki member list",
+        "要“从知识库中移除指定的企业用户成员（仅支持 USER 类型）”请改用 dws wiki member remove"
+      ],
+      "examples": [
+        "dws wiki member update --workspace <WS_ID> --users uid1 --role EDITOR",
+        "dws wiki member update --workspace <WS_ID> --users uid1,uid2 --role READER"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  },
+  "products": {
+    "wiki": {
+      "agent_summary": "管理钉钉知识库空间、节点、内容检索和知识库成员权限"
+    }
+  }
+}

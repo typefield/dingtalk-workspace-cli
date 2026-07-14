@@ -1,0 +1,128 @@
+{
+  "version": 1,
+  "source": {
+    "kind": "explicit",
+    "name": "dws-agent-hints/report",
+    "repository": "DingTalk-Real-AI/dingtalk-workspace-cli",
+    "channel": "open-source"
+  },
+  "tools": {
+    "report.create_report": {
+      "use_when": [
+        "2b. 提交日志（从步骤 1/2 取 templateId 与 contents 字段）— 推荐 --contents-file 传入避免 shell 引号",
+        "内联（短内容）",
+        "推荐：长内容走文件，避免 shell 引号问题"
+      ],
+      "avoid_when": [
+        "要“读取单份日报正文（含字段明细 + 钉钉跳转链接）”请改用 dws report entry get",
+        "要“读取单份日报的已读统计”请改用 dws report entry stats"
+      ],
+      "examples": [
+        "dws report entry submit --template-id <templateId> --contents-file ./report.json --format json",
+        "dws report entry submit --template-id <templateId> --contents '[{\"key\":\"今日完成\",\"sort\":\"0\",\"content\":\"完成了需求评审\",\"contentType\":\"markdown\",\"type\":\"1\"}]' --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_available_report_templates": {
+      "use_when": [
+        "1. 获取当前用户可用的日志模版",
+        "写日报/提交周报/发日志/填日志",
+        "有什么日志模版"
+      ],
+      "avoid_when": [
+        "要“读取单个日志模版的字段定义”请改用 dws report template get"
+      ],
+      "examples": [
+        "dws report template list",
+        "dws report template list --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_received_report_list": {
+      "use_when": [
+        "3. 查看收到的日报列表 — 提取 reportId",
+        "别人发给我的日志/我收到的日志",
+        "我收到的日志",
+        "查日志/看日报/看正文"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“列出我收到的日报”"
+      ],
+      "examples": [
+        "dws report inbox list --start-date 2026-05-04 --end-date 2026-05-11 --format json",
+        "dws report inbox list --date 2026-05-11 --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_report_entry_details": {
+      "use_when": [
+        "2c. 仅当 submit 返回中缺少 dingtalkOpenUrl 时，手动补取 dingtalk:// 跳转链接",
+        "4. 查看日报详情（正文/字段明细）",
+        "从列表结果提取 reportId 后，再查正文",
+        "先通过 report inbox list / outbox list / entry submit 取得 reportId，再查正文与跳转链接",
+        "已知 reportId",
+        "我发过 / 我创建的日志",
+        "我收到的日志"
+      ],
+      "avoid_when": [
+        "要“提交一份新日报（按模版）”请改用 dws report entry submit",
+        "要“读取单份日报的已读统计”请改用 dws report entry stats"
+      ],
+      "examples": [
+        "dws report entry get --report-id <reportId> --format json",
+        "dws report entry get --report-id <reportId>"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_report_statistics_by_id": {
+      "use_when": [
+        "5. 查看日报已读统计",
+        "日志统计/已读统计"
+      ],
+      "avoid_when": [
+        "要“提交一份新日报（按模版）”请改用 dws report entry submit",
+        "要“读取单份日报正文（含字段明细 + 钉钉跳转链接）”请改用 dws report entry get"
+      ],
+      "examples": [
+        "dws report entry stats --report-id <reportId>",
+        "dws report entry stats --report-id <reportId> --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_send_report_list": {
+      "use_when": [
+        "6. 查看我发出的日报列表",
+        "我发过 / 我创建的日志",
+        "我发过的日志/我创建的日志"
+      ],
+      "avoid_when": [
+        "需要创建、修改或删除数据时不要使用；本命令只用于“列出我发出的日报”"
+      ],
+      "examples": [
+        "dws report outbox list --cursor 0 --size 20 --format json",
+        "dws report outbox list --cursor 0 --size 20"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    },
+    "report.get_template_details_by_name": {
+      "use_when": [
+        "2. 按名称读取模版字段定义"
+      ],
+      "avoid_when": [
+        "要“获取当前用户可用的日志模版列表”请改用 dws report template list"
+      ],
+      "examples": [
+        "dws report template get --name <templateName>",
+        "dws report template get --name \"日报\" --format json"
+      ],
+      "interface_mode": "mcp",
+      "availability": "available"
+    }
+  }
+}

@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -234,8 +234,7 @@
         "CommandRegistry:canonical_path=todo.add_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment add",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_comment",
         "skills/mono/references/products/todo.md",
@@ -277,17 +276,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -319,17 +318,17 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -341,17 +340,17 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -397,17 +396,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -444,22 +443,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -502,9 +508,7 @@
         "CommandRegistry:canonical_path=todo.delete_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment delete",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo_comment",
         "skills/mono/references/products/todo.md",
@@ -547,17 +551,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -653,17 +657,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -750,8 +754,7 @@
         "CommandRegistry:canonical_path=todo.list_todo_comment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo comment list",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.list_todo_comment",
         "skills/mono/references/products/todo.md",
@@ -793,17 +796,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -897,17 +900,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -994,8 +997,7 @@
         "CommandRegistry:canonical_path=todo.add_todo_attachment",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-attachment",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_attachment",
         "skills/mono/references/products/todo.md",
@@ -1037,17 +1039,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1141,17 +1143,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1238,8 +1240,7 @@
         "CommandRegistry:canonical_path=todo.add_task_executors",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-executor",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_executors",
         "skills/mono/references/products/todo.md",
@@ -1281,17 +1282,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1385,17 +1386,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1482,8 +1483,7 @@
         "CommandRegistry:canonical_path=todo.add_task_participants",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-participant",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_task_participants",
         "skills/mono/references/products/todo.md",
@@ -1526,17 +1526,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1632,17 +1632,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1729,8 +1729,7 @@
         "CommandRegistry:canonical_path=todo.add_todo_reminder",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task add-reminder",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.add_todo_reminder",
         "skills/mono/references/products/todo.md",
@@ -1773,17 +1772,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1879,17 +1878,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1984,8 +1983,7 @@
         "cobra-help:dws todo task create",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.create_personal_todo",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_todo",
         "skills/mono/references/products/todo.md",
@@ -2029,17 +2027,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2135,17 +2133,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2232,8 +2230,7 @@
         "CommandRegistry:canonical_path=todo.create_personal_sub_todo",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task create-sub",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.create_personal_sub_todo",
         "skills/mono/references/products/todo.md",
@@ -2252,7 +2249,7 @@
       ],
       "confirmation": "user_required",
       "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "effect_source": "agent-hint",
       "examples": [
         "dws todo task delete --task-id \u003ctaskId\u003e --format json"
       ],
@@ -2275,17 +2272,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -2317,15 +2314,23 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "user_required",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "user_required",
@@ -2338,16 +2343,23 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "destructive",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -2388,17 +2400,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -2441,20 +2453,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/imported/wukong.json",
-          "precedence": "imported",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "high",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "internal/cli/schema_hints/imported/wukong.json",
               "precedence": "imported",
-              "selected": true
+              "selected": false
             },
             {
               "value": "high",
@@ -2500,8 +2527,7 @@
         "cobra-help:dws todo task delete",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.delete_todo",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.delete_todo",
         "skills/mono/SKILL.md",
@@ -2546,17 +2572,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2652,17 +2678,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2757,8 +2783,7 @@
         "cobra-help:dws todo task done",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_done_status",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_done_status",
         "skills/mono/references/products/todo.md",
@@ -2801,17 +2826,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2905,17 +2930,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3010,8 +3035,7 @@
         "cobra-help:dws todo task get",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.get_todo_detail",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.get_todo_detail",
         "skills/mono/references/products/todo.md",
@@ -3054,17 +3078,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3158,17 +3182,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3255,8 +3279,7 @@
         "CommandRegistry:canonical_path=todo.get_user_todos_in_current_org",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task list",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.get_user_todos_in_current_org",
         "skills/mono/references/products/todo.md",
@@ -3273,8 +3296,8 @@
       "avoid_when": [
         "用户未明确移除，或待办与执行人未确认时不要修改执行人列表。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws todo task remove-executor --task-id \u003ctaskId\u003e --executors \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
@@ -3298,17 +3321,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -3339,18 +3362,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -3361,18 +3384,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -3418,17 +3441,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3465,22 +3488,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3518,14 +3548,12 @@
         "rpc_name": "remove_task_executors"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=todo.remove_task_executors",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task remove-executor",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_executors",
         "skills/mono/references/products/todo.md",
@@ -3542,8 +3570,8 @@
       "avoid_when": [
         "用户未明确移除，或待办与参与人未确认时不要修改参与人列表。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws todo task remove-participant --task-id \u003ctaskId\u003e --participants \u003cUSER_ID_1\u003e,\u003cUSER_ID_2\u003e --format json"
@@ -3567,17 +3595,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -3608,18 +3636,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -3630,18 +3658,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -3687,17 +3715,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/todo.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/todo.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3734,22 +3762,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/todo marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/todo marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3787,14 +3822,12 @@
         "rpc_name": "remove_task_participants"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=todo.remove_task_participants",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task remove-participant",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.remove_task_participants",
         "skills/mono/references/products/todo.md",
@@ -3837,17 +3870,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3943,17 +3976,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4040,8 +4073,7 @@
         "CommandRegistry:canonical_path=todo.reset_todo_reminder",
         "Skill:skills/mono/references/products/todo.md",
         "cobra-help:dws todo task reset-reminder",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.reset_todo_reminder",
         "skills/mono/references/products/todo.md",
@@ -4084,17 +4116,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -4190,17 +4222,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/todo.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/todo is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/todo.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/todo is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -4295,8 +4327,7 @@
         "cobra-help:dws todo task update",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.todo.prod.json#todo.update_todo_task",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/todo.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.todo.update_todo_task",
         "skills/mono/references/products/todo.md",

@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -233,8 +233,7 @@
       "source_refs": [
         "cobra-help:dws minutes get audio --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_minutes_audio_url",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -276,17 +275,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -380,17 +379,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -484,8 +483,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.batch_get_minutes_details",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.batch_get_minutes_details",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -527,17 +525,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -631,17 +629,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -735,8 +733,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_basic_info",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_basic_info",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -778,17 +775,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -882,17 +879,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -986,8 +983,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_keywords",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_keywords",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -1029,17 +1025,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1133,17 +1129,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1237,8 +1233,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_ai_summary",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_ai_summary",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -1280,17 +1275,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1384,17 +1379,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1488,8 +1483,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.list_minutes_todos",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_minutes_todos",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -1531,17 +1525,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1635,17 +1629,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1739,8 +1733,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.get_minutes_transcription",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_minutes_transcription",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -1782,17 +1775,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1886,17 +1879,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1990,8 +1983,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.add_personal_hot_word",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.add_personal_hot_word",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -2033,17 +2025,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2137,17 +2129,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2233,8 +2225,7 @@
       "source_refs": [
         "cobra-help:dws minutes hot-word list --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_my_hotwords",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -2276,17 +2267,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -2374,33 +2365,33 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": "minutes.list_by_keyword_and_time_range",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "minutes.list_by_keyword_and_time_range",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -2466,8 +2457,7 @@
       "source_refs": [
         "cobra-help:dws minutes list all --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -2508,17 +2498,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2612,17 +2602,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2634,17 +2624,17 @@
         },
         "interface_ref": {
           "value": "minutes.list_by_keyword_and_time_range",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "minutes.list_by_keyword_and_time_range",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "minutes.list_by_keyword_and_time_range",
@@ -2716,8 +2706,7 @@
       "source_refs": [
         "cobra-help:dws minutes list mine --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.list_by_keyword_and_time_range",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -2759,17 +2748,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -2857,33 +2846,33 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": "minutes.list_by_keyword_and_time_range",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "minutes.list_by_keyword_and_time_range",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -2949,8 +2938,7 @@
       "source_refs": [
         "cobra-help:dws minutes list shared --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -2991,17 +2979,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3095,17 +3083,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3199,8 +3187,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.create_mind_graph",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_mind_graph",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -3242,17 +3229,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3346,17 +3333,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3450,8 +3437,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.query_mind_graph_status",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_mind_graph_status",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -3493,17 +3479,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3597,17 +3583,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3693,8 +3679,7 @@
       "source_refs": [
         "cobra-help:dws minutes permission add --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.add_member_permission",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -3711,8 +3696,8 @@
       "avoid_when": [
         "当用户实际需要批量给多个听记增加成员，并设置成员的权限时，改用 dws minutes permission add。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws minutes permission remove --ids '\u003cuuid1,uuid2\u003e' --member-uids 123456,789012"
@@ -3736,17 +3721,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -3777,18 +3762,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -3799,18 +3784,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -3856,17 +3841,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3903,22 +3888,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据 reviewed CommandRegistry、dws minutes permission remove --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3956,13 +3948,11 @@
         "rpc_name": "remove_member_permission"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws minutes permission remove --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.remove_member_permission",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -4004,17 +3994,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -4102,47 +4092,47 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -4150,10 +4140,10 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "explicit",
               "selected": false,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -4170,13 +4160,6 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据 reviewed CommandRegistry、dws minutes record pause --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。"
-            },
-            {
-              "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
-              "precedence": "reviewed_explicit",
-              "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
             }
           ]
         },
@@ -4223,11 +4206,7 @@
       "source_refs": [
         "cobra-help:dws minutes record pause --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -4268,17 +4247,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -4366,47 +4345,47 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -4414,10 +4393,10 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "explicit",
               "selected": false,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             }
           ]
         },
@@ -4434,13 +4413,6 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据 reviewed CommandRegistry、dws minutes record resume --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。"
-            },
-            {
-              "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
-              "precedence": "reviewed_explicit",
-              "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
             }
           ]
         },
@@ -4487,11 +4459,7 @@
       "source_refs": [
         "cobra-help:dws minutes record resume --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -4532,17 +4500,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
@@ -4582,17 +4550,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-command-surface-review marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -4638,46 +4606,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -4686,10 +4654,10 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "internal/cli/schema_hints/interface-refs.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
@@ -4709,24 +4677,32 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -4759,11 +4735,7 @@
       "source_refs": [
         "cobra-help:dws minutes record start --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -4804,17 +4776,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
@@ -4854,17 +4826,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-command-surface-review marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -4910,46 +4882,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -4958,10 +4930,10 @@
           "overridden_candidates": [
             {
               "value": "minutes.执行听记指令-发起AI听记录音",
-              "source": "internal/cli/schema_hints/interface-refs.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
@@ -4981,24 +4953,32 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -5031,11 +5011,7 @@
       "source_refs": [
         "cobra-help:dws minutes record stop --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/best_practices/07-minutes.md",
         "skills/mono/references/products/minutes.md"
@@ -5051,9 +5027,9 @@
       "avoid_when": [
         "用户只需查询现有信息，或尚未明确目标对象和变更内容时不要使用。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
-      "effect_source": "skill-explicit",
+      "confirmation": "not_required",
+      "effect": "write",
+      "effect_source": "agent-hint",
       "examples": [
         "dws minutes replace-text --id '\u003ctaskUuid\u003e' --search '旧文字' --replace '新文字'"
       ],
@@ -5076,17 +5052,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -5117,33 +5093,47 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
+            },
             {
               "value": "user_required",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
+            },
             {
               "value": "destructive",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -5184,17 +5174,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -5237,21 +5227,35 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据 reviewed CommandRegistry、dws minutes replace-text --help 与 mono 产品参考，审阅该工具的 Agent 选择语义和示例。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "skills/mono/SKILL.md",
-          "precedence": "skill",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "Skill danger table explicitly reviews this operation",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
+            },
             {
               "value": "high",
               "source": "skills/mono/SKILL.md",
               "precedence": "skill",
-              "selected": true,
+              "selected": false,
               "review_reason": "Skill danger table explicitly reviews this operation"
             }
           ]
@@ -5284,13 +5288,13 @@
         "rpc_name": "replace_minutes_text"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "cobra-help:dws minutes replace-text --help",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.replace_minutes_text",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.replace_minutes_text",
         "skills/mono/SKILL.md",
@@ -5333,17 +5337,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5437,17 +5441,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5541,7 +5545,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.replace_speaker",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.replace_speaker",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
@@ -5583,17 +5587,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -5625,17 +5629,17 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -5647,17 +5651,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "read",
@@ -5689,17 +5693,17 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "idempotent",
@@ -5711,17 +5715,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -5761,26 +5765,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/minutes.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/minutes marks this tool as reviewed",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/minutes.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/minutes marks this tool as reviewed"
             },
             {
               "value": "low",
@@ -5822,9 +5826,7 @@
       "source_refs": [
         "cobra-help:dws minutes speaker summary create --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_speaker_summary",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
@@ -5866,17 +5868,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5970,17 +5972,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6066,8 +6068,7 @@
       "source_refs": [
         "cobra-help:dws minutes speaker summary get --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.get_speaker_summary",
         "skills/mono/references/best_practices/10-minutes-speaker-match.md",
@@ -6109,17 +6110,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6213,17 +6214,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6309,8 +6310,7 @@
       "source_refs": [
         "cobra-help:dws minutes tag list --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_user_tag_list",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -6352,17 +6352,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6456,17 +6456,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6552,8 +6552,7 @@
       "source_refs": [
         "cobra-help:dws minutes tag query --help",
         "internal/cli/schema_command_registry.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.query_minutes_by_tag_id",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -6595,17 +6594,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6699,17 +6698,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6803,8 +6802,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.update_minutes_summary",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.update_minutes_summary",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -6846,17 +6844,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6950,17 +6948,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7054,8 +7052,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.update_minutes_title",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.update_minutes_title",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -7097,17 +7094,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7201,17 +7198,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7305,8 +7302,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.cancel_upload_session",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.cancel_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -7348,17 +7344,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7452,17 +7448,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7556,8 +7552,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.complete_upload_session",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.complete_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",
@@ -7599,17 +7594,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -7703,17 +7698,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/minutes.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/minutes.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/minutes is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -7807,8 +7802,7 @@
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.minutes.prod.json#minutes.create_upload_session",
         "internal/cli/schema_command_registry.json",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/minutes.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.minutes.create_upload_session",
         "skills/mono/references/best_practices/07-minutes.md",

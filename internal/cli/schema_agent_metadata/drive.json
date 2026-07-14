@@ -33,17 +33,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -137,17 +137,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -242,7 +242,7 @@
         "cobra-help:dws drive commit",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.commit_upload",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.commit_upload",
         "skills/mono/references/products/drive.md",
@@ -286,17 +286,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -392,17 +392,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -414,17 +414,17 @@
         },
         "interface_ref": {
           "value": "doc.copy_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.copy_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.copy_document",
@@ -497,8 +497,7 @@
         "CommandRegistry:canonical_path=drive.copy_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive copy",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.copy_document",
         "skills/mono/references/products/drive.md",
@@ -540,17 +539,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -582,17 +581,17 @@
         },
         "confirmation": {
           "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -604,17 +603,17 @@
         },
         "effect": {
           "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -660,17 +659,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -682,17 +681,17 @@
         },
         "interface_ref": {
           "value": "doc.delete_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "doc.delete_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "doc.delete_document",
@@ -715,22 +714,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -773,9 +779,7 @@
         "CommandRegistry:canonical_path=drive.delete_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive delete",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.delete_document",
         "skills/mono/references/products/drive.md",
@@ -818,17 +822,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -924,17 +928,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1029,7 +1033,7 @@
         "cobra-help:dws drive download",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.download_file",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.download_file",
         "skills/mono/references/intent-guide.md",
@@ -1074,17 +1078,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1178,17 +1182,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1283,7 +1287,7 @@
         "cobra-help:dws drive info",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.get_file_info",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.get_file_info",
         "skills/mono/references/products/drive.md",
@@ -1327,17 +1331,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1433,17 +1437,17 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1455,31 +1459,31 @@
         },
         "interface_reason": {
           "value": "The CLI command routes by --workspace between drive/list_files and doc/list_nodes, so the reviewed executable wrapper has no single direct MCP interface.",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "The CLI command routes by --workspace between drive/list_files and doc/list_nodes, so the reviewed executable wrapper has no single direct MCP interface.",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -1561,7 +1565,7 @@
         "cobra-help:dws drive list",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.list_files",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_files",
         "skills/mono/references/intent-guide.md",
@@ -1606,17 +1610,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1710,17 +1714,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -1807,7 +1811,7 @@
         "CommandRegistry:canonical_path=drive.list_spaces",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive list-spaces",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_spaces",
         "skills/mono/references/intent-guide.md",
@@ -1851,17 +1855,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -1957,17 +1961,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2062,7 +2066,7 @@
         "cobra-help:dws drive mkdir",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.create_folder",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.create_folder",
         "skills/mono/references/products/doc.md",
@@ -2107,17 +2111,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2213,17 +2217,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2235,17 +2239,17 @@
         },
         "interface_ref": {
           "value": "doc.move_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.move_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.move_document",
@@ -2318,8 +2322,7 @@
         "CommandRegistry:canonical_path=drive.move_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive move",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.move_document",
         "skills/mono/references/products/drive.md",
@@ -2362,17 +2365,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2468,17 +2471,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2490,17 +2493,17 @@
         },
         "interface_ref": {
           "value": "doc.add_permission",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.add_permission",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.add_permission",
@@ -2573,9 +2576,7 @@
         "CommandRegistry:canonical_path=drive.add_permission",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission add",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.add_permission",
         "skills/mono/references/products/drive.md",
@@ -2618,17 +2619,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -2724,17 +2725,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -2746,17 +2747,17 @@
         },
         "interface_ref": {
           "value": "doc.list_permission",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.list_permission",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.list_permission",
@@ -2829,9 +2830,7 @@
         "CommandRegistry:canonical_path=drive.list_permission",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission list",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.list_permission",
         "skills/mono/references/products/drive.md",
@@ -2848,8 +2847,8 @@
       "avoid_when": [
         "成员、节点或撤权意图未确认时不要移除权限；仅调整角色应使用权限更新命令。"
       ],
-      "confirmation": "user_required",
-      "effect": "destructive",
+      "confirmation": "not_required",
+      "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
         "dws drive permission remove --node DOC_ID --users uid1 --format json",
@@ -2874,17 +2873,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "available",
@@ -2915,18 +2914,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -2937,18 +2936,18 @@
           ]
         },
         "effect": {
-          "value": "destructive",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "write",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "destructive",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "write",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -2996,17 +2995,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "mcp",
@@ -3018,17 +3017,17 @@
         },
         "interface_ref": {
           "value": "doc.remove_permission",
-          "source": "internal/cli/schema_hints/interface-refs.json",
-          "precedence": "explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "doc.remove_permission",
-              "source": "internal/cli/schema_hints/interface-refs.json",
-              "precedence": "explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "doc.remove_permission",
@@ -3051,22 +3050,29 @@
               "precedence": "reviewed_manual",
               "selected": true,
               "review_reason": "依据真实 Cobra leaf、对应产品 Skill 与现有 structured hints 审阅选择语义和示例；不改变命令身份、参数、安全或接口事实。"
+            },
+            {
+              "value": true,
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
+              "selected": false,
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/destructive-safety.json",
-          "precedence": "explicit",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "destructive-safety-review is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/destructive-safety.json",
-              "precedence": "explicit",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "destructive-safety-review is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3104,15 +3110,12 @@
         "rpc_name": "remove_permission"
       },
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=drive.permission_remove",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission remove",
-        "internal/cli/schema_hints/destructive-safety.json",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.permission_remove",
         "skills/mono/references/products/drive.md",
@@ -3154,17 +3157,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -3258,17 +3261,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -3280,17 +3283,17 @@
         },
         "interface_ref": {
           "value": "doc.update_permission",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.update_permission",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.update_permission",
@@ -3363,9 +3366,7 @@
         "CommandRegistry:canonical_path=drive.permission_update",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive permission update",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
-        "internal/cli/schema_hints/sibling-disambiguation.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.permission_update",
         "skills/mono/references/products/drive.md",
@@ -3407,17 +3408,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -3443,13 +3442,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3463,13 +3462,13 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3503,13 +3502,13 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3523,47 +3522,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -3585,7 +3580,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -3593,13 +3588,13 @@
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -3641,8 +3636,7 @@
         "CommandRegistry:canonical_path=drive.publish_get",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish get",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -3657,7 +3651,7 @@
       "avoid_when": [
         "只需查询公开状态或关闭公开发布时不要使用；目标文件和公开范围未明确时不要开启"
       ],
-      "confirmation": "user_required",
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -3683,17 +3677,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -3718,24 +3712,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -3747,23 +3735,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -3797,23 +3779,17 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "unknown",
@@ -3825,46 +3801,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -3887,38 +3863,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -3953,14 +3917,12 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=drive.publish_set",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish set",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -3975,7 +3937,7 @@
       "avoid_when": [
         "只需查询公开状态或开启公开发布时不要使用；目标文件未明确时不要关闭"
       ],
-      "confirmation": "user_required",
+      "confirmation": "not_required",
       "effect": "write",
       "effect_source": "agent-hint",
       "examples": [
@@ -4000,17 +3962,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -4035,24 +3997,18 @@
           ]
         },
         "confirmation": {
-          "value": "user_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "not_required",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "user_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "not_required",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "not_required",
@@ -4064,23 +4020,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "write",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -4112,23 +4062,17 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "unknown",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "unknown",
@@ -4140,46 +4084,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -4202,38 +4146,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
-          "value": "high",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "value": "medium",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
-              "value": "high",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "medium",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "medium",
@@ -4268,14 +4200,12 @@
       "interface_mode": "composite",
       "interface_reason": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
       "reviewed": true,
-      "risk": "high",
+      "risk": "medium",
       "source_refs": [
         "CommandRegistry:canonical_path=drive.publish_unset",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive publish unset",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -4316,17 +4246,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -4352,13 +4280,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4366,13 +4294,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4402,13 +4330,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4416,47 +4344,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -4478,7 +4402,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4486,13 +4410,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             }
@@ -4528,8 +4452,7 @@
         "CommandRegistry:canonical_path=drive.recent",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recent",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -4570,17 +4493,15 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
@@ -4606,13 +4527,13 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4626,13 +4547,13 @@
         },
         "effect": {
           "value": "read",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4668,13 +4589,13 @@
         },
         "idempotency": {
           "value": "idempotent",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4688,47 +4609,43 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
-              "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
+              "selected": true
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "unreviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "unreviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -4750,7 +4667,7 @@
             },
             {
               "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": false
             }
@@ -4758,13 +4675,13 @@
         },
         "risk": {
           "value": "low",
-          "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "unreviewed_explicit",
           "resolution": "highest_precedence",
           "candidates": [
             {
               "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "unreviewed_explicit",
               "selected": true
             },
@@ -4806,8 +4723,7 @@
         "CommandRegistry:canonical_path=drive.recycle_list",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recycle list",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -4847,17 +4763,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -4883,45 +4799,33 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "not_required",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "read",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -4947,68 +4851,62 @@
         },
         "idempotency": {
           "value": "unknown",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "unknown",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "idempotent",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -5031,38 +4929,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": false,
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
-            },
-            {
-              "value": "low",
-              "source": "internal/cli/schema_hints/runtime-surface-completeness.json",
-              "precedence": "unreviewed_explicit",
-              "selected": false
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -5096,9 +4982,7 @@
         "CommandRegistry:canonical_path=drive.recycle_restore",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive recycle restore",
-        "internal/cli/schema_hints/runtime-surface-completeness.json",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -5138,17 +5022,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5242,17 +5126,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5264,17 +5148,17 @@
         },
         "interface_ref": {
           "value": "doc.rename_document",
-          "source": "internal/cli/schema_hints/interface-refs.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "doc.rename_document",
-              "source": "internal/cli/schema_hints/interface-refs.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "explicit",
               "selected": true,
-              "review_reason": "open-source-helper-interface-refs is an explicit Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "doc.rename_document",
@@ -5347,8 +5231,7 @@
         "CommandRegistry:canonical_path=drive.rename_document",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive rename",
-        "internal/cli/schema_hints/interface-refs.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.rename_document",
         "skills/mono/references/products/drive.md",
@@ -5391,17 +5274,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -5497,17 +5380,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -5594,7 +5477,7 @@
         "CommandRegistry:canonical_path=drive.search_files",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive search",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.search_files",
         "skills/mono/references/intent-guide.md",
@@ -5639,17 +5522,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -5675,33 +5558,33 @@
         },
         "confirmation": {
           "value": "not_required",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "not_required",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -5727,62 +5610,62 @@
         },
         "idempotency": {
           "value": "non_idempotent",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "non_idempotent",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -5805,26 +5688,26 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "medium",
-              "source": "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "runtime-confirmation-review-v2 marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -5857,8 +5740,7 @@
       "source_refs": [
         "cobra-help:dws drive shortcut --help",
         "internal/cli/schema_command_registry.json#drive.create_shortcut",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
-        "internal/cli/schema_hints/zz-runtime-confirmation-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -5898,17 +5780,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             }
           ]
         },
@@ -5996,47 +5878,47 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             }
           ]
         },
         "interface_reason": {
           "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "reviewed-interface-disposition-v2 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/zz-interface-disposition-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
             }
@@ -6101,7 +5983,7 @@
       "source_refs": [
         "cobra-help:dws drive stats --help",
         "internal/cli/schema_command_registry.json#drive.get_node_stats",
-        "internal/cli/schema_hints/zz-interface-disposition-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/products/drive.md"
       ],
@@ -6142,17 +6024,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
@@ -6192,17 +6074,17 @@
         },
         "effect": {
           "value": "write",
-          "source": "internal/cli/schema_hints/catalog-completeness.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "dws-command-surface-review marks this tool as reviewed",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "write",
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             },
             {
               "value": "write",
@@ -6250,46 +6132,46 @@
         },
         "interface_mode": {
           "value": "composite",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "composite",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_reason": {
           "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
             {
               "value": "命令包含多个 RPC、条件分派或本地 HTTP/文件步骤，不能绑定为单一 interface_ref",
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "interface_ref": {
           "value": null,
-          "source": "internal/cli/schema_hints/selection-review.json",
+          "source": "internal/cli/schema_hints/products/drive.json",
           "precedence": "reviewed_explicit",
           "resolution": "interface_disposition_matrix",
           "review_reason": "final interface mode composite forbids a direct MCP interface_ref",
           "candidates": [
             {
               "value": null,
-              "source": "internal/cli/schema_hints/selection-review.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": true,
               "review_reason": "final interface mode composite forbids a direct MCP interface_ref"
@@ -6312,24 +6194,32 @@
             },
             {
               "value": true,
-              "source": "internal/cli/schema_hints/catalog-completeness.json",
+              "source": "internal/cli/schema_hints/products/drive.json",
               "precedence": "reviewed_explicit",
               "selected": false,
-              "review_reason": "dws-command-surface-review marks this tool as reviewed"
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
             }
           ]
         },
         "risk": {
           "value": "medium",
-          "source": "effect-default",
-          "precedence": "inference_or_default",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "reviewed_explicit",
           "resolution": "highest_precedence",
+          "review_reason": "dws-agent-hints/drive marks this tool as reviewed",
           "candidates": [
+            {
+              "value": "medium",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "reviewed_explicit",
+              "selected": true,
+              "review_reason": "dws-agent-hints/drive marks this tool as reviewed"
+            },
             {
               "value": "medium",
               "source": "effect-default",
               "precedence": "inference_or_default",
-              "selected": true
+              "selected": false
             }
           ]
         },
@@ -6363,8 +6253,7 @@
         "CommandRegistry:canonical_path=drive.upload",
         "Skill:skills/mono/references/products/drive.md",
         "cobra-help:dws drive upload",
-        "internal/cli/schema_hints/catalog-completeness.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "skills/mono/references/intent-guide.md",
         "skills/mono/references/products/drive.md",
@@ -6407,17 +6296,17 @@
         },
         "availability": {
           "value": "available",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "available",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "available",
@@ -6513,17 +6402,17 @@
         },
         "interface_mode": {
           "value": "mcp",
-          "source": "internal/cli/schema_hints/selection-review.json",
-          "precedence": "reviewed_explicit",
+          "source": "internal/cli/schema_hints/products/drive.json",
+          "precedence": "explicit",
           "resolution": "highest_precedence",
-          "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source",
+          "review_reason": "dws-agent-hints/drive is an explicit Agent hint source",
           "candidates": [
             {
               "value": "mcp",
-              "source": "internal/cli/schema_hints/selection-review.json",
-              "precedence": "reviewed_explicit",
+              "source": "internal/cli/schema_hints/products/drive.json",
+              "precedence": "explicit",
               "selected": true,
-              "review_reason": "agent-selection-contract-v1 is a reviewed Agent hint source"
+              "review_reason": "dws-agent-hints/drive is an explicit Agent hint source"
             },
             {
               "value": "mcp",
@@ -6618,7 +6507,7 @@
         "cobra-help:dws drive upload-info",
         "dws-wukong-envelope@4574f7022c32:dws-wukong-discovery.drive.prod.json#drive.get_upload_info",
         "internal/cli/schema_hints/imported/wukong.json",
-        "internal/cli/schema_hints/selection-review.json",
+        "internal/cli/schema_hints/products/drive.json",
         "internal/cli/schema_manual_hints.json",
         "internal/cli/schema_mcp_metadata.json#tools.drive.get_upload_info",
         "skills/mono/references/products/drive.md",
