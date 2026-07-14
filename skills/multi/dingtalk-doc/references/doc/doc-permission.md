@@ -1,8 +1,5 @@
 # doc permission（文档权限：add / update / list）
 
-> **前置条件（MUST READ）：** 执行本命令前，必须先用 Read 工具读取以下文件：
-> 1. [`../doc.md`](../doc.md) — 命令路由 + 场景索引 + 意图判断 + 工作流
-
 > **关键区分**：
 > - "把**某篇文档**授权给某人" → `doc permission add`（节点级，包括「我的文档」下的文档都支持）
 > - "把**某个知识库**整体授权给某人" → `wiki member add`（容器级，但**「我的文档」个人空间不支持**）
@@ -112,6 +109,5 @@ dws doc permission add --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" 
 
 ## 参考
 
-- [`../doc.md` §意图判断](../doc.md#意图判断)（如何路由到本命令族）
 - `dws contact user search`（取 userId 的入口，跨产品命令）
 - [`wiki.md`](../../../dingtalk-wiki/references/wiki.md)（知识库容器级授权 `wiki member add`，与本节点级权限相区分）
