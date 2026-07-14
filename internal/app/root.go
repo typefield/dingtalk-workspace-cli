@@ -561,6 +561,7 @@ func hideNonDirectRuntimeCommands(root *cobra.Command) {
 	staticCommands := map[string]bool{
 		"auth":       true,
 		"api":        true,
+		"audit":      true,
 		"cache":      true,
 		"config":     true,
 		"dev":        true,
@@ -595,7 +596,7 @@ func hideNonDirectRuntimeCommands(root *cobra.Command) {
 // not override. This protects core CLI functionality from being hijacked
 // by a malicious or misconfigured plugin.
 var reservedCommands = map[string]bool{
-	"auth": true, "api": true, "login": true, "logout": true,
+	"auth": true, "api": true, "audit": true, "login": true, "logout": true,
 	"plugin": true, "profile": true, "skill": true, "cache": true,
 	"config": true, "doctor": true, "completion": true,
 	"recovery": true, "upgrade": true, "version": true,
