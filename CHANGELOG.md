@@ -17,6 +17,7 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ### Fixed
 
+- **Dynamic MCP command naming and resilient refresh** (Aone 84163152) — published MCP commands now use a validated ASCII `serverName`, then `mcp-<mcpId>`, rather than falling back to a Chinese display name. Refresh probes services concurrently with independent `--timeout` budgets, keeps stale commands for services that fail while updating healthy services, reports partial failures in JSON, and no longer guesses `/server/org-{mcpId}` endpoints.
 - **Cross-platform auth regression coverage** — dedicated macOS CI now runs the Darwin-only auth/keychain regression suite with race detection, Windows CI builds and tests the native DPAPI path, and recovery guidance prefers safe migration or per-profile cleanup over destructive global reset.
 
 ## [1.0.51] - 2026-07-10

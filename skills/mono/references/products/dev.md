@@ -179,7 +179,8 @@ dws connector mcp published <service-or-tool-slug> <tool-slug> --format json
 - `inspect` 只执行 MCP 握手和 `tools/list`，不调用业务工具；含凭证地址优先通过 `DINGTALK_MCPDEV_MCP_URL` 传入，输出会脱敏。
 - 凭证密钥优先用 `--content-file` 或 stdin 传入；dry-run 不回显密钥值。`credential debug` 会真实调用下游测试接口。
 - 成员命令的 `--user-ids` 必须传 staffId；新增/移除前先 `member list` 核对。
-- 动态命令一级路径优先用 `serverName`，缺失时用 MCP 服务 `name`，再缺失时退到工具 `name`；`connector mcp published ...` 作为调试路径保留。
+- 动态命令一级路径优先用合法 ASCII `serverName`，缺失或不合法时用 `mcp-<mcpId>`，没有 mcpId 才退到工具 `name`；不使用中文服务名。
+- `refresh` 单服务独立超时并支持部分成功；检查 `partial`、`failedServices`、`cacheUpdated`，失败服务会保留旧缓存。
 - 写操作和 `tool debug` 必须先 `--dry-run`，确认后再 `--yes`。
 - 复杂字段直接传 JSON：`--http`/`--api-inputs`/`--api-outputs` 为 object，`--tool-inputs`/`--tool-outputs`/`--input-mappings`/`--output-mappings` 为 array，`--value` 为 object。
 - 发布前必须先调试通过；删除服务前先 `service get` + `tool list` 核对。

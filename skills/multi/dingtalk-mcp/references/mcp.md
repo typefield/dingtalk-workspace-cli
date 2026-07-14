@@ -98,7 +98,7 @@ service create
 dws <service-or-tool-slug> <tool-slug> [flags]
 ```
 
-一级命令命名优先级：`serverName` → MCP 服务 `name` → 工具 `name`。当前发现接口尚未稳定返回 `serverName` 时，先用 MCP 服务名；如果服务名也缺失，再退到工具名。DWS 同时保留调试路径：
+一级命令命名优先级：合法 ASCII `serverName` → `mcp-<mcpId>` → 工具 `name`。中文服务名和非法 `serverName` 不进入命令路径；旧缓存中的中文一级路径会自动迁移为 `mcp-<mcpId>`。DWS 同时保留调试路径：
 
 ```text
 dws connector mcp published <service-or-tool-slug> <tool-slug> [flags]
@@ -115,10 +115,12 @@ dws connector mcp published --help
 缓存规则：
 
 - DWS 会缓存已发布 MCP 的工具描述，TTL 10 分钟。
-- `refresh` 会主动拉取预发/线上 Portal 发现接口并重建缓存。
+- `refresh` 会主动拉取预发/线上 Portal 发现接口并重建缓存；`--timeout` 同时作为发现请求和单个 MCP `tools/list` 的超时。
+- MCP 工具发现使用有限并发和独立超时：单个服务失败不会取消后续服务；健康服务更新，失败服务保留上次缓存。
+- 返回中的 `partial` 表示部分成功，`failedServices` 给出失败的 mcpId/脱敏端点/原因，`cacheUpdated` 表示合并后的缓存已持久化。
 - 发布或更新工具后，可以立即 `refresh`，再看 `published --help`。
 - `service list` / `listMyMCP` 返回 `result.list[].serverName`；它是 kebab-case CLI 一级命令名，未设置时为空。动态发现必须优先使用该字段，不能始终从中文服务名推导。
-- 不要根据 `mcpId` 自行猜 `/server/org-{mcpId}`；应使用发现接口返回的 `mcpUrl`，或 `url get --source PUBLISHED` 返回的真实接入地址。
+- 所有刷新只使用发现接口返回的真实 hash `mcpUrl`；不会根据 `mcpId` 猜 `/server/org-{mcpId}`。需要找回地址时使用 `url get --source PUBLISHED`。
 
 指定接入地址的只读探测：
 

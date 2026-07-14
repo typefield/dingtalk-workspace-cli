@@ -59,7 +59,7 @@ MCP 开发脚手架（mcpdev 管理面）
 - 工具创建或更新后只是草稿，必须调试通过并发布后才对使用方生效。**publish ≠ 上架市场**：publish 后企业内即可用，`url get --source PUBLISHED` 即可自助取地址。
 - `draft` 只有草稿；`published` 只有线上版本；`published_with_draft` 线上有发布版同时存在更新草稿。
 - `tool debug` 不传 `versionId` 时，已发布工具默认调线上版本；调试草稿必须传草稿 `versionId`。
-- `service list` 返回的 `serverName` 是 DWS 动态命令一级路径；未设置时为空。DWS 一级命令优先用 `serverName`，缺失时用服务 `name`，再缺失退到工具 `name`；不要凭 `mcpId` 手拼接入地址。
+- `service list` 返回的合法 ASCII `serverName` 是 DWS 动态命令一级路径；缺失或不合法时稳定回退 `mcp-<mcpId>`，没有 mcpId 才退到工具 `name`。禁止用中文服务名生成命令；不要凭 `mcpId` 手拼接入地址。
 
 ## Shortcut
 
@@ -78,7 +78,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | 管理凭证账号 | `credential list/get` 查账号元信息 → `credential save --content-file` 保存密钥 → `credential debug` 验证 → `credential bind` 绑定；删除前先 `get` 核对 `flowCount` |
 | 管理开发协作者 | `member list` 查现状 → `member add/remove --user-ids <staffId,...> --dry-run` → 用户确认 → `--yes` |
 | 探测指定 MCP 地址 | 将含凭证地址放入 `DINGTALK_MCPDEV_MCP_URL`，执行 `dws connector mcp inspect --format json`；读取协议版本、服务能力和完整工具 Schema，不调用业务工具 |
-| 生成/刷新 DWS 动态命令 | 工具发布后执行 `dws connector mcp refresh --format json` → 检查 `dws <service-or-tool> --help` 和 `dws connector mcp published --help` → 优先使用 `dws <service-or-tool> <tool>`，必要时用 `dws connector mcp published <service-or-tool> <tool>` 调试 |
+| 生成/刷新 DWS 动态命令 | 工具发布后执行 `dws connector mcp refresh --format json` → 检查 `partial/failedServices/cacheUpdated` → 检查 `dws <service-or-tool> --help` 和 `dws connector mcp published --help`；部分失败时健康服务正常更新、失败服务保留旧缓存 |
 | 续作已有服务/工具 | `service list --keyword` 找 `mcpId` → `tool list --mcp-id` 找 `actionId` → 再执行目标操作 |
 | 编辑已发布工具 | `tool get` 读当前定义（底层存储格式，翻译回三段式，详见 [mcp.md](references/mcp.md) §只更新一个已有工具草稿）→ 全量构造 `tool update --dry-run` → 调试草稿 versionId → 用户确认后发布 |
 | 删除工具或服务 | 先 `tool get` 或 `service get` + `tool list` 核对影响面 → 用户明确确认 → 删除命令加 `--yes` |

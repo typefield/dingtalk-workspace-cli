@@ -19,6 +19,7 @@ import (
 	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
+	stderrors "errors"
 	"fmt"
 	"io"
 	"log/slog"
@@ -29,6 +30,7 @@ import (
 	"sort"
 	"strconv"
 	"strings"
+	"sync"
 	"time"
 	"unicode"
 
@@ -43,14 +45,15 @@ import (
 )
 
 const (
-	mcpHTTPCommandRoot               = "connector"
-	mcpHTTPCommandDiscoveryPath      = "/cli/discovery/mcp"
-	mcpHTTPCommandDiscoveryEnv       = "DWS_MCP_DISCOVERY_BASE_URL"
-	preAIHubBaseURL                  = "https://pre-aihub.dingtalk.com"
-	mcpHTTPCommandDiscoveryPageSize  = 100
-	mcpHTTPCommandDiscoveryMaxPages  = 100
-	mcpHTTPCommandListTTL            = 10 * time.Minute
-	mcpHTTPCommandListRefreshTimeout = 5 * time.Second
+	mcpHTTPCommandRoot              = "connector"
+	mcpHTTPCommandDiscoveryPath     = "/cli/discovery/mcp"
+	mcpHTTPCommandDiscoveryEnv      = "DWS_MCP_DISCOVERY_BASE_URL"
+	preAIHubBaseURL                 = "https://pre-aihub.dingtalk.com"
+	mcpHTTPCommandDiscoveryPageSize = 100
+	mcpHTTPCommandDiscoveryMaxPages = 100
+	mcpHTTPCommandListTTL           = 10 * time.Minute
+	mcpHTTPCommandRefreshTimeout    = 30 * time.Second
+	mcpHTTPCommandRefreshWorkers    = 4
 )
 
 type mcpHTTPCommandCacheFile struct {
@@ -96,6 +99,25 @@ type publishedMCPService struct {
 	MCPURL      string      `json:"mcpUrl"`
 }
 
+type mcpHTTPRefreshFailure struct {
+	MCPID    string `json:"mcpId,omitempty"`
+	Name     string `json:"name,omitempty"`
+	Endpoint string `json:"endpoint,omitempty"`
+	Error    string `json:"error"`
+}
+
+type mcpHTTPRefreshReport struct {
+	Commands               []mcpHTTPCommandDescriptor `json:"-"`
+	ServiceCount           int                        `json:"serviceCount"`
+	SuccessfulServiceCount int                        `json:"successfulServiceCount"`
+	ToolCount              int                        `json:"toolCount"`
+	Partial                bool                       `json:"partial"`
+	CacheUpdated           bool                       `json:"cacheUpdated"`
+	FailedServices         []mcpHTTPRefreshFailure    `json:"failedServices,omitempty"`
+	discoveredProducts     map[string]bool
+	successfulProducts     map[string]bool
+}
+
 type mcpHTTPFlagSpec struct {
 	PropertyName string
 	FlagName     string
@@ -111,7 +133,7 @@ func registerDynamicMCPHTTPCommands(root *cobra.Command, runner executor.Runner,
 	if root == nil || runner == nil {
 		return
 	}
-	ensureMCPHTTPRefreshCommand(root)
+	ensureMCPHTTPRefreshCommand(root, flags)
 
 	source, err := currentMCPHTTPCommandCacheSource()
 	if err != nil {
@@ -121,8 +143,8 @@ func registerDynamicMCPHTTPCommands(root *cobra.Command, runner executor.Runner,
 
 	commands, fresh := readMCPHTTPCommandCache(source)
 	if !fresh && shouldRefreshMCPHTTPCommands(os.Args[1:]) {
-		if refreshed, err := refreshMCPHTTPCommandCache(rootCtx); err == nil {
-			commands = refreshed
+		if refreshed, err := refreshMCPHTTPCommandCache(rootCtx, mcpHTTPRefreshTimeout(flags)); err == nil {
+			commands = refreshed.Commands
 		} else {
 			slog.Debug("mcp-http: refresh failed, using stale cache if any", "error", err)
 		}
@@ -135,7 +157,7 @@ func registerDynamicMCPHTTPCommands(root *cobra.Command, runner executor.Runner,
 	addMCPHTTPCommands(root, runner, flags, commands)
 }
 
-func ensureMCPHTTPRefreshCommand(root *cobra.Command) {
+func ensureMCPHTTPRefreshCommand(root *cobra.Command, flags *GlobalFlags) {
 	connectorRoot := ensureMCPHTTPGroup(root, []string{mcpHTTPCommandRoot, "mcp"})
 	if connectorRoot == nil {
 		return
@@ -151,17 +173,16 @@ func ensureMCPHTTPRefreshCommand(root *cobra.Command) {
 				if err != nil {
 					return err
 				}
-				commands, err := refreshMCPHTTPCommandCache(cmd.Context())
+				report, err := refreshMCPHTTPCommandCache(cmd.Context(), mcpHTTPRefreshTimeout(flags))
 				if err != nil {
-					return err
+					if report.ServiceCount > 0 || len(report.FailedServices) > 0 {
+						if writeErr := output.WriteCommandPayload(cmd, mcpHTTPRefreshPayload(report, source, false), output.FormatJSON); writeErr != nil {
+							return writeErr
+						}
+					}
+					return mcpHTTPRefreshCommandError(err)
 				}
-				payload := map[string]any{
-					"success": true,
-					"count":   len(commands),
-					"ttl":     mcpHTTPCommandListTTL.String(),
-					"source":  source,
-				}
-				return output.WriteCommandPayload(cmd, payload, output.FormatJSON)
+				return output.WriteCommandPayload(cmd, mcpHTTPRefreshPayload(report, source, true), output.FormatJSON)
 			},
 		}
 		connectorRoot.AddCommand(cmd)
@@ -169,6 +190,36 @@ func ensureMCPHTTPRefreshCommand(root *cobra.Command) {
 	if commandChild(connectorRoot, "inspect") == nil {
 		connectorRoot.AddCommand(newMCPHTTPInspectCommand())
 	}
+}
+
+func mcpHTTPRefreshPayload(report mcpHTTPRefreshReport, source string, success bool) map[string]any {
+	return map[string]any{
+		"success":                success,
+		"partial":                report.Partial,
+		"count":                  len(report.Commands),
+		"commandCount":           len(report.Commands),
+		"toolCount":              report.ToolCount,
+		"serviceCount":           report.ServiceCount,
+		"successfulServiceCount": report.SuccessfulServiceCount,
+		"failedServiceCount":     len(report.FailedServices),
+		"failedServices":         report.FailedServices,
+		"cacheUpdated":           report.CacheUpdated,
+		"ttl":                    mcpHTTPCommandListTTL.String(),
+		"source":                 source,
+	}
+}
+
+func mcpHTTPRefreshCommandError(err error) error {
+	var structured *apperrors.Error
+	if stderrors.As(err, &structured) {
+		return err
+	}
+	return apperrors.NewDiscovery(
+		err.Error(),
+		apperrors.WithReason("mcp_refresh_failed"),
+		apperrors.WithRetryable(true),
+		apperrors.WithCause(err),
+	)
 }
 
 func newMCPHTTPInspectCommand() *cobra.Command {
@@ -218,27 +269,48 @@ func newMCPHTTPInspectCommand() *cobra.Command {
 	return cmd
 }
 
-func refreshMCPHTTPCommandCache(ctx context.Context) ([]mcpHTTPCommandDescriptor, error) {
+func mcpHTTPRefreshTimeout(flags *GlobalFlags) time.Duration {
+	if flags != nil && flags.Timeout > 0 {
+		return time.Duration(flags.Timeout) * time.Second
+	}
+	return mcpHTTPCommandRefreshTimeout
+}
+
+func refreshMCPHTTPCommandCache(ctx context.Context, timeout time.Duration) (mcpHTTPRefreshReport, error) {
 	if ctx == nil {
 		ctx = context.Background()
 	}
+	if timeout <= 0 {
+		timeout = mcpHTTPCommandRefreshTimeout
+	}
 	portalBase, err := mcpHTTPDiscoveryBaseURL()
 	if err != nil {
-		return nil, err
+		return mcpHTTPRefreshReport{}, err
 	}
 	source := mcpHTTPCommandCacheSource(portalBase)
 
-	callCtx, cancel := context.WithTimeout(ctx, mcpHTTPCommandListRefreshTimeout)
-	defer cancel()
-
-	commands, err := fetchMCPHTTPCommandList(callCtx, portalBase)
+	discoveryCtx, cancel := context.WithTimeout(ctx, timeout)
+	services, err := fetchPublishedMCPServices(discoveryCtx, portalBase)
+	cancel()
 	if err != nil {
-		return nil, err
+		return mcpHTTPRefreshReport{}, err
 	}
-	if err := writeMCPHTTPCommandCache(source, commands); err != nil {
-		slog.Debug("mcp-http: failed to write cache", "error", err)
+	report := mcpHTTPCommandsFromPublishedMCPsReport(ctx, services, timeout)
+	existing, _ := readMCPHTTPCommandCache(source)
+	if report.SuccessfulServiceCount == 0 && len(report.FailedServices) > 0 {
+		report.Commands = existing
+		return report, fmt.Errorf("published MCP refresh failed: %s", report.FailedServices[0].Error)
 	}
-	return commands, nil
+	report.Commands = mergeMCPHTTPRefreshCommands(existing, report)
+	if err := writeMCPHTTPCommandCache(source, report.Commands); err != nil {
+		return report, apperrors.NewInternal(
+			"write published MCP command cache failed",
+			apperrors.WithReason("mcp_refresh_cache_write_failed"),
+			apperrors.WithCause(err),
+		)
+	}
+	report.CacheUpdated = true
+	return report, nil
 }
 
 func readMCPHTTPCommandCache(endpoint string) ([]mcpHTTPCommandDescriptor, bool) {
@@ -364,7 +436,11 @@ func fetchMCPHTTPCommandList(ctx context.Context, portalBase string) ([]mcpHTTPC
 	if err != nil {
 		return nil, err
 	}
-	return mcpHTTPCommandsFromPublishedMCPs(ctx, services)
+	report := mcpHTTPCommandsFromPublishedMCPsReport(ctx, services, mcpHTTPCommandRefreshTimeout)
+	if report.SuccessfulServiceCount == 0 && len(report.FailedServices) > 0 {
+		return nil, fmt.Errorf("published MCP refresh failed: %s", report.FailedServices[0].Error)
+	}
+	return report.Commands, nil
 }
 
 func fetchPublishedMCPServices(ctx context.Context, portalBase string) ([]publishedMCPService, error) {
@@ -470,30 +546,93 @@ func mcpHTTPDiscoveryURL(portalBase string, page, pageSize int, keyword string) 
 	return u.String(), nil
 }
 
-func mcpHTTPCommandsFromPublishedMCPs(ctx context.Context, services []publishedMCPService) ([]mcpHTTPCommandDescriptor, error) {
-	seen := map[string]bool{}
-	var commands []mcpHTTPCommandDescriptor
-	var firstErr error
+func mcpHTTPCommandsFromPublishedMCPsReport(ctx context.Context, services []publishedMCPService, timeout time.Duration) mcpHTTPRefreshReport {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	if timeout <= 0 {
+		timeout = mcpHTTPCommandRefreshTimeout
+	}
+	report := mcpHTTPRefreshReport{
+		ServiceCount:       len(services),
+		FailedServices:     make([]mcpHTTPRefreshFailure, 0),
+		discoveredProducts: make(map[string]bool, len(services)),
+		successfulProducts: make(map[string]bool, len(services)),
+	}
+	if len(services) == 0 {
+		return report
+	}
+
+	type probeJob struct {
+		index   int
+		service publishedMCPService
+	}
+	type probeResult struct {
+		index   int
+		service publishedMCPService
+		tools   []transport.ToolDescriptor
+		err     error
+	}
 
 	token := resolveRuntimeAuthToken(ctx, "")
 	headers := resolveIdentityHeaders()
-	client := transport.NewClient(nil).WithAuth(token, headers)
+	client := newMCPHTTPRefreshClient(timeout).WithAuth(token, headers)
+	jobs := make(chan probeJob, len(services))
+	results := make(chan probeResult, len(services))
+	for index, service := range services {
+		jobs <- probeJob{index: index, service: service}
+	}
+	close(jobs)
 
-	for _, service := range services {
-		mcpURL := strings.TrimSpace(service.MCPURL)
-		if mcpURL == "" {
-			continue
-		}
-		result, err := client.ListTools(ctx, mcpURL)
-		if err != nil {
-			if firstErr == nil {
-				firstErr = fmt.Errorf("tools/list failed for MCP %s (%s): %w", service.displayName(), transport.RedactURL(mcpURL), err)
+	workerCount := min(mcpHTTPCommandRefreshWorkers, len(services))
+	var workers sync.WaitGroup
+	workers.Add(workerCount)
+	for range workerCount {
+		go func() {
+			defer workers.Done()
+			for job := range jobs {
+				mcpURL := strings.TrimSpace(job.service.MCPURL)
+				if mcpURL == "" {
+					results <- probeResult{index: job.index, service: job.service, err: fmt.Errorf("missing mcpUrl")}
+					continue
+				}
+				callCtx, cancel := context.WithTimeout(ctx, timeout)
+				tools, err := client.ListTools(callCtx, mcpURL)
+				cancel()
+				results <- probeResult{index: job.index, service: job.service, tools: tools.Tools, err: err}
 			}
-			slog.Debug("mcp-http: tools/list failed for published MCP", "mcpId", service.idString(), "name", service.Name, "endpoint", transport.RedactURL(mcpURL), "error", err)
+		}()
+	}
+	workers.Wait()
+	close(results)
+
+	probes := make([]probeResult, 0, len(services))
+	for result := range results {
+		probes = append(probes, result)
+	}
+	sort.Slice(probes, func(i, j int) bool { return probes[i].index < probes[j].index })
+
+	seen := map[string]bool{}
+	for _, probe := range probes {
+		service := probe.service
+		productID := service.productID()
+		report.discoveredProducts[productID] = true
+		mcpURL := strings.TrimSpace(service.MCPURL)
+		if probe.err != nil {
+			failure := mcpHTTPRefreshFailure{
+				MCPID:    service.idString(),
+				Name:     service.displayName(),
+				Endpoint: transport.RedactURL(mcpURL),
+				Error:    mcpHTTPRefreshErrorMessage(probe.err, mcpURL),
+			}
+			report.FailedServices = append(report.FailedServices, failure)
+			slog.Debug("mcp-http: tools/list failed for published MCP", "mcpId", service.idString(), "name", service.Name, "endpoint", failure.Endpoint, "error", failure.Error)
 			continue
 		}
-
-		for _, tool := range result.Tools {
+		report.SuccessfulServiceCount++
+		report.successfulProducts[productID] = true
+		report.ToolCount += len(probe.tools)
+		for _, tool := range probe.tools {
 			descriptors := mcpHTTPCommandsFromPublishedTool(service, mcpURL, tool)
 			for _, descriptor := range descriptors {
 				descriptor = normalizeMCPHTTPCommand(descriptor)
@@ -505,17 +644,62 @@ func mcpHTTPCommandsFromPublishedMCPs(ctx context.Context, services []publishedM
 					continue
 				}
 				seen[key] = true
-				commands = append(commands, descriptor)
+				report.Commands = append(report.Commands, descriptor)
 			}
 		}
 	}
-	sort.Slice(commands, func(i, j int) bool {
-		return strings.Join(commands[i].Path, " ") < strings.Join(commands[j].Path, " ")
+	sort.Slice(report.Commands, func(i, j int) bool {
+		return strings.Join(report.Commands[i].Path, " ") < strings.Join(report.Commands[j].Path, " ")
 	})
-	if len(commands) == 0 && firstErr != nil {
-		return nil, firstErr
+	report.Partial = len(report.FailedServices) > 0
+	return report
+}
+
+func newMCPHTTPRefreshClient(timeout time.Duration) *transport.Client {
+	httpClient := &http.Client{Timeout: timeout}
+	client := transport.NewClient(httpClient)
+	if base, ok := client.HTTPClient.Transport.(*http.Transport); ok {
+		configured := base.Clone()
+		configured.ResponseHeaderTimeout = timeout
+		client.HTTPClient.Transport = configured
 	}
-	return commands, nil
+	return client
+}
+
+func mcpHTTPRefreshErrorMessage(err error, endpoint string) string {
+	if err == nil {
+		return ""
+	}
+	message := err.Error()
+	redact := func(raw string) {
+		raw = strings.TrimSpace(raw)
+		if raw == "" {
+			return
+		}
+		message = strings.ReplaceAll(message, raw, transport.RedactURL(raw))
+	}
+	redact(endpoint)
+	var urlErr *url.Error
+	if stderrors.As(err, &urlErr) {
+		redact(urlErr.URL)
+	}
+	return message
+}
+
+func mergeMCPHTTPRefreshCommands(existing []mcpHTTPCommandDescriptor, report mcpHTTPRefreshReport) []mcpHTTPCommandDescriptor {
+	out := make([]mcpHTTPCommandDescriptor, 0, len(existing)+len(report.Commands))
+	for _, command := range existing {
+		productID := strings.TrimSpace(command.ProductID)
+		if !report.discoveredProducts[productID] {
+			continue
+		}
+		if report.successfulProducts[productID] {
+			continue
+		}
+		out = append(out, command)
+	}
+	out = append(out, report.Commands...)
+	return dedupeAndSortMCPHTTPCommands(out)
 }
 
 func mcpHTTPCommandsFromPublishedTool(service publishedMCPService, endpoint string, tool transport.ToolDescriptor) []mcpHTTPCommandDescriptor {
@@ -559,51 +743,6 @@ func mcpHTTPCommandsFromPublishedTool(service publishedMCPService, endpoint stri
 	return []mcpHTTPCommandDescriptor{fixed, debug}
 }
 
-func publishedMCPServiceForID(mcpID string) (publishedMCPService, error) {
-	mcpID = strings.TrimSpace(mcpID)
-	if mcpID == "" {
-		return publishedMCPService{}, fmt.Errorf("empty mcpId")
-	}
-	endpoint, err := publishedMCPURLForID(mcpID)
-	if err != nil {
-		return publishedMCPService{}, err
-	}
-	return publishedMCPService{
-		MCPID:  json.Number(mcpID),
-		MCPURL: endpoint,
-	}, nil
-}
-
-func publishedMCPURLForID(mcpID string) (string, error) {
-	base, err := mcpHTTPPublishedGatewayBaseURL()
-	if err != nil {
-		return "", err
-	}
-	return strings.TrimRight(base, "/") + "/server/org-" + url.PathEscape(strings.TrimSpace(mcpID)), nil
-}
-
-func mcpHTTPPublishedGatewayBaseURL() (string, error) {
-	portalBase, err := mcpHTTPDiscoveryBaseURL()
-	if err != nil {
-		return "", err
-	}
-	parsed, err := url.Parse(portalBase)
-	if err != nil || parsed.Scheme == "" || parsed.Host == "" {
-		return "", fmt.Errorf("invalid published MCP discovery URL: %q", transport.RedactURL(portalBase))
-	}
-	host := strings.ToLower(parsed.Hostname())
-	switch host {
-	case "pre-aihub.dingtalk.com":
-		parsed.Host = strings.Replace(parsed.Host, parsed.Hostname(), "pre-mcp-gw.dingtalk.com", 1)
-	case "aihub.dingtalk.com":
-		parsed.Host = strings.Replace(parsed.Host, parsed.Hostname(), "mcp-gw.dingtalk.com", 1)
-	}
-	parsed.Path = ""
-	parsed.RawQuery = ""
-	parsed.Fragment = ""
-	return strings.TrimRight(parsed.String(), "/"), nil
-}
-
 func (s publishedMCPService) idString() string {
 	return strings.TrimSpace(s.MCPID.String())
 }
@@ -619,16 +758,38 @@ func (s publishedMCPService) displayName() string {
 }
 
 func (s publishedMCPService) commandName(tool transport.ToolDescriptor) string {
-	if name := strings.TrimSpace(s.ServerName); name != "" {
+	if name, ok := normalizeMCPHTTPServerName(s.ServerName); ok {
 		return name
 	}
-	if name := strings.TrimSpace(s.Name); name != "" {
-		return name
+	if id := kebabCaseMCPHTTP(s.idString()); id != "" {
+		return "mcp-" + id
 	}
 	if name := strings.TrimSpace(tool.Name); name != "" {
 		return name
 	}
-	return s.displayName()
+	return "published-mcp"
+}
+
+func normalizeMCPHTTPServerName(name string) (string, bool) {
+	name = strings.ToLower(strings.TrimSpace(name))
+	if name == "" || len(name) > 255 || strings.HasPrefix(name, "-") || strings.HasSuffix(name, "-") {
+		return "", false
+	}
+	previousDash := false
+	for _, r := range name {
+		if r == '-' {
+			if previousDash {
+				return "", false
+			}
+			previousDash = true
+			continue
+		}
+		if !(r >= 'a' && r <= 'z' || r >= '0' && r <= '9') {
+			return "", false
+		}
+		previousDash = false
+	}
+	return name, true
 }
 
 func (s publishedMCPService) productID() string {
@@ -783,8 +944,36 @@ func normalizeMCPHTTPCommand(command mcpHTTPCommandDescriptor) mcpHTTPCommandDes
 	if len(path) >= 2 && path[0] == "connect" && path[1] == "mcp" {
 		path[0] = mcpHTTPCommandRoot
 	}
+	path = normalizePublishedMCPHTTPCommandPath(path, command.ProductID, command.Tool)
 	command.Path = path
 	return command
+}
+
+func normalizePublishedMCPHTTPCommandPath(path []string, productID, tool string) []string {
+	const prefix = "published-mcp-"
+	if !strings.HasPrefix(productID, prefix) {
+		return path
+	}
+	serviceSlug := mcpHTTPCommandServiceSlug(path)
+	if serviceSlug == "" {
+		return path
+	}
+	if normalized, ok := normalizeMCPHTTPServerName(serviceSlug); ok {
+		if normalized == serviceSlug {
+			return path
+		}
+		return replaceMCPHTTPCommandServiceSlug(path, normalized)
+	}
+	fallback := kebabCaseMCPHTTP(strings.TrimPrefix(productID, prefix))
+	if fallback != "" {
+		fallback = "mcp-" + fallback
+	} else {
+		fallback = kebabCaseMCPHTTP(tool)
+	}
+	if fallback == "" {
+		return path
+	}
+	return replaceMCPHTTPCommandServiceSlug(path, fallback)
 }
 
 func firstMCPHTTPSchema(obj map[string]any) map[string]any {
@@ -1465,6 +1654,11 @@ func shouldRefreshMCPHTTPCommands(args []string) bool {
 		}
 		tokens = append(tokens, splitMCPHTTPPath(arg)...)
 	}
+	for i := 0; i+2 < len(tokens); i++ {
+		if tokens[i] == mcpHTTPCommandRoot && tokens[i+1] == "mcp" && tokens[i+2] == "refresh" {
+			return false
+		}
+	}
 	for i := 0; i+1 < len(tokens); i++ {
 		if tokens[i] == "dev" && tokens[i+1] == "mcp" {
 			return true
@@ -1487,13 +1681,13 @@ func maybeRefreshMCPHTTPCommandsAfterInvocation(ctx context.Context, invocation 
 	if !shouldRefreshMCPHTTPCommandsAfterInvocation(invocation, flags) {
 		return
 	}
-	if _, err := refreshMCPHTTPCommandCache(ctx); err != nil {
+	report, err := refreshMCPHTTPCommandCache(ctx, mcpHTTPRefreshTimeout(flags))
+	if err != nil {
 		slog.Debug("mcp-http: post-mutation refresh failed", "error", err)
+		return
 	}
-	if ok, err := refreshCurrentPublishedMCPCommandCache(ctx, invocation, result); err != nil {
-		slog.Debug("mcp-http: current published MCP refresh failed", "error", err)
-	} else if ok {
-		slog.Debug("mcp-http: current published MCP refreshed", "mcpId", mcpHTTPInvocationMCPID(invocation, result))
+	if report.Partial {
+		slog.Debug("mcp-http: post-mutation refresh partially succeeded", "failedServices", len(report.FailedServices))
 	}
 }
 
@@ -1515,75 +1709,6 @@ func mcpDevToolMutatesCommands(tool string) bool {
 	default:
 		return false
 	}
-}
-
-func refreshCurrentPublishedMCPCommandCache(ctx context.Context, invocation executor.Invocation, result executor.Result) (bool, error) {
-	mcpID := mcpHTTPInvocationMCPID(invocation, result)
-	if mcpID == "" {
-		return false, nil
-	}
-	service, err := publishedMCPServiceForID(mcpID)
-	if err != nil {
-		return false, err
-	}
-	callCtx, cancel := context.WithTimeout(ctx, mcpHTTPCommandListRefreshTimeout)
-	defer cancel()
-
-	commands, err := mcpHTTPCommandsFromPublishedMCPs(callCtx, []publishedMCPService{service})
-	if err != nil {
-		return false, err
-	}
-	if len(commands) == 0 {
-		return false, nil
-	}
-
-	source, err := currentMCPHTTPCommandCacheSource()
-	if err != nil {
-		return false, err
-	}
-	existing, _ := readMCPHTTPCommandCache(source)
-	merged := mergeMCPHTTPCommandCacheForProduct(existing, commands, service.productID())
-	if err := writeMCPHTTPCommandCache(source, merged); err != nil {
-		return false, err
-	}
-	registerMCPHTTPRuntimeRoutes(commands)
-	return true, nil
-}
-
-func mergeMCPHTTPCommandCacheForProduct(existing, replacement []mcpHTTPCommandDescriptor, productID string) []mcpHTTPCommandDescriptor {
-	productID = strings.TrimSpace(productID)
-	serviceSlug := existingMCPHTTPCommandServiceSlug(existing, productID)
-	if serviceSlug != "" {
-		for i := range replacement {
-			replacement[i].Path = replaceMCPHTTPCommandServiceSlug(replacement[i].Path, serviceSlug)
-		}
-	}
-
-	out := make([]mcpHTTPCommandDescriptor, 0, len(existing)+len(replacement))
-	for _, command := range existing {
-		if productID != "" && strings.TrimSpace(command.ProductID) == productID {
-			continue
-		}
-		out = append(out, command)
-	}
-	out = append(out, replacement...)
-	return dedupeAndSortMCPHTTPCommands(out)
-}
-
-func existingMCPHTTPCommandServiceSlug(commands []mcpHTTPCommandDescriptor, productID string) string {
-	productID = strings.TrimSpace(productID)
-	if productID == "" {
-		return ""
-	}
-	for _, command := range commands {
-		if strings.TrimSpace(command.ProductID) != productID {
-			continue
-		}
-		if slug := mcpHTTPCommandServiceSlug(command.Path); slug != "" {
-			return slug
-		}
-	}
-	return ""
 }
 
 func mcpHTTPCommandServiceSlug(path []string) string {
@@ -1635,62 +1760,6 @@ func dedupeAndSortMCPHTTPCommands(commands []mcpHTTPCommandDescriptor) []mcpHTTP
 		return strings.Join(out[i].Path, " ") < strings.Join(out[j].Path, " ")
 	})
 	return out
-}
-
-func mcpHTTPInvocationMCPID(invocation executor.Invocation, result executor.Result) string {
-	if value := mcpHTTPValueString(invocation.Params["mcpId"]); value != "" {
-		return value
-	}
-	if value := mcpHTTPValueString(invocation.Params["mcp_id"]); value != "" {
-		return value
-	}
-	for _, key := range []string{"mcpId", "mcp_id"} {
-		if value := findMCPHTTPValueString(result.Response, key); value != "" {
-			return value
-		}
-	}
-	return ""
-}
-
-func findMCPHTTPValueString(value any, key string) string {
-	switch typed := value.(type) {
-	case map[string]any:
-		if value := mcpHTTPValueString(typed[key]); value != "" {
-			return value
-		}
-		for _, child := range typed {
-			if value := findMCPHTTPValueString(child, key); value != "" {
-				return value
-			}
-		}
-	case []any:
-		for _, child := range typed {
-			if value := findMCPHTTPValueString(child, key); value != "" {
-				return value
-			}
-		}
-	}
-	return ""
-}
-
-func mcpHTTPValueString(value any) string {
-	switch typed := value.(type) {
-	case string:
-		return strings.TrimSpace(typed)
-	case json.Number:
-		return strings.TrimSpace(typed.String())
-	case float64:
-		if typed == float64(int64(typed)) {
-			return strconv.FormatInt(int64(typed), 10)
-		}
-		return strconv.FormatFloat(typed, 'f', -1, 64)
-	case int:
-		return strconv.Itoa(typed)
-	case int64:
-		return strconv.FormatInt(typed, 10)
-	default:
-		return ""
-	}
 }
 
 func mcpHTTPCommandRequiresWriteGuard(descriptor mcpHTTPCommandDescriptor) bool {

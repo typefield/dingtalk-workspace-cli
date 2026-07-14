@@ -17,15 +17,19 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"fmt"
 	"net/http"
 	"net/http/httptest"
 	"os"
 	"path/filepath"
 	"reflect"
+	"strconv"
 	"strings"
+	"sync/atomic"
 	"testing"
 	"time"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/transport"
 	"github.com/spf13/cobra"
@@ -174,7 +178,7 @@ func TestFetchMCPHTTPCommandListFromPublishedDiscovery(t *testing.T) {
 						"name":        "Weather MCP",
 						"description": "Weather service",
 						"icon":        "",
-						"mcpUrl":      server.URL + "/server/org-1001",
+						"mcpUrl":      server.URL + "/server/hash-1001",
 					}},
 					"currentPage": 1,
 					"pageSize":    100,
@@ -182,7 +186,7 @@ func TestFetchMCPHTTPCommandListFromPublishedDiscovery(t *testing.T) {
 					"totalPages":  1,
 				},
 			})
-		case "/server/org-1001":
+		case "/server/hash-1001":
 			var req map[string]any
 			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
 				t.Fatalf("decode JSON-RPC request: %v", err)
@@ -296,9 +300,7 @@ func TestMCPHTTPCommandCacheTTL(t *testing.T) {
 }
 
 func TestMCPHTTPCommandsFromPublishedToolFallsBackToToolName(t *testing.T) {
-	commands := mcpHTTPCommandsFromPublishedTool(publishedMCPService{
-		MCPID: json.Number("1001"),
-	}, "https://mcp-gw.example/server/org-1001", transport.ToolDescriptor{
+	commands := mcpHTTPCommandsFromPublishedTool(publishedMCPService{}, "https://mcp-gw.example/server/hash-1001", transport.ToolDescriptor{
 		Name:        "baidu_search_suggest",
 		Description: "Baidu suggest",
 	})
@@ -308,6 +310,80 @@ func TestMCPHTTPCommandsFromPublishedToolFallsBackToToolName(t *testing.T) {
 	}
 	if findMCPHTTPTestCommandByPath(commands, []string{"connector", "mcp", "published", "baidu-search-suggest", "baidu-search-suggest"}) == nil {
 		t.Fatalf("tool-name debug command missing: %#v", commands)
+	}
+}
+
+func TestMCPHTTPCommandsFromPublishedToolFallsBackToMCPIDBeforeDisplayName(t *testing.T) {
+	commands := mcpHTTPCommandsFromPublishedTool(publishedMCPService{
+		MCPID: json.Number("10513"),
+		Name:  "天气查询测试服务",
+	}, "https://mcp-gw.example/server/weather", transport.ToolDescriptor{
+		Name: "search_city",
+	})
+
+	if findMCPHTTPTestCommandByPath(commands, []string{"mcp-10513", "search-city"}) == nil {
+		t.Fatalf("mcpId fallback command missing: %#v", commands)
+	}
+	for _, command := range commands {
+		if strings.Contains(strings.Join(command.Path, " "), "天气查询测试服务") {
+			t.Fatalf("display name leaked into command path: %#v", command.Path)
+		}
+	}
+}
+
+func TestMCPHTTPCommandsFromPublishedToolRejectsInvalidServerName(t *testing.T) {
+	commands := mcpHTTPCommandsFromPublishedTool(publishedMCPService{
+		MCPID:      json.Number("10513"),
+		ServerName: "天气服务",
+		Name:       "Weather Service",
+	}, "https://mcp-gw.example/server/weather", transport.ToolDescriptor{
+		Name: "search_city",
+	})
+
+	if findMCPHTTPTestCommandByPath(commands, []string{"mcp-10513", "search-city"}) == nil {
+		t.Fatalf("invalid serverName should fall back to mcpId: %#v", commands)
+	}
+}
+
+func TestMCPHTTPCommandCacheMigratesChinesePublishedServicePath(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	endpoint := "https://mcp-gw.example/server/weather"
+	path, err := mcpHTTPCommandCachePath(endpoint)
+	if err != nil {
+		t.Fatalf("mcpHTTPCommandCachePath() error = %v", err)
+	}
+	if err := os.MkdirAll(filepath.Dir(path), 0o700); err != nil {
+		t.Fatalf("MkdirAll(cache dir) error = %v", err)
+	}
+	cache := mcpHTTPCommandCacheFile{
+		FetchedAt: time.Now(),
+		Commands: []mcpHTTPCommandDescriptor{
+			{
+				Path:      []string{"天气查询测试服务", "search-city"},
+				ProductID: "published-mcp-10513",
+				Tool:      "search_city",
+			},
+			{
+				Path:      []string{"connector", "mcp", "published", "天气查询测试服务", "search-city"},
+				ProductID: "published-mcp-10513",
+				Tool:      "search_city",
+			},
+		},
+	}
+	data, _ := json.Marshal(cache)
+	if err := os.WriteFile(path, data, 0o600); err != nil {
+		t.Fatalf("WriteFile(cache) error = %v", err)
+	}
+
+	commands, fresh := readMCPHTTPCommandCache(endpoint)
+	if !fresh {
+		t.Fatal("migrated cache should remain fresh")
+	}
+	if findMCPHTTPTestCommandByPath(commands, []string{"mcp-10513", "search-city"}) == nil {
+		t.Fatalf("fixed migrated path missing: %#v", commands)
+	}
+	if findMCPHTTPTestCommandByPath(commands, []string{"connector", "mcp", "published", "mcp-10513", "search-city"}) == nil {
+		t.Fatalf("debug migrated path missing: %#v", commands)
 	}
 }
 
@@ -344,96 +420,256 @@ func TestMCPHTTPCommandCacheMigratesLegacyConnectMCPPath(t *testing.T) {
 	}
 }
 
-func TestPublishedMCPURLForIDUsesDiscoveryEnvironment(t *testing.T) {
-	t.Setenv(mcpHTTPCommandDiscoveryEnv, "https://pre-aihub.dingtalk.com")
-	got, err := publishedMCPURLForID("10487")
-	if err != nil {
-		t.Fatalf("publishedMCPURLForID() error = %v", err)
+func TestMCPHTTPCommandsFromPublishedMCPsReportIsolatesTimeout(t *testing.T) {
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		switch r.URL.Path {
+		case "/slow":
+			time.Sleep(200 * time.Millisecond)
+		case "/fast":
+			var req map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode JSON-RPC request: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0",
+				"id":      req["id"],
+				"result": map[string]any{
+					"tools": []map[string]any{{"name": "fast_tool"}},
+				},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+
+	startedAt := time.Now()
+	report := mcpHTTPCommandsFromPublishedMCPsReport(context.Background(), []publishedMCPService{
+		{MCPID: json.Number("1001"), ServerName: "slow-one", MCPURL: server.URL + "/slow?key=super-secret"},
+		{MCPID: json.Number("1002"), ServerName: "slow-two", MCPURL: server.URL + "/slow?key=super-secret"},
+		{MCPID: json.Number("1003"), ServerName: "slow-three", MCPURL: server.URL + "/slow?key=super-secret"},
+		{MCPID: json.Number("1004"), ServerName: "slow-four", MCPURL: server.URL + "/slow?key=super-secret"},
+		{MCPID: json.Number("1005"), ServerName: "fast-service", MCPURL: server.URL + "/fast"},
+	}, 50*time.Millisecond)
+	elapsed := time.Since(startedAt)
+
+	if !report.Partial || report.ServiceCount != 5 || report.SuccessfulServiceCount != 1 {
+		t.Fatalf("unexpected report: %#v", report)
 	}
-	want := "https://pre-mcp-gw.dingtalk.com/server/org-10487"
-	if got != want {
-		t.Fatalf("publishedMCPURLForID() = %q, want %q", got, want)
+	if len(report.FailedServices) != 4 || report.FailedServices[0].MCPID != "1001" {
+		t.Fatalf("failed services = %#v", report.FailedServices)
+	}
+	if elapsed >= 150*time.Millisecond {
+		t.Fatalf("service probes appear sequential: elapsed=%s", elapsed)
+	}
+	for _, failure := range report.FailedServices {
+		if strings.Contains(failure.Endpoint, "super-secret") || strings.Contains(failure.Error, "super-secret") {
+			t.Fatalf("refresh failure leaked endpoint credential: %#v", failure)
+		}
+	}
+	if report.ToolCount != 1 || len(report.Commands) != 2 {
+		t.Fatalf("toolCount=%d commands=%d, want 1/2", report.ToolCount, len(report.Commands))
+	}
+	if findMCPHTTPTestCommandByPath(report.Commands, []string{"fast-service", "fast-tool"}) == nil {
+		t.Fatalf("healthy service command missing: %#v", report.Commands)
 	}
 }
 
-func TestMergeMCPHTTPCommandCacheForProductPreservesExistingServicePath(t *testing.T) {
+func TestMCPHTTPCommandsFromPublishedMCPsReportBoundsConcurrency(t *testing.T) {
+	var active atomic.Int32
+	var maximum atomic.Int32
+	release := make(chan struct{})
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		var req map[string]any
+		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+			t.Errorf("decode JSON-RPC request: %v", err)
+			return
+		}
+		current := active.Add(1)
+		for {
+			observed := maximum.Load()
+			if current <= observed || maximum.CompareAndSwap(observed, current) {
+				break
+			}
+		}
+		<-release
+		active.Add(-1)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"jsonrpc": "2.0",
+			"id":      req["id"],
+			"result":  map[string]any{"tools": []map[string]any{{"name": "bounded_tool"}}},
+		})
+	}))
+	defer server.Close()
+
+	services := make([]publishedMCPService, 6)
+	for index := range services {
+		services[index] = publishedMCPService{
+			MCPID:      json.Number(strconv.Itoa(index + 1)),
+			ServerName: fmt.Sprintf("service-%d", index+1),
+			MCPURL:     server.URL,
+		}
+	}
+	reportCh := make(chan mcpHTTPRefreshReport, 1)
+	go func() {
+		reportCh <- mcpHTTPCommandsFromPublishedMCPsReport(context.Background(), services, 2*time.Second)
+	}()
+
+	deadline := time.Now().Add(time.Second)
+	for maximum.Load() < mcpHTTPCommandRefreshWorkers && time.Now().Before(deadline) {
+		time.Sleep(time.Millisecond)
+	}
+	if got := maximum.Load(); got != mcpHTTPCommandRefreshWorkers {
+		close(release)
+		t.Fatalf("maximum concurrent probes = %d, want %d", got, mcpHTTPCommandRefreshWorkers)
+	}
+	close(release)
+	report := <-reportCh
+	if got := maximum.Load(); got > mcpHTTPCommandRefreshWorkers {
+		t.Fatalf("maximum concurrent probes = %d, limit %d", got, mcpHTTPCommandRefreshWorkers)
+	}
+	if report.SuccessfulServiceCount != len(services) || len(report.FailedServices) != 0 {
+		t.Fatalf("unexpected bounded-concurrency report: %#v", report)
+	}
+}
+
+func TestNewMCPHTTPRefreshClientUsesRequestedTimeout(t *testing.T) {
+	client := newMCPHTTPRefreshClient(45 * time.Second)
+	if client.HTTPClient.Timeout != 45*time.Second {
+		t.Fatalf("http client timeout = %s, want 45s", client.HTTPClient.Timeout)
+	}
+	transportConfig, ok := client.HTTPClient.Transport.(*http.Transport)
+	if !ok {
+		t.Fatalf("HTTP transport = %T, want *http.Transport", client.HTTPClient.Transport)
+	}
+	if transportConfig.ResponseHeaderTimeout != 45*time.Second {
+		t.Fatalf("response header timeout = %s, want 45s", transportConfig.ResponseHeaderTimeout)
+	}
+}
+
+func TestMergeMCPHTTPRefreshCommandsPreservesFailedProductCache(t *testing.T) {
 	existing := []mcpHTTPCommandDescriptor{
-		{
-			Path:      []string{"connector", "mcp", "published", "weather-service", "old-tool"},
-			ProductID: "published-mcp-1001",
-			Tool:      "old_tool",
-		},
-		{
-			Path:      []string{"connector", "mcp", "published", "todo", "get-todo"},
-			ProductID: "published-mcp-2002",
-			Tool:      "get_todo",
-		},
+		{Path: []string{"service-one", "old-one"}, ProductID: "published-mcp-1001", Tool: "old_one"},
+		{Path: []string{"service-two", "old-two"}, ProductID: "published-mcp-1002", Tool: "old_two"},
+		{Path: []string{"removed-service", "old-three"}, ProductID: "published-mcp-1003", Tool: "old_three"},
 	}
-	replacement := []mcpHTTPCommandDescriptor{
-		{
-			Path:      []string{"mcp-1001", "new-tool"},
-			ProductID: "published-mcp-1001",
-			Tool:      "new_tool",
+	report := mcpHTTPRefreshReport{
+		Commands: []mcpHTTPCommandDescriptor{
+			{Path: []string{"service-two", "new-two"}, ProductID: "published-mcp-1002", Tool: "new_two"},
 		},
-		{
-			Path:      []string{"connector", "mcp", "published", "mcp-1001", "new-tool"},
-			ProductID: "published-mcp-1001",
-			Tool:      "new_tool",
+		discoveredProducts: map[string]bool{
+			"published-mcp-1001": true,
+			"published-mcp-1002": true,
+		},
+		successfulProducts: map[string]bool{
+			"published-mcp-1002": true,
 		},
 	}
 
-	got := mergeMCPHTTPCommandCacheForProduct(existing, replacement, "published-mcp-1001")
-	if len(got) != 3 {
-		t.Fatalf("len(merged) = %d, want 3: %#v", len(got), got)
+	got := mergeMCPHTTPRefreshCommands(existing, report)
+	if findMCPHTTPTestCommand(got, "old_one") == nil {
+		t.Fatalf("failed product cache should be preserved: %#v", got)
 	}
-	if findMCPHTTPTestCommand(got, "old_tool") != nil {
-		t.Fatalf("old product command should be replaced: %#v", got)
+	if findMCPHTTPTestCommand(got, "new_two") == nil || findMCPHTTPTestCommand(got, "old_two") != nil {
+		t.Fatalf("successful product cache should be replaced: %#v", got)
 	}
-	wantFixedPath := []string{"weather-service", "new-tool"}
-	if findMCPHTTPTestCommandByPath(got, wantFixedPath) == nil {
-		t.Fatalf("fixed new command missing: %#v", got)
-	}
-	wantDebugPath := []string{"connector", "mcp", "published", "weather-service", "new-tool"}
-	if findMCPHTTPTestCommandByPath(got, wantDebugPath) == nil {
-		t.Fatalf("debug new command missing: %#v", got)
-	}
-	if findMCPHTTPTestCommand(got, "get_todo") == nil {
-		t.Fatalf("unrelated product command should be preserved: %#v", got)
+	if findMCPHTTPTestCommand(got, "old_three") != nil {
+		t.Fatalf("undiscovered product cache should be removed: %#v", got)
 	}
 }
 
-func TestRefreshCurrentPublishedMCPCommandCacheMergesDirectToolsList(t *testing.T) {
+func TestRefreshMCPHTTPCommandCachePartialSuccessPreservesFailedProduct(t *testing.T) {
 	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
 	ResetRuntimeTokenCache()
 	t.Cleanup(ResetRuntimeTokenCache)
 
 	var server *httptest.Server
 	server = httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
-		if r.URL.Path != "/server/org-1001" {
+		switch r.URL.Path {
+		case "/cli/discovery/mcp":
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"success": true,
+				"result": map[string]any{
+					"values": []map[string]any{
+						{"mcpId": 1001, "serverName": "slow-service", "mcpUrl": server.URL + "/slow"},
+						{"mcpId": 1002, "serverName": "fast-service", "mcpUrl": server.URL + "/fast"},
+					},
+					"totalPages": 1,
+				},
+			})
+		case "/slow":
+			time.Sleep(100 * time.Millisecond)
+		case "/fast":
+			var req map[string]any
+			if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
+				t.Fatalf("decode JSON-RPC request: %v", err)
+			}
+			_ = json.NewEncoder(w).Encode(map[string]any{
+				"jsonrpc": "2.0",
+				"id":      req["id"],
+				"result":  map[string]any{"tools": []map[string]any{{"name": "new_fast"}}},
+			})
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer server.Close()
+	t.Setenv(mcpHTTPCommandDiscoveryEnv, server.URL)
+
+	source, err := currentMCPHTTPCommandCacheSource()
+	if err != nil {
+		t.Fatalf("currentMCPHTTPCommandCacheSource() error = %v", err)
+	}
+	existing := []mcpHTTPCommandDescriptor{
+		{Path: []string{"slow-service", "old-slow"}, ProductID: "published-mcp-1001", Tool: "old_slow"},
+		{Path: []string{"fast-service", "old-fast"}, ProductID: "published-mcp-1002", Tool: "old_fast"},
+		{Path: []string{"removed-service", "old-removed"}, ProductID: "published-mcp-1003", Tool: "old_removed"},
+	}
+	if err := writeMCPHTTPCommandCache(source, existing); err != nil {
+		t.Fatalf("writeMCPHTTPCommandCache() error = %v", err)
+	}
+
+	report, err := refreshMCPHTTPCommandCache(context.Background(), 30*time.Millisecond)
+	if err != nil {
+		t.Fatalf("refreshMCPHTTPCommandCache() error = %v", err)
+	}
+	if !report.Partial || !report.CacheUpdated || len(report.FailedServices) != 1 {
+		t.Fatalf("unexpected report: %#v", report)
+	}
+	if findMCPHTTPTestCommand(report.Commands, "old_slow") == nil {
+		t.Fatalf("failed service stale command missing: %#v", report.Commands)
+	}
+	if findMCPHTTPTestCommand(report.Commands, "new_fast") == nil || findMCPHTTPTestCommand(report.Commands, "old_fast") != nil {
+		t.Fatalf("healthy service cache not replaced: %#v", report.Commands)
+	}
+	if findMCPHTTPTestCommand(report.Commands, "old_removed") != nil {
+		t.Fatalf("removed service cache should be dropped: %#v", report.Commands)
+	}
+	cached, fresh := readMCPHTTPCommandCache(source)
+	if !fresh || !reflect.DeepEqual(cached, report.Commands) {
+		t.Fatalf("cache mismatch: fresh=%v cached=%#v report=%#v", fresh, cached, report.Commands)
+	}
+}
+
+func TestMCPHTTPRefreshCommandReportsTotalFailureAndKeepsCache(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	ResetRuntimeTokenCache()
+	t.Cleanup(ResetRuntimeTokenCache)
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if r.URL.Path != "/cli/discovery/mcp" {
 			http.NotFound(w, r)
 			return
 		}
-		var req map[string]any
-		if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
-			t.Fatalf("decode JSON-RPC request: %v", err)
-		}
-		if req["method"] != "tools/list" {
-			t.Fatalf("JSON-RPC method = %#v, want tools/list", req["method"])
-		}
 		_ = json.NewEncoder(w).Encode(map[string]any{
-			"jsonrpc": "2.0",
-			"id":      req["id"],
+			"success": true,
 			"result": map[string]any{
-				"tools": []map[string]any{{
-					"name":        "new_weather",
-					"description": "New weather",
-					"inputSchema": map[string]any{
-						"type": "object",
-						"properties": map[string]any{
-							"city": map[string]any{"type": "string"},
-						},
-					},
+				"values": []map[string]any{{
+					"mcpId":      1001,
+					"serverName": "offline-service",
+					"mcpUrl":     "",
 				}},
+				"totalPages": 1,
 			},
 		})
 	}))
@@ -445,42 +681,51 @@ func TestRefreshCurrentPublishedMCPCommandCacheMergesDirectToolsList(t *testing.
 		t.Fatalf("currentMCPHTTPCommandCacheSource() error = %v", err)
 	}
 	existing := []mcpHTTPCommandDescriptor{{
-		Path:      []string{"connector", "mcp", "published", "weather-service", "old-weather"},
+		Path:      []string{"offline-service", "cached-tool"},
 		ProductID: "published-mcp-1001",
-		Tool:      "old_weather",
+		Tool:      "cached_tool",
 	}}
 	if err := writeMCPHTTPCommandCache(source, existing); err != nil {
 		t.Fatalf("writeMCPHTTPCommandCache() error = %v", err)
 	}
 
-	ok, err := refreshCurrentPublishedMCPCommandCache(context.Background(), executor.Invocation{
-		Tool:   "mcp_tool_publish",
-		Params: map[string]any{"mcpId": 1001},
-	}, executor.Result{})
-	if err != nil {
-		t.Fatalf("refreshCurrentPublishedMCPCommandCache() error = %v", err)
+	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
+	flags := &GlobalFlags{}
+	bindPersistentFlags(root, flags)
+	ensureMCPHTTPRefreshCommand(root, flags)
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetArgs([]string{"connector", "mcp", "refresh", "--format", "json"})
+	_, err = root.ExecuteC()
+	if err == nil {
+		t.Fatal("refresh error = nil, want total failure")
 	}
-	if !ok {
-		t.Fatal("refreshCurrentPublishedMCPCommandCache() ok = false, want true")
+	if got := apperrors.ExitCode(err); got != 6 {
+		t.Fatalf("refresh exit code = %d, want discovery code 6: %v", got, err)
 	}
-	got, fresh := readMCPHTTPCommandCache(source)
-	if !fresh {
-		t.Fatal("cache should be fresh after direct refresh")
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+		t.Fatalf("decode refresh failure payload: %v; output=%q", err, stdout.String())
 	}
-	if findMCPHTTPTestCommand(got, "old_weather") != nil {
-		t.Fatalf("old tool should be replaced: %#v", got)
+	if payload["success"] != false || payload["partial"] != true || payload["cacheUpdated"] != false {
+		t.Fatalf("unexpected refresh failure payload: %#v", payload)
 	}
-	newCommand := findMCPHTTPTestCommand(got, "new_weather")
-	if newCommand == nil {
-		t.Fatalf("new tool missing from cache: %#v", got)
+	if payload["failedServiceCount"] != float64(1) || payload["commandCount"] != float64(1) {
+		t.Fatalf("unexpected refresh failure counts: %#v", payload)
 	}
-	wantPath := []string{"connector", "mcp", "published", "weather-service", "new-weather"}
-	if !reflect.DeepEqual(newCommand.Path, wantPath) {
-		t.Fatalf("new command path = %#v, want %#v", newCommand.Path, wantPath)
+	cached, fresh := readMCPHTTPCommandCache(source)
+	if !fresh || findMCPHTTPTestCommand(cached, "cached_tool") == nil {
+		t.Fatalf("total failure should preserve cache: fresh=%v cached=%#v", fresh, cached)
 	}
-	wantFixedPath := []string{"weather-service", "new-weather"}
-	if findMCPHTTPTestCommandByPath(got, wantFixedPath) == nil {
-		t.Fatalf("fixed new command missing from cache: %#v", got)
+}
+
+func TestMCPHTTPRefreshCommandErrorPreservesStructuredCategory(t *testing.T) {
+	internalErr := apperrors.NewInternal("cache write failed")
+	if got := apperrors.ExitCode(mcpHTTPRefreshCommandError(internalErr)); got != 5 {
+		t.Fatalf("structured internal error exit code = %d, want 5", got)
+	}
+	if got := apperrors.ExitCode(mcpHTTPRefreshCommandError(fmt.Errorf("all probes failed"))); got != 6 {
+		t.Fatalf("plain refresh error exit code = %d, want discovery code 6", got)
 	}
 }
 
@@ -523,6 +768,15 @@ func TestShouldRefreshMCPHTTPCommandsAfterPublishedToolPublish(t *testing.T) {
 	invocation.Tool = "create_document"
 	if shouldRefreshMCPHTTPCommandsAfterInvocation(invocation, nil) {
 		t.Fatal("unrelated tool should not refresh dynamic command cache")
+	}
+}
+
+func TestShouldRefreshMCPHTTPCommandsSkipsExplicitRefreshStartupFetch(t *testing.T) {
+	if shouldRefreshMCPHTTPCommands([]string{"connector", "mcp", "refresh"}) {
+		t.Fatal("explicit refresh should not trigger a duplicate startup refresh")
+	}
+	if !shouldRefreshMCPHTTPCommands([]string{"connector", "mcp", "service", "list"}) {
+		t.Fatal("other connector commands should refresh stale dynamic commands")
 	}
 }
 
