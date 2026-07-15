@@ -23,6 +23,25 @@ metadata:
 
 > 命令参考：[mail.md](references/mail.md)。复杂搜索、附件、批量处理、草稿等多步邮件场景参考：[09-mail.md](references/09-mail.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws mail --help` / `dws shortcut list --service mail` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws mail <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws mail +contact-list` | read | 列出指定邮箱的所有邮件联系人 |
+| `dws mail +find-mail-user` | read | 按关键词搜索邮箱联系人并投影列表（姓名/昵称/邮箱/工号等） |
+| `dws mail +folder-list` | read | 列出顶层文件夹或指定父文件夹下的子文件夹 |
+| `dws mail +recent-mail` | read | 列出收件箱近期邮件会话并投影列表（主题/发件人/时间/threadId） |
+| `dws mail +search-mail` | read | 按 KQL 关键词搜索邮件并投影列表（主题/发件人/时间/messageId） |
+| `dws mail +tag-list` | read | 列出指定邮箱下的所有邮件标签 |
+| `dws mail +template-list` | read | 列出指定邮箱的所有邮件模板 |
+| `dws mail +thread-list` | read | 列出指定邮箱文件夹下的邮件会话（thread） |
+| `dws mail +unread-mail` | read | 列出未读邮件并投影列表（主题/发件人/时间/messageId） |
+| `dws mail +user-search` | read | 按关键词或工号搜索邮箱用户（仅企业邮箱） |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |

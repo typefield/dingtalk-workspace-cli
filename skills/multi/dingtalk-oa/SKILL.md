@@ -23,6 +23,22 @@ metadata:
 
 > 命令参考：[oa.md](references/oa.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws oa --help` / `dws shortcut list --service oa` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws oa <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws oa +list-cc` | read | 获取抄送当前用户的审批单列表 |
+| `dws oa +list-executed` | read | 获取当前用户已经处理过的审批单列表 |
+| `dws oa +list-forms` | read | 获取当前用户可见的审批表单列表 |
+| `dws oa +list-pending` | read | 查询待我处理的审批（时间范围为 epoch 毫秒） |
+| `dws oa +list-submitted` | read | 获取当前用户已发起的审批单列表 |
+| `dws oa +my-initiated` | read | 列出我发起（提交）的审批单据 |
+| `dws oa +search-forms` | read | 按关键字模糊搜索当前用户可见的审批表单 |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |

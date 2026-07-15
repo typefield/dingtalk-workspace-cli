@@ -23,6 +23,19 @@ metadata:
 
 > 命令参考：[ding.md](references/ding.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws ding --help` / `dws shortcut list --service ding` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws ding <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws ding +list` | read | 查询 DING 消息列表 |
+| `dws ding +recall-personal` | high-risk-write | 撤回本人发起的 DING |
+| `dws ding +receiver-status` | read | 查询 DING 消息接收人已读状态 |
+| `dws ding +send-personal` | write | 以本人身份发送 DING 给指定人 |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |

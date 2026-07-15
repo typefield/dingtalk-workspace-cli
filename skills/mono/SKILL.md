@@ -35,6 +35,31 @@ cli_version: ">=1.0.15"
 - shortcut 失败时按“错误处理”流程先加 `--verbose` 复查；若仍失败，不要自行换成隐藏 shortcut 兜底，应记录具体输入、输出、trace / endpoint / tool 信息。
 
 
+<!-- VISIBLE_SHORTCUTS_OVERVIEW_START -->
+## 本期可见 Shortcut 总览
+
+下面只统计本期真实测试通过、默认 `--help` / `dws shortcut list` 可见的 shortcut。mono 模式不展开 200+ 行明细，避免 skill 过重；需要执行时先按产品路由，再用 `dws <service> --help` 查看 flags。multi 模式的各产品 skill 会展开该产品的可见 shortcut 表。
+
+| 服务 | 可见 shortcut 数 | multi skill | 发现命令 |
+|---|---:|---|---|
+| `aitable` | 29 | `dingtalk-aitable` | `dws aitable --help` / `dws shortcut list --service aitable --format json` |
+| `attendance` | 19 | `dingtalk-attendance` | `dws attendance --help` / `dws shortcut list --service attendance --format json` |
+| `calendar` | 20 | `dingtalk-calendar` | `dws calendar --help` / `dws shortcut list --service calendar --format json` |
+| `chat` | 42 | `dingtalk-chat` | `dws chat --help` / `dws shortcut list --service chat --format json` |
+| `contact` | 14 | `dingtalk-contact` | `dws contact --help` / `dws shortcut list --service contact --format json` |
+| `devapp` | 19 | `dingtalk-dev` | `dws devapp --help` / `dws shortcut list --service devapp --format json` |
+| `ding` | 4 | `dingtalk-ding` | `dws ding --help` / `dws shortcut list --service ding --format json` |
+| `doc` | 17 | `dingtalk-doc` | `dws doc --help` / `dws shortcut list --service doc --format json` |
+| `drive` | 7 | `dingtalk-drive` | `dws drive --help` / `dws shortcut list --service drive --format json` |
+| `mail` | 10 | `dingtalk-mail` | `dws mail --help` / `dws shortcut list --service mail --format json` |
+| `minutes` | 6 | `dingtalk-minutes` | `dws minutes --help` / `dws shortcut list --service minutes --format json` |
+| `oa` | 7 | `dingtalk-oa` | `dws oa --help` / `dws shortcut list --service oa --format json` |
+| `report` | 2 | `dingtalk-report` | `dws report --help` / `dws shortcut list --service report --format json` |
+| `sheet` | 2 | `dingtalk-sheet` | `dws sheet --help` / `dws shortcut list --service sheet --format json` |
+| `todo` | 11 | `dingtalk-todo` | `dws todo --help` / `dws shortcut list --service todo --format json` |
+| `wiki` | 1 | `dingtalk-wiki` | `dws wiki --help` / `dws shortcut list --service wiki --format json` |
+<!-- VISIBLE_SHORTCUTS_OVERVIEW_END -->
+
 ## 产品总览
 
 | 产品                | 用途                                                   | 参考文件                                                           |

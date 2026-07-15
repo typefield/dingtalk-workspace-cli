@@ -23,6 +23,16 @@ metadata:
 
 > 命令参考：[wiki.md](references/wiki.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws wiki --help` / `dws shortcut list --service wiki` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws wiki <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws wiki +space-search` | read | 搜索知识库 |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 `dws wiki` 三个命令族：`space`（知识库容器）、`node`（库内节点：文档/文件夹/表格等）、`member`（容器级成员）。

@@ -23,6 +23,21 @@ metadata:
 
 > 命令参考：[minutes.md](references/minutes.md)；剧本：[07-minutes.md](references/07-minutes.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws minutes --help` / `dws shortcut list --service minutes` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws minutes <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws minutes +detail` | read | 一条命令聚合取一条妙记（听记）的多项产物（基础信息/摘要/关键词/逐字稿/待办） |
+| `dws minutes +list-all` | read | 查询我有权限访问的所有听记列表 |
+| `dws minutes +list-mine` | read | 查询我创建的听记列表 |
+| `dws minutes +list-shared` | read | 查询他人共享给我的听记列表 |
+| `dws minutes +record-start` | write | 发起听记（开始录音） |
+| `dws minutes +replace-batch` | write | 对一条妙记（听记）批量执行多组文字替换（原文=>替换） |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |

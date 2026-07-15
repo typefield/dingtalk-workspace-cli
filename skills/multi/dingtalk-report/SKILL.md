@@ -23,6 +23,17 @@ metadata:
 
 > 命令参考：[report.md](references/report.md)；剧本：[05-reporting.md](references/05-reporting.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws report --help` / `dws shortcut list --service report` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws report <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws report +inbox-list` | read | 列出我收到的日报（按时间范围分页） |
+| `dws report +outbox-list` | read | 列出我发出的日报（可选时间/模版名过滤） |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |

@@ -23,6 +23,22 @@ metadata:
 
 > 命令参考：[drive.md](references/drive.md)。
 
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（本期可见，优先使用）
+
+以下 shortcut 已通过本期真实测试并在默认 `dws drive --help` / `dws shortcut list --service drive` 中可见。用户意图命中时优先使用 shortcut；具体 flags 以 `dws drive <shortcut> --help` 为准。未列出的同产品 shortcut 属于本期隐藏项，不在业务执行时主动推荐。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws drive +copy` | write | 复制文件/文档到指定位置 |
+| `dws drive +find-file` | read | 按名称关键词搜索钉盘文件并投影关键字段（只读） |
+| `dws drive +info` | read | 获取钉盘文件/文件夹元数据 |
+| `dws drive +move` | write | 移动文件/文档到指定位置 |
+| `dws drive +recent` | read | 获取最近访问/编辑的文档列表 |
+| `dws drive +search` | read | 搜索钉盘文件 |
+| `dws drive +search-docs` | read | 搜索文档空间文档 |
+<!-- VISIBLE_SHORTCUTS_END -->
+
 ## 意图表
 
 | 用户说 | 命令 |
