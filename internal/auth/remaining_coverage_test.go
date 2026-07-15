@@ -34,10 +34,12 @@ func TestTokenPersistencePreflightRemainingEdges(t *testing.T) {
 	origHooks := edition.Get()
 	origGet := authKeychainGet
 	origValidate := authValidateEntries
+	origProfilesReadFile := profilesReadFile
 	t.Cleanup(func() {
 		edition.Override(origHooks)
 		authKeychainGet = origGet
 		authValidateEntries = origValidate
+		profilesReadFile = origProfilesReadFile
 	})
 
 	edition.Override(&edition.Hooks{SaveToken: func(string, []byte) error { return nil }})
@@ -51,14 +53,12 @@ func TestTokenPersistencePreflightRemainingEdges(t *testing.T) {
 	edition.Override(&edition.Hooks{})
 	authKeychainGet = func(string, string) (string, error) { return "", nil }
 	authValidateEntries = func(string) error { return nil }
-	parent := t.TempDir()
-	invalidConfigDir := filepath.Join(parent, "not-a-directory")
-	if err := os.WriteFile(invalidConfigDir, []byte("x"), 0o600); err != nil {
-		t.Fatal(err)
+	profileFail := errors.New("profile load failed")
+	profilesReadFile = func(string) ([]byte, error) { return nil, profileFail }
+	if err := preflightTokenPersistence(t.TempDir()); !errors.Is(err, profileFail) {
+		t.Fatalf("profile load error = %v", err)
 	}
-	if err := preflightTokenPersistence(invalidConfigDir); err == nil {
-		t.Fatal("profile load error expected")
-	}
+	profilesReadFile = origProfilesReadFile
 
 	dir := t.TempDir()
 	rawProfiles := []byte(`{"version":1,"profiles":[{"name":"blank","corpId":"   "},{"name":"first","corpId":"corp"},{"name":"duplicate","corpId":"corp"}]}`)
@@ -96,16 +96,22 @@ func TestPortableExportRemainingEdges(t *testing.T) {
 	origManifest := portableWriteManifest
 	origAddDir := portableAddDir
 	origAddFile := portableAddFile
+	origKeychainGet := authKeychainGet
+	origKeychainExists := authKeychainExists
 	t.Cleanup(func() {
 		portableStat = origStat
 		portableConfigFilesForExport = origConfigFiles
 		portableWriteManifest = origManifest
 		portableAddDir = origAddDir
 		portableAddFile = origAddFile
+		authKeychainGet = origKeychainGet
+		authKeychainExists = origKeychainExists
 	})
 
 	t.Setenv(keychain.StorageDirEnv, t.TempDir())
 	t.Setenv(keychain.DisableKeychainEnv, "1")
+	authKeychainGet = func(string, string) (string, error) { return "", nil }
+	authKeychainExists = func(string, string) bool { return false }
 	configDir := t.TempDir()
 	encPath := filepath.Join(keychain.StorageDir(keychain.Service), keychain.AccountToken+".enc")
 	portableStat = func(path string) (os.FileInfo, error) {
@@ -119,8 +125,14 @@ func TestPortableExportRemainingEdges(t *testing.T) {
 	}
 	portableStat = origStat
 
-	if err := SaveTokenDataKeychain(&TokenData{CorpID: "corp", AccessToken: "token"}); err != nil {
+	if err := os.MkdirAll(filepath.Dir(encPath), 0o700); err != nil {
 		t.Fatal(err)
+	}
+	if err := os.WriteFile(encPath, []byte("encrypted"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	authKeychainGet = func(string, string) (string, error) {
+		return `{"corp_id":"corp","access_token":"token"}`, nil
 	}
 	if err := os.WriteFile(filepath.Join(configDir, "app.json"), []byte("{}"), 0o600); err != nil {
 		t.Fatal(err)
