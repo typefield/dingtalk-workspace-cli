@@ -849,6 +849,28 @@
         "dws-schema-live:sheet.get_sheet"
       ]
     },
+    "sheet.import": {
+      "agent_summary": "将本地 xlsx/xls 文件导入为新的钉钉在线电子表格。",
+      "use_when": [
+        "用户要把本地 Excel 文件转换为可在线编辑的钉钉表格时"
+      ],
+      "avoid_when": [
+        "读取或修改已有在线表格时应使用 sheet list/info/range 等命令",
+        "查询已提交导入任务的状态时使用 sheet import get，不要重复创建导入任务"
+      ],
+      "examples": [
+        "dws sheet import create --file ./report.xlsx --folder-token <FOLDER_TOKEN> --format json",
+        "dws sheet import create --file ./data.xls --workspace <WORKSPACE_ID> --name \"月度报表\" --format json"
+      ],
+      "reviewed": true,
+      "review_reason": "人工审阅：公开 leaf 与兼容入口 sheet import 复用同一导入流程，使 Agent Schema 能发现并调用真正的导入动作。",
+      "source_refs": [
+        "internal/cli/schema_command_registry.json",
+        "cobra-help:dws sheet import create --help",
+        "skills/mono/references/products/sheet/sheet-import.md",
+        "live-mcp:none (Cobra+Skill; composite/unpinned)"
+      ]
+    },
     "sheet.import_get": {
       "agent_summary": "根据 taskId 查询表格导入任务结果。",
       "use_when": [

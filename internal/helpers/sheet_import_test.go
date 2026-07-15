@@ -176,6 +176,32 @@ func TestSheetImportRunsSharedDocImportFlow(t *testing.T) {
 	}
 }
 
+func TestSheetImportCreateLeafMatchesLegacyDryRun(t *testing.T) {
+	filePath := writeImportFixture(t, "xlsx")
+	legacy, err := executeSheetImportCommand(t, &sheetImportCaller{dryRun: true}, fastSheetImportConfig(),
+		"--file", filePath, "--workspace", "workspace-1", "--name", "Sales")
+	if err != nil {
+		t.Fatalf("legacy sheet import dry-run returned error: %v", err)
+	}
+	leaf, err := executeSheetImportCommand(t, &sheetImportCaller{dryRun: true}, fastSheetImportConfig(),
+		"create", "--file", filePath, "--workspace", "workspace-1", "--name", "Sales")
+	if err != nil {
+		t.Fatalf("sheet import create dry-run returned error: %v", err)
+	}
+	if leaf != legacy {
+		t.Fatalf("create leaf output differs from legacy entry:\nlegacy:\n%s\nleaf:\n%s", legacy, leaf)
+	}
+
+	root := newSheetImportCmdWithConfig(fastSheetImportConfig())
+	create, _, err := root.Find([]string{"create"})
+	if err != nil || create == nil {
+		t.Fatalf("find create leaf: command=%v err=%v", create, err)
+	}
+	if !create.Runnable() || create.HasSubCommands() {
+		t.Fatalf("create command must be a runnable leaf: runnable=%v hasSubcommands=%v", create.Runnable(), create.HasSubCommands())
+	}
+}
+
 func TestSheetImportTimeoutIsStructuredSuccessExit(t *testing.T) {
 	cfg := fastSheetImportConfig()
 	cfg.poll.maxPolls = 2

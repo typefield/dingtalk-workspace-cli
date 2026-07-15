@@ -15,15 +15,7 @@ package helpers
 
 import "github.com/spf13/cobra"
 
-func newSheetImportCmd() *cobra.Command {
-	return newSheetImportCmdWithConfig(sheetImportFlowConfig())
-}
-
-func newSheetImportCmdWithConfig(cfg importFlowConfig) *cobra.Command {
-	importCmd := &cobra.Command{
-		Use:   "import",
-		Short: "导入本地表格文件为在线电子表格 (xlsx / xls)",
-		Long: `将本地表格文件导入为一个新的钉钉在线电子表格，与 dws sheet export（导出）对称。
+const sheetImportLong = `将本地表格文件导入为一个新的钉钉在线电子表格，与 dws sheet export（导出）对称。
 
 支持的文件格式 (按扩展名):
   xlsx, xls   Microsoft Excel 表格
@@ -38,7 +30,17 @@ CLI 内部自动完成全部流程:
   4. 渐进式退避轮询等待完成（最多约 5 分钟）
 
 如果轮询超时仍未完成，会输出 taskId 供后续手动查询:
-  dws sheet import get --task-id <taskId>`,
+  dws sheet import get --task-id <taskId>`
+
+func newSheetImportCmd() *cobra.Command {
+	return newSheetImportCmdWithConfig(sheetImportFlowConfig())
+}
+
+func newSheetImportCmdWithConfig(cfg importFlowConfig) *cobra.Command {
+	importCmd := &cobra.Command{
+		Use:   "import",
+		Short: "导入本地表格文件为在线电子表格 (xlsx / xls)",
+		Long:  sheetImportLong,
 		Example: `  # 导入 xlsx 为在线电子表格（默认表格名取文件名）
   dws sheet import --file ./quote.xlsx --folder-token <FOLDER_TOKEN>
 
@@ -51,12 +53,23 @@ CLI 内部自动完成全部流程:
 			return runImportCommand(cmd, args, cfg)
 		},
 	}
-	importCmd.Flags().String("file", "", "本地表格文件路径 (必填，支持 xlsx/xls)")
-	importCmd.Flags().String("folder-token", "", "目标文件夹 ID 或 URL (与 --workspace 至少传一个)")
-	importCmd.Flags().String("workspace", "", "目标知识库 ID 或 URL (与 --folder-token 至少传一个)")
-	importCmd.Flags().StringP("name", "n", "", "导入后表格名称 (可选，默认取文件名)")
-	importCmd.Flags().String("folder", "", "")
-	_ = importCmd.Flags().MarkHidden("folder")
+	addSheetImportFlags(importCmd)
+
+	// Schema deliberately binds only runnable leaves. Keep the historical
+	// runnable parent for CLI compatibility, and expose the same action through
+	// a leaf so agents can discover and invoke the import operation.
+	importCreateCmd := &cobra.Command{
+		Use:   "create",
+		Short: "导入本地表格文件为在线电子表格 (xlsx / xls)",
+		Long:  sheetImportLong,
+		Example: `  dws sheet import create --file ./quote.xlsx --folder-token <FOLDER_TOKEN>
+  dws sheet import create --file ./data.xls --workspace <WORKSPACE_ID> --name "月度报表"`,
+		Args: cobra.NoArgs,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			return runImportCommand(cmd, args, cfg)
+		},
+	}
+	addSheetImportFlags(importCreateCmd)
 
 	importGetCmd := &cobra.Command{
 		Use:   "get",
@@ -75,6 +88,15 @@ CLI 内部自动完成全部流程:
 		},
 	}
 	importGetCmd.Flags().String("task-id", "", "导入任务 ID (必填)")
-	importCmd.AddCommand(importGetCmd)
+	importCmd.AddCommand(importCreateCmd, importGetCmd)
 	return importCmd
+}
+
+func addSheetImportFlags(cmd *cobra.Command) {
+	cmd.Flags().String("file", "", "本地表格文件路径 (必填，支持 xlsx/xls)")
+	cmd.Flags().String("folder-token", "", "目标文件夹 ID 或 URL (与 --workspace 至少传一个)")
+	cmd.Flags().String("workspace", "", "目标知识库 ID 或 URL (与 --folder-token 至少传一个)")
+	cmd.Flags().StringP("name", "n", "", "导入后表格名称 (可选，默认取文件名)")
+	cmd.Flags().String("folder", "", "")
+	_ = cmd.Flags().MarkHidden("folder")
 }

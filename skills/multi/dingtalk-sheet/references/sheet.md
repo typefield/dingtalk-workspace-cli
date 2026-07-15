@@ -2,12 +2,12 @@
 
 ## 适用范围（重要）
 
-`sheet` 的单元格与工作表操作仅支持钉钉在线电子表格（`contentType=ALIDOC`、`extension=axls`）。`sheet import` 是文件入口：它接收本地 `xlsx` / `xls`，转换并新建在线电子表格；不能把已上传的 xlsx 节点直接当作 axls 操作。
+`sheet` 的单元格与工作表操作仅支持钉钉在线电子表格（`contentType=ALIDOC`、`extension=axls`）。`sheet import create` 是 Agent 可发现的文件入口：它接收本地 `xlsx` / `xls`，转换并新建在线电子表格；不能把已上传的 xlsx 节点直接当作 axls 操作。
 
 | 文件类型 | 处理方式 |
 |---------|---------|
 | 在线电子表格（`axls`） | 走 `sheet` 全部命令（读/写/筛选/合并/导出等服务端原子操作） |
-| 本地路径上的 `xlsx` / `xls` | 用 `dws sheet import --file <路径> --folder-token <ID>` 或 `--workspace <ID>` 转换为新的在线电子表格 |
+| 本地路径上的 `xlsx` / `xls` | 用 `dws sheet import create --file <路径> --folder-token <ID>` 或 `--workspace <ID>` 转换为新的在线电子表格 |
 | 钉盘/文档中已有的 `xlsx` / `xls` / `xlsm` / `csv` 节点 | 不能直接调用工作表/单元格命令；先用 `dws doc download --node <ID> --output <路径>` 下载。若用户要转为在线表格，再对下载文件执行 `sheet import` |
 | 想把在线表格导出为 xlsx | 用 `dws sheet export` ——输入是 `axls`，输出是 xlsx（axls → xlsx 的格式转换） |
 
@@ -126,7 +126,7 @@ dws sheet filter-view --help
 | `sheet list-float-images` | 列出工作表所有浮动图片 |
 | `sheet update-float-image` | 更新浮动图片属性 |
 | `sheet delete-float-image` | 删除浮动图片 |
-| `sheet import` | 导入本地 xlsx/xls 为新的在线电子表格 |
+| `sheet import create` | 导入本地 xlsx/xls 为新的在线电子表格（`sheet import` 保留兼容） |
 | `sheet export` | 导出表格为 xlsx |
 | `sheet filter get` | 获取全局筛选信息 |
 | `sheet filter create` | 创建全局筛选 |

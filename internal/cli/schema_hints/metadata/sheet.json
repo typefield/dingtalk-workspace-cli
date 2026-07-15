@@ -392,6 +392,17 @@
       "availability": "available",
       "reviewed": true
     },
+    "sheet.import": {
+      "effect": "write",
+      "risk": "medium",
+      "confirmation": "not_required",
+      "idempotency": "non_idempotent",
+      "interface_mode": "composite",
+      "availability": "available",
+      "interface_reason": "该 CLI 导入流程包含本地文件校验、创建导入会话、OSS 上传、确认转换和任务轮询，不能绑定为单一 interface_ref。",
+      "reviewed": true,
+      "review_reason": "人工审阅：导入会新建在线电子表格，不修改已有文档；重复执行会创建多个文档，因此标记为 non_idempotent。"
+    },
     "sheet.import_get": {
       "effect": "read",
       "risk": "low",

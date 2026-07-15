@@ -32,7 +32,7 @@ metadata:
 | 用户说 | 命令 |
 |--------|------|
 | "创建电子表格" | `dws sheet create --name "<标题>"` |
-| "导入本地 Excel 为在线表格" | `dws sheet import --file <xlsx或xls> --folder-token <ID>` 或 `--workspace <ID>` |
+| "导入本地 Excel 为在线表格" | `dws sheet import create --file <xlsx或xls> --folder-token <ID>` 或 `--workspace <ID>` |
 | "新建工作表" | `dws sheet new --node <nodeId或URL> --name "<sheet名>"` |
 | "读取单元格" | `dws sheet range read --node <nodeId或URL> --sheet-id <sheetId> --range A1:B2` |
 | "写入单元格" | `dws sheet range update --node <nodeId或URL> --sheet-id <sheetId> --range A1:B2 --values '[[..]]'` |
