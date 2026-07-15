@@ -23,6 +23,11 @@ func TestDocWritePipelineStrategyRemainingCoverage(t *testing.T) {
 	oldArgs := os.Args
 	os.Args = []string{"dws", "doc"}
 	t.Cleanup(func() { os.Args = oldArgs })
+	contentStdinCmd := docWriteCoverageCommand()
+	_ = contentStdinCmd.Flags().Set("content", "-")
+	if got := detectContentSource(contentStdinCmd); got != sourceStdin {
+		t.Fatalf("content stdin source = %v", got)
+	}
 	stdinCmd := docWriteCoverageCommand()
 	_ = stdinCmd.Flags().Set("markdown", "-")
 	if got := detectContentSource(stdinCmd); got != sourceStdin {
