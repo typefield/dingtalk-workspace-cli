@@ -96,7 +96,7 @@ Example:
   dws ding message send-by-message --group <openConversationId> --message-id <openMessageId> --users id1,id2
   dws ding message send-by-message --group <openConversationId> --message-id <openMessageId> --users id1 --type sms
   # 查询 openDingTalkId: dws contact user search --query "姓名"
-  # 查询 openConversationId: dws chat search --keyword "群名"
+  # 查询 openConversationId: dws chat search --query "群名"
 Flags:
       --group string       原消息所在会话 openConversationId (必填)
       --message-id string  原消息 openMessageId (必填)

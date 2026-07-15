@@ -21,7 +21,7 @@
 用户说"建外部群/创建外部群" → `chat group create --type EXTERNAL`
 用户说"建普通群" → `chat group create --type NORMAL`
 用户说"创建话题圈/建话题群" → `chat group create --thread`
-用户说"建群并指定群主/让某某当群主" → `chat group create --owner <openDingTalkId>`
+用户说"建群并指定群主/让某某当群主" → 先 `chat group create`，从返回取 `openConversationId`，再 `chat group transfer-owner --group <openConversationId> --new-owner <openDingTalkId>`
 用户说"搜索群/找群" → `chat search`
 用户说"我创建的群/我管理的群/我是群主的群/我当管理员的群" → `chat group list-my-groups`
 用户说"群成员/看群里有谁" → `chat group members`

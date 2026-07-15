@@ -15,15 +15,14 @@ Example:
   dws chat group create --name "Q1 项目冲刺群" --users userId1,userId2,userId3
   dws chat group create --name "外部合作群" --users userId1,userId2 --type EXTERNAL
   dws chat group create --name "话题圈" --users userId1,userId2 --thread
-  # 指定他人为群主
-  dws chat group create --name "项目群" --users userId1,userId2 --owner <openDingTalkId>
 Flags:
       --name string     群名称 (必填)
       --users string    成员 userId 或 openDingTalkId（可混传），用户本身会自动加入无需包含，逗号分隔，不超过20个 (必填)
       --type string     群类型: INTERNAL(内部群,默认)/EXTERNAL(外部群)/NORMAL(普通群)
       --thread          开启话题模式，将创建话题圈
-      --owner string    群主 openDingTalkId（可选，未指定时默认操作者为群主）
 ```
+
+创建时当前登录用户自动成为群主。需要指定他人为群主时，先创建群并从返回中取 `openConversationId`，再执行 `dws chat group transfer-owner --group <openConversationId> --new-owner <openDingTalkId>`。
 
 #### 查看群成员列表 — 分页查询指定群聊的成员
 ```
@@ -125,7 +124,7 @@ Example:
   dws chat group transfer-owner --group <openConversationId> --new-owner <openDingTalkId>
   dws chat group transfer-owner --group <openConversationId> --user <userId>
   # 查询群 ID: dws chat search --query "群名"
-  # 查询人员: dws contact user search --keyword "姓名" --format json
+  # 查询人员: dws contact user search --query "姓名" --format json
 Flags:
       --group string       群聊 openConversationId (必填)
       --new-owner string   新群主 openDingTalkId
@@ -429,7 +428,7 @@ Usage:
   dws chat group-role set-user [flags]
 Example:
   dws chat group-role set-user --group <openConversationId> --user <userId> --role-ids roleId1,roleId2
-  # 查询人员: dws contact user search --keyword "姓名" --format json
+  # 查询人员: dws contact user search --query "姓名" --format json
   # 查询 role-id: dws chat group-role list --group <openConversationId>
 Flags:
       --group string      群聊 openConversationId (必填)

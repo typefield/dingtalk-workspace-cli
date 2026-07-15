@@ -78,10 +78,6 @@ Example:
   dws chat message send --group <openconversation_id> --msg-type file --file-path ./report.pdf
   # 旧链路（仅当上游已用 dt_media_upload 拿到 mediaId 时使用）
   dws chat message send --group <openconversation_id> --msg-type image --media-id <mediaId>
-  # 发送位置消息（需先通过 dt_media_upload 上传地图缩略图获取 mediaId）
-  dws chat message send --group <openconversation_id> --msg-type location --latitude <纬度> --longitude <经度> --location-name <地址名称> --map-thumbnail-url "@mediaId"
-  # 分享联系人名片
-  dws chat message send --group <openconversation_id> --msg-type profile --contact-id <openDingTalkId>
 Flags:
       --text string              消息内容（推荐使用，也可用位置参数）
       --group string             群聊 openconversation_id（群聊时必填）
@@ -91,7 +87,7 @@ Flags:
       --at-all                   @所有人（仅群聊时生效，可选，默认 false）
       --at-open-dingtalk-ids string  @指定成员的 openDingTalkId 列表，逗号分隔（仅群聊时生效，可选）
       --media-id string          图片 mediaId（仅旧链路：`--msg-type image` 时使用；新场景请直接用 `--msg-type file --file-path`）
-      --msg-type string          消息类型: image/file/location/profile（推荐统一用 `file --file-path`；image+media-id 仅作旧链路兼容）
+      --msg-type string          富媒体消息类型: image/file/audio/video（推荐统一用 `file --file-path`；image+media-id 仅作旧链路兼容）
       --dentry-id int64          旧链路兼容：文件 dentryId（与 --space-id 成对传入时跳过自动上传）
       --space-id int64           旧链路兼容：空间 ID（与 --dentry-id 成对传入时跳过自动上传）
       --file-name string         旧链路兼容：文件名
@@ -99,11 +95,6 @@ Flags:
       --file-path string         本地文件路径（msgType=file 时可直接上传发送；旧链路中作为 content.filePath）
       --file-size int64          旧链路兼容：文件大小，单位字节
       --uuid string             幂等 UUID，相同 uuid 在 24h 内不会重复发送（可选）
-      --latitude string          纬度，如 30.271321（msgType=location 时必填）
-      --longitude string         经度，如 120.007878（msgType=location 时必填）
-      --location-name string     地址名称，如 阿里集团-钉钉（msgType=location 时必填）
-      --map-thumbnail-url string 地图缩略图 mediaId，格式 @mediaId（msgType=location 时必填，需先通过 dt_media_upload 上传图片获取）
-      --contact-id string       要分享的联系人 openDingTalkId（msgType=profile 时必填）
 
 注意:
   - --text 和位置参数二选一，--text 优先
@@ -119,8 +110,7 @@ Flags:
   - 旧链路兼容：仅当上游已经通过 `dt_media_upload` 拿到 `@lQL...` 形式的 mediaId 时，才使用 `--msg-type image --media-id`；新代码与新指引一律用 file-path 路径
   - 富媒体消息的单聊优先使用 `--open-dingtalk-id`；传 `--user` 时 CLI 会尝试解析成 openDingTalkId 后发送
   - --uuid 用于幂等发送，传入相同 uuid 在 24h 内不会重复投递消息（可选，群聊和单聊均支持）
-  - **发送位置消息**：`--msg-type location --latitude <纬度> --longitude <经度> --location-name <地址名称> --map-thumbnail-url @mediaId`；地图缩略图需先通过 `dt_media_upload` 上传图片获取 mediaId
-  - **分享联系人名片**：`--msg-type profile --contact-id <openDingTalkId>`；将指定联系人的名片分享到群聊或单聊
+  - 当前命令不支持位置消息或联系人名片；不得生成 `location` / `profile` 类型或相应的臆造参数
 ```
 
 #### 查询消息发送状态 — 查询以当前用户身份发送的消息的发送状态
@@ -465,11 +455,11 @@ Flags:
   - 翻页：hasMore=true 时，用返回的 nextCursor 作为下次 --cursor
 ```
 
-#### 多维度搜索消息（推荐首选） — 支持按关键词、发送者、@我、@指定人、指定会话、时间范围、消息类型、会话类型等多维度搜索
+#### 多维度搜索消息（推荐首选） — 支持按关键词、发送者、@我、@指定人、指定会话和时间范围搜索
 
 > 推荐：这是消息搜索的首选接口。它可以完全替代 `chat message search`（query 可选 vs 必填，支持多个会话 vs 单个），大部分替代 `chat message list-by-sender`（通过 --user/--users 按 userId 搜索发送者，或通过 --sender-ids 按 openDingTalkId 搜索）和 `chat message list-mentions`（通过 --at-me 搜索@我的消息）。仅在拉取「特别关注人」消息时需要退回 `list-focused`。
 
-支持按关键词、发送者、@我、@指定人、指定会话、时间范围、消息类型、会话类型等多维度搜索消息。发送者 userId 使用 --user/--users；发送者或 @ 人的 openDingTalkId 使用 --sender-ids/--at-ids。所有参数均为可选，至少指定一个搜索条件。
+支持按关键词、发送者、@我、@指定人、指定会话和时间范围等维度搜索消息。发送者 userId 使用 --user/--users；发送者或 @ 人的 openDingTalkId 使用 --sender-ids/--at-ids。所有参数均为可选，至少指定一个搜索条件。
 ```
 Usage:
   dws chat message search-advanced [flags]
@@ -481,11 +471,9 @@ Example:
   dws chat message search-advanced --at-me --start "2026-04-01T00:00:00+08:00" --end "2026-04-15T00:00:00+08:00"
   dws chat message search-advanced --at-ids <openDingTalkId1>,<openDingTalkId2> --conversation-ids <openConversationId1>,<openConversationId2> --limit 50 --cursor 0
   dws chat message search-advanced --conversation-ids <单聊openConversationId> --query "合同" --start "2026-04-01T00:00:00+08:00" --end "2026-04-15T00:00:00+08:00"
-  dws chat message search-advanced --message-type file --search-conv-type group_chat --query "附件"
-  dws chat message search-advanced --only-robot-messages --query "通知"
   # 查询群 ID: dws chat search --query "群名"
   # 查询单聊会话 ID: dws chat conversation-info --user <userId>
-  # 查询人员: dws contact user search --keyword "姓名" --format json
+  # 查询人员: dws contact user search --query "姓名" --format json
 Flags:
       --query string              搜索关键词（可选）
       --user string                 发送者 userId，支持逗号分隔（可选）
@@ -494,13 +482,10 @@ Flags:
       --at-me                       只搜索 @我 的消息（可选，默认 false）
       --at-ids string               @指定人的 openDingTalkId 列表，逗号分隔（可选）
       --conversation-ids string     会话 openConversationId 列表，逗号分隔（可选，群聊或单聊均可，不传则搜索所有会话）
-      --message-type string          消息类型筛选（可选，支持 file/image/video/audio/link）
-      --search-conv-type string      会话类型筛选（可选，single_chat=单聊, group_chat=群聊）
       --start string                开始时间，ISO-8601 格式（可选）
       --end string                  结束时间，ISO-8601 格式（可选）
       --cursor string               分页游标（默认 "0"）
       --limit int                   每页返回数量（默认 100）
-      --only-robot-messages          仅搜索机器人消息（可选，默认 false）
       --conversation-ids 的别名: --groups
 
 注意:

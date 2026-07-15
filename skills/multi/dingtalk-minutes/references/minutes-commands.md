@@ -8,18 +8,18 @@ Usage:
   dws minutes list mine [flags]
 Example:
   dws minutes list mine
-  dws minutes list mine --max 10
-  dws minutes list mine --max 10 --next-token <nextToken>
+  dws minutes list mine --limit 10
+  dws minutes list mine --limit 10 --cursor <nextToken>
   dws minutes list mine --query "周会"
 Flags:
-      --max float         查询的听记篇数 (默认 10)
-      --next-token string 分页 token (首页留空，后续填写前次返回的 nextToken)
+      --limit float       每页数据条数 (默认 10)
+      --cursor string     分页 token (首页留空，后续填写前次返回的 nextToken)
       --query string      关键字筛选 (可选)
       --start string      开始时间 ISO-8601 (可选)
       --end string        结束时间 ISO-8601 (可选)
 ```
 
-查询我创建的听记列表，支持 `--max` 和 `--next-token` 分页，支持按关键字和时间范围筛选。
+查询我创建的听记列表，支持 `--limit` 和 `--cursor` 分页，支持按关键字和时间范围筛选。
 
 ### 查询他人共享给我的听记列表
 ```
@@ -27,17 +27,17 @@ Usage:
   dws minutes list shared [flags]
 Example:
   dws minutes list shared
-  dws minutes list shared --max 20
-  dws minutes list shared --max 5 --next-token <nextToken>
+  dws minutes list shared --limit 20
+  dws minutes list shared --limit 5 --cursor <nextToken>
 Flags:
-      --max float         查询的听记篇数 (默认 10)
-      --next-token string 分页 token (首页留空，后续填写前次返回的 nextToken)
+      --limit float       每页数据条数 (默认 10)
+      --cursor string     分页 token (首页留空，后续填写前次返回的 nextToken)
       --query string      关键字筛选 (可选)
       --start string      开始时间 ISO-8601 (可选)
       --end string        结束时间 ISO-8601 (可选)
 ```
 
-查询他人共享给我的听记列表，支持 `--max` 和 `--next-token` 分页，支持按关键字和时间范围筛选。
+查询他人共享给我的听记列表，支持 `--limit` 和 `--cursor` 分页，支持按关键字和时间范围筛选。
 
 ### 查询我有权限访问的所有听记列表
 ```
@@ -45,19 +45,19 @@ Usage:
   dws minutes list all [flags]
 Example:
   dws minutes list all
-  dws minutes list all --max 20
-  dws minutes list all --query "周会" --max 20
+  dws minutes list all --limit 20
+  dws minutes list all --query "周会" --limit 20
   dws minutes list all --start "2026-03-01T00:00:00+08:00" --end "2026-03-20T23:59:59+08:00"
-  dws minutes list all --max 10 --next-token <nextToken>
+  dws minutes list all --limit 10 --cursor <nextToken>
 Flags:
       --end string        结束时间 ISO-8601 (可选)
       --query string      关键字筛选 (可选)
-      --max float         查询的听记篇数 (默认 10)
-      --next-token string 分页 token (首页留空，后续填写前次返回的 nextToken)
+      --limit float       每页数据条数 (默认 10)
+      --cursor string     分页 token (首页留空，后续填写前次返回的 nextToken)
       --start string      开始时间 ISO-8601 (可选)
 ```
 
-查询我有权限访问的所有听记列表（包括我创建的、他人共享给我的等所有有权限的听记）。支持按关键字和时间范围筛选。时间范围和关键字为可选参数，不传则返回所有有权限的听记。支持使用 `--max` 和 `--next-token` 进行分页查询。
+查询我有权限访问的所有听记列表（包括我创建的、他人共享给我的等所有有权限的听记）。支持按关键字和时间范围筛选。时间范围和关键字为可选参数，不传则返回所有有权限的听记。支持使用 `--limit` 和 `--cursor` 进行分页查询。
 
 ### 获取听记基础信息
 ```
@@ -109,11 +109,11 @@ Usage:
 Example:
   dws minutes get transcription --id <taskUuid>
   dws minutes get transcription --id <taskUuid> --direction 1
-  dws minutes get transcription --id <taskUuid> --next-token <nextToken> --format json
+  dws minutes get transcription --id <taskUuid> --cursor <nextToken> --format json
 Flags:
       --direction string   排序方向: 0=正序, 1=倒序 (默认 0)
       --id string          听记 taskUuid (必填)，取值逻辑参考 ## 注意事项
-      --next-token string 下一页的token 首次查询可空 后续查询需填写前次请求返回的nextToken
+      --cursor string      分页 token，首次查询留空，后续填写前次返回的 nextToken
 ```
 
 每条记录包含: 发言人信息、转写文本、对应时间戳
@@ -123,9 +123,9 @@ Flags:
 > **这是最高频的 silent failure：** `get transcription` 单次调用**最多只返回 50 段**。一篇 30 分钟会议的转写通常有 150-400 段，如果不翻页就只能看到前 1/3 甚至 1/8 的内容。
 >
 > **分页机制（必须掌握）：**
-> - 首次调用：`dws minutes get transcription --id <uuid> --format json`（不传 `--next-token`）
+> - 首次调用：`dws minutes get transcription --id <uuid> --format json`（不传 `--cursor`）
 > - 检查返回 JSON 中是否包含 `nextToken` 字段（非空字符串）
-> - 如果有 `nextToken`：继续调用并传入 `--next-token <上次返回的nextToken值>`
+> - 如果有 `nextToken`：继续调用并传入 `--cursor <上次返回的nextToken值>`
 > - 循环直到返回中**不再包含 `nextToken`**（或 `nextToken` 为空），表示所有段落已拉取完毕
 > - **拼合所有页的段落**后，才算拿到了完整转写原文
 >
@@ -137,7 +137,7 @@ Flags:
 >     if next_token == "":
 >         result = dws minutes get transcription --id <uuid> --format json
 >     else:
->         result = dws minutes get transcription --id <uuid> --next-token <next_token> --format json
+>         result = dws minutes get transcription --id <uuid> --cursor <next_token> --format json
 >     all_paragraphs.append(result.paragraphs)
 >     next_token = result.nextToken   # 可能为空或不存在
 >     if next_token 为空或不存在:
@@ -147,8 +147,8 @@ Flags:
 >
 > **典型错误（导致“总结整篇听记”只覆盖前 50 段）：**
 > - [错误] 只调用一次 `get transcription`，看到返回了内容就以为拿全了 → 实际只有前 50 段
-> - [错误] 看到返回 JSON 里有 `nextToken` 字段但不知道这是什么、不知道要传 `--next-token` → 默默丢弃了后续页
-> - [错误] 用 `--help` 查参数但在 Windows 下输出被截断，没看到 `--next-token` 参数 → 以为不支持分页
+> - [错误] 看到返回 JSON 里有 `nextToken` 字段但不知道这是什么、不知道要传 `--cursor` → 默默丢弃了后续页
+> - [错误] 用 `--help` 查参数但在 Windows 下输出被截断，没看到 `--cursor` 参数 → 以为不支持分页
 > - [正确] **正确做法：无条件按上述循环逻辑自动翻页，直到 nextToken 为空**
 
 **转写原文拉取策略：**
@@ -338,8 +338,8 @@ Step 7: 引导用户替换发言人（调用 speaker replace 写回听记）
 
 | 路径 | 命令 | 得到什么 |
 |------|------|----------|
-| ① 通讯录组织架构 | `dws contact user search --keyword "目标人名"` → 部门/职级/上级/真名 | 职能大类（技术/产品/设计/管理）+ 是否存在该人 |
-| ② 本人创建的文档 | `dws doc search --keyword "目标人名/真名"` 至少获取 3 篇标题 | 角色精确信号（PM写PRD、研发写技术方案、设计师写视觉规范）|
+| ① 通讯录组织架构 | `dws contact user search --query "目标人名"` → 部门/职级/上级/真名 | 职能大类（技术/产品/设计/管理）+ 是否存在该人 |
+| ② 本人创建的文档 | `dws doc search --query "目标人名/真名"` 至少获取 3 篇标题 | 角色精确信号（PM写PRD、研发写技术方案、设计师写视觉规范）|
 | ③ 近期日程类型 | `dws calendar event list` | 职能边界（参加什么类型的会）|
 | ④ 聊天记录 | `dws chat message list` 获取与目标人的近期 IM 消息 | 语言风格/工作内容/职责线索 |
 
@@ -593,15 +593,13 @@ Usage:
   dws minutes speaker summary create [flags]
 Example:
   dws minutes speaker summary create --ids <uuid1,uuid2>
-  dws minutes speaker summary create --task-uuids <uuid1,uuid2>
 Flags:
       --ids string          听记 taskUuid 列表，逗号分隔 (必填)
-      --task-uuids string   --ids 的别名，同样接受逗号分隔的 taskUuid 列表
 ```
 
 触发创建发言人的段落总结任务，将听记中每位发言人的所有发言内容汇总总结。触发后需调用 `speaker summary get` 查询总结结果。
 
-> **参数别名说明**：`--ids` 和 `--task-uuids` 等价，均可使用。推荐统一用 `--ids`。
+统一使用 canonical 参数 `--ids`。
 
 ### 查询发言人段落总结结果
 ```
@@ -609,15 +607,13 @@ Usage:
   dws minutes speaker summary get [flags]
 Example:
   dws minutes speaker summary get --ids <uuid1,uuid2>
-  dws minutes speaker summary get --task-uuids <uuid1,uuid2>
 Flags:
       --ids string          听记 taskUuid 列表，逗号分隔 (必填)
-      --task-uuids string   --ids 的别名，同样接受逗号分隔的 taskUuid 列表
 ```
 
 查询发言人段落总结任务的结果，返回每位发言人的发言汇总。需先调用 `speaker summary create` 触发任务。
 
-> **参数别名说明**：`--ids` 和 `--task-uuids` 等价，均可使用。推荐统一用 `--ids`。
+统一使用 canonical 参数 `--ids`。
 
 **speaker summary 异步轮询策略（必须严格遵守）：**
 
@@ -790,12 +786,8 @@ Example:
   dws minutes permission add --ids <uuid1,uuid2> --member-uids 123456,789012 --policy 3
   dws minutes permission add --ids <uuid> --member-uids 123456 --policy 2 --cover
   dws minutes permission add --ids <uuid> --member-uids 123456 --policy 3 --sub-resources "OrigContent,Summary"
-  dws minutes permission add --uuids <uuid1,uuid2> --member-uids 123456 --policy 3
-  dws minutes permission add --task-uuids <uuid1,uuid2> --member-uids 123456 --policy 3
 Flags:
       --ids string            听记 taskUuid 列表，逗号分隔 (必填)
-      --uuids string          --ids 的别名
-      --task-uuids string     --ids 的别名
       --member-uids string    成员钉钉 UID 列表，逗号分隔 (必填)
       --policy int            权限类型: 0=管理员, 1=所有者, 2=可编辑, 3=可查看/下载, 4=仅查看 (必填)
       --cover                 是否覆盖已有权限 (可选，默认 false)
@@ -837,12 +829,8 @@ Usage:
 Example:
   dws minutes permission remove --ids <uuid1,uuid2> --member-uids 123456,789012
   dws minutes permission remove --ids <uuid> --member-uids 123456
-  dws minutes permission remove --uuids <uuid1,uuid2> --member-uids 123456
-  dws minutes permission remove --task-uuids <uuid1,uuid2> --member-uids 123456
 Flags:
       --ids string            听记 taskUuid 列表，逗号分隔 (必填)
-      --uuids string          --ids 的别名
-      --task-uuids string     --ids 的别名
       --member-uids string    成员钉钉 UID 列表，逗号分隔 (必填)
 ```
 

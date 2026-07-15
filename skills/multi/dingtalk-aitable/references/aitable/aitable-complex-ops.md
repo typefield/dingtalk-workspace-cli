@@ -25,15 +25,16 @@ dws aitable chart get --base-id <BASE_ID> --dashboard-id <DASHBOARD_ID> --chart-
 `export data` 常见为异步任务：首次调用可能只返回 `taskId`，需要继续轮询。
 
 ```bash
-# 第一步：创建任务（按 scope 传必要参数）
-dws aitable export data --base-id <BASE_ID> --scope table --table-id <TABLE_ID> --format excel --timeout-ms 1000
+# 第一步：创建任务（业务格式与输出格式分开）
+dws aitable export data --base-id <BASE_ID> --scope table --table-id <TABLE_ID> --export-format excel --timeout-ms 1000 --format json
 
 # 第二步：拿 taskId 继续轮询，直到返回 downloadUrl
-dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 3000
+dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 3000 --format json
 ```
 
 参数约束
 
-- `scope=all`：只需 `base-id`
+- 创建任务统一需要 `base-id + scope + export-format`
+- `scope=all`：无额外 ID
 - `scope=table`：必须 `table-id`
 - `scope=view`：必须同时 `table-id + view-id`

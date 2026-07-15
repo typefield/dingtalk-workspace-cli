@@ -183,7 +183,7 @@ dws aisearch person --keyword "<员工姓名>" --dimension name --format json
 **场景 B — 按部门查询**：
 ```bash
 dws contact dept search --query "<部门名>" --format json
-dws contact dept list-members --ids <deptId> --format json
+dws contact dept list-members --depts <deptId> --format json
 ```
 
 **场景 C — 考勤组全员**：
@@ -430,7 +430,7 @@ dws attendance group get --group-id <groupId> --format json
 
 # 2. 获取部门成员
 dws contact dept search --query "研发部" --format json
-dws contact dept list-members --ids <deptId> --format json
+dws contact dept list-members --depts <deptId> --format json
 
 # 3. 回显确认 → 用户确认 → 执行
 python scripts/attendance_schedule_import.py \

@@ -4,9 +4,9 @@
 
 ```bash
 # 导入排班记录
-dws attendance schedule import --group-id 123456 \
-  --schedules '[{"userId":"user001","classId":123,"workDate":"2026-04-22","checkBeginTime":"09:00","checkEndTime":"18:00"}]' \
-  --yes --format json
+dws attendance schedule import --groupId 123456 \
+  --scheduleVOS '[{"userId":"user001","classId":123,"workDate":"2026-04-22","checkBeginTime":"09:00","checkEndTime":"18:00"}]' \
+  --user-say-yes --format json
 
 #  获取排班记录 — 禁止直接调用，必须走 attendance-schedule.md 排班查询导出工作流
 # python scripts/attendance_schedule_export.py --users user001,user002 --start 2026-04-01 --end 2026-04-30

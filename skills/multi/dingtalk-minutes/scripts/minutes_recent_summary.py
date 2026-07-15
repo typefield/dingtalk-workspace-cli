@@ -60,7 +60,7 @@ def main():
     print('🎙️ 获取听记列表...')
     list_data = run_dws([
         'minutes', 'list', 'mine',
-        '--max', str(args.max),
+        '--limit', str(args.max),
         '--format', 'json',
     ], dry_run=args.dry_run)
 
@@ -93,9 +93,14 @@ def main():
             if isinstance(summary_data, str):
                 summary_text = summary_data
             elif isinstance(summary_data, dict):
-                summary_text = (summary_data.get('summary')
-                                or summary_data.get('content')
-                                or json.dumps(summary_data,
+                inner = summary_data.get('result')
+                container = (inner if isinstance(inner, dict)
+                             else summary_data)
+                summary_text = (container.get('fullSummary')
+                                or container.get('summary')
+                                or container.get('content')
+                                or (inner if isinstance(inner, str) else '')
+                                or json.dumps(container,
                                               ensure_ascii=False))
 
         output_lines.append(f"## {i}. {title}\n")

@@ -86,16 +86,16 @@ Flags:
 Usage:
   dws attendance schedule import [flags]
 Example:
-  dws attendance schedule import --group-id 123456 \
-    --schedules '[{"userId":"user001","classId":123,"workDate":"2026-04-22","checkBeginTime":"09:00","checkEndTime":"18:00"}]' \
-    --yes
+  dws attendance schedule import --groupId 123456 \
+    --scheduleVOS '[{"userId":"user001","classId":123,"workDate":"2026-04-22","checkBeginTime":"09:00","checkEndTime":"18:00"}]' \
+    --user-say-yes
 Flags:
-      --group-id string   考勤组（必填，传入考勤组ID）
-      --schedules string  排班记录 JSON 数组（必填）
-      --yes               跳过确认提示
+      --groupId string       考勤组（必填，传入考勤组ID）
+      --scheduleVOS string   排班记录 JSON 数组（必填）
+      --user-say-yes         用户已确认，跳过交互式确认提示
 ```
 
-为排班制考勤组导入排班记录。`--schedules` 为 JSON 数组，每条记录包含：
+为排班制考勤组导入排班记录。`--scheduleVOS` 为 JSON 数组，每条记录包含：
 - `userId`: 员工ID
 - `classId`: 班次ID
 - `workDate`: 工作日期（YYYY-MM-DD），如 2026-04-22
@@ -108,7 +108,7 @@ Flags:
 `schedule import` 是写操作，会为考勤组导入或变更员工排班。AI 调用时必须按以下流程执行，不得在未确认的情况下直接导入：
 
 1. **识别写操作**：用户表达“导入排班 / 设置排班 / 安排排班 / 给员工排班 / 批量排班”等意图时，命中 `schedule import`。
-2. **收集必要参数**：必须明确 `--group-id` 和 `--schedules`，并确认排班记录中的 `userId`、`classId`、`workDate`、`checkBeginTime`、`checkEndTime`、`isRest` 等字段。
+2. **收集必要参数**：必须明确 `--groupId` 和 `--scheduleVOS`，并确认排班记录中的 `userId`、`classId`、`workDate`、`checkBeginTime`、`checkEndTime`、`isRest` 等字段。
 3. **展示导入摘要并反问确认**：向用户展示考勤组 ID、导入员工数量、涉及日期范围、班次 ID 列表，以及排班记录明细摘要，并询问是否确认执行导入。
 4. **用户确认后再执行导入**：只有用户明确确认后，才可以执行 `dws attendance schedule import ... --format json`。
 

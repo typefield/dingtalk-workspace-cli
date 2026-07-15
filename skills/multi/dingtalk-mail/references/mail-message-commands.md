@@ -64,7 +64,7 @@ dws mail user search --email <当前邮箱> --keyword "姓名" --format json
 # → 提取 users[].email
 
 # 路径 3：contact user search
-dws contact user search --keyword "姓名" --format json
+dws contact user search --query "姓名" --format json
 # → 提取用户邮箱字段
 ```
 

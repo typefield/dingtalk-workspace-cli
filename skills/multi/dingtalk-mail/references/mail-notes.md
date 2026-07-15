@@ -9,7 +9,7 @@
 - 收件人邮箱获取：用户只知道同事名字时，**并发**同时执行以下三路查询，取最先返回有效邮箱的结果，无需等待其他路完成：
   1. `dws aisearch person --keyword "名字" --dimension name` → `dws contact user get --ids <userId>`，提取 `orgAuthEmail`
   2. `dws mail user search --email <发件人邮箱> --keyword "名字"`，提取 `users[].email`（仅企业邮箱账号可调用，个人 @dingtalk.com 邮箱会报权限错误可忽略；若已知工号，可改用 `--employee-no <工号>`）
-  3. `dws contact user search --keyword "名字"`，提取用户邮箱字段
+  3. `dws contact user search --query "名字"`，提取用户邮箱字段
   若三路均无有效邮箱，请用户手动提供收件人邮箱，严禁臆测和假设
 - `thread list --folder` 的值必须是文件夹 ID，不是文件夹显示名称；不知道文件夹 ID 时，先调用 `folder list` 查 `folders[].id`
 - `thread get/update/trash/batch-update/batch-trash` 使用的是会话 ID（conversationId），不是邮件 ID；会话 ID 可来自 `thread list` 的 `conversations[].id`，也可来自 `message search` 或 `message get` 返回的 `conversationId`

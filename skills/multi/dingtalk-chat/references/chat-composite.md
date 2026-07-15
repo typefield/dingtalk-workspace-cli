@@ -32,7 +32,7 @@ dws chat message send-by-bot --robot-code <robot-code> --group <openconversation
   --title "通知" --text "内容" --format json
 
 # Step 3: 邀请机器人进群
-dws chat group members add-bot --group <openconversation_id> --robot-code <robot-code>
+dws chat group members add-bot --id <openconversation_id> --robot-code <robot-code>
 
 # Step 4: 重新发送
 dws chat message send-by-bot --robot-code <robot-code> --group <openconversation_id> \
@@ -114,7 +114,7 @@ Example:
   dws chat message send-card --group <openConversationId>
   dws chat message send-card --receiver <openDingTalkId>
   # 查询群 ID: dws chat search --query "群名"
-  # 查询人员: dws contact user search --keyword "姓名" --format json
+  # 查询人员: dws contact user search --query "姓名" --format json
 Flags:
       --group string      群聊 openConversationId（群聊时必填，与 --receiver 互斥）
       --receiver string   单聊接收者 openDingTalkId（单聊时必填，与 --group 互斥）

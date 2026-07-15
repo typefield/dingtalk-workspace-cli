@@ -398,8 +398,8 @@ dws oa approval redirect-task --task-id <taskId> --to-actioner-id <userId> --rem
 dws oa approval oa-comments --instance-id <processInstanceId> --content "同意，请尽快处理" --format json
 
 # 14. 对审批实例进行抄送（processInstanceId 来自 list-pending 或 detail）
-dws oa approval oa-cc-noticer --instance-id <processInstanceId> --user-list "68674200835816" --format json
-dws oa approval oa-cc-noticer --instance-id <processInstanceId> --user-list "userId1,userId2" --format json
+dws oa approval oa-cc-noticer --instance-id <processInstanceId> --users "68674200835816" --format json
+dws oa approval oa-cc-noticer --instance-id <processInstanceId> --users "userId1,userId2" --format json
 
 # 15. 催办审批（必须两步串联：先拿被催办人 userId，再发 DING）
 # 15a. Step 1: 调用 ding-info 拿到被催办人 userId（来自 list-pending 或 tasks 中的 taskId）

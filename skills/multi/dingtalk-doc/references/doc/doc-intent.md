@@ -5,7 +5,7 @@
 用户说"找文档/搜文档/最近文档":
 
 - 全局搜索 → `dws drive search --query "<关键词>"`（聚合钉盘+文档空间）
-- 空间内搜索 → `dws wiki node search --workspace <WS_ID> --keyword "<关键词>"`
+- 空间内搜索 → `dws wiki node search --workspace <WS_ID> --query "<关键词>"`
 - 遍历文件夹 → `dws drive list --workspace <WS_ID>` 或 `dws wiki node list --workspace <WS_ID>`
 - 最近访问/最近编辑 → `dws drive recent`（见 [`drive.md`](../../../dingtalk-drive/references/drive.md)）
 

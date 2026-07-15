@@ -293,17 +293,7 @@ dws chat message send --open-dingtalk-id <openDingTalkId> --msg-type file --file
 > ❌ 反模式：调 `dt_media_upload` / `extract_media_id.py` / `drive upload` / `drive download` 等前置工具再 `--msg-type image --media-id`。这是**旧链路**，仅当上游已持有 mediaId 才用；新场景一律 `--file-path` 直发，避免长链路与“空白图”现象。
 > 富媒体消息单聊优先使用 `--open-dingtalk-id`；传 `--user` 时 CLI 会尝试解析为 openDingTalkId 后发送。
 
-- "发送位置/坐标/地址到群里" / "发个位置给某某" — `dws chat message send ... --msg-type location --latitude <纬度> --longitude <经度> --location-name <地址名称> --map-thumbnail-url @mediaId`；地图缩略图需先通过 `dt_media_upload` 上传获取 mediaId
-
-```bash
-dws chat message send --group <openConversationId> --msg-type location --latitude <纬度> --longitude <经度> --location-name <地址名称> --format json
-```
-
-- "分享联系人/名片到群里" / "把某某的名片发给某某" — `dws chat message send ... --msg-type profile --contact-id <openDingTalkId>`
-
-```bash
-dws chat message send --group <openConversationId> --msg-type profile --contact-id <openDingTalkId> --format json
-```
+- 当前 `chat message send` 只支持文本/Markdown 和 `image/file/audio/video` 富媒体；位置消息和联系人名片没有可执行 CLI 参数。遇到这两类请求应明确说明能力边界，不得生成 `location` / `profile` 类型或臆造参数。
 
 **用 `chat message send-by-bot` 的场景**：
 - "让机器人在群里发一条通知" — **机器人身份**发消息
@@ -438,7 +428,7 @@ dws contact user get --ids <userId> --format json
 # 3. 用搜索到的邮箱地址作为收件人发送邮件
 dws mail mailbox list --format json  # 获取发件人邮箱
 dws mail message send --from my@company.com --to zhangsan@company.com \
-  --subject "周报" --body "内容" --format json
+  --subject "周报" --content "内容" --format json
 ```
 
 ### 创建日程并邀请同事（aisearch → calendar）

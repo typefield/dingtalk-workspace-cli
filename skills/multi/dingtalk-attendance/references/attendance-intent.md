@@ -25,8 +25,8 @@
 用户说"加班规则/加班设置/加班计算" → `overtime search`（返回结果已包含全量属性，无需再调 get）
 用户说"加班规则详情/某条加班规则的具体信息" → `overtime search --name "..."`（search 直出）。如需查已删除/被覆盖的历史记录 → `overtime get`
 用户说"考勤组列表/有哪些考勤组" → `group search`
-用户说"考勤组详情/全量考勤组信息" → `group get`,若返回结果中含成员 userId 列表，则对每个 userId 调用 `dws contact user get --user-ids <userId>`（或等价通讯录查询），在最终输出中展示员工姓名而非裸 userId
-用户说"考勤组成员/打卡地址/打卡wifi/打卡蓝牙" → `group filtered-get`（按需查询，节省成本）,若返回结果中含成员 userId 列表，则对每个 userId 调用 `dws contact user get --user-ids <userId>`（或等价通讯录查询），在最终输出中展示员工姓名而非裸 userId
+用户说"考勤组详情/全量考勤组信息" → `group get`,若返回结果中含成员 userId 列表，则批量调用 `dws contact user get --ids <userId1,userId2>`（或等价通讯录查询），在最终输出中展示员工姓名而非裸 userId
+用户说"考勤组成员/打卡地址/打卡wifi/打卡蓝牙" → `group filtered-get`（按需查询，节省成本）,若返回结果中含成员 userId 列表，则批量调用 `dws contact user get --ids <userId1,userId2>`（或等价通讯录查询），在最终输出中展示员工姓名而非裸 userId
 用户说"更新考勤组成员/添加考勤人员/删除考勤人员/添加考勤部门/删除考勤部门/加入考勤组/移出考勤组/设置无需考勤/取消无需考勤" → `group update-members`
 用户说"修改考勤组/更新考勤组配置/考勤组改名/改变考勤组绑定的班次/修改打卡范围/设置考勤组负责人" → `group update`
 用户说"创建考勤组/新建考勤组/添加考勤组" → `group create`

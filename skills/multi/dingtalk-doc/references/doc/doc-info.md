@@ -76,7 +76,7 @@ Flags:
 | 方式 | 触发条件 | 操作 |
 |------|----------|------|
 | **A** | 用户**直接提供文档 URL 或 nodeId** | **直接传给 `--node`**，无需额外查询；优先使用此方式 |
-| **B** | 用户给出关键字 / 文档名 | `dws drive search --query "<关键字>" --format json` 或 `dws wiki node search --workspace <WS_ID> --keyword "<关键字>"` 从返回中提取 nodeId |
+| **B** | 用户给出关键字 / 文档名 | `dws drive search --query "<关键字>" --format json` 或 `dws wiki node search --workspace <WS_ID> --query "<关键字>"` 从返回中提取 nodeId |
 | **C** | 用户指向某个文件夹下的文档 | `dws drive list --workspace <WS_ID> --format json` 或 `dws wiki node list --workspace <WS_ID>` 从返回中提取 |
 
 > **关键节省**：方式 A 命中时，禁止再调 search/list "确认一下" —— 用户提供的 URL/nodeId 本身就是权威输入。同理，`--folder` 也支持 alidocs 文件夹 URL 直传，不要先 search 把 URL 解析成纯数字 ID 再传。

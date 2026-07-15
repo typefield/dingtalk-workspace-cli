@@ -44,6 +44,50 @@ def run_dws(
         return None
 
 
+def todos_from_payload(payload: Any) -> List[dict]:
+    """解析 result.dingtalkTodoList；为空时回退解析 actions。"""
+    inner = payload.get('result', payload) if isinstance(payload, dict) else payload
+    out: List[dict] = []
+    if isinstance(inner, dict):
+        ding_list = inner.get('dingtalkTodoList')
+        if isinstance(ding_list, list):
+            for item in ding_list:
+                if not isinstance(item, dict):
+                    continue
+                content = item.get('title') or item.get('content') or ''
+                if content:
+                    out.append({'content': str(content), '_raw': item})
+            if out:
+                return out
+        actions = inner.get('actions')
+        if isinstance(actions, list):
+            for action in actions:
+                content = ''
+                if isinstance(action, str):
+                    text = action.strip()
+                    if text.startswith('{'):
+                        try:
+                            content = json.loads(text).get('value') or ''
+                        except json.JSONDecodeError:
+                            content = text
+                    else:
+                        content = text
+                elif isinstance(action, dict):
+                    content = (action.get('value') or action.get('content')
+                               or action.get('title') or '')
+                if content:
+                    out.append({'content': str(content)})
+    elif isinstance(inner, list):
+        for item in inner:
+            if not isinstance(item, dict):
+                continue
+            content = (item.get('content') or item.get('text')
+                       or item.get('title') or item.get('value') or '')
+            if content:
+                out.append({'content': str(content), '_raw': item})
+    return out
+
+
 def main():
     parser = argparse.ArgumentParser(
         description='从听记中提取待办事项'
@@ -60,7 +104,7 @@ def main():
         print('🎙️ 获取听记列表...')
         data = run_dws([
             'minutes', 'list', 'mine',
-            '--max', str(args.max),
+            '--limit', str(args.max),
             '--format', 'json',
         ], dry_run=args.dry_run)
         if args.dry_run:
@@ -82,21 +126,9 @@ def main():
         ])
         if not todos_data:
             continue
-        if isinstance(todos_data, list):
-            items = todos_data
-        elif isinstance(todos_data, dict):
-            inner = todos_data.get('result', todos_data)
-            if isinstance(inner, dict):
-                items = inner.get('todos', [])
-            elif isinstance(inner, list):
-                items = inner
-            else:
-                items = []
-        else:
-            items = []
+        items = todos_from_payload(todos_data)
         for t in items:
-            if isinstance(t, dict):
-                t['_source'] = title
+            t['_source'] = title
         all_todos.extend(items)
 
     print(f"\n📋 听记待办汇总")

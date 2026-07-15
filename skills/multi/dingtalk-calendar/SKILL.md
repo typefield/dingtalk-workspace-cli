@@ -51,7 +51,7 @@ metadata:
 **触发**：建日程/约会议/加日程。
 
 1. **解析与会人（必须）**：对每个姓名 `dws aisearch person --keyword "<姓名>" --dimension name --format json` 取 `userId`，多人逗号拼接。
-2. **执行（必须）**：`dws calendar event create --summary "<主题>" --start "<ISO>" --end "<ISO>" --attendees <userId1,userId2> --format json`（按需加 `--location`/`--description`/`--rooms`）。
+2. **执行（必须）**：`dws calendar event create --title "<主题>" --start "<ISO>" --end "<ISO>" --attendees <userId1,userId2> --format json`（按需加 `--location`/`--desc`/`--rooms`）。
 3. **验证（必须）**：从返回取 `eventId`，可 `dws calendar event list --start "<ISO>" --end "<ISO>" --format json` 复核。
 
 **禁止**：跳过与会人 userId 解析直接传姓名、编造会议室 roomId。

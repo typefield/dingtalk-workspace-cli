@@ -46,7 +46,7 @@ metadata:
 **触发**：查听记/会议记录/某会议的纪要/按关键词或时间找听记。
 
 1. **选 scope（必须·铁律）**：`mine`=我创建/发起的；`shared`=他人共享给我的；`all`=我可访问的全部（含 mine+shared）。用户说"我能访问/可见/所有/我的听记"等覆盖语义**一律 `all`**；只有明确"我创建的/我发起的/我录的"才用 `mine`。
-2. **执行（必须）**：`dws minutes list all|mine|shared --format json`；按关键词加 `--query "<关键词>"`，按时间加 `--start "<ISO>" --end "<ISO>"`，限制条数 `--limit <n>`（`--max` 兼容别名），翻页用 `--cursor <token>`（`--next-token` 兼容别名）。
+2. **执行（必须）**：`dws minutes list all|mine|shared --format json`；按关键词加 `--query "<关键词>"`，按时间加 `--start "<ISO>" --end "<ISO>"`，限制条数用 canonical 参数 `--limit <n>`，翻页用 `--cursor <token>`。
 3. **解析（必须）**：从 `itemList[]` 取真实 `taskUuid` + `title` + 时间；多候选必须让用户确认，**禁止**默认取第一条。
 
 **禁止**：把 `mine` 当全量、凭标题相似度锁定、跳过 `--format json`。

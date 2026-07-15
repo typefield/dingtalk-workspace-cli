@@ -214,8 +214,8 @@ def fetch_all_classes() -> dict[int, str]:
         try:
             result = run_dws([
                 "attendance", "class", "search",
-                "--page-index", str(page_index),
-                "--page-size", str(page_size),
+                "--page", str(page_index),
+                "--limit", str(page_size),
             ])
         except DwsCallError as exc:
             error(f"查询班次列表失败: {exc}")
@@ -367,7 +367,7 @@ def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
             "attendance", "schedule", "import",
             "--groupId", str(group_id),
             "--scheduleVOS", schedules_json,
-            "--yes",
+            "--user-say-yes",
         ])
     except DwsCallError as exc:
         error(f"排班导入失败: {exc}")

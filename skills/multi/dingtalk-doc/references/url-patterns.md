@@ -159,7 +159,7 @@ Agent 流程：
 
 | 用户说 | 路由 | 不要混淆 |
 |--------|------|---------|
-| "把这个文档/表格/多维表分享给张三" | **节点级**：`doc permission add --node <URL> --user <UID> --role EDITOR` | 不是 `wiki member add` |
+| "把这个文档/表格/多维表分享给张三" | **节点级**：`doc permission add --node <URL> --users <UID> --role EDITOR` | 不是 `wiki member add` |
 | "把张三加到这个知识库" | **容器级**：`wiki member add --workspace <WS> --user <UID> --role <ROLE>` | 不是 `doc permission add` |
 
 > 区分依据：**doc permission 作用于单个 node（document / file / folder）；wiki member 作用于整个 workspace 容器**。同一用户在 workspace 是 EDITOR、在某个 node 上仍可被单独提升为 MANAGER（节点级覆盖容器级）。

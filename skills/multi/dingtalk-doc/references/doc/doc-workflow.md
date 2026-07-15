@@ -54,7 +54,7 @@ dws doc comment create-inline --node <DOC_ID> --block-id <BLOCK_ID> \
 
 # ── 工作流 9: 权限授予（节点级，已迁移到 drive）──
 dws contact user search --query "张三" --format json            # 取 userId
-dws drive permission add --node <DOC_ID> --user <uid1>,<uid2> --role EDITOR --format json
+dws drive permission add --node <DOC_ID> --users <uid1>,<uid2> --role EDITOR --format json
 dws drive permission list --node <DOC_ID> --format json        # 校验
 
 # ── 工作流 10: 文件操作（已迁移到 drive）──

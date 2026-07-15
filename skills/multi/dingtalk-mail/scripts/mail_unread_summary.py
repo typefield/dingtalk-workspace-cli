@@ -39,6 +39,18 @@ def run_dws(
         return None
 
 
+def unwrap_result(data: Any) -> Any:
+    while isinstance(data, dict):
+        for key in ('result', 'content', 'data'):
+            nested = data.get(key)
+            if isinstance(nested, (dict, list)):
+                data = nested
+                break
+        else:
+            return data
+    return data
+
+
 def get_my_email(dry_run: bool = False) -> Optional[str]:
     data = run_dws([
         'mail', 'mailbox', 'list', '--format', 'json',
@@ -46,6 +58,17 @@ def get_my_email(dry_run: bool = False) -> Optional[str]:
     if dry_run:
         return '<MY_EMAIL>'
     if not data:
+        return None
+    data = unwrap_result(data)
+    if isinstance(data, dict) and isinstance(data.get('emailAccounts'), list):
+        accounts = data['emailAccounts']
+        for account in accounts:
+            if (isinstance(account, dict)
+                    and account.get('type') == 'ORG'
+                    and account.get('email')):
+                return account['email']
+        if accounts and isinstance(accounts[0], dict):
+            return accounts[0].get('email')
         return None
     if isinstance(data, list) and data:
         item = data[0]
@@ -80,7 +103,7 @@ def main():
         'mail', 'message', 'search',
         '--email', email or '<MY_EMAIL>',
         '--query', kql,
-        '--size', str(args.size),
+        '--limit', str(args.size),
         '--format', 'json',
     ], dry_run=args.dry_run)
 
@@ -90,6 +113,7 @@ def main():
         print('未查到邮件')
         return
 
+    data = unwrap_result(data)
     messages = (data if isinstance(data, list)
                 else data.get('items', data.get('messages', [])))
 

@@ -84,7 +84,7 @@ metadata:
 
 **触发**：导出文档/下载文档/转 PDF·Markdown。
 
-1. **判类型（必须）**：先 `dws doc info --node <nodeId> --format json`；在线文档 → `dws doc export --node <nodeId> --format <pdf|markdown> --format json`；普通文件 → 切 `dingtalk-drive` 用 `dws drive download --node <nodeId> --output <path>`。
+1. **判类型（必须）**：先 `dws doc info --node <nodeId> --format json`；在线文档 → `dws doc export --node <nodeId> --export-format <docx|markdown|pdf> --output <path> --format json`；普通文件 → 切 `dingtalk-drive` 用 `dws drive download --node <nodeId> --output <path> --format json`。
 
 **禁止**：不分类型一律走 `doc export`（普通文件会失败）、跳过 `doc info` 判断。
 

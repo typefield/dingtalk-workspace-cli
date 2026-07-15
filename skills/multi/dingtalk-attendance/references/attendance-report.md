@@ -132,7 +132,7 @@ dws aisearch person --keyword "<员工姓名>" --dimension name --format json
 **场景 B — 按部门查询**:
 ```bash
 dws contact dept search --query "<部门名>" --format json
-dws contact dept list-members --ids <deptId> --format json
+dws contact dept list-members --depts <deptId> --format json
 ```
 
 **场景 C — 多个部门**: 对每个部门分别执行 B，汇总去重。
@@ -502,7 +502,7 @@ python scripts/attendance_report_checkin.py \
 ```bash
 # 1. 获取部门成员
 dws contact dept search --query "研发组" --format json
-dws contact dept list-members --ids <deptId> --format json
+dws contact dept list-members --depts <deptId> --format json
 
 # 2. 调用脚本（默认月度汇总，不传 --column-keywords）
 python scripts/attendance_report_monthly.py \

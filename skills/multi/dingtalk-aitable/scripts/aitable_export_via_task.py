@@ -88,10 +88,12 @@ def build_start_args(args: argparse.Namespace) -> list[str]:
         args.base_id,
         "--scope",
         args.scope,
-        "--format",
+        "--export-format",
         args.export_format,
         "--timeout-ms",
         str(args.timeout_ms),
+        "--format",
+        "json",
     ]
     if args.table_id:
         cmd.extend(["--table-id", args.table_id])
@@ -155,6 +157,8 @@ def main() -> None:
                 task_id,
                 "--timeout-ms",
                 str(args.poll_timeout_ms),
+                "--format",
+                "json",
             ],
             timeout_sec=max(120, int(args.poll_timeout_ms / 1000) + 60),
         )

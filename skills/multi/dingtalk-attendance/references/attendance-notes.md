@@ -79,7 +79,7 @@
 | --user-say-yes | n | 用户已确认，跳过交互式确认提示 | - |
 
 **获取 planId 步骤**:
-1. 查询排班记录：`dws attendance schedule get --userIdList USER_ID --workDateBegin DATE --workDateEnd DATE`
+1. 查询排班记录：`dws attendance schedule get --users USER_ID --start DATE --end DATE`
 2. 从返回结果中找到对应打卡类型（OnDuty=上班，OffDuty=下班）的记录
 3. 使用该记录的 `id` 字段作为 `--plan-id` 参数
 4. 示例返回：`{"id": 948964045503, "checkType": "OffDuty", ...}` → `--plan-id 948964045503`
@@ -96,7 +96,7 @@
 **示例**:
 ```bash
 # 步骤1：获取排班记录的 planId
-dws attendance schedule get --userIdList 03642229451220076 --workDateBegin 2026-05-13 --workDateEnd 2026-05-13 -f json
+dws attendance schedule get --users 03642229451220076 --start 2026-05-13 --end 2026-05-13 -f json
 
 # 步骤2：使用返回的 id 作为 --plan-id 改签
 # 假设返回 id: 948964045503 (OffDuty 下班打卡)

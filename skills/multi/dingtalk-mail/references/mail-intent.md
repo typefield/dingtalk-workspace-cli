@@ -11,7 +11,7 @@
   **第一步**：并发同时发起以下三路查询，取最先返回有效邮箱的结果；若三路均无有效邮箱，请用户提供，禁止臆测：
     1. `aisearch person --keyword <姓名>` → `contact user get --ids <userId>`，提取 `orgAuthEmail`
     2. `mail user search --email <当前邮箱> --keyword <姓名>`，提取 `users[].email`（仅企业邮箱可用；若已知工号，可改用 `--employee-no <工号>`）
-    3. `contact user search --keyword <姓名>`，提取用户邮箱字段
+    3. `contact user search --query <姓名>`，提取用户邮箱字段
   **第二步**：用获得的目标邮箱拼入 KQL（如 `from:<email>` 或 `to:<email>`）执行 `message search`，或用于 `message send`
 用户说"发带附件的邮件/发邮件附件" → 先 `mailbox list` 获取发件地址，再 `message send --attachment <文件路径>`
 用户说"给(某人名字)发邮件" → 先 `aisearch person` 获取 userId，再 `contact user get` 获取收件人邮箱，再 `message send`

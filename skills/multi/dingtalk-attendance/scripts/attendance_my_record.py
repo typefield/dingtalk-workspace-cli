@@ -48,7 +48,22 @@ def get_my_user_id(dry_run: bool = False) -> Optional[str]:
         return '<MY_USER_ID>'
     if not data or not isinstance(data, dict):
         return None
-    return data.get('userId') or data.get('userid')
+    uid = data.get('userId') or data.get('userid')
+    if uid:
+        return uid
+    inner = data.get('result')
+    if isinstance(inner, dict):
+        inner = [inner]
+    if isinstance(inner, list):
+        for item in inner:
+            if not isinstance(item, dict):
+                continue
+            employee = item.get('orgEmployeeModel')
+            if isinstance(employee, dict) and employee.get('userId'):
+                return employee['userId']
+            if item.get('userId'):
+                return item['userId']
+    return None
 
 
 def main():

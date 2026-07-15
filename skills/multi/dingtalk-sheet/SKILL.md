@@ -21,7 +21,7 @@ metadata:
 <!-- SAFETY_PREAMBLE_INJECT -->
 
 > 命令参考：[sheet.md](references/sheet.md)。
-> 高频模块：[读取](references/sheet/sheet-read-index.md) · [写入](references/sheet/sheet-write-index.md) · [格式](references/sheet/sheet-format-index.md) · [查询](references/sheet/sheet-query-index.md) · [可视化](references/sheet/sheet-visual-index.md) · [导入导出](references/sheet/sheet-export-index.md)。
+> 高频模块：[触发门禁](references/sheet/sheet-triggers.md) · [读取](references/sheet/sheet-read-index.md) · [写入](references/sheet/sheet-write-index.md) · [格式](references/sheet/sheet-format-index.md) · [查询](references/sheet/sheet-query-index.md) · [可视化](references/sheet/sheet-visual-index.md) · [导入导出](references/sheet/sheet-export-index.md)。
 
 ## 意图表
 

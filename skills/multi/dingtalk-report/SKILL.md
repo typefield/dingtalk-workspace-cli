@@ -20,7 +20,7 @@ metadata:
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> 命令参考：[report.md](references/report.md)；剧本：[05-reporting.md](references/05-reporting.md)。
+> 命令参考：[report.md](references/report.md)；剧本：[05-reporting.md](references/05-reporting.md)；分页查询辅助脚本：[`scripts/report_received_today.py`](scripts/report_received_today.py)。
 
 ## 意图表
 

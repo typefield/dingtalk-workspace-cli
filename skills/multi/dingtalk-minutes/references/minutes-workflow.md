@@ -8,11 +8,11 @@ dws minutes record start --format json
 
 # 1. 查看我的听记列表 — 提取 taskUuid
 dws minutes list mine --format json
-dws minutes list mine --max 10 --next-token <nextToken> --format json
+dws minutes list mine --limit 10 --cursor <nextToken> --format json
 dws minutes list mine --query "周会" --format json
 
 # 1b. 查看共享给我的听记
-dws minutes list shared --max 20 --format json
+dws minutes list shared --limit 20 --format json
 dws minutes list shared --query "日报" --format json
 
 # 1c. 查看我有权限访问的所有听记（支持关键字和时间范围筛选）
@@ -79,9 +79,9 @@ dws minutes upload cancel --session-id <sessionId> --format json
 
 | 操作 | 从返回中提取 | 用于 |
 |------|-------------|------|
-| `list mine` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
-| `list shared` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
-| `list all` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --next-token |
+| `list mine` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --cursor |
+| `list shared` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --cursor |
+| `list all` | `taskUuid`、`nextToken` | get/update 的 --id；翻页时 --cursor |
 | `get batch` | 各听记 `taskUuid` | 进一步查询详情 |
 | `get audio` | 音频/视频 OSS 地址 | 用 HTTP GET 下载录音文件 / 在浏览器播放 |
 | `record start` | `taskUuid`/`uuid` | record pause/resume/stop 的 --id |
