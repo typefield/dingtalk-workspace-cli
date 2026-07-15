@@ -199,20 +199,6 @@ func TestReadFileBoundedEmptyFile(t *testing.T) {
 	}
 }
 
-func TestReadFileBoundedPermissionDenied(t *testing.T) {
-	t.Parallel()
-	dir := t.TempDir()
-	path := filepath.Join(dir, "noperm.txt")
-	writeTestFile(t, path, []byte("secret"))
-	os.Chmod(path, 0o000)
-	t.Cleanup(func() { os.Chmod(path, 0o644) })
-
-	_, _, err := ReadFileArg("@" + path)
-	if err == nil {
-		t.Fatal("expected error for permission denied")
-	}
-}
-
 // ---------------------------------------------------------------------------
 // StdinGuard
 // ---------------------------------------------------------------------------

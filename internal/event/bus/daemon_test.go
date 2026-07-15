@@ -78,6 +78,9 @@ func skipOnWindows(t *testing.T, reason string) {
 // $TMPDIR (/var/folders/.../T/...) which can easily exceed that.
 func shortTempDir(t *testing.T) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		return t.TempDir()
+	}
 	dir, err := os.MkdirTemp("/tmp", "dws-bus-")
 	if err != nil {
 		t.Fatalf("mktemp: %v", err)

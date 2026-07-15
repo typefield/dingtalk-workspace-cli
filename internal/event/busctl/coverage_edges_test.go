@@ -152,12 +152,17 @@ func TestStatusFilesystemEdges(t *testing.T) {
 	origStat := statusStat
 	t.Cleanup(func() { statusReadDir = origReadDir; statusStat = origStat })
 	configDir := t.TempDir()
-	if err := os.WriteFile(filepath.Join(configDir, "events"), []byte("file"), 0o600); err != nil {
-		t.Fatal(err)
+	eventsDir := filepath.Join(configDir, "events")
+	statusReadDir = func(path string) ([]os.DirEntry, error) {
+		if path == eventsDir {
+			return nil, errBusctlInjected
+		}
+		return origReadDir(path)
 	}
-	if _, err := EnumerateBuses(configDir, ""); err == nil {
-		t.Fatal("events scan error expected")
+	if _, err := EnumerateBuses(configDir, ""); !errors.Is(err, errBusctlInjected) {
+		t.Fatalf("events scan error = %v", err)
 	}
+	statusReadDir = origReadDir
 
 	configDir = t.TempDir()
 	legacy := makeBusDir(t, configDir, "open", "legacy", true, 0)

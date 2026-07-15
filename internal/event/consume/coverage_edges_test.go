@@ -8,6 +8,7 @@ import (
 	"io"
 	"net"
 	"os"
+	"runtime"
 	"strings"
 	"syscall"
 	"testing"
@@ -74,7 +75,7 @@ func TestFormatterPipelineRouterAndSinkEdges(t *testing.T) {
 		t.Fatalf("global output without stream sink: %v", err)
 	}
 
-	if err := NewStdoutSink(errorWriter{err: syscall.EPIPE}).Write(transport.Event{}, []byte("x")); !errors.Is(err, ErrPipeClosed) {
+	if err := NewStdoutSink(errorWriter{err: testBrokenPipeError()}).Write(transport.Event{}, []byte("x")); !errors.Is(err, ErrPipeClosed) {
 		t.Fatalf("broken pipe error = %v", err)
 	}
 	mkdirSinkDir = func(string, os.FileMode) error { return wantErr }
@@ -168,7 +169,7 @@ func TestRunFrameAndDeliveryEdges(t *testing.T) {
 		writer io.Writer
 		want   error
 	}{
-		{"pipe closed", errorWriter{err: syscall.EPIPE}, nil},
+		{"pipe closed", errorWriter{err: testBrokenPipeError()}, nil},
 		{"delivery failure", errorWriter{err: errors.New("output failed")}, errors.New("want error")},
 	} {
 		discoverBus = pipeDiscover(t, [][]byte{ack, event}, true)
@@ -204,6 +205,15 @@ func TestRunFrameAndDeliveryEdges(t *testing.T) {
 	if err := Run(context.Background(), cfg); err != nil {
 		t.Fatalf("duration cancellation run: %v", err)
 	}
+}
+
+func testBrokenPipeError() error {
+	if runtime.GOOS == "windows" {
+		// ERROR_BROKEN_PIPE. Use syscall.Errno so this generic test file
+		// stays buildable without importing the Windows-only package.
+		return syscall.Errno(109)
+	}
+	return syscall.EPIPE
 }
 
 func mustJSONFrame(t *testing.T, value any) []byte {

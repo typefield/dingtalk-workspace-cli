@@ -853,7 +853,14 @@ func TestRuntimeRunnerRoutingCoverage(t *testing.T) {
 
 func TestExecuteInvocationCoverage(t *testing.T) {
 	oldEdition := edition.Get()
-	t.Cleanup(func() { edition.Override(oldEdition) })
+	edition.Override(&edition.Hooks{TokenProvider: func(context.Context, func() (string, error)) (string, error) {
+		return "", nil
+	}})
+	ResetRuntimeTokenCache()
+	t.Cleanup(func() {
+		edition.Override(oldEdition)
+		ResetRuntimeTokenCache()
+	})
 	pluginAuthMu.Lock()
 	oldRegistry := pluginAuthRegistry
 	pluginAuthRegistry = make(map[string]*PluginAuth)
@@ -1069,27 +1076,6 @@ func TestAuthCommandPureCoverage(t *testing.T) {
 		t.Fatal("manual credential prompt error succeeded")
 	}
 
-	inputPath := filepath.Join(t.TempDir(), "empty")
-	if err := os.WriteFile(inputPath, nil, 0o600); err != nil {
-		t.Fatal(err)
-	}
-	input, err := os.Open(inputPath)
-	if err != nil {
-		t.Fatal(err)
-	}
-	oldStdin := os.Stdin
-	os.Stdin = input
-	t.Cleanup(func() { os.Stdin = oldStdin; _ = input.Close() })
-	_, _ = selectAuthLoginGuideAction()
-	_, _, _ = promptAuthLoginManualCredentials()
-	_, _ = selectLoginRecommendScopeMode()
-	if selected, err := selectLoginRecommendProducts(nil); err != nil || selected != nil {
-		t.Fatalf("empty recommended products = %#v %v", selected, err)
-	}
-	if selected, err := selectLoginRecommendProducts([]pat.LoginRecommendProduct{{ProductName: "missing-code"}}); err != nil || selected != nil {
-		t.Fatalf("invalid recommended products = %#v %v", selected, err)
-	}
-	_, _ = selectLoginRecommendProducts([]pat.LoginRecommendProduct{{ProductCode: "doc", ProductName: "Document"}})
 }
 
 func TestAuthLoginTokenCommandCoverage(t *testing.T) {

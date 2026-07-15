@@ -80,8 +80,9 @@ func TestBrowserPolicyInjectedEdges(t *testing.T) {
 	if got := patConfigDir(); got != ".dws" {
 		t.Fatalf("failed home config dir = %q", got)
 	}
-	patPolicyUserHomeDir = func() (string, error) { return "/home/test", nil }
-	if got := patConfigDir(); got != "/home/test/.dws" {
+	homeDir := filepath.Join(t.TempDir(), "home")
+	patPolicyUserHomeDir = func() (string, error) { return homeDir, nil }
+	if got := patConfigDir(); got != filepath.Join(homeDir, ".dws") {
 		t.Fatalf("home config dir = %q", got)
 	}
 

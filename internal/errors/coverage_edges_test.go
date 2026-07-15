@@ -86,7 +86,7 @@ func TestValidationCoverageEdges(t *testing.T) {
 	if _, err := SafeOutputPath("\x00"); err == nil {
 		t.Fatal("control character output path should fail")
 	}
-	if _, err := SafeInputPath(filepath.Join(string(filepath.Separator), "tmp", "absolute")); err == nil {
+	if _, err := SafeInputPath(filepath.Join(t.TempDir(), "absolute")); err == nil {
 		t.Fatal("absolute input path should fail")
 	}
 

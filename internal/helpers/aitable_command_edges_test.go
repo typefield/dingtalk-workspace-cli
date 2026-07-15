@@ -271,6 +271,7 @@ func TestAitableDeleteCancellationEdges(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = input.Close() })
 	if _, err := input.WriteString(strings.Repeat("no\n", 20)); err != nil {
 		t.Fatal(err)
 	}

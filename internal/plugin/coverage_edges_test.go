@@ -153,9 +153,10 @@ func TestManifestEdges(t *testing.T) {
 	}
 
 	valid := Manifest{Name: "valid-plugin", Version: "v1.2.3-beta"}
+	absoluteCommand := filepath.Join(t.TempDir(), "bin", "server")
 	for name, mutate := range map[string]func(*Manifest){
 		"absolute stdio command": func(m *Manifest) {
-			m.MCPServers = map[string]*MCPServer{"x": {Type: "stdio", Command: filepath.Join(string(os.PathSeparator), "bin", "x")}}
+			m.MCPServers = map[string]*MCPServer{"x": {Type: "stdio", Command: absoluteCommand}}
 		},
 		"unsupported server": func(m *Manifest) {
 			m.MCPServers = map[string]*MCPServer{"x": {Type: "other"}}
@@ -422,12 +423,18 @@ func TestLoaderInstallBuildAndGit(t *testing.T) {
 	}
 
 	src := t.TempDir()
+	builtOutput := filepath.Join("bin", "server")
+	buildCommand := "mkdir -p bin && printf ok > bin/server"
+	if runtime.GOOS == "windows" {
+		builtOutput += ".exe"
+		buildCommand = "if not exist bin mkdir bin && echo ok>bin\\server.exe"
+	}
 	writePluginManifest(t, src, Manifest{
 		Name:    "built-plugin",
 		Version: "1.0.0",
 		Build: &BuildConfig{
-			Command: "mkdir -p bin && printf ok > bin/server",
-			Output:  "bin/server",
+			Command: buildCommand,
+			Output:  builtOutput,
 		},
 	})
 	if err := os.WriteFile(filepath.Join(src, "payload.txt"), []byte("new"), 0o644); err != nil {
@@ -450,8 +457,11 @@ func TestLoaderInstallBuildAndGit(t *testing.T) {
 	if _, err := os.Stat(stale); !os.IsNotExist(err) {
 		t.Fatalf("stale file remains: %v", err)
 	}
-	info, err := os.Stat(filepath.Join(installed.Root, "bin", "server"))
-	if err != nil || info.Mode()&0o111 == 0 {
+	info, err := os.Stat(filepath.Join(installed.Root, builtOutput))
+	if err != nil {
+		t.Fatalf("built output is missing: %v", err)
+	}
+	if runtime.GOOS != "windows" && info.Mode()&0o111 == 0 {
 		t.Fatalf("built output is not executable: %v %#o", err, info.Mode())
 	}
 
@@ -475,19 +485,26 @@ func TestLoaderInstallBuildAndGit(t *testing.T) {
 	if err := BuildPlugin(filepath.Join(t.TempDir(), "missing")); err == nil {
 		t.Fatal("expected BuildPlugin parse error")
 	}
+	successfulBuildCommand := "true"
+	outputBuildCommand := "printf ok > output"
+	if runtime.GOOS == "windows" {
+		successfulBuildCommand = "exit /b 0"
+		outputBuildCommand = "echo ok>output"
+	}
 	writePluginManifest(t, noBuild, Manifest{
 		Name: "plain-plugin", Version: "1.0.0",
-		Build: &BuildConfig{Command: "printf ok > output", Output: "output"},
+		Build: &BuildConfig{Command: outputBuildCommand, Output: "output"},
 	})
 	if err := BuildPlugin(noBuild); err != nil {
 		t.Fatal(err)
 	}
 
+	absoluteOutput := filepath.Join(t.TempDir(), "x")
 	for name, build := range map[string]*BuildConfig{
 		"empty command":   {},
-		"absolute output": {Command: "true", Output: filepath.Join(string(os.PathSeparator), "tmp", "x")},
-		"escaping output": {Command: "true", Output: "../x"},
-		"missing output":  {Command: "true", Output: "missing"},
+		"absolute output": {Command: successfulBuildCommand, Output: absoluteOutput},
+		"escaping output": {Command: successfulBuildCommand, Output: "../x"},
+		"missing output":  {Command: successfulBuildCommand, Output: "missing"},
 	} {
 		t.Run(name, func(t *testing.T) {
 			if err := runBuild(t.TempDir(), build); err == nil {

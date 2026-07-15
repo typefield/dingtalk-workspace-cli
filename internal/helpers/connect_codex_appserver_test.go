@@ -19,6 +19,7 @@ import (
 	"io"
 	"os"
 	"path/filepath"
+	"runtime"
 	"strings"
 	"testing"
 	"time"
@@ -26,6 +27,17 @@ import (
 
 func writeShellExecutable(t *testing.T, dir, name, body string) string {
 	t.Helper()
+	if runtime.GOOS == "windows" {
+		path := filepath.Join(dir, name+".exe")
+		if err := copyCurrentHelpersTestBinary(path); err != nil {
+			t.Fatalf("write Windows stub %s: %v", name, err)
+		}
+		if err := os.WriteFile(path+helpersShellStubBodySuffix, []byte(body), 0o600); err != nil {
+			t.Fatalf("write Windows stub body %s: %v", name, err)
+		}
+		t.Setenv(helpersShellStubEnv, "1")
+		return path
+	}
 	path := filepath.Join(dir, name)
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body), 0o755); err != nil {
 		t.Fatalf("write stub %s: %v", name, err)

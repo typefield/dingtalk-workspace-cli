@@ -305,7 +305,12 @@ func TestRunStartupAndSourceEdges(t *testing.T) {
 
 	workDir := shortTempDir(t)
 	base.WorkDir = workDir
-	base.IPCEndpoint = filepath.Join(workDir, "bus.sock")
+	base.IPCEndpoint = dwsevent.IPCEndpoint(
+		workDir,
+		"open",
+		dwsevent.SourceKindAppStream,
+		dwsevent.IdentityHash(workDir),
+	)
 	base.Logger = slog.New(slog.NewTextHandler(io.Discard, nil))
 	base.Source = edgeSource{start: func(_ context.Context, emit dwsevent.EmitFn) error {
 		emit(nil)

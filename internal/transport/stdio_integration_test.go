@@ -21,6 +21,7 @@ import (
 	"os"
 	"os/exec"
 	"path/filepath"
+	"runtime"
 	"sync/atomic"
 	"testing"
 	"time"
@@ -147,6 +148,9 @@ func buildTestHelper(t *testing.T) string {
 	}
 
 	binPath := filepath.Join(t.TempDir(), "stdio-test-server")
+	if runtime.GOOS == "windows" {
+		binPath += ".exe"
+	}
 	cmd := exec.Command("go", "build", "-o", binPath, serverSrc)
 	out, err := cmd.CombinedOutput()
 	if err != nil {

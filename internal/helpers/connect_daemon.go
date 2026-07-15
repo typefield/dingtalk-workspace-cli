@@ -97,6 +97,9 @@ var (
 	daemonRename        = os.Rename
 	daemonFindProcess   = os.FindProcess
 	daemonProcessAlive  = processAlive
+	daemonSignalProcess = func(process *os.Process, signal os.Signal) error {
+		return process.Signal(signal)
+	}
 	daemonSignalContext = func() (context.Context, context.CancelFunc) {
 		return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	}
@@ -505,7 +508,7 @@ func superviseWait(ctx context.Context, worker *exec.Cmd) error {
 	case err := <-done:
 		return err
 	case <-ctx.Done():
-		_ = worker.Process.Signal(syscall.SIGTERM)
+		_ = daemonSignalProcess(worker.Process, syscall.SIGTERM)
 		select {
 		case err := <-done:
 			return err
@@ -607,7 +610,7 @@ func daemonStop(w io.Writer, dirKey string) error {
 		if hb, _ := readConnectHeartbeat(dir); hb != nil && hb.Pid > 0 && daemonProcessAlive(hb.Pid) {
 			fmt.Fprintf(w, "connect daemon: supervisor (pid %d) was dead, stopping orphan worker (pid %d)...\n", st.Pid, hb.Pid)
 			if proc, perr := daemonFindProcess(hb.Pid); perr == nil {
-				_ = proc.Signal(syscall.SIGTERM)
+				_ = daemonSignalProcess(proc, syscall.SIGTERM)
 				deadline := daemonNow().Add(daemonStopTimeout)
 				for daemonNow().Before(deadline) {
 					if !daemonProcessAlive(hb.Pid) {
@@ -616,7 +619,7 @@ func daemonStop(w io.Writer, dirKey string) error {
 					helperSleep(200 * time.Millisecond)
 				}
 				if daemonProcessAlive(hb.Pid) {
-					_ = proc.Signal(syscall.SIGKILL)
+					_ = daemonSignalProcess(proc, syscall.SIGKILL)
 					helperSleep(200 * time.Millisecond)
 				}
 			}
@@ -630,7 +633,7 @@ func daemonStop(w io.Writer, dirKey string) error {
 	if err != nil {
 		return apperrors.NewInternal(fmt.Sprintf("find daemon process %d: %v", st.Pid, err))
 	}
-	if err := proc.Signal(syscall.SIGTERM); err != nil {
+	if err := daemonSignalProcess(proc, syscall.SIGTERM); err != nil {
 		return apperrors.NewInternal(fmt.Sprintf("signal daemon %d: %v", st.Pid, err))
 	}
 	fmt.Fprintf(w, "sent SIGTERM to connect daemon (pid %d), waiting for graceful stop...\n", st.Pid)
@@ -645,7 +648,7 @@ func daemonStop(w io.Writer, dirKey string) error {
 		helperSleep(200 * time.Millisecond)
 	}
 	// Graceful window elapsed; force kill.
-	_ = proc.Signal(syscall.SIGKILL)
+	_ = daemonSignalProcess(proc, syscall.SIGKILL)
 	helperSleep(200 * time.Millisecond)
 	_ = os.Remove(daemonPidPath(dir))
 	fmt.Fprintf(w, "connect daemon did not stop in %s; sent SIGKILL (pid %d)\n", daemonStopTimeout, st.Pid)

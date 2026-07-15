@@ -15,19 +15,23 @@ import (
 )
 
 func TestMainWritesProductionSmokeRegistry(t *testing.T) {
-	read, write, err := os.Pipe()
+	outputFile, err := os.CreateTemp(t.TempDir(), "schema-registry-smoke-*.json")
 	if err != nil {
 		t.Fatal(err)
 	}
 	oldStdout := os.Stdout
-	os.Stdout = write
-	t.Cleanup(func() { os.Stdout = oldStdout })
+	os.Stdout = outputFile
+	t.Cleanup(func() {
+		os.Stdout = oldStdout
+		_ = outputFile.Close()
+	})
 	main()
-	if err := write.Close(); err != nil {
+	os.Stdout = oldStdout
+	if _, err := outputFile.Seek(0, 0); err != nil {
 		t.Fatal(err)
 	}
 	var output bytes.Buffer
-	if _, err := output.ReadFrom(read); err != nil {
+	if _, err := output.ReadFrom(outputFile); err != nil {
 		t.Fatal(err)
 	}
 	if output.Len() == 0 {

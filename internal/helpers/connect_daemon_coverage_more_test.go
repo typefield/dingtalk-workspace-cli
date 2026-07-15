@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"strings"
+	"syscall"
 	"testing"
 	"time"
 
@@ -30,6 +31,7 @@ func preserveDaemonHooks(t *testing.T) {
 	oldRename := daemonRename
 	oldFindProcess := daemonFindProcess
 	oldProcessAlive := daemonProcessAlive
+	oldSignalProcess := daemonSignalProcess
 	oldSignalContext := daemonSignalContext
 	oldDir := connectDaemonDirOverride
 	oldAfter := helperAfter
@@ -47,11 +49,15 @@ func preserveDaemonHooks(t *testing.T) {
 		daemonRename = oldRename
 		daemonFindProcess = oldFindProcess
 		daemonProcessAlive = oldProcessAlive
+		daemonSignalProcess = oldSignalProcess
 		daemonSignalContext = oldSignalContext
 		connectDaemonDirOverride = oldDir
 		helperAfter = oldAfter
 		helperSleep = oldSleep
 	})
+	// Tests exercise the platform-independent lifecycle below the public
+	// Windows guard. The dedicated unsupported case resets this to false.
+	daemonDetachEnabled = true
 }
 
 func daemonTestCommand() *cobra.Command {
@@ -131,7 +137,7 @@ func TestStartDaemonLifecycleEdges(t *testing.T) {
 		if err := os.Mkdir(daemonLogPath(dir), 0o700); err != nil {
 			t.Fatal(err)
 		}
-		daemonExecutable = func() (string, error) { return "/bin/sh", nil }
+		daemonExecutable = os.Executable
 		if err := startDaemon(daemonTestCommand(), "key", "client", "", "custom", "", "", false); err == nil {
 			t.Fatal("daemon start with directory log succeeded")
 		}
@@ -140,7 +146,7 @@ func TestStartDaemonLifecycleEdges(t *testing.T) {
 	t.Run("child start error", func(t *testing.T) {
 		preserveDaemonHooks(t)
 		connectDaemonDirOverride = t.TempDir()
-		daemonExecutable = func() (string, error) { return "/bin/sh", nil }
+		daemonExecutable = os.Executable
 		daemonCommand = func(string, ...string) *exec.Cmd {
 			return exec.Command(filepath.Join(t.TempDir(), "missing"))
 		}
@@ -152,8 +158,9 @@ func TestStartDaemonLifecycleEdges(t *testing.T) {
 	t.Run("success", func(t *testing.T) {
 		preserveDaemonHooks(t)
 		connectDaemonDirOverride = t.TempDir()
-		daemonExecutable = func() (string, error) { return "/bin/sh", nil }
-		daemonCommand = func(string, ...string) *exec.Cmd { return exec.Command("sh", "-c", "exit 0") }
+		daemonExecutable = os.Executable
+		fixture := writeShellExecutable(t, t.TempDir(), "daemon-success", "exit 0\n")
+		daemonCommand = func(string, ...string) *exec.Cmd { return exec.Command(fixture) }
 		cmd := daemonTestCommand()
 		var out bytes.Buffer
 		cmd.SetOut(&out)
@@ -162,6 +169,25 @@ func TestStartDaemonLifecycleEdges(t *testing.T) {
 		}
 		if !strings.Contains(out.String(), "daemon started") {
 			t.Fatalf("start output = %q", out.String())
+		}
+
+		// startDaemon intentionally releases its detached child. On Windows the
+		// child keeps daemon.log locked until it exits, so wait for that handle
+		// to close before TempDir cleanup.
+		dir, err := connectDaemonDir("key")
+		if err != nil {
+			t.Fatal(err)
+		}
+		deadline := time.Now().Add(2 * time.Second)
+		for {
+			err = os.Remove(daemonLogPath(dir))
+			if err == nil || os.IsNotExist(err) {
+				break
+			}
+			if time.Now().After(deadline) {
+				t.Fatalf("daemon log remained locked: %v", err)
+			}
+			time.Sleep(10 * time.Millisecond)
 		}
 	})
 }
@@ -193,7 +219,10 @@ func TestDaemonFileOperationEdges(t *testing.T) {
 			daemonFileSync = func(*os.File) error { return errors.New("sync") }
 		}},
 		{"close", func() {
-			daemonFileClose = func(*os.File) error { return errors.New("close") }
+			daemonFileClose = func(file *os.File) error {
+				_ = file.Close()
+				return errors.New("close")
+			}
 		}},
 		{"rename", func() {
 			daemonRename = func(string, string) error { return errors.New("rename") }
@@ -546,87 +575,7 @@ func TestDaemonStatusAndStopEdges(t *testing.T) {
 		}
 	})
 
-	t.Run("stale supervisor stops orphan", func(t *testing.T) {
-		preserveDaemonHooks(t)
-		connectDaemonDirOverride = t.TempDir()
-		helperSleep = func(time.Duration) {}
-		worker := exec.Command("sh", "-c", "sleep 5")
-		if err := worker.Start(); err != nil {
-			t.Fatal(err)
-		}
-		done := make(chan struct{})
-		go func() { _ = worker.Wait(); close(done) }()
-		dir, _ := connectDaemonDir("orphan")
-		deadSupervisorPID := deadPid(t)
-		if err := writeDaemonState(dir, daemonState{Pid: deadSupervisorPID, DirKey: "orphan"}); err != nil {
-			t.Fatal(err)
-		}
-		seedHeartbeat(t, "orphan", connectHeartbeat{Pid: worker.Process.Pid})
-		aliveChecks := 0
-		daemonProcessAlive = func(pid int) bool {
-			if pid == deadSupervisorPID {
-				return false
-			}
-			aliveChecks++
-			return aliveChecks < 3
-		}
-		var out bytes.Buffer
-		if err := daemonStop(&out, "orphan"); err != nil {
-			t.Fatal(err)
-		}
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			_ = worker.Process.Kill()
-			t.Fatal("orphan worker did not stop")
-		}
-	})
-
-	t.Run("stale supervisor force kills orphan", func(t *testing.T) {
-		preserveDaemonHooks(t)
-		connectDaemonDirOverride = t.TempDir()
-		dir, _ := connectDaemonDir("orphan-force")
-		if err := writeDaemonState(dir, daemonState{Pid: 999, DirKey: "orphan-force"}); err != nil {
-			t.Fatal(err)
-		}
-		seedHeartbeat(t, "orphan-force", connectHeartbeat{Pid: 123})
-		daemonProcessAlive = func(pid int) bool { return pid == 123 }
-		daemonFindProcess = func(int) (*os.Process, error) { return os.FindProcess(-1) }
-		base := time.Now()
-		var calls int
-		daemonNow = func() time.Time {
-			calls++
-			return base.Add(time.Duration(calls) * (daemonStopTimeout + time.Second))
-		}
-		helperSleep = func(time.Duration) {}
-		if err := daemonStop(&bytes.Buffer{}, "orphan-force"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("live graceful stop", func(t *testing.T) {
-		preserveDaemonHooks(t)
-		connectDaemonDirOverride = t.TempDir()
-		worker := exec.Command("sh", "-c", "sleep 5")
-		if err := worker.Start(); err != nil {
-			t.Fatal(err)
-		}
-		go func() { _ = worker.Wait() }()
-		dir, _ := connectDaemonDir("live")
-		if err := writeDaemonState(dir, daemonState{Pid: worker.Process.Pid, DirKey: "live"}); err != nil {
-			t.Fatal(err)
-		}
-		var aliveCalls int
-		daemonProcessAlive = func(int) bool {
-			aliveCalls++
-			return aliveCalls == 1
-		}
-		if err := daemonStop(&bytes.Buffer{}, "live"); err != nil {
-			t.Fatal(err)
-		}
-	})
-
-	t.Run("find and signal errors", func(t *testing.T) {
+	t.Run("find error", func(t *testing.T) {
 		preserveDaemonHooks(t)
 		connectDaemonDirOverride = t.TempDir()
 		dir, _ := connectDaemonDir("find-error")
@@ -638,52 +587,132 @@ func TestDaemonStatusAndStopEdges(t *testing.T) {
 		if err := daemonStop(&bytes.Buffer{}, "find-error"); err == nil {
 			t.Fatal("find process error was ignored")
 		}
+	})
+}
 
-		dir, _ = connectDaemonDir("signal-error")
-		if err := writeDaemonState(dir, daemonState{Pid: 456, DirKey: "signal-error"}); err != nil {
+func TestDaemonStopHookedLifecycleEdges(t *testing.T) {
+	const (
+		supervisorPID = 101
+		workerPID     = 202
+	)
+
+	prepare := func(t *testing.T, key string, withWorker bool) {
+		t.Helper()
+		preserveDaemonHooks(t)
+		connectDaemonDirOverride = t.TempDir()
+		dir, err := connectDaemonDir(key)
+		if err != nil {
 			t.Fatal(err)
 		}
-		daemonFindProcess = func(int) (*os.Process, error) { return os.FindProcess(-1) }
-		if err := daemonStop(&bytes.Buffer{}, "signal-error"); err == nil {
-			t.Fatal("signal process error was ignored")
+		if err := writeDaemonState(dir, daemonState{Pid: supervisorPID, DirKey: key}); err != nil {
+			t.Fatal(err)
+		}
+		if withWorker {
+			seedHeartbeat(t, key, connectHeartbeat{Pid: workerPID})
+		}
+		daemonFindProcess = func(int) (*os.Process, error) { return new(os.Process), nil }
+	}
+
+	t.Run("orphan worker exits gracefully", func(t *testing.T) {
+		prepare(t, "orphan-graceful", true)
+		workerChecks := 0
+		daemonProcessAlive = func(pid int) bool {
+			if pid == supervisorPID {
+				return false
+			}
+			workerChecks++
+			return workerChecks <= 2
+		}
+		base := time.Now()
+		daemonNow = func() time.Time { return base }
+		var signals []os.Signal
+		daemonSignalProcess = func(_ *os.Process, signal os.Signal) error {
+			signals = append(signals, signal)
+			return nil
+		}
+		sleeps := 0
+		helperSleep = func(time.Duration) { sleeps++ }
+		if err := daemonStop(&bytes.Buffer{}, "orphan-graceful"); err != nil {
+			t.Fatal(err)
+		}
+		if len(signals) != 1 || signals[0] != syscall.SIGTERM || sleeps != 1 {
+			t.Fatalf("signals=%v sleeps=%d", signals, sleeps)
 		}
 	})
 
-	t.Run("live force kill", func(t *testing.T) {
-		preserveDaemonHooks(t)
-		connectDaemonDirOverride = t.TempDir()
-		worker := exec.Command("sh", "-c", "trap '' TERM; sleep 5")
-		if err := worker.Start(); err != nil {
+	t.Run("orphan worker is force killed", func(t *testing.T) {
+		prepare(t, "orphan-force-hooked", true)
+		daemonProcessAlive = func(pid int) bool { return pid == workerPID }
+		base := time.Now()
+		nowCalls := 0
+		daemonNow = func() time.Time {
+			nowCalls++
+			if nowCalls <= 2 {
+				return base
+			}
+			return base.Add(daemonStopTimeout + time.Second)
+		}
+		var signals []os.Signal
+		daemonSignalProcess = func(_ *os.Process, signal os.Signal) error {
+			signals = append(signals, signal)
+			return nil
+		}
+		helperSleep = func(time.Duration) {}
+		if err := daemonStop(&bytes.Buffer{}, "orphan-force-hooked"); err != nil {
 			t.Fatal(err)
 		}
-		time.Sleep(30 * time.Millisecond)
-		done := make(chan struct{})
-		go func() { _ = worker.Wait(); close(done) }()
-		dir, _ := connectDaemonDir("force")
-		if err := writeDaemonState(dir, daemonState{Pid: worker.Process.Pid, DirKey: "force"}); err != nil {
-			t.Fatal(err)
+		if len(signals) != 2 || signals[0] != syscall.SIGTERM || signals[1] != syscall.SIGKILL {
+			t.Fatalf("signals=%v", signals)
+		}
+	})
+
+	t.Run("live supervisor exits gracefully", func(t *testing.T) {
+		prepare(t, "live-graceful-hooked", false)
+		aliveCalls := 0
+		daemonProcessAlive = func(int) bool {
+			aliveCalls++
+			return aliveCalls == 1
 		}
 		base := time.Now()
-		advanced := false
-		daemonNow = func() time.Time {
-			if advanced {
-				return base.Add(daemonStopTimeout + time.Second)
-			}
-			return base
-		}
-		helperSleep = func(time.Duration) { advanced = true }
-		var out bytes.Buffer
-		if err := daemonStop(&out, "force"); err != nil {
+		daemonNow = func() time.Time { return base }
+		daemonSignalProcess = func(*os.Process, os.Signal) error { return nil }
+		if err := daemonStop(&bytes.Buffer{}, "live-graceful-hooked"); err != nil {
 			t.Fatal(err)
 		}
-		if !strings.Contains(out.String(), "SIGKILL") {
-			t.Fatalf("force stop output = %q", out.String())
+	})
+
+	t.Run("live supervisor signal fails", func(t *testing.T) {
+		prepare(t, "live-signal-error-hooked", false)
+		daemonProcessAlive = func(int) bool { return true }
+		daemonSignalProcess = func(*os.Process, os.Signal) error { return errors.New("signal") }
+		if err := daemonStop(&bytes.Buffer{}, "live-signal-error-hooked"); err == nil {
+			t.Fatal("signal error was ignored")
 		}
-		select {
-		case <-done:
-		case <-time.After(time.Second):
-			_ = worker.Process.Kill()
-			t.Fatal("forced worker did not stop")
+	})
+
+	t.Run("live supervisor is force killed", func(t *testing.T) {
+		prepare(t, "live-force-hooked", false)
+		daemonProcessAlive = func(int) bool { return true }
+		base := time.Now()
+		nowCalls := 0
+		daemonNow = func() time.Time {
+			nowCalls++
+			if nowCalls <= 2 {
+				return base
+			}
+			return base.Add(daemonStopTimeout + time.Second)
+		}
+		var signals []os.Signal
+		daemonSignalProcess = func(_ *os.Process, signal os.Signal) error {
+			signals = append(signals, signal)
+			return nil
+		}
+		helperSleep = func(time.Duration) {}
+		if err := daemonStop(&bytes.Buffer{}, "live-force-hooked"); err != nil {
+			t.Fatal(err)
+		}
+		if len(signals) != 2 || signals[0] != syscall.SIGTERM || signals[1] != syscall.SIGKILL {
+			t.Fatalf("signals=%v", signals)
 		}
 	})
 }

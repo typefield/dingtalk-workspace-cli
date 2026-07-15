@@ -280,6 +280,7 @@ func TestSinkAndForwarderFailureCoverage(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
+	t.Cleanup(func() { _ = readFailure.Close() })
 	if _, err := readFailure.WriteString("x"); err != nil {
 		t.Fatal(err)
 	}

@@ -435,10 +435,12 @@ func TestRollbackLifecycleEdges(t *testing.T) {
 	originalExecutable := upgradeExecutable
 	originalEval := upgradeEvalSymlinks
 	originalHome := upgradeUserHomeDir
+	originalReadDir := rollbackReadDir
 	t.Cleanup(func() {
 		upgradeExecutable = originalExecutable
 		upgradeEvalSymlinks = originalEval
 		upgradeUserHomeDir = originalHome
+		rollbackReadDir = originalReadDir
 	})
 	failure := errors.New("injected failure")
 	upgradeUserHomeDir = func() (string, error) { return "", failure }
@@ -490,13 +492,11 @@ func TestRollbackLifecycleEdges(t *testing.T) {
 	if err := manager.Cleanup(0); err != nil {
 		t.Fatal(err)
 	}
-	badDir := filepath.Join(t.TempDir(), "file")
-	if err := os.WriteFile(badDir, []byte("x"), 0o600); err != nil {
-		t.Fatal(err)
+	rollbackReadDir = func(string) ([]os.DirEntry, error) { return nil, failure }
+	if _, err := manager.ListBackups(); !errors.Is(err, failure) {
+		t.Fatalf("backup read error = %v", err)
 	}
-	if _, err := NewRollbackManagerWithDir(badDir).ListBackups(); err == nil {
-		t.Fatal("backup read error ignored")
-	}
+	rollbackReadDir = originalReadDir
 	syncFileData(current)
 	syncFileData("/missing/file")
 }
@@ -541,7 +541,7 @@ func TestDownloaderRetryControlEdges(t *testing.T) {
 	close(ready)
 	downloadAfter = func(time.Duration) <-chan time.Time { return ready }
 	cfg.MaxRetries = 7
-	if _, err := DownloadWithConfig(t.Context(), "http://127.0.0.1:1", filepath.Join(t.TempDir(), "out"), cfg); err == nil {
+	if _, err := DownloadWithConfig(t.Context(), truncated.URL, filepath.Join(t.TempDir(), "out"), cfg); err == nil {
 		t.Fatal("retry exhaustion with capped backoff succeeded")
 	}
 
@@ -551,7 +551,7 @@ func TestDownloaderRetryControlEdges(t *testing.T) {
 		return make(chan time.Time)
 	}
 	cfg.MaxRetries = 2
-	if _, err := DownloadWithConfig(ctx, "http://127.0.0.1:1", filepath.Join(t.TempDir(), "out"), cfg); !errors.Is(err, context.Canceled) {
+	if _, err := DownloadWithConfig(ctx, truncated.URL, filepath.Join(t.TempDir(), "out"), cfg); !errors.Is(err, context.Canceled) {
 		t.Fatalf("backoff cancellation = %v", err)
 	}
 }
