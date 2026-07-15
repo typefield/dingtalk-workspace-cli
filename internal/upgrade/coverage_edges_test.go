@@ -641,6 +641,9 @@ func TestReplacerInjectedIOEdges(t *testing.T) {
 	if err := ReplaceSelf(newBinary); !errors.Is(err, failure) {
 		t.Fatalf("ReplaceSelf replacement error = %v", err)
 	}
+	if err := replaceExeFileFor("src", "dst", "linux"); !errors.Is(err, failure) {
+		t.Fatalf("non-Windows copy fallback error = %v", err)
+	}
 
 	if err := replaceExeFileFor("src", "dst", "windows"); err == nil {
 		t.Fatal("windows replace path unexpectedly succeeded")

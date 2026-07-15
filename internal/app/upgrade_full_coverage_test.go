@@ -5,7 +5,7 @@ import (
 	"errors"
 	"io"
 	"os"
-	"runtime"
+	"path/filepath"
 	"strings"
 	"testing"
 	"time"
@@ -358,13 +358,18 @@ func TestRunUpgradeAllStagesCoverage(t *testing.T) {
 func TestUpgradeBinaryHelpersFailureCoverage(t *testing.T) {
 	oldStat, oldChmod := upgradeStat, upgradeChmod
 	oldTry, oldRepair := upgradeTryExecVersion, upgradeRepairDarwin
+	oldGOOS := upgradeRuntimeGOOS
 	oldLook, oldCommand, oldMkdir, oldHome := upgradeLookPath, upgradeCommandOutput, upgradeMkdirAll, upgradeUserHomeDir
 	t.Cleanup(func() {
 		upgradeStat, upgradeChmod = oldStat, oldChmod
 		upgradeTryExecVersion, upgradeRepairDarwin = oldTry, oldRepair
+		upgradeRuntimeGOOS = oldGOOS
 		upgradeLookPath, upgradeCommandOutput, upgradeMkdirAll, upgradeUserHomeDir = oldLook, oldCommand, oldMkdir, oldHome
 	})
 	fail := errors.New("failure")
+	if _, err := oldCommand(filepath.Join(t.TempDir(), "missing-command")); err == nil {
+		t.Fatal("default command runner executed a missing command")
+	}
 	upgradeStat = func(string) (os.FileInfo, error) { return nil, fail }
 	if err := validateNewBinary("binary", "1.0"); !errors.Is(err, fail) {
 		t.Fatalf("binary stat error = %v", err)
@@ -384,20 +389,20 @@ func TestUpgradeBinaryHelpersFailureCoverage(t *testing.T) {
 	if err := validateNewBinary("binary", "1.0"); err == nil {
 		t.Fatal("unexecutable binary succeeded")
 	}
-	if runtime.GOOS == "darwin" {
-		calls := 0
-		upgradeTryExecVersion = func(string) ([]byte, error) {
-			calls++
-			if calls == 1 {
-				return nil, errors.New("signal: killed")
-			}
-			return []byte("version 1.0"), nil
+	upgradeRuntimeGOOS = "darwin"
+	calls := 0
+	upgradeTryExecVersion = func(string) ([]byte, error) {
+		calls++
+		if calls == 1 {
+			return nil, errors.New("signal: killed")
 		}
-		upgradeRepairDarwin = func(string) error { return nil }
-		if err := validateNewBinary("binary", "1.0"); err != nil {
-			t.Fatalf("repaired binary = %v", err)
-		}
+		return []byte("version 1.0"), nil
 	}
+	upgradeRepairDarwin = func(string) error { return nil }
+	if err := validateNewBinary("binary", "1.0"); err != nil {
+		t.Fatalf("repaired binary = %v", err)
+	}
+	upgradeRuntimeGOOS = oldGOOS
 	upgradeTryExecVersion = func(string) ([]byte, error) { return []byte("different"), nil }
 	if err := validateNewBinary("binary", "1.0"); err != nil {
 		t.Fatalf("version mismatch warning = %v", err)

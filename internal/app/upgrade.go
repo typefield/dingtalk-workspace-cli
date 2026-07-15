@@ -71,6 +71,7 @@ var (
 	upgradeChmod            = os.Chmod
 	upgradeTryExecVersion   = tryExecVersion
 	upgradeRepairDarwin     = repairDarwinBinary
+	upgradeRuntimeGOOS      = runtime.GOOS
 	upgradeLookPath         = exec.LookPath
 	upgradeCommandOutput    = func(name string, args ...string) ([]byte, error) {
 		return exec.Command(name, args...).CombinedOutput()
@@ -688,7 +689,7 @@ func validateNewBinary(binaryPath, expectedVersion string) error {
 	if err != nil {
 		// Apple Silicon kills unsigned arm64 binaries with SIGKILL via amfid.
 		// Repair the binary in-place (ad-hoc codesign + drop quarantine) and retry once.
-		if runtime.GOOS == "darwin" && isLikelyAMFIKill(err) {
+		if upgradeRuntimeGOOS == "darwin" && isLikelyAMFIKill(err) {
 			if repairErr := upgradeRepairDarwin(binaryPath); repairErr == nil {
 				out, err = upgradeTryExecVersion(binaryPath)
 			}
