@@ -73,6 +73,7 @@ func TestToolCallerAdapterCoverage(t *testing.T) {
 	if adapter.Format() != "raw" || !adapter.DryRun() || adapter.Fields() != "a" || adapter.JQ() != ".a" {
 		t.Fatal("adapter flags were not forwarded")
 	}
+	adapter.flags.DryRun = false
 
 	runner.err = errors.New("runner failure")
 	if _, err := adapter.CallTool(context.Background(), "doc", "get", map[string]any{"x": 1}); !errors.Is(err, runner.err) {
@@ -1514,7 +1515,7 @@ func TestPersonalEventPureCoverage(t *testing.T) {
 	}
 
 	args := personalBusSpawnArgs(identity, "custom", "https://ticket")
-	if len(args) != 8 || len(personalBusSpawnArgs(identity, "", "")) != 4 {
+	if len(args) != 10 || len(personalBusSpawnArgs(identity, "", "")) != 6 {
 		t.Fatalf("personal bus args = %#v", args)
 	}
 	if personalEventControlBaseURL(" https://control/ ", "") != "https://control" || personalEventStreamTicketURL(" https://ticket/ ", "") != "https://ticket" {

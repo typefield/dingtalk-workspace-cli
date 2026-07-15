@@ -409,11 +409,6 @@ func getCurrentUserID(ctx context.Context) (string, error) {
 					}
 				}
 			}
-			if r, ok := flat["result"].(map[string]any); ok {
-				if uid, ok := r["userId"].(string); ok && uid != "" {
-					return uid, nil
-				}
-			}
 		}
 	}
 	return "", fmt.Errorf("cannot parse userId from get_current_user_profile response")

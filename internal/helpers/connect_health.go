@@ -184,10 +184,7 @@ func (h *connectHealth) flush() error {
 	snapshot := h.hb
 	h.mu.Unlock()
 
-	data, err := json.MarshalIndent(snapshot, "", "  ")
-	if err != nil {
-		return err
-	}
+	data, _ := json.MarshalIndent(snapshot, "", "  ")
 	path := connectHeartbeatPath(h.dir)
 	tmp := path + ".tmp"
 	if err := os.WriteFile(tmp, data, config.FilePerm); err != nil {

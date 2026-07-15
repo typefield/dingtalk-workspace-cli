@@ -32,6 +32,15 @@ const atPollInterval = 5 * time.Second
 // atPollWindow is how far back we look on each poll tick.
 const atPollWindow = 30 * time.Second
 
+var (
+	atPollExecutable     = os.Executable
+	atPollCommandContext = exec.CommandContext
+	atPollTicker         = func(interval time.Duration) (<-chan time.Time, func()) {
+		ticker := time.NewTicker(interval)
+		return ticker.C, ticker.Stop
+	}
+)
+
 // atMentionPoller periodically queries the "search_at_me_message" API
 // using the logged-in user's token and feeds new messages into the
 // connect forwarder — supplementing the Stream callback which DingTalk
@@ -66,13 +75,13 @@ func (p *atMentionPoller) start(ctx context.Context) {
 			return
 		}
 		fmt.Fprintf(os.Stderr, "[connect][at-poll] 已启动 @消息轮询（间隔 %s）\n", atPollInterval)
-		ticker := time.NewTicker(atPollInterval)
-		defer ticker.Stop()
+		ticks, stopTicker := atPollTicker(atPollInterval)
+		defer stopTicker()
 		for {
 			select {
 			case <-ctx.Done():
 				return
-			case <-ticker.C:
+			case <-ticks:
 				p.poll(ctx)
 			}
 		}
@@ -80,7 +89,7 @@ func (p *atMentionPoller) start(ctx context.Context) {
 }
 
 func (p *atMentionPoller) poll(ctx context.Context) {
-	exe, err := os.Executable()
+	exe, err := atPollExecutable()
 	if err != nil {
 		return
 	}
@@ -88,7 +97,7 @@ func (p *atMentionPoller) poll(ctx context.Context) {
 	start := now.Add(-atPollWindow).Format("2006-01-02T15:04:05+08:00")
 	end := now.Format("2006-01-02T15:04:05+08:00")
 
-	cmd := exec.CommandContext(ctx, exe, "chat", "message", "list-mentions",
+	cmd := atPollCommandContext(ctx, exe, "chat", "message", "list-mentions",
 		"--start", start,
 		"--end", end,
 		"--limit", "50",
@@ -254,21 +263,4 @@ func extractAtPollText(content, contentType string) string {
 		}
 	}
 	return content
-}
-
-// Keep-alive references: this poller was introduced alongside the connect
-// daemon work but is pending wiring into the daemon startup path. Remove
-// this block once atMentionPoller is instantiated by the daemon (or delete
-// the file if the feature is abandoned).
-var _ = func() any {
-	_ = atPollInterval
-	_ = atPollWindow
-	_ = atMentionMessage{}
-	p := (*atMentionPoller)(nil)
-	_ = p.start
-	_ = p.poll
-	_ = p.handleMessage
-	_ = p.sendGroupReply
-	_ = extractAtPollText
-	return nil
 }

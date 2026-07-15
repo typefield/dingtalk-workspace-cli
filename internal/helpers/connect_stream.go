@@ -85,6 +85,8 @@ type connectChatReplier interface {
 
 type connectMediaClient interface {
 	downloadMessageFile(context.Context, string, string) (string, error)
+	downloadMessageFileNamed(context.Context, string, string, string) (string, error)
+	downloadRecoveredChatRecordFile(context.Context, fileInboundInfo) (string, error)
 	getUserUnionID(context.Context, string) (string, error)
 	downloadDentryFile(context.Context, int64, int64, string, string) (string, error)
 }

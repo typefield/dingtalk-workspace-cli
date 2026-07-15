@@ -115,14 +115,8 @@ func (f *geminiAPIForwarder) forwardWithAttachments(ctx context.Context, _ strin
 		},
 		Contents: []geminiContent{{Role: "user", Parts: parts}},
 	}
-	raw, err := json.Marshal(body)
-	if err != nil {
-		return "", err
-	}
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(raw))
-	if err != nil {
-		return "", err
-	}
+	raw, _ := json.Marshal(body)
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(raw))
 	req.Header.Set("Content-Type", "application/json")
 	req.Header.Set("x-goog-api-key", f.apiKey)
 

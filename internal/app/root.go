@@ -49,6 +49,30 @@ type outputFileContextKey struct{}
 
 const recoveryEventStderrPrefix = "RECOVERY_EVENT_ID="
 
+var (
+	rootNormalizeProcessProfileArgs = normalizeProcessProfileArgs
+	rootExecuteCommand              = (*cobra.Command).ExecuteC
+	rootNewRootCommandWithEngine    = NewRootCommandWithEngine
+	rootRunPreParse                 = pipeline.RunPreParse
+	rootLatestRecoveryCapture       = recovery.LatestCapture
+	rootResetRecoveryState          = recovery.ResetRuntimeState
+	rootStopAllStdioClients         = StopAllStdioClients
+	rootLoadPlugins                 = loadPlugins
+	rootMkdirAll                    = os.MkdirAll
+	rootCreateFile                  = os.Create
+	rootCloseFile                   = (*os.File).Close
+	rootPluginInjectConfigEnv       = (*plugin.Loader).InjectPluginConfigEnv
+	rootPluginLoadUser              = (*plugin.Loader).LoadUser
+	rootPluginLoadDev               = (*plugin.Loader).LoadDev
+	rootPluginDescriptors           = (*plugin.Plugin).ToServerDescriptors
+	rootPluginStdioClients          = (*plugin.Plugin).StdioClients
+	rootRegisterPluginHTTPServer    = registerPluginHTTPServer
+	rootRegisterStdioManifest       = registerStdioServerFromManifest
+	rootPluginLoadHooks             = (*plugin.Plugin).LoadHooks
+	rootPluginSyncSkills            = plugin.SyncSkills
+	rootAuthLoadTokenData           = authpkg.LoadTokenData
+)
+
 // Execute runs the root command and returns the process exit code.
 func Execute() (exitCode int) {
 	defer func() {
@@ -58,13 +82,13 @@ func Execute() (exitCode int) {
 		}
 	}()
 
-	restoreArgs := normalizeProcessProfileArgs()
+	restoreArgs := rootNormalizeProcessProfileArgs()
 	defer restoreArgs()
 
 	timing := NewTimingCollector()
 	defer func() {
-		StopAllStdioClients() // Ensure child processes are terminated on exit
-		CloseAuditSink()      // Drain async audit forwards on all exit paths,
+		rootStopAllStdioClients() // Ensure child processes are terminated on exit
+		CloseAuditSink()          // Drain async audit forwards on all exit paths,
 		// including command errors where Cobra skips PersistentPostRunE.
 		timing.PrintIfEnabled()
 		timing.WriteReportIfEnabled(RawVersion(), SanitizeCommand(os.Args))
@@ -77,17 +101,17 @@ func Execute() (exitCode int) {
 	ctx = WithTimingCollector(ctx, timing)
 
 	initStart := time.Now()
-	recovery.ResetRuntimeState()
+	rootResetRecoveryState()
 	engine := newPipelineEngine()
-	root := NewRootCommandWithEngine(ctx, engine)
+	root := rootNewRootCommandWithEngine(ctx, engine)
 	timing.Record("cmd_init", time.Since(initStart))
 
 	// Run PreParse handlers on raw argv before Cobra parses flags.
 	// This corrects model-generated errors like --userId → --user-id
 	// and --limit100 → --limit 100.
-	pipeline.RunPreParse(root, engine)
+	rootRunPreParse(root, engine)
 
-	executed, err := root.ExecuteC()
+	executed, err := rootExecuteCommand(root)
 	if err != nil {
 		if executed == nil {
 			executed = root
@@ -99,7 +123,7 @@ func Execute() (exitCode int) {
 			_, _ = fmt.Fprintln(os.Stderr)
 		}
 		_ = printExecutionError(executed, os.Stdout, os.Stderr, err)
-		if last := recovery.LatestCapture(); last != nil && last.EventID != "" {
+		if last := rootLatestRecoveryCapture(); last != nil && last.EventID != "" {
 			_, _ = fmt.Fprintf(os.Stderr, "%s%s\n", recoveryEventStderrPrefix, last.EventID)
 		}
 		return apperrors.ExitCode(err)
@@ -374,7 +398,7 @@ func NewRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine) 
 
 	// --- Plugin loading: runs AFTER legacy commands so plugin endpoints can
 	// be appended on top of the static endpoint registry.
-	pluginCmds := loadPlugins(engine, runner)
+	pluginCmds := rootLoadPlugins(engine, runner)
 	if len(pluginCmds) > 0 {
 		addPluginCommandsSafe(root, pluginCmds)
 	}
@@ -686,10 +710,10 @@ func configureOutputSink(cmd *cobra.Command) error {
 	if err := validateOptionalPath("--output", outputPath); err != nil {
 		return err
 	}
-	if err := os.MkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
+	if err := rootMkdirAll(filepath.Dir(outputPath), 0o755); err != nil {
 		return apperrors.NewInternal(fmt.Sprintf("failed to prepare output directory: %v", err))
 	}
-	file, err := os.Create(outputPath)
+	file, err := rootCreateFile(outputPath)
 	if err != nil {
 		return apperrors.NewInternal(fmt.Sprintf("failed to create output file: %v", err))
 	}
@@ -703,7 +727,7 @@ func closeOutputSink(cmd *cobra.Command) error {
 	if !ok || file == nil {
 		return nil
 	}
-	if err := file.Close(); err != nil {
+	if err := rootCloseFile(file); err != nil {
 		return apperrors.NewInternal(fmt.Sprintf("failed to close output file: %v", err))
 	}
 	return nil
@@ -775,10 +799,10 @@ func loadPlugins(engine *pipeline.Engine, _ executor.Runner) []*cobra.Command {
 	// variables so that expandPluginVars can resolve ${KEY} references
 	// in plugin.json headers, endpoints, etc. User-set env vars take
 	// precedence (InjectPluginConfigEnv skips already-set keys).
-	pluginLoader.InjectPluginConfigEnv()
+	rootPluginInjectConfigEnv(pluginLoader)
 
 	// Load TokenData once; reused for stdio injection below.
-	tokenData, _ := authpkg.LoadTokenData(defaultConfigDir())
+	tokenData, _ := rootAuthLoadTokenData(defaultConfigDir())
 	var userCtx *plugin.UserContext
 	if tokenData != nil {
 		// Inject user context if either UserID or CorpID is present.
@@ -791,32 +815,32 @@ func loadPlugins(engine *pipeline.Engine, _ executor.Runner) []*cobra.Command {
 	}
 
 	// 1. Load user plugins (per settings.json)
-	userPlugins := pluginLoader.LoadUser()
+	userPlugins := rootPluginLoadUser(pluginLoader)
 
 	// 2. Load dev plugins (registered via `dws plugin dev`)
-	devPlugins := pluginLoader.LoadDev()
+	devPlugins := rootPluginLoadDev(pluginLoader)
 
 	allPlugins := append(userPlugins, devPlugins...)
 
 	// 3. Register HTTP descriptors and authentication from the manifest.
 	for _, p := range allPlugins {
-		for _, srv := range p.ToServerDescriptors() {
-			registerPluginHTTPServer(srv)
+		for _, srv := range rootPluginDescriptors(p) {
+			rootRegisterPluginHTTPServer(srv)
 		}
 	}
 
 	// 4. Register stdio descriptors and unstarted clients. The subprocess is
 	// started and initialized only when a command is actually executed.
 	for _, p := range allPlugins {
-		for _, sc := range p.StdioClients(userCtx) {
-			registerStdioServerFromManifest(p, sc)
+		for _, sc := range rootPluginStdioClients(p, userCtx) {
+			rootRegisterStdioManifest(p, sc)
 		}
 	}
 
 	// 5. Register plugin hooks into pipeline engine
 	if engine != nil {
 		for _, p := range allPlugins {
-			hooksCfg, err := p.LoadHooks()
+			hooksCfg, err := rootPluginLoadHooks(p)
 			if err != nil {
 				slog.Warn("plugin: failed to load hooks",
 					"plugin", p.Manifest.Name, "error", err)
@@ -832,7 +856,7 @@ func loadPlugins(engine *pipeline.Engine, _ executor.Runner) []*cobra.Command {
 	}
 
 	// 7. Sync plugin skills to agent directories
-	plugin.SyncSkills(allPlugins)
+	rootPluginSyncSkills(allPlugins)
 
 	if len(allPlugins) > 0 {
 		slog.Debug("plugins loaded",

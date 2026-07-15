@@ -75,12 +75,6 @@ func TestPureScalarAndCommandHelpersCoverage(t *testing.T) {
 	for _, value := range []any{json.Number("1"), json.Number("bad"), float64(2), float64(-1), int64(3), 4, "5", "bad", true} {
 		_, _ = int64FromJSONScalar(value)
 	}
-	if err := printMCPText(`{"ok":true}`); err != nil {
-		t.Fatal(err)
-	}
-	if err := printMCPText("not-json"); err != nil {
-		t.Fatal(err)
-	}
 }
 
 func TestChartMailAndSheetPureHelpersCoverage(t *testing.T) {

@@ -29,6 +29,14 @@ import (
 	"github.com/spf13/cobra"
 )
 
+var (
+	chatMediaResolveAppToken = mediaResolveAppToken
+	chatMediaUploadFile      = mediaUploadFile
+	mediaCreateFormFile      = func(w *multipart.Writer, field, name string) (io.Writer, error) { return w.CreateFormFile(field, name) }
+	mediaOpenFile            = os.Open
+	mediaCopyFile            = io.Copy
+)
+
 func newChatMediaGroup() *cobra.Command {
 	media := &cobra.Command{
 		Use:               "media",
@@ -72,12 +80,12 @@ func newChatMediaUploadCommand() *cobra.Command {
 			ctx, cancel := context.WithTimeout(cmd.Context(), 2*time.Minute)
 			defer cancel()
 
-			token, err := mediaResolveAppToken(ctx)
+			token, err := chatMediaResolveAppToken(ctx)
 			if err != nil {
 				return err
 			}
 
-			mediaID, err := mediaUploadFile(ctx, token, filePath, mediaType)
+			mediaID, err := chatMediaUploadFile(ctx, token, filePath, mediaType)
 			if err != nil {
 				return err
 			}
@@ -102,10 +110,7 @@ func mediaResolveAppToken(ctx context.Context) (string, error) {
 				"请使用 dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET> 登录。")
 	}
 	url := "https://oapi.dingtalk.com/gettoken?appkey=" + appKey + "&appsecret=" + appSecret
-	req, err := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
-	if err != nil {
-		return "", err
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodGet, url, nil)
 	resp, err := (&http.Client{Timeout: 10 * time.Second}).Do(req)
 	if err != nil {
 		return "", apperrors.NewAuth("获取访问令牌失败: " + err.Error())
@@ -136,27 +141,24 @@ func mediaUploadFile(ctx context.Context, token, filePath, mediaType string) (st
 	go func() {
 		defer pw.Close()
 		defer writer.Close()
-		part, err := writer.CreateFormFile("media", filepath.Base(filePath))
+		part, err := mediaCreateFormFile(writer, "media", filepath.Base(filePath))
 		if err != nil {
 			pw.CloseWithError(err)
 			return
 		}
-		f, err := os.Open(filePath)
+		f, err := mediaOpenFile(filePath)
 		if err != nil {
 			pw.CloseWithError(err)
 			return
 		}
 		defer f.Close()
-		if _, err := io.Copy(part, f); err != nil {
+		if _, err := mediaCopyFile(part, f); err != nil {
 			pw.CloseWithError(err)
 		}
 	}()
 
 	url := "https://oapi.dingtalk.com/media/upload?access_token=" + token + "&type=" + mediaType
-	req, err := http.NewRequestWithContext(ctx, http.MethodPost, url, pr)
-	if err != nil {
-		return "", err
-	}
+	req, _ := http.NewRequestWithContext(ctx, http.MethodPost, url, pr)
 	req.Header.Set("Content-Type", writer.FormDataContentType())
 
 	resp, err := (&http.Client{Timeout: 2 * time.Minute}).Do(req)

@@ -7,7 +7,6 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
-	"os"
 	"path/filepath"
 	"strings"
 	"testing"
@@ -15,11 +14,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/apiclient"
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/plugin"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/transport"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/mcptypes"
 	"github.com/spf13/cobra"
 )
@@ -65,131 +60,12 @@ func appRPCServer(t *testing.T, initOK, listOK bool) *httptest.Server {
 	}))
 }
 
-func TestDynamicServerAndHelperFetcherCoverage(t *testing.T) {
-	p := &plugin.Plugin{Manifest: plugin.Manifest{Name: "demo-plugin", Description: "demo"}}
-	timeouts := pluginColdTimeouts{httpNoAuth: time.Second, httpAuth: time.Second, stdio: time.Second}
-	runner := &coverageRunner{}
-
-	for _, tc := range []struct {
-		initOK bool
-		listOK bool
-		want   int
-	}{
-		{false, true, 0},
-		{true, false, 0},
-		{true, true, 1},
-	} {
-		srv := appRPCServer(t, tc.initOK, tc.listOK)
-		desc := mcptypes.ServerDescriptor{Key: "server", Endpoint: srv.URL, CLI: mcptypes.CLIOverlay{ID: "demo"}}
-		client := transport.NewClient(nil)
-		client.TrustedDomains = []string{"127.0.0.1"}
-		tools := discoverHTTPTools(p, desc, client, timeouts)
-		if len(tools) != tc.want {
-			t.Fatalf("HTTP tools = %d, want %d", len(tools), tc.want)
-		}
-		_ = registerHTTPServer(p, desc, client, runner, timeouts)
-		srv.Close()
-	}
-	if got := buildHTTPCommandsFromTools(mcptypes.ServerDescriptor{}, nil, runner); got != nil {
-		t.Fatalf("removed HTTP command builder = %#v", got)
-	}
-	base := transport.NewClient(nil)
-	if buildPluginAuthClient(base, mcptypes.ServerDescriptor{AuthHeaders: map[string]string{"X": "Y"}}) != base {
-		t.Fatal("client without bearer token was copied")
-	}
-	authClient := buildPluginAuthClient(base, mcptypes.ServerDescriptor{Endpoint: "https://api.example.test", AuthHeaders: map[string]string{"Authorization": "Bearer token", "X": "Y"}})
-	if authClient == base || authClient.AuthToken != "token" || len(authClient.TrustedDomains) != 2 || authClient.ExtraHeaders["X"] != "Y" {
-		t.Fatalf("plugin auth client = %#v", authClient)
-	}
+func TestPluginAuthCoverage(t *testing.T) {
 	registerPluginAuthFromHeaders(mcptypes.ServerDescriptor{Key: "fallback", Endpoint: "%", AuthHeaders: map[string]string{"Authorization": "token"}})
 	registerPluginAuthFromHeaders(mcptypes.ServerDescriptor{Key: "server", Endpoint: "https://x.test", CLI: mcptypes.CLIOverlay{ID: "cli"}, AuthHeaders: map[string]string{"Authorization": "Bearer token", "X": "Y"}})
 	registerPluginAuthFromHeaders(mcptypes.ServerDescriptor{Key: "none"})
 	if got, ok := LookupPluginAuth("cli"); !ok || got == nil || got.Token != "token" {
 		t.Fatalf("registered plugin auth = %#v, %v", got, ok)
-	}
-
-	server := appRPCServer(t, true, true)
-	oldEdition := edition.Get()
-	edition.Override(&edition.Hooks{StaticServers: func() []edition.ServerInfo {
-		return []edition.ServerInfo{{ID: "devdoc", Endpoint: server.URL}}
-	}})
-	t.Cleanup(func() { edition.Override(oldEdition); server.Close() })
-	fetcher := newHelperToolFetcher()
-	for range 2 {
-		schemas, err := fetcher(context.Background(), "devdoc")
-		if err != nil || schemas["tool"].Name != "tool" {
-			t.Fatalf("helper schemas = %#v, %v", schemas, err)
-		}
-	}
-	if _, err := fetcher(context.Background(), "missing"); err == nil {
-		t.Fatal("missing helper source succeeded")
-	}
-	if _, err := helperSourceEndpoint("op-app"); err != nil {
-		t.Fatal(err)
-	}
-	if got := inputSchemaProperties(nil); got == nil || len(got) != 0 {
-		t.Fatalf("nil properties = %#v", got)
-	}
-	if got := inputSchemaProperties(map[string]any{"properties": "bad"}); got == nil || len(got) != 0 {
-		t.Fatalf("bad properties = %#v", got)
-	}
-	if got := inputSchemaRequired(nil); got != nil {
-		t.Fatalf("nil required = %#v", got)
-	}
-	if got := inputSchemaRequired(map[string]any{"required": "bad"}); got != nil {
-		t.Fatalf("bad required = %#v", got)
-	}
-}
-
-func TestStdioDiscoveryAndRegistryCoverage(t *testing.T) {
-	p := &plugin.Plugin{Manifest: plugin.Manifest{Name: "stdio-plugin", Description: "demo"}}
-	timeouts := pluginColdTimeouts{stdio: 2 * time.Second}
-	notStarted := transport.NewStdioClient("ignored", nil, nil)
-	if got := discoverStdioTools(p, plugin.StdioServerClient{Key: "bad", Client: notStarted}, timeouts); got != nil {
-		t.Fatalf("unstarted stdio tools = %#v", got)
-	}
-
-	script := filepath.Join(t.TempDir(), "server.sh")
-	body := `#!/bin/sh
-while IFS= read -r line; do
-  case "$line" in
-    *initialize*) printf '%s\n' '{"jsonrpc":"2.0","id":1,"result":{"protocolVersion":"2025-03-26"}}' ;;
-    *tools/list*) printf '%s\n' '{"jsonrpc":"2.0","id":2,"result":{"tools":[{"name":"echo","description":"echo","inputSchema":{}}]}}' ;;
-  esac
-done
-`
-	if err := os.WriteFile(script, []byte(body), 0o700); err != nil {
-		t.Fatal(err)
-	}
-	client := transport.NewStdioClient(script, nil, nil)
-	if err := client.Start(context.Background()); err != nil {
-		t.Fatal(err)
-	}
-	defer client.Stop()
-	sc := plugin.StdioServerClient{Key: "local", Client: client}
-	tools := discoverStdioTools(p, sc, timeouts)
-	if len(tools) != 1 {
-		t.Fatalf("stdio tools = %#v", tools)
-	}
-	if got := registerStdioServer(p, sc, &coverageRunner{}, timeouts); got != nil {
-		t.Fatalf("stdio commands = %#v", got)
-	}
-	if got := buildStdioCommands(p, sc, nil, &coverageRunner{}); got != nil {
-		t.Fatalf("empty stdio commands = %#v", got)
-	}
-	if got, ok := LookupStdioClient("local"); !ok || got != client {
-		t.Fatalf("stdio suffix lookup = %#v, %v", got, ok)
-	}
-	if !StopStdioClient("stdio-plugin/local") || StopStdioClient("missing") {
-		t.Fatal("stdio stop result mismatch")
-	}
-	RegisterStdioClient("one", transport.NewStdioClient("ignored", nil, nil))
-	RegisterStdioClient("two", transport.NewStdioClient("ignored", nil, nil))
-	StopStdioClientsByPlugin("missing")
-	StopStdioClientsByPlugin("")
-	StopAllStdioClients()
-	if newPipelineEngine() == nil {
-		t.Fatal("pipeline engine is nil")
 	}
 }
 
@@ -333,11 +209,6 @@ func TestRootUtilityAndTimingCoverage(t *testing.T) {
 	if !argsChanged([]string{"a"}, []string{"b"}) || argsChanged([]string{"a"}, []string{"a"}) {
 		t.Fatal("argsChanged mismatch")
 	}
-	for _, raw := range []string{"", "bad", "0", "15ms"} {
-		t.Setenv(cli.PluginColdTimeoutEnv, raw)
-		_ = resolvePluginColdTimeouts()
-	}
-
 	cmd := &cobra.Command{Use: "root"}
 	cmd.SetContext(context.Background())
 	cmd.Flags().String("output", "", "")

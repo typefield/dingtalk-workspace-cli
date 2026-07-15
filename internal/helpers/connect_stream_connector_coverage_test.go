@@ -84,6 +84,14 @@ func (m *fakeConnectMedia) downloadMessageFile(context.Context, string, string) 
 	return m.messagePath, m.messageErr
 }
 
+func (m *fakeConnectMedia) downloadMessageFileNamed(context.Context, string, string, string) (string, error) {
+	return m.messagePath, m.messageErr
+}
+
+func (m *fakeConnectMedia) downloadRecoveredChatRecordFile(context.Context, fileInboundInfo) (string, error) {
+	return m.messagePath, m.messageErr
+}
+
 func (m *fakeConnectMedia) getUserUnionID(context.Context, string) (string, error) {
 	return m.unionID, m.unionErr
 }
@@ -242,14 +250,14 @@ func runConnectorScenarioWithCard(t *testing.T, messages []*chatbot.BotCallbackD
 }
 
 func TestRunStreamConnectorBasicMessageEdges(t *testing.T) {
-	t.Run("blank and missing webhook drop", func(t *testing.T) {
+	t.Run("blank fallback and missing webhook drop", func(t *testing.T) {
 		fwd := &basicConnectorForwarder{reply: "unused"}
 		blank := connectorMessage("blank", "")
 		noWebhook := connectorMessage("webhook", "hello")
 		noWebhook.SessionWebhook = ""
 		runConnectorScenario(t, []*chatbot.BotCallbackDataModel{blank, noWebhook}, fwd, nil, nil, nil, 0)
-		if len(fwd.prompts) != 0 {
-			t.Fatalf("dropped messages forwarded: %#v", fwd.prompts)
+		if len(fwd.prompts) != 1 || !strings.Contains(fwd.prompts[0], "原始消息 JSON") {
+			t.Fatalf("fallback messages forwarded: %#v", fwd.prompts)
 		}
 	})
 
@@ -533,7 +541,7 @@ func TestRunStreamConnectorMediaEdges(t *testing.T) {
 				m.Content = map[string]any{"downloadCode": "code", "fileName": "report.txt"}
 				return m
 			}(),
-			media: &fakeConnectMedia{messagePath: "/tmp/report.txt"}, want: "用户发来一个文件",
+			media: &fakeConnectMedia{messagePath: "/tmp/report.txt"}, want: "/tmp/report.txt",
 		},
 		{
 			name: "client file failure",
@@ -543,7 +551,7 @@ func TestRunStreamConnectorMediaEdges(t *testing.T) {
 				m.Content = map[string]any{"downloadCode": "code", "fileName": "report.txt"}
 				return m
 			}(),
-			media: &fakeConnectMedia{messageErr: errors.New("download")}, want: "文件下载失败",
+			media: &fakeConnectMedia{messageErr: errors.New("download")}, want: "原始内容下载失败",
 		},
 		{
 			name: "dentry success",

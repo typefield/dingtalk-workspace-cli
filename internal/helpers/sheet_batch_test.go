@@ -1,10 +1,14 @@
 package helpers
 
 import (
+	"errors"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	"github.com/spf13/cobra"
 )
 
 func TestSheetBatchOperationTranslationCoversEveryMapping(t *testing.T) {
@@ -74,6 +78,9 @@ func TestSheetBatchValueConversionsAndDefaults(t *testing.T) {
 	if _, ok := BuildFillRangeArgs(nil)["fillType"]; ok {
 		t.Fatal("empty fill type should be omitted")
 	}
+	if got := BuildFillRangeArgs(map[string]any{"fill-type": "down"})["fillType"]; got != "down" {
+		t.Fatalf("fill type = %v", got)
+	}
 	if got := BuildGroupDimensionArgs(nil)["groupState"]; got != "expand" {
 		t.Fatalf("default group state = %v", got)
 	}
@@ -118,5 +125,107 @@ func TestResolveCSVContent(t *testing.T) {
 	}
 	if got := resolveCsvContent("plain\r\n"); got != strings.ReplaceAll("plain\r\n", "\r", "") {
 		t.Fatalf("plain csv = %q", got)
+	}
+
+	closedRead, closedWrite, err := os.Pipe()
+	if err != nil {
+		t.Fatalf("closed pipe: %v", err)
+	}
+	_ = closedWrite.Close()
+	_ = closedRead.Close()
+	os.Stdin = closedRead
+	if got := resolveCsvContent("-"); got != "-" {
+		t.Fatalf("failed stdin read = %q", got)
+	}
+}
+
+func executeSheetBatchCommand(t *testing.T, caller *scriptedToolCaller, cmd *cobra.Command, args ...string) error {
+	t.Helper()
+	oldDeps := deps
+	oldArgs := os.Args
+	InitDeps(caller)
+	deps.Out.w = io.Discard
+	deps.Out.errW = io.Discard
+	os.Args = []string{"dws", "sheet"}
+	t.Cleanup(func() {
+		deps = oldDeps
+		os.Args = oldArgs
+	})
+	cmd.SilenceErrors = true
+	cmd.SilenceUsage = true
+	cmd.SetOut(io.Discard)
+	cmd.SetErr(io.Discard)
+	cmd.SetArgs(args)
+	return cmd.Execute()
+}
+
+func batchUpdateCoverageCommand() *cobra.Command {
+	cmd := newBatchUpdateCmd()
+	cmd.Flags().String("node", "", "")
+	cmd.Flags().String("operations", "", "")
+	cmd.Flags().Bool("continue-on-error", false, "")
+	return cmd
+}
+
+func rangeBatchClearCoverageCommand() *cobra.Command {
+	cmd := newRangeBatchClearCmd()
+	cmd.Flags().String("node", "", "")
+	cmd.Flags().String("ranges", "", "")
+	cmd.Flags().String("type", "", "")
+	return cmd
+}
+
+func TestSheetBatchUpdateCommandRemainingCoverage(t *testing.T) {
+	for _, args := range [][]string{
+		nil,
+		{"--node", "node", "--operations", "["},
+	} {
+		if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, batchUpdateCoverageCommand(), args...); err == nil {
+			t.Fatalf("batch arguments %v returned nil", args)
+		}
+	}
+	invalid := []string{
+		"[]",
+		"[1]",
+		`[{"toolName":"unknown","input":{}}]`,
+	}
+	for _, operations := range invalid {
+		if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, batchUpdateCoverageCommand(), "--node", "node", "--operations", operations); err == nil {
+			t.Fatalf("operations %s returned nil", operations)
+		}
+	}
+
+	valid := `[{"toolName":"range fill","input":{"sheet-id":"sheet","source-range":"A1","target-range":"A2","fill-type":"down"}}]`
+	if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, batchUpdateCoverageCommand(), "--node", "node", "--operations", valid); err != nil {
+		t.Fatalf("batch update success: %v", err)
+	}
+	boom := errors.New("batch failed")
+	if err := executeSheetBatchCommand(t, &scriptedToolCaller{steps: []scriptedToolStep{{err: boom}}}, batchUpdateCoverageCommand(), "--node", "node", "--operations", valid); err == nil {
+		t.Fatal("strict batch error returned nil")
+	}
+	if err := executeSheetBatchCommand(t, &scriptedToolCaller{steps: []scriptedToolStep{{err: boom}}}, batchUpdateCoverageCommand(), "--node", "node", "--operations", valid, "--continue-on-error"); err == nil {
+		t.Fatal("lenient batch error returned nil")
+	}
+}
+
+func TestSheetRangeBatchClearCommandRemainingCoverage(t *testing.T) {
+	for _, args := range [][]string{
+		nil,
+		{"--node", "node", "--ranges", "["},
+	} {
+		if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, rangeBatchClearCoverageCommand(), args...); err == nil {
+			t.Fatalf("clear arguments %v returned nil", args)
+		}
+	}
+	for _, ranges := range []string{"[]", `["A1:B2"]`, `["!A1:B2"]`, `["Sheet!"]`} {
+		if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, rangeBatchClearCoverageCommand(), "--node", "node", "--ranges", ranges); err == nil {
+			t.Fatalf("ranges %s returned nil", ranges)
+		}
+	}
+	if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, rangeBatchClearCoverageCommand(), "--node", "node", "--ranges", `[" Sheet ! A1:B2 "]`); err != nil {
+		t.Fatalf("default clear type: %v", err)
+	}
+	if err := executeSheetBatchCommand(t, &scriptedToolCaller{}, rangeBatchClearCoverageCommand(), "--node", "node", "--ranges", `["Sheet!A1:B2"]`, "--type", "all"); err != nil {
+		t.Fatalf("explicit clear type: %v", err)
 	}
 }

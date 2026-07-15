@@ -112,6 +112,9 @@ func TestDocPollingCoverage(t *testing.T) {
 
 func TestSheetExportPollingCoverage(t *testing.T) {
 	installImmediateTiming(t)
+	oldArgs := os.Args
+	os.Args = []string{"dws", "sheet"}
+	t.Cleanup(func() { os.Args = oldArgs })
 	cases := []struct {
 		format string
 		steps  []scriptedToolStep

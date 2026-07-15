@@ -78,13 +78,16 @@ func TestSheetBatchSetStyleCoverage(t *testing.T) {
 		{name: "missing-fields-stop", body: `[{"sheetId":""}]`},
 		{name: "missing-fields-continue", body: `[{"sheetId":""},{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, cont: true},
 		{name: "invalid-range", body: `[{"sheetId":"Sheet1","range":"bad","bgColor":"red"}]`},
+		{name: "invalid-range-continue", body: `[{"sheetId":"Sheet1","range":"bad","bgColor":"red"},{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, cont: true},
 		{name: "invalid-style", body: `[{"sheetId":"Sheet1","range":"A1"}]`},
+		{name: "invalid-style-continue", body: `[{"sheetId":"Sheet1","range":"A1"},{"sheetId":"Sheet1","range":"A2","bgColor":"red"}]`, cont: true},
 		{name: "json-success", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "json", response: `{"ok":true}`},
 		{name: "json-raw-result", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "json", response: `{`},
 		{name: "json-call-error-stop", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "json", callErr: errors.New("failed")},
 		{name: "json-call-error-continue", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"},{"sheetId":"Sheet1","range":"A2","fontSize":12}]`, format: "json", callErr: errors.New("failed"), cont: true},
 		{name: "raw-success", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "raw", response: `{"ok":true}`},
 		{name: "raw-call-error", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "raw", callErr: errors.New("failed"), cont: true},
+		{name: "raw-call-error-stop", body: `[{"sheetId":"Sheet1","range":"A1","bgColor":"red"}]`, format: "raw", callErr: errors.New("failed")},
 	}
 	for _, tc := range cases {
 		t.Run(tc.name, func(t *testing.T) {

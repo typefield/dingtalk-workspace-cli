@@ -22,6 +22,8 @@ import (
 
 const todoListPageSizeMax = 20
 
+var todoFileMD5Hex = fileMD5Hex
+
 func newTodoCommand() *cobra.Command {
 	todoCmd := &cobra.Command{
 		Use:   "todo",
@@ -869,7 +871,7 @@ func buildTodoLocalFileMeta(filePath, fileName, md5Value string) (todoLocalFileM
 	}
 	fileType := strings.TrimPrefix(filepath.Ext(fileName), ".")
 	if md5Value == "" {
-		md5Value, err = fileMD5Hex(filePath)
+		md5Value, err = todoFileMD5Hex(filePath)
 		if err != nil {
 			return todoLocalFileMeta{}, err
 		}

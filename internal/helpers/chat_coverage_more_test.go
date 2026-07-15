@@ -331,10 +331,7 @@ func TestChatFileUtilityCoverage(t *testing.T) {
 	deps.Out.w = io.Discard
 	deps.Out.errW = io.Discard
 	t.Cleanup(func() { deps = previous })
-	_ = printMCPText(`{"ok":true}`)
-	_ = printMCPText(`not-json`)
 	caller.format = "raw"
-	_ = printMCPText(`{"ok":true}`)
 }
 
 func TestUploadConversationLocalFileCoverage(t *testing.T) {

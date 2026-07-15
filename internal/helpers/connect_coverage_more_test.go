@@ -39,8 +39,6 @@ func TestConnectForwarderPureCoverage(t *testing.T) {
 	streamSDKLogger{}.Errorf("error %s", "x")
 	streamSDKLogger{}.Fatalf("fatal %s", "x")
 	_ = agentNotInstalled("channel", "app", "install")
-	_ = insertBeforeArg([]string{"bin", "--marker", "tail"}, "--marker", "inserted")
-	_ = insertBeforeArg([]string{"bin", "tail"}, "--missing", "inserted")
 
 	sessions := newConvSessions("")
 	execFwd := &execForwarder{name: "agent", argv: []string{"bin"}, sessions: sessions}
@@ -295,11 +293,11 @@ func TestConnectStreamRemainingPureEdges(t *testing.T) {
 
 	turns := []connectQueuedTurn{
 		{},
-		{picCode: "picture-code"},
-		{fileInfo: fileInboundInfo{FileName: " named.txt ", DownloadCode: "download"}},
-		{fileInfo: fileInboundInfo{DownloadCode: "download"}},
+		{picCodes: []string{"picture-code"}},
+		{fileInfos: []fileInboundInfo{{FileName: " named.txt ", DownloadCode: "download"}}},
+		{fileInfos: []fileInboundInfo{{DownloadCode: "download"}}},
 	}
-	wants := []string{"[空消息]", "[图片]", "[文件: named.txt]", "[文件]"}
+	wants := []string{"[空消息]", "[图片]", "[附件: named.txt]", "[1 个附件]"}
 	for i, turn := range turns {
 		if got := connectTurnSummary(turn); got != wants[i] {
 			t.Errorf("summary %d = %q, want %q", i, got, wants[i])
@@ -313,17 +311,17 @@ func TestConnectStreamRemainingPureEdges(t *testing.T) {
 		t.Fatalf("single merge = %#v", got)
 	}
 	mergedPicture := mergeConnectQueuedTurns([]connectQueuedTurn{
-		{picCode: "old-picture", msgID: "m1"},
+		{picCodes: []string{"old-picture"}, msgID: "m1"},
 		{text: "latest", msgID: "m2"},
 	})
-	if mergedPicture.picCode != "old-picture" {
+	if len(mergedPicture.picCodes) != 1 || mergedPicture.picCodes[0] != "old-picture" {
 		t.Fatalf("merged picture = %#v", mergedPicture)
 	}
 	mergedFile := mergeConnectQueuedTurns([]connectQueuedTurn{
-		{fileInfo: fileInboundInfo{FileName: "old", DownloadCode: "code"}, msgID: "m1"},
+		{fileInfos: []fileInboundInfo{{FileName: "old", DownloadCode: "code"}}, msgID: "m1"},
 		{text: "latest", msgID: "m2"},
 	})
-	if !mergedFile.fileInfo.hasActionable() {
+	if len(mergedFile.fileInfos) != 1 || !mergedFile.fileInfos[0].hasActionable() {
 		t.Fatalf("merged file = %#v", mergedFile)
 	}
 }
