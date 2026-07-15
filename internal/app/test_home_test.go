@@ -29,7 +29,7 @@ func setTestHome(t *testing.T, home string) {
 	}
 }
 
-func TestConfigureLogLevelReleasesPreviousFileLogger(t *testing.T) {
+func TestConfigureLogLevelTerminatesReplacedFileLoggers(t *testing.T) {
 	firstConfig := t.TempDir()
 	secondConfig := t.TempDir()
 	t.Cleanup(CloseFileLogger)

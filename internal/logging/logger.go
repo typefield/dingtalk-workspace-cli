@@ -77,7 +77,8 @@ func (fl *FileLogger) Writer() io.Writer {
 	return fl.writer
 }
 
-// Close flushes and closes the underlying log file.
+// Close flushes and permanently closes the underlying log file. Later writes
+// fail with os.ErrClosed instead of reopening the file.
 func (fl *FileLogger) Close() error {
 	if fl == nil || fl.writer == nil {
 		return nil
