@@ -19,7 +19,10 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
+	"strings"
 	"sync"
+
+	"github.com/google/uuid"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/security"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
@@ -122,10 +125,13 @@ func SaveSecureTokenData(configDir string, data *TokenData) error {
 	}
 
 	finalPath := filepath.Join(configDir, secureDataFile)
-	tmpPath := finalPath + ".tmp"
+	// Give each writer its own temp file. A fixed ".data.tmp" path lets a
+	// failed concurrent writer remove another writer's in-flight temp file,
+	// which can leave the final file missing on Windows.
+	tmpPath := finalPath + "." + uuid.New().String() + ".tmp"
 
 	// Atomic write with fsync to ensure data durability
-	tmpFile, err := secureOpenFile(tmpPath, os.O_WRONLY|os.O_CREATE|os.O_TRUNC, config.FilePerm)
+	tmpFile, err := secureOpenFile(tmpPath, os.O_WRONLY|os.O_CREATE|os.O_EXCL, config.FilePerm)
 	if err != nil {
 		return fmt.Errorf("creating tmp file: %w", err)
 	}
@@ -196,6 +202,17 @@ func DeleteSecureData(configDir string) error {
 		return fmt.Errorf("deleting secure data file: %w", err)
 	}
 	_ = secureRemove(path + ".tmp")
+	entries, _ := os.ReadDir(configDir)
+	for _, entry := range entries {
+		name := entry.Name()
+		if entry.IsDir() || !strings.HasPrefix(name, secureDataFile+".") || !strings.HasSuffix(name, ".tmp") {
+			continue
+		}
+		id := strings.TrimSuffix(strings.TrimPrefix(name, secureDataFile+"."), ".tmp")
+		if _, err := uuid.Parse(id); err == nil {
+			_ = secureRemove(filepath.Join(configDir, name))
+		}
+	}
 	return nil
 }
 
