@@ -511,7 +511,13 @@ func newDevMCPToolPublishCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runDevMCPTool(runner, cmd, devMCPToolPublishTool, params)
+			if err := runDevMCPTool(runner, cmd, devMCPToolPublishTool, params); err != nil {
+				return err
+			}
+			if !commandDryRun(cmd) {
+				fmt.Fprintln(cmd.ErrOrStderr(), "提示：发布后本服务暴露为顶层命令 dws <serverName> <工具名>（等价 dws connector mcp published <serverName> <工具名>；serverName 用 service get 查）。动态命令按发布组织隔离，跨组织调用需 --profile；命令缓存最迟 10 分钟自动生效，立即可用请执行 dws connector mcp refresh。")
+			}
+			return nil
 		},
 	}
 	addDevMCPToolLocatorFlags(cmd)
@@ -667,7 +673,7 @@ func newDevMCPCredentialGetCommand(runner executor.Runner) *cobra.Command {
 }
 
 func newDevMCPCredentialDebugCommand(runner executor.Runner) *cobra.Command {
-	return newDevMCPCredentialLocatorCommand(runner, "debug", "调试 MCP 凭证账号", devMCPCredentialDebugTool, true)
+	return newDevMCPCredentialLocatorCommand(runner, "debug", "调试 MCP 凭证账号（会真实调用下游接口，TOKEN 型含现场换 token）", devMCPCredentialDebugTool, true)
 }
 
 func newDevMCPCredentialBindCommand(runner executor.Runner) *cobra.Command {

@@ -118,7 +118,7 @@ dws connector mcp published --help
 - `refresh` 会主动拉取预发/线上 Portal 发现接口并重建缓存；`--timeout` 同时作为发现请求和单个 MCP `tools/list` 的超时。
 - MCP 工具发现使用有限并发和独立超时：单个服务失败不会取消后续服务；健康服务更新，失败服务保留上次缓存。
 - 返回中的 `partial` 表示部分成功，`failedServices` 给出失败的 mcpId/脱敏端点/原因，`cacheUpdated` 表示合并后的缓存已持久化。
-- 发布或更新工具后，可以立即 `refresh`，再看 `published --help`。
+- 发布或更新工具后**最迟 10 分钟（缓存 TTL）自动生效**——「立即出现」只是缓存恰好过期的巧合，不是保证；需要立即可用就执行 `refresh`，再看 `published --help`。
 - `service list` / `listMyMCP` 返回 `result.list[].serverName`；它是 kebab-case CLI 一级命令名，未设置时为空。动态发现必须优先使用该字段，不能始终从中文服务名推导。
 - 所有刷新只使用发现接口返回的真实 hash `mcpUrl`；不会根据 `mcpId` 猜 `/server/org-{mcpId}`。需要找回地址时使用 `url get --source PUBLISHED`。
 

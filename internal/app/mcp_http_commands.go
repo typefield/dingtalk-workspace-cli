@@ -165,7 +165,7 @@ func ensureMCPHTTPRefreshCommand(root *cobra.Command, flags *GlobalFlags) {
 	if commandChild(connectorRoot, "refresh") == nil {
 		cmd := &cobra.Command{
 			Use:               "refresh",
-			Short:             "刷新远程 MCP 命令缓存",
+			Short:             "刷新远程 MCP 命令缓存（发布后最迟 10 分钟自动生效；需立即可用时执行本命令）",
 			Args:              cobra.NoArgs,
 			DisableAutoGenTag: true,
 			RunE: func(cmd *cobra.Command, args []string) error {

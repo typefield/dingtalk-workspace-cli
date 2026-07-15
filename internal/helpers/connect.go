@@ -37,7 +37,7 @@ func (connectorHandler) Name() string {
 func (connectorHandler) Command(runner executor.Runner) *cobra.Command {
 	root := &cobra.Command{
 		Use:               "connector",
-		Short:             "连接器与接入能力",
+		Short:             "连接器与接入能力（把自有系统接给 AI 用：dws connector mcp --help）",
 		Long:              "管理钉钉连接器与接入能力：MCP 服务/工具管理、接入地址获取，以及后续连接器类扩展。",
 		Args:              cobra.NoArgs,
 		TraverseChildren:  true,
