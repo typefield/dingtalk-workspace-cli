@@ -483,14 +483,19 @@ func newDevMCPToolDebugCommand(runner executor.Runner) *cobra.Command {
 			}
 			params["value"] = value
 			devMCPPutString(params, "versionId", devMCPStringFlag(cmd, "version-id"))
-			devMCPPutInt(params, "credentialId", devMCPIntFlag(cmd, "credential-id"))
+			credentialID := devMCPIntFlag(cmd, "credential-id")
+			if credentialID == 0 && !commandBoolFlag(cmd, "no-credential") {
+				return apperrors.NewValidation("请传 --credential-id <id>（credential list 可查）；确认服务无鉴权时显式加 --no-credential。debug 不使用 bind 绑定的凭证，缺省降级会产生 40014 等误导性报错")
+			}
+			devMCPPutInt(params, "credentialId", credentialID)
 			return runDevMCPTool(runner, cmd, devMCPToolDebugTool, params)
 		},
 	}
 	addDevMCPToolLocatorFlags(cmd)
-	cmd.Flags().String("value", "", "调试入参 JSON 对象")
+	cmd.Flags().String("value", "", "调试入参 JSON 对象，结构须符合工具 toolInputs 定义；不要传空 {} 走过场")
 	cmd.Flags().String("version-id", "", "指定调试的版本 ID")
-	cmd.Flags().Int("credential-id", 0, "凭证账号 ID；调试带鉴权的工具必须显式指定（debug 不使用 bind 绑定的凭证）")
+	cmd.Flags().Int("credential-id", 0, "凭证账号 ID（credential list 可查）；服务已配置鉴权时必须指定，作为本次调试的实际运行时鉴权（debug 不使用 bind 绑定的凭证，缺省降级会产生 40014 等误导性报错）")
+	cmd.Flags().Bool("no-credential", false, "显式声明本次调试不使用凭证（确认服务无鉴权配置时用）")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPToolDebugTool)
 	return cmd
@@ -636,7 +641,7 @@ func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("auth-type", "", "鉴权类型：NO_AUTH、BASIC、API_SECRET、TOKEN 或 SIGNATURE")
 	cmd.Flags().String("basic-auth-config", "", "BASIC 鉴权配置 JSON 对象")
 	cmd.Flags().String("api-secret-auth-config", "", "API_SECRET 鉴权配置 JSON 对象")
-	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象")
+	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象：{authFields, fetchTokenRequest, 注入位, tokenExpireRules, refreshToken, testRequest}；注入位按下游要求三选一：authHeaders（token 放请求头）/ authQuery（token 放 query 参数）/ authBody")
 	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 签名配置 JSON 对象")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPAuthConfigSaveTool)
@@ -712,7 +717,7 @@ func newDevMCPCredentialLocatorCommand(runner executor.Runner, use, short, tool 
 func newDevMCPCredentialSaveCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "save",
-		Short:             "新增或修改 MCP 凭证账号",
+		Short:             "新增或修改 MCP 凭证账号（TOKEN 型会现场调换 token 接口验密钥，密钥无效则保存失败）",
 		Example:           "  dws connector mcp credential save --mcp-id 10520 --name 生产账号 --content-file credentials.json --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
@@ -923,12 +928,12 @@ func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 	cmd.Flags().String("http-info", "", "HTTP 接口配置 JSON 对象（toolType=http 时必填）")
 	cmd.Flags().String("http", "", "已更名为 --http-info")
 	_ = cmd.Flags().MarkHidden("http")
-	cmd.Flags().String("api-inputs", "", "接口真实入参 JSON 对象")
-	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象")
-	cmd.Flags().String("tool-inputs", "", "暴露给 LLM 的入参 JSON 数组")
-	cmd.Flags().String("tool-outputs", "", "暴露给 LLM 的出参 JSON 数组")
-	cmd.Flags().String("input-mappings", "", "入参映射 JSON 数组")
-	cmd.Flags().String("output-mappings", "", "出参映射 JSON 数组")
+	cmd.Flags().String("api-inputs", "", "接口真实入参 JSON 对象：{headers,body,query,path} 四组，每组=字段数组，字段项={key,title,type,required,description,children}；⚠️平台不支持 enum/default/example 属性——枚举/默认值/示例写进字段 description 文本")
+	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤")
+	cmd.Flags().String("tool-inputs", "", "暴露给 LLM 的入参 JSON 数组（字段树，array 型 children 固定一项 key=items）；每字段必须写自包含 description：含义+取值格式+示例，可对 api-inputs 裁剪/改名/加防呆")
+	cmd.Flags().String("tool-outputs", "", "暴露给 LLM 的出参 JSON 数组；留空且出参映射整体透传时=返回按 --api-outputs 裁剪后的完整响应体")
+	cmd.Flags().String("input-mappings", "", "入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
+	cmd.Flags().String("output-mappings", "", "出参映射 JSON 数组（必须配置，缺省=工具返回空）；最简整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]")
 }
 
 func annotateDevMCPTool(cmd *cobra.Command, tool string) *cobra.Command {

@@ -158,6 +158,23 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			},
 		},
 		{
+			name: "tool debug no credential explicit",
+			args: []string{
+				"connector", "mcp", "tool", "debug",
+				"--mcp-id", "10487",
+				"--tool-id", "G-ACT-1",
+				"--value", `{"city":"杭州"}`,
+				"--no-credential",
+				"--dry-run",
+			},
+			wantTool: devMCPToolDebugTool,
+			wantParams: map[string]any{
+				"mcpId":  10487,
+				"toolId": "G-ACT-1",
+				"value":  map[string]any{"city": "杭州"},
+			},
+		},
+		{
 			name:     "tool versions",
 			args:     []string{"connector", "mcp", "tool", "versions", "--mcp-id", "10487", "--tool-id", "G-ACT-1", "--page-size", "10"},
 			wantTool: devMCPToolVersionsTool,
@@ -357,6 +374,17 @@ func TestConnectorMCPLegacyFlagRenameHints(t *testing.T) {
 		args    []string
 		wantErr string
 	}{
+		{
+			name: "tool debug requires credential choice",
+			args: []string{
+				"connector", "mcp", "tool", "debug",
+				"--mcp-id", "10487",
+				"--tool-id", "G-ACT-1",
+				"--value", `{"city":"杭州"}`,
+				"--dry-run",
+			},
+			wantErr: "请传 --credential-id",
+		},
 		{
 			name:    "tool get rejects action-id",
 			args:    []string{"connector", "mcp", "tool", "get", "--mcp-id", "10487", "--action-id", "G-ACT-1"},

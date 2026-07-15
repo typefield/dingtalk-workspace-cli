@@ -153,6 +153,22 @@ dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> 
 ```
 
 - `authType` 仅支持 `NO_AUTH`、`BASIC`、`API_SECRET`、`TOKEN`、`SIGNATURE`；只传当前类型对应的配置对象。auth save 存的是「说明书」（authFields 字段定义、换取与注入方式），不含密钥值。
+- TOKEN 型注入位按下游要求三选一：`authHeaders`（token 放请求头）/ `authQuery`（token 放 query 参数）/ `authBody`。**query 位完整模板**（已实测跑通，按下游实际字段替换占位符）：
+
+```json
+{
+  "authFields": [{"dataId":"appKey","type":"string","required":true},{"dataId":"appSecret","type":"password","required":true}],
+  "fetchTokenRequest": {"method":"GET","url":"https://<换token接口>","query":[
+    {"key":"<换token入参key名>","type":"authField","value":"#(\"appKey\")"},
+    {"key":"<换token入参secret名>","type":"authField","value":"#(\"appSecret\")"}]},
+  "authQuery": [{"key":"<业务接口的token参数名>","type":"text","value":"$.Body.<token在换token响应中的字段路径>"}],
+  "tokenExpireRules": [{"func":"EQ(${@(\"Body/<错误码字段>\")},\"<token失效错误码>\")"}],
+  "refreshToken": true,
+  "testRequest": {"method":"POST","url":"https://<业务接口>"}
+}
+```
+
+  要点：`authQuery[].value` 用 `$.Body.<字段>` 引用换 token 响应；失效判据按下游真实返回写——HTTP 状态码型用 `${@("$/statusCode")}`，业务错误码型用 `${@("Body/<字段>")}`。header 位注入同结构，把 `authQuery` 换成 `authHeaders` 即可。
 - `credential save` 保存的是**开发者内置凭证**：归属「当前用户 + 当前 MCP」，密钥由开发者提供（不是使用者的凭证），配置调试与实例运行时两个场景都用它。`content` key 必须与 `auth get` 返回的 `authFields[].dataId` 一致；密钥不会回显，dry-run 也只显示脱敏占位。TOKEN 型 save 会真实调用换 token 接口验证密钥（密钥无效则 save 整体失败），其他类型纯落库。
 - `credential debug` 会真实调用鉴权配置中的 `testRequest`；`success=true` 只代表请求连通，仍要检查返回 `detail` 判断口令是否有效。
 - `credential bind` 只是「选用」：**仅对正式实例运行时生效**。`tool debug` 不使用 bind 绑定的凭证——调试带鉴权的工具必须在 `tool debug` 显式传 `--credential-id`，不传则按无凭证直调（TOKEN 注入配置原文、BASIC 静默不注入，报错全是误导性假症状）。
