@@ -39,13 +39,33 @@ type fakeCaller struct {
 	tool    string
 	args    map[string]any
 	dryRun  bool
+	calls   []toolCall
+	results map[string]string
 }
 
-func (f *fakeCaller) reset() { f.called, f.product, f.tool, f.args = false, "", "", nil }
+type toolCall struct {
+	product string
+	tool    string
+	args    map[string]any
+}
+
+func (f *fakeCaller) reset() {
+	f.called, f.product, f.tool, f.args = false, "", "", nil
+	f.calls = nil
+}
 
 func (f *fakeCaller) CallTool(_ context.Context, product, tool string, args map[string]any) (*edition.ToolResult, error) {
 	f.called, f.product, f.tool, f.args = true, product, tool, args
-	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{"ok":true}`}}}, nil
+	f.calls = append(f.calls, toolCall{product: product, tool: tool, args: args})
+	text := `{"ok":true}`
+	if f.results != nil {
+		if v, ok := f.results[product+"/"+tool]; ok {
+			text = v
+		} else if v, ok := f.results[tool]; ok {
+			text = v
+		}
+	}
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: text}}}, nil
 }
 func (f *fakeCaller) Format() string { return "json" }
 func (f *fakeCaller) DryRun() bool   { return f.dryRun }
@@ -195,6 +215,58 @@ func TestReplaceBatchDryRunDoesNotCallTool(t *testing.T) {
 	}
 	if fake.called {
 		t.Fatalf("dry-run called real tool %s/%s with %#v", fake.product, fake.tool, fake.args)
+	}
+}
+
+func TestDMAddsAIClawTypeByDefault(t *testing.T) {
+	fake := &fakeCaller{results: map[string]string{
+		"contact/search_contact_by_key_word": `{"result":[{"userId":"u1","name":"张三","openDingTalkId":"open1"}]}`,
+	}}
+	helpers.InitDeps(fake)
+
+	root := &cobra.Command{Use: "dws", SilenceUsage: true, SilenceErrors: true}
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	root.AddCommand(builtin.Commands()...)
+	root.SetArgs([]string{"chat", "+dm", "--to", "张三", "--text", "你好", "--yes"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if len(fake.calls) < 2 {
+		t.Fatalf("calls = %d, want contact lookup then message send", len(fake.calls))
+	}
+	send := fake.calls[len(fake.calls)-1]
+	if send.product != "chat" || send.tool != "send_personal_message" {
+		t.Fatalf("last call = %s/%s, want chat/send_personal_message", send.product, send.tool)
+	}
+	if got := send.args["clawType"]; got != edition.ClawType() {
+		t.Fatalf("clawType = %#v, want %q", got, edition.ClawType())
+	}
+}
+
+func TestDMCanDisableAIClawType(t *testing.T) {
+	fake := &fakeCaller{results: map[string]string{
+		"contact/search_contact_by_key_word": `{"result":[{"userId":"u1","name":"张三","openDingTalkId":"open1"}]}`,
+	}}
+	helpers.InitDeps(fake)
+
+	root := &cobra.Command{Use: "dws", SilenceUsage: true, SilenceErrors: true}
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	root.AddCommand(builtin.Commands()...)
+	root.SetArgs([]string{"chat", "+dm", "--to", "张三", "--text", "你好", "--ai-tag=false", "--yes"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	send := fake.calls[len(fake.calls)-1]
+	if _, ok := send.args["clawType"]; ok {
+		t.Fatalf("clawType unexpectedly present when --ai-tag=false: %#v", send.args["clawType"])
 	}
 }
 

@@ -23,6 +23,7 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 	"github.com/spf13/pflag"
 )
@@ -33,6 +34,13 @@ import (
 type RuntimeContext struct {
 	cmd      *cobra.Command
 	shortcut Shortcut
+}
+
+// AIMessageTagFlag matches `chat message send --ai-tag`: IM send shortcuts
+// default to tagging delivered messages as AI-sent, while still allowing users
+// to opt out with --ai-tag=false.
+func AIMessageTagFlag() Flag {
+	return Flag{Name: "ai-tag", Type: FlagBool, Default: "true", Desc: "消息是否带 AI 发送角标（默认 true）"}
 }
 
 // Command returns the underlying cobra command (escape hatch; prefer the typed
@@ -74,6 +82,19 @@ func (rt *RuntimeContext) DryRun() bool { return globalBool(rt.cmd, "dry-run") }
 
 // Yes reports whether --yes is set (skip confirmation prompts).
 func (rt *RuntimeContext) Yes() bool { return globalBool(rt.cmd, "yes") }
+
+// AddAIMessageTag attaches the clawType parameter expected by IM send APIs when
+// the shortcut exposes --ai-tag and the flag is true. This mirrors the native
+// `chat message send` behavior.
+func (rt *RuntimeContext) AddAIMessageTag(params map[string]any) map[string]any {
+	if params == nil {
+		params = map[string]any{}
+	}
+	if f := rt.cmd.Flags().Lookup("ai-tag"); f == nil || rt.Bool("ai-tag") {
+		params["clawType"] = edition.ClawType()
+	}
+	return params
+}
 
 // CallMCP dispatches a single MCP tool call and prints the result, reusing the
 // shared helper path so the shortcut inherits DWS's error classification
