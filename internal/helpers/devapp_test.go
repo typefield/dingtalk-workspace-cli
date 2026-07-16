@@ -378,7 +378,7 @@ func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 	}
 }
 
-func TestDevAppGetBuildsDetailParams(t *testing.T) {
+func TestCrossPlatformCoverageDevAppGetBuildsDetailParams(t *testing.T) {
 	runner := &captureRunner{}
 	root := newDevAppCommand(runner)
 	var out bytes.Buffer
@@ -398,7 +398,7 @@ func TestDevAppGetBuildsDetailParams(t *testing.T) {
 	}
 }
 
-func TestDevAppGetBuildsDetailParamsByAppKey(t *testing.T) {
+func TestCrossPlatformCoverageDevAppGetBuildsDetailParamsByAppKey(t *testing.T) {
 	runner := &captureRunner{}
 	root := newDevAppCommand(runner)
 	var out bytes.Buffer
@@ -418,7 +418,24 @@ func TestDevAppGetBuildsDetailParamsByAppKey(t *testing.T) {
 	}
 }
 
-func TestDevAppGetRequiresLocator(t *testing.T) {
+func TestCrossPlatformCoverageDevAppGetPrefersUnifiedAppIDWhenBothPresent(t *testing.T) {
+	runner := &captureRunner{}
+	root := newDevAppCommand(runner)
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"get", "--unified-app-id", "u-1", "--app-key", "dingxxx"})
+
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+	}
+	want := map[string]any{"unifiedAppId": "u-1", "appKey": "dingxxx"}
+	if !reflect.DeepEqual(runner.last.Params, want) {
+		t.Fatalf("Params = %#v, want %#v", runner.last.Params, want)
+	}
+}
+
+func TestCrossPlatformCoverageDevAppGetRequiresLocator(t *testing.T) {
 	runner := &captureRunner{}
 	root := newDevAppCommand(runner)
 	var out bytes.Buffer
