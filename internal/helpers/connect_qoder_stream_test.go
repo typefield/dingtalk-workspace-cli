@@ -14,7 +14,9 @@
 package helpers
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"os"
 	"path/filepath"
 	"strings"
@@ -24,6 +26,7 @@ import (
 
 func writeQoderStreamStub(t *testing.T, dir string) string {
 	t.Helper()
+	requirePOSIXShell(t)
 	logPath := filepath.Join(dir, "qoder-starts.log")
 	script := `#!/usr/bin/env python3
 import json
@@ -63,17 +66,42 @@ if "--input-format" in sys.argv:
             }), flush=True)
 else:
     prompt = sys.argv[-1] if len(sys.argv) > 1 else ""
-    print(json.dumps({
-        "type": "result",
-        "subtype": "success",
-        "message": {"content": [{"type": "text", "text": "one-shot " + prompt}]},
-    }))
+    print("one-shot " + prompt)
 `
 	path := filepath.Join(dir, "qodercli")
 	if err := os.WriteFile(path, []byte(script), 0o755); err != nil {
 		t.Fatalf("write qoder stub: %v", err)
 	}
 	return logPath
+}
+
+func TestQoderForwarderUsesNativeAttachmentFlag(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	stubDir := t.TempDir()
+	logPath := writeQoderStreamStub(t, stubDir)
+	t.Setenv("DWS_QODER_STUB_LOG", logPath)
+	attachmentPath := filepath.Join(t.TempDir(), "forwarded.mov")
+	if err := os.WriteFile(attachmentPath, []byte("video-bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	f := &qoderStreamForwarder{
+		name: "qoderwork", bin: filepath.Join(stubDir, "qodercli"),
+		timeout: 5 * time.Second, sessions: newConvSessions(""),
+	}
+	reply, err := f.forwardWithAttachments(context.Background(), "conv", "分析视频", []connectMediaAttachment{{LocalPath: attachmentPath, FileName: "forwarded.mov", MediaType: "video"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if reply != "one-shot 分析视频" {
+		t.Fatalf("reply = %q", reply)
+	}
+	raw, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if !strings.Contains(string(raw), `"--attachment", "`+attachmentPath+`"`) || !strings.Contains(string(raw), `"-p", "分析视频"`) {
+		t.Fatalf("qoder args missing attachment: %s", raw)
+	}
 }
 
 func TestQoderForwarderKeepsStreamJSONProcessAlive(t *testing.T) {
@@ -122,6 +150,39 @@ func TestQoderForwarderKeepsStreamJSONProcessAlive(t *testing.T) {
 	}
 	if !strings.Contains(lines[0], "--input-format") || !strings.Contains(lines[0], "stream-json") {
 		t.Fatalf("qodercli should start in stream-json input mode, log:\n%s", raw)
+	}
+}
+
+type qoderTestWriteCloser struct {
+	bytes.Buffer
+}
+
+func (w *qoderTestWriteCloser) Close() error { return nil }
+
+func TestQoderControlRequestReturnsImmediately(t *testing.T) {
+	stdin := &qoderTestWriteCloser{}
+	f := &qoderStreamForwarder{name: "qoder", stdin: stdin}
+
+	if !f.handleControlRequestLocked(`{"type":"control_request","request_id":"req-1","request":{"type":"permission","subtype":"permission","tool":"bash"}}`) {
+		t.Fatal("control_request was not handled")
+	}
+
+	var got struct {
+		Type     string `json:"type"`
+		Response struct {
+			Subtype   string `json:"subtype"`
+			RequestID string `json:"request_id"`
+			Code      string `json:"code"`
+		} `json:"response"`
+	}
+	if err := json.Unmarshal(bytes.TrimSpace(stdin.Bytes()), &got); err != nil {
+		t.Fatalf("decode response: %v; raw=%q", err, stdin.String())
+	}
+	if got.Type != "control_response" || got.Response.RequestID != "req-1" {
+		t.Fatalf("response identity mismatch: %#v", got)
+	}
+	if got.Response.Subtype != "error" || got.Response.Code != "unsupported_control_request" {
+		t.Fatalf("response should explicitly unblock with unsupported error: %#v", got.Response)
 	}
 }
 

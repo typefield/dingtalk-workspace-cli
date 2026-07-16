@@ -16,7 +16,10 @@ package app
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
+	"fmt"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -132,6 +135,122 @@ func TestAuthImportRequiresForceWhenPopulated(t *testing.T) {
 	}
 }
 
+func TestAuthStatusJSONReportsKeychainUnavailable(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", filepath.Join(t.TempDir(), "config"))
+
+	prev := edition.Get()
+	edition.Override(&edition.Hooks{
+		LoadToken: func(configDir string) ([]byte, error) {
+			return nil, keychain.NewUnavailableError("read DEK from macOS Keychain", errors.New("default keychain missing"))
+		},
+	})
+	t.Cleanup(func() {
+		edition.Override(prev)
+	})
+
+	cmd := NewRootCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--format", "json", "auth", "status"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("auth status --format json error = %v\noutput:\n%s", err, out.String())
+	}
+
+	var resp struct {
+		Success       bool   `json:"success"`
+		Authenticated bool   `json:"authenticated"`
+		Reason        string `json:"reason"`
+		Message       string `json:"message"`
+		Hint          string `json:"hint"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal auth status JSON error = %v\noutput:\n%s", err, out.String())
+	}
+	if !resp.Success {
+		t.Fatalf("success = false, want true; response=%+v", resp)
+	}
+	if resp.Authenticated {
+		t.Fatalf("authenticated = true, want false; response=%+v", resp)
+	}
+	if resp.Reason != "keychain_unavailable" {
+		t.Fatalf("reason = %q, want keychain_unavailable; response=%+v", resp.Reason, resp)
+	}
+	if !strings.Contains(resp.Message, "Keychain") && !strings.Contains(resp.Message, "钥匙串") {
+		t.Fatalf("message should mention Keychain/钥匙串; response=%+v", resp)
+	}
+	if !strings.Contains(resp.Hint, keychain.DisableKeychainEnv) {
+		t.Fatalf("hint should mention %s; response=%+v", keychain.DisableKeychainEnv, resp)
+	}
+}
+
+func TestAuthStatusJSONReportsDEKMissing(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", filepath.Join(t.TempDir(), "config"))
+
+	prev := edition.Get()
+	edition.Override(&edition.Hooks{
+		LoadToken: func(configDir string) ([]byte, error) {
+			return nil, fmt.Errorf("load from keychain: %w", keychain.ErrDEKMissing)
+		},
+	})
+	t.Cleanup(func() {
+		edition.Override(prev)
+	})
+
+	cmd := NewRootCommand()
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	cmd.SetErr(&out)
+	cmd.SetArgs([]string{"--format", "json", "auth", "status"})
+
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("auth status --format json error = %v\noutput:\n%s", err, out.String())
+	}
+
+	var resp struct {
+		Success       bool   `json:"success"`
+		Authenticated bool   `json:"authenticated"`
+		Reason        string `json:"reason"`
+		Message       string `json:"message"`
+		Hint          string `json:"hint"`
+	}
+	if err := json.Unmarshal(out.Bytes(), &resp); err != nil {
+		t.Fatalf("unmarshal auth status JSON error = %v\noutput:\n%s", err, out.String())
+	}
+	if !resp.Success {
+		t.Fatalf("success = false, want true; response=%+v", resp)
+	}
+	if resp.Authenticated {
+		t.Fatalf("authenticated = true, want false; response=%+v", resp)
+	}
+	if resp.Reason != "dek_missing" {
+		t.Fatalf("reason = %q, want dek_missing; response=%+v", resp.Reason, resp)
+	}
+	if !strings.Contains(resp.Message, "登录密钥") {
+		t.Fatalf("message should mention 登录密钥; response=%+v", resp)
+	}
+	if !strings.Contains(resp.Hint, "重新登录") {
+		t.Fatalf("hint should mention 重新登录; response=%+v", resp)
+	}
+	if !strings.Contains(resp.Hint, "dws auth reset") {
+		t.Fatalf("hint should mention dws auth reset; response=%+v", resp)
+	}
+}
+
+func TestAuthStatusDiagnosticReportsCiphertextKeyMismatch(t *testing.T) {
+	diagnostic := authStatusDiagnosticFromError(fmt.Errorf("load token: %w", keychain.ErrCiphertextKeyMismatch))
+	if diagnostic == nil {
+		t.Fatal("authStatusDiagnosticFromError() = nil")
+	}
+	if diagnostic.Reason != "ciphertext_key_mismatch" {
+		t.Fatalf("reason = %q, want ciphertext_key_mismatch", diagnostic.Reason)
+	}
+	if !strings.Contains(diagnostic.Hint, keychain.DisableKeychainEnv) {
+		t.Fatalf("hint should mention %s: %q", keychain.DisableKeychainEnv, diagnostic.Hint)
+	}
+}
+
 func TestAuthStatusRefreshFailureLeavesStoredTokenIntact(t *testing.T) {
 	// Isolate keychain storage to a per-test directory so the saved
 	// token can't leak into other test packages running in parallel.
@@ -230,6 +349,91 @@ func TestAuthStatusProfileOverrideDoesNotSwitchCurrentProfile(t *testing.T) {
 	}
 	if cfg.CurrentProfile != "corp_secondary" {
 		t.Fatalf("currentProfile = %q, want unchanged corp_secondary", cfg.CurrentProfile)
+	}
+}
+
+func TestAuthMigrateKeychainDryRunAndConfirmedExecution(t *testing.T) {
+	t.Setenv(keychain.DisableKeychainEnv, "")
+	oldMigrate := migrateKeychainToFileDEK
+	t.Cleanup(func() { migrateKeychainToFileDEK = oldMigrate })
+
+	calls := 0
+	migrateKeychainToFileDEK = func(_ string, dryRun bool) (int, error) {
+		calls++
+		if calls == 1 && !dryRun {
+			t.Fatal("first migration call should be dry-run")
+		}
+		if calls == 2 && dryRun {
+			t.Fatal("second migration call should execute")
+		}
+		return 4, nil
+	}
+
+	newRoot := func() (*cobra.Command, *bytes.Buffer) {
+		root := &cobra.Command{Use: "dws"}
+		root.PersistentFlags().Bool("dry-run", false, "")
+		root.PersistentFlags().Bool("yes", false, "")
+		root.PersistentFlags().String("format", "json", "")
+		root.AddCommand(newAuthMigrateKeychainCommand())
+		var out bytes.Buffer
+		root.SetOut(&out)
+		root.SetErr(&out)
+		return root, &out
+	}
+
+	root, out := newRoot()
+	root.SetArgs([]string{"migrate-keychain", "--dry-run"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("migrate-keychain --dry-run error = %v\noutput:\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), `"dry_run":true`) || !strings.Contains(out.String(), `"entries":4`) {
+		t.Fatalf("dry-run output = %q", out.String())
+	}
+
+	root, out = newRoot()
+	root.SetArgs([]string{"migrate-keychain", "--yes"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("migrate-keychain --yes error = %v\noutput:\n%s", err, out.String())
+	}
+	if !strings.Contains(out.String(), `"dry_run":false`) || !strings.Contains(out.String(), `"entries":4`) {
+		t.Fatalf("migration output = %q", out.String())
+	}
+	if calls != 2 {
+		t.Fatalf("migration calls = %d, want 2", calls)
+	}
+}
+
+func TestAuthMigrateKeychainRequiresConfirmationAndSystemMode(t *testing.T) {
+	oldMigrate := migrateKeychainToFileDEK
+	t.Cleanup(func() { migrateKeychainToFileDEK = oldMigrate })
+	migrateKeychainToFileDEK = func(_ string, _ bool) (int, error) {
+		t.Fatal("migration backend should not be called")
+		return 0, nil
+	}
+
+	newRoot := func() *cobra.Command {
+		root := &cobra.Command{Use: "dws"}
+		root.PersistentFlags().Bool("dry-run", false, "")
+		root.PersistentFlags().Bool("yes", false, "")
+		root.PersistentFlags().String("format", "json", "")
+		root.AddCommand(newAuthMigrateKeychainCommand())
+		root.SetOut(io.Discard)
+		root.SetErr(io.Discard)
+		return root
+	}
+
+	t.Setenv(keychain.DisableKeychainEnv, "")
+	root := newRoot()
+	root.SetArgs([]string{"migrate-keychain"})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "--yes") {
+		t.Fatalf("unconfirmed migration error = %v, want --yes guidance", err)
+	}
+
+	t.Setenv(keychain.DisableKeychainEnv, "1")
+	root = newRoot()
+	root.SetArgs([]string{"migrate-keychain", "--dry-run"})
+	if err := root.Execute(); err == nil || !strings.Contains(err.Error(), "env -u") {
+		t.Fatalf("file-DEK mode migration error = %v, want system-mode guidance", err)
 	}
 }
 
@@ -823,6 +1027,10 @@ func (f *authLoginRecommendSequenceCaller) CallTool(_ context.Context, _ string,
 func (f *authLoginRecommendSequenceCaller) Format() string { return "table" }
 
 func (f *authLoginRecommendSequenceCaller) DryRun() bool { return false }
+
+func (f *authLoginRecommendSequenceCaller) Fields() string { return "" }
+
+func (f *authLoginRecommendSequenceCaller) JQ() string { return "" }
 
 func stringSliceArgEqual(got any, want []string) bool {
 	if got == nil {

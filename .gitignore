@@ -19,6 +19,7 @@ test/cli_compat/testdata/
 /internal/compat/testdata/*
 .gitignore
 .worktrees/
+.qoder/
 
 # Secrets & credentials
 .env
@@ -42,5 +43,14 @@ dws.zip
 # 功能测试运行产物
 results.jsonl
 test/dev_functional/results.jsonl
+/auto-test/
+/eval-runs/
+/.qoder/
 .vercel
 .env*
+# Local Go coverage output
+/coverage.txt
+/coverage-base.txt
+/coverage-policy.txt
+/coverage.html
+dwsbin

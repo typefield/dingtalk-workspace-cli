@@ -71,9 +71,9 @@ irm https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace-cli/ma
 | 模式 | 安装内容 | 适合场景 |
 |------|----------|----------|
 | **mono**（稳定，默认） | 一个 `dws` skill，覆盖全部产品 | 跨产品组合操作；单一入口召唤 |
-| **multi** 🧪 **试验版 / Preview** | 20 个独立产品 skill（`dingtalk-aitable` / `dingtalk-calendar` / `dingtalk-chat` ...） | 单产品任务；每次召唤上下文更小 |
+| **multi** 🧪 **试验版 / Preview** | 按产品拆分的独立 skill（`dingtalk-aitable` / `dingtalk-calendar` / `dingtalk-chat` ...） | 单产品任务；每次召唤上下文更小 |
 
-> 🧪 **multi 模式当前为 EXPERIMENTAL（试验版 / Preview）**。20 个独立 skill 全部通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整。生产 / 共享环境建议优先用 `mono`。问题请提 issue 反馈。
+> 🧪 **multi 模式当前为 EXPERIMENTAL（试验版 / Preview）**。全部独立 skill 均通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整。生产 / 共享环境建议优先用 `mono`。问题请提 issue 反馈。
 
 怎么选：
 
@@ -93,6 +93,30 @@ irm https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace-cli/ma
 npm install -g dingtalk-workspace-cli
 ```
 
+安装最新 beta：
+
+```bash
+npm install -g dingtalk-workspace-cli@beta
+```
+
+**Homebrew**（macOS / Linux）：
+
+```bash
+brew tap DingTalk-Real-AI/dingtalk-workspace-cli https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+brew install dingtalk-workspace-cli
+```
+
+> Formula 与代码位于同一个仓库，因此首次 `tap` 需要显式指定仓库 URL。后续可直接使用 `brew upgrade dingtalk-workspace-cli`。
+
+安装 Homebrew beta（keg-only，不覆盖稳定版）：
+
+```bash
+brew install dingtalk-workspace-cli-beta
+$(brew --prefix dingtalk-workspace-cli-beta)/bin/dws version
+```
+
+如需让 beta 的 `dws` 成为当前 shell 默认版本，将 `$(brew --prefix dingtalk-workspace-cli-beta)/bin` 放到 PATH 最前面。
+
 **预编译二进制文件**：从 [GitHub Releases](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/releases) 下载。
 
 > **macOS 用户注意**：如果提示“无法打开，因为 Apple 无法检查其是否包含恶意软件”，请执行：
@@ -110,6 +134,7 @@ cp dws ~/.local/bin/         # 安装到 PATH
 ```
 
 > 需要 Go 1.25+。也可以用 `make package` 构建所有平台产物（macOS / Linux / Windows × amd64 / arm64）。
+> 静态端点数据由悟空基线生成并提交在本仓库 `internal/syncdata`，源码构建不需要额外 checkout 数据仓库。
 
 </details>
 
@@ -152,11 +177,29 @@ dws 内置自升级能力，直接从 [GitHub Releases](https://github.com/DingT
 ```bash
 dws upgrade                    # 交互式升级到最新版本
 dws upgrade --check            # 仅检查是否有新版本
-dws upgrade --list             # 列出所有可用版本
+dws upgrade --list             # 列出正式 release 版本
+dws upgrade --beta             # 升级到最新 beta 预发布版本
+dws upgrade --check --beta     # 仅检查 beta 轨道是否有新版本
+dws upgrade --list --beta      # 列出 beta 预发布版本
 dws upgrade --version v1.0.7   # 升级到指定版本
+dws upgrade --version v1.0.8-beta.1  # 升级到指定 beta 版本
 dws upgrade --rollback         # 回滚到上一版本
 dws upgrade -y                 # 跳过确认直接升级
 ```
+
+默认情况下，`dws upgrade` 只跟随正式 release 轨道。只有显式传入 `--beta` 时，才会选择 GitHub pre-release 里的 beta 构建。
+
+### 六渠道发布后验证
+
+维护者和验证同学可按发版质量保障 SOP，对 curl、PowerShell、npm stable、npm beta、Homebrew、`dws upgrade` 执行安装与冒烟验证：
+
+```bash
+git clone https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git /tmp/dws-verify
+cd /tmp/dws-verify/verify
+bash verify-all-channels.sh
+```
+
+脚本使用隔离目录，不会替换当前 PATH 中的 `dws`；输出 `PASS`、`FAIL`、`SKIP` 汇总。跨平台渠道必须由对应平台补测，`SKIP` 不计为通过。验证范围和平台矩阵见 [`verify/README.md`](verify/README.md)。
 
 <details>
 <summary><strong>工作原理</strong></summary>
@@ -171,8 +214,9 @@ dws upgrade -y                 # 跳过确认直接升级
 | Flag | 说明 |
 |------|------|
 | `--check` | 仅检查更新，不安装 |
-| `--list` | 列出所有可用版本及更新日志 |
-| `--version` | 升级到指定版本（如 `v1.0.7`） |
+| `--list` | 列出正式 release 版本及更新日志 |
+| `--beta` | 对 `upgrade`、`--check`、`--list` 使用 beta 预发布轨道 |
+| `--version` | 升级到指定版本（如 `v1.0.7` 或 `v1.0.8-beta.1`） |
 | `--rollback` | 回滚到上一个备份版本 |
 | `--force` | 强制重新安装，即使已是最新版本 |
 | `--skip-skills` | 跳过技能包更新 |
@@ -247,6 +291,16 @@ dws --profile <名称|corpId> contact user search --query "..."   # 单次对指
 
 跨组织读取由 agent 编排，而非内置 `--all-orgs`：先 `dws profile list` 拿到组织，再对每个组织带 `--profile` 各查一遍，然后合并。写操作默认只在当前组织进行——跨组织写之前先确认目标组织。
 
+macOS 下，如果已登记的 token slot 无法解密，为避免把系统 Keychain 和 file-DEK 写成混合状态，新的 OAuth 登录会直接拒绝。如果普通终端仍能读取登录态、只有设置 `DWS_DISABLE_KEYCHAIN=1` 的沙箱读不到，可在不暴露 token 的情况下迁移 legacy 与各 profile 的认证条目：
+
+```bash
+env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run --format json
+env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --yes --format json
+DWS_DISABLE_KEYCHAIN=1 dws auth status --format json
+```
+
+迁移会先验证全部认证密文再写入、忽略无关的应用密钥；提交中断后可安全重跑。如果预检确认是密文本身损坏，报错会给出对应 `corpId`；只清理这个组织可执行 `dws auth logout --profile <名称|corpId>`，再重新登录。只有确认要丢弃全部本地 profile 时才用 `dws auth reset`。
+
 </details>
 
 <details>
@@ -300,27 +354,37 @@ dws contact user search --query "张三" --dry-run
 dws contact user get-self --jq '.result[0].orgEmployeeModel | {name: .orgUserName, dept: .depts[0].deptName, userId}'
 ```
 
-### Schema 发现
+### 命令帮助与 Schema
 
-Agent 无需预置所有命令知识，通过 `dws schema` 动态发现可用能力：
+命令帮助和 Schema 分别负责命令契约的不同部分：
+
+- `dws <path> --help` 是命令是否存在、当前二进制接受哪些 flags 的事实源。
+- `dws schema "<path>"` 是 Agent 选命令、参数映射与约束、风险和确认语义的契约。
+- Help 与 Schema 冲突时视为契约漂移：执行只传 Cobra 接受的参数，安全语义取更保守值。
+- Schema 只描述命令，不读取或搜索钉钉业务数据；发现命令后仍需执行真实产品命令。
 
 ```bash
-# 第一步：发现所有可用产品
-dws schema --jq '.products[] | {id, tool_count: (.tools | length)}'
+# 确认命令存在并查看当前接受的 flags
+dws aitable record query --help
 
-# 第二步：查看目标工具的参数结构
-dws schema aitable.query_records --jq '.tool.parameters'
+# 先在产品内发现命令，再查看选中 leaf 的契约
+dws schema aitable
+dws schema "aitable record query"
 
-# 第三步：构造正确的调用
+# 执行真实业务查询
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 ```
 
+`dws schema --all` 会完整导出命令契约，供工具、CI、审计和兼容性基线使用。Agent 应优先按产品/分组发现后查询 leaf，避免把整个 Catalog 加载进上下文。
+
 ### Agent Skills
 
-仓库内置完整的 Agent Skill 体系（`skills/` 目录），目前重组为两套布局：
+仓库内置完整的 Agent Skill 体系（`skills/` 目录），分为两套布局：
 
 - `skills/mono/` — 单 skill 布局（一个 `SKILL.md` + `references/products/`），默认推荐。
-- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ... 共 18 个），每个 skill 自带 `SKILL.md`。🧪 **试验版 / Preview — 各 multi `SKILL.md` 头部有详细注意事项。**
+- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ...），每个 skill 自带 `SKILL.md`。🧪 **试验版 / Preview — 各 multi `SKILL.md` 头部有详细注意事项。**
+
+Schema 生成共享的 reviewed 输入单独位于 `internal/cli/schema_hints/`。它们不是 Agent Skill，也不会进入二进制或发布 skill 包。
 
 安装之后，Claude Code / Cursor 等 AI 工具就能通过自然语言直接操作钉钉：
 
@@ -394,6 +458,51 @@ DWS_SKILL_SOURCE=/path/to/skills dws skill setup --mode multi
 **ISV 集成**：编写您自己的 Agent Skill，与 dws 内置 Skill 搭配构建跨产品工作流：**ISV Skill → dws Skill → 钉钉开放平台 API（强制鉴权 + 全链路审计）**。
 
 ## 功能特性
+
+<details>
+<summary><strong>个人事件订阅</strong> — 实时接收钉钉消息，驱动事件触发的 Agent</summary>
+
+`dws event consume` 使用当前 OAuth 登录用户建立托管的 Stream WebSocket 长连接，并把每条事件以 NDJSON 一行输出到 stdout。当前公开目录包括：当前用户被 @ 的消息、与指定用户的单聊消息、指定群的消息。
+
+> **前置条件**：先运行 `dws auth login`。个人身份从 OAuth token 解析，不允许通过命令行伪造。
+
+只需要 event 能力时，可以使用官方便捷安装脚本：
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace-cli/main/scripts/install-event.sh | sh
+```
+
+```bash
+# 查看公开个人事件目录和 schema
+dws event list
+dws event schema user_im_message_receive_o2o
+
+# 监听当前用户被 @ 的消息
+dws event consume user_im_message_receive_at -f ndjson
+
+# 监听与指定用户的单聊消息
+dws event consume user_im_message_receive_o2o --user <userId> -f ndjson
+
+# 监听指定群的消息
+dws event consume user_im_message_receive_group --group <openConversationId> -f ndjson
+
+# 查看本地 consume，并取消指定订阅
+dws event status
+dws event stop <subscribe_id>
+```
+
+| 特性 | 说明 |
+|------|------|
+| 自动编排 | `consume` 创建或复用个人订阅，`stop` 取消订阅并清理本地状态 |
+| 共享连接 | 同一用户的多个 consumer 共享本地 bus 和云端长连接 |
+| 订阅隔离 | 正常 consumer 同时按事件类型和 `subscribe_id` 匹配 |
+| Agent 友好输出 | Stream 事件写入 stdout，连接状态和诊断信息写入 stderr |
+| 状态可观测 | `status` 同时显示服务端订阅、personal bus 和本地 consumers |
+| 跨平台 | macOS/Linux 使用 Unix Socket，Windows 使用 Named Pipe |
+
+Agent 工作流和事件参数详见 `skills/multi/dingtalk-event/SKILL.md`。
+
+</details>
 
 <details>
 <summary><strong>Raw API 调用</strong> — 直接调用钉钉 OpenAPI</summary>
@@ -476,7 +585,7 @@ dws aitable record query --base-id BASE_ID --tabel-id TABLE_ID       # --tabel-i
 ```bash
 # 内置 jq 表达式
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --jq '.invocation.params'
-dws schema --jq '.products[] | {id, tools: (.tools | length)}'
+dws schema "dev app create" --jq '.tool.required'
 
 # 只返回指定字段
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocation,response
@@ -485,13 +594,13 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocati
 </details>
 
 <details>
-<summary><strong>Schema 自省</strong> — 调用前查询任意工具的参数结构</summary>
+<summary><strong>Schema 自省</strong> — Agent 命令发现与执行契约</summary>
 
 ```bash
-dws schema                                              # 列出所有产品和工具
-dws schema aitable.query_records                        # 查看参数 Schema
-dws schema aitable.query_records --jq '.tool.required'   # 查看必填字段
-dws schema --jq '.products[].id'                        # 提取所有产品 ID
+dws schema aitable                                      # 发现产品命令
+dws schema "aitable record query"                       # 查看选中 leaf 契约
+dws schema "aitable record query" --jq '.tool.required' # 查看必填字段
+dws schema --all                                        # CI/审计/基线的全量导出
 ```
 
 </details>
@@ -619,7 +728,7 @@ dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <sec
 
 - [命令索引](./docs/command-index.md) — 全部运行时命令，带描述与使用场景
 - [参考手册](./docs/reference.md) — 环境变量、退出码、输出格式、Shell 补全
-- [架构设计](./docs/architecture.md) — 发现驱动管道、IR、Transport 层
+- [架构设计](./docs/architecture.md) — 静态端点管道、命令面、Transport 层
 - [开放平台应用指令设计](./docs/dev-yulan-command-routing.md) — yulan dev app 应用侧命令、MCP overlay、权限流程与 Agent 路由
 - [更新日志](./CHANGELOG.md) — 版本历史与迁移说明
 

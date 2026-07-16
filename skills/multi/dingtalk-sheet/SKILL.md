@@ -1,6 +1,6 @@
 ---
 name: dingtalk-sheet
-description: 钉钉电子表格。Use when 用户说 电子表格/工作表/单元格读写/单元格追加/查找/公式/超链接/插入图片/浮动图片/sheet。Distinct from dingtalk-aitable(AI表格/多维表/字段类型)、dingtalk-doc(普通文档)。命令前缀：dws sheet。
+description: 钉钉电子表格。Use when 用户说 电子表格/导入Excel为在线表格/工作表/单元格读写/单元格追加/查找/公式/超链接/插入图片/浮动图片/sheet。Distinct from dingtalk-aitable(AI表格/多维表/字段类型)、dingtalk-doc(普通文档)。命令前缀：dws sheet。
 cli_version: ">=0.2.14"
 metadata:
   category: product
@@ -12,39 +12,49 @@ metadata:
 
 # 钉钉电子表格 Skill
 
-> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。20 个 dingtalk-* skill 全部通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
+> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。全部 dingtalk-* skill 已通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
 
 > **PREREQUISITE:** Read the `dws-shared` skill first for auth, global flags, product routing, URL preflight, error codes, and safety rules. The `dws` binary must be on PATH.
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 
 > 命令参考：[sheet.md](references/sheet.md)；URL 识别与类型探测：[url-patterns.md](references/url-patterns.md)。
 
-## 开放平台文档 RAG / 错误码排查
-
-- 任何产品执行中，只要用户问开放平台 API、接口参数、字段含义、权限点、回调、SDK、配额、错误码，或命令返回上游 OpenAPI/SDK 错误，必须先用 `dws devdoc article search --query "<关键词>" --format json` 做官方文档 RAG。
-- 查询词优先保留原始 API 名、能力名、权限点、完整错误码和 message；首轮形如 `errcode <code> <message>`，无结果再换 `<产品/场景> <错误码>`、`<接口名> 参数`。
-- 本地 CLI 错误（如 `unknown command` / `unknown flag` / 认证 / recovery）仍按 root `dws` / `dws-shared` 的错误处理执行；`devdoc` 用于开放平台业务错误码和接口语义排查。
-- `devdoc` 只查钉钉开放平台开发者文档，不查业务数据；排查结论必须基于命中条目的标题、摘要或链接，不能编造错误原因或不存在的命令。
-
 ## URL 预检（含 alidocs URL 时必读）
 
 输入含 `alidocs.dingtalk.com` URL 时，该域名下存在多种路径格式：`/i/p/...`（分享短链）、`/i/nodes/...`（节点链接，类型需探测）、`/spreadsheetv2/...`（电子表格直链，直接路由到 `sheet`）、`/document/edit|preview?dentryKey=...`（文档链接，路由到 `dingtalk-doc`）等。**必须先读 [url-patterns.md](references/url-patterns.md) 中的「alidocs URL 分流决策」**，按规则识别 URL 类型；仅当确认是在线电子表格（`/spreadsheetv2/...` 或 `i/nodes/` 且 probe 出 `contentType=ALIDOC` + `extension=axls`）时，才继续走本 skill 的命令。
+
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（无专用脚本/recipe 时优先）
+
+以下 shortcut 来自独立于 Runtime Schema 的公开 catalog。先按本 skill 的意图表、脚本和 recipe 路由：存在精确覆盖该场景的专用脚本/recipe 时按其执行；否则用户意图命中时，shortcut 优先于手写原子命令。用 `dws shortcut list --service sheet --format json` 读取参数、约束、风险和示例，并以 `dws sheet <shortcut> --help` 核对当前 Cobra flags；不要对 `+` 路径调用 `dws schema`。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws sheet +list-sheets` | read | 获取表格文档中全部工作表列表 |
+| `dws sheet +read` | read | 读取工作表指定范围的结构化单元格数据 |
+<!-- VISIBLE_SHORTCUTS_END -->
 
 ## 意图表
 
 | 用户说 | 命令 |
 |--------|------|
 | "创建电子表格" | `dws sheet create --name "<标题>"` |
+| "导入本地 Excel 为在线表格" | `dws sheet import create --file <xlsx或xls> --folder-token <ID>` 或 `--workspace <ID>` |
 | "新建工作表" | `dws sheet new --node <nodeId或URL> --name "<sheet名>"` |
 | "读取单元格" | `dws sheet range read --node <nodeId或URL> --sheet-id <sheetId> --range A1:B2` |
 | "写入单元格" | `dws sheet range update --node <nodeId或URL> --sheet-id <sheetId> --range A1:B2 --values '[[..]]'` |
+| "结构化读取 / DataFrame 读取" | `dws sheet table-get --node <nodeId或URL> [--sheet-id <sheetId>]` |
+| "结构化写入 / DataFrame 写入" | `dws sheet table-put --node <nodeId或URL> --sheets '<JSON>'` |
+| "创建透视表 / 数据透视" | `dws sheet pivot-table create --node <nodeId或URL> --source "'Sheet1'!A1:D100" --properties '<JSON>'` |
+| "查看透视表" | `dws sheet pivot-table list --node <nodeId或URL> --sheet-id <sheetId>` |
+| "显示 / 隐藏网格线" | `dws sheet show-gridline|hide-gridline --node <nodeId或URL> --sheet-id <sheetId>` |
 | "追加一行" | `dws sheet append --node <nodeId或URL> --sheet-id <sheetId> --values '[[..]]'` |
 | "查找 / 替换" | `dws sheet find --node <nodeId或URL> --sheet-id <sheetId> --find "<关键词>"` / `dws sheet replace --node <nodeId或URL> --sheet-id <sheetId> --find "<旧值>" --replacement "<新值>"` |
-| "插入图片到单元格" | `dws sheet write-image --node <nodeId或URL> --sheet-id <sheetId> --range A1 --resource-id <attachmentId>`（或 `--resource-url <url>`） |
+| "插入图片到单元格" | `dws sheet write-image --node <nodeId或URL> --sheet-id <sheetId> --range A1:A1 --file <本地图片路径>`（CLI 自动上传本地图片并写入单元格；没有 --resource-id/--resource-url 这两个 flag） |
 
 ## URL 与 ID 前置
 

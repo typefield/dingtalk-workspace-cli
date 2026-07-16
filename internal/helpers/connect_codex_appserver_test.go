@@ -26,6 +26,7 @@ import (
 
 func writeShellExecutable(t *testing.T, dir, name, body string) string {
 	t.Helper()
+	requirePOSIXShell(t)
 	path := filepath.Join(dir, name)
 	if err := os.WriteFile(path, []byte("#!/bin/sh\n"+body), 0o755); err != nil {
 		t.Fatalf("write stub %s: %v", name, err)
@@ -37,7 +38,9 @@ func TestForwarderForChannelCodexPrefersAppServer(t *testing.T) {
 	clearChannelEnv(t)
 	t.Setenv("DWS_CONNECT_NO_INSTALL", "1")
 	stub := t.TempDir()
-	writeShellExecutable(t, stub, "codex", "exit 0\n")
+	if err := writeExecStub(stub, "codex"); err != nil {
+		t.Fatalf("write codex stub: %v", err)
+	}
 	t.Setenv("PATH", stub)
 
 	fwd, err := forwarderForChannel("codex", "", connectAgentOptions{Memory: true})
@@ -107,14 +110,13 @@ while IFS= read -r line; do
     *\"method\":\"initialize\"*) printf '%s\n' '{"id":1,"result":{}}' ;;
     *\"method\":\"thread/start\"*) printf '%s\n' '{"id":2,"result":{"thread":{"id":"thr_stub"}}}' ;;
     *\"method\":\"thread/resume\"*) printf '%s\n' '{"id":2,"result":{"thread":{"id":"thr_stub"}}}' ;;
-    *\"method\":\"turn/start\"*)
-      printf '%s\n' '{"method":"item/agentMessage/delta","params":{"threadId":"thr_stub","turnId":"turn_stub","itemId":"item_1","delta":"你"}}'
-      printf '%s\n' '{"method":"item/agentMessage/delta","params":{"threadId":"thr_stub","turnId":"turn_stub","itemId":"item_1","delta":"好"}}'
-      printf '%s\n' '{"method":"turn/completed","params":{"threadId":"thr_stub","turn":{"id":"turn_stub","status":"completed","items":[{"id":"item_1","type":"agentMessage","text":"你好"}]}}}'
-      exit 0
-      ;;
-  esac
-done
+	    *\"method\":\"turn/start\"*)
+	      printf '%s\n' '{"method":"item/agentMessage/delta","params":{"threadId":"thr_stub","turnId":"turn_stub","itemId":"item_1","delta":"你"}}'
+	      printf '%s\n' '{"method":"item/agentMessage/delta","params":{"threadId":"thr_stub","turnId":"turn_stub","itemId":"item_1","delta":"好"}}'
+	      printf '%s\n' '{"method":"turn/completed","params":{"threadId":"thr_stub","turn":{"id":"turn_stub","status":"completed","items":[{"id":"item_1","type":"agentMessage","text":"你好"}]}}}'
+	      ;;
+	  esac
+	done
 `)
 	fwd := &codexAppServerForwarder{
 		bin:      codex,
@@ -123,9 +125,13 @@ done
 		workDir:  dir,
 		sessions: newCodexThreadSessions(""),
 	}
+	imagePath := filepath.Join(dir, "forwarded.png")
+	if err := os.WriteFile(imagePath, []byte("png-bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
 
 	var deltas []string
-	reply, err := fwd.forwardStream(context.Background(), "conv-1", "第一问", func(s string) {
+	reply, err := fwd.forwardStreamWithAttachments(context.Background(), "conv-1", "第一问", []connectMediaAttachment{{LocalPath: imagePath, FileName: "forwarded.png", MediaType: "image"}}, func(s string) {
 		deltas = append(deltas, s)
 	})
 	if err != nil {
@@ -151,6 +157,9 @@ done
 	}
 	if strings.Count(log, `"method":"thread/resume"`) != 1 {
 		t.Fatalf("expected one thread/resume, log:\n%s", log)
+	}
+	if !strings.Contains(log, `"type":"localImage"`) || !strings.Contains(log, imagePath) {
+		t.Fatalf("turn/start missing native localImage input, log:\n%s", log)
 	}
 }
 

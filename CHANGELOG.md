@@ -6,10 +6,118 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+### Added
+
+- **Declarative shortcut commands** (#592) — adds 366 `dws <service> +<command>` shortcuts across 16 services, including one-to-one MCP wrappers and multi-step smart workflows. Shortcuts publish stable Agent-visible contracts with named flags, validation and confirmation metadata, dry-run protection for writes, catalog/help routing, and optional local YAML extensions and usage recording.
+- **Sheet imports and Aitable workflow writes** (#624) — adds `dws sheet import` / `sheet import create` for converting local xlsx/xls files into new online sheets, `sheet import get` for polling import tasks, and `dws aitable workflow create/update` for applying validated `workflow-dsl/v1` definitions, with matching reviewed Agent Schema and bundled Skill guidance.
+- **Official multi-platform Homebrew channel** — stable `Formula/dingtalk-workspace-cli.rb` and keg-only `Formula/dingtalk-workspace-cli-beta.rb` live in this repository and select signed macOS Intel/Apple Silicon or Linux amd64/arm64 artifacts at install time. Stable and beta releases open isolated Formula update PRs after final artifact signing, so beta never replaces the stable Formula. Agent Skills stay under `pkgshare` without mutating the user's home directory, and both tracks are covered by the six-channel post-release verifier.
+
 ### Fixed
 
 - **PAT organization-policy denials stop immediately** — `PAT_ORG_POLICY_DENIED` now remains terminal even if a backend also returns `flowId`, authorization URLs, or client credentials; the CLI does not mutate process credentials, open a browser, poll, or retry until an organization administrator changes the policy.
 
+## [1.0.52] - 2026-07-14
+
+This release seals the `v1.0.52` line with personal event subscriptions, a deterministic 22-product Agent command catalog, local user-operation auditing, expanded Open product commands, safer macOS credentials and release signing, and more reliable Connect and IM delivery.
+
+### Added
+
+- **Personal event subscriptions** (#589) — adds `dws event list/schema/consume/status/stop` for user @ mentions, selected one-to-one chats, and selected group chats. `consume` can create or reuse a personal subscription, multiple local consumers share one bus while keeping outputs isolated by event type and subscription, and the mono/multi event Skills ship with the binary.
+- **Open product command capabilities** (#608) — adds Sheet table, pivot-table, and gridline commands; Chat message favorites; Drive statistics and shortcuts; and Doc comment update/delete, with matching mono/multi Skill documentation and command-contract coverage.
+- **Local user-operation audit log** (#555) — operations executed through `dws` now produce redacted daily JSONL records with actor, command and endpoint, result or error category, duration, CLI/platform metadata, and a SHA-256 previous-hash chain for tamper evidence. Writers coordinate through a cross-process file lock and rotate logs safely; `dws audit tail` inspects recent records, `dws audit export` emits date-filtered JSONL or CSV, and `dws audit verify` reports the first broken link in a file's hash chain.
+- **Stable Agent command catalog** (#598) — `dws schema` now ships a deterministic 22-product / 564-tool catalog generated from the executable Cobra tree, with progressive product/group/leaf queries, complete parameter contracts, reviewed command identity and aliases, safety/confirmation metadata, field provenance, and final-delivery completeness/drift gates. The catalog is embedded at build time and does not require runtime MCP `tools/list` discovery.
+- **Reviewed Schema for local commands** (#598, #609) — `event consume/list/schema/status/stop` and `audit export/tail/verify` enter the reviewed `CommandRegistry`, bind to the real Cobra tree at generation time, and ship through the same typed `ToolSpec` and embedded Catalog path as public MCP-backed commands. Leaf, group, product, and `--all` queries are projections of that single delivered model.
+- **Safe macOS Keychain → file-DEK migration** (#597) — `dws auth migrate-keychain --to file-dek` preflights every legacy/profile auth entry before rewriting, ignores unrelated application secrets, supports side-effect-free `--dry-run`, requires explicit `--yes`, and lets sandboxed and normal processes share an existing login without exposing tokens.
+
+### Changed
+
+- **`event consume` AI-subprocess contract** (#609) — emits a fixed ready line and a final controlled-exit summary, supports parent-pipe stdin EOF as graceful shutdown, forwards `--profile` to the detached bus, surfaces bus startup errors, and cleans up subscriptions according to ownership so orchestrators can drive event streams without sleeps or leaked server-side subscriptions.
+- **Wukong IM read-result parity** (#618) — `chat message list` preserves quoted merged-forward and image context; message-search entitlement failures retain the server-provided friendly hint and action URL; and `ding message list` exposes each DING's content alongside its ID and status.
+- **Developer ID signing for official macOS archives** (#605) — official releases now require both Darwin archives to be signed with the configured Apple Developer ID certificate, timestamp, and hardened runtime. The release job validates credentials and signatures and fails closed instead of silently publishing ad-hoc-signed official binaries.
+
+### Fixed
+
+- **Smart-category mappings and runtime network diagnostics** (#591) — `chat category create-smart` now maps category names, group-name keywords, and member OpenDingTalk IDs to the live MCP contract, rejects blank or empty supplied values locally, and reports runtime `tools/call` connection failures as actionable API/network errors instead of internal discovery failures.
+- **Connect daemon restart lifecycle** (#599) — pins the Stream SDK reconnect-race fix, snapshots the running executable before detaching, uses a real 30-second keepalive, and manages each worker as its own Unix process group so launcher cleanup or worker panics no longer cause restart loops or orphan local-agent processes.
+- **Complex Connect messages and attachments** (#606, #612) — rich-text messages retain all embedded pictures in order, queued turns keep every pending attachment, and unknown or future callback shapes reach each Agent backend with their message type and raw JSON instead of being discarded. Attachment recovery is locator-based, nested `chatRecord` pictures/audio/video/files can be recovered from message APIs after Stream ACK, and OpenCode uses a full-duration storyboard for large videos to avoid base64 OOMs while preserving the original download for the turn.
+- **macOS auth survives Keychain mode changes** (#597) — credential reads try existing compatible DEKs without creating key material, updates preserve the DEK that decrypted existing ciphertext, unreadable slots fail closed before token exchange, profile slots use the canonical auth backend, and `auth status` reports ciphertext/key mismatches instead of treating them as ordinary logout. Dedicated macOS race and Windows DPAPI coverage protect the cross-platform paths.
+
+## [1.0.51] - 2026-07-10
+
+This release promotes the sealed `v1.0.51-beta.1` contents to stable. It syncs the hardcoded Wukong command surface, prevents `dev connect` conversations from blocking on messages received mid-turn, and makes local credential failures diagnosable without mutating key material.
+
+### Added
+
+- **Agoal product commands** (#585) — adds `dws agoal` strategy, contract, scorecard, user-objective, report, and objective-template command groups, together with static routing and the bundled mono/multi Agoal skills.
+- **Wukong chat command parity** (#585) — adds `chat group notice create|edit|get|list`, `group share-invite`, `text translate`, `category create-smart`, and `message list-emotion-replies`.
+- **Wukong document import commands** (#585) — adds `doc import` for starting imports and `doc import get` for querying import tasks.
+- **Wukong mail command parity** (#585) — adds mailbox profile, message batch-get, sent-message recall and recall-detail, auto-reply update, plus allow-list and block-list management.
+- **Wukong sheet grouping commands** (#585) — adds `sheet group-dimension` and `sheet ungroup-dimension` for whole-row or whole-column ranges.
+- **Keychain health diagnostics** (#578) — `dws doctor` now includes a keychain check, while `dws auth status` distinguishes ordinary logged-out state from `keychain_unavailable` and `dek_missing` failures and returns remediation hints in table and JSON output.
+
+### Changed
+
+- **`dws pat chmod` defaults to permanent grants** (#584) — running `dws pat chmod <scope>` without `--grant-type` now requests a `permanent` grant instead of `session`, aligning the direct CLI path with the recommend-authorization helper. Session grants remain available by passing `--grant-type session --session-id <id>`.
+- **The `dev connect --channel gemini` path now uses the Gemini `generateContent` API** (#587) — configure it with `GEMINI_API_KEY` or `GOOGLE_API_KEY`, optionally override the compatible endpoint with `GEMINI_API_BASE_URL` or `GOOGLE_GEMINI_API_BASE_URL`, and select a model with `--agent-model` or `GEMINI_MODEL`; a local `gemini` executable is no longer required.
+
+### Fixed
+
+- **Non-blocking `dev connect` turn scheduling** (#587) — stream and `@`-poll callbacks no longer wait for the active turn to finish. Turns stay serialized per conversation, messages received mid-turn are coalesced into one pending follow-up, and different conversations can continue in parallel.
+- **Connect agent recovery and headless execution** (#587) — stale addressable sessions retry once with a fresh session, unsupported Qoder control requests receive an immediate response instead of hanging, OpenCode and bypass-mode channels receive non-interactive permission settings, and backend/API failures are no longer posted as successful assistant replies.
+- **Side-effect-free credential reads** (#578) — keychain reads inspect encrypted credential data before looking up the DEK and never generate a replacement key on a read path. Missing DEKs and unavailable macOS Keychains are surfaced as explicit diagnostic failures instead of silently mutating credential state.
+
+## [1.0.50] - 2026-07-08
+
+This release fixes a long-standing gap where the global `--jq` / `--fields` output filters were silently ignored on product commands, lands a JSON-mode output path for the sheet batch-style command, and aligns the bundled skill surface with the real command semantics uncovered by the round-2 real-machine QA sweep.
+
+### Fixed
+
+- **Global `--jq` / `--fields` are honored on product commands** (#575) — `Formatter.PrintJSON` / `PrintJSONUnescaped` now route through `output.WriteFiltered` when either flag is set, so product commands accept the same filters that `dws api` has always supported. The tool-caller adapter exposes `Fields()` / `JQ()` so helpers can read the flags without re-parsing.
+- **`skill setup --dry-run` is a no-op preview** (#575) — it now prints what would be written without touching the skill directory, the registry, or the agent config. Help text and docs are updated to match.
+- **Skill docs alignment to the real command surface** (#575) — per-product references and the cross-product intent guide clarify that `--fields` projects top-level / list keys only (use `--jq` for nested paths); `minutes_extract_todos.py`, `calendar_free_slot_finder.py`, `chat_export_messages.py` / `chat_history_with_user.py`, and `contact_dept_members.py` are rewritten against the current response shapes; `aisearch` / `aitable` / `attendance` / `calendar` / `chat` / `contact` / `dev` / `doc` / `doc-comment` / `doc-file-ops` / `doc-list` / `doc-search` / `drive` / `mail` / `minutes` / `oa` / `sheet` / `sheet-export` / `url-patterns` / `best_practices/lite-recipes.md` / `global-reference.md` / `intent-guide.md` are re-synced; the QA voice ("真机" phrasing) and environment-specific quirks stated as absolute rules are removed from the docs.
+
+### Changed
+
+- **`sheet range batch-set-style` emits per-row JSON in JSON mode** (#575) — when `--format json` is set, each update is reported as `{index, sheetId, range, ok, error}` instead of only the final aggregate, so callers can programmatically track partial failures under `--continue-on-error`.
+- **Command-merge helpers exported** — `pkg/cmdutil.LeafMerge*` and the provenance helpers are now public so downstream command trees can reuse the same merge semantics.
+
+## [1.0.49] - 2026-07-08
+
+This release lands a full real-machine QA sweep across the CLI, helper scripts, and skill docs (#572), and hardens the release pipeline so npm publishing can no longer be blocked by Gitee mirror issues (#570).
+
+### Fixed
+
+- **Real-machine QA fixes across CLI commands** (#572) — `aitable chart/dashboard share update --enabled` now takes a string so `--enabled false` disables; `chat conversation-info --user` resolves openDingTalkId and registers `--id/--conversation-id/--chat` aliases; `chat list-all-conversations --limit` is capped at 100 and rejects larger values; custom-robot webhook failures surface `errcode` instead of masquerading as success; `contact` registers `--dept/--depts` as the primary flags so the documented spelling actually works; `sheet media-upload` and `sheet export` emit clean JSON under `--format json` (progress lines no longer leak); `wiki node create --type` enum is corrected (drops unsupported `asheet`, adds `axls/able/appt/adraw/amind`); `ding message list --type` defaults to `ALL` since the server rejects empty type.
+- **Helper script fixes (mono and multi)** (#572) — aitable import/export flag names and the tableId regex (7-char default tables were rejected); mail search `--limit`, contact dept response keys (`deptList`/`deptUserList`) and `userInfo` nesting; `attendance_my_record` whoami compatibility; `calendar_schedule_meeting` event-id unwrapping; `drive_tree_list` recursion via `fileId`; report scripts migrated off the deprecated `report list`/`report detail`.
+- **Skill docs sync (mono and multi)** (#572) — command indexes, flag names, enums, return-structure keys and cross-product intent routing are re-aligned to real-machine behavior across all products. Genuinely server-side limitations (permission gates, org-level restrictions, unregistered tool keys) are annotated instead of code-patched, and the cross-cutting hazards (`success` always true, `--jq`/`--fields` currently no-op) are documented.
+
+### Changed
+
+- **Release pipeline unblocks npm publish from Gitee mirror** (#570) — the Release workflow now publishes to npm before touching the Gitee mirror, so Gitee upload issues cannot block `npm/latest`. GitHub→Gitee attachment upload is disabled by default (unreliable from US runners) and only runs when `ENABLE_GITEE_UPLOAD_FALLBACK=true`; the legacy upload fallback path is guarded with timeout and retry so it fails fast when re-enabled.
+- **Repair modes for release republish** (#570) — the Release workflow gains a repair input and a standalone npm-only repair workflow, used to republish an existing release to npm without re-running the full pipeline.
+
+## [1.0.48] - 2026-07-07
+
+This release promotes the sealed **remove-discovery delivery** from the beta line to the stable `v1.0.48` package. It removes dynamic service discovery from the open-edition runtime, keeps legacy CLI compatibility aliases, syncs the open command/help/skill surface with the dws-wukong baseline, and includes the `dev connect` default-yolo behavior on the stable upgrade track.
+
+### Changed
+
+- **Remove-discovery delivery is now formal/stable** — the beta validation line is ready to cut as `v1.0.48`; normal stable channels (`dws upgrade`, GitHub `releases/latest`, install scripts, and npm `latest`) should receive this release after the official tag is published.
+- **Static endpoint runtime sealed for stable delivery** — the open edition no longer depends on dynamic service discovery at runtime, while preserving legacy command compatibility aliases and the synced help/skill surface from the beta.
+- **`contact label` is restored as real wukong-compatible functionality** — `dws contact label list/get/list-members` now call `get_org_labels`, `search_label_by_name`, and `get_label_members_by_labelId`; `contact role` remains an alias, and the common top-level compatibility entries (`contact search/find/list/get/self/me/whoami/get-self`) now dispatch to real user/dept/label tools where unambiguous.
+- **Skill docs match the sealed command surface** — contact docs again describe the real `contact label` three-step role lookup flow; video-conference start/invite/share flows remain explicitly unsupported and point users to the DingTalk client.
+
+### Fixed
+
+- **`calendar event list --dry-run` no longer executes the real list call** — the sorted event-list wrapper now respects dry-run and prints the `list_calendar_events` preview instead of calling the backend.
+- **`chat file upload` is downlined** — the hidden compatibility entry now returns a clear downline message and never calls `chat/upload_conversation_file_by_url`; the supported file path remains `chat message send --msg-type file --file-path`.
+- **Optional plugin version validation no longer pollutes every command** — incompatible local plugins such as conference are skipped at debug level during command-tree construction instead of printing a WARN on unrelated commands.
+- **PR #45 review follow-ups are folded into the release** — doc version rollback pagination now unwraps nested result/content/data envelopes for `nextCursor`, mail helper scripts handle `{result:{emailAccounts:[...]}}`, and the generated attendance `.xlsx` fixture is removed from the skill scripts.
+
+### Tests
+
+- **Command-surface regression tests** — root-command tests now cover real `contact label`/`role` dry-runs, hidden top-level contact compatibility entries, `chat file upload` downline behavior, and `calendar event list --dry-run`.
+- **Release hygiene tests** — skill markdown policy still blocks unsupported conference routes, plugin loader tests assert optional validation failures stay quiet at WARN level, and doc version cursor extraction has nested-envelope coverage.
 ## [1.0.47] - 2026-07-05
 
 This release adds **connector supervision & health monitoring** (`dev connect list/status/restart/stop`) and fixes **bot-to-bot @-mention** delivery end-to-end.

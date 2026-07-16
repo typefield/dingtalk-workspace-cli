@@ -71,9 +71,9 @@ The installer ships skills in one of two layouts. CLI commands (`dws aitable ...
 | Mode | What gets installed | Best for |
 |------|----------------------|----------|
 | **mono** (stable, default) | One `dws` skill covering all products | Cross-product workflows; single entry point |
-| **multi** 🧪 **EXPERIMENTAL** | 18 per-product skills (`dingtalk-aitable`, `dingtalk-calendar`, `dingtalk-chat`, ...) | Single-product tasks; smaller context per call |
+| **multi** 🧪 **EXPERIMENTAL** | Per-product skills (`dingtalk-aitable`, `dingtalk-calendar`, `dingtalk-chat`, ...) | Single-product tasks; smaller context per call |
 
-> 🧪 **`multi` is currently EXPERIMENTAL / preview.** 18 product-scoped skills all pass the dispatch verifier, but interface, naming and cross-skill references may change in future releases. For production / shared environments, prefer `mono`. File issues if you hit problems.
+> 🧪 **`multi` is currently EXPERIMENTAL / preview.** All product-scoped skills pass the dispatch verifier, but interface, naming and cross-skill references may change in future releases. For production / shared environments, prefer `mono`. File issues if you hit problems.
 
 How to pick:
 
@@ -93,6 +93,30 @@ How to pick:
 npm install -g dingtalk-workspace-cli
 ```
 
+Install the latest beta:
+
+```bash
+npm install -g dingtalk-workspace-cli@beta
+```
+
+**Homebrew** (macOS / Linux):
+
+```bash
+brew tap DingTalk-Real-AI/dingtalk-workspace-cli https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+brew install dingtalk-workspace-cli
+```
+
+> The Formula lives in this repository, so the first `tap` command must include the explicit repository URL. Afterwards, use `brew upgrade dingtalk-workspace-cli` normally.
+
+Install the keg-only Homebrew beta without replacing the stable Formula:
+
+```bash
+brew install dingtalk-workspace-cli-beta
+$(brew --prefix dingtalk-workspace-cli-beta)/bin/dws version
+```
+
+To make the beta `dws` the default for the current shell, prepend `$(brew --prefix dingtalk-workspace-cli-beta)/bin` to PATH.
+
 **Pre-built binary**: download from [GitHub Releases](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/releases).
 
 > **macOS users**: If you see "cannot be opened because Apple cannot check it for malicious software", run:
@@ -108,6 +132,10 @@ cd dingtalk-workspace-cli
 go build -o dws ./cmd       # build to current directory
 cp dws ~/.local/bin/         # install to PATH
 ```
+
+Static endpoint data is generated from the Wukong baseline and committed in this
+repository under `internal/syncdata`, so source builds do not require a sibling
+data checkout.
 
 > Requires Go 1.25+. Use `make package` to cross-compile for all platforms (macOS / Linux / Windows x amd64 / arm64).
 
@@ -152,11 +180,29 @@ dws has built-in self-upgrade capability. Updates are pulled directly from [GitH
 ```bash
 dws upgrade                    # interactive upgrade to latest version
 dws upgrade --check            # check for new versions without installing
-dws upgrade --list             # list all available versions
+dws upgrade --list             # list stable release versions
+dws upgrade --beta             # upgrade to the latest beta pre-release
+dws upgrade --check --beta     # check the beta track without installing
+dws upgrade --list --beta      # list beta pre-release versions
 dws upgrade --version v1.0.7   # upgrade to a specific version
+dws upgrade --version v1.0.8-beta.1  # upgrade to a specific beta version
 dws upgrade --rollback         # rollback to the previous version
 dws upgrade -y                 # skip confirmation prompt
 ```
+
+By default, `dws upgrade` follows the stable release track. Use `--beta` only when you explicitly want the newest GitHub pre-release build.
+
+### Six-channel post-release verification
+
+Maintainers and release validators can run the release-quality smoke checks for curl, PowerShell, npm stable, npm beta, Homebrew, and `dws upgrade`:
+
+```bash
+git clone https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git /tmp/dws-verify
+cd /tmp/dws-verify/verify
+bash verify-all-channels.sh
+```
+
+The verifier uses isolated directories and does not replace the `dws` on the current PATH. It reports `PASS`, `FAIL`, and `SKIP`; a platform skip is not a pass and must be covered on the matching host. See [`verify/README.md`](verify/README.md) for the platform matrix.
 
 <details>
 <summary><strong>How it works</strong></summary>
@@ -171,8 +217,9 @@ A backup of the current version is automatically created before each upgrade. Us
 | Flag | Description |
 |------|-------------|
 | `--check` | Check for updates without installing |
-| `--list` | List all available versions with changelogs |
-| `--version` | Upgrade to a specific version (e.g. `v1.0.7`) |
+| `--list` | List available stable release versions with changelogs |
+| `--beta` | Use the beta pre-release track for `upgrade`, `--check`, or `--list` |
+| `--version` | Upgrade to a specific version (e.g. `v1.0.7` or `v1.0.8-beta.1`) |
 | `--rollback` | Rollback to the previous backed-up version |
 | `--force` | Force reinstall even if already on the latest version |
 | `--skip-skills` | Skip skill package update |
@@ -247,6 +294,16 @@ dws --profile <name|corpId> contact user search --query "..."   # run one comman
 
 Cross-org reads are orchestrated by the agent rather than a built-in `--all-orgs`: list the profiles, run the query per org with `--profile`, then merge. Writes default to the current org only — confirm the target org before writing across orgs.
 
+On macOS, an unreadable registered token slot blocks a new OAuth login rather than risking a mixed Keychain/file-DEK state. If normal terminal commands can still read the login while a sandbox using `DWS_DISABLE_KEYCHAIN=1` cannot, migrate the legacy and profile auth entries without exposing tokens:
+
+```bash
+env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run --format json
+env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --yes --format json
+DWS_DISABLE_KEYCHAIN=1 dws auth status --format json
+```
+
+The migration validates every selected auth ciphertext before writing, ignores unrelated application secrets, and can be rerun after an interrupted commit. If validation identifies genuinely damaged ciphertext, remove only the affected profile with `dws auth logout --profile <name|corpId>`, then log in again. Use `dws auth reset` only when you intend to discard every local profile.
+
 </details>
 
 <details>
@@ -300,30 +357,37 @@ dws contact user search --query "engineering" --dry-run
 dws contact user get-self --jq '.result[0].orgEmployeeModel | {name: .orgUserName, dept: .depts[0].deptName, userId}'
 ```
 
-### Schema Discovery
+### Command Help and Schema
 
-Agents don't need pre-built knowledge of every command. Use `dws schema` to dynamically discover capabilities:
+Use Cobra help and Schema for different parts of the command contract:
+
+- `dws <path> --help` is the source of truth for whether a command exists and which flags the binary accepts.
+- `dws schema "<path>"` is the Agent contract for command selection, parameter mappings and constraints, risk, and confirmation semantics.
+- If Help and Schema disagree, treat it as contract drift: pass only flags accepted by Cobra and use the more conservative safety semantics.
+- Schema describes commands; it does not read or search DingTalk business data. Execute the real product command after discovery.
 
 ```bash
-# Step 1: Discover all available products
-dws schema --jq '.products[] | {id, tool_count: (.tools | length)}'
+# Confirm that the command exists and inspect accepted flags
+dws aitable record query --help
 
-# Step 2: Inspect target tool's parameter schema
-dws schema aitable.query_records --jq '.tool.parameters'
+# Discover within a product, then inspect the selected leaf contract
+dws schema aitable
+dws schema "aitable record query"
 
-# Optional: inspect DingTalk authorization metadata for PAT planning
-dws schema aitable.query_records --jq '.tool.auth'
-
-# Step 3: Construct the correct call
+# Execute the real business query
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 ```
 
+`dws schema --all` exports the complete contract for tooling, CI, audits, and compatibility baselines. Agents should prefer product/group discovery followed by a leaf query to avoid loading the full Catalog into context.
+
 ### Agent Skills
 
-The repo ships a complete Agent Skill system under `skills/`, now organized into two layouts:
+The repo ships a complete Agent Skill system under `skills/`, organized into two layouts:
 
 - `skills/mono/` — single-skill layout (one `SKILL.md` + `references/products/`), recommended default.
-- `skills/multi/` — per-product skills (`dingtalk-aitable/`, `dingtalk-calendar/`, `dingtalk-chat/`, ... 20 products in total), each with its own `SKILL.md`. 🧪 **EXPERIMENTAL / preview — see banner in each multi `SKILL.md` for caveats.**
+- `skills/multi/` — per-product skills (`dingtalk-aitable/`, `dingtalk-calendar/`, `dingtalk-chat/`, ...), each with its own `SKILL.md`. 🧪 **EXPERIMENTAL / preview — see banner in each multi `SKILL.md` for caveats.**
+
+Shared reviewed inputs for Schema generation live separately under `internal/cli/schema_hints/`. They are not Agent Skills and are excluded from binaries and release skill bundles.
 
 After installing, AI tools like Claude Code / Cursor can operate DingTalk directly through natural language:
 
@@ -397,6 +461,51 @@ Env vars: `DWS_SKILL_MODE=mono|multi` (also honored by `install.sh` / `install.p
 **ISV Integration**: Author your own Agent Skills and orchestrate them with dws skills for cross-product workflows: **ISV Skill → dws Skill → DingTalk Open Platform API (enforced auth + full audit)**.
 
 ## Features
+
+<details>
+<summary><strong>Personal Event Subscription</strong> — real-time DingTalk messages for event-driven agents</summary>
+
+`dws event consume` subscribes as the currently logged-in user over a managed Stream WebSocket and emits each event as one NDJSON line on stdout. The public catalog currently covers messages that mention the current user, one-to-one messages with a specified user, and messages in a specified group.
+
+> **Prerequisite**: run `dws auth login`. Personal identity is resolved from the OAuth token and cannot be supplied through command-line identity flags.
+
+For an event-focused installation, use the official convenience installer:
+
+```bash
+curl -fsSL https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace-cli/main/scripts/install-event.sh | sh
+```
+
+```bash
+# Inspect the public personal event catalog and schema
+dws event list
+dws event schema user_im_message_receive_o2o
+
+# Listen for messages that mention the current user
+dws event consume user_im_message_receive_at -f ndjson
+
+# Listen for one-to-one messages with a specified user
+dws event consume user_im_message_receive_o2o --user <userId> -f ndjson
+
+# Listen for messages in a specified group
+dws event consume user_im_message_receive_group --group <openConversationId> -f ndjson
+
+# Inspect local consumers and cancel a subscription
+dws event status
+dws event stop <subscribe_id>
+```
+
+| Feature | Details |
+|---------|---------|
+| Managed lifecycle | `consume` creates or reuses the personal subscription; `stop` cancels it and cleans local state |
+| Shared connection | Consumers for the same user share one local bus and cloud connection |
+| Subscription isolation | Normal consumers match both event type and `subscribe_id` |
+| Agent-friendly output | Stream events are written to stdout as NDJSON; status and diagnostics use stderr |
+| Observability | `status` shows remote subscriptions, the personal bus, and local consumers |
+| Cross-platform | Unix Socket on macOS/Linux, Windows Named Pipe on Windows |
+
+See `skills/multi/dingtalk-event/SKILL.md` for the Agent workflow and supported event parameters.
+
+</details>
 
 <details>
 <summary><strong>Raw API Access</strong> — call any DingTalk OpenAPI directly</summary>
@@ -479,7 +588,7 @@ dws aitable record query --base-id BASE_ID --tabel-id TABLE_ID       # --tabel-i
 ```bash
 # Built-in jq expressions
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --jq '.invocation.params'
-dws schema --jq '.products[] | {id, tools: (.tools | length)}'
+dws schema "dev app create" --jq '.tool.required'
 
 # Return only specific fields
 dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocation,response
@@ -488,14 +597,13 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --fields invocati
 </details>
 
 <details>
-<summary><strong>Schema Introspection</strong> — query parameter schemas before making calls</summary>
+<summary><strong>Schema Introspection</strong> — Agent command discovery and execution contracts</summary>
 
 ```bash
-dws schema                                              # list all products and tools
-dws schema aitable.query_records                        # view parameter schema
-dws schema aitable.query_records --jq '.tool.required'   # view required fields
-dws schema aitable.query_records --jq '.tool.auth'       # view authorization metadata
-dws schema --jq '.products[].id'                        # extract all product IDs
+dws schema aitable                                      # discover product commands
+dws schema "aitable record query"                       # view the selected leaf contract
+dws schema "aitable record query" --jq '.tool.required' # view required fields
+dws schema --all                                        # full export for CI/audit/baselines
 ```
 
 </details>
@@ -626,7 +734,7 @@ See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step
 
 - [Command Index](./docs/command-index.md) — every runtime command with description and when-to-use guidance
 - [Reference](./docs/reference.md) — environment variables, exit codes, output formats, shell completion
-- [Architecture](./docs/architecture.md) — discovery-driven pipeline, IR, transport layer
+- [Architecture](./docs/architecture.md) — static endpoint pipeline, command surface, transport layer
 - [Open Platform App Command Routing](./docs/dev-yulan-command-routing.md) — yulan dev app command design, MCP overlay, permission flow, and Agent routing
 - [Changelog](./CHANGELOG.md) — release history and migration notes
 

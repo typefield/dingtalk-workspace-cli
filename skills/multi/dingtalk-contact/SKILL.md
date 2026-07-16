@@ -12,25 +12,39 @@ metadata:
 
 # 钉钉通讯录 Skill
 
-> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。20 个 dingtalk-* skill 全部通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
+> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。全部 dingtalk-* skill 已通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
 
 > **PREREQUISITE:** Read the `dws-shared` skill first for auth, global flags, product routing, URL preflight, error codes, and safety rules. The `dws` binary must be on PATH.
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 
 > 命令参考：[contact.md](references/contact.md)；剧本：[08-directory.md](references/08-directory.md)。
 
-> 跨组织：当前组织查不到人时，别判定「查无此人」——先 `dws profile list` 看有哪些已登录组织，再对每个组织带 `--profile <corpId>` 各查一遍，全无才追问用户。详见 `dingtalk-profile` skill。
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（无专用脚本/recipe 时优先）
 
-## 开放平台文档 RAG / 错误码排查
+以下 shortcut 来自独立于 Runtime Schema 的公开 catalog。先按本 skill 的意图表、脚本和 recipe 路由：存在精确覆盖该场景的专用脚本/recipe 时按其执行；否则用户意图命中时，shortcut 优先于手写原子命令。用 `dws shortcut list --service contact --format json` 读取参数、约束、风险和示例，并以 `dws contact <shortcut> --help` 核对当前 Cobra flags；不要对 `+` 路径调用 `dws schema`。
 
-- 任何产品执行中，只要用户问开放平台 API、接口参数、字段含义、权限点、回调、SDK、配额、错误码，或命令返回上游 OpenAPI/SDK 错误，必须先用 `dws devdoc article search --query "<关键词>" --format json` 做官方文档 RAG。
-- 查询词优先保留原始 API 名、能力名、权限点、完整错误码和 message；首轮形如 `errcode <code> <message>`，无结果再换 `<产品/场景> <错误码>`、`<接口名> 参数`。
-- 本地 CLI 错误（如 `unknown command` / `unknown flag` / 认证 / recovery）仍按 root `dws` / `dws-shared` 的错误处理执行；`devdoc` 用于开放平台业务错误码和接口语义排查。
-- `devdoc` 只查钉钉开放平台开发者文档，不查业务数据；排查结论必须基于命中条目的标题、摘要或链接，不能编造错误原因或不存在的命令。
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws contact +by-mobile` | read | 按手机号查询某人的完整资料（自动解析 userId 后取详情） |
+| `dws contact +dept-members` | read | 按部门名列出部门成员（自动解析 deptId） |
+| `dws contact +list-dept-members` | read | 查看部门成员（仅本部门，不含下级） |
+| `dws contact +list-followings` | read | 获取当前用户的特别关注列表 |
+| `dws contact +list-role-members` | read | 查询角色下的成员列表 |
+| `dws contact +list-roles` | read | 获取企业所有角色（标签）列表 |
+| `dws contact +list-sub-depts` | read | 查看指定部门的子部门 |
+| `dws contact +lookup` | read | 按姓名查询某人的完整资料（自动解析 userId 后取详情） |
+| `dws contact +me` | read | 查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影） |
+| `dws contact +org` | read | 按姓名查某人所在部门的详情（自动解析 userId 与 deptId） |
+| `dws contact +resolve-dept` | read | 按名称搜索部门并解析出唯一 deptId（只读） |
+| `dws contact +search-mobile` | read | 按手机号搜索通讯录用户 |
+| `dws contact +search-user` | read | 按关键词搜索通讯录用户 |
+| `dws contact +team` | read | 按姓名列出某人所在部门的成员（自动解析 userId 与 deptId） |
+<!-- VISIBLE_SHORTCUTS_END -->
 
 ## 意图表
 
@@ -40,7 +54,7 @@ metadata:
 | "按 userId 查详情" | `dws contact user get --ids <userId1>,<userId2>,...`（多个并行） |
 | "按部门名拉成员" | `python scripts/contact_dept_members.py --query "<部门名>"` |
 | "搜部门" | `dws contact dept search --query "<关键词>"` |
-| "部门成员列表" | `dws contact dept list-members --ids <deptId>` |
+| "部门成员列表" | `dws contact dept list-members --depts <deptId>` |
 | "离职员工/离职名单/已离职" | `dws contact user dismission search`（可加 `--name` / `--start` + `--end` / `--depts`） |
 | "花名册/员工档案/学历/银行卡/合同" | `dws contact user profile get --staff-id <STAFF_ID>`（先 `profile fields` 查字段） |
 

@@ -19,11 +19,52 @@ import (
 	"fmt"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 	"time"
 )
+
+func TestOpencodeForwarderSendsNativeFileParts(t *testing.T) {
+	dir := t.TempDir()
+	path := filepath.Join(dir, "evidence.png")
+	if err := os.WriteFile(path, []byte("png-bytes"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	var gotParts []map[string]any
+	ts := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		w.Header().Set("Content-Type", "application/json")
+		switch {
+		case r.Method == http.MethodGet && r.URL.Path == "/global/health":
+			_, _ = w.Write([]byte(`{"healthy":true}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session":
+			_, _ = w.Write([]byte(`{"id":"ses_media"}`))
+		case r.Method == http.MethodPost && r.URL.Path == "/session/ses_media/message":
+			var body struct {
+				Parts []map[string]any `json:"parts"`
+			}
+			_ = json.NewDecoder(r.Body).Decode(&body)
+			gotParts = body.Parts
+			_, _ = w.Write([]byte(`{"parts":[{"type":"text","text":"ok"}]}`))
+		default:
+			http.NotFound(w, r)
+		}
+	}))
+	defer ts.Close()
+	f := &opencodeForwarder{
+		bin: "opencode", timeout: 5 * time.Second, workDir: dir,
+		sessions: newOpencodeSessions(""),
+		server:   &opencodeServer{baseURL: ts.URL, httpClient: ts.Client()},
+	}
+	_, err := f.forwardWithAttachments(context.Background(), "conv", "看图", []connectMediaAttachment{{LocalPath: path, FileName: "evidence.png", MediaType: "image"}})
+	if err != nil {
+		t.Fatal(err)
+	}
+	if len(gotParts) != 2 || gotParts[1]["type"] != "file" || gotParts[1]["filename"] != "evidence.png" || !strings.HasPrefix(fmt.Sprint(gotParts[1]["url"]), "file://") {
+		t.Fatalf("parts = %#v", gotParts)
+	}
+}
 
 func TestOpencodeForwarderUsesServerSessionAPI(t *testing.T) {
 	dir := t.TempDir()
@@ -252,12 +293,59 @@ func TestOpencodeSessionsPersist(t *testing.T) {
 // mid-flight. The per-turn ctx (f.timeout, default 0 = no limit) governs
 // only when the user explicitly sets --agent-timeout / DWS_AGENT_TIMEOUT_MS.
 func TestNewOpencodeServerHasNoClientTimeout(t *testing.T) {
-	s := newOpencodeServer("opencode", nil, "")
+	s := newOpencodeServer("opencode", nil, "", false)
 	if s.httpClient == nil {
 		t.Fatal("httpClient must be initialized")
 	}
 	if s.httpClient.Timeout != 0 {
 		t.Fatalf("opencode http client Timeout = %s, want 0 (no client-level cap)", s.httpClient.Timeout)
+	}
+}
+
+func TestOpencodeServerEnvDisablesInteractiveGates(t *testing.T) {
+	s := newOpencodeServer("opencode", []string{
+		`OPENCODE_CONFIG_CONTENT={"provider":{"x":true},"tools":{"read":true},"permission":{"bash":"ask","edit":"ask","write":"ask","question":"ask"}}`,
+		`OPENCODE_PERMISSION={"bash":"ask"}`,
+	}, "", false)
+
+	env := s.commandEnv("pw")
+	if got := envValue(env, "OPENCODE_SERVER_USERNAME"); got != opencodeServerUsername {
+		t.Fatalf("server username = %q, want %q", got, opencodeServerUsername)
+	}
+	if got := envValue(env, "OPENCODE_SERVER_PASSWORD"); got != "pw" {
+		t.Fatalf("server password = %q, want pw", got)
+	}
+
+	var cfg map[string]any
+	if err := json.Unmarshal([]byte(envValue(env, opencodeConfigContentEnv)), &cfg); err != nil {
+		t.Fatalf("decode OPENCODE_CONFIG_CONTENT: %v", err)
+	}
+	if _, ok := cfg["provider"].(map[string]any)["x"]; !ok {
+		t.Fatalf("existing config fields were not preserved: %#v", cfg)
+	}
+	tools := cfg["tools"].(map[string]any)
+	if got := tools["question"]; got != false {
+		t.Fatalf("tools.question = %#v, want false", got)
+	}
+	permission := cfg["permission"].(map[string]any)
+	for _, key := range []string{"bash", "edit", "write", "external_directory", "doom_loop"} {
+		if got := permission[key]; got != "allow" {
+			t.Fatalf("permission.%s = %#v, want allow", key, got)
+		}
+	}
+	if got := permission["question"]; got != "deny" {
+		t.Fatalf("permission.question = %#v, want deny", got)
+	}
+
+	var envPermission map[string]string
+	if err := json.Unmarshal([]byte(envValue(env, opencodePermissionEnv)), &envPermission); err != nil {
+		t.Fatalf("decode OPENCODE_PERMISSION: %v", err)
+	}
+	if got := envPermission["bash"]; got != "allow" {
+		t.Fatalf("OPENCODE_PERMISSION.bash = %q, want allow", got)
+	}
+	if got := envPermission["question"]; got != "deny" {
+		t.Fatalf("OPENCODE_PERMISSION.question = %q, want deny", got)
 	}
 }
 

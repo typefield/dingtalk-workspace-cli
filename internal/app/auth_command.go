@@ -82,6 +82,7 @@ func buildAuthCommand(patCaller edition.ToolCaller) *cobra.Command {
 	cmd.AddCommand(
 		newAuthLogoutCommand(),
 		newAuthStatusCommand(),
+		newAuthMigrateKeychainCommand(),
 		newAuthExportCommand(),
 		newAuthImportCommand(),
 		newAuthExchangeCommand(),
@@ -283,6 +284,7 @@ var (
 	loginRecommendScopeModeSelector = selectLoginRecommendScopeMode
 	loginRecommendProductSelector   = selectLoginRecommendProducts
 	authLoginInteractiveTerminal    = isInteractiveTerminal
+	migrateKeychainToFileDEK        = authpkg.MigrateKeychainToFileDEK
 )
 
 func selectAuthLoginGuideAction() (authLoginGuideAction, error) {
@@ -446,6 +448,7 @@ func newAuthStatusCommand() *cobra.Command {
 			authenticated := false
 			refreshed := false
 			var tokenData *authpkg.TokenData
+			var statusErr error
 			provider := authpkg.NewOAuthProvider(configDir, nil)
 			configureOAuthProviderCompatibility(provider, configDir)
 			if data, err := provider.Status(); err == nil {
@@ -468,12 +471,15 @@ func newAuthStatusCommand() *cobra.Command {
 				if authStatusAuthenticated(tokenData) {
 					authenticated = true
 				}
+			} else {
+				statusErr = err
 			}
+			diagnostic := authStatusDiagnosticFromError(statusErr)
 
 			// Check if JSON output is requested
 			format, _ := cmd.Root().PersistentFlags().GetString("format")
 			if strings.EqualFold(strings.TrimSpace(format), "json") {
-				return writeAuthStatusJSON(cmd.OutOrStdout(), authenticated, refreshed, tokenData)
+				return writeAuthStatusJSON(cmd.OutOrStdout(), authenticated, refreshed, tokenData, diagnostic)
 			}
 
 			// Default table output
@@ -503,7 +509,10 @@ func newAuthStatusCommand() *cobra.Command {
 				}
 			} else {
 				fmt.Fprintf(w, "%-16s%s\n", "状态:", "未登录")
-				if !edition.Get().IsEmbedded {
+				if diagnostic != nil {
+					fmt.Fprintf(w, "%-16s%s\n", "原因:", diagnostic.Message)
+					fmt.Fprintf(w, "%-16s%s\n", "提示:", diagnostic.Hint)
+				} else if !edition.Get().IsEmbedded {
 					fmt.Fprintln(w, "运行 dws auth login --recommend 进行登录")
 				}
 			}
@@ -511,6 +520,65 @@ func newAuthStatusCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("profile", "", "指定要查看的 profile 名或 corpId")
+	return cmd
+}
+
+func newAuthMigrateKeychainCommand() *cobra.Command {
+	cmd := &cobra.Command{
+		Use:   "migrate-keychain",
+		Short: "将 macOS 系统 Keychain 登录态安全迁移到 file-DEK",
+		Long: `将 dws-cli 的 legacy 与 profile 登录 token 统一重加密为 file-DEK，使 Codex 等沙箱进程与普通终端共享同一登录态。
+
+迁移必须从仍可读取原登录态的系统 Keychain 模式运行。命令会先验证全部认证密文；任何认证条目不可解密时均不会写入。应用密钥等无关条目不在迁移范围内。
+先用 --dry-run 预检，确认后加 --yes 执行。`,
+		Example: `  env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run --format json
+  env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --yes --format json`,
+		Args:              cobra.NoArgs,
+		DisableAutoGenTag: true,
+		RunE: func(cmd *cobra.Command, args []string) error {
+			target, err := cmd.Flags().GetString("to")
+			if err != nil {
+				return apperrors.NewInternal("failed to read --to")
+			}
+			if strings.TrimSpace(target) != "file-dek" {
+				return apperrors.NewValidation("--to 当前仅支持 file-dek")
+			}
+			if os.Getenv(keychain.DisableKeychainEnv) != "" {
+				return apperrors.NewValidation(fmt.Sprintf(
+					"迁移必须从系统 Keychain 模式运行；请使用 `env -u %s dws auth migrate-keychain --to file-dek ...`",
+					keychain.DisableKeychainEnv,
+				))
+			}
+
+			dryRun, _ := cmd.Root().PersistentFlags().GetBool("dry-run")
+			yes, _ := cmd.Root().PersistentFlags().GetBool("yes")
+			if !dryRun && !yes {
+				return apperrors.NewValidation("迁移会重加密全部本地登录 token；请先使用 --dry-run 预检，确认后加 --yes 执行")
+			}
+			count, err := migrateKeychainToFileDEK(defaultConfigDir(), dryRun)
+			if err != nil {
+				return apperrors.NewInternal(fmt.Sprintf("keychain migration failed: %v", err))
+			}
+
+			result := struct {
+				Success bool   `json:"success"`
+				DryRun  bool   `json:"dry_run"`
+				Target  string `json:"target"`
+				Entries int    `json:"entries"`
+			}{Success: true, DryRun: dryRun, Target: "file-dek", Entries: count}
+			format, _ := cmd.Root().PersistentFlags().GetString("format")
+			if strings.EqualFold(strings.TrimSpace(format), "json") {
+				return json.NewEncoder(cmd.OutOrStdout()).Encode(result)
+			}
+			if dryRun {
+				fmt.Fprintf(cmd.OutOrStdout(), "预检通过：%d 个本地认证条目可迁移到 file-DEK\n", count)
+			} else {
+				fmt.Fprintf(cmd.OutOrStdout(), "迁移完成：%d 个本地认证条目已统一使用 file-DEK\n", count)
+			}
+			return nil
+		},
+	}
+	cmd.Flags().String("to", "file-dek", "目标密钥后端（当前仅支持 file-dek）")
 	return cmd
 }
 
@@ -562,24 +630,6 @@ func pushRuntimeProfile(selector string) func() {
 	}
 }
 
-func cleanupAuthConfigIfNoProfiles(configDir string) {
-	cfg, err := authpkg.LoadProfiles(configDir)
-	if err == nil && len(cfg.Profiles) > 0 {
-		return
-	}
-	if authpkg.TokenDataExistsKeychain() {
-		return
-	}
-	appKey, _ := authpkg.ResolveAppCredentials(configDir)
-	if appKey != "" {
-		_ = authpkg.DeleteAppTokenData(appKey)
-	}
-	_ = authpkg.DeleteAppConfig(configDir)
-	_ = os.Remove(filepath.Join(configDir, "mcp_url"))
-	_ = os.Remove(filepath.Join(configDir, "token"))
-	_ = authpkg.DeleteTokenMarker(configDir)
-}
-
 func newAuthExportCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export",
@@ -607,7 +657,7 @@ func newAuthExportCommand() *cobra.Command {
 			}
 			if !authpkg.PortableExportSupported() {
 				return apperrors.NewValidation(fmt.Sprintf(
-					"macOS 默认将 DEK 存在系统 Keychain，导出的包无法在其它机器解密；请设置 %s=1 后重新登录再导出",
+					"macOS 导出认证包需要 file-DEK 模式；请先设置 %s=1 并运行 dws auth status 验证，只有提示密钥不匹配且确认可丢弃旧登录态时，才执行 dws auth reset 后重新登录",
 					keychain.DisableKeychainEnv,
 				))
 			}
@@ -956,10 +1006,6 @@ func authLoginMutedStyle() lipgloss.Style {
 	return lipgloss.NewStyle().Foreground(authLoginMuted)
 }
 
-func authLoginShouldShowPostLoginTUI(cmd *cobra.Command, format string, recommend bool) bool {
-	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, authLoginInteractiveTerminal())
-}
-
 func authLoginShouldShowPostLoginTUIForTerminal(cmd *cobra.Command, format string, recommend bool, interactive bool) bool {
 	return authLoginShouldUsePostLoginTUIModeForTerminal(cmd, format, recommend, interactive)
 }
@@ -1028,10 +1074,7 @@ func clipRunes(value string, limit int) string {
 }
 
 func clearCompatCache() {
-	store := cacheStoreFromEnv()
-	if store != nil {
-		_ = os.RemoveAll(store.Root)
-	}
+	// Cache store removed; no-op in static endpoint mode.
 }
 
 func resolveAuthLoginConfig(cmd *cobra.Command) (authLoginConfig, error) {
@@ -1224,6 +1267,8 @@ type authStatusResponse struct {
 	Success           bool   `json:"success"`
 	Authenticated     bool   `json:"authenticated"`
 	Message           string `json:"message,omitempty"`
+	Reason            string `json:"reason,omitempty"`
+	Hint              string `json:"hint,omitempty"`
 	Refreshed         bool   `json:"refreshed,omitempty"`
 	TokenValid        bool   `json:"token_valid,omitempty"`
 	RefreshTokenValid bool   `json:"refresh_token_valid,omitempty"`
@@ -1235,14 +1280,54 @@ type authStatusResponse struct {
 	UserName          string `json:"user_name,omitempty"`
 }
 
-func writeAuthStatusJSON(w io.Writer, authenticated, refreshed bool, data *authpkg.TokenData) error {
+type authStatusDiagnostic struct {
+	Reason  string
+	Message string
+	Hint    string
+}
+
+func authStatusDiagnosticFromError(err error) *authStatusDiagnostic {
+	if err == nil {
+		return nil
+	}
+	if keychain.IsCiphertextKeyMismatch(err) {
+		return &authStatusDiagnostic{
+			Reason:  "ciphertext_key_mismatch",
+			Message: "本地登录态与可用登录密钥不匹配，已拒绝覆盖现有凭证",
+			Hint:    "macOS 请先在系统 Keychain 模式运行 `env -u DWS_DISABLE_KEYCHAIN dws auth migrate-keychain --to file-dek --dry-run`，预检通过后加 --yes 迁移；只有密文损坏且确认无法恢复时才按 profile 退出或执行 auth reset。",
+		}
+	}
+	if keychain.IsDEKMissing(err) {
+		return &authStatusDiagnostic{
+			Reason:  "dek_missing",
+			Message: "本地登录密钥缺失，无法解密已保存的登录态",
+			Hint:    "请先恢复或统一原登录密钥；确认旧登录态不可恢复后，执行 dws auth reset，再重新登录。",
+		}
+	}
+	if !keychain.IsUnavailable(err) {
+		return nil
+	}
+	return &authStatusDiagnostic{
+		Reason:  "keychain_unavailable",
+		Message: "无法读取 macOS Keychain 中的登录密钥，无法判断登录状态",
+		Hint:    "检查 macOS 默认钥匙串是否存在且已解锁；修复后重试，或在测试环境设置 DWS_DISABLE_KEYCHAIN=1 后重新登录。",
+	}
+}
+
+func writeAuthStatusJSON(w io.Writer, authenticated, refreshed bool, data *authpkg.TokenData, diagnostic *authStatusDiagnostic) error {
 	resp := authStatusResponse{
 		Success:       true,
 		Authenticated: authenticated,
 	}
 
 	if !authenticated {
-		resp.Message = "未登录"
+		if diagnostic != nil {
+			resp.Message = diagnostic.Message
+			resp.Reason = diagnostic.Reason
+			resp.Hint = diagnostic.Hint
+		} else {
+			resp.Message = "未登录"
+		}
 	} else if data != nil {
 		resp.Refreshed = refreshed
 		resp.TokenValid = data.IsAccessTokenValid()

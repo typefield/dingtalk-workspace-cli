@@ -24,6 +24,7 @@ import (
 	"io"
 	"net"
 	"net/http"
+	"net/url"
 	"os"
 	"os/exec"
 	"path/filepath"
@@ -40,6 +41,8 @@ const (
 	opencodeNoTextReply        = "（本地 agent 无文本输出）"
 	opencodeServerStartupWait  = 20 * time.Second
 	opencodeServerPollInterval = 150 * time.Millisecond
+	opencodeConfigContentEnv   = "OPENCODE_CONFIG_CONTENT"
+	opencodePermissionEnv      = "OPENCODE_PERMISSION"
 	// opencodeHealthProbeTimeout bounds a single /global/health probe so startup
 	// detection stays snappy even though the shared http.Client has no overall
 	// deadline (message turns rely on the per-turn ctx instead).
@@ -58,6 +61,7 @@ type opencodeForwarder struct {
 	timeout  time.Duration
 	workDir  string
 	model    string
+	yolo     bool
 	sessions *opencodeSessions // convID→opencode sessionID, persisted; nil = stateless
 	server   *opencodeServer
 }
@@ -73,9 +77,10 @@ func newOpencodeForwarder(bin string, env []string, timeout time.Duration, opts 
 		timeout:  timeout,
 		workDir:  opts.WorkDir,
 		model:    opts.Model,
+		yolo:     opts.Yolo,
 		sessions: sessions,
 	}
-	f.server = newOpencodeServer(bin, env, f.cwd())
+	f.server = newOpencodeServer(bin, env, f.cwd(), opts.Yolo)
 	return f
 }
 
@@ -95,7 +100,15 @@ func (f *opencodeForwarder) forward(ctx context.Context, convID, text string) (s
 	return f.forwardStream(ctx, convID, text, nil)
 }
 
+func (f *opencodeForwarder) forwardWithAttachments(ctx context.Context, convID, text string, attachments []connectMediaAttachment) (string, error) {
+	return f.forwardStreamWithAttachments(ctx, convID, text, attachments, nil)
+}
+
 func (f *opencodeForwarder) forwardStream(ctx context.Context, convID, text string, _ func(string)) (string, error) {
+	return f.forwardStreamWithAttachments(ctx, convID, text, nil, nil)
+}
+
+func (f *opencodeForwarder) forwardStreamWithAttachments(ctx context.Context, convID, text string, attachments []connectMediaAttachment, _ func(string)) (string, error) {
 	ctx, cancel := applyTimeout(ctx, f.timeout)
 	defer cancel()
 
@@ -103,15 +116,15 @@ func (f *opencodeForwarder) forwardStream(ctx context.Context, convID, text stri
 	if err != nil {
 		return "", err
 	}
-	reply, err := f.forwardWithClient(ctx, client, convID, text)
+	reply, err := f.forwardWithClient(ctx, client, convID, text, attachments)
 	if errors.Is(err, errOpencodeSessionMissing) && f.sessions != nil {
 		f.sessions.reset(convID)
-		reply, err = f.forwardWithClient(ctx, client, convID, text)
+		reply, err = f.forwardWithClient(ctx, client, convID, text, attachments)
 	}
 	return reply, err
 }
 
-func (f *opencodeForwarder) forwardWithClient(ctx context.Context, client *opencodeHTTPClient, convID, text string) (string, error) {
+func (f *opencodeForwarder) forwardWithClient(ctx context.Context, client *opencodeHTTPClient, convID, text string, attachments []connectMediaAttachment) (string, error) {
 	sessionID := ""
 	if f.sessions != nil {
 		sessionID = f.sessions.id(convID)
@@ -126,7 +139,7 @@ func (f *opencodeForwarder) forwardWithClient(ctx context.Context, client *openc
 			f.sessions.set(convID, sessionID)
 		}
 	}
-	reply, err := client.sendMessage(ctx, sessionID, text, f.model)
+	reply, err := client.sendMessageWithAttachments(ctx, sessionID, text, f.model, attachments)
 	if err != nil {
 		return "", err
 	}
@@ -191,6 +204,7 @@ type opencodeServer struct {
 	bin        string
 	env        []string
 	workDir    string
+	yolo       bool
 	mu         sync.Mutex
 	baseURL    string
 	password   string
@@ -199,11 +213,12 @@ type opencodeServer struct {
 	httpClient *http.Client
 }
 
-func newOpencodeServer(bin string, env []string, workDir string) *opencodeServer {
+func newOpencodeServer(bin string, env []string, workDir string, yolo bool) *opencodeServer {
 	return &opencodeServer{
 		bin:     bin,
 		env:     env,
 		workDir: workDir,
+		yolo:    yolo,
 		// No client-level Timeout: a turn can legitimately run for minutes.
 		// f.timeout (from --agent-timeout / DWS_AGENT_TIMEOUT_MS, default 0 =
 		// no limit) governs via the per-request ctx when set.
@@ -236,11 +251,7 @@ func (s *opencodeServer) ensure(ctx context.Context) (*opencodeHTTPClient, error
 	if s.workDir != "" {
 		cmd.Dir = s.workDir
 	}
-	cmd.Env = append(os.Environ(), s.env...)
-	cmd.Env = append(cmd.Env,
-		"OPENCODE_SERVER_USERNAME="+opencodeServerUsername,
-		"OPENCODE_SERVER_PASSWORD="+password,
-	)
+	cmd.Env = s.commandEnv(password)
 	cmd.Stdout = os.Stderr
 	cmd.Stderr = os.Stderr
 	if err := cmd.Start(); err != nil {
@@ -260,6 +271,97 @@ func (s *opencodeServer) ensure(ctx context.Context) (*opencodeHTTPClient, error
 		return nil, err
 	}
 	return client, nil
+}
+
+func (s *opencodeServer) commandEnv(password string) []string {
+	env := append([]string{}, os.Environ()...)
+	env = append(env, s.env...)
+	env = upsertEnv(env, "OPENCODE_SERVER_USERNAME", opencodeServerUsername)
+	env = upsertEnv(env, "OPENCODE_SERVER_PASSWORD", password)
+	config := opencodeNonInteractiveConfig(envValue(env, opencodeConfigContentEnv))
+	env = upsertEnv(env, opencodeConfigContentEnv, config)
+	env = upsertEnv(env, opencodePermissionEnv, opencodeNonInteractivePermission())
+	return env
+}
+
+func opencodeNonInteractiveConfig(existing string) string {
+	cfg := map[string]any{}
+	if strings.TrimSpace(existing) != "" {
+		_ = json.Unmarshal([]byte(existing), &cfg)
+	}
+	tools, _ := cfg["tools"].(map[string]any)
+	if tools == nil {
+		tools = map[string]any{}
+	}
+	tools["question"] = false
+	cfg["tools"] = tools
+
+	permission, _ := cfg["permission"].(map[string]any)
+	if permission == nil {
+		permission = map[string]any{}
+	}
+	for k, v := range opencodeNonInteractivePermissionMap() {
+		permission[k] = v
+	}
+	cfg["permission"] = permission
+
+	data, err := json.Marshal(cfg)
+	if err != nil {
+		return `{"tools":{"question":false},"permission":{"*":"allow","read":"allow","edit":"allow","write":"allow","patch":"allow","apply_patch":"allow","glob":"allow","grep":"allow","bash":"allow","task":"allow","skill":"allow","lsp":"allow","webfetch":"allow","websearch":"allow","question":"deny","external_directory":"allow","doom_loop":"allow"}}`
+	}
+	return string(data)
+}
+
+func opencodeNonInteractivePermission() string {
+	data, err := json.Marshal(opencodeNonInteractivePermissionMap())
+	if err != nil {
+		return `{"*":"allow","read":"allow","edit":"allow","write":"allow","patch":"allow","apply_patch":"allow","glob":"allow","grep":"allow","bash":"allow","task":"allow","skill":"allow","lsp":"allow","webfetch":"allow","websearch":"allow","question":"deny","external_directory":"allow","doom_loop":"allow"}`
+	}
+	return string(data)
+}
+
+func opencodeNonInteractivePermissionMap() map[string]string {
+	return map[string]string{
+		"*":                  "allow",
+		"read":               "allow",
+		"edit":               "allow",
+		"write":              "allow",
+		"patch":              "allow",
+		"apply_patch":        "allow",
+		"glob":               "allow",
+		"grep":               "allow",
+		"bash":               "allow",
+		"task":               "allow",
+		"skill":              "allow",
+		"lsp":                "allow",
+		"webfetch":           "allow",
+		"websearch":          "allow",
+		"question":           "deny",
+		"external_directory": "allow",
+		"doom_loop":          "allow",
+	}
+}
+
+func envValue(env []string, key string) string {
+	prefix := key + "="
+	for i := len(env) - 1; i >= 0; i-- {
+		if strings.HasPrefix(env[i], prefix) {
+			return strings.TrimPrefix(env[i], prefix)
+		}
+	}
+	return ""
+}
+
+func upsertEnv(env []string, key, value string) []string {
+	prefix := key + "="
+	out := make([]string, 0, len(env)+1)
+	for _, item := range env {
+		if strings.HasPrefix(item, prefix) {
+			continue
+		}
+		out = append(out, item)
+	}
+	return append(out, prefix+value)
 }
 
 func (s *opencodeServer) waitHealthy(ctx context.Context, client *opencodeHTTPClient) error {
@@ -366,9 +468,27 @@ func (c *opencodeHTTPClient) deleteSession(ctx context.Context, sessionID string
 	return nil
 }
 
-func (c *opencodeHTTPClient) sendMessage(ctx context.Context, sessionID, text, model string) (string, error) {
+func (c *opencodeHTTPClient) sendMessageWithAttachments(ctx context.Context, sessionID, text, model string, attachments []connectMediaAttachment) (string, error) {
+	parts := []map[string]any{{"type": "text", "text": text}}
+	for _, attachment := range attachments {
+		path := strings.TrimSpace(attachment.LocalPath)
+		if path == "" {
+			continue
+		}
+		fileURL := (&url.URL{Scheme: "file", Path: path}).String()
+		name := strings.TrimSpace(attachment.FileName)
+		if name == "" {
+			name = filepath.Base(path)
+		}
+		parts = append(parts, map[string]any{
+			"type":     "file",
+			"url":      fileURL,
+			"filename": name,
+			"mime":     connectAttachmentMIME(path),
+		})
+	}
 	body := map[string]any{
-		"parts": []map[string]any{{"type": "text", "text": text}},
+		"parts": parts,
 	}
 	if m := opencodeModelRef(model); m != nil {
 		body["model"] = m

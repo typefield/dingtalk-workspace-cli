@@ -1904,7 +1904,12 @@ func devAppRequireWriteGuard(cmd *cobra.Command, operation string) error {
 	if commandDryRun(cmd) || devAppYes(cmd) {
 		return nil
 	}
-	return apperrors.NewValidation(fmt.Sprintf("%s 是写操作；加 --dry-run 预览，或确认后加 --yes 执行", operation))
+	return apperrors.NewValidation(
+		fmt.Sprintf("%s 是写操作；加 --dry-run 预览，或确认后加 --yes 执行", operation),
+		apperrors.WithReason("confirmation_required"),
+		apperrors.WithHint("先确认目标应用及变更影响；用户明确同意后以相同参数追加 --yes"),
+		apperrors.WithActions("确认目标应用和变更内容", "获得用户确认后使用 --yes 执行"),
+	)
 }
 
 func devAppYes(cmd *cobra.Command) bool {
@@ -1917,14 +1922,6 @@ func devAppYes(cmd *cobra.Command) bool {
 		}
 	}
 	return false
-}
-
-func devAppCloneParams(src map[string]any) map[string]any {
-	out := make(map[string]any, len(src)+1)
-	for k, v := range src {
-		out[k] = v
-	}
-	return out
 }
 
 func devAppPermissionScopes(cmd *cobra.Command) []string {

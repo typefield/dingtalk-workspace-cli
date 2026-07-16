@@ -27,6 +27,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/audit"
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
@@ -153,9 +154,22 @@ type runtimeRunner struct {
 	scanner            safety.Scanner
 	enforceContentScan bool
 	includeScanReport  bool
+	auditSink          audit.Sink
 }
 
 func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation) (executor.Result, error) {
+	// Global dry-run is an execution barrier, not merely a transport option.
+	// Return a deterministic local preview before profile resolution, catalog
+	// discovery, Keychain/token prefetch, auth, stateful preflight or transport.
+	// Use the non-injectable EchoRunner rather than r.fallback so tests and
+	// edition overlays cannot accidentally turn this path into real execution.
+	if invocation.DryRun || (r != nil && r.globalFlags != nil && r.globalFlags.DryRun) {
+		invocation.DryRun = true
+		return (executor.EchoRunner{}).Run(ctx, invocation)
+	}
+	if r == nil {
+		return executor.Result{}, fmt.Errorf("runtime runner is not configured")
+	}
 	// Emit the one-shot host-owned PAT decision log. Placed here (not in
 	// the constructor) so it fires AFTER PersistentPreRunE has configured
 	// slog level per --debug / --verbose. The Once guard makes repeat
@@ -412,12 +426,16 @@ func (r *runtimeRunner) handleCatalogMiss(ctx context.Context, invocation execut
 		invocation.DryRun = true
 		return r.fallback.Run(ctx, invocation)
 	}
-	hint := "产品 envelope 可能未下发到 discovery，或已经被 serverDeps fail-fast 丢弃；可执行 'dws cache refresh' 强制重新 discovery，仍失败请向 Portal 确认 envelope 状态。"
-	actions := []string{"dws cache refresh"}
+	hint := "当前命令已注册，但静态端点目录中缺少对应 product/server endpoint。这通常是服务发现下线后的同步产物缺口，不是参数错误；请不要通过反复调整 flag 重试。"
+	actions := []string{
+		"确认 internal/syncdata.StaticServers() 是否包含该 product/server",
+		"运行 sync-oss 重新生成静态端点与路由",
+		"若该能力已下线，请在 skill 与 --help 中标记 unavailable 并提供替代命令",
+	}
 	if strings.TrimSpace(invocation.CanonicalProduct) == devappProductID {
-		hint = "dev app（product id: devapp）是 helper-only 产品，命令树不依赖 discovery；真实调用需要内部版通过 SupplementServers/StaticServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
+		hint = "dev app（product id: devapp）是 helper-only 产品，命令树不依赖服务发现；真实调用需要通过 StaticServers/SupplementServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
 		actions = []string{
-			"检查内部版 SupplementServers/StaticServers 是否包含 devapp endpoint",
+			"检查 StaticServers/SupplementServers 是否包含 devapp endpoint",
 			"本地调试可临时设置 DINGTALK_DEVAPP_MCP_URL 后重试",
 		}
 	}
@@ -435,6 +453,16 @@ func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, 
 	// Route stdio:// endpoints to the local StdioClient — no HTTP, no auth.
 	if IsStdioEndpoint(endpoint) {
 		return r.executeStdioInvocation(ctx, invocation)
+	}
+
+	// Constructing the Cobra tree is also used for help, schema, and command
+	// discovery. Open the process-wide audit writer only when a real invocation
+	// reaches the execution boundary so read-only command inspection does not
+	// leave an audit lock handle behind (which prevents TempDir cleanup on
+	// Windows). Keep an injected sink when tests or editions provide one.
+	auditSink := r.auditSink
+	if auditSink == nil {
+		auditSink = setupAuditSink()
 	}
 
 	invokeStart := time.Now()
@@ -464,6 +492,7 @@ func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, 
 		logging.LogCommandEnd(fl, execID,
 			invocation.CanonicalProduct, invocation.Tool,
 			retErr == nil, time.Since(invokeStart), errCat, errReason)
+		emitAudit(auditSink, execID, invokeStart, invocation, endpoint, retErr, version)
 	}()
 
 	// Check if this product has plugin-level auth credentials registered.
@@ -699,6 +728,13 @@ func (r *runtimeRunner) executeStdioInvocation(ctx context.Context, invocation e
 		var cancel context.CancelFunc
 		callCtx, cancel = context.WithTimeout(ctx, time.Duration(r.globalFlags.Timeout)*time.Second)
 		defer cancel()
+	}
+	if err := client.EnsureInitialized(callCtx); err != nil {
+		return executor.Result{}, apperrors.NewAPI(
+			fmt.Sprintf("stdio initialize failed: %v", err),
+			apperrors.WithOperation("initialize"),
+			apperrors.WithReason("stdio_initialize_error"),
+		)
 	}
 
 	callResult, err := client.CallTool(callCtx, invocation.Tool, invocation.Params)

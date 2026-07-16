@@ -12,23 +12,36 @@ metadata:
 
 # 钉钉待办 Skill
 
-> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。20 个 dingtalk-* skill 全部通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
+> 🧪 **EXPERIMENTAL · 试验版 / Preview** — multi 模式当前未达 stable 标准。全部 dingtalk-* skill 已通过 dispatch verifier，但接口、命名、跨 skill 引用后续可能调整；生产 / 共享环境请优先使用 mono 模式（`dws skill setup --mode mono`）。问题请提 issue 反馈。
 
 > **PREREQUISITE:** Read the `dws-shared` skill first for auth, global flags, product routing, URL preflight, error codes, and safety rules. The `dws` binary must be on PATH.
 
 <!-- SAFETY_PREAMBLE_INJECT -->
 
-> ⚠️ **命令可用性可能因企业服务发现配置而异**。本文档列出的命令基于 dws envelope schema 与本仓库 v1.0.30 实测，但部分命令的 cobra 子命令暴露与否还取决于你的企业 MCP gateway 是否注册了对应 tool。如果跑某条命令报 `unknown command` 或 fall back 到父级 help，说明当前账号企业未开通该能力。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> ⚠️ **命令可用性以当前 dws 二进制为准**。服务发现已下线，本文档随内置 skill 发布；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。若命令存在但调用失败，请按错误中的 endpoint 或 tool 提示确认静态端点目录和后端工具注册。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
 
 
 > 命令参考：[todo.md](references/todo.md)；剧本：[02-task.md](references/02-task.md)。
 
-## 开放平台文档 RAG / 错误码排查
+<!-- VISIBLE_SHORTCUTS_START -->
+## Shortcuts（无专用脚本/recipe 时优先）
 
-- 任何产品执行中，只要用户问开放平台 API、接口参数、字段含义、权限点、回调、SDK、配额、错误码，或命令返回上游 OpenAPI/SDK 错误，必须先用 `dws devdoc article search --query "<关键词>" --format json` 做官方文档 RAG。
-- 查询词优先保留原始 API 名、能力名、权限点、完整错误码和 message；首轮形如 `errcode <code> <message>`，无结果再换 `<产品/场景> <错误码>`、`<接口名> 参数`。
-- 本地 CLI 错误（如 `unknown command` / `unknown flag` / 认证 / recovery）仍按 root `dws` / `dws-shared` 的错误处理执行；`devdoc` 用于开放平台业务错误码和接口语义排查。
-- `devdoc` 只查钉钉开放平台开发者文档，不查业务数据；排查结论必须基于命中条目的标题、摘要或链接，不能编造错误原因或不存在的命令。
+以下 shortcut 来自独立于 Runtime Schema 的公开 catalog。先按本 skill 的意图表、脚本和 recipe 路由：存在精确覆盖该场景的专用脚本/recipe 时按其执行；否则用户意图命中时，shortcut 优先于手写原子命令。用 `dws shortcut list --service todo --format json` 读取参数、约束、风险和示例，并以 `dws todo <shortcut> --help` 核对当前 Cobra flags；不要对 `+` 路径调用 `dws schema`。
+
+| Shortcut | 风险 | 适用场景 |
+|---|---|---|
+| `dws todo +assign` | write | 按姓名给某人创建并指派一条待办（自动解析 userId） |
+| `dws todo +assign-multi` | write | 把一条待办按姓名一次性指派给多个人（自动把每个姓名解析成 userId） |
+| `dws todo +created-todos` | read | 列出我创建的待办（我作为创建人 creator 发起的待办，而非分配给我执行的） |
+| `dws todo +get` | read | 查询待办详情 |
+| `dws todo +get-my-tasks` | read | 查询当前组织下我的待办列表 |
+| `dws todo +list-attachment` | read | 查询待办任务的附件列表 |
+| `dws todo +list-comment` | read | 查询待办评论列表 |
+| `dws todo +list-sub` | read | 查询子待办列表 |
+| `dws todo +overdue` | read | 列出我已过期未完成的待办 |
+| `dws todo +remind` | write | 给自己创建一条带截止/提醒时间的待办 |
+| `dws todo +todo-done` | write | 按标题关键词把我的某条待办标记完成（自动定位 taskId） |
+<!-- VISIBLE_SHORTCUTS_END -->
 
 ## 意图表
 
@@ -53,6 +66,7 @@ metadata:
 - `--id` / `--ids` 是隐藏兼容别名，文档和生成命令统一写 `--task-id`，减少模型漂移。
 - 优先级映射：低=10，普通=20，较高/高/重要=30，紧急/最高/P0/马上处理=40；不要把"较高"写成 40。
 - 截止时间必须是 ISO-8601。相对日期按当前日期计算；例如周五说"下周二"就是紧接下一个自然周的周二，不要再加一周。
+- 附件命令 `task add-attachment` / `list-attachment` / `remove-attachment` 均可用：`add-attachment --task-id <taskId> --file-path <本地文件>`（真实上传，先确认待办存在，返回 `result.attachmentIds`）；`list-attachment --task-id <taskId>`（返回顶层 `attachments[].attachmentId`）；`remove-attachment --task-id <taskId> --attachment-id <id> --yes`（不可逆，先确认）。
 - 创建、标记完成、重开、删除后必须 `task get` 或对应 `task list --status ...` 验证，不要只凭创建返回或口头计划结束。
 - 所有 dws 命令带 `--format json`。
 
