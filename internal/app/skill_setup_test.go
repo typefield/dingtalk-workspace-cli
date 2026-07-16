@@ -100,8 +100,9 @@ func TestResolveSkillSetupSourceErrorWhenMissing(t *testing.T) {
 
 func TestResolveSkillSetupTargetsSingleAgent(t *testing.T) {
 	home := t.TempDir()
-	setTestHome(t, home)
-
+	originalHome := skillSetupUserHomeDir
+	skillSetupUserHomeDir = func() (string, error) { return home, nil }
+	t.Cleanup(func() { skillSetupUserHomeDir = originalHome })
 	got, err := resolveSkillSetupTargets("claude", skillSetupModeMono)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)
@@ -123,8 +124,9 @@ func TestResolveSkillSetupTargetsUnknown(t *testing.T) {
 
 func TestResolveSkillSetupTargetsMultiOmitsDwsTail(t *testing.T) {
 	home := t.TempDir()
-	setTestHome(t, home)
-
+	originalHome := skillSetupUserHomeDir
+	skillSetupUserHomeDir = func() (string, error) { return home, nil }
+	t.Cleanup(func() { skillSetupUserHomeDir = originalHome })
 	got, err := resolveSkillSetupTargets("claude", skillSetupModeMulti)
 	if err != nil {
 		t.Fatalf("unexpected err: %v", err)

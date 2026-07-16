@@ -38,6 +38,8 @@ const (
 	maxBackups = 2
 )
 
+var openLogFile = os.OpenFile
+
 // FileLogger wraps a rotatingWriter and provides a structured slog.Logger
 // that writes JSON lines to disk.
 type FileLogger struct {
@@ -139,7 +141,7 @@ func (w *rotatingWriter) open() error {
 		return os.ErrClosed
 	}
 
-	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, config.FilePerm)
+	f, err := openLogFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, config.FilePerm)
 	if err != nil {
 		return err
 	}
@@ -186,7 +188,7 @@ func (w *rotatingWriter) reopenLocked() error {
 	if w.closed {
 		return os.ErrClosed
 	}
-	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, config.FilePerm)
+	f, err := openLogFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_APPEND, config.FilePerm)
 	if err != nil {
 		return err
 	}
@@ -234,7 +236,7 @@ func (w *rotatingWriter) rotate() {
 		os.Rename(src, dst)
 	}
 
-	f, err := os.OpenFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, config.FilePerm)
+	f, err := openLogFile(w.path, os.O_CREATE|os.O_WRONLY|os.O_TRUNC, config.FilePerm)
 	if err != nil {
 		return
 	}
