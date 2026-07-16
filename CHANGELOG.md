@@ -20,6 +20,7 @@ This beta validates the accumulated post-v1.0.52 command surface, release automa
 ### Changed
 
 - **Guarded prerelease and stable automation** — adds the guided `dws-release` entry for one-command CHANGELOG preparation, validation-only and annotated-tag publication flows; promotes only an explicitly validated beta; verifies command-tree compatibility and all six packaged binaries; and serializes immutable GitHub Release, npm channel, OSS, Homebrew, and optional Gitee delivery with fail-closed recovery checks.
+- **Reviewed historical release recovery proofs** — release preflight can recognize an explicitly pinned successful recovery delivery for a historical stable tag while still rejecting arbitrary workflow dispatches, mismatched commits, and incomplete release, signing, or publication jobs.
 
 ### Fixed
 
