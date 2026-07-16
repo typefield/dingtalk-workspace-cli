@@ -13,7 +13,7 @@
 | Attachment / Advanced Permission | [附件](./aitable/aitable-attachment-index.md) · [高级权限](./aitable/aitable-advperm-index.md) |
 | 完整命令速查 | [命令索引](./aitable/aitable-command-index.md) |
 | 复杂操作与路由 | [复杂操作](./aitable/aitable-complex-ops.md) · [意图判断](./aitable/aitable-intent.md) |
-| 标准流程与上下文 | [核心工作流](./aitable/aitable-workflow.md) · [上下文传递](./aitable/aitable-context.md) |
+| 标准流程与上下文 | [核心工作流](./aitable/aitable-core-workflow.md) · [上下文传递](./aitable/aitable-context.md) |
 | 注意事项、脚本、产品边界 | [注意事项](./aitable/aitable-notes.md) · [自动化脚本](./aitable/aitable-scripts.md) · [相关产品](./aitable/aitable-related.md) |
 
 ## 创建 AI 表格

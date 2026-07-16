@@ -93,6 +93,30 @@ How to pick:
 npm install -g dingtalk-workspace-cli
 ```
 
+Install the latest beta:
+
+```bash
+npm install -g dingtalk-workspace-cli@beta
+```
+
+**Homebrew** (macOS / Linux):
+
+```bash
+brew tap DingTalk-Real-AI/dingtalk-workspace-cli https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git
+brew install dingtalk-workspace-cli
+```
+
+> The Formula lives in this repository, so the first `tap` command must include the explicit repository URL. Afterwards, use `brew upgrade dingtalk-workspace-cli` normally.
+
+Install the keg-only Homebrew beta without replacing the stable Formula:
+
+```bash
+brew install dingtalk-workspace-cli-beta
+$(brew --prefix dingtalk-workspace-cli-beta)/bin/dws version
+```
+
+To make the beta `dws` the default for the current shell, prepend `$(brew --prefix dingtalk-workspace-cli-beta)/bin` to PATH.
+
 **Pre-built binary**: download from [GitHub Releases](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/releases).
 
 > **macOS users**: If you see "cannot be opened because Apple cannot check it for malicious software", run:
@@ -167,6 +191,18 @@ dws upgrade -y                 # skip confirmation prompt
 ```
 
 By default, `dws upgrade` follows the stable release track. Use `--beta` only when you explicitly want the newest GitHub pre-release build.
+
+### Six-channel post-release verification
+
+Maintainers and release validators can run the release-quality smoke checks for curl, PowerShell, npm stable, npm beta, Homebrew, and `dws upgrade`:
+
+```bash
+git clone https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git /tmp/dws-verify
+cd /tmp/dws-verify/verify
+bash verify-all-channels.sh
+```
+
+The verifier uses isolated directories and does not replace the `dws` on the current PATH. It reports `PASS`, `FAIL`, and `SKIP`; a platform skip is not a pass and must be covered on the matching host. See [`verify/README.md`](verify/README.md) for the platform matrix.
 
 <details>
 <summary><strong>How it works</strong></summary>
@@ -287,6 +323,9 @@ dws auth status   # confirm "Refresh Token: valid"
 ```
 
 The bundle includes the encrypted keychain under `~/.local/share/dws-cli` (with `auth-token.enc` and `dek`) plus required `~/.dws` config files.
+Windows export and import are intentionally rejected before credentials or
+bundles are read: Windows stores credentials as DPAPI-protected HKCU Registry
+values, and the current file-DEK bundle has no safe DPAPI-to-portable conversion.
 
 </details>
 
@@ -619,7 +658,7 @@ See [`docs/robot-quickstart.md`](./docs/robot-quickstart.md) for the full 4-step
 
 | Service | Command | Capabilities |
 |---------|---------|--------------|
-| Contact | `contact` | Look up users by name / mobile / job-number, departments, labels & roles, roster profiles & dismissals |
+| Contact | `contact` | Look up users, departments, labels, roster profiles and dismissals; create enterprises and enterprise accounts; invite employees |
 | Chat / IM | `chat` (`im`) | Send / reply / search messages, group & member management, bot & webhook messaging, reactions, recall |
 | Calendar | `calendar` | Events CRUD, attendees, meeting rooms, free/busy & time suggestions |
 | Todo | `todo` | Create / list / update / complete tasks and comments |

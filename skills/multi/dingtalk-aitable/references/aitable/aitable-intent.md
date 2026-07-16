@@ -64,11 +64,13 @@
 用户说"表单/form/收集表/问卷/催办填写" → 读 [aitable-form.md](./aitable-form.md)
 
 用户说"自动化/工作流/流程/触发/automation/workflow" → 读 [aitable-workflow.md](./aitable-workflow.md)
+- 新建并发布流程 → `workflow create --base-id <BASE_ID> --dsl @workflow.json`
+- 修改并发布已有流程 → 先 `workflow get` 留底，再 `workflow update --base-id <BASE_ID> --workflow-id <WORKFLOW_ID> --dsl @workflow.json`
 - 看 Base 里有哪些流程 / 哪些在跑 → `workflow list`（看 `recordCount` / `runningCount`）
 - 看某个流程具体配置（触发条件、动作步骤） → `workflow get`
 - 启用流程 → `workflow enable`
 - 临时停掉流程（调试 / 数据迁移）→ `workflow disable --yes`
-- **新建 / 修改 / 删除流程**：当前不支持，引导用户到 AI 表格 Web 端 → 数据表 → 自动化 面板手动完成
+- **删除流程**：当前 CLI 暂不支持，引导用户到 AI 表格 Web 端 → 数据表 → 自动化面板手动完成
 
 用户说"仪表盘/图表/chart" → 读 [aitable-dashboard-chart.md](./aitable-dashboard-chart.md)
 
