@@ -666,6 +666,10 @@ func pushRuntimeProfile(selector string) func() {
 }
 
 func newAuthExportCommand() *cobra.Command {
+	return newAuthExportCommandWithSupport(authpkg.PortableExportSupportError)
+}
+
+func newAuthExportCommandWithSupport(supportError func() error) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "export",
 		Short: "导出可迁移认证包",
@@ -689,6 +693,9 @@ func newAuthExportCommand() *cobra.Command {
 			output = strings.TrimSpace(output)
 			if !asBase64 && output == "" {
 				return apperrors.NewValidation("--output is required unless --base64 is used")
+			}
+			if err := supportError(); err != nil {
+				return apperrors.NewValidation(err.Error())
 			}
 			if !authPortableExportSupported() {
 				return apperrors.NewValidation(fmt.Sprintf(
@@ -733,6 +740,10 @@ func newAuthExportCommand() *cobra.Command {
 }
 
 func newAuthImportCommand() *cobra.Command {
+	return newAuthImportCommandWithSupport(authpkg.PortableImportSupportError)
+}
+
+func newAuthImportCommandWithSupport(supportError func() error) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:   "import",
 		Short: "导入可迁移认证包",
@@ -761,7 +772,9 @@ func newAuthImportCommand() *cobra.Command {
 			if err != nil {
 				return apperrors.NewInternal("failed to read --force")
 			}
-
+			if err := supportError(); err != nil {
+				return apperrors.NewValidation(err.Error())
+			}
 			configDir := defaultConfigDir()
 			if !force && authPortableTargetPopulated(configDir) {
 				return apperrors.NewValidation("检测到已有登录态，请使用 --force 确认覆盖")

@@ -618,7 +618,7 @@ func TestCrossPlatformCoverageAuthCoveragePortableExchangeAndReset(t *testing.T)
 		authDeleteAppConfig = oldDeleteConfig
 	})
 
-	export := newAuthExportCommand()
+	export := newAuthExportCommandWithSupport(func() error { return nil })
 	badString := &cobra.Command{}
 	badString.Flags().Bool("output", false, "")
 	if err := export.RunE(badString, nil); err == nil {
@@ -658,7 +658,7 @@ func TestCrossPlatformCoverageAuthCoveragePortableExchangeAndReset(t *testing.T)
 	if err := export.RunE(export, nil); err != nil {
 		t.Fatal(err)
 	}
-	export = newAuthExportCommand()
+	export = newAuthExportCommandWithSupport(func() error { return nil })
 	_, out, _ := authCoverageRoot(export, "table", false)
 	_ = export.Flags().Set("base64", "true")
 	export.SetOut(&appFailWriter{err: errors.New("stdout")})
@@ -676,7 +676,7 @@ func TestCrossPlatformCoverageAuthCoveragePortableExchangeAndReset(t *testing.T)
 		t.Fatal(err)
 	}
 
-	importCmd := newAuthImportCommand()
+	importCmd := newAuthImportCommandWithSupport(func() error { return nil })
 	badInput := &cobra.Command{}
 	badInput.Flags().Bool("input", false, "")
 	if err := importCmd.RunE(badInput, nil); err == nil {
