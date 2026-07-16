@@ -600,9 +600,6 @@ contact user profile fields 获取可用字段列表。
 		{contactDeptListMembersCmd, []string{"ids", "id", "dept-id", "dept-ids"}},
 	} {
 		for _, name := range s.aliases {
-			if s.cmd.Flags().Lookup(name) != nil {
-				continue // 已是主 flag，跳过
-			}
 			s.cmd.Flags().String(name, "", "部门 ID 别名（等价于当前命令的主 flag）")
 			_ = s.cmd.Flags().MarkHidden(name)
 		}
