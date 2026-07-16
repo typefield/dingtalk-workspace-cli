@@ -2,6 +2,8 @@ package security
 
 import (
 	"bytes"
+	"crypto/aes"
+	"crypto/cipher"
 	"errors"
 	"io"
 	"net"
@@ -25,6 +27,34 @@ func TestCrossPlatformCoverageEncryptRandomSourceErrors(t *testing.T) {
 	cryptoRandReader = io.MultiReader(bytes.NewReader(make([]byte, SaltSize)), alwaysErrorReader{err: wantErr})
 	if _, err := Encrypt([]byte("data"), []byte("password")); !errors.Is(err, wantErr) {
 		t.Fatalf("nonce error = %v", err)
+	}
+}
+
+func TestCrossPlatformCoverageCryptoConstructorErrors(t *testing.T) {
+	wantErr := errors.New("cipher construction failed")
+	failCipher := func([]byte) (cipher.Block, error) {
+		return nil, wantErr
+	}
+	failGCM := func(cipher.Block, int) (cipher.AEAD, error) {
+		return nil, wantErr
+	}
+
+	if _, err := encryptWithFactories([]byte("data"), []byte("password"), failCipher, cipher.NewGCMWithNonceSize); !errors.Is(err, wantErr) {
+		t.Fatalf("Encrypt cipher error = %v", err)
+	}
+	if _, err := encryptWithFactories([]byte("data"), []byte("password"), aes.NewCipher, failGCM); !errors.Is(err, wantErr) {
+		t.Fatalf("Encrypt GCM error = %v", err)
+	}
+
+	encrypted, err := Encrypt([]byte("data"), []byte("password"))
+	if err != nil {
+		t.Fatalf("Encrypt fixture error = %v", err)
+	}
+	if _, err := decryptWithFactories(encrypted, []byte("password"), failCipher, cipher.NewGCMWithNonceSize); !errors.Is(err, wantErr) {
+		t.Fatalf("Decrypt cipher error = %v", err)
+	}
+	if _, err := decryptWithFactories(encrypted, []byte("password"), aes.NewCipher, failGCM); !errors.Is(err, wantErr) {
+		t.Fatalf("Decrypt GCM error = %v", err)
 	}
 }
 

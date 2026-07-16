@@ -305,11 +305,18 @@ func getOrCreateDEKWithRuntime(service string, runtime darwinKeychainRuntime) ([
 }
 
 func encryptData(plaintext string, key []byte) ([]byte, error) {
+	return encryptDataWithGCM(plaintext, key, cipher.NewGCM)
+}
+
+func encryptDataWithGCM(plaintext string, key []byte, newGCM keychainGCMFactory) ([]byte, error) {
 	block, err := aes.NewCipher(key)
 	if err != nil {
 		return nil, err
 	}
-	aesGCM, _ := cipher.NewGCM(block) // AES always supports the standard GCM nonce size.
+	aesGCM, err := newGCM(block)
+	if err != nil {
+		return nil, err
+	}
 
 	iv := make([]byte, ivBytes)
 	if _, err := keychainRandRead(iv); err != nil {
@@ -324,6 +331,10 @@ func encryptData(plaintext string, key []byte) ([]byte, error) {
 }
 
 func decryptData(data []byte, key []byte) (string, error) {
+	return decryptDataWithGCM(data, key, cipher.NewGCM)
+}
+
+func decryptDataWithGCM(data []byte, key []byte, newGCM keychainGCMFactory) (string, error) {
 	if len(data) < ivBytes+tagBytes {
 		return "", fmt.Errorf("ciphertext too short")
 	}
@@ -331,7 +342,10 @@ func decryptData(data []byte, key []byte) (string, error) {
 	if err != nil {
 		return "", err
 	}
-	aesGCM, _ := cipher.NewGCM(block) // AES always supports the standard GCM nonce size.
+	aesGCM, err := newGCM(block)
+	if err != nil {
+		return "", err
+	}
 
 	iv := data[:ivBytes]
 	ciphertext := data[ivBytes:]
