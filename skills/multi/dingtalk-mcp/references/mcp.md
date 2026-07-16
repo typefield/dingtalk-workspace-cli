@@ -76,14 +76,14 @@ service create
 
 - `toolInputs` 的 `key` 对应 `inputMappings.source`（`$.node_start.<key>`）；`apiInputs` 的字段位置对应 `inputMappings.target`（`$.<位置>.<key>`）。
 - **平台不支持 enum/default/example 等 JSON Schema 标准属性**——枚举、默认值、示例一律写进字段 `description` 文本。
-- 必填最小集是 `mcpId/name/http-info`（CLI 自动附加必填的 `toolType:"http"`；后端旧键 `http`、缺 `toolType` 的旧形态会报 `business_error_invalid_params`），但要工具真能用，`apiInputs + toolInputs + inputMappings + outputMappings` 都要给全（否则映射不生效或出参为空）。
+- create/update 必填集（V4 起）：`mcpId / name / title / description / --http-info / --api-inputs / --tool-inputs / --input-mappings` 全部必填（required 是 schema 语义约束，平台运行时不强拦缺失，但必须照填）；`toolType` 参数已移除（多传会被静默忽略）；旧键 `http` 仍报 `business_error_invalid_params`。`outputMappings` 建议显式配置（省略/传 []＝整包响应体外多包一层 Body，见下）。
 - 工具 `description` 有 DB 列长限制（约 700 字符）：`tool create/update` 草稿不报错，**`tool publish` 才报 Data too long**——描述超长要在发布前收敛。
 
 映射规则的完整格式（JSONPath 写法、Pascal 位置名、reference/fixed/express 三型、出参透传、系统参数、数组双规则）见 **[mapping-rules.md](mapping-rules.md)**，写 `--input-mappings` / `--output-mappings` 前必读。速记三条最大的坑：
 
 - target 位置名必须 Pascal（`$.Query.*` / `$.Body.*`），全大写/全小写**静默失效**；
 - `express` 类型的表达式必须放 `expression` 字段（不是 `source`），放错被静默存成 `{}`；
-- `outputMappings` 不能为空，最简写法 = 响应体整体透传 `{"type":"reference","source":"$.node_service_activator.Body","target":"$"}`。
+- `outputMappings` 显式二选一：整体透传 `{"type":"reference","source":"$.node_service_activator.Body","target":"$"}`，或字段级精修（裁剪/改名/[*]/嵌套/系统变量，见 mapping-rules.md §5）；⚠️省略或传 `[]`＝工具仍建成、运行时返回 `{"Body":{整包响应体}}` 包壳（不报错也不是返回空），不推荐。⚠️出参 rules 的 source 必须在 apiOutputs 声明范围内，否则 UI 标「变量已失效」（红线#13）。
 - `corpId` / `userId` 等调用者身份由系统参数注入（`$.system_node.*`），不要做成 toolInput 让 LLM 传。
 
 ### 从 API 材料到工具定义
@@ -119,7 +119,7 @@ dws connector mcp published --help
 - MCP 工具发现使用有限并发和独立超时：单个服务失败不会取消后续服务；健康服务更新，失败服务保留上次缓存。
 - 返回中的 `partial` 表示部分成功，`failedServices` 给出失败的 mcpId/脱敏端点/原因，`cacheUpdated` 表示合并后的缓存已持久化。
 - 发布或更新工具后**最迟 10 分钟（缓存 TTL）自动生效**——「立即出现」只是缓存恰好过期的巧合，不是保证；需要立即可用就执行 `refresh`，再看 `published --help`。
-- `service list` / `listMyMCP` 返回 `result.list[].serverName`；它是 kebab-case CLI 一级命令名，未设置时为空。动态发现必须优先使用该字段，不能始终从中文服务名推导。
+- `service list` 返回顶层 `services[].serverName`（V4 起分页平铺，无 result 信封）；它是 kebab-case CLI 一级命令名，未设置时为空。动态发现必须优先使用该字段，不能始终从中文服务名推导。
 - 所有刷新只使用发现接口返回的真实 hash `mcpUrl`；不会根据 `mcpId` 猜 `/server/org-{mcpId}`。需要找回地址时使用 `url get --source PUBLISHED`。
 
 指定接入地址的只读探测：
@@ -170,7 +170,7 @@ dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> 
 
   要点：`authQuery[].value` 用 `$.Body.<字段>` 引用换 token 响应；失效判据按下游真实返回写——HTTP 状态码型用 `${@("$/statusCode")}`，业务错误码型用 `${@("Body/<字段>")}`。header 位注入同结构，把 `authQuery` 换成 `authHeaders` 即可。
 - `credential save` 保存的是**开发者内置凭证**：归属「当前用户 + 当前 MCP」，密钥由开发者提供（不是使用者的凭证），配置调试与实例运行时两个场景都用它。`content` key 必须与 `auth get` 返回的 `authFields[].dataId` 一致；密钥不会回显，dry-run 也只显示脱敏占位。TOKEN 型 save 会真实调用换 token 接口验证密钥（密钥无效则 save 整体失败），其他类型纯落库。
-- `credential debug` 会真实调用鉴权配置中的 `testRequest`；`success=true` 只代表请求连通，仍要检查返回 `detail` 判断口令是否有效。
+- `credential debug` 会真实调用鉴权配置中的 `testRequest`，返回平铺结构 `{executeSuccess, executeErrorMsg, detail}`（V4 起 detail 在顶层）；**外层 success=true 只代表流程走完，不代表鉴权通过**——必须解析顶层 `detail.response`（statusCode 2xx 且业务无 errcode 才算真通过），由 AI 判读后给出明确结论，拿不准时人工复核。
 - `credential bind` 只是「选用」：**仅对正式实例运行时生效**。`tool debug` 不使用 bind 绑定的凭证——调试带鉴权的工具必须在 `tool debug` 显式传 `--credential-id`，不传则按无凭证直调（TOKEN 注入配置原文、BASIC 静默不注入，报错全是误导性假症状）。
 - 删除凭证前先 `credential get` 检查 `flowCount`；移除成员前先 `member list` 核对，二者都必须获得明确确认。
 
@@ -286,7 +286,7 @@ dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> 
 - `mcp_not_found`：当前 mcpdev endpoint 或当前登录组织下没有该 `mcpId`。
 - `mcp_id_initializing`（MCP 数据初始化中）：存量数据补齐中，**等 10 秒重试一次**即可。
 - `no_draft_to_publish`：没有可发布草稿，先 `tool update` 或确认 toolId。
-- `business_error_invalid_params`：常见于旧契约调用——工具入参用了旧键 `actionId`（应为 `toolId`），或 create/update 用了旧键 `http`/缺 `toolType`（应为 `toolType`+`httpInfo`）。升级 dws 后 CLI flag 对应 `--tool-id`/`--http-info`。
+- `business_error_invalid_params`：常见于旧契约调用——工具入参用了旧键 `actionId`（应为 `toolId`），或 create/update 用了旧键 `http`（应为 `httpInfo`）。升级 dws 后 CLI flag 对应 `--tool-id`/`--http-info`。
 - `tool_already_listed_in_market`：已上架市场的工具不允许删除，需先在市场下架。
 - 调试「成功」但接口报缺参/返回空：映射静默失效——位置名大小写（须 Pascal）/ express 用了 `source` 字段（须 `expression`）/ 漏映射，见 mapping-rules.md。
 - 调试通过但发布后调用旧逻辑：调试时漏传草稿 `versionId`，实际测了线上旧版本。
@@ -308,7 +308,7 @@ dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
 服务名用业务语义命名且组织内唯一，不要用 test、临时 等占位名。删除服务不可恢复，删除前先 `service get` 和 `tool list` 核对；服务下还有工具时会被拒绝。
 
-列表类命令（`service list` / `tool list` / `tool versions`）返回统一分页信封 `{list, hasMore, nextCursor, totalCount}`——用 `hasMore` 判断翻页，不要用「返回条数==pageSize」启发式。
+列表类命令返回**顶层平铺**分页（V4 起，无 result/list 信封）：语义化数组 + 分页字段同级——`service list`→`services[]`、`tool list`→`tools[]`、`tool versions`→`versions[]`、`credential list`→`credentials[]`，旁边是 `hasMore/nextCursor/totalCount`。用 `hasMore` 判断翻页，不要用「返回条数==pageSize」启发式。
 
 ## 工具
 
@@ -339,7 +339,7 @@ dws connector mcp tool delete --mcp-id <mcpId> --tool-id <toolId> --dry-run --fo
 
 | flag | 类型 | MCP 入参 |
 |------|------|----------|
-| `--http-info` | object | `httpInfo`（CLI 自动附加 `toolType:"http"`） |
+| `--http-info` | object | `httpInfo` |
 | `--api-inputs` | object | `apiInputs` |
 | `--api-outputs` | object | `apiOutputs` |
 | `--tool-inputs` | array | `toolInputs` |
@@ -353,6 +353,7 @@ dws connector mcp tool delete --mcp-id <mcpId> --tool-id <toolId> --dry-run --fo
 - `tool debug` 会真实执行目标接口；写接口必须用测试数据（先让用户指定测试资源）。
 - 调试带鉴权的工具必须显式传 `--credential-id`（debug 不使用 `credential bind` 绑定的凭证，不传按无凭证直调）。
 - **通过标准 = 返回真实业务数据**（如查天气要真返回温度数值），不是「没报错」——映射静默失效时命令不报错但接口收到空参数。
+- 调试返回为平铺结构（V4 起）：业务结果在**顶层 `toolOutput`**（不再嵌在 result.outputValue），同级有 `executeSuccess/toolInput/rawOutput/time`；出参精修是否生效直接看 `toolOutput` 形状。
 - 不传 `--version-id` 时，如果工具曾发布过，会调已发布版本，不会自动调最新草稿。
 - 要调试正在编辑的草稿，必须从 `tool get` 取草稿 `versionId` 后显式传 `--version-id`。
 - 发布前必须至少调试通过一次。

@@ -74,15 +74,37 @@
 
 **完整函数目录**（7 组 82 个：集合/日期/逻辑/数学/字符串/JSON/系统，含 72 用例实测的序列化坑——date 出毫秒串、collection 直映丢数据须先 JOIN、double 带 `.0`）见 **[expression-functions.md](expression-functions.md)**，做复杂数据变换才翻。
 
-## 5. 出参映射：整体透传
+## 5. 出参映射：整体透传 or 字段级精修（二选一，显式配置）
 
-`outputMappings` **不能为空**（空了工具没有出参、返回空）。最简且推荐 = 响应体整体透传：
+出参链路：`apiOutputs`（接口真实出参 schema）→ `outputMappings`（映射规则）→ `toolOutputs`（对外出参字段树）。
+
+### 5a. 整体透传（最简，快速起步）
 
 ```json
 [ { "type": "reference", "source": "$.node_service_activator.Body", "target": "$" } ]
 ```
 
-工具出参 = 接口返回的完整 body，绝大多数只读接口这样就够。需要结构化裁剪/改名时才逐字段写（并配套 toolOutputs 定义结构）。
+工具出参 = 按 `apiOutputs` 裁剪后的完整响应体（声明什么字段就返回什么）。`toolOutputs` 可留空。
+
+### 5b. 字段级精修（裁剪/改名/嵌套重组，对外工具推荐）
+
+映射元素 = `{target(必填), type: reference|express(缺省 reference), source, expression, displayText}`。词汇表：
+
+| 意图 | 写法 |
+|---|---|
+| **改名** | source=`$.node_service_activator.Body.<API字段路径>`，target=`$.<toolOutputs字段路径>`。例（data.staff_id → user.userId）：`{"target":"$.user.userId","type":"reference","source":"$.node_service_activator.Body.data.staff_id"}` |
+| **裁剪** | 不声明也不映射即裁除——未映射的 API 字段自动不返回 |
+| **数组逐元素** | source/target 都带 `[*]`；对象数组→标量数组亦可：`$.node_service_activator.Body.result[*].userId → $.members[*]` |
+| **嵌套重组** | target 写多层路径（4 层嵌套实测可用），`toolOutputs` 声明对应字段树 |
+| **系统变量注入（安全 2 只）** | source=`$.system_node.ddDataCorpId`（调用组织 corpId）/ `$.system_node.operateUserId`（调用用户 userId） |
+
+配套 `toolOutputs`：声明对外字段树（新字段名 + description，**建议每个字段都写**——这些描述直接喂给 LLM）；type=array 时 children 恰一项 key="items"。
+
+### 5c. 三条红线
+
+- ⚠️（红线#13）**rules 的 source 必须在 apiOutputs/出参 schema 声明范围内**——引用未声明的子路径运行时不报错、UI 却标「变量已失效」；建工具时 `apiOutputs` 必须如实声明到被映射的最深层级。
+- ⚠️**省略 `outputMappings` 或传 `[]` ＝工具仍能建成**，运行时返回整包响应体且**多包一层 Body**（`{"Body":{…}}`，无任何裁剪）——不是「返回空」也不报错，但不推荐；请显式二选一。
+- **判读位**：`tool debug` 的业务返回在顶层 `toolOutput`（与 executeSuccess/toolInput/rawOutput/time 同级，不再嵌在 result.outputValue）；出参精修是否生效以 `toolOutput` 实际形状为准。
 
 ## 6. 系统参数注入（身份等）
 

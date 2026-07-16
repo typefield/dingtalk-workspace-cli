@@ -923,17 +923,17 @@ func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 		addDevMCPToolIDFlag(cmd)
 	}
 	cmd.Flags().String("name", "", "工具唯一标识，snake_case")
-	cmd.Flags().String("title", "", "工具中文标题")
-	cmd.Flags().String("description", "", "工具功能描述")
-	cmd.Flags().String("http-info", "", "HTTP 接口配置 JSON 对象（toolType=http 时必填）")
+	cmd.Flags().String("title", "", "必填。工具中文标题：中文自然语言、≤30 字、与功能一致")
+	cmd.Flags().String("description", "", "必填。工具功能完整描述（LLM 选择工具的核心依据）：动词开头，说明功能/何时用/入参来源/破坏性行为")
+	cmd.Flags().String("http-info", "", "必填。HTTP 接口配置 JSON 对象：{method,url,auth:{type,...}}")
 	cmd.Flags().String("http", "", "已更名为 --http-info")
 	_ = cmd.Flags().MarkHidden("http")
-	cmd.Flags().String("api-inputs", "", "接口真实入参 JSON 对象：{headers,body,query,path} 四组，每组=字段数组，字段项={key,title,type,required,description,children}；⚠️平台不支持 enum/default/example 属性——枚举/默认值/示例写进字段 description 文本")
+	cmd.Flags().String("api-inputs", "", "必填。接口真实入参 JSON 对象：{headers,body,query,path} 四组，每组=字段数组，字段项={key,title,type,required,description,children}；⚠️平台不支持 enum/default/example 属性——枚举/默认值/示例写进字段 description 文本")
 	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤")
-	cmd.Flags().String("tool-inputs", "", "暴露给 LLM 的入参 JSON 数组（字段树，array 型 children 固定一项 key=items）；每字段必须写自包含 description：含义+取值格式+示例，可对 api-inputs 裁剪/改名/加防呆")
-	cmd.Flags().String("tool-outputs", "", "暴露给 LLM 的出参 JSON 数组；留空且出参映射整体透传时=返回按 --api-outputs 裁剪后的完整响应体")
-	cmd.Flags().String("input-mappings", "", "入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
-	cmd.Flags().String("output-mappings", "", "出参映射 JSON 数组（必须配置，缺省=工具返回空）；最简整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]")
+	cmd.Flags().String("tool-inputs", "", "必填。暴露给 LLM 的入参字段树 JSON 数组（array 型 children 固定一项 key=items）；每字段必须写自包含 description：含义+取值格式+示例，可对 api-inputs 裁剪/改名/加防呆")
+	cmd.Flags().String("tool-outputs", "", "可选。暴露给 LLM 的出参字段树 JSON 数组；与 --output-mappings 配套做出参精修（裁字段/改名/补语义）；留空且整体透传时=返回按 --api-outputs 裁剪后的完整响应体")
+	cmd.Flags().String("input-mappings", "", "必填。入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
+	cmd.Flags().String("output-mappings", "", "建议显式配置。出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️省略或传 []＝工具仍建成，运行时返回整包响应体且多包一层 Body（{\"Body\":{…}}），不推荐")
 }
 
 func annotateDevMCPTool(cmd *cobra.Command, tool string) *cobra.Command {
@@ -997,14 +997,12 @@ func devMCPToolUpsertParams(cmd *cobra.Command, includeToolID bool) (map[string]
 	}
 
 	if cmd.Flags().Changed("http") {
-		return nil, apperrors.NewValidation("--http 已更名为 --http-info（脚手架 0714 契约变更：请求体键名 http→httpInfo，并新增必填 toolType），请改用 --http-info")
+		return nil, apperrors.NewValidation("--http 已更名为 --http-info（脚手架契约变更：请求体键名 http→httpInfo），请改用 --http-info")
 	}
 	httpInfo, err := devMCPRequiredJSONObjectFlag(cmd, "http-info")
 	if err != nil {
 		return nil, err
 	}
-	// 0714 契约：toolType 必填，当前枚举仅 http；后续扩展 hsf 等类型时随契约调整。
-	params["toolType"] = "http"
 	params["httpInfo"] = httpInfo
 
 	devMCPPutString(params, "title", devMCPStringFlag(cmd, "title"))
@@ -1059,12 +1057,12 @@ func devMCPValidateToolUpsertParams(params map[string]any) error {
 		}
 	}
 	if mappings, ok := params["inputMappings"].([]any); ok {
-		if err := devMCPValidateMappingsFlag("input-mappings", mappings, false); err != nil {
+		if err := devMCPValidateMappingsFlag("input-mappings", mappings); err != nil {
 			return err
 		}
 	}
 	if mappings, ok := params["outputMappings"].([]any); ok {
-		if err := devMCPValidateMappingsFlag("output-mappings", mappings, true); err != nil {
+		if err := devMCPValidateMappingsFlag("output-mappings", mappings); err != nil {
 			return err
 		}
 	}
@@ -1204,10 +1202,7 @@ func stringValue(value any) string {
 	}
 }
 
-func devMCPValidateMappingsFlag(flag string, mappings []any, requireNonEmpty bool) error {
-	if requireNonEmpty && len(mappings) == 0 {
-		return apperrors.NewValidation("--" + flag + " 不能为空；如需整体透传可用 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]")
-	}
+func devMCPValidateMappingsFlag(flag string, mappings []any) error {
 	for i, raw := range mappings {
 		mapping, ok := raw.(map[string]any)
 		if !ok {

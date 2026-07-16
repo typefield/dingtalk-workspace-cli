@@ -133,14 +133,14 @@ dws connector mcp --help
 dws connector mcp service --help
 dws connector mcp tool --help
 
-# 服务；list 返回 result.list[].serverName，作为动态命令一级路径
+# 服务；list 返回顶层 services[].serverName（V4 分页平铺），作为动态命令一级路径
 dws connector mcp service list --keyword <关键词> --format json
 dws connector mcp service get --mcp-id <mcpId> --format json
 dws connector mcp service create --name <服务名> --description <描述> --server-name <kebab-case> --dry-run --format json
 dws connector mcp service update --mcp-id <mcpId> --description <新描述> --server-name <kebab-case> --dry-run --format json
 dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
-# 工具（0714 契约起工具 ID flag 统一 --tool-id；create/update 用 --http-info，CLI 自动附加 toolType:"http"）
+# 工具（工具 ID flag 统一 --tool-id；create/update 用 --http-info；V4 起 title/description/api-inputs/tool-inputs/input-mappings 均必填）
 dws connector mcp tool list --mcp-id <mcpId> --page-size 100 --format json
 dws connector mcp tool get --mcp-id <mcpId> --tool-id <toolId> --format json
 dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json

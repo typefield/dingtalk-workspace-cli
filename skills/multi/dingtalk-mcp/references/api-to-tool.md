@@ -38,4 +38,4 @@
 
 ## 5. 设计整表先过目
 
-每个工具产出：name/title/description、http-info（CLI 自动附加 toolType:"http"）、apiInputs、toolInputs、inputMappings、outputMappings + **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。
+每个工具产出（V4 起前六项均必填）：name/title/description、http-info、apiInputs、toolInputs、inputMappings + 出参三件（apiOutputs/toolOutputs/outputMappings，建议一并设计——整体透传或字段级精修二选一）+ **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。

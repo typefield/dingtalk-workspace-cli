@@ -26,10 +26,10 @@ metadata:
 2. 所有命令加 `--format json`。
 3. 创建、更新、删除、调试、发布都先 `--dry-run --format json` 预览，再在用户明确确认后加 `--yes --format json`。
 4. `mcpId`、`toolId`（G-ACT- 开头，即工具列表返回的 actionId，0714 契约起 tool 系命令入参统一叫 toolId）、`versionId` 必须来自 `service list/get`、`tool list/get`、`tool versions` 或上游命令返回，禁止猜。
-5. 发布前必须先 `tool debug` 调试通过；调试草稿必须显式传草稿 `--version-id`。**debug 通过的标准是返回真实业务数据**（如查北京要真返回经纬度），不是「没报错」。**调试带鉴权的工具必须显式传 `--credential-id`**——debug 不使用 `credential bind` 绑定的凭证，不传则按无凭证直调，症状全是误导性假错。
+5. 发布前必须先 `tool debug` 调试通过；调试草稿必须显式传草稿 `--version-id`。**debug 通过的标准是返回真实业务数据**（如查北京要真返回经纬度），不是「没报错」；业务结果在返回**顶层 `toolOutput`** 字段（V4 起平铺）。**调试带鉴权的工具必须显式传 `--credential-id`**——debug 不使用 `credential bind` 绑定的凭证，不传则按无凭证直调，症状全是误导性假错。
 6. `url get` 返回的是按调用者**个人身份**生成的实例地址（非组织公共地址），其中 `?key=` 是个人敏感凭证，勿外发共享，不写入文档、代码、日志或回答全文。
 7. 删除服务前必须先 `service get` + `tool list` 核对；服务下还有工具时先逐个删除工具。
-8. **写 `--input-mappings` / `--output-mappings` 前先读 [mapping-rules.md](references/mapping-rules.md)**——映射是最大坑源：位置名 Pascal 写错、express 用错字段、出参映射为空都**静默失效不报错**，只有 debug 真跑才暴露。
+8. **写 `--input-mappings` / `--output-mappings` 前先读 [mapping-rules.md](references/mapping-rules.md)**——映射是最大坑源：位置名 Pascal 写错、express 用错字段、出参 rules 的 source 未在 apiOutputs 声明范围内（UI 标「变量已失效」）都**静默失效不报错**，只有 debug 真跑才暴露；出参映射省略/传 []＝返回多包一层 Body 的整包响应体（非精修，不推荐）。
 9. `tool update` 是全量提交：先 `tool get` 读回（返回的是底层存储格式，需翻译回三段式），漏字段等于清空。
 
 ## 领域模型
@@ -88,7 +88,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | 用户说 | 命令 |
 |--------|------|
 | "把这个接口做成 MCP / 给 agent 用" | 走 Shortcut 第一行全流程（从 API 材料一键建 MCP） |
-| "列出 MCP 服务 / 找回 mcpId 或 serverName" | `dws connector mcp service list --keyword <关键词> --format json`；读取 `result.list[].mcpId/serverName` |
+| "列出 MCP 服务 / 找回 mcpId 或 serverName" | `dws connector mcp service list --keyword <关键词> --format json`；读取顶层 `services[].mcpId/serverName` |
 | "查看 MCP 服务详情" | `dws connector mcp service get --mcp-id <mcpId> --format json` |
 | "创建 MCP 服务" | `dws connector mcp service create --name <名称> --description <描述> --dry-run --format json` |
 | "列出某服务工具 / 找回 toolId" | `dws connector mcp tool list --mcp-id <mcpId> --page-size 100 --format json` |

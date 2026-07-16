@@ -96,9 +96,8 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			},
 			wantTool: devMCPToolCreateTool,
 			wantParams: map[string]any{
-				"mcpId":    10487,
-				"name":     "get_weather",
-				"toolType": "http",
+				"mcpId": 10487,
+				"name":  "get_weather",
 				"httpInfo": map[string]any{
 					"method": "GET",
 					"url":    "https://example.com",
@@ -126,10 +125,9 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			},
 			wantTool: devMCPToolUpdateTool,
 			wantParams: map[string]any{
-				"mcpId":    10487,
-				"toolId":   "G-ACT-1",
-				"name":     "get_weather",
-				"toolType": "http",
+				"mcpId":  10487,
+				"toolId": "G-ACT-1",
+				"name":   "get_weather",
 				"httpInfo": map[string]any{
 					"method": "GET",
 					"url":    "https://example.com",
@@ -172,6 +170,30 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"mcpId":  10487,
 				"toolId": "G-ACT-1",
 				"value":  map[string]any{"city": "杭州"},
+			},
+		},
+		{
+			name: "tool create passes empty output mappings through",
+			args: []string{
+				"connector", "mcp", "tool", "create",
+				"--mcp-id", "10487",
+				"--name", "get_weather",
+				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--output-mappings", `[]`,
+				"--dry-run",
+			},
+			wantTool: devMCPToolCreateTool,
+			wantParams: map[string]any{
+				"mcpId": 10487,
+				"name":  "get_weather",
+				"httpInfo": map[string]any{
+					"method": "GET",
+					"url":    "https://example.com",
+					"auth": map[string]any{
+						"type": "NO_AUTH",
+					},
+				},
+				"outputMappings": []any{},
 			},
 		},
 		{
@@ -323,19 +345,6 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"--dry-run",
 			},
 			wantErr: "children 必须且只能包含一个 key=items",
-		},
-		{
-			name: "rejects empty output mappings",
-			args: []string{
-				"connector", "mcp", "tool", "create",
-				"--mcp-id", "10487",
-				"--name", "get_weather",
-				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
-				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
-				"--output-mappings", `[]`,
-				"--dry-run",
-			},
-			wantErr: "--output-mappings 不能为空",
 		},
 		{
 			name: "rejects mapping without target",
