@@ -6,6 +6,10 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+## [1.0.53-beta.2] - 2026-07-16
+
+This beta validates the accumulated post-v1.0.52 command surface, release automation, and runtime hardening changes, including enterprise contact onboarding, declarative shortcuts, Sheet/Aitable writes, multi-platform Homebrew formulas, and credential and target-validation fixes.
+
 ### Added
 
 - **Contact enterprise onboarding commands** — adds `contact org create`, `contact user invite`, and `contact account create` for creating a DingTalk enterprise, inviting an employee by mobile, and provisioning an enterprise login account, with reviewed Schema contracts and mono/multi Skill routing.
@@ -16,11 +20,12 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 ### Changed
 
 - **Guarded prerelease and stable automation** — adds the guided `dws-release` entry for one-command CHANGELOG preparation, validation-only and annotated-tag publication flows; promotes only an explicitly validated beta; verifies command-tree compatibility and all six packaged binaries; and serializes immutable GitHub Release, npm channel, OSS, Homebrew, and optional Gitee delivery with fail-closed recovery checks.
+- **Reviewed historical release recovery proofs** — release preflight can recognize an explicitly pinned successful recovery delivery for a historical stable tag while still rejecting arbitrary workflow dispatches, mismatched commits, and incomplete release, signing, or publication jobs.
 
 ### Fixed
 
 - **PAT organization-policy denials stop immediately** — `PAT_ORG_POLICY_DENIED` now remains terminal even if a backend also returns `flowId`, authorization URLs, or client credentials; the CLI does not mutate process credentials, open a browser, poll, or retry until an organization administrator changes the policy.
-- **Sheet and Todo invalid-target failures** — `sheet range read/get` now rejects a null cell-info response instead of printing `null` and exiting successfully, while Todo completion and attachment listing verify that a task exists before calling lenient backend endpoints. Attachment listing is also published through Runtime Schema for schema-first Agent discovery.
+- **Sheet and task invalid-target failures** — `sheet range read/get` now rejects a null cell-info response instead of printing `null` and exiting successfully, while task completion and attachment listing verify that a task exists before calling lenient backend endpoints. Attachment listing is also published through Runtime Schema for schema-first Agent discovery.
 - **Windows portable-auth contract** — `dws auth export` and `dws auth import` now fail early without reading credentials, bundles, or writing files instead of claiming portable-bundle support for DPAPI-protected HKCU Registry credentials.
 - **Concurrent credential writes and reentrant CLI execution** — secure-token writers now use isolated, exclusive temporary files before atomic replacement so concurrent processes cannot remove each other's in-flight data, and repeated in-process CLI runs close the previous file logger before replacing it instead of retaining the prior log-file handle.
 
