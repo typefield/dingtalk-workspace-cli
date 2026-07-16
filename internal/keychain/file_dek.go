@@ -16,6 +16,7 @@
 package keychain
 
 import (
+	"crypto/cipher"
 	"crypto/rand"
 	"fmt"
 	"os"
@@ -23,6 +24,8 @@ import (
 
 	"github.com/google/uuid"
 )
+
+type keychainGCMFactory func(cipher.Block) (cipher.AEAD, error)
 
 var (
 	keychainMkdirAll    = os.MkdirAll
