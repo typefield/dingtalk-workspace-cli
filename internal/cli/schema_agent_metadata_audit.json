@@ -1,11 +1,11 @@
 {
   "version": 1,
-  "source_hash": "sha256:4db1f4a2c79217b6ea3fe01e2fcc4f5a72354b4d02dd798c4c7ea3a26bb00fb5",
-  "surface_hash": "sha256:e858be68701d256818eccd085a6f7f97655835b9c7cbbce6275ed930c2436dc3",
-  "source_files": 149,
+  "source_hash": "sha256:c38aaadc2f3d12eb3be7214563dfb8eea583865ad71b2b19e54e5dfd2f4b2b7b",
+  "surface_hash": "sha256:631b73b174f48cb0cca7c8449e80920739010d0db223dac2855101f4dbd0eda6",
+  "source_files": 150,
   "hint_files": 46,
   "hint_products": 39,
-  "hint_tools": 1280,
+  "hint_tools": 1290,
   "interface_metadata": {
     "source": "mcp-tools-list+cli-registry",
     "revision": "4574f7022c32cf4c033e9b7b4156e2fec815fed8",
@@ -29,14 +29,14 @@
   "coverage": {
     "surface_products": 22,
     "products_with_metadata": 22,
-    "surface_tools": 564,
-    "tools_with_metadata": 564,
-    "tools_with_agent_summary": 564,
-    "tools_with_use_when": 564,
-    "tools_with_avoid_when": 564,
-    "tools_with_examples": 564,
-    "tools_with_interface_mode": 564,
-    "unmatched_skill_tools": 141,
+    "surface_tools": 569,
+    "tools_with_metadata": 569,
+    "tools_with_agent_summary": 569,
+    "tools_with_use_when": 569,
+    "tools_with_avoid_when": 569,
+    "tools_with_examples": 569,
+    "tools_with_interface_mode": 569,
+    "unmatched_skill_tools": 140,
     "unreviewed_skill_tools": 21
   },
   "source_products": [
@@ -160,7 +160,7 @@
     {
       "tool_path": "calendar participant delete",
       "source": "skills/mono/SKILL.md",
-      "line": 99,
+      "line": 135,
       "candidates": [
         "calendar attendee delete",
         "calendar event delete",
@@ -2539,7 +2539,7 @@
     {
       "tool_path": "dev connect",
       "source": "skills/mono/references/products/dev.md",
-      "line": 131,
+      "line": 132,
       "candidates": [
         "dev connect status",
         "dev connect stop",
@@ -2553,7 +2553,7 @@
     {
       "tool_path": "dev connect",
       "source": "skills/mono/references/products/dev.md",
-      "line": 135,
+      "line": 136,
       "candidates": [
         "dev connect status",
         "dev connect stop",
@@ -2567,7 +2567,7 @@
     {
       "tool_path": "dev connect",
       "source": "skills/mono/references/products/dev.md",
-      "line": 139,
+      "line": 140,
       "candidates": [
         "dev connect status",
         "dev connect stop",
@@ -2581,7 +2581,7 @@
     {
       "tool_path": "dev connect",
       "source": "skills/mono/references/products/dev.md",
-      "line": 144,
+      "line": 145,
       "candidates": [
         "dev connect status",
         "dev connect stop",
@@ -2595,7 +2595,7 @@
     {
       "tool_path": "dev app version check-approval",
       "source": "skills/mono/references/products/dev.md",
-      "line": 199,
+      "line": 200,
       "candidates": [
         "dev app version create",
         "dev app version get",
@@ -4069,7 +4069,7 @@
     {
       "tool_path": "sheet range",
       "source": "skills/mono/references/products/sheet.md",
-      "line": 65,
+      "line": 66,
       "candidates": [
         "sheet range batch-clear",
         "sheet range batch-set-style",
@@ -4083,7 +4083,7 @@
     {
       "tool_path": "sheet filter-view",
       "source": "skills/mono/references/products/sheet.md",
-      "line": 66,
+      "line": 67,
       "candidates": [
         "sheet filter-view create",
         "sheet filter-view delete",
@@ -4137,20 +4137,6 @@
       }
     },
     {
-      "tool_path": "todo task list-attachment",
-      "source": "skills/mono/references/products/todo.md",
-      "line": 216,
-      "candidates": [
-        "todo task add-attachment",
-        "todo task add-executor",
-        "todo task add-participant"
-      ],
-      "review": {
-        "status": "stale",
-        "reason": "旧版 Skill 或说明性引用，当前公开命令面无等价 leaf，禁止词法模糊映射"
-      }
-    },
-    {
       "tool_path": "todo task remove-attachment",
       "source": "skills/mono/references/products/todo.md",
       "line": 231,
@@ -4168,20 +4154,6 @@
       "tool_path": "todo task remove-attachment",
       "source": "skills/mono/references/products/todo.md",
       "line": 232,
-      "candidates": [
-        "todo task add-attachment",
-        "todo task add-executor",
-        "todo task add-participant"
-      ],
-      "review": {
-        "status": "stale",
-        "reason": "旧版 Skill 或说明性引用，当前公开命令面无等价 leaf，禁止词法模糊映射"
-      }
-    },
-    {
-      "tool_path": "todo task list-attachment",
-      "source": "skills/mono/references/products/todo.md",
-      "line": 375,
       "candidates": [
         "todo task add-attachment",
         "todo task add-executor",

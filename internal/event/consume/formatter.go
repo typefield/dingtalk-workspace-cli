@@ -23,6 +23,12 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/transport"
 )
 
+var (
+	marshalEvent       = json.Marshal
+	marshalEventIndent = json.MarshalIndent
+	marshalCompact     = json.Marshal
+)
+
 // Format identifies the wire shape `dws event consume` writes per event.
 // Values mirror dws's global -f/--format flag vocabulary (defined in
 // internal/output) with the subset that makes sense for streaming.
@@ -160,16 +166,52 @@ func (f *structuredFormatter) Render(ev transport.Event) ([]byte, error) {
 	} else if f.compact {
 		value = registry.LookupProcessor(ev.EventType)(ev)
 	}
-
 	var (
 		b   []byte
 		err error
 	)
-	if f.pretty {
-		b, err = json.MarshalIndent(value, "", "  ")
-	} else {
-		b, err = json.Marshal(value)
+	switch {
+	case f.pretty:
+		b, err = marshalEventIndent(value, "", "  ")
+	case f.compact:
+		b, err = marshalCompact(value)
+	default:
+		b, err = marshalEvent(value)
 	}
+	if err != nil {
+		return nil, err
+	}
+	return append(b, '\n'), nil
+}
+
+// The basic formatters remain available for focused encoder tests. The public
+// construction path uses structuredFormatter so personal event projections are
+// applied consistently across all structured formats.
+type ndjsonFormatter struct{}
+
+func (ndjsonFormatter) Render(ev transport.Event) ([]byte, error) {
+	b, err := marshalEvent(ev)
+	if err != nil {
+		return nil, err
+	}
+	return append(b, '\n'), nil
+}
+
+type prettyFormatter struct{}
+
+func (prettyFormatter) Render(ev transport.Event) ([]byte, error) {
+	b, err := marshalEventIndent(ev, "", "  ")
+	if err != nil {
+		return nil, err
+	}
+	return append(b, '\n'), nil
+}
+
+type compactFormatter struct{}
+
+func (compactFormatter) Render(ev transport.Event) ([]byte, error) {
+	value := registry.LookupProcessor(ev.EventType)(ev)
+	b, err := marshalCompact(value)
 	if err != nil {
 		return nil, err
 	}
