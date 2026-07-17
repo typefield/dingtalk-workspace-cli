@@ -152,7 +152,29 @@ dws connector mcp member add --mcp-id <mcpId> --user-ids <staffId1,staffId2> --d
 dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json
 ```
 
-- `authType` 仅支持 `NO_AUTH`、`BASIC`、`API_SECRET`、`TOKEN`、`SIGNATURE`；只传当前类型对应的配置对象。auth save 存的是「说明书」（authFields 字段定义、换取与注入方式），不含密钥值。
+#### 鉴权方式选型（先选对类型再动手）
+
+| 下游接口要什么 | 选型 |
+|---|---|
+| 无鉴权 | `NO_AUTH` |
+| 用户名+密码（HTTP Basic） | `BASIC`（运行时注入 `Authorization: Basic base64(user:pass)`） |
+| **静态 API key**（key 原文放 query 或 header，如 `?api_key=xxx`） | **`SIGNATURE` 自定义字段 + 直引**（样本见下） |
+| 动态换 token（先拿 key/secret 换 access_token 再调业务接口） | `TOKEN`（注入位 authHeaders/authQuery/authBody 三选一 + 失效自动刷新） |
+| 自定义签名算法（时间戳/摘要等需表达式计算） | `SIGNATURE` 自定义字段 + funcValue 表达式 |
+
+**静态 API key（query 位）实测样本**（真调 NASA APOD 通过）：
+
+```json
+{"signatureAuthConfig": {
+  "authFields": [{"dataId":"apiKey","description":"API Key","type":"password","required":true}],
+  "authQuery": [{"key":"api_key","type":"authField","value":"#(\"apiKey\")"}],
+  "testRequest": {"method":"GET","url":"https://<业务接口>"}
+}}
+```
+
+key 放 header 时把 `authQuery` 换成 `authHeaders`（key=<头名>）；凭证 content=`{"apiKey":"<真实key>"}`。
+
+- auth save 存的是「说明书」（authFields 字段定义、换取与注入方式），不含密钥值；按选型只传对应类型的配置对象。
 - TOKEN 型注入位按下游要求三选一：`authHeaders`（token 放请求头）/ `authQuery`（token 放 query 参数）/ `authBody`。**query 位完整模板**（已实测跑通，按下游实际字段替换占位符）：
 
 ```json

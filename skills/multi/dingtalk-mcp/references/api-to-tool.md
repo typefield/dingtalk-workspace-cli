@@ -8,7 +8,7 @@
 
 1. **API 材料**：OpenAPI/Postman/curl/文档，至少一种；
 2. **业务目标**：这些接口给 agent 干什么——决定工具怎么拆、description 怎么写；
-3. **鉴权方式**：不确定就问，别默认 NO_AUTH 蒙混。`http-info.auth` 三型：无鉴权 `{"type":"NO_AUTH"}`；Basic `{"type":"BASIC","username":"..","password":".."}`；API Secret `{"type":"API_SECRET","apiSecret":".."}`。
+3. **鉴权方式**：不确定就问，别默认 NO_AUTH 蒙混。简单场景可在 `http-info.auth` 内联：无鉴权 `{"type":"NO_AUTH"}`；Basic `{"type":"BASIC","username":"..","password":".."}`。带密钥的场景（静态 API key/动态 token/自定义签名）一律走服务级鉴权配置（见 mcp.md「鉴权方式选型」），密钥不进工具定义。
 
 ## 2. 从不同材料提取
 

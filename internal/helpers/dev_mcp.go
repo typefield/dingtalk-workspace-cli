@@ -632,7 +632,7 @@ func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
 			}
 			authType = strings.ToUpper(authType)
 			if !devMCPValidAuthType(authType) {
-				return apperrors.NewValidation("--auth-type 只支持 NO_AUTH、BASIC、API_SECRET、TOKEN 或 SIGNATURE")
+				return apperrors.NewValidation("--auth-type 只支持 NO_AUTH、BASIC、TOKEN 或 SIGNATURE（静态 API key 场景用 SIGNATURE 自定义字段+直引）")
 			}
 			params := map[string]any{"mcpId": mcpID, "authType": authType}
 			for _, mapping := range []struct{ flag, key string }{
@@ -649,11 +649,12 @@ func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
 		},
 	}
 	addDevMCPMCPIDFlag(cmd)
-	cmd.Flags().String("auth-type", "", "鉴权类型：NO_AUTH、BASIC、API_SECRET、TOKEN 或 SIGNATURE")
+	cmd.Flags().String("auth-type", "", "鉴权类型：NO_AUTH、BASIC、TOKEN 或 SIGNATURE；静态 API key 场景用 SIGNATURE 自定义字段+直引")
 	cmd.Flags().String("basic-auth-config", "", "BASIC 鉴权配置 JSON 对象")
-	cmd.Flags().String("api-secret-auth-config", "", "API_SECRET 鉴权配置 JSON 对象")
+	cmd.Flags().String("api-secret-auth-config", "", "")
+	_ = cmd.Flags().MarkHidden("api-secret-auth-config")
 	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象：{authFields, fetchTokenRequest, 注入位, tokenExpireRules, refreshToken, testRequest}；注入位按下游要求三选一：authHeaders（token 放请求头）/ authQuery（token 放 query 参数）/ authBody")
-	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 签名配置 JSON 对象")
+	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 自定义鉴权配置 JSON 对象（静态 API key 直引 / 自定义签名表达式两类场景）")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPAuthConfigSaveTool)
 	return cmd
