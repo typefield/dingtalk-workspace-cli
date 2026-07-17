@@ -84,6 +84,8 @@
 [ { "type": "reference", "source": "$.node_service_activator.Body", "target": "$" } ]
 ```
 
+⚠️ **透传不等于可以不传 `apiOutputs`**——这条 rule 的 source 引用的是声明 schema 里的 `Body` 节点，`apiOutputs` 不声明则 `Body` 不存在（红线#13 对透传同样生效）：工具照样建成、运行也正常，但管理台 UI 出参映射页标「变量已失效」，且工具出参 schema 为空（LLM 看不到返回结构）。**`apiOutputs` 与 `outputMappings` 必须同批提交**（CLI 已强校验，缺一报错）。真实响应结构未知时的正确顺序：先建裸草稿（出参三件都不传）→ `tool debug` 真跑取样 → `tool update` 按真实响应把 `apiOutputs`+`outputMappings` 一并补齐 → `publish`。
+
 工具出参 = 按 `apiOutputs` 裁剪后的完整响应体（声明什么字段就返回什么）。`toolOutputs` 可留空。
 
 ### 5b. 字段级精修（裁剪/改名/嵌套重组，对外工具推荐）
@@ -102,8 +104,8 @@
 
 ### 5c. 三条红线
 
-- ⚠️（红线#13）**rules 的 source 必须在 apiOutputs/出参 schema 声明范围内**——引用未声明的子路径运行时不报错、UI 却标「变量已失效」；建工具时 `apiOutputs` 必须如实声明到被映射的最深层级。
-- ⚠️**省略 `outputMappings` 或传 `[]` ＝工具仍能建成**，运行时返回整包响应体且**多包一层 Body**（`{"Body":{…}}`，无任何裁剪）——不是「返回空」也不报错，但不推荐；请显式二选一。
+- ⚠️（红线#13）**rules 的 source 必须在 apiOutputs/出参 schema 声明范围内**——引用未声明的子路径运行时不报错、UI 却标「变量已失效」；建工具时 `apiOutputs` 必须如实声明到被映射的最深层级（整体透传引用 `Body` 根节点也算，见 5a）。**CLI 双重把关**：create/update 时 `outputMappings` 与 `apiOutputs` 必须同批提交并静态互验；`publish` 前会读回草稿复验全部 rules source 可解析性，不过直接拒绝发布。
+- ⚠️**省略 `outputMappings` 或传 `[]` ＝草稿仍能建成**，运行时返回整包响应体且**多包一层 Body**（`{"Body":{…}}`，无任何裁剪）——不是「返回空」也不报错。但**发布会被 CLI 硬闸拦下**（服务端会默认写透传 rule 而声明为空，正是红线#13 形态）：publish 前必须 `tool update` 补 `apiOutputs`（+`outputMappings`）。
 - **判读位**：`tool debug` 的业务返回在顶层 `toolOutput`（与 executeSuccess/toolInput/rawOutput/time 同级，不再嵌在 result.outputValue）；出参精修是否生效以 `toolOutput` 实际形状为准。
 - **null 省略**：映射引擎对值为 null 的字段整个省略（不会出现 `"字段": null`）——出参缺字段＝值为空；空成功（只剩 success:true）要警惕上游返回了空值，结合业务预期判读。
 

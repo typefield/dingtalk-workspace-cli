@@ -516,6 +516,11 @@ func newDevMCPToolPublishCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
+			if !commandDryRun(cmd) {
+				if err := devMCPPublishPreflight(runner, cmd, params); err != nil {
+					return err
+				}
+			}
 			if err := runDevMCPTool(runner, cmd, devMCPToolPublishTool, params); err != nil {
 				return err
 			}
@@ -929,11 +934,11 @@ func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 	cmd.Flags().String("http", "", "已更名为 --http-info")
 	_ = cmd.Flags().MarkHidden("http")
 	cmd.Flags().String("api-inputs", "", "必填。接口真实入参 JSON 对象：{headers,body,query,path} 四组，每组=字段数组，字段项={key,title,type,required,description,children}；⚠️平台不支持 enum/default/example 属性——枚举/默认值/示例写进字段 description 文本")
-	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤")
+	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤；⚠️与 --output-mappings 必须同批提交（整体透传也必须声明，否则 UI 标「变量已失效」且 publish 被拒），真实结构未知时先建裸草稿→debug 取样→update 补齐")
 	cmd.Flags().String("tool-inputs", "", "必填。暴露给 LLM 的入参字段树 JSON 数组（array 型 children 固定一项 key=items）；每字段必须写自包含 description：含义+取值格式+示例，可对 api-inputs 裁剪/改名/加防呆")
 	cmd.Flags().String("tool-outputs", "", "可选。暴露给 LLM 的出参字段树 JSON 数组；与 --output-mappings 配套做出参精修（裁字段/改名/补语义）；留空且整体透传时=返回按 --api-outputs 裁剪后的完整响应体")
 	cmd.Flags().String("input-mappings", "", "必填。入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
-	cmd.Flags().String("output-mappings", "", "建议显式配置。出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️省略或传 []＝工具仍建成，运行时返回整包响应体且多包一层 Body（{\"Body\":{…}}），不推荐")
+	cmd.Flags().String("output-mappings", "", "出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️必须与 --api-outputs 同批提交并静态互验（source 引用的字段必须已声明，红线#13）；⚠️省略或传 []＝草稿仍建成但运行时多包一层 Body 且 publish 被拦，需先 update 补齐")
 }
 
 func annotateDevMCPTool(cmd *cobra.Command, tool string) *cobra.Command {
@@ -1065,6 +1070,9 @@ func devMCPValidateToolUpsertParams(params map[string]any) error {
 		if err := devMCPValidateMappingsFlag("output-mappings", mappings); err != nil {
 			return err
 		}
+	}
+	if err := devMCPLintMappingReferences(params); err != nil {
+		return err
 	}
 	return nil
 }
