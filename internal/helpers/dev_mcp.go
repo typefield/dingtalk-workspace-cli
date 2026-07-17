@@ -282,7 +282,13 @@ func newDevMCPServiceCreateCommand(runner executor.Runner) *cobra.Command {
 			devMCPPutString(params, "icon_url", devMCPStringFlag(cmd, "icon-url"))
 			devMCPPutString(params, "introduction", devMCPStringFlag(cmd, "introduction"))
 			devMCPPutString(params, "serverName", serverName)
-			return runDevMCPTool(runner, cmd, devMCPServiceCreateTool, params)
+			if err := runDevMCPTool(runner, cmd, devMCPServiceCreateTool, params); err != nil {
+				return err
+			}
+			if serverName == "" {
+				fmt.Fprintln(cmd.ErrOrStderr(), "警告：未设置 --server-name，发布后顶层动态命令将退化为 mcp-<mcpId>（而非语义化服务名）。建议创建时就传 --server-name <kebab-case>；或事后 dws connector mcp service update --mcp-id <mcpId> --server-name <kebab-case>，再执行 dws connector mcp refresh。")
+			}
+			return nil
 		},
 	}
 	cmd.Flags().String("name", "", "服务名称，组织内唯一")

@@ -67,8 +67,8 @@ MCP 开发脚手架（mcpdev 管理面）
 
 | 目标 | 快捷方案 |
 |------|----------|
-| **从 API 材料一键建 MCP（最高频）** | 收齐材料/业务目标/鉴权方式（缺就问）→ 按 [api-to-tool.md](references/api-to-tool.md) 拆三段式 + 设计整表给用户过目 → `service create` → 逐个 `tool create`（先建最简单的一个，`tool get` 读回核对再建其余）→ 逐个 `tool debug` 真跑（校验真实业务数据）→ 用户确认后逐个 `tool publish` → `url get --source PUBLISHED` → `connector mcp refresh` 验证动态命令 |
-| 从零创建 MCP 服务 | `service create --dry-run` → 用户确认 → `service create --yes` → 记录返回 `mcpId` |
+| **从 API 材料一键建 MCP（最高频）** | 收齐材料/业务目标/鉴权方式（缺就问）→ 按 [api-to-tool.md](references/api-to-tool.md) 拆三段式 + 设计整表给用户过目 → `service create`（`--name` 中文显示名 + **`--server-name` 必填**：kebab-case，就是顶层动态命令名，漏设则退化为 `mcp-<mcpId>`）→ 逐个 `tool create`（先建最简单的一个，`tool get` 读回核对再建其余）→ 逐个 `tool debug` 真跑（校验真实业务数据）→ 用户确认后逐个 `tool publish` → `url get --source PUBLISHED` → `connector mcp refresh` 验证动态命令 |
+| 从零创建 MCP 服务 | `service create --dry-run`（**必带 `--server-name`**，kebab-case 一级命令名）→ 用户确认 → `service create --yes` → 记录返回 `mcpId` |
 | 给服务新增 HTTP 工具 | 读 mapping-rules.md → `tool create --dry-run` → 用户确认 → `tool create --yes` → `tool get` 取 `toolId/versionId` 并核对 rules |
 | 验证草稿工具能跑 | `tool get` 取草稿 `versionId` → `tool debug --version-id <versionId> --dry-run` → 用户确认 → `tool debug --version-id <versionId> --yes` → 核验返回真实业务数据 |
 | debug 失败排查 | 大概率映射问题：位置名大小写（Pascal）/ express 字段用错 / 漏映射 → 按 mapping-rules.md 修 → `tool update`（全量）→ 再 debug；同一工具自动修最多 2 轮，仍不行按 [mcp.md](references/mcp.md) §故障定位 五步法排查后升级给用户 |
@@ -90,7 +90,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | "把这个接口做成 MCP / 给 agent 用" | 走 Shortcut 第一行全流程（从 API 材料一键建 MCP） |
 | "列出 MCP 服务 / 找回 mcpId 或 serverName" | `dws connector mcp service list --keyword <关键词> --format json`；读取顶层 `services[].mcpId/serverName` |
 | "查看 MCP 服务详情" | `dws connector mcp service get --mcp-id <mcpId> --format json` |
-| "创建 MCP 服务" | `dws connector mcp service create --name <名称> --description <描述> --dry-run --format json` |
+| "创建 MCP 服务" | `dws connector mcp service create --name <中文显示名> --server-name <kebab命令名> --description <描述> --dry-run --format json` |
 | "列出某服务工具 / 找回 toolId" | `dws connector mcp tool list --mcp-id <mcpId> --page-size 100 --format json` |
 | "读取工具定义 / 找 versionId" | `dws connector mcp tool get --mcp-id <mcpId> --tool-id <toolId> --format json` |
 | "调试工具草稿" | `dws connector mcp tool debug --mcp-id <mcpId> --tool-id <toolId> --version-id <versionId> --value '{"city_name":"北京"}' --dry-run --format json`（value=符合 toolInputs 的测试入参，从设计阶段的材料示例值来，不要传空 `{}` 走过场；带鉴权的工具加 `--credential-id <id>`） |
