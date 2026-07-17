@@ -73,7 +73,7 @@ MCP 开发脚手架（mcpdev 管理面）
 | 验证草稿工具能跑 | `tool get` 取草稿 `versionId` → `tool debug --version-id <versionId> --dry-run` → 用户确认 → `tool debug --version-id <versionId> --yes` → 核验返回真实业务数据 |
 | debug 失败排查 | 大概率映射问题：位置名大小写（Pascal）/ express 字段用错 / 漏映射 → 按 mapping-rules.md 修 → `tool update`（全量）→ 再 debug；同一工具自动修最多 2 轮，仍不行按 [mcp.md](references/mcp.md) §故障定位 五步法排查后升级给用户 |
 | 发布工具并可调用 | 确认最近一次 debug 成功 → `tool publish --dry-run` → 明确说明发布后使用方可调用 → 用户明确确认（「嗯/继续」不算）→ `tool publish --yes` → `tool get` 回读状态 |
-| 获取客户端接入地址 | 已发布未上架用 `url get --source PUBLISHED`；已上架市场用 `url get --source MARKET`；输出中的 `?key=` 只脱敏展示 |
+| 获取客户端接入地址 | 已发布未上架用 `url get --source PUBLISHED`；已上架市场用 `url get --source MARKET`；输出中的 `?key=` 只脱敏展示；**只返回 success 无 mcpUrl＝取址失败**（服务已删/不可用，平台缺口 Aone 84417179），先 `service get` 核实 |
 | 配置下游接口鉴权 | `auth get` 查现状 → `auth save --dry-run` → 用户确认 → `auth save --yes`；auth save 只存「说明书」（字段定义/换取与注入方式），真实密钥不要放鉴权配置，改用 `credential save` 存**开发者内置凭证** |
 | 管理凭证账号 | `credential list/get` 查账号元信息 → `credential save --content-file` 保存密钥（开发者内置凭证：归属当前用户+当前 MCP，密钥由开发者提供，配置调试与实例运行时两个场景都用它）→ `credential debug` 验证 → `credential bind` 选用（**仅对正式实例生效**；`tool debug` 不吃 bind，调试必须显式 `--credential-id`）；删除前先 `get` 核对 `flowCount` |
 | 管理开发协作者 | `member list` 查现状 → `member add/remove --user-ids <staffId,...> --dry-run` → 用户确认 → `--yes` |

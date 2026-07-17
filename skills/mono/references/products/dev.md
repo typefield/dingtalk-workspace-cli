@@ -149,7 +149,7 @@ dws connector mcp tool debug --mcp-id <mcpId> --tool-id <toolId> --value '{}' --
 dws connector mcp tool publish --mcp-id <mcpId> --tool-id <toolId> --dry-run --format json
 dws connector mcp tool versions --mcp-id <mcpId> --tool-id <toolId> --format json
 
-# 接入地址：按调用者个人身份生成的实例地址（非组织公共地址），含 ?key= 个人敏感凭证，勿外发
+# 接入地址：按调用者个人身份生成的实例地址（非组织公共地址），含 ?key= 个人敏感凭证，勿外发；只返回 success 无 mcpUrl＝服务已删/不可用（平台缺口），先 service get 核实
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
 # 下游鉴权配置、凭证账号、开发协作者

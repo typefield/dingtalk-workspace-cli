@@ -105,6 +105,7 @@
 - ⚠️（红线#13）**rules 的 source 必须在 apiOutputs/出参 schema 声明范围内**——引用未声明的子路径运行时不报错、UI 却标「变量已失效」；建工具时 `apiOutputs` 必须如实声明到被映射的最深层级。
 - ⚠️**省略 `outputMappings` 或传 `[]` ＝工具仍能建成**，运行时返回整包响应体且**多包一层 Body**（`{"Body":{…}}`，无任何裁剪）——不是「返回空」也不报错，但不推荐；请显式二选一。
 - **判读位**：`tool debug` 的业务返回在顶层 `toolOutput`（与 executeSuccess/toolInput/rawOutput/time 同级，不再嵌在 result.outputValue）；出参精修是否生效以 `toolOutput` 实际形状为准。
+- **null 省略**：映射引擎对值为 null 的字段整个省略（不会出现 `"字段": null`）——出参缺字段＝值为空；空成功（只剩 success:true）要警惕上游返回了空值，结合业务预期判读。
 
 ## 6. 系统参数注入（身份等）
 

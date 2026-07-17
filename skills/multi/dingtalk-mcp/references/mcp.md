@@ -310,6 +310,8 @@ dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 
 列表类命令返回**顶层平铺**分页（V4 起，无 result/list 信封）：语义化数组 + 分页字段同级——`service list`→`services[]`、`tool list`→`tools[]`、`tool versions`→`versions[]`、`credential list`→`credentials[]`，旁边是 `hasMore/nextCursor/totalCount`。用 `hasMore` 判断翻页，不要用「返回条数==pageSize」启发式。
 
+所有工具出参的通用行为（V4 出参映射）：**值为 null 的字段会被映射引擎整个省略**，不会出现 `"字段": null`——出参里缺某字段＝该值为空，不代表工具异常；判断成败一律看 `success`/`errorCode`。
+
 ## 工具
 
 ```bash
@@ -369,7 +371,8 @@ dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
 - **publish ≠ 上架市场**：publish 后企业内即可用，`--source PUBLISHED` 直接取到「已发布未上架」服务的可用地址——无需上架、无需外部工具，全程自助闭环。
 - 已上架市场传 `--source MARKET`。
-- 返回的是按调用者**个人身份**生成的实例地址（非组织级公共地址），服务须已有已发布工具才有可用实例。
+- 返回的是按调用者**个人身份**生成的实例地址（非组织级公共地址）。
+- ⚠️已知缺口（已反馈 Aone 84417179）：对**已删除/不可用**的服务取址不报错，返回 `success:true` 且无 mcpUrl/mcpJson 字段（空成功）。**只返回 success 而无 mcpUrl ＝ 取址失败**——先 `service get` 核实服务是否存在，绝不能当成功处理。
 - 返回的 URL 或 JSON config 含个人化 `?key=`，按敏感凭证处理，勿外发共享，只能给当前用户本地配置使用。
 - 代码或命令需要接入地址时优先使用 `url get` 或发现接口返回值，不要自行拼接服务 URL。
 
