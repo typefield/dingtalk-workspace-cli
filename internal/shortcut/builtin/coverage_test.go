@@ -270,6 +270,29 @@ func TestDMCanDisableAIClawType(t *testing.T) {
 	}
 }
 
+func TestChatSearchAcceptsKeywordAlias(t *testing.T) {
+	fake := &fakeCaller{}
+	helpers.InitDeps(fake)
+
+	root := &cobra.Command{Use: "dws", SilenceUsage: true, SilenceErrors: true}
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	root.AddCommand(builtin.Commands()...)
+	root.SetArgs([]string{"chat", "+chat-search", "--keyword", "树莓派", "--yes"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	if fake.product != "im" || fake.tool != "search_groups" {
+		t.Fatalf("call = %s/%s, want im/search_groups", fake.product, fake.tool)
+	}
+	if got := fake.args["keyword"]; got != "树莓派" {
+		t.Fatalf("keyword = %#v, want 树莓派", got)
+	}
+}
+
 // TestAllToolLiteralsAreReal statically scans every shortcut package source for
 // CallMCP("tool", ...) literals and asserts each tool exists in the helper
 // ground truth. This covers the ~55 shortcuts whose own validation blocks the

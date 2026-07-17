@@ -28,15 +28,23 @@ var ChatSearch = shortcut.Shortcut{
 	Intent:      "当你只记得群名称关键词、需要拿到群 openConversationId 以便发消息或管理该群时使用；按群名模糊搜索，只读分页返回匹配的群列表。",
 	Risk:        shortcut.RiskRead,
 	Flags: []shortcut.Flag{
-		{Name: "query", Type: shortcut.FlagString, Desc: "群名称关键词", Required: true},
+		{Name: "query", Type: shortcut.FlagString, Desc: "群名称关键词"},
+		{Name: "keyword", Type: shortcut.FlagString, Desc: "--query 的别名", Hidden: true},
 		{Name: "limit", Type: shortcut.FlagInt, Default: "20", Desc: "每页返回数量"},
 		{Name: "cursor", Type: shortcut.FlagString, Default: "0", Desc: "分页游标，翻页传 nextCursor"},
 		{Name: "exclude-muted", Type: shortcut.FlagBool, Desc: "排除已设置免打扰的群聊"},
 	},
 	Tips: []string{`dws chat +chat-search --query "项目冲刺"`},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		return rt.AtLeastOne("query", "keyword")
+	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
+		query := rt.Str("query")
+		if query == "" {
+			query = rt.Str("keyword")
+		}
 		params := map[string]any{
-			"keyword": rt.Str("query"),
+			"keyword": query,
 			"limit":   rt.Int("limit"),
 			"cursor":  rt.Str("cursor"),
 		}
