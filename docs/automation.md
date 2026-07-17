@@ -65,16 +65,25 @@ git diff --check
 ## Homebrew Formula PR Automation
 
 Official tag releases require the repository Actions secret
-`HOMEBREW_PR_TOKEN`. The `DingTalk-Real-AI` organization currently does not
-allow fine-grained personal access tokens to target this repository, so use a
-classic personal access token owned by a maintainer or release-bot account with
+`HOMEBREW_PR_TOKEN`. Prefer a fine-grained personal access token owned by a
+maintainer or release-bot account, limited to this repository with
+`Contents: write` and `Pull requests: write`. If organization policy prevents
+that account from targeting the repository, use a dedicated classic token with
 only the `public_repo` scope. Do not reuse a broad developer token.
 
-Store the non-expiring token as the `HOMEBREW_PR_TOKEN` repository Actions
-secret. Replace it immediately if it is exposed, its owner loses repository
-access, or the release-bot ownership changes. The Release workflow uses this
+Store the dedicated token as the `HOMEBREW_PR_TOKEN` repository Actions secret
+and rotate it before its configured expiration. Replace it immediately if it is
+exposed, its owner loses repository access, or the release-bot ownership
+changes. The Release workflow uses this
 dedicated token only to push an `automation/homebrew-*` branch and open the
 stable or beta Formula PR. It does not push Formula changes directly to `main`.
+The default-branch governance preflight and every tag contract authenticate the
+token before publication, reject over-scoped classic tokens, confirm its
+identity, and run a controlled write canary. The canary pushes a unique
+`automation/homebrew-token-canary-*` branch with a `[skip ci]` commit, creates a
+draft PR, closes it, and deletes the branch with the same token. This proves both
+Contents and Pull requests write access before publication without merging
+anything. The gate also rejects reuse of `RELEASE_GOVERNANCE_TOKEN`.
 No maintainer environment variable is required when creating a tag. Using the
 built-in `GITHUB_TOKEN` is insufficient because organization policy prevents
 Actions from creating pull requests, and its generated PR events may require

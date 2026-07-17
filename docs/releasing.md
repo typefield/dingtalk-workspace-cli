@@ -128,6 +128,7 @@ Homebrew 当前只属于本机预检/手工公式通道：预检会在当前 mac
 - `main` 必须要求精确的 `CI Gate`；tag workflow 也会通过 Checks API 再确认该封板 SHA 已通过。
 - 必须启用 immutable releases；它只保护启用后发布的 release，因此应在第一次使用新流水线前配置。为 `v*` 增加 tag ruleset，限制创建权限，并在 release 发布前保护 tag 的短暂窗口。
 - 配置 `RELEASE_GOVERNANCE_TOKEN` Actions secret，只授予目标仓库 `Administration: read`；内置 `GITHUB_TOKEN` 不具备 immutable-releases API 所需的仓库治理权限。每次本地预检和 tag workflow 都使用这一个身份进行 fail-closed 验证。
+- 单独配置 `HOMEBREW_PR_TOKEN`，优先使用仅授权本仓库且具备 `Contents: write`、`Pull requests: write` 的 fine-grained PAT；若组织策略不允许该账号使用 fine-grained PAT，则回退到仅带 `public_repo` scope 的专用 classic PAT。治理预检和 tag contract 会验证 token 身份、classic scope，并用 `[skip ci]` 临时分支和 draft PR 完成真实写权限 canary，随后立即关闭 PR、删除分支；任何清理失败都会 fail closed。门禁也会拒绝与治理 token 复用。
 - 创建 `release-recovery` environment，只允许受保护分支，设置 required reviewer、禁止自审并关闭管理员绕过。workflow 会读取 environment 的 required-reviewer、prevent-self-review 和 protected-branch 规则；规则缺失时紧急恢复会失败，正常 beta/stable tag 发布不受影响。
 
 immutable releases 或 `CI Gate` 缺失时，发布脚本会自动拒绝封 tag。tag ruleset 可能来自组织层，脚本不自动推断其最终作用范围；管理员确认不能省略，脚本约定也不能替代平台强制。

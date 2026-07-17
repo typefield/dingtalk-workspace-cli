@@ -1,6 +1,7 @@
 package scripts_test
 
 import (
+	"bytes"
 	"crypto/sha256"
 	"fmt"
 	"os"
@@ -8,7 +9,9 @@ import (
 	"path/filepath"
 	"sort"
 	"strings"
+	"syscall"
 	"testing"
+	"time"
 )
 
 var releasePlatformAssets = []string{
@@ -1237,6 +1240,370 @@ esac
 	output, err = run(true)
 	if err == nil || !strings.Contains(output, "run identity mismatch") {
 		t.Fatalf("mismatched governance run identity passed: err=%v\noutput:\n%s", err, output)
+	}
+}
+
+func TestVerifyHomebrewPRTokenRequiresMinimalWorkingIdentity(t *testing.T) {
+	sourceRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("Abs(repo root) error = %v", err)
+	}
+	binDir := t.TempDir()
+	fakeGH := filepath.Join(binDir, "gh")
+	mustWriteFile(t, fakeGH, []byte(`#!/bin/sh
+set -eu
+test "${GH_TOKEN:-}" = valid-token
+command="$1"
+shift
+test "$command" = api
+endpoint=""
+for argument in "$@"; do
+  case "$argument" in
+    repos/*|user) endpoint="$argument" ;;
+  esac
+done
+case "$endpoint" in
+  repos/owner/repo)
+    printf 'HTTP/2.0 200 OK\nX-OAuth-Scopes: %s\n\nowner/repo\t%s\tmain\n' \
+      "${GH_SCOPES-public_repo}" "${GH_CAN_PUSH:-true}"
+    ;;
+  repos/owner/repo/pulls?state=open\&per_page=1) ;;
+  user) printf '%s\n' release-bot ;;
+  *) exit 1 ;;
+esac
+`), 0o755)
+
+	script := filepath.Join(sourceRoot, "scripts", "release", "verify-homebrew-pr-token.sh")
+	run := func(token, scopes, canPush string) (string, error) {
+		cmd := exec.Command("sh", script, "owner/repo")
+		cmd.Env = []string{
+			"PATH=" + binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
+			"HOME=" + t.TempDir(),
+			"HOMEBREW_PR_TOKEN=" + token,
+			"GH_SCOPES=" + scopes,
+			"GH_CAN_PUSH=" + canPush,
+		}
+		output, err := cmd.CombinedOutput()
+		return string(output), err
+	}
+
+	output, err := run("valid-token", "public_repo", "true")
+	if err != nil || !strings.Contains(output, "Homebrew PR token capability passed for owner/repo as release-bot (classic-public_repo)") {
+		t.Fatalf("valid Homebrew PR token rejected: err=%v\noutput:\n%s", err, output)
+	}
+
+	output, err = run("valid-token", "repo", "true")
+	if err == nil || !strings.Contains(output, "must have only public_repo scope") {
+		t.Fatalf("overprivileged Homebrew PR token accepted: err=%v\noutput:\n%s", err, output)
+	}
+
+	output, err = run("valid-token", "", "true")
+	if err != nil || !strings.Contains(output, "(fine-grained)") {
+		t.Fatalf("fine-grained Homebrew PR token rejected: err=%v\noutput:\n%s", err, output)
+	}
+
+	output, err = run("valid-token", "public_repo", "false")
+	if err == nil || !strings.Contains(output, "does not have push permission") {
+		t.Fatalf("non-pushing Homebrew identity accepted: err=%v\noutput:\n%s", err, output)
+	}
+
+	output, err = run("", "public_repo", "true")
+	if err == nil || !strings.Contains(output, "HOMEBREW_PR_TOKEN is required") {
+		t.Fatalf("missing Homebrew token accepted: err=%v\noutput:\n%s", err, output)
+	}
+}
+
+func TestVerifyHomebrewPRTokenCanaryCreatesAndCleans(t *testing.T) {
+	sourceRoot, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("Abs(repo root) error = %v", err)
+	}
+	r := newReleaseTestRepo(t)
+	binDir := t.TempDir()
+	stateDir := t.TempDir()
+	realGit, err := exec.LookPath("git")
+	if err != nil {
+		t.Fatalf("LookPath(git) error = %v", err)
+	}
+	fakeGit := filepath.Join(binDir, "git")
+	mustWriteFile(t, fakeGit, []byte(`#!/bin/sh
+set -eu
+network=false
+for argument in "$@"; do
+  case "$argument" in
+    clone|push|ls-remote) network=true ;;
+  esac
+done
+if [ "$network" = true ]; then
+  printf '%s\n' "$*" >> "$GH_STATE/git-network-args"
+  case " $* " in
+    *" https://github.com/owner/repo.git "*) ;;
+    *) exit 91 ;;
+  esac
+  test "${GIT_CONFIG_NOSYSTEM:-}" = 1
+  test "${GIT_CONFIG_GLOBAL:-}" = /dev/null
+  test "${GIT_CONFIG_COUNT:-}" = 0
+  test -x "${GIT_ASKPASS:-}"
+  test "$("$GIT_ASKPASS" Username)" = x-access-token
+  test "$("$GIT_ASKPASS" Password)" = valid-token
+  case " $* " in
+    *" HEAD:refs/heads/"*)
+      if [ "${BLOCK_PUSH:-false}" = true ]; then
+        "$REAL_GIT" \
+          -c "url.$TEST_REMOTE.insteadOf=https://github.com/owner/repo.git" \
+          "$@"
+        : > "$GH_STATE/push-complete-${GITHUB_RUN_ID:-unknown}"
+        sleep 2
+        exit 0
+      fi
+      ;;
+  esac
+  case " $* " in
+    *" :refs/heads/"*)
+      if [ "${FAIL_DELETE:-false}" = true ]; then
+        exit 92
+      fi
+      ;;
+  esac
+  exec "$REAL_GIT" \
+    -c "url.$TEST_REMOTE.insteadOf=https://github.com/owner/repo.git" \
+    "$@"
+fi
+exec "$REAL_GIT" "$@"
+`), 0o755)
+	fakeGH := filepath.Join(binDir, "gh")
+	mustWriteFile(t, fakeGH, []byte(`#!/bin/sh
+set -eu
+test "${GH_TOKEN:-}" = valid-token
+command="$1"
+shift
+case "$command" in
+  api)
+    endpoint=""
+    for argument in "$@"; do
+      case "$argument" in
+        repos/*|user) endpoint="$argument" ;;
+      esac
+    done
+    case "$endpoint" in
+      repos/owner/repo)
+        printf 'HTTP/2.0 200 OK\nX-OAuth-Scopes: public_repo\n\nowner/repo\ttrue\tmain\n'
+        ;;
+      repos/owner/repo/pulls?state=open\&per_page=1) ;;
+      repos/owner/repo/pulls?state=open\&head=owner:*\&base=main\&per_page=2)
+        if [ -f "$GH_STATE/pr-open-${GITHUB_RUN_ID:-unknown}" ]; then
+          printf '%s\n' 42
+        fi
+        ;;
+      repos/owner/repo/pulls/42)
+        if [ "${FAIL_CLOSE:-false}" = true ]; then
+          exit 93
+        fi
+        rm -f "$GH_STATE/pr-open-${GITHUB_RUN_ID:-unknown}"
+        printf '%s\n' closed > "$GH_STATE/pr-closed-${GITHUB_RUN_ID:-unknown}"
+        ;;
+      user) printf '%s\n' release-bot ;;
+      *) exit 1 ;;
+    esac
+    ;;
+  pr)
+    test "$1" = create
+    shift
+    printf '%s\n' "$@" > "$GH_STATE/pr-args"
+    : > "$GH_STATE/pr-create-started-${GITHUB_RUN_ID:-unknown}"
+    if [ "${FAIL_PR_CREATE:-false}" = true ]; then
+      exit 94
+    fi
+    : > "$GH_STATE/pr-open-${GITHUB_RUN_ID:-unknown}"
+    if [ "${BLOCK_PR_CREATE:-false}" = true ]; then
+      sleep 2
+    fi
+    printf '%s\n' 'https://github.com/owner/repo/pull/42'
+    ;;
+  *) exit 1 ;;
+esac
+`), 0o755)
+
+	script := filepath.Join(sourceRoot, "scripts", "release", "verify-homebrew-pr-token.sh")
+	baseEnv := []string{
+		"PATH=" + binDir + string(os.PathListSeparator) + os.Getenv("PATH"),
+		"HOME=" + t.TempDir(),
+		"GH_STATE=" + stateDir,
+		"HOMEBREW_PR_TOKEN=valid-token",
+		"GITHUB_RUN_ATTEMPT=2",
+		"REAL_GIT=" + realGit,
+		"TEST_REMOTE=" + r.remote,
+	}
+	runCanary := func(runID string, extraEnv ...string) ([]byte, error) {
+		cmd := exec.Command("sh", script, "owner/repo", "--canary")
+		cmd.Dir = r.root
+		cmd.Env = append(append([]string{}, baseEnv...), "GITHUB_RUN_ID="+runID)
+		cmd.Env = append(cmd.Env, extraEnv...)
+		return cmd.CombinedOutput()
+	}
+	remoteHasBranch := func(branch string) bool {
+		cmd := exec.Command(
+			"git", "--git-dir", r.remote, "show-ref", "--verify",
+			"refs/heads/"+branch,
+		)
+		return cmd.Run() == nil
+	}
+
+	output, err := runCanary("12345")
+	if err != nil || !strings.Contains(string(output), "Homebrew PR token capability passed") {
+		t.Fatalf("Homebrew token canary error = %v\noutput:\n%s", err, output)
+	}
+
+	prArgs, err := os.ReadFile(filepath.Join(stateDir, "pr-args"))
+	if err != nil {
+		t.Fatalf("ReadFile(PR args) error = %v", err)
+	}
+	for _, required := range []string{
+		"--draft",
+		"--base\nmain",
+		"--head\nautomation/homebrew-token-canary-12345-2",
+	} {
+		if !strings.Contains(string(prArgs), required) {
+			t.Errorf("Homebrew token canary PR args are missing %q:\n%s", required, prArgs)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(stateDir, "pr-closed-12345")); err != nil {
+		t.Fatalf("Homebrew token canary did not close its PR: %v", err)
+	}
+	gitNetworkArgs, err := os.ReadFile(filepath.Join(stateDir, "git-network-args"))
+	if err != nil {
+		t.Fatalf("ReadFile(git network args) error = %v", err)
+	}
+	for _, required := range []string{
+		"clone",
+		"https://github.com/owner/repo.git",
+		"HEAD:refs/heads/automation/homebrew-token-canary-12345-2",
+		"--force-with-lease=refs/heads/automation/homebrew-token-canary-12345-2:",
+		":refs/heads/automation/homebrew-token-canary-12345-2",
+	} {
+		if !strings.Contains(string(gitNetworkArgs), required) {
+			t.Errorf("Homebrew token canary Git operations are missing %q:\n%s", required, gitNetworkArgs)
+		}
+	}
+
+	if remoteHasBranch("automation/homebrew-token-canary-12345-2") {
+		t.Fatal("Homebrew token canary left its remote branch behind")
+	}
+
+	output, err = runCanary("20001", "FAIL_PR_CREATE=true")
+	if err == nil || !strings.Contains(string(output), "cannot create a canary pull request") {
+		t.Fatalf("PR creation failure was not fail-closed: err=%v\noutput:\n%s", err, output)
+	}
+	if remoteHasBranch("automation/homebrew-token-canary-20001-2") {
+		t.Fatal("PR creation failure left its canary branch behind")
+	}
+
+	output, err = runCanary("20002", "FAIL_CLOSE=true")
+	if err == nil ||
+		!strings.Contains(string(output), "could not close canary PR") ||
+		!strings.Contains(string(output), "could not clean up Homebrew token canary PR") {
+		t.Fatalf("PR cleanup failure was not fail-closed: err=%v\noutput:\n%s", err, output)
+	}
+	if remoteHasBranch("automation/homebrew-token-canary-20002-2") {
+		t.Fatal("PR cleanup failure left its canary branch behind")
+	}
+	if _, err := os.Stat(filepath.Join(stateDir, "pr-open-20002")); err != nil {
+		t.Fatalf("PR cleanup failure did not leave an observable open canary PR: %v", err)
+	}
+
+	output, err = runCanary("20003", "FAIL_DELETE=true")
+	if err == nil ||
+		!strings.Contains(string(output), "could not delete canary branch") ||
+		!strings.Contains(string(output), "could not clean up Homebrew token canary branch") {
+		t.Fatalf("branch cleanup failure was not fail-closed: err=%v\noutput:\n%s", err, output)
+	}
+	if !remoteHasBranch("automation/homebrew-token-canary-20003-2") {
+		t.Fatal("branch deletion failure was hidden instead of leaving an observable failed canary")
+	}
+
+	termCmd := exec.Command("sh", script, "owner/repo", "--canary")
+	termCmd.Dir = r.root
+	termCmd.Env = append(append([]string{}, baseEnv...),
+		"GITHUB_RUN_ID=20004",
+		"BLOCK_PR_CREATE=true",
+	)
+	var termStdout bytes.Buffer
+	var termStderr bytes.Buffer
+	termCmd.Stdout = &termStdout
+	termCmd.Stderr = &termStderr
+	if err := termCmd.Start(); err != nil {
+		t.Fatalf("Start(TERM canary) error = %v", err)
+	}
+	marker := filepath.Join(stateDir, "pr-create-started-20004")
+	deadline := time.Now().Add(5 * time.Second)
+	for {
+		if _, err := os.Stat(marker); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			_ = termCmd.Process.Kill()
+			_ = termCmd.Wait()
+			t.Fatalf("TERM canary did not reach PR creation:\n%s%s", termStdout.String(), termStderr.String())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if err := termCmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatalf("Signal(TERM canary) error = %v", err)
+	}
+	err = termCmd.Wait()
+	exitErr, ok := err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 143 {
+		t.Fatalf("TERM canary exit = %v, want 143\nstdout:\n%s\nstderr:\n%s",
+			err, termStdout.String(), termStderr.String())
+	}
+	if remoteHasBranch("automation/homebrew-token-canary-20004-2") {
+		t.Fatal("TERM canary left its remote branch behind")
+	}
+	if _, err := os.Stat(filepath.Join(stateDir, "pr-closed-20004")); err != nil {
+		t.Fatalf("TERM canary did not close the PR created during the signal race: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(stateDir, "pr-open-20004")); !os.IsNotExist(err) {
+		t.Fatalf("TERM canary left an open PR marker: %v", err)
+	}
+
+	pushTermCmd := exec.Command("sh", script, "owner/repo", "--canary")
+	pushTermCmd.Dir = r.root
+	pushTermCmd.Env = append(append([]string{}, baseEnv...),
+		"GITHUB_RUN_ID=20005",
+		"BLOCK_PUSH=true",
+	)
+	var pushTermStdout bytes.Buffer
+	var pushTermStderr bytes.Buffer
+	pushTermCmd.Stdout = &pushTermStdout
+	pushTermCmd.Stderr = &pushTermStderr
+	if err := pushTermCmd.Start(); err != nil {
+		t.Fatalf("Start(push TERM canary) error = %v", err)
+	}
+	pushMarker := filepath.Join(stateDir, "push-complete-20005")
+	deadline = time.Now().Add(5 * time.Second)
+	for {
+		if _, err := os.Stat(pushMarker); err == nil {
+			break
+		}
+		if time.Now().After(deadline) {
+			_ = pushTermCmd.Process.Kill()
+			_ = pushTermCmd.Wait()
+			t.Fatalf("push TERM canary did not complete its remote push:\n%s%s",
+				pushTermStdout.String(), pushTermStderr.String())
+		}
+		time.Sleep(20 * time.Millisecond)
+	}
+	if err := pushTermCmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatalf("Signal(push TERM canary) error = %v", err)
+	}
+	err = pushTermCmd.Wait()
+	exitErr, ok = err.(*exec.ExitError)
+	if !ok || exitErr.ExitCode() != 143 {
+		t.Fatalf("push TERM canary exit = %v, want 143\nstdout:\n%s\nstderr:\n%s",
+			err, pushTermStdout.String(), pushTermStderr.String())
+	}
+	if remoteHasBranch("automation/homebrew-token-canary-20005-2") {
+		t.Fatal("push TERM canary left its remote branch behind")
 	}
 }
 

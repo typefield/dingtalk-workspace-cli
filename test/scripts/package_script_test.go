@@ -678,10 +678,13 @@ func TestReleaseWorkflowGovernancePreflightCannotPublish(t *testing.T) {
 		"governance_preflight_nonce:",
 		`format('Release governance preflight {0}', inputs.governance_preflight_nonce)`,
 		"name: Release governance preflight",
+		"name: Check out trusted preflight tooling",
 		"github.event_name == 'workflow_dispatch'",
 		"EXPECTED_REPOSITORY: DingTalk-Real-AI/dingtalk-workspace-cli",
 		`DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}`,
 		`test "$PREFLIGHT_COMMIT" = "$GITHUB_SHA"`,
+		`ref: ${{ inputs.governance_preflight_commit }}`,
+		"persist-credentials: false",
 		"governance preflight cannot be combined with npm repair",
 	} {
 		if !strings.Contains(workflow, required) {
@@ -689,7 +692,6 @@ func TestReleaseWorkflowGovernancePreflightCannotPublish(t *testing.T) {
 		}
 	}
 	for _, forbidden := range []string{
-		"actions/checkout",
 		"contents: write",
 		"goreleaser",
 		"gh release",
@@ -700,6 +702,11 @@ func TestReleaseWorkflowGovernancePreflightCannotPublish(t *testing.T) {
 		if strings.Contains(preflight, forbidden) {
 			t.Errorf("governance preflight must not contain publishing behavior %q", forbidden)
 		}
+	}
+	ciGate := strings.Index(preflight, "Require successful CI Gate on the preflight commit")
+	homebrewCanary := strings.Index(preflight, "Verify Homebrew PR automation permission")
+	if ciGate == -1 || homebrewCanary == -1 || ciGate > homebrewCanary {
+		t.Error("governance preflight must validate the exact CI Gate before exposing Homebrew credentials")
 	}
 
 	mirror := releaseWorkflowSection(t, workflow, "  mirror-gitee-release:\n", "\n  repair-npm:\n")
@@ -1014,13 +1021,24 @@ func TestReleaseWorkflowOpensHomebrewPROnlyForOfficialStableTags(t *testing.T) {
 		t.Fatal("the built-in GITHUB_TOKEN must not receive pull-request write permission")
 	}
 	for _, required := range []string{
-		"Check Homebrew PR automation token",
+		"Verify Homebrew PR automation permission",
 		"secrets.HOMEBREW_PR_TOKEN",
-		"HOMEBREW_PR_TOKEN is required to open Formula PRs from official releases",
+		"verify-homebrew-pr-token.sh",
+		"--canary",
+		"HOMEBREW_PR_TOKEN and RELEASE_GOVERNANCE_TOKEN must use separate least-privilege identities",
 	} {
 		if !strings.Contains(workflow, required) {
 			t.Errorf("release workflow is missing Homebrew PR token preflight %q", required)
 		}
+	}
+	if got := strings.Count(workflow, "Verify Homebrew PR automation permission"); got != 2 {
+		t.Errorf("Homebrew PR permission preflight count = %d, want one default-branch preflight and one tag contract", got)
+	}
+	tagContract := releaseWorkflowSection(t, workflow, "  release-contract:\n", "\n  release:\n")
+	tagCI := strings.Index(tagContract, "Require successful CI Gate on the sealed commit")
+	tagHomebrew := strings.Index(tagContract, "Verify Homebrew PR automation permission")
+	if tagCI == -1 || tagHomebrew == -1 || tagCI > tagHomebrew {
+		t.Error("tag contract must validate the sealed CI Gate before exposing Homebrew credentials")
 	}
 
 	start := strings.Index(workflow, "- name: Open stable Homebrew formula PR")

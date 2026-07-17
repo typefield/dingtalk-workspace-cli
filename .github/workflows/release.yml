@@ -173,6 +173,7 @@ jobs:
     timeout-minutes: 5
     permissions:
       checks: read
+      contents: read
     steps:
       - name: Validate trusted governance preflight context
         env:
@@ -214,15 +215,6 @@ jobs:
             exit 1
           }
 
-      - name: Require release governance token
-        env:
-          RELEASE_GOVERNANCE_TOKEN: ${{ secrets.RELEASE_GOVERNANCE_TOKEN }}
-        run: |
-          test -n "$RELEASE_GOVERNANCE_TOKEN" || {
-            echo "RELEASE_GOVERNANCE_TOKEN with repository Administration read permission is required" >&2
-            exit 1
-          }
-
       - name: Require successful CI Gate on the preflight commit
         uses: actions/github-script@v7
         env:
@@ -245,6 +237,22 @@ jobs:
               core.setFailed(`CI Gate has not succeeded for ${process.env.PREFLIGHT_COMMIT}`);
             }
 
+      - name: Check out trusted preflight tooling
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ inputs.governance_preflight_commit }}
+          persist-credentials: false
+          fetch-depth: 0
+
+      - name: Require release governance token
+        env:
+          RELEASE_GOVERNANCE_TOKEN: ${{ secrets.RELEASE_GOVERNANCE_TOKEN }}
+        run: |
+          test -n "$RELEASE_GOVERNANCE_TOKEN" || {
+            echo "RELEASE_GOVERNANCE_TOKEN with repository Administration read permission is required" >&2
+            exit 1
+          }
+
       - name: Require immutable releases governance
         uses: actions/github-script@v7
         with:
@@ -264,6 +272,21 @@ jobs:
             if (response.data.enabled !== true) {
               core.setFailed("Immutable releases must be enabled before publishing");
             }
+
+      - name: Verify Homebrew PR automation permission
+        env:
+          HOMEBREW_PR_TOKEN: ${{ secrets.HOMEBREW_PR_TOKEN }}
+          RELEASE_GOVERNANCE_TOKEN: ${{ secrets.RELEASE_GOVERNANCE_TOKEN }}
+        run: |
+          test -n "$HOMEBREW_PR_TOKEN" || {
+            echo "HOMEBREW_PR_TOKEN is required to open Formula PRs from official releases" >&2
+            exit 1
+          }
+          test "$HOMEBREW_PR_TOKEN" != "$RELEASE_GOVERNANCE_TOKEN" || {
+            echo "HOMEBREW_PR_TOKEN and RELEASE_GOVERNANCE_TOKEN must use separate least-privilege identities" >&2
+            exit 1
+          }
+          ./scripts/release/verify-homebrew-pr-token.sh "$GITHUB_REPOSITORY" --canary
 
   release-contract:
     needs: [dispatch-contract, authorize-recovery]
@@ -417,16 +440,6 @@ jobs:
             https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli.git \
             '+refs/tags/v*:refs/tags/v*'
 
-      - name: Check Homebrew PR automation token
-        if: ${{ github.repository_owner == 'DingTalk-Real-AI' }}
-        env:
-          HOMEBREW_PR_TOKEN: ${{ secrets.HOMEBREW_PR_TOKEN }}
-        run: |
-          if [ -z "${HOMEBREW_PR_TOKEN:-}" ]; then
-            echo "HOMEBREW_PR_TOKEN is required to open Formula PRs from official releases" >&2
-            exit 1
-          fi
-
       - name: Validate release contract
         id: contract
         env:
@@ -513,6 +526,23 @@ jobs:
             if (response.data.enabled !== true) {
               core.setFailed("Immutable releases must be enabled before publishing");
             }
+
+      - name: Verify Homebrew PR automation permission
+        if: ${{ github.repository_owner == 'DingTalk-Real-AI' }}
+        env:
+          HOMEBREW_PR_TOKEN: ${{ secrets.HOMEBREW_PR_TOKEN }}
+          RELEASE_GOVERNANCE_TOKEN: ${{ secrets.RELEASE_GOVERNANCE_TOKEN }}
+        run: |
+          if [ -z "$HOMEBREW_PR_TOKEN" ]; then
+            echo "HOMEBREW_PR_TOKEN is required to open Formula PRs from official releases" >&2
+            exit 1
+          fi
+          if [ "$HOMEBREW_PR_TOKEN" = "$RELEASE_GOVERNANCE_TOKEN" ]; then
+            echo "HOMEBREW_PR_TOKEN and RELEASE_GOVERNANCE_TOKEN must use separate least-privilege identities" >&2
+            exit 1
+          fi
+          "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/verify-homebrew-pr-token.sh" \
+            "$GITHUB_REPOSITORY" --canary
 
       - name: Require successful beta delivery before stable promotion
         if: ${{ steps.contract.outputs.channel == 'stable' }}
