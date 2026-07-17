@@ -91,6 +91,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--name", "get_weather",
 				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
+				"--api-outputs", `{"body":[{"key":"temperature","type":"number","description":"Temperature."}]}`,
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
@@ -107,6 +108,11 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				},
 				"toolInputs": []any{
 					map[string]any{"key": "city", "type": "string", "description": "City name, for example: Hangzhou."},
+				},
+				"apiOutputs": map[string]any{
+					"body": []any{
+						map[string]any{"key": "temperature", "type": "number", "description": "Temperature."},
+					},
 				},
 				"outputMappings": []any{
 					map[string]any{"target": "$", "type": "reference", "source": "$.node_service_activator.Body"},
