@@ -88,6 +88,8 @@ func buildAuthCommand(patCaller edition.ToolCaller) *cobra.Command {
 		newAuthImportCommand(),
 		newAuthExchangeCommand(patCaller),
 		newAuthResetCommand(),
+		newAuthTokenCommand(),
+		newAuthInjectCommand(),
 	)
 	return cmd
 }
