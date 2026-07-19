@@ -929,6 +929,7 @@ jobs:
             "$RELEASE_VERSION" "$RELEASE_COMMIT" "$RELEASE_TAG_OBJECT"
 
       - name: Publish or reuse immutable GitHub Release
+        id: publish
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           RELEASE_CHANNEL: ${{ needs.release-contract.outputs.channel }}
@@ -941,9 +942,36 @@ jobs:
             prerelease_flag="--prerelease"
           fi
 
+          release_id=""
           if gh release view "$RELEASE_VERSION" >/dev/null 2>&1; then
-            is_draft="$(gh release view "$RELEASE_VERSION" --json isDraft --jq .isDraft)"
-            is_prerelease="$(gh release view "$RELEASE_VERSION" --json isPrerelease --jq .isPrerelease)"
+            release_id="$(
+              gh release view "$RELEASE_VERSION" \
+                --json databaseId \
+                --jq .databaseId
+            )"
+            printf '%s\n' "$release_id" | grep -Eq '^[1-9][0-9]*$' || {
+              echo "Existing GitHub Release has an invalid database ID: $release_id" >&2
+              exit 1
+            }
+            resolved_tag="$(
+              gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+                "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                --jq .tag_name
+            )"
+            test "$resolved_tag" = "$RELEASE_VERSION" || {
+              echo "GitHub Release ID $release_id targets $resolved_tag, not $RELEASE_VERSION." >&2
+              exit 1
+            }
+            is_draft="$(
+              gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+                "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                --jq .draft
+            )"
+            is_prerelease="$(
+              gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+                "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                --jq .prerelease
+            )"
             if [ "$is_prerelease" != "$expected_prerelease" ]; then
               echo "Existing release channel does not match $RELEASE_CHANNEL." >&2
               exit 1
@@ -951,14 +979,18 @@ jobs:
             if [ "$is_draft" = "false" ]; then
               is_immutable="$(
                 gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
-                  "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION" \
+                  "repos/$GITHUB_REPOSITORY/releases/$release_id" \
                   --jq .immutable
               )"
               if [ "$is_immutable" != "true" ]; then
                 echo "Published release is mutable; refusing to reuse its assets." >&2
                 exit 1
               fi
-              remote_body="$(gh release view "$RELEASE_VERSION" --json body --jq .body)"
+              remote_body="$(
+                gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+                  "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+                  --jq .body
+              )"
               local_body="$(cat "$RUNNER_TEMP/release-notes.md")"
               if [ "$remote_body" != "$local_body" ]; then
                 echo "Published release notes differ from the sealed CHANGELOG." >&2
@@ -976,11 +1008,9 @@ jobs:
               fi
               published_dir="$RUNNER_TEMP/published-release"
               mkdir -p "$published_dir"
-              gh release download "$RELEASE_VERSION" \
-                --dir "$published_dir" \
-                --pattern 'dws-*' \
-                --pattern 'checksums.txt' \
-                --clobber
+              DWS_GITHUB_RELEASE_ID="$release_id" \
+                "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh" \
+                "$RELEASE_VERSION" "$published_dir"
               DWS_PACKAGE_DIST_DIR="$published_dir" \
                 ./scripts/release/verify-release-artifacts.sh "$RELEASE_VERSION"
               for asset in "$published_dir"/dws-* "$published_dir"/checksums.txt; do
@@ -993,12 +1023,10 @@ jobs:
               DWS_PACKAGE_DIST_DIR="$GITHUB_WORKSPACE/dist" \
                 DWS_PACKAGE_SOURCE_ROOT="$GITHUB_WORKSPACE" \
                 ./scripts/release/stage-npm-package.sh "$RELEASE_VERSION"
+              echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
               echo "Published GitHub Release is immutable and verified; reusing its exact assets."
               exit 0
             fi
-            gh release edit "$RELEASE_VERSION" \
-              --title "$RELEASE_VERSION" \
-              --notes-file "$RUNNER_TEMP/release-notes.md"
           else
             # shellcheck disable=SC2086
             gh release create "$RELEASE_VERSION" \
@@ -1007,6 +1035,63 @@ jobs:
               --title "$RELEASE_VERSION" \
               --notes-file "$RUNNER_TEMP/release-notes.md" \
               $prerelease_flag
+            release_id="$(
+              gh release view "$RELEASE_VERSION" \
+                --json databaseId \
+                --jq .databaseId
+            )"
+          fi
+          printf '%s\n' "$release_id" | grep -Eq '^[1-9][0-9]*$' || {
+            echo "Draft GitHub Release has an invalid database ID: $release_id" >&2
+            exit 1
+          }
+          resolved_tag="$(
+            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+              --jq .tag_name
+          )"
+          test "$resolved_tag" = "$RELEASE_VERSION" || {
+            echo "Draft GitHub Release ID $release_id targets $resolved_tag, not $RELEASE_VERSION." >&2
+            exit 1
+          }
+          gh api --method PATCH \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+            -f tag_name="$RELEASE_VERSION" \
+            -f target_commitish="$RELEASE_COMMIT" \
+            -f name="$RELEASE_VERSION" \
+            -f body="$(cat "$RUNNER_TEMP/release-notes.md")" \
+            -F draft=true \
+            -F prerelease="$expected_prerelease" \
+            >/dev/null
+          draft_state="$(
+            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+              --jq '[.tag_name, .draft, .prerelease] | @tsv'
+          )"
+          test "$draft_state" = "$(printf '%s\ttrue\t%s' "$RELEASE_VERSION" "$expected_prerelease")" || {
+            echo "Draft GitHub Release identity or channel changed before upload." >&2
+            exit 1
+          }
+          draft_body="$(
+            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+              --jq .body
+          )"
+          local_body="$(cat "$RUNNER_TEMP/release-notes.md")"
+          test "$draft_body" = "$local_body" || {
+            echo "Draft GitHub Release notes differ from the sealed CHANGELOG." >&2
+            exit 1
+          }
+          if [ "$IS_RECOVERY" = "true" ]; then
+            recovery_marker="<!-- dws-release-recovery run=$GITHUB_RUN_ID tag-object=$RELEASE_TAG_OBJECT commit=$RELEASE_COMMIT -->"
+            case "$draft_body" in
+              *"$recovery_marker"*) ;;
+              *)
+                echo "Draft GitHub Release is not bound to this exact recovery run." >&2
+                exit 1
+                ;;
+            esac
           fi
           gh release upload "$RELEASE_VERSION" \
             dist/dws-*.tar.gz \
@@ -1014,15 +1099,24 @@ jobs:
             dist/dws-skills.zip \
             dist/checksums.txt \
             --clobber
-          ./scripts/release/verify-github-release-assets.sh "$RELEASE_VERSION"
+          uploaded_release_id="$(
+            gh release view "$RELEASE_VERSION" \
+              --json databaseId \
+              --jq .databaseId
+          )"
+          test "$uploaded_release_id" = "$release_id" || {
+            echo "GitHub Release identity changed during upload: $release_id -> $uploaded_release_id" >&2
+            exit 1
+          }
+          DWS_GITHUB_RELEASE_ID="$release_id" \
+            "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh" \
+            "$RELEASE_VERSION"
           sealed_upload="$RUNNER_TEMP/sealed-upload"
           rm -rf "$sealed_upload"
           mkdir -p "$sealed_upload"
-          gh release download "$RELEASE_VERSION" \
-            --dir "$sealed_upload" \
-            --pattern 'dws-*' \
-            --pattern 'checksums.txt' \
-            --clobber
+          DWS_GITHUB_RELEASE_ID="$release_id" \
+            "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh" \
+            "$RELEASE_VERSION" "$sealed_upload"
           DWS_PACKAGE_DIST_DIR="$sealed_upload" \
             ./scripts/release/verify-release-artifacts.sh "$RELEASE_VERSION"
           for remote_asset in "$sealed_upload"/dws-* "$sealed_upload"/checksums.txt; do
@@ -1032,23 +1126,76 @@ jobs:
               exit 1
             }
           done
-          gh release edit "$RELEASE_VERSION" --draft=false
+          gh api --method PATCH \
+            -H 'X-GitHub-Api-Version: 2026-03-10' \
+            "repos/$GITHUB_REPOSITORY/releases/$release_id" \
+            -f name="$RELEASE_VERSION" \
+            -f body="$(cat "$RUNNER_TEMP/release-notes.md")" \
+            -F prerelease="$expected_prerelease" \
+            -F draft=false \
+            >/dev/null
+          echo "release_id=$release_id" >> "$GITHUB_OUTPUT"
 
       - name: Require immutable published GitHub Release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          RELEASE_ID: ${{ steps.publish.outputs.release_id }}
+          RELEASE_CHANNEL: ${{ needs.release-contract.outputs.channel }}
         run: |
           set -eu
-          immutable="$(
-            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
-              "repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION" \
-              --jq .immutable
-          )"
-          test "$immutable" = true || {
-            echo "GitHub Release is not immutable; refusing downstream publication." >&2
+          expected_prerelease=false
+          if [ "$RELEASE_CHANNEL" = "prerelease" ]; then expected_prerelease=true; fi
+          printf '%s\n' "$RELEASE_ID" | grep -Eq '^[1-9][0-9]*$' || {
+            echo "Published GitHub Release has an invalid database ID: $RELEASE_ID" >&2
             exit 1
           }
-          ./scripts/release/verify-github-release-assets.sh "$RELEASE_VERSION"
+          release_state="$(
+            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+              --jq '[.tag_name, .draft, .prerelease, .immutable] | @tsv'
+          )"
+          test "$release_state" = "$(printf '%s\tfalse\t%s\ttrue' "$RELEASE_VERSION" "$expected_prerelease")" || {
+            echo "GitHub Release ID $RELEASE_ID is not the exact public immutable $RELEASE_VERSION release." >&2
+            exit 1
+          }
+          immutable_body="$(
+            gh api -H 'X-GitHub-Api-Version: 2026-03-10' \
+              "repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID" \
+              --jq .body
+          )"
+          local_body="$(cat "$RUNNER_TEMP/release-notes.md")"
+          test "$immutable_body" = "$local_body" || {
+            echo "Immutable GitHub Release notes differ from the sealed CHANGELOG." >&2
+            exit 1
+          }
+          if [ "$IS_RECOVERY" = "true" ]; then
+            recovery_marker="<!-- dws-release-recovery run=$GITHUB_RUN_ID tag-object=$RELEASE_TAG_OBJECT commit=$RELEASE_COMMIT -->"
+            case "$immutable_body" in
+              *"$recovery_marker"*) ;;
+              *)
+                echo "Immutable GitHub Release is not bound to this exact recovery run." >&2
+                exit 1
+                ;;
+            esac
+          fi
+          DWS_GITHUB_RELEASE_ID="$RELEASE_ID" \
+            "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh" \
+            "$RELEASE_VERSION"
+          immutable_dir="$RUNNER_TEMP/immutable-release"
+          rm -rf "$immutable_dir"
+          mkdir -p "$immutable_dir"
+          DWS_GITHUB_RELEASE_ID="$RELEASE_ID" \
+            "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh" \
+            "$RELEASE_VERSION" "$immutable_dir"
+          DWS_PACKAGE_DIST_DIR="$immutable_dir" \
+            ./scripts/release/verify-release-artifacts.sh "$RELEASE_VERSION"
+          for immutable_asset in "$immutable_dir"/dws-* "$immutable_dir"/checksums.txt; do
+            sealed_asset="dist/$(basename "$immutable_asset")"
+            cmp -s "$sealed_asset" "$immutable_asset" || {
+              echo "Immutable GitHub asset differs from this run's sealed bytes: $(basename "$immutable_asset")" >&2
+              exit 1
+            }
+          done
           "$GITHUB_WORKSPACE/tmp/trusted-release-tooling/scripts/release/verify-github-tag-authority.sh" \
             "$RELEASE_VERSION" "$RELEASE_COMMIT" "$RELEASE_TAG_OBJECT"
 

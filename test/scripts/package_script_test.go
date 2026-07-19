@@ -799,6 +799,94 @@ func TestReleaseWorkflowRecoveryReusesGuardedJobs(t *testing.T) {
 	}
 }
 
+func TestReleaseWorkflowDraftLifecycleUsesOneReleaseID(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	publishJob := releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n")
+	publishStep := releaseWorkflowSection(
+		t,
+		publishJob,
+		"      - name: Publish or reuse immutable GitHub Release\n",
+		"\n      - name: Require immutable published GitHub Release\n",
+	)
+
+	for _, required := range []string{
+		"id: publish",
+		"--json databaseId",
+		`"repos/$GITHUB_REPOSITORY/releases/$release_id"`,
+		`uploaded_release_id="$(`,
+		`test "$uploaded_release_id" = "$release_id"`,
+		"Draft GitHub Release ID $release_id targets",
+		"Draft GitHub Release notes differ from the sealed CHANGELOG.",
+		"Draft GitHub Release is not bound to this exact recovery run.",
+		`DWS_GITHUB_RELEASE_ID="$release_id"`,
+		`tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh`,
+		`tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh`,
+		`cmp -s "$local_asset" "$remote_asset"`,
+		"-F draft=false",
+		`echo "release_id=$release_id" >> "$GITHUB_OUTPUT"`,
+	} {
+		if !strings.Contains(publishStep, required) {
+			t.Errorf("Draft release lifecycle is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`gh release download "$RELEASE_VERSION"`,
+		`gh release edit "$RELEASE_VERSION" --draft=false`,
+		`"repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION"`,
+	} {
+		if strings.Contains(publishStep, forbidden) {
+			t.Errorf("Draft release lifecycle must not switch back from the locked release ID via %q", forbidden)
+		}
+	}
+
+	tagGuard := strings.Index(publishStep, "Draft GitHub Release ID $release_id targets")
+	draftPatch := strings.Index(publishStep, "-F draft=true")
+	bodyVerify := strings.Index(publishStep, "Draft GitHub Release notes differ from the sealed CHANGELOG.")
+	markerVerify := strings.Index(publishStep, "Draft GitHub Release is not bound to this exact recovery run.")
+	upload := strings.Index(publishStep, `gh release upload "$RELEASE_VERSION"`)
+	idRecheck := strings.Index(publishStep, `test "$uploaded_release_id" = "$release_id"`)
+	verify := strings.Index(publishStep, "tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh")
+	download := strings.LastIndex(publishStep, "tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh")
+	byteCompare := strings.Index(publishStep, `cmp -s "$local_asset" "$remote_asset"`)
+	publish := strings.Index(publishStep, "-F draft=false")
+	if tagGuard == -1 || draftPatch == -1 || bodyVerify == -1 || markerVerify == -1 ||
+		upload == -1 || idRecheck == -1 || verify == -1 || download == -1 || byteCompare == -1 || publish == -1 ||
+		!(tagGuard < draftPatch && draftPatch < bodyVerify && bodyVerify < markerVerify && markerVerify < upload &&
+			upload < idRecheck && idRecheck < verify && verify < download && download < byteCompare && byteCompare < publish) {
+		t.Fatal("Draft must retain one release ID through upload, exact verification, download, byte comparison, and publication")
+	}
+
+	terminalStep := publishJob[strings.Index(publishJob, "      - name: Require immutable published GitHub Release\n"):]
+	for _, required := range []string{
+		`RELEASE_ID: ${{ steps.publish.outputs.release_id }}`,
+		`RELEASE_CHANNEL: ${{ needs.release-contract.outputs.channel }}`,
+		`"repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"`,
+		`DWS_GITHUB_RELEASE_ID="$RELEASE_ID"`,
+		`tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh`,
+		`tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh`,
+		`[.tag_name, .draft, .prerelease, .immutable] | @tsv`,
+		`printf '%s\tfalse\t%s\ttrue' "$RELEASE_VERSION" "$expected_prerelease"`,
+		"Immutable GitHub Release notes differ from the sealed CHANGELOG.",
+		"Immutable GitHub Release is not bound to this exact recovery run.",
+		`DWS_PACKAGE_DIST_DIR="$immutable_dir"`,
+		`cmp -s "$sealed_asset" "$immutable_asset"`,
+	} {
+		if !strings.Contains(terminalStep, required) {
+			t.Errorf("terminal immutable release gate is missing %q", required)
+		}
+	}
+	immutableState := strings.Index(terminalStep, `[.tag_name, .draft, .prerelease, .immutable] | @tsv`)
+	immutableBody := strings.Index(terminalStep, "Immutable GitHub Release notes differ from the sealed CHANGELOG.")
+	immutableDownload := strings.Index(terminalStep, "tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh")
+	immutableVerify := strings.Index(terminalStep, `DWS_PACKAGE_DIST_DIR="$immutable_dir"`)
+	immutableCompare := strings.Index(terminalStep, `cmp -s "$sealed_asset" "$immutable_asset"`)
+	if immutableState == -1 || immutableBody == -1 || immutableDownload == -1 || immutableVerify == -1 || immutableCompare == -1 ||
+		!(immutableState < immutableBody && immutableBody < immutableDownload && immutableDownload < immutableVerify && immutableVerify < immutableCompare) {
+		t.Fatal("terminal gate must reverify immutable notes and exact sealed bytes on the locked release ID")
+	}
+}
+
 func TestRecoverReleaseBindsOneFailedRunAttempt(t *testing.T) {
 	t.Parallel()
 	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "recover-release.sh"))
@@ -1090,7 +1178,7 @@ func TestReleaseWorkflowUsesAppleCodesignBeforePublication(t *testing.T) {
 	}
 
 	codesign := strings.Index(workflow[verifyJob:publishJob], "codesign --verify --strict --verbose=4")
-	publish := strings.Index(workflow[publishJob:], `gh release edit "$RELEASE_VERSION" --draft=false`)
+	publish := strings.Index(workflow[publishJob:], "-F draft=false")
 	if codesign == -1 || publish == -1 {
 		t.Fatal("macOS codesign verification and explicit Draft publication are required")
 	}
