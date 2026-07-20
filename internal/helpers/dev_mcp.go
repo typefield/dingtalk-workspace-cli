@@ -424,7 +424,7 @@ func newDevMCPToolCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "create",
 		Short:             "新建 MCP 工具草稿",
-		Example:           "  dws connector mcp tool create --mcp-id 10487 --name get_weather --http-info '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
+		Example:           "  dws connector mcp tool create --mcp-id 10487 --name get_weather --title 查询天气 --description 按经纬度查询实时天气 --http-info '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --api-inputs '{\"query\":[{\"key\":\"lat\",\"type\":\"number\",\"description\":\"纬度\"}]}' --tool-inputs '[{\"key\":\"lat\",\"type\":\"number\",\"required\":true,\"description\":\"纬度，示例：39.9\"}]' --input-mappings '[{\"target\":\"$.Query.lat\",\"type\":\"reference\",\"source\":\"$.node_start.lat\"}]' --api-outputs '{\"body\":[{\"key\":\"temperature\",\"type\":\"number\",\"description\":\"温度\"}]}' --tool-outputs '[]' --output-mappings '[{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]' --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -448,7 +448,7 @@ func newDevMCPToolUpdateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "update",
 		Short:             "编辑 MCP 工具并保存为草稿",
-		Example:           "  dws connector mcp tool update --mcp-id 10487 --tool-id G-ACT-xxx --name get_weather --http-info '{\"method\":\"GET\",\"url\":\"https://example.com\",\"auth\":{\"type\":\"NO_AUTH\"}}' --dry-run --format json",
+		Example:           "  dws connector mcp tool update --mcp-id 10487 --tool-id G-ACT-xxx --name get_weather --title 查询天气 --description 按经纬度查询实时天气 --http-info '{...}' --api-inputs '{...}' --tool-inputs '[...]' --input-mappings '[...]' --api-outputs '{...}' --tool-outputs '[]' --output-mappings '[...]' --dry-run --format json（全量提交：先 tool get 读回，各段在现状基础上改）",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -941,11 +941,11 @@ func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 	cmd.Flags().String("http", "", "已更名为 --http-info")
 	_ = cmd.Flags().MarkHidden("http")
 	cmd.Flags().String("api-inputs", "", "必填。接口真实入参 JSON 对象：{headers,body,query,path} 四组，每组=字段数组，字段项={key,title,type,required,description,children}；⚠️平台不支持 enum/default/example 属性——枚举/默认值/示例写进字段 description 文本")
-	cmd.Flags().String("api-outputs", "", "接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤；⚠️与 --output-mappings 必须同批提交（整体透传也必须声明，否则 UI 标「变量已失效」且 publish 被拒），真实结构未知时先建裸草稿→debug 取样→update 补齐")
+	cmd.Flags().String("api-outputs", "", "必填。接口真实出参 JSON 对象：{headers,body} 两组，字段结构同 --api-inputs；⚠️出参按此 schema 精确裁剪——声明什么字段就返回什么，未声明的被过滤（漏声明=业务数据被整段吞掉）；结构未知时先按材料尽力声明→debug 取样→update 修正")
 	cmd.Flags().String("tool-inputs", "", "必填。暴露给 LLM 的入参字段树 JSON 数组（array 型 children 固定一项 key=items）；每字段必须写自包含 description：含义+取值格式+示例，可对 api-inputs 裁剪/改名/加防呆")
-	cmd.Flags().String("tool-outputs", "", "可选。暴露给 LLM 的出参字段树 JSON 数组；与 --output-mappings 配套做出参精修（裁字段/改名/补语义）；留空且整体透传时=返回按 --api-outputs 裁剪后的完整响应体")
+	cmd.Flags().String("tool-outputs", "", "必填。暴露给 LLM 的出参字段树 JSON 数组；不做出参精修时显式传 '[]'（配整体透传=返回按 --api-outputs 裁剪后的完整响应体）；精修时与 --output-mappings 配套（裁字段/改名/补语义）")
 	cmd.Flags().String("input-mappings", "", "必填。入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
-	cmd.Flags().String("output-mappings", "", "出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️必须与 --api-outputs 同批提交并静态互验（source 引用的字段必须已声明，红线#13）；⚠️省略或传 []＝草稿仍建成但运行时多包一层 Body 且 publish 被拦，需先 update 补齐")
+	cmd.Flags().String("output-mappings", "", "必填。出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️必须与 --api-outputs 同批提交并静态互验（source 引用的字段必须已声明，红线#13）；⚠️省略或传 []＝草稿仍建成但运行时多包一层 Body 且 publish 被拦，需先 update 补齐")
 }
 
 func annotateDevMCPTool(cmd *cobra.Command, tool string) *cobra.Command {
@@ -1040,6 +1040,19 @@ func devMCPToolUpsertParams(cmd *cobra.Command, includeToolID bool) (map[string]
 	}
 	if err := devMCPValidateToolUpsertParams(params); err != nil {
 		return nil, err
+	}
+	var missingOutputs []string
+	for _, f := range []struct{ key, flag string }{
+		{"apiOutputs", "--api-outputs"},
+		{"toolOutputs", "--tool-outputs"},
+		{"outputMappings", "--output-mappings"},
+	} {
+		if _, ok := params[f.key]; !ok {
+			missingOutputs = append(missingOutputs, f.flag)
+		}
+	}
+	if len(missingOutputs) > 0 {
+		return nil, apperrors.NewValidation(strings.Join(missingOutputs, "、") + " 为必填（0720 契约：出参三件套）。漏传 apiOutputs 的故障形态：工具建成且调用看似成功，但下游复杂结构字段被精确裁剪整段吞掉、UI 出参映射标「变量已失效」。不做出参精修时：--tool-outputs 传 '[]'、--output-mappings 用整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]、--api-outputs 按接口真实出参如实声明（结构未知先按材料尽力声明，debug 取样后 update 修正）")
 	}
 	return params, nil
 }

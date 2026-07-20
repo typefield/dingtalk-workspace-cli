@@ -29,7 +29,7 @@ metadata:
 5. 发布前必须先 `tool debug` 调试通过；调试草稿必须显式传草稿 `--version-id`。**debug 通过的标准是返回真实业务数据**（如查北京要真返回经纬度），不是「没报错」；业务结果在返回**顶层 `toolOutput`** 字段（V4 起平铺）。**调试带鉴权的工具必须显式传 `--credential-id`**——debug 不使用 `credential bind` 绑定的凭证，不传则按无凭证直调，症状全是误导性假错。
 6. `url get` 返回的是按调用者**个人身份**生成的实例地址（非组织公共地址），其中 `?key=` 是个人敏感凭证，勿外发共享，不写入文档、代码、日志或回答全文。
 7. 删除服务前必须先 `service get` + `tool list` 核对；服务下还有工具时先逐个删除工具。
-8. **写 `--input-mappings` / `--output-mappings` 前先读 [mapping-rules.md](references/mapping-rules.md)**——映射是最大坑源：位置名 Pascal 写错、express 用错字段、出参 rules 的 source 未在 apiOutputs 声明范围内（UI 标「变量已失效」）都**静默失效不报错**，只有 debug 真跑才暴露；出参映射省略/传 []＝返回多包一层 Body 的整包响应体（非精修，不推荐）。**CLI 双闸**：create/update 时 mappings 引用的字段必须在同批提交的 apiInputs/apiOutputs/toolInputs/toolOutputs 里可解析（整体透传也必须带 apiOutputs）；publish 前自动读回草稿复验出参 rules 可解析性，不过直接拒发。
+8. **写 `--input-mappings` / `--output-mappings` 前先读 [mapping-rules.md](references/mapping-rules.md)**——映射是最大坑源：位置名 Pascal 写错、express 用错字段、出参 rules 的 source 未在 apiOutputs 声明范围内（UI 标「变量已失效」）都**静默失效不报错**，只有 debug 真跑才暴露；出参三件套（api-outputs/tool-outputs/output-mappings）0720 起必填——漏传 apiOutputs＝下游复杂结构字段被整段吞掉（调用还"成功"），CLI 已硬拦。**CLI 双闸**：create/update 时 mappings 引用的字段必须在同批提交的 apiInputs/apiOutputs/toolInputs/toolOutputs 里可解析（整体透传也必须带 apiOutputs）；publish 前自动读回草稿复验出参 rules 可解析性，不过直接拒发。
 9. `tool update` 是全量提交：先 `tool get` 读回（返回的是底层存储格式，需翻译回三段式），漏字段等于清空。
 
 ## 领域模型

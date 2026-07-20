@@ -76,14 +76,14 @@ service create
 
 - `toolInputs` 的 `key` 对应 `inputMappings.source`（`$.node_start.<key>`）；`apiInputs` 的字段位置对应 `inputMappings.target`（`$.<位置>.<key>`）。
 - **平台不支持 enum/default/example 等 JSON Schema 标准属性**——枚举、默认值、示例一律写进字段 `description` 文本。
-- create/update 必填集（V4 起）：`mcpId / name / title / description / --http-info / --api-inputs / --tool-inputs / --input-mappings` 全部必填（required 是 schema 语义约束，平台运行时不强拦缺失，但必须照填）；`toolType` 参数已移除（多传会被静默忽略）；旧键 `http` 仍报 `business_error_invalid_params`。`outputMappings` 建议显式配置（省略/传 []＝整包响应体外多包一层 Body，见下）。
+- create/update 必填集（0720 第六刀终态）：`mcpId / name / title / description / --http-info / --api-inputs / --tool-inputs / --input-mappings` + **出参三件套 `--api-outputs / --tool-outputs / --output-mappings`** 全部必填（create 11 项、update 12 项；`--tool-outputs` 不做精修显式传 `[]`）。CLI 已硬拦缺项；平台运行时不强拦，但**漏传 apiOutputs 的故障形态**＝工具建成且调用看似成功、下游复杂结构字段被精确裁剪整段吞掉、UI 出参映射标「变量已失效」。`toolType` 参数已移除（多传被静默忽略）；旧键 `http` 仍报 `business_error_invalid_params`。
 - 工具 `description` 有 DB 列长限制（约 700 字符）：`tool create/update` 草稿不报错，**`tool publish` 才报 Data too long**——描述超长要在发布前收敛。
 
 映射规则的完整格式（JSONPath 写法、Pascal 位置名、reference/fixed/express 三型、出参透传、系统参数、数组双规则）见 **[mapping-rules.md](mapping-rules.md)**，写 `--input-mappings` / `--output-mappings` 前必读。速记三条最大的坑：
 
 - target 位置名必须 Pascal（`$.Query.*` / `$.Body.*`），全大写/全小写**静默失效**；
 - `express` 类型的表达式必须放 `expression` 字段（不是 `source`），放错被静默存成 `{}`；
-- `outputMappings` 显式二选一：整体透传 `{"type":"reference","source":"$.node_service_activator.Body","target":"$"}`，或字段级精修（裁剪/改名/[*]/嵌套/系统变量，见 mapping-rules.md §5）；⚠️省略或传 `[]`＝工具仍建成、运行时返回 `{"Body":{整包响应体}}` 包壳（不报错也不是返回空），不推荐。⚠️出参 rules 的 source 必须在 apiOutputs 声明范围内，否则 UI 标「变量已失效」（红线#13）。
+- `outputMappings`（必填）二选一：整体透传 `{"type":"reference","source":"$.node_service_activator.Body","target":"$"}`，或字段级精修（裁剪/改名/[*]/嵌套/系统变量，见 mapping-rules.md §5）。⚠️出参 rules 的 source 必须在 apiOutputs 声明范围内，否则 UI 标「变量已失效」（红线#13）。（直连脚手架的旧调用方注记：平台运行时不强拦省略/[]，行为=返回 `{"Body":{整包响应体}}` 包壳——勿依赖。）
 - `corpId` / `userId` 等调用者身份由系统参数注入（`$.system_node.*`），不要做成 toolInput 让 LLM 传。
 
 ### 从 API 材料到工具定义
@@ -343,8 +343,8 @@ dws connector mcp tool get --mcp-id <mcpId> --tool-id <toolId> --format json
 dws connector mcp tool versions --mcp-id <mcpId> --tool-id <toolId> --format json
 
 # 创建 / 更新工具：复杂字段使用 JSON 字符串
-dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --title <标题> --description <描述> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
-dws connector mcp tool update --mcp-id <mcpId> --tool-id <toolId> --name <snake_case_name> --title <标题> --description <描述> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --dry-run --format json
+dws connector mcp tool create --mcp-id <mcpId> --name <snake_case_name> --title <标题> --description <描述> --http-info '{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}' --api-inputs '{...}' --tool-inputs '[...]' --input-mappings '[...]' --api-outputs '{...}' --tool-outputs '[]' --output-mappings '[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]' --dry-run --format json
+dws connector mcp tool update --mcp-id <mcpId> --tool-id <toolId> <同 create 全量字段（0720 起含出参三件套）> --dry-run --format json
 
 # 调试 / 发布 / 删除（value=符合 toolInputs 的测试入参，不要传空 {} 走过场）
 dws connector mcp tool debug --mcp-id <mcpId> --tool-id <toolId> --version-id <versionId> --value '{"city_name":"北京"}' --credential-id <credentialId> --dry-run --format json

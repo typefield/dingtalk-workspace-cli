@@ -42,6 +42,12 @@ func TestConnectorMCPMappingReferenceLintRejects(t *testing.T) {
 		wantErr string
 	}{
 		{
+			// 0720 第六刀：出参三件套必填，裸草稿不再是合法中间态。
+			name: "bare draft rejected since output trio required",
+			args: lintTestCreateArgs(),
+			wantErr: "出参三件套",
+		},
+		{
 			// 0717 opencode 实测形态：整体透传 rule + 不传 apiOutputs，
 			// 发布后 UI 标「变量已失效」。
 			name: "passthrough without api outputs",
@@ -142,14 +148,10 @@ func TestConnectorMCPMappingReferenceLintAccepts(t *testing.T) {
 		args []string
 	}{
 		{
-			// 裸草稿（出参三件都不传）是合法中间态：debug 取样后再补。
-			name: "bare draft without mappings",
-			args: lintTestCreateArgs(),
-		},
-		{
 			name: "passthrough with declared api outputs",
 			args: lintTestCreateArgs(
 				"--api-outputs", `{"body":[{"key":"errcode","type":"number"},{"key":"result","type":"object","children":[{"key":"dept_id_list","type":"array","children":[{"key":"items","type":"number"}]}]}]}`,
+				"--tool-outputs", `[]`,
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 			),
 		},
@@ -167,6 +169,9 @@ func TestConnectorMCPMappingReferenceLintAccepts(t *testing.T) {
 				"--api-inputs", `{"query":[{"key":"name","type":"string"},{"key":"language","type":"string"}]}`,
 				"--tool-inputs", `[{"key":"city_name","type":"string","description":"城市名，如：杭州"}]`,
 				"--input-mappings", `[{"target":"$.Query.name","type":"reference","source":"$.node_start.city_name"},{"target":"$.Query.language","type":"fixed","source":"zh"}]`,
+				"--api-outputs", `{"body":[{"key":"results","type":"array","children":[{"key":"items","type":"object"}]}]}`,
+				"--tool-outputs", `[]`,
+				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 			),
 		},
 	}

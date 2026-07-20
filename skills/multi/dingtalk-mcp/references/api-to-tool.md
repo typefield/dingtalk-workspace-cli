@@ -38,4 +38,4 @@
 
 ## 5. 设计整表先过目
 
-每个工具产出（V4 起前六项均必填）：name/title/description、http-info、apiInputs、toolInputs、inputMappings + 出参三件（**apiOutputs 必填**——整体透传也必须声明，否则 UI 标「变量已失效」且 publish 被 CLI 拒绝，见 mapping-rules 红线#13；映射形态整体透传或字段级精修二选一；toolOutputs 仅字段级精修需要）+ **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。
+每个工具产出（0720 起九项全必填）：name/title/description、http-info、apiInputs、toolInputs、inputMappings、**出参三件套 apiOutputs/toolOutputs/outputMappings**（toolOutputs 不精修显式传 []；整体透传或字段级精修二选一；apiOutputs 按材料如实声明到被映射层级——漏声明=业务数据被吞+UI 标「变量已失效」，红线#13）+ **一组建议测试入参**（从材料示例值来，debug 用）。**整表给用户过一遍再动手建**——此时改成本最低。

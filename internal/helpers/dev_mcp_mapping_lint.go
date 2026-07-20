@@ -149,7 +149,7 @@ func devMCPLintVariableSource(path, source string, toolInputs []any, flag string
 func devMCPLintActivatorSource(path, source string, apiOutputs map[string]any) error {
 	if apiOutputs == nil {
 		return apperrors.NewValidation(fmt.Sprintf(
-			"%s.source %q 引用了 API 出参，但本次请求未提供 --api-outputs。整体透传也必须声明 API 出参（红线#13）：不声明则发布后 UI 出参映射标「变量已失效」、工具出参 schema 为空。真实结构未知时先建裸草稿（出参三件都不传）→ tool debug 取样 → tool update 把 --api-outputs 与 --output-mappings 一并补齐",
+			"%s.source %q 引用了 API 出参，但本次请求未提供 --api-outputs。整体透传也必须声明 API 出参（红线#13）：不声明则发布后 UI 出参映射标「变量已失效」、工具出参 schema 为空。结构未知时先按材料尽力声明 --api-outputs → tool debug 取样 → tool update 修正补全（0720 起出参三件套必填，不可裸建）",
 			path, source))
 	}
 	rest := devMCPPathRest(source, devMCPSourceServiceActivator)

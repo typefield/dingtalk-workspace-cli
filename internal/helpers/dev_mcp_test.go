@@ -92,6 +92,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
 				"--tool-inputs", `[{"key":"city","type":"string","description":"City name, for example: Hangzhou."}]`,
 				"--api-outputs", `{"body":[{"key":"temperature","type":"number","description":"Temperature."}]}`,
+				"--tool-outputs", `[]`,
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
@@ -114,6 +115,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 						map[string]any{"key": "temperature", "type": "number", "description": "Temperature."},
 					},
 				},
+				"toolOutputs": []any{},
 				"outputMappings": []any{
 					map[string]any{"target": "$", "type": "reference", "source": "$.node_service_activator.Body"},
 				},
@@ -127,6 +129,9 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--tool-id", "G-ACT-1",
 				"--name", "get_weather",
 				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--api-outputs", `{"body":[{"key":"temperature","type":"number","description":"Temperature."}]}`,
+				"--tool-outputs", `[]`,
+				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
 			wantTool: devMCPToolUpdateTool,
@@ -140,6 +145,15 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 					"auth": map[string]any{
 						"type": "NO_AUTH",
 					},
+				},
+				"apiOutputs": map[string]any{
+					"body": []any{
+						map[string]any{"key": "temperature", "type": "number", "description": "Temperature."},
+					},
+				},
+				"toolOutputs": []any{},
+				"outputMappings": []any{
+					map[string]any{"target": "$", "type": "reference", "source": "$.node_service_activator.Body"},
 				},
 			},
 		},
@@ -185,6 +199,8 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--mcp-id", "10487",
 				"--name", "get_weather",
 				"--http-info", `{"method":"GET","url":"https://example.com","auth":{"type":"NO_AUTH"}}`,
+				"--api-outputs", `{"body":[{"key":"temperature","type":"number","description":"Temperature."}]}`,
+				"--tool-outputs", `[]`,
 				"--output-mappings", `[]`,
 				"--dry-run",
 			},
@@ -199,6 +215,12 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 						"type": "NO_AUTH",
 					},
 				},
+				"apiOutputs": map[string]any{
+					"body": []any{
+						map[string]any{"key": "temperature", "type": "number", "description": "Temperature."},
+					},
+				},
+				"toolOutputs": []any{},
 				"outputMappings": []any{},
 			},
 		},
