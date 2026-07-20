@@ -390,6 +390,7 @@ func newRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine, 
 	// usage log (privacy-preserving; see internal/shortcut/usage). Powers
 	// `dws shortcut stats` and future high-frequency shortcut distillation.
 	patCaller := newRecordingToolCaller(newToolCallerAdapter(runner, flags))
+	mcpCmd.AddCommand(newMCPURLGroup(patCaller))
 
 	utilityCommands := []*cobra.Command{
 		newAuthCommand(patCaller),
