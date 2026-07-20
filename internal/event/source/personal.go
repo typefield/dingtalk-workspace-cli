@@ -245,16 +245,22 @@ func (s *PersonalSource) fetchTicketAttempt(ctx context.Context, accessToken str
 		return nil, 0, retryPersonal(fmt.Errorf("personal source: fetch ticket: %w", err))
 	}
 	defer resp.Body.Close()
-	data, err := io.ReadAll(io.LimitReader(resp.Body, config.MaxResponseBodySize))
-	if err != nil {
-		return nil, resp.StatusCode, retryPersonal(fmt.Errorf("personal source: read ticket response: %w", err))
-	}
 	if resp.StatusCode < 200 || resp.StatusCode >= 300 {
+		// Classify by status before touching the body: a truncated error body
+		// must not upgrade a fatal status (notably 401) into a retryable
+		// error, or the outer reconnect loop would bypass the single
+		// refresh-retry guard. The body is not used here, so drain it only
+		// best-effort for connection reuse.
+		_, _ = io.Copy(io.Discard, io.LimitReader(resp.Body, config.MaxResponseBodySize))
 		err := fmt.Errorf("personal source: ticket HTTP %d", resp.StatusCode)
 		if retryableTicketStatus(resp.StatusCode) {
 			return nil, resp.StatusCode, retryPersonal(err)
 		}
 		return nil, resp.StatusCode, err
+	}
+	data, err := io.ReadAll(io.LimitReader(resp.Body, config.MaxResponseBodySize))
+	if err != nil {
+		return nil, resp.StatusCode, retryPersonal(fmt.Errorf("personal source: read ticket response: %w", err))
 	}
 	ticket, err := decodeTicket(data)
 	if err != nil {

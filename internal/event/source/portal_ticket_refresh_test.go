@@ -314,3 +314,74 @@ func TestPersonalFetchTicket401RefreshFailureStaysFatal(t *testing.T) {
 		t.Fatalf("failed refresh should stay fatal, got retryable %v", err)
 	}
 }
+
+// brokenBody simulates a response body that fails mid-read, e.g. the server
+// closing the connection before the error payload is fully written.
+type brokenBody struct{}
+
+func (brokenBody) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
+func (brokenBody) Close() error             { return nil }
+
+// TestPersonalFetchTicket401TruncatedBodyStaysFatal guards the single
+// refresh-retry protection: a 401 whose body fails with unexpected EOF must
+// be classified by status (fatal) and never wrapped as retryable, otherwise
+// the outer reconnect loop would refresh again on every iteration.
+func TestPersonalFetchTicket401TruncatedBodyStaysFatal(t *testing.T) {
+	attempts := 0
+	refreshCalls := 0
+	src, err := NewPersonal(PersonalConfig{
+		AccessToken: "stale",
+		ForceRefreshToken: func(context.Context, string) (string, error) {
+			refreshCalls++
+			return "rotated", nil
+		},
+		ClientID:  "client",
+		SourceID:  "source",
+		TicketURL: "https://ticket.test",
+		HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			attempts++
+			return &http.Response{StatusCode: http.StatusUnauthorized, Body: brokenBody{}, Header: make(http.Header)}, nil
+		})},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = src.fetchTicket(context.Background())
+	if err == nil || !strings.Contains(err.Error(), "HTTP 401") {
+		t.Fatalf("fatal 401 error expected, got %v", err)
+	}
+	if isRetryablePersonalError(err) {
+		t.Fatalf("401 with truncated body must stay fatal, got retryable %v", err)
+	}
+	if refreshCalls != 1 {
+		t.Fatalf("refresh calls = %d, want 1", refreshCalls)
+	}
+	if attempts != 2 {
+		t.Fatalf("attempts = %d, want 2", attempts)
+	}
+}
+
+// TestPersonalFetchTicket200TruncatedBodyStaysRetryable pins the existing
+// behavior for success responses: a body read failure on 2xx is a transient
+// transport problem and remains retryable.
+func TestPersonalFetchTicket200TruncatedBodyStaysRetryable(t *testing.T) {
+	src, err := NewPersonal(PersonalConfig{
+		AccessToken: "token",
+		ClientID:    "client",
+		SourceID:    "source",
+		TicketURL:   "https://ticket.test",
+		HTTPClient: &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
+			return &http.Response{StatusCode: 200, Body: brokenBody{}, Header: make(http.Header)}, nil
+		})},
+	})
+	if err != nil {
+		t.Fatal(err)
+	}
+	_, err = src.fetchTicket(context.Background())
+	if !errors.Is(err, io.ErrUnexpectedEOF) {
+		t.Fatalf("error should wrap io.ErrUnexpectedEOF, got %v", err)
+	}
+	if !isRetryablePersonalError(err) {
+		t.Fatalf("2xx body read failure should stay retryable, got %v", err)
+	}
+}
