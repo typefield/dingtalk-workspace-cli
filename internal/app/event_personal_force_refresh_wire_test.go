@@ -11,10 +11,10 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/personal"
 )
 
-// TestNewPersonalStreamSourceWiresForceRefreshRejectedToken asserts the
+// TestCrossPlatformCoverageNewPersonalStreamSourceWiresForceRefreshRejectedToken asserts the
 // personal stream source receives a ForceRefreshToken callback that forwards
 // the rejected token into the app-level compare-and-refresh chain.
-func TestNewPersonalStreamSourceWiresForceRefreshRejectedToken(t *testing.T) {
+func TestCrossPlatformCoverageNewPersonalStreamSourceWiresForceRefreshRejectedToken(t *testing.T) {
 	oldAux := personalResolveAuxiliaryAccessToken
 	oldRefresh := personalForceRefreshRejectedToken
 	t.Cleanup(func() {

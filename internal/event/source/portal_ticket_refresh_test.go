@@ -17,12 +17,12 @@ import (
 	"github.com/open-dingtalk/dingtalk-stream-sdk-go/payload"
 )
 
-// TestPortalStart401RefreshRetryEndToEnd drives the full production chain
+// TestCrossPlatformCoveragePortalStart401RefreshRetryEndToEnd drives the full production chain
 // DingtalkSource.Start → startPortalTicket → requestPortalTicket: the first
 // ticket request is rejected with 401, ForceRefreshToken rotates the token,
 // the in-chain retry succeeds with the fresh token and a WebSocket event is
 // delivered to emit.
-func TestPortalStart401RefreshRetryEndToEnd(t *testing.T) {
+func TestCrossPlatformCoveragePortalStart401RefreshRetryEndToEnd(t *testing.T) {
 	var ticketCalls, refreshCalls atomic.Int64
 	var rejectedSeen atomic.Value
 
@@ -104,10 +104,10 @@ func TestPortalStart401RefreshRetryEndToEnd(t *testing.T) {
 	}
 }
 
-// TestRequestPortalTicketRetryUsesRotatedTokenDirectly asserts the in-chain
+// TestCrossPlatformCoverageRequestPortalTicketRetryUsesRotatedTokenDirectly asserts the in-chain
 // retry sends the token returned by ForceRefreshToken instead of re-invoking
 // the provider (which could still serve the stale token).
-func TestRequestPortalTicketRetryUsesRotatedTokenDirectly(t *testing.T) {
+func TestCrossPlatformCoverageRequestPortalTicketRetryUsesRotatedTokenDirectly(t *testing.T) {
 	providerCalls := 0
 	var attemptTokens []string
 	client := &http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
@@ -147,9 +147,9 @@ func TestRequestPortalTicketRetryUsesRotatedTokenDirectly(t *testing.T) {
 	}
 }
 
-// TestRequestPortalTicketRefreshFailureKeepsBothErrors asserts a failing
+// TestCrossPlatformCoverageRequestPortalTicketRefreshFailureKeepsBothErrors asserts a failing
 // refresh neither retries nor drops the refresh error or the original 401.
-func TestRequestPortalTicketRefreshFailureKeepsBothErrors(t *testing.T) {
+func TestCrossPlatformCoverageRequestPortalTicketRefreshFailureKeepsBothErrors(t *testing.T) {
 	refreshErr := errors.New("refresh_token exchange failed")
 	attempts := 0
 	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
@@ -176,9 +176,9 @@ func TestRequestPortalTicketRefreshFailureKeepsBothErrors(t *testing.T) {
 	}
 }
 
-// TestRequestPortalTicketWithoutRefreshCallback401StaysFatal covers backward
+// TestCrossPlatformCoverageRequestPortalTicketWithoutRefreshCallback401StaysFatal covers backward
 // compatibility: nil ForceRefreshToken keeps the single-attempt fatal 401.
-func TestRequestPortalTicketWithoutRefreshCallback401StaysFatal(t *testing.T) {
+func TestCrossPlatformCoverageRequestPortalTicketWithoutRefreshCallback401StaysFatal(t *testing.T) {
 	attempts := 0
 	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 		attempts++
@@ -195,10 +195,10 @@ func TestRequestPortalTicketWithoutRefreshCallback401StaysFatal(t *testing.T) {
 	}
 }
 
-// TestRequestPortalTicketSecond401IsFatal guards against refresh loops: the
+// TestCrossPlatformCoverageRequestPortalTicketSecond401IsFatal guards against refresh loops: the
 // controlled retry happens exactly once even if the rotated token is also
 // rejected.
-func TestRequestPortalTicketSecond401IsFatal(t *testing.T) {
+func TestCrossPlatformCoverageRequestPortalTicketSecond401IsFatal(t *testing.T) {
 	attempts := 0
 	refreshCalls := 0
 	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
@@ -223,9 +223,9 @@ func TestRequestPortalTicketSecond401IsFatal(t *testing.T) {
 	}
 }
 
-// TestRequestPortalTicketRefreshEmptyTokenIsFatal asserts an empty rotated
+// TestCrossPlatformCoverageRequestPortalTicketRefreshEmptyTokenIsFatal asserts an empty rotated
 // token is rejected instead of being sent to the server.
-func TestRequestPortalTicketRefreshEmptyTokenIsFatal(t *testing.T) {
+func TestCrossPlatformCoverageRequestPortalTicketRefreshEmptyTokenIsFatal(t *testing.T) {
 	attempts := 0
 	client := &http.Client{Transport: roundTripFunc(func(*http.Request) (*http.Response, error) {
 		attempts++
@@ -248,9 +248,9 @@ func TestRequestPortalTicketRefreshEmptyTokenIsFatal(t *testing.T) {
 	}
 }
 
-// TestPersonalFetchTicket401RefreshRetry mirrors the portal behavior for the
+// TestCrossPlatformCoveragePersonalFetchTicket401RefreshRetry mirrors the portal behavior for the
 // personal stream ticket path.
-func TestPersonalFetchTicket401RefreshRetry(t *testing.T) {
+func TestCrossPlatformCoveragePersonalFetchTicket401RefreshRetry(t *testing.T) {
 	var attemptTokens []string
 	src, err := NewPersonal(PersonalConfig{
 		AccessTokenProvider: func(context.Context) (string, error) { return "stale", nil },
@@ -287,9 +287,9 @@ func TestPersonalFetchTicket401RefreshRetry(t *testing.T) {
 	}
 }
 
-// TestPersonalFetchTicket401RefreshFailureStaysFatal asserts a failed refresh
+// TestCrossPlatformCoveragePersonalFetchTicket401RefreshFailureStaysFatal asserts a failed refresh
 // keeps the 401 fatal (not retryable) and wraps the refresh error.
-func TestPersonalFetchTicket401RefreshFailureStaysFatal(t *testing.T) {
+func TestCrossPlatformCoveragePersonalFetchTicket401RefreshFailureStaysFatal(t *testing.T) {
 	refreshErr := errors.New("refresh_token exchange failed")
 	src, err := NewPersonal(PersonalConfig{
 		AccessToken: "stale",
@@ -322,11 +322,11 @@ type brokenBody struct{}
 func (brokenBody) Read([]byte) (int, error) { return 0, io.ErrUnexpectedEOF }
 func (brokenBody) Close() error             { return nil }
 
-// TestPersonalFetchTicket401TruncatedBodyStaysFatal guards the single
+// TestCrossPlatformCoveragePersonalFetchTicket401TruncatedBodyStaysFatal guards the single
 // refresh-retry protection: a 401 whose body fails with unexpected EOF must
 // be classified by status (fatal) and never wrapped as retryable, otherwise
 // the outer reconnect loop would refresh again on every iteration.
-func TestPersonalFetchTicket401TruncatedBodyStaysFatal(t *testing.T) {
+func TestCrossPlatformCoveragePersonalFetchTicket401TruncatedBodyStaysFatal(t *testing.T) {
 	attempts := 0
 	refreshCalls := 0
 	src, err := NewPersonal(PersonalConfig{
@@ -361,10 +361,10 @@ func TestPersonalFetchTicket401TruncatedBodyStaysFatal(t *testing.T) {
 	}
 }
 
-// TestPersonalFetchTicket200TruncatedBodyStaysRetryable pins the existing
+// TestCrossPlatformCoveragePersonalFetchTicket200TruncatedBodyStaysRetryable pins the existing
 // behavior for success responses: a body read failure on 2xx is a transient
 // transport problem and remains retryable.
-func TestPersonalFetchTicket200TruncatedBodyStaysRetryable(t *testing.T) {
+func TestCrossPlatformCoveragePersonalFetchTicket200TruncatedBodyStaysRetryable(t *testing.T) {
 	src, err := NewPersonal(PersonalConfig{
 		AccessToken: "token",
 		ClientID:    "client",
@@ -383,5 +383,48 @@ func TestPersonalFetchTicket200TruncatedBodyStaysRetryable(t *testing.T) {
 	}
 	if !isRetryablePersonalError(err) {
 		t.Fatalf("2xx body read failure should stay retryable, got %v", err)
+	}
+}
+
+// TestCrossPlatformCoveragePersonalFetchTicketAttemptTransportAndPayloadEdges covers the
+// remaining fetchTicketAttempt branches: transport failures and retryable
+// statuses stay retryable, while a well-formed response missing the endpoint
+// or ticket fields stays fatal.
+func TestCrossPlatformCoveragePersonalFetchTicketAttemptTransportAndPayloadEdges(t *testing.T) {
+	newSource := func(rt roundTripFunc) *PersonalSource {
+		src, err := NewPersonal(PersonalConfig{
+			AccessToken: "token",
+			ClientID:    "client",
+			SourceID:    "source",
+			TicketURL:   "https://ticket.test",
+			HTTPClient:  &http.Client{Transport: rt},
+		})
+		if err != nil {
+			t.Fatal(err)
+		}
+		return src
+	}
+
+	dialErr := errors.New("dial tcp: connection refused")
+	src := newSource(func(*http.Request) (*http.Response, error) { return nil, dialErr })
+	_, _, err := src.fetchTicketAttempt(context.Background(), "token")
+	if !errors.Is(err, dialErr) || !isRetryablePersonalError(err) {
+		t.Fatalf("transport failure should stay retryable and wrap cause, got %v", err)
+	}
+
+	src = newSource(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: io.NopCloser(strings.NewReader("busy")), Header: make(http.Header)}, nil
+	})
+	_, status, err := src.fetchTicketAttempt(context.Background(), "token")
+	if status != http.StatusServiceUnavailable || !isRetryablePersonalError(err) {
+		t.Fatalf("503 should stay retryable, got status %d err %v", status, err)
+	}
+
+	src = newSource(func(*http.Request) (*http.Response, error) {
+		return &http.Response{StatusCode: 200, Body: io.NopCloser(strings.NewReader(`{"endpoint":"","ticket":""}`)), Header: make(http.Header)}, nil
+	})
+	_, _, err = src.fetchTicketAttempt(context.Background(), "token")
+	if err == nil || isRetryablePersonalError(err) || !strings.Contains(err.Error(), "missing endpoint or ticket") {
+		t.Fatalf("missing ticket fields should stay fatal, got %v", err)
 	}
 }

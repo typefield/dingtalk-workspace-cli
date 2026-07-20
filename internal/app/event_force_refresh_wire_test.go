@@ -8,10 +8,10 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/source"
 )
 
-// TestNewEventSourceWiresForceRefreshRejectedToken asserts the portal ticket
+// TestCrossPlatformCoverageNewEventSourceWiresForceRefreshRejectedToken asserts the portal ticket
 // source receives a ForceRefreshToken callback that forwards the actual
 // rejected token into the app-level compare-and-refresh chain.
-func TestNewEventSourceWiresForceRefreshRejectedToken(t *testing.T) {
+func TestCrossPlatformCoverageNewEventSourceWiresForceRefreshRejectedToken(t *testing.T) {
 	oldNew, oldRefresh := eventNewDingtalkSource, eventForceRefreshRejected
 	t.Cleanup(func() { eventNewDingtalkSource, eventForceRefreshRejected = oldNew, oldRefresh })
 
