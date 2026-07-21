@@ -514,7 +514,11 @@ func TestSchemaRegistryIndexResolvesCanonicalCLIAndAlias(t *testing.T) {
 			t.Fatalf("Resolve(%q) = %#v, %v", path, resolved.Identity, ok)
 		}
 	}
-	for _, path := range []string{"calendar.attendee.delete", "calendar/attendee/delete"} {
+	for _, path := range []string{
+		"calendar.attendee.delete",
+		"calendar/attendee/delete",
+		"dws.calendar.attendee.delete",
+	} {
 		resolved, ok := index.ResolveQuery(path)
 		if !ok || resolved.Identity.CanonicalPath != "calendar.attendee_delete" {
 			t.Fatalf("ResolveQuery(%q) = %#v, %v", path, resolved.Identity, ok)
