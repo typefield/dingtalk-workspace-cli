@@ -56,6 +56,7 @@ var (
 	eventNewEventSource        = newEventSource
 	eventNewDingtalkSource     = source.New
 	eventResolveAccessToken    = ResolveAuxiliaryAccessToken
+	eventForceRefreshRejected  = forceRefreshRejectedAccessToken
 	eventBusRun                = bus.Run
 	eventReadyFDFromEnv        = busctl.ReadyFDFromEnv
 	eventResolvePersonal       = resolvePersonalEventIdentity
@@ -435,6 +436,9 @@ func newEventSource(_ context.Context, configDir, clientID, clientSecret string,
 			TicketURL: eventStreamTicketURL(streamOpts.TicketURL),
 			AccessTokenProvider: func(ctx context.Context) (string, error) {
 				return eventResolveAccessToken(ctx, configDir, "")
+			},
+			ForceRefreshToken: func(ctx context.Context, rejectedToken string) (string, error) {
+				return eventForceRefreshRejected(ctx, configDir, rejectedToken)
 			},
 			SourceID:     eventStreamSourceID(streamOpts.SourceID),
 			Mode:         streamOpts.Mode,

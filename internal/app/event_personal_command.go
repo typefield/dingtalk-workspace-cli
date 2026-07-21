@@ -131,6 +131,7 @@ var (
 	personalFindProcess                 = os.FindProcess
 	personalSignalProcess               = (*os.Process).Signal
 	personalResolveAuxiliaryAccessToken = ResolveAuxiliaryAccessToken
+	personalForceRefreshRejectedToken   = forceRefreshRejectedAccessToken
 	personalLoadTokenData               = authpkg.LoadTokenData
 	personalClientID                    = authpkg.ClientID
 	personalResolveAppCredentialsStrict = authpkg.ResolveAppCredentialsStrict
@@ -831,6 +832,9 @@ func newPersonalStreamSource(ctx context.Context, opts personalStreamSourceOptio
 	return source.NewPersonal(source.PersonalConfig{
 		AccessTokenProvider: func(ctx context.Context) (string, error) {
 			return personalResolveAuxiliaryAccessToken(ctx, opts.ConfigDir, "")
+		},
+		ForceRefreshToken: func(ctx context.Context, rejectedToken string) (string, error) {
+			return personalForceRefreshRejectedToken(ctx, opts.ConfigDir, rejectedToken)
 		},
 		ClientID:     clientID,
 		ClientSecret: clientSecret,
