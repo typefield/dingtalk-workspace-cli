@@ -8,7 +8,7 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [1.0.54] - 2026-07-21
 
-This release promotes the validated `v1.0.54-beta.1` baseline to stable. It restores the default transport envelope for personal event output with opt-in flattening, plus Schema CLI path and plugin overlay compatibility fixes.
+This release promotes the validated `v1.0.54-beta.2` baseline to stable. It restores the default transport envelope for personal event output with opt-in flattening, plus Schema CLI path and plugin overlay compatibility fixes.
 
 ### Changed
 
@@ -18,6 +18,14 @@ This release promotes the validated `v1.0.54-beta.1` baseline to stable. It rest
 
 - **Schema CLI path compatibility** (#738) — user-facing Schema lookups once again accept space-, dot-, and slash-separated CLI paths without weakening strict canonical identity resolution.
 - **Plugin CLI overlays** (#701) — installed plugins register their manifest-authored command trees again for HTTP and stdio servers, and a plugin may now replace a hidden compatibility fallback (for example `conference`) instead of being skipped as a distribution conflict.
+
+## [1.0.54-beta.2] - 2026-07-21
+
+This beta revalidates the same `v1.0.54-beta.1` source through the cloud release path with a sealed `OSS-Mirror: deferred` policy, because the manually tagged `v1.0.54-beta.1` push run failed on the unavailable OSS mirror channel after GitHub and npm delivery.
+
+### Changed
+
+- **Release delivery only** — no source changes since `v1.0.54-beta.1`; see that section for the user-visible changes under validation (#743, #738, #701).
 
 ## [1.0.54-beta.1] - 2026-07-21
 
