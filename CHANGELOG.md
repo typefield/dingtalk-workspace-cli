@@ -6,9 +6,9 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
-## [1.0.54-beta.1] - 2026-07-21
+## [1.0.54] - 2026-07-21
 
-This beta validates the restored default transport envelope for personal event output with opt-in flattening, plus Schema CLI path and plugin overlay compatibility fixes, on top of the validated `v1.0.53-beta.7` baseline.
+This release promotes the validated `v1.0.54-beta.1` baseline to stable. It restores the default transport envelope for personal event output with opt-in flattening, plus Schema CLI path and plugin overlay compatibility fixes.
 
 ### Changed
 
