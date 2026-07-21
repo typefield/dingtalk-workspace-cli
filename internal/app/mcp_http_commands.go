@@ -1357,7 +1357,7 @@ func addMCPHTTPCommandFlags(cmd *cobra.Command, specs []mcpHTTPFlagSpec) {
 		usage := mcpHTTPFlagUsage(spec)
 		switch spec.Kind {
 		case "integer":
-			cmd.Flags().Int(spec.FlagName, 0, usage)
+			cmd.Flags().Int64(spec.FlagName, 0, usage)
 		case "number":
 			cmd.Flags().Float64(spec.FlagName, 0, usage)
 		case "boolean":
@@ -1464,7 +1464,7 @@ func validateMCPHTTPRequiredParams(cmd *cobra.Command, schema map[string]any, sp
 func mcpHTTPFlagValue(cmd *cobra.Command, spec mcpHTTPFlagSpec) (any, error) {
 	switch spec.Kind {
 	case "integer":
-		return cmd.Flags().GetInt(spec.FlagName)
+		return cmd.Flags().GetInt64(spec.FlagName)
 	case "number":
 		return cmd.Flags().GetFloat64(spec.FlagName)
 	case "boolean":

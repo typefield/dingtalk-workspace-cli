@@ -87,6 +87,12 @@ func tryFuzzyMatch(arg string, known map[string]bool, candidates []string) (stri
 		bare = bare[:idx]
 	}
 
+	// Cobra owns these built-in control flags. They must stay intact even when
+	// this pre-parse handler runs before Cobra has registered them.
+	if bare == "help" || bare == "version" {
+		return "", false
+	}
+
 	// Already known — nothing to fix.
 	if known[bare] {
 		return "", false

@@ -46,6 +46,11 @@ func RunPreParse(root *cobra.Command, engine *Engine) {
 		return
 	}
 
+	// Cobra adds the built-in help flag lazily during execution, after this
+	// pre-parse phase. Initialize it before collecting known flags so --help is
+	// never mistaken for a nearby application flag such as --http.
+	target.InitDefaultHelpFlag()
+
 	// Build FlagInfo from the target command's registered flags.
 	flagInfos := FlagInfoFromCommand(target)
 	if len(flagInfos) == 0 {

@@ -924,12 +924,110 @@ func TestAddMCPHTTPCommandsRegistersRunnableCommand(t *testing.T) {
 	if runner.invocation.Params["cityName"] != "杭州" {
 		t.Fatalf("cityName param = %#v", runner.invocation.Params["cityName"])
 	}
-	if runner.invocation.Params["limit"] != 3 {
+	if runner.invocation.Params["limit"] != int64(3) {
 		t.Fatalf("limit param = %#v", runner.invocation.Params["limit"])
 	}
 	options, ok := runner.invocation.Params["options"].(map[string]any)
 	if !ok || options["unit"] != "c" {
 		t.Fatalf("options param = %#v", runner.invocation.Params["options"])
+	}
+}
+
+func TestMCPHTTPDynamicLeafHelpIsReachable(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	t.Setenv(mcpHTTPCommandDiscoveryEnv, "https://mcp-discovery.example")
+	source, err := currentMCPHTTPCommandCacheSource()
+	if err != nil {
+		t.Fatalf("currentMCPHTTPCommandCacheSource() error = %v", err)
+	}
+	if err := writeMCPHTTPCommandCache(source, []mcpHTTPCommandDescriptor{{
+		Path:        []string{"connector", "mcp", "published", "weather-service", "get-forecast"},
+		ProductID:   "weather-product",
+		Tool:        "get_forecast",
+		Description: "Get the weather forecast for one department.",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"deptId": map[string]any{"type": "integer", "description": "Department ID"},
+			},
+		},
+	}}); err != nil {
+		t.Fatalf("writeMCPHTTPCommandCache() error = %v", err)
+	}
+
+	tests := []struct {
+		name string
+		args []string
+	}{
+		{
+			name: "long help flag",
+			args: []string{"connector", "mcp", "published", "weather-service", "get-forecast", "--help"},
+		},
+		{
+			name: "short help flag",
+			args: []string{"connector", "mcp", "published", "weather-service", "get-forecast", "-h"},
+		},
+		{
+			name: "help command",
+			args: []string{"help", "connector", "mcp", "published", "weather-service", "get-forecast"},
+		},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			root := NewRootCommandWithEngine(context.Background(), nil)
+
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs(tt.args)
+			if _, err := root.ExecuteC(); err != nil {
+				t.Fatalf("ExecuteC() error = %v", err)
+			}
+			body := out.String()
+			for _, want := range []string{
+				"Get the weather forecast for one department.",
+				"dws connector mcp published weather-service get-forecast",
+				"--dept-id",
+			} {
+				if !strings.Contains(body, want) {
+					t.Fatalf("leaf help missing %q:\n%s", want, body)
+				}
+			}
+		})
+	}
+}
+
+func TestMCPHTTPIntegerFlagUsesInt64(t *testing.T) {
+	descriptor := mcpHTTPCommandDescriptor{
+		Path:      []string{"connector", "mcp", "published", "weather-service", "get-forecast"},
+		ProductID: "weather-product",
+		Tool:      "get_forecast",
+		InputSchema: map[string]any{
+			"type": "object",
+			"properties": map[string]any{
+				"deptId": map[string]any{"type": "integer", "description": "Department ID"},
+			},
+		},
+	}
+	runner := &mcpHTTPTestRunner{}
+	cmd := newMCPHTTPDynamicCommand(runner, nil, descriptor)
+	var out bytes.Buffer
+	cmd.SetOut(&out)
+	deptID := cmd.Flags().Lookup("dept-id")
+	if deptID == nil {
+		t.Fatal("dept-id flag was not registered")
+	}
+	if got := deptID.Value.Type(); got != "int64" {
+		t.Fatalf("dept-id flag type = %q, want int64", got)
+	}
+
+	cmd.SetArgs([]string{"--dept-id", "9223372036854775807"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if got := runner.invocation.Params["deptId"]; got != int64(9223372036854775807) {
+		t.Fatalf("deptId param = %#v, want int64 max", got)
 	}
 }
 
@@ -968,7 +1066,7 @@ func TestAddMCPHTTPCommandsAcceptsParamsJSON(t *testing.T) {
 	if runner.invocation.Params["cityName"] != "杭州" {
 		t.Fatalf("cityName param = %#v", runner.invocation.Params["cityName"])
 	}
-	if runner.invocation.Params["limit"] != 3 {
+	if runner.invocation.Params["limit"] != int64(3) {
 		t.Fatalf("limit param = %#v", runner.invocation.Params["limit"])
 	}
 	options, ok := runner.invocation.Params["options"].(map[string]any)
