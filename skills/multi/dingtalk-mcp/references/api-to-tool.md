@@ -1,5 +1,7 @@
 # 从 API 材料到工具定义
 
+> 本文档面向 **http 型**工具（API 材料→三段式）。**HSF 接口**走另一条路：`hsf method-list` 发现方法 → `tool create-hsf`（无需 apiInputs/apiOutputs，服务端自动生成），差异详见 mcp.md「HSF 型工具」节与 mapping-rules §5.5。
+
 用户给 API 材料（OpenAPI / Postman / curl / 接口文档）要求「做成 MCP / 给 agent 用」时，按本文档把材料拆成 `tool create` 的三段式入参。三段式字段结构见 `mcp.md` §三段式工具定义；映射格式见 `mapping-rules.md`。
 
 ## 1. 信息对齐（缺就问，禁止猜）

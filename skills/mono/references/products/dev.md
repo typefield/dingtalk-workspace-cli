@@ -149,6 +149,11 @@ dws connector mcp tool debug --mcp-id <mcpId> --tool-id <toolId> --value '{}' --
 dws connector mcp tool publish --mcp-id <mcpId> --tool-id <toolId> --dry-run --format json
 dws connector mcp tool versions --mcp-id <mcpId> --tool-id <toolId> --format json
 
+# HSF 型工具（V5）：方法发现→建造→部分更新（update-hsf=只传要改的；http 版 update=全量提交，勿混用）
+dws connector mcp hsf method-list --interface-name <接口全限定名> --format json
+dws connector mcp tool create-hsf --mcp-id <mcpId> --name <snake_case> --hsf-info '{"interfaceName":"…","methodName":"…"}' --tool-inputs '[...]' --input-mappings '[...]' --tool-outputs '[]' --output-mappings '[...]' --dry-run --format json
+dws connector mcp tool update-hsf --mcp-id <mcpId> --tool-id <toolId> --description <只传要改的> --dry-run --format json
+
 # 接入地址：按调用者个人身份生成的实例地址（非组织公共地址），含 ?key= 个人敏感凭证，勿外发；只返回 success 无 mcpUrl＝服务已删/不可用（平台缺口），先 service get 核实
 dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
@@ -159,6 +164,7 @@ dws connector mcp credential list --mcp-id <mcpId> --format json
 dws connector mcp credential save --mcp-id <mcpId> --name <账号名> --content-file credentials.json --dry-run --format json
 dws connector mcp credential debug --mcp-id <mcpId> --credential-id <id> --dry-run --format json
 dws connector mcp credential bind --mcp-id <mcpId> --credential-id <id> --dry-run --format json
+dws connector mcp credential unbind --mcp-id <mcpId> --dry-run --format json
 dws connector mcp credential delete --mcp-id <mcpId> --credential-id <id> --dry-run --format json
 dws connector mcp member list --mcp-id <mcpId> --format json
 dws connector mcp member add --mcp-id <mcpId> --user-ids <staffId1,staffId2> --dry-run --format json

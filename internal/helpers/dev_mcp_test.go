@@ -235,6 +235,82 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 			},
 		},
 		{
+			name: "tool create hsf assembles params",
+			args: []string{
+				"connector", "mcp", "tool", "create-hsf",
+				"--mcp-id", "10520",
+				"--name", "search_mcp_services",
+				"--title", "搜索MCP服务",
+				"--description", "按名称关键词搜索当前用户有权限的 MCP 服务",
+				"--hsf-info", `{"interfaceName":"com.dingtalk.open.connect.workbench.api.service.hsf.MCPHsfService","methodName":"searchMCPs","version":"1.0.0"}`,
+				"--tool-inputs", `[{"key":"keyword","type":"string","description":"可选。按服务名关键词过滤。示例：验收"}]`,
+				"--input-mappings", `[{"target":"$.SearchMCPRequest.name","type":"reference","source":"$.node_start.keyword"},{"target":"$.SearchMCPRequest.corpId","type":"reference","source":"$.system_node.ddDataCorpId"},{"target":"$.SearchMCPRequest.userId","type":"reference","source":"$.system_node.operateUserId"}]`,
+				"--tool-outputs", `[]`,
+				"--output-mappings", `[{"target":"$.success","type":"reference","source":"$.node_service_activator.success"}]`,
+				"--timeout", "30",
+				"--only-original-keys",
+				"--dry-run",
+			},
+			wantTool: devMCPToolCreateHsfTool,
+			wantParams: map[string]any{
+				"mcpId":       10520,
+				"name":        "search_mcp_services",
+				"title":       "搜索MCP服务",
+				"description": "按名称关键词搜索当前用户有权限的 MCP 服务",
+				"hsfInfo": map[string]any{
+					"interfaceName": "com.dingtalk.open.connect.workbench.api.service.hsf.MCPHsfService",
+					"methodName":    "searchMCPs",
+					"version":       "1.0.0",
+				},
+				"toolInputs": []any{
+					map[string]any{"key": "keyword", "type": "string", "description": "可选。按服务名关键词过滤。示例：验收"},
+				},
+				"inputMappings": []any{
+					map[string]any{"target": "$.SearchMCPRequest.name", "type": "reference", "source": "$.node_start.keyword"},
+					map[string]any{"target": "$.SearchMCPRequest.corpId", "type": "reference", "source": "$.system_node.ddDataCorpId"},
+					map[string]any{"target": "$.SearchMCPRequest.userId", "type": "reference", "source": "$.system_node.operateUserId"},
+				},
+				"toolOutputs": []any{},
+				"outputMappings": []any{
+					map[string]any{"target": "$.success", "type": "reference", "source": "$.node_service_activator.success"},
+				},
+				"timeout":          30,
+				"onlyOriginalKeys": true,
+			},
+		},
+		{
+			name: "tool update hsf partial semantics",
+			args: []string{
+				"connector", "mcp", "tool", "update-hsf",
+				"--mcp-id", "10520",
+				"--tool-id", "G-ACT-1",
+				"--description", "更准确的新描述",
+				"--dry-run",
+			},
+			wantTool: devMCPToolUpdateHsfTool,
+			wantParams: map[string]any{
+				"mcpId":       10520,
+				"toolId":      "G-ACT-1",
+				"description": "更准确的新描述",
+			},
+		},
+		{
+			name:     "hsf method list",
+			args:     []string{"connector", "mcp", "hsf", "method-list", "--interface-name", "com.dingtalk.open.connect.workbench.api.service.hsf.MCPHsfService"},
+			wantTool: devMCPHsfMethodListTool,
+			wantParams: map[string]any{
+				"interfaceName": "com.dingtalk.open.connect.workbench.api.service.hsf.MCPHsfService",
+			},
+		},
+		{
+			name:     "credential unbind",
+			args:     []string{"connector", "mcp", "credential", "unbind", "--mcp-id", "10520", "--dry-run"},
+			wantTool: devMCPCredentialUnbindTool,
+			wantParams: map[string]any{
+				"mcpId": 10520,
+			},
+		},
+		{
 			name: "auth config save",
 			args: []string{
 				"connector", "mcp", "auth", "save",
@@ -338,6 +414,38 @@ func TestConnectorMCPToolUpsertMetadataValidation(t *testing.T) {
 				"--dry-run",
 			},
 			wantErr: "--name 必须是 snake_case",
+		},
+		{
+			name: "rejects zero timeout",
+			args: []string{
+				"connector", "mcp", "tool", "update-hsf",
+				"--mcp-id", "10520",
+				"--tool-id", "G-ACT-1",
+				"--timeout", "0",
+				"--dry-run",
+			},
+			wantErr: "--timeout 取值范围 1-180",
+		},
+		{
+			name: "rejects hsf create without quartet",
+			args: []string{
+				"connector", "mcp", "tool", "create-hsf",
+				"--mcp-id", "10520",
+				"--name", "search_mcp_services",
+				"--hsf-info", `{"interfaceName":"a.b.C","methodName":"m"}`,
+				"--dry-run",
+			},
+			wantErr: "hsf 建造四件套",
+		},
+		{
+			name: "rejects hsf update without changes",
+			args: []string{
+				"connector", "mcp", "tool", "update-hsf",
+				"--mcp-id", "10520",
+				"--tool-id", "G-ACT-1",
+				"--dry-run",
+			},
+			wantErr: "至少提供一项待更新字段",
 		},
 		{
 			name: "rejects invalid server name",

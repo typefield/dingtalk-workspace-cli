@@ -37,14 +37,18 @@ const (
 	devMCPServiceListTool   = "mcp_service_list"
 	devMCPServiceUpdateTool = "mcp_service_update"
 
-	devMCPToolCreateTool   = "mcp_tool_create"
+	devMCPToolCreateTool   = "mcp_tool_create_http"
 	devMCPToolDebugTool    = "mcp_tool_debug"
 	devMCPToolDeleteTool   = "mcp_tool_delete"
 	devMCPToolGetTool      = "mcp_tool_get"
 	devMCPToolListTool     = "mcp_tool_list"
 	devMCPToolPublishTool  = "mcp_tool_publish"
-	devMCPToolUpdateTool   = "mcp_tool_update"
+	devMCPToolUpdateTool   = "mcp_tool_update_http"
 	devMCPToolVersionsTool = "mcp_tool_versions"
+
+	devMCPToolCreateHsfTool = "mcp_tool_create_hsf"
+	devMCPToolUpdateHsfTool = "mcp_tool_update_hsf"
+	devMCPHsfMethodListTool = "mcp_hsf_method_list"
 
 	devMCPAuthConfigGetTool  = "mcp_auth_config_get"
 	devMCPAuthConfigSaveTool = "mcp_auth_config_save"
@@ -55,6 +59,7 @@ const (
 	devMCPCredentialGetTool    = "mcp_credential_get"
 	devMCPCredentialListTool   = "mcp_credential_list"
 	devMCPCredentialSaveTool   = "mcp_credential_save"
+	devMCPCredentialUnbindTool = "mcp_credential_unbind"
 
 	devMCPMemberAddTool    = "mcp_member_add"
 	devMCPMemberListTool   = "mcp_member_list"
@@ -117,6 +122,8 @@ func newDevMCPCommand(runner executor.Runner) *cobra.Command {
 		newDevMCPToolPublishCommand(runner),
 		newDevMCPToolDeleteCommand(runner),
 		newDevMCPToolVersionsCommand(runner),
+		newDevMCPToolCreateHsfCommand(runner),
+		newDevMCPToolUpdateHsfCommand(runner),
 	)
 
 	url := &cobra.Command{
@@ -144,6 +151,7 @@ func newDevMCPCommand(runner executor.Runner) *cobra.Command {
 		newDevMCPCredentialSaveCommand(runner),
 		newDevMCPCredentialDebugCommand(runner),
 		newDevMCPCredentialBindCommand(runner),
+		newDevMCPCredentialUnbindCommand(runner),
 		newDevMCPCredentialDeleteCommand(runner),
 	)
 
@@ -154,7 +162,10 @@ func newDevMCPCommand(runner executor.Runner) *cobra.Command {
 		newDevMCPMemberRemoveCommand(runner),
 	)
 
-	root.AddCommand(service, tool, url, auth, credential, member)
+	hsf := newDevMCPCommandGroup("hsf", "HSF 方法发现（建 hsf 型工具前查方法与 DTO 字段名）")
+	hsf.AddCommand(newDevMCPHsfMethodListCommand(runner))
+
+	root.AddCommand(service, tool, url, auth, credential, member, hsf)
 	return root
 }
 
@@ -946,6 +957,33 @@ func addDevMCPToolUpsertFlags(cmd *cobra.Command, includeToolID bool) {
 	cmd.Flags().String("tool-outputs", "", "必填。暴露给 LLM 的出参字段树 JSON 数组；不做出参精修时显式传 '[]'（配整体透传=返回按 --api-outputs 裁剪后的完整响应体）；精修时与 --output-mappings 配套（裁字段/改名/补语义）")
 	cmd.Flags().String("input-mappings", "", "必填。入参映射 JSON 数组，每项 {target,type,source}，type=reference/fixed/express；⚠️target 位置名必须 Pascal（$.Body./$.Query./$.Head./$.Path.），全小写/全大写会静默失效不报错")
 	cmd.Flags().String("output-mappings", "", "必填。出参映射 JSON 数组：整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}] 或字段级精修（配合 --tool-outputs 裁剪/改名，详见 skill mapping-rules）；⚠️必须与 --api-outputs 同批提交并静态互验（source 引用的字段必须已声明，红线#13）；⚠️省略或传 []＝草稿仍建成但运行时多包一层 Body 且 publish 被拦，需先 update 补齐")
+	addDevMCPTimeoutOOKFlags(cmd, includeToolID)
+}
+
+func addDevMCPTimeoutOOKFlags(cmd *cobra.Command, update bool) {
+	timeoutNote := "可选。请求超时秒数（1-180 整数），不传=系统默认 10 秒；⚠️一旦设置无法清回系统默认（传 0 会被 1-180 校验拒）"
+	ookNote := "可选。仅映射非空字段：开启后出参只含下游实际返回的 key（无 null/空占位）；不传=默认关闭"
+	if update {
+		timeoutNote += "。全量提交语义的定点例外：漏传=保留原值"
+		ookNote = "可选。仅映射非空字段开关；漏传=保留原值（定点例外），要关闭必须显式传 false"
+	}
+	cmd.Flags().Int("timeout", 0, timeoutNote)
+	cmd.Flags().Bool("only-original-keys", false, ookNote)
+}
+
+func devMCPPutTimeoutOOK(cmd *cobra.Command, params map[string]any) error {
+	if cmd.Flags().Changed("timeout") {
+		t := devMCPIntFlag(cmd, "timeout")
+		if t < 1 || t > 180 {
+			return apperrors.NewValidation("--timeout 取值范围 1-180 秒（不支持传 0 清回系统默认）")
+		}
+		params["timeout"] = t
+	}
+	if cmd.Flags().Changed("only-original-keys") {
+		v, _ := cmd.Flags().GetBool("only-original-keys")
+		params["onlyOriginalKeys"] = v
+	}
+	return nil
 }
 
 func annotateDevMCPTool(cmd *cobra.Command, tool string) *cobra.Command {
@@ -1050,6 +1088,9 @@ func devMCPToolUpsertParams(cmd *cobra.Command, includeToolID bool) (map[string]
 		if _, ok := params[f.key]; !ok {
 			missingOutputs = append(missingOutputs, f.flag)
 		}
+	}
+	if err := devMCPPutTimeoutOOK(cmd, params); err != nil {
+		return nil, err
 	}
 	if len(missingOutputs) > 0 {
 		return nil, apperrors.NewValidation(strings.Join(missingOutputs, "、") + " 为必填（0720 契约：出参三件套）。漏传 apiOutputs 的故障形态：工具建成且调用看似成功，但下游复杂结构字段被精确裁剪整段吞掉、UI 出参映射标「变量已失效」。不做出参精修时：--tool-outputs 传 '[]'、--output-mappings 用整体透传 [{\"target\":\"$\",\"type\":\"reference\",\"source\":\"$.node_service_activator.Body\"}]、--api-outputs 按接口真实出参如实声明（结构未知先按材料尽力声明，debug 取样后 update 修正）")

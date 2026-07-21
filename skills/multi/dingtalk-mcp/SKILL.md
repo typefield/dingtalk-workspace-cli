@@ -30,7 +30,7 @@ metadata:
 6. `url get` 返回的是按调用者**个人身份**生成的实例地址（非组织公共地址），其中 `?key=` 是个人敏感凭证，勿外发共享，不写入文档、代码、日志或回答全文。
 7. 删除服务前必须先 `service get` + `tool list` 核对；服务下还有工具时先逐个删除工具。
 8. **写 `--input-mappings` / `--output-mappings` 前先读 [mapping-rules.md](references/mapping-rules.md)**——映射是最大坑源：位置名 Pascal 写错、express 用错字段、出参 rules 的 source 未在 apiOutputs 声明范围内（UI 标「变量已失效」）都**静默失效不报错**，只有 debug 真跑才暴露；出参三件套（api-outputs/tool-outputs/output-mappings）0720 起必填——漏传 apiOutputs＝下游复杂结构字段被整段吞掉（调用还"成功"），CLI 已硬拦。**CLI 双闸**：create/update 时 mappings 引用的字段必须在同批提交的 apiInputs/apiOutputs/toolInputs/toolOutputs 里可解析（整体透传也必须带 apiOutputs）；publish 前自动读回草稿复验出参 rules 可解析性，不过直接拒发。
-9. `tool update` 是全量提交：先 `tool get` 读回（返回的是底层存储格式，需翻译回三段式），漏字段等于清空。
+9. **两种 update 语义（V5 起，勿混用）**：http 型走 `tool update`＝**全量提交**（漏传即清空，必须先 `tool get` 读回——**读回即三段式可直接改**——在其基础上整包提交；仅 timeout/only-original-keys 例外：漏传=保留原值）；hsf 型走 `tool update-hsf`＝**部分更新**（只传要改的，未传保持原值），hsf 工具误走 http 版会被平台拒（hsf_tool_update_via_http）。判型看 `tool get` 返回的 `toolType`（http/hsf）。
 
 ## 领域模型
 
@@ -42,7 +42,7 @@ MCP 开发脚手架（mcpdev 管理面）
 │   ├── 下游鉴权配置 + 凭证账号（密钥不回显）
 │   ├── 开发协作者成员
 │   ├── 接入地址：mcpURL / mcpJSON（PUBLISHED / MARKET，可能含敏感 ?key=）
-│   └── MCP 工具 Tool（toolId）
+│   └── MCP 工具 Tool（toolId；toolType=http 配 httpInfo / hsf 配 hsfInfo）
 │       ├── 身份字段：name / title / description / status
 │       ├── HTTP 适配：method / url / auth
 │       ├── 三段式定义：apiInputs/apiOutputs + toolInputs/toolOutputs + mappings
@@ -70,17 +70,18 @@ MCP 开发脚手架（mcpdev 管理面）
 | **从 API 材料一键建 MCP（最高频）** | 收齐材料/业务目标/鉴权方式（缺就问）→ 按 [api-to-tool.md](references/api-to-tool.md) 拆三段式 + 设计整表给用户过目 → `service create`（`--name` 中文显示名 + **`--server-name` 必填**：kebab-case，就是顶层动态命令名，漏设则退化为 `mcp-<mcpId>`）→ 逐个 `tool create`（先建最简单的一个，`tool get` 读回核对再建其余）→ 逐个 `tool debug` 真跑（校验真实业务数据）→ 用户确认后逐个 `tool publish` → `url get --source PUBLISHED` → `connector mcp refresh` 验证动态命令 |
 | 从零创建 MCP 服务 | `service create --dry-run`（**必带 `--server-name`**，kebab-case 一级命令名）→ 用户确认 → `service create --yes` → 记录返回 `mcpId` |
 | 给服务新增 HTTP 工具 | 读 mapping-rules.md → `tool create --dry-run` → 用户确认 → `tool create --yes` → `tool get` 取 `toolId/versionId` 并核对 rules |
+| 从 HSF 方法建工具（hsf 型） | `hsf method-list --interface-name <接口全限定名>` 发现方法与 DTO 字段名 → `tool create-hsf`（hsfInfo 三元组；无需 api-inputs/outputs，服务端自动生成；⚠️DTO 含 corpId/userId 必须显式写两条 $.system_node.* 注入映射）→ debug → publish |
 | 验证草稿工具能跑 | `tool get` 取草稿 `versionId` → `tool debug --version-id <versionId> --dry-run` → 用户确认 → `tool debug --version-id <versionId> --yes` → 核验返回真实业务数据 |
 | debug 失败排查 | 大概率映射问题：位置名大小写（Pascal）/ express 字段用错 / 漏映射 → 按 mapping-rules.md 修 → `tool update`（全量）→ 再 debug；同一工具自动修最多 2 轮，仍不行按 [mcp.md](references/mcp.md) §故障定位 五步法排查后升级给用户 |
 | 发布工具并可调用 | 确认最近一次 debug 成功 → `tool publish --dry-run` → 明确说明发布后使用方可调用 → 用户明确确认（「嗯/继续」不算）→ `tool publish --yes` → `tool get` 回读状态 |
 | 获取客户端接入地址 | 已发布未上架用 `url get --source PUBLISHED`；已上架市场用 `url get --source MARKET`；输出中的 `?key=` 只脱敏展示；**只返回 success 无 mcpUrl＝取址失败**（服务已删/不可用，平台缺口 Aone 84417179），先 `service get` 核实 |
 | 配置下游接口鉴权 | `auth get` 查现状 → **先按 mcp.md「鉴权方式选型」选类型（静态 API key=SIGNATURE 自定义字段+直引）** → `auth save --dry-run` → 用户确认 → `auth save --yes`；auth save 只存「说明书」，真实密钥不要放鉴权配置，改用 `credential save` 存**开发者内置凭证** |
-| 管理凭证账号 | `credential list/get` 查账号元信息 → `credential save --content-file` 保存密钥（开发者内置凭证：归属当前用户+当前 MCP，密钥由开发者提供，配置调试与实例运行时两个场景都用它）→ `credential debug` 验证 → `credential bind` 选用（**仅对正式实例生效**；`tool debug` 不吃 bind，调试必须显式 `--credential-id`）；删除前先 `get` 核对 `flowCount` |
+| 管理凭证账号 | `credential list/get` 查账号元信息 → `credential save --content-file` 保存密钥（开发者内置凭证：归属当前用户+当前 MCP，密钥由开发者提供，配置调试与实例运行时两个场景都用它）→ `credential debug` 验证 → `credential bind` 选用（**仅对正式实例生效**；`tool debug` 不吃 bind，调试必须显式 `--credential-id`）；`credential unbind` 解绑实例凭证（bind 逆操作，delete 报 credential_in_use 时先 unbind 再删） |
 | 管理开发协作者 | `member list` 查现状 → `member add/remove --user-ids <staffId,...> --dry-run` → 用户确认 → `--yes` |
 | 探测指定 MCP 地址 | 将含凭证地址放入 `DINGTALK_MCPDEV_MCP_URL`，执行 `dws connector mcp inspect --format json`；读取协议版本、服务能力和完整工具 Schema，不调用业务工具 |
 | 生成/刷新 DWS 动态命令 | 工具发布后执行 `dws connector mcp refresh --format json` → 检查 `partial/failedServices/cacheUpdated` → 检查 `dws <service-or-tool> --help` 和 `dws connector mcp published --help`；部分失败时健康服务正常更新、失败服务保留旧缓存 |
 | 续作已有服务/工具 | `service list --keyword` 找 `mcpId` → `tool list --mcp-id` 找 `toolId` → 再执行目标操作 |
-| 编辑已发布工具 | `tool get` 读当前定义（底层存储格式，翻译回三段式，详见 [mcp.md](references/mcp.md) §只更新一个已有工具草稿）→ 全量构造 `tool update --dry-run` → 调试草稿 versionId → 用户确认后发布 |
+| 编辑已发布工具 | `tool get` 读当前定义（**读回即三段式**，判型看 toolType）→ http 型全量构造 `tool update --dry-run`（漏传即清空）/ hsf 型 `tool update-hsf` 只传要改的（部分更新）→ 调试草稿 versionId → 用户确认后发布 |
 | 删除工具或服务 | 先 `tool get` 或 `service get` + `tool list` 核对影响面 → 用户明确确认 → 删除命令加 `--yes` |
 
 ## 意图表
@@ -99,6 +100,8 @@ MCP 开发脚手架（mcpdev 管理面）
 | "配置/查询 MCP 鉴权" | `dws connector mcp auth get\|save` |
 | "保存/查询/调试/绑定/删除 MCP 凭证" | `dws connector mcp credential save\|list\|get\|debug\|bind\|delete` |
 | "查询/新增/移除 MCP 协作者" | `dws connector mcp member list\|add\|remove` |
+| "把 HSF 接口/方法做成工具" | `dws connector mcp hsf method-list` 发现方法 → `tool create-hsf`（详见 mcp.md HSF 节） |
+| "解绑实例凭证 / 删凭证被 credential_in_use 拦" | `dws connector mcp credential unbind --mcp-id <mcpId>` → 再 `credential delete` |
 | "读取这个 MCP 的协议和工具元数据" | 设置 `DINGTALK_MCPDEV_MCP_URL` 后执行 `dws connector mcp inspect --format json` |
 
 ## 详细参考

@@ -109,6 +109,17 @@
 - **判读位**：`tool debug` 的业务返回在顶层 `toolOutput`（与 executeSuccess/toolInput/rawOutput/time 同级，不再嵌在 result.outputValue）；出参精修是否生效以 `toolOutput` 实际形状为准。
 - **null 省略**：映射引擎对值为 null 的字段整个省略（不会出现 `"字段": null`）——出参缺字段＝值为空；空成功（只剩 success:true）要警惕上游返回了空值，结合业务预期判读。
 
+## 5.5 HSF 型工具映射差异（V5）
+
+http 侧规则（Pascal 位置名、`.Body.` 前缀、api-outputs 静态互验）**仅适用于 http 型工具**。hsf 型差异：
+
+| 项 | http 型 | hsf 型 |
+|---|---|---|
+| 入参 target | `$.<Pascal位置>.<字段>`（Query/Body/Head/Path） | `$.<DTO简名>.<字段>`（如 `$.SearchMCPRequest.name`） |
+| 出参 source | `$.node_service_activator.Body.…` | `$.node_service_activator.result…`（**无 .Body.**） |
+| 字段名权威源 | apiInputs/apiOutputs 自己声明 | `hsf method-list` 返回的 inputSchema/outputSchema（写错=**静默忽略**） |
+| 身份注入 | 系统参数按需 | **必须显式写两条**：`$.system_node.ddDataCorpId→$.<DTO>.corpId`、`$.system_node.operateUserId→$.<DTO>.userId`（服务端不自动补，漏写=运行时参数错误） |
+
 ## 6. 系统参数注入（身份等）
 
 接口需要调用者身份（userId / corpId）等运行时上下文时，**不要**做成 toolInput 让 LLM 传，用 `reference` 引用系统参数——平台运行时按「当前调用者」自动填充，权限跟人走：

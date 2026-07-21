@@ -1704,7 +1704,9 @@ func shouldRefreshMCPHTTPCommandsAfterInvocation(invocation executor.Invocation,
 func mcpDevToolMutatesCommands(tool string) bool {
 	switch strings.TrimSpace(tool) {
 	case "mcp_service_create", "mcp_service_update", "mcp_service_delete",
-		"mcp_tool_create", "mcp_tool_update", "mcp_tool_publish", "mcp_tool_delete":
+		"mcp_tool_create_http", "mcp_tool_update_http",
+		"mcp_tool_create_hsf", "mcp_tool_update_hsf",
+		"mcp_tool_publish", "mcp_tool_delete":
 		return true
 	default:
 		return false
