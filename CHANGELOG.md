@@ -6,14 +6,18 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+## [1.0.54-beta.1] - 2026-07-21
+
+This beta validates the restored default transport envelope for personal event output with opt-in flattening, plus Schema CLI path and plugin overlay compatibility fixes, on top of the validated `v1.0.53-beta.7` baseline.
+
 ### Changed
 
-- **Personal event output compatibility** — `event consume` once again preserves the transport envelope by default for `ndjson`/`json`/`pretty`, while retaining the existing `compact` processor. New Agent workflows opt into the event-specific top-level DTO with `--flatten`; `event schema --flatten` describes that DTO, while the default schema describes `type/event_type/data/headers` and points to `.data | fromjson`.
+- **Personal event output compatibility** (#743) — `event consume` once again preserves the transport envelope by default for `ndjson`/`json`/`pretty`, while retaining the existing `compact` processor. New Agent workflows opt into the event-specific top-level DTO with `--flatten`, which is mutually exclusive with `-f raw` and `--debug-raw-events`; `event schema --flatten` describes that DTO, while the default schema describes `type/event_type/data/headers` and points to `.data | fromjson`.
 
 ### Fixed
 
-- **Schema CLI path compatibility** — user-facing Schema lookups once again accept space-, dot-, and slash-separated CLI paths without weakening strict canonical identity resolution.
-- **Plugin CLI overlays** — installed plugins register their manifest-authored command trees again for HTTP and stdio servers, and a plugin may now replace a hidden compatibility fallback (for example `conference`) instead of being skipped as a distribution conflict.
+- **Schema CLI path compatibility** (#738) — user-facing Schema lookups once again accept space-, dot-, and slash-separated CLI paths without weakening strict canonical identity resolution.
+- **Plugin CLI overlays** (#701) — installed plugins register their manifest-authored command trees again for HTTP and stdio servers, and a plugin may now replace a hidden compatibility fallback (for example `conference`) instead of being skipped as a distribution conflict.
 
 ## [1.0.53] - 2026-07-21
 
