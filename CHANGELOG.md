@@ -6,6 +6,10 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+### Changed
+
+- **Personal event output compatibility** — `event consume` once again preserves the transport envelope by default for `ndjson`/`json`/`pretty`, while retaining the existing `compact` processor. New Agent workflows opt into the event-specific top-level DTO with `--flatten`; `event schema --flatten` describes that DTO, while the default schema describes `type/event_type/data/headers` and points to `.data | fromjson`.
+
 ### Fixed
 
 - **Schema CLI path compatibility** — user-facing Schema lookups once again accept space-, dot-, and slash-separated CLI paths without weakening strict canonical identity resolution.
