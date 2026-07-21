@@ -26,7 +26,7 @@ import (
 )
 
 func main() {
-	os.Exit(run(os.Args[1:], app.NewSchemaSourceRootCommand(), os.Stdout, os.Stderr))
+	os.Exit(run(os.Args[1:], app.NewRootCommand(), os.Stdout, os.Stderr))
 }
 
 func run(args []string, root *cobra.Command, stdout, stderr io.Writer) int {

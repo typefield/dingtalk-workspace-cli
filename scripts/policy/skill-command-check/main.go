@@ -59,7 +59,7 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	os.Exit(run(rootPath, app.NewSchemaSourceRootCommand(), os.Stdout, os.Stderr))
+	os.Exit(run(rootPath, app.NewRootCommand(), os.Stdout, os.Stderr))
 }
 
 func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {

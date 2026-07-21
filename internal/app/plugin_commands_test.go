@@ -213,12 +213,11 @@ func TestPluginOverlayBuildsConferenceTreeAndDispatchesOriginalProperties(t *tes
 	}
 }
 
-func TestPluginOverlayTypedFlagsAndServerOverride(t *testing.T) {
+func TestPluginOverlayTypedFlags(t *testing.T) {
 	descriptor := conferencePluginDescriptor()
 	descriptor.CLI.ToolOverrides = map[string]mcptypes.CLIToolOverride{
 		"typed_tool": {
-			CLIName:        "typed",
-			ServerOverride: "other-server",
+			CLIName: "typed",
 			Flags: map[string]mcptypes.CLIFlagOverride{
 				"conversationId": {Required: true, Description: "conversation"},
 				"enabled":        {Type: "bool"},
@@ -244,7 +243,7 @@ func TestPluginOverlayTypedFlagsAndServerOverride(t *testing.T) {
 		t.Fatalf("runner calls = %d", len(runner.invocations))
 	}
 	invocation := runner.invocations[0]
-	if invocation.CanonicalProduct != "other-server" {
+	if invocation.CanonicalProduct != "conference-local" {
 		t.Fatalf("canonical product = %q", invocation.CanonicalProduct)
 	}
 	want := map[string]any{
@@ -713,6 +712,35 @@ func TestUnsupportedPluginOverlaySemanticsFailClosed(t *testing.T) {
 				},
 			}
 		},
+		func(descriptor *mcptypes.ServerDescriptor) {
+			descriptor.CLI.ToolOverrides = map[string]mcptypes.CLIToolOverride{
+				"unsafe": {CLIName: "unsafe", ServerOverride: "drive"},
+			}
+		},
+		func(descriptor *mcptypes.ServerDescriptor) {
+			descriptor.CLI.ToolOverrides = map[string]mcptypes.CLIToolOverride{
+				"unsafe": {
+					CLIName: "unsafe",
+					Flags: map[string]mcptypes.CLIFlagOverride{
+						"Body.query": {},
+					},
+				},
+			}
+		},
+		func(descriptor *mcptypes.ServerDescriptor) {
+			descriptor.CLI.ToolOverrides = map[string]mcptypes.CLIToolOverride{
+				"unsafe": {CLIName: "unsafe", Group: "safe.bad_name"},
+			}
+		},
+		func(descriptor *mcptypes.ServerDescriptor) {
+			descriptor.CLI.ToolOverrides = map[string]mcptypes.CLIToolOverride{
+				"unsafe": {
+					CLIName:         "unsafe",
+					Flags:           map[string]mcptypes.CLIFlagOverride{"value": {}},
+					RequireTogether: [][]string{{"value", "missing"}},
+				},
+			}
+		},
 	} {
 		descriptor := conferencePluginDescriptor()
 		mutate(&descriptor)
@@ -723,5 +751,59 @@ func TestUnsupportedPluginOverlaySemanticsFailClosed(t *testing.T) {
 		); len(commands) != 0 {
 			t.Fatalf("unsupported overlay produced commands %#v", commands)
 		}
+	}
+}
+
+func TestUnsupportedPluginDescriptorsDoNotRegisterRuntimeState(t *testing.T) {
+	isolatePluginRuntime(t)
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+
+	writeManifest := func(name, manifest string) {
+		t.Helper()
+		directory := filepath.Join(configDir, "plugins", "user", name)
+		if err := os.MkdirAll(directory, 0o755); err != nil {
+			t.Fatal(err)
+		}
+		if err := os.WriteFile(filepath.Join(directory, "plugin.json"), []byte(manifest), 0o600); err != nil {
+			t.Fatal(err)
+		}
+	}
+	writeManifest("unsafe-http", `{
+		"name":"unsafe-http",
+		"version":"1.0.0",
+		"mcpServers":{"unsafe":{
+			"type":"streamable-http",
+			"endpoint":"https://unsafe.invalid/mcp",
+			"headers":{"Authorization":"Bearer unsafe-secret"},
+			"cli":{"id":"unsafe-http-id","command":"unsafe-http","toolOverrides":{
+				"unsafe_tool":{"cliName":"run","serverOverride":"drive"}
+			}}
+		}}
+	}`)
+	writeManifest("unsafe-stdio", `{
+		"name":"unsafe-stdio",
+		"version":"1.0.0",
+		"mcpServers":{"unsafe":{
+			"type":"stdio",
+			"command":"bin/unsafe",
+			"cli":{"id":"unsafe-stdio-id","command":"unsafe-stdio","toolOverrides":{
+				"unsafe_tool":{"cliName":"run","flags":{"value":{"mapsTo":"target"}}}
+			}}
+		}}
+	}`)
+
+	root := pluginTestRoot()
+	if commands := loadPlugins(root, nil, executor.EchoRunner{}); len(commands) != 0 {
+		t.Fatalf("unsupported plugin descriptors produced commands %#v", commands)
+	}
+	if endpoint, ok := directRuntimeEndpoint("unsafe-http-id", "unsafe_tool"); ok {
+		t.Fatalf("unsupported HTTP descriptor registered endpoint %q", endpoint)
+	}
+	if _, ok := LookupPluginAuth("unsafe-http-id"); ok {
+		t.Fatal("unsupported HTTP descriptor registered plugin auth")
+	}
+	if _, ok := LookupStdioClient("unsafe-stdio/unsafe"); ok {
+		t.Fatal("unsupported stdio descriptor registered a client")
 	}
 }

@@ -112,7 +112,7 @@ func runGenerate(args []string, stdout, stderr io.Writer) error {
 	defer i18n.SetLang(previousLang)
 	i18n.SetLang("en")
 
-	snapshot := interfacesnapshot.Capture(app.NewSchemaSourceRootCommand())
+	snapshot := interfacesnapshot.Capture(app.NewRootCommand())
 	if *output == "-" {
 		return interfacesnapshot.Write(stdout, snapshot)
 	}

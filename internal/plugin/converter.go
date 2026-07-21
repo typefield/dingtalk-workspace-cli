@@ -14,6 +14,7 @@
 package plugin
 
 import (
+	"bytes"
 	"encoding/json"
 	"io"
 	"log/slog"
@@ -193,8 +194,15 @@ func (p *Plugin) ResolveCLIOverlay(serverKey string) (mcptypes.CLIOverlay, bool)
 		}
 	}
 
-	if err := json.Unmarshal(data, &overlay); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&overlay); err != nil {
 		slog.Warn("plugin: failed to parse CLI overlay",
+			"plugin", p.Manifest.Name, "server", serverKey, "error", err)
+		return mcptypes.CLIOverlay{}, false
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		slog.Warn("plugin: CLI overlay contains trailing JSON",
 			"plugin", p.Manifest.Name, "server", serverKey, "error", err)
 		return mcptypes.CLIOverlay{}, false
 	}

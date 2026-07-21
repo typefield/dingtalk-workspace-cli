@@ -1032,8 +1032,17 @@ func selectPluginServerCandidates(
 	accepted := make([]pluginServerCandidate, 0, len(candidates))
 	for _, candidate := range candidates {
 		descriptor := candidate.descriptor
-		if descriptor.CLI.Skip ||
-			pluginDescriptorConflictsWithDistribution(root, descriptor, distributionProducts) {
+		if descriptor.CLI.Skip {
+			continue
+		}
+		if reason := unsupportedPluginDescriptor(root, descriptor); reason != "" {
+			slog.Warn("plugin: descriptor CLI semantics are unsupported, skipping",
+				"plugin", candidate.owner.Manifest.Name,
+				"server", descriptor.Key,
+				"field", reason)
+			continue
+		}
+		if pluginDescriptorConflictsWithDistribution(root, descriptor, distributionProducts) {
 			continue
 		}
 		claims := pluginDescriptorIdentityClaims(descriptor)

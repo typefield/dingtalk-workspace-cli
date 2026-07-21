@@ -161,6 +161,11 @@ func buildPluginOverlayRoot(
 		parent := root
 		if groupPath := strings.TrimSpace(override.Group); groupPath != "" {
 			parent = ensurePluginGroup(root, groupPath, groupPath, groups)
+			if parent == nil {
+				slog.Warn("plugin: invalid overlay group path, skipping leaf",
+					"plugin", server.DisplayName, "tool", toolName, "group", groupPath)
+				continue
+			}
 		}
 		if existing := cobracmd.ChildByName(parent, leaf.Name()); existing != nil {
 			slog.Warn("plugin: duplicate overlay leaf, keeping first",
@@ -207,7 +212,12 @@ func buildPluginLeaf(
 	if !ok {
 		return nil
 	}
-	canonicalProduct := firstNonEmptyPluginString(override.ServerOverride, overlay.ID, server.Key)
+	if !validPluginFlagConstraints(bindings, override) {
+		slog.Warn("plugin: invalid flag constraints, skipping leaf",
+			"plugin", server.DisplayName, "tool", toolName)
+		return nil
+	}
+	canonicalProduct := firstNonEmptyPluginString(overlay.ID, server.Key)
 	cmd := &cobra.Command{
 		Use:               use,
 		Short:             short,
@@ -290,6 +300,11 @@ func registerPluginBindings(
 
 	for _, property := range properties {
 		flagOverride := override.Flags[property]
+		if strings.Contains(property, ".") {
+			slog.Warn("plugin: dotted flag properties are unsupported, skipping leaf",
+				"command", name, "property", property)
+			return nil, "", nil, false
+		}
 		if reason := unsupportedPluginFlagOverride(flagOverride); reason != "" {
 			slog.Warn("plugin: unsupported flag override semantics, skipping leaf",
 				"command", name, "property", property, "field", reason)
@@ -335,8 +350,6 @@ func registerPluginBindings(
 				minPositionals = index + 1
 			}
 			labels = append(labels, positionalLabel{index: index, name: property})
-		} else if len(names) == 0 {
-			return nil, "", nil, false
 		}
 
 		bindings = append(bindings, pluginFlagBinding{
@@ -351,6 +364,13 @@ func registerPluginBindings(
 			positionalIndex: flagOverride.PositionalIndex,
 			omitWhen:        strings.ToLower(strings.TrimSpace(flagOverride.OmitWhen)),
 		})
+	}
+	for index := 0; index < maxPositionals; index++ {
+		if !usedPositions[index] {
+			slog.Warn("plugin: positional bindings must use contiguous indexes, skipping leaf",
+				"command", name, "missingIndex", index)
+			return nil, "", nil, false
+		}
 	}
 
 	use := name
@@ -582,6 +602,10 @@ func shouldOmitPluginValue(value any, mode string) bool {
 		return typed == 0
 	case float64:
 		return typed == 0
+	case []any:
+		return len(typed) == 0
+	case map[string]any:
+		return len(typed) == 0
 	default:
 		return false
 	}
@@ -637,20 +661,48 @@ func applyPluginFlagConstraints(cmd *cobra.Command, override mcptypes.CLIToolOve
 	}
 }
 
+func validPluginFlagConstraints(bindings []pluginFlagBinding, override mcptypes.CLIToolOverride) bool {
+	known := make(map[string]bool)
+	for _, binding := range bindings {
+		for _, name := range binding.names {
+			known[name] = true
+		}
+	}
+	validate := func(groups [][]string, minimum int) bool {
+		for _, group := range groups {
+			if len(group) < minimum {
+				return false
+			}
+			seen := make(map[string]bool, len(group))
+			for _, rawName := range group {
+				name := strings.TrimSpace(rawName)
+				if name == "" || !known[name] || seen[name] {
+					return false
+				}
+				seen[name] = true
+			}
+		}
+		return true
+	}
+	return validate(override.MutuallyExclusive, 2) &&
+		validate(override.RequireOneOf, 1) &&
+		validate(override.RequireTogether, 2)
+}
+
 func ensurePluginGroup(
 	root *cobra.Command,
 	rawPath string,
 	description string,
 	groups map[string]*cobra.Command,
 ) *cobra.Command {
+	if !validPluginGroupPath(rawPath) {
+		return nil
+	}
 	parts := strings.Split(strings.TrimSpace(rawPath), ".")
 	parent := root
 	var pathParts []string
 	for index, rawPart := range parts {
 		part := strings.TrimSpace(rawPart)
-		if !validPluginCommandName(part) {
-			continue
-		}
 		pathParts = append(pathParts, part)
 		path := strings.Join(pathParts, ".")
 		if existing := groups[path]; existing != nil {
@@ -668,6 +720,16 @@ func ensurePluginGroup(
 		parent = group
 	}
 	return parent
+}
+
+func validPluginGroupPath(rawPath string) bool {
+	parts := strings.Split(strings.TrimSpace(rawPath), ".")
+	for _, rawPart := range parts {
+		if !validPluginCommandName(strings.TrimSpace(rawPart)) {
+			return false
+		}
+	}
+	return true
 }
 
 func mergePluginRoot(destination, source *cobra.Command) {
@@ -769,6 +831,8 @@ func unsupportedPluginOverlay(overlay mcptypes.CLIOverlay) string {
 		return "parent"
 	case strings.TrimSpace(overlay.Group) != "":
 		return "group"
+	case len(overlay.ServerDeps) > 0:
+		return "serverDeps"
 	case len(overlay.Hints) > 0:
 		return "hintCommands"
 	case strings.TrimSpace(overlay.RedirectTo) != "":
@@ -778,12 +842,63 @@ func unsupportedPluginOverlay(overlay mcptypes.CLIOverlay) string {
 	}
 }
 
+func unsupportedPluginDescriptor(root *cobra.Command, descriptor mcptypes.ServerDescriptor) string {
+	overlay := descriptor.CLI
+	if reason := unsupportedPluginOverlay(overlay); reason != "" {
+		return reason
+	}
+	if len(overlay.ToolOverrides) == 0 {
+		return ""
+	}
+	if !validPluginCommandName(pluginDescriptorRootName(descriptor)) {
+		return "command"
+	}
+	for groupPath := range overlay.Groups {
+		if !validPluginGroupPath(groupPath) {
+			return "groups"
+		}
+	}
+	reservations := pluginReservedFlags(root)
+	for toolName, override := range overlay.ToolOverrides {
+		if override.Hidden {
+			continue
+		}
+		if strings.TrimSpace(toolName) == "" {
+			return "tool"
+		}
+		if reason := unsupportedPluginToolOverride(override); reason != "" {
+			return reason
+		}
+		leafName := strings.TrimSpace(override.CLIName)
+		if leafName == "" {
+			leafName = derivePluginCommandName(toolName, overlay.Prefixes)
+		}
+		if !validPluginCommandName(leafName) {
+			return "cliName"
+		}
+		if groupPath := strings.TrimSpace(override.Group); groupPath != "" &&
+			!validPluginGroupPath(groupPath) {
+			return "group"
+		}
+		bindings, _, _, ok := registerPluginBindings(leafName, override, reservations)
+		if !ok {
+			return "flags"
+		}
+		if !validPluginFlagConstraints(bindings, override) {
+			return "constraints"
+		}
+	}
+	return ""
+}
+
 func unsupportedPluginToolOverride(override mcptypes.CLIToolOverride) string {
 	switch {
 	case len(override.CLIAliases) > 0:
 		return "cliAliases"
 	case len(override.OutputFormat) > 0:
 		return "outputFormat"
+	case strings.TrimSpace(override.ServerOverride) != "":
+		return "serverOverride"
 	case strings.TrimSpace(override.RedirectTo) != "":
 		return "redirectTo"
 	case len(override.Pipeline) > 0:
@@ -805,8 +920,32 @@ func unsupportedPluginFlagOverride(override mcptypes.CLIFlagOverride) string {
 		return "runtimeDefault"
 	case override.PipelineLocal:
 		return "pipelineLocal"
+	case !supportedPluginFlagType(override.Type):
+		return "type"
+	case !supportedPluginOmitMode(override.OmitWhen):
+		return "omitWhen"
 	default:
 		return ""
+	}
+}
+
+func supportedPluginFlagType(raw string) bool {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "string", "int", "integer", "float", "float64", "number",
+		"bool", "boolean", "stringslice", "string_slice", "array", "[]string",
+		"json", "object":
+		return true
+	default:
+		return false
+	}
+}
+
+func supportedPluginOmitMode(raw string) bool {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "", "empty", "zero", "never":
+		return true
+	default:
+		return false
 	}
 }
 

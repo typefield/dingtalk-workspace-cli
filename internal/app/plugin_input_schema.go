@@ -45,13 +45,8 @@ func normalizePluginInputParams(
 	for key, value := range params {
 		normalized[key] = value
 	}
-	value, err := coercePluginSchemaValue(normalized, schema)
-	if err != nil {
+	if _, err := coercePluginSchemaValue(normalized, schema); err != nil {
 		return nil, cliInputValidationError(err)
-	}
-	normalized, ok := value.(map[string]any)
-	if !ok {
-		return nil, fmt.Errorf("plugin input schema root must be an object")
 	}
 	if err := cli.ValidateInputSchema(normalized, schema); err != nil {
 		return nil, err
@@ -153,6 +148,9 @@ func coercePluginSchemaValue(value any, schema map[string]any) (any, error) {
 			var parsed map[string]any
 			if err := json.Unmarshal([]byte(trimmed), &parsed); err != nil {
 				return nil, fmt.Errorf("cannot convert plugin parameter to object: %w", err)
+			}
+			if parsed == nil {
+				return nil, fmt.Errorf("cannot convert plugin parameter to object: expected a JSON object")
 			}
 			value = parsed
 		case "array":

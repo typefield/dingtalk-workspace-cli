@@ -1,6 +1,7 @@
 package mcptypes
 
 import (
+	"bytes"
 	"encoding/json"
 	"strings"
 )
@@ -39,7 +40,19 @@ type CLIGroupDef struct {
 }
 
 type CLITool struct {
-	Name string `json:"name"`
+	Name        string                 `json:"name"`
+	CLIName     string                 `json:"cliName,omitempty"`
+	Title       string                 `json:"title,omitempty"`
+	Description string                 `json:"description,omitempty"`
+	IsSensitive bool                   `json:"isSensitive,omitempty"`
+	Category    string                 `json:"category,omitempty"`
+	Hidden      bool                   `json:"hidden,omitempty"`
+	Flags       map[string]CLIFlagHint `json:"flags,omitempty"`
+}
+
+type CLIFlagHint struct {
+	Shorthand string `json:"shorthand,omitempty"`
+	Alias     string `json:"alias,omitempty"`
 }
 
 type CLIToolOverride struct {
@@ -88,7 +101,9 @@ func (override *CLIFlagOverride) UnmarshalJSON(data []byte) error {
 		Default json.RawMessage `json:"default,omitempty"`
 		*alias
 	}{alias: (*alias)(override)}
-	if err := json.Unmarshal(data, &aux); err != nil {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	if err := decoder.Decode(&aux); err != nil {
 		return err
 	}
 	override.Default = coercePluginScalar(aux.Default)
