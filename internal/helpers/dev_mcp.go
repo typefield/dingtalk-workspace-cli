@@ -206,7 +206,7 @@ func newDevMCPURLGetCommand(runner executor.Runner) *cobra.Command {
 				"mcpId":  mcpID,
 				"source": source,
 			}
-			return runDevMCPTool(runner, cmd, devMCPServerURLGetTool, params)
+			return runDevMCPURLGet(runner, cmd, params)
 		},
 	}
 	cmd.Flags().Int("mcp-id", 0, "MCP 服务 ID")
@@ -502,7 +502,7 @@ func newDevMCPToolDebugCommand(runner executor.Runner) *cobra.Command {
 			devMCPPutString(params, "versionId", devMCPStringFlag(cmd, "version-id"))
 			credentialID := devMCPIntFlag(cmd, "credential-id")
 			if credentialID == 0 && !commandBoolFlag(cmd, "no-credential") {
-				return apperrors.NewValidation("请传 --credential-id <id>（credential list 可查）；确认服务无鉴权时显式加 --no-credential。debug 不使用 bind 绑定的凭证，缺省降级会产生 40014 等误导性报错")
+				return apperrors.NewValidation("调试需指定本次运行时凭证，二选一：① 有鉴权工具 → --credential-id <id>（credential list 可查）；② 无鉴权工具 → --no-credential。debug 只认这里传的凭证（不吃 bind 绑定的）；有鉴权却漏传不会被直接拦，而是降级空跑、由下游返回 40014 / access_token is blank 等\"貌似 token 坏、实为没给凭证\"的误导报错。")
 			}
 			devMCPPutInt(params, "credentialId", credentialID)
 			return runDevMCPTool(runner, cmd, devMCPToolDebugTool, params)
@@ -511,8 +511,8 @@ func newDevMCPToolDebugCommand(runner executor.Runner) *cobra.Command {
 	addDevMCPToolLocatorFlags(cmd)
 	cmd.Flags().String("value", "", "调试入参 JSON 对象，结构须符合工具 toolInputs 定义；不要传空 {} 走过场")
 	cmd.Flags().String("version-id", "", "指定调试的版本 ID")
-	cmd.Flags().Int("credential-id", 0, "凭证账号 ID（credential list 可查）；服务已配置鉴权时必须指定，作为本次调试的实际运行时鉴权（debug 不使用 bind 绑定的凭证，缺省降级会产生 40014 等误导性报错）")
-	cmd.Flags().Bool("no-credential", false, "显式声明本次调试不使用凭证（确认服务无鉴权配置时用）")
+	cmd.Flags().Int("credential-id", 0, "凭证账号 ID（credential list 可查）；服务已配置鉴权时必须指定，作为本次调试的实际运行时鉴权（debug 不吃 bind 绑定的凭证；缺省不传不会被直接拦，会降级空跑、下游返回 40014 等误导报错）")
+	cmd.Flags().Bool("no-credential", false, "无鉴权工具的正常走法——声明本次调试不使用凭证（与 --credential-id 二选一必填其一）")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPToolDebugTool)
 	return cmd

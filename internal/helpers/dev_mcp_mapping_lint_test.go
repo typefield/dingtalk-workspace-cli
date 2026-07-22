@@ -43,8 +43,8 @@ func TestConnectorMCPMappingReferenceLintRejects(t *testing.T) {
 	}{
 		{
 			// 0720 第六刀：出参三件套必填，裸草稿不再是合法中间态。
-			name: "bare draft rejected since output trio required",
-			args: lintTestCreateArgs(),
+			name:    "bare draft rejected since output trio required",
+			args:    lintTestCreateArgs(),
 			wantErr: "出参三件套",
 		},
 		{
@@ -296,4 +296,25 @@ func TestConnectorMCPToolPublishPreflight(t *testing.T) {
 			t.Fatalf("publish should run after preflight passes, calls: %#v", runner.calls)
 		}
 	})
+}
+
+func TestDevMCPResponseLacksURL(t *testing.T) {
+	cases := []struct {
+		name     string
+		response map[string]any
+		want     bool
+	}{
+		{"flat with url", map[string]any{"success": true, "mcpUrl": "https://pre-mcp-gw/server/x?key=y"}, false},
+		{"flat empty success (DRAFT)", map[string]any{"success": true}, true},
+		{"flat blank url", map[string]any{"success": true, "mcpUrl": "  "}, true},
+		{"wrapped result envelope with url", map[string]any{"result": map[string]any{"mcpUrl": "https://pre-mcp-gw/server/x?key=y"}}, false},
+		{"nil response", nil, true},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			if got := devMCPResponseLacksURL(tc.response); got != tc.want {
+				t.Fatalf("devMCPResponseLacksURL(%#v) = %v, want %v", tc.response, got, tc.want)
+			}
+		})
+	}
 }

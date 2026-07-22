@@ -188,6 +188,8 @@ dws connector mcp member remove --mcp-id <mcpId> --user-ids <staffId1,staffId2> 
 
 key 放 header 时把 `authQuery` 换成 `authHeaders`（key=<头名>）；凭证 content=`{"apiKey":"<真实key>"}`。
 
+> **⚠️ 建带鉴权 MCP 的顺序铁律（实测踩坑）**：`auth save`（配鉴权）→ `credential save`（存凭证）→ **`credential bind`（绑定生效凭证）** → 建工具 → **`tool publish`（发布）**。**凭证必须在 `tool publish` 之前 bind**——若先 publish 后 bind，发布实例会卡在**草稿态（DRAFT）**：`url get` 恒返回 `success:true` 但**无 mcpUrl**，且**事后再 bind 也救不回**，只能重建工具按正确顺序重发布。无鉴权（NO_AUTH）服务无此约束，建好发布直接可取 url。
+
 - auth save 存的是「说明书」（authFields 字段定义、换取与注入方式），不含密钥值；按选型只传对应类型的配置对象。
 - TOKEN 型注入位按下游要求三选一：`authHeaders`（token 放请求头）/ `authQuery`（token 放 query 参数）/ `authBody`。**query 位完整模板**（已实测跑通，按下游实际字段替换占位符）：
 

@@ -220,7 +220,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 						map[string]any{"key": "temperature", "type": "number", "description": "Temperature."},
 					},
 				},
-				"toolOutputs": []any{},
+				"toolOutputs":    []any{},
 				"outputMappings": []any{},
 			},
 		},
@@ -528,7 +528,7 @@ func TestConnectorMCPLegacyFlagRenameHints(t *testing.T) {
 				"--value", `{"city":"杭州"}`,
 				"--dry-run",
 			},
-			wantErr: "请传 --credential-id",
+			wantErr: "调试需指定本次运行时凭证，二选一",
 		},
 		{
 			name:    "tool get rejects action-id",

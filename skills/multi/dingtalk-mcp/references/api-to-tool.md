@@ -23,6 +23,15 @@
 
 **建议真跑取样**：只读接口先真实请求一次，拿真实响应反推 apiOutputs 结构 + 生成 `tool debug` 用的测试入参——比看文档猜可靠得多。
 
+**`--api-inputs` 格式（易错点）**：值是「四组各一个**字段数组**」，不是对象。每组（query/body/path/headers）的值 = `[{key,type,description,...}]` 数组，用不到的组给 `[]`：
+
+```json
+{"query":[{"key":"name","type":"string","description":"城市名"}],
+ "body":[],"path":[],"headers":[]}
+```
+
+⚠️ 写成 `{"query":{"name":{...}}}`（对象套对象）会被拒：`--api-inputs.query 必须是字段数组`。`--api-outputs` 同构（只有 headers/body 两组）。
+
 ## 3. 工具侧加工（toolInputs 是面向 LLM 的投影，不是 apiInputs 照搬）
 
 - **裁剪**：分页游标、固定控制位、冗余参数不暴露给 LLM，用 `fixed` 映射写死（mapping-rules §4）；

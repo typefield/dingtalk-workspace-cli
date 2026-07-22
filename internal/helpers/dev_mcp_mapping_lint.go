@@ -368,6 +368,39 @@ func devMCPPublishPreflight(runner executor.Runner, cmd *cobra.Command, locator 
 		strings.Join(broken, "\n  - ")))
 }
 
+// runDevMCPURLGet runs mcp_server_url_get and, when the call returns a success
+// response that carries no接入地址, prints a hint. The most common cause of an
+// empty-success is a DRAFT instance: for an auth-configured service the
+// credential must be bound BEFORE the tool is published; binding afterwards does
+// not recover it. Surfacing this stops callers reading the bare success as OK.
+func runDevMCPURLGet(runner executor.Runner, cmd *cobra.Command, params map[string]any) error {
+	inv := executor.NewHelperInvocation(cobracmd.LegacyCommandPath(cmd), devMCPProduct, devMCPServerURLGetTool, params)
+	inv.DryRun = commandDryRun(cmd)
+	res, err := runner.Run(cmd.Context(), inv)
+	if err != nil {
+		return err
+	}
+	if !commandDryRun(cmd) && devMCPResponseLacksURL(res.Response) {
+		fmt.Fprintln(cmd.ErrOrStderr(), "提示：本次返回 success 但无接入地址（mcpUrl）。常见原因：服务处于草稿态——带鉴权的服务须在「发布工具之前」先 credential bind，先发布后 bind 会卡草稿态且事后 bind 也不生效（只能重建工具按正确顺序重发布）。请确认凭证已在发布前绑定；无鉴权服务不受此影响。")
+	}
+	return writeCommandPayload(cmd, res)
+}
+
+// devMCPResponseLacksURL reports whether a mcp_server_url_get response came back
+// without a usable mcpUrl (the empty-success that masks a DRAFT instance). It
+// tolerates both the flat response and content/result envelopes.
+func devMCPResponseLacksURL(response map[string]any) bool {
+	for _, m := range []map[string]any{response, devAppConnectUnwrap(response)} {
+		if m == nil {
+			continue
+		}
+		if s, _ := m["mcpUrl"].(string); strings.TrimSpace(s) != "" {
+			return false
+		}
+	}
+	return true
+}
+
 // devMCPExtractToolDetail digs the tool object out of a mcp_tool_get response,
 // tolerating content/result envelopes and both wrapped/flat layouts.
 func devMCPExtractToolDetail(response map[string]any) map[string]any {
