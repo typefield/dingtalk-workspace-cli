@@ -306,7 +306,7 @@ func newDevMCPServiceCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("description", "", "服务用途描述")
 	cmd.Flags().String("icon-url", "", "服务图标 URL")
 	cmd.Flags().String("introduction", "", "服务详情介绍，支持 markdown")
-	cmd.Flags().String("server-name", "", "服务英文标识，kebab-case，作为 DWS 一级命令名")
+	cmd.Flags().String("server-name", "", "服务英文标识，kebab-case，作为 DWS 一级命令名。强烈建议提供——不传则动态命令路径退化为 mcp-<数字 mcpId>（丢掉可读的一级命令名）")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPServiceCreateTool)
 	return cmd
@@ -624,9 +624,11 @@ func newDevMCPAuthConfigGetCommand(runner executor.Runner) *cobra.Command {
 
 func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
-		Use:               "save",
-		Short:             "保存 MCP 下游鉴权配置",
-		Example:           "  dws connector mcp auth save --mcp-id 10520 --auth-type NO_AUTH --dry-run --format json",
+		Use:   "save",
+		Short: "保存 MCP 下游鉴权配置",
+		Example: `  dws connector mcp auth save --mcp-id 10520 --auth-type NO_AUTH --dry-run --format json
+  # 静态 API key（SIGNATURE 直引）：authQuery/authHeaders 的 value 用 #("<authFields 的 dataId>")，key 放 header 则把 authQuery 换成 authHeaders
+  dws connector mcp auth save --mcp-id 10520 --auth-type SIGNATURE --signature-auth-config '{"authFields":[{"dataId":"apiKey","type":"password","required":true}],"authQuery":[{"key":"api_key","type":"authField","value":"#(\"apiKey\")"}]}' --yes --format json`,
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -664,8 +666,8 @@ func newDevMCPAuthConfigSaveCommand(runner executor.Runner) *cobra.Command {
 	cmd.Flags().String("basic-auth-config", "", "BASIC 鉴权配置 JSON 对象")
 	cmd.Flags().String("api-secret-auth-config", "", "")
 	_ = cmd.Flags().MarkHidden("api-secret-auth-config")
-	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象：{authFields, fetchTokenRequest, 注入位, tokenExpireRules, refreshToken, testRequest}；注入位按下游要求三选一：authHeaders（token 放请求头）/ authQuery（token 放 query 参数）/ authBody")
-	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 自定义鉴权配置 JSON 对象（静态 API key 直引 / 自定义签名表达式两类场景）")
+	cmd.Flags().String("token-auth-config", "", "TOKEN 换取及注入配置 JSON 对象：{authFields, fetchTokenRequest, 注入位, tokenExpireRules, refreshToken, testRequest}；注入位按下游要求三选一：authHeaders（token 放请求头）/ authQuery（token 放 query 参数）/ authBody。引用密钥字段用 #(\"<dataId>\") 函数语法（不是 {{}} 模板）、引换 token 响应用 $.Body.<字段>；完整可跑模板见 skill mcp.md 鉴权节")
+	cmd.Flags().String("signature-auth-config", "", "SIGNATURE 自定义鉴权配置 JSON 对象（静态 API key 直引 / 自定义签名表达式两类场景）。直引写法见上方 Examples 与 skill mcp.md：value 用 #(\"<authFields 的 dataId>\") 函数语法")
 	preferLegacyLeaf(cmd)
 	annotateDevMCPTool(cmd, devMCPAuthConfigSaveTool)
 	return cmd
