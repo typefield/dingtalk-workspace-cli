@@ -37,14 +37,14 @@ const (
 	devMCPServiceListTool   = "mcp_service_list"
 	devMCPServiceUpdateTool = "mcp_service_update"
 
-	devMCPToolCreateTool   = "mcp_tool_create_http"
-	devMCPToolDebugTool    = "mcp_tool_debug"
-	devMCPToolDeleteTool   = "mcp_tool_delete"
-	devMCPToolGetTool      = "mcp_tool_get"
-	devMCPToolListTool     = "mcp_tool_list"
-	devMCPToolPublishTool  = "mcp_tool_publish"
-	devMCPToolUpdateTool   = "mcp_tool_update_http"
-	devMCPToolVersionsTool = "mcp_tool_versions"
+	devMCPToolCreateHTTPTool = "mcp_tool_create_http"
+	devMCPToolDebugTool      = "mcp_tool_debug"
+	devMCPToolDeleteTool     = "mcp_tool_delete"
+	devMCPToolGetTool        = "mcp_tool_get"
+	devMCPToolListTool       = "mcp_tool_list"
+	devMCPToolPublishTool    = "mcp_tool_publish"
+	devMCPToolUpdateHTTPTool = "mcp_tool_update_http"
+	devMCPToolVersionsTool   = "mcp_tool_versions"
 
 	devMCPToolCreateHsfTool = "mcp_tool_create_hsf"
 	devMCPToolUpdateHsfTool = "mcp_tool_update_hsf"
@@ -446,12 +446,12 @@ func newDevMCPToolCreateCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runDevMCPTool(runner, cmd, devMCPToolCreateTool, params)
+			return runDevMCPTool(runner, cmd, devMCPToolCreateHTTPTool, params)
 		},
 	}
 	addDevMCPToolUpsertFlags(cmd, false)
 	preferLegacyLeaf(cmd)
-	annotateDevMCPTool(cmd, devMCPToolCreateTool)
+	annotateDevMCPTool(cmd, devMCPToolCreateHTTPTool)
 	return cmd
 }
 
@@ -470,12 +470,12 @@ func newDevMCPToolUpdateCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return err
 			}
-			return runDevMCPTool(runner, cmd, devMCPToolUpdateTool, params)
+			return runDevMCPTool(runner, cmd, devMCPToolUpdateHTTPTool, params)
 		},
 	}
 	addDevMCPToolUpsertFlags(cmd, true)
 	preferLegacyLeaf(cmd)
-	annotateDevMCPTool(cmd, devMCPToolUpdateTool)
+	annotateDevMCPTool(cmd, devMCPToolUpdateHTTPTool)
 	return cmd
 }
 

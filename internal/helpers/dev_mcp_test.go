@@ -65,6 +65,26 @@ func TestConnectorMCPCommandTree(t *testing.T) {
 	}
 }
 
+func TestConnectorMCPRenamedBackendTools(t *testing.T) {
+	connector := connectorHandler{}.Command(&captureRunner{})
+	for _, tc := range []struct {
+		path []string
+		tool string
+	}{
+		{path: []string{"mcp", "url", "get"}, tool: "mcp_server_url_get"},
+		{path: []string{"mcp", "tool", "create"}, tool: "mcp_tool_create_http"},
+		{path: []string{"mcp", "tool", "update"}, tool: "mcp_tool_update_http"},
+	} {
+		cmd, _, err := connector.Find(tc.path)
+		if err != nil {
+			t.Fatalf("Find(%v) error = %v", tc.path, err)
+		}
+		if got := cmd.Annotations["mcp-tool"]; got != tc.tool {
+			t.Fatalf("Find(%v) mcp-tool = %q, want %q", tc.path, got, tc.tool)
+		}
+	}
+}
+
 func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 	cases := []struct {
 		name       string
@@ -120,7 +140,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
-			wantTool: devMCPToolCreateTool,
+			wantTool: devMCPToolCreateHTTPTool,
 			wantParams: map[string]any{
 				"mcpId": 10487,
 				"name":  "get_weather",
@@ -158,7 +178,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--output-mappings", `[{"target":"$","type":"reference","source":"$.node_service_activator.Body"}]`,
 				"--dry-run",
 			},
-			wantTool: devMCPToolUpdateTool,
+			wantTool: devMCPToolUpdateHTTPTool,
 			wantParams: map[string]any{
 				"mcpId":  10487,
 				"toolId": "G-ACT-1",
@@ -228,7 +248,7 @@ func TestConnectorMCPCommandsBuildToolParams(t *testing.T) {
 				"--output-mappings", `[]`,
 				"--dry-run",
 			},
-			wantTool: devMCPToolCreateTool,
+			wantTool: devMCPToolCreateHTTPTool,
 			wantParams: map[string]any{
 				"mcpId": 10487,
 				"name":  "get_weather",
