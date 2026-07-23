@@ -14,7 +14,9 @@
 package cli
 
 import (
+	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -77,6 +79,34 @@ func robotConfigToolSchema() HelperToolSchema {
 			"mode":             map[string]any{"type": "string", "description": "机器人模式", "enum": []any{"HTTPS", "STREAM", "AISKILL"}},
 		},
 		Required: []string{"unifiedAppId"},
+	}
+}
+
+func buildAnnotatedMCPTestTree() *cobra.Command {
+	root := &cobra.Command{Use: "dws"}
+	lookup := &cobra.Command{
+		Use:   "lookup-english-word",
+		Short: "Lookup English Word",
+		Annotations: map[string]string{
+			"mcp-tool":   "lookup_english_word",
+			"mcp-source": "published-mcp-1001",
+		},
+		Run: func(*cobra.Command, []string) {},
+	}
+	service := &cobra.Command{Use: "english-dictionary", Short: "English Dictionary"}
+	service.AddCommand(lookup)
+	root.AddCommand(service)
+	return root
+}
+
+func englishWordToolSchema() HelperToolSchema {
+	return HelperToolSchema{
+		Name:        "lookup_english_word",
+		Description: "Look up one English word",
+		Properties: map[string]any{
+			"word": map[string]any{"type": "string", "description": "English word, for example: hello."},
+		},
+		Required: []string{"word"},
 	}
 }
 
@@ -146,6 +176,78 @@ func TestRenderHelperSchema_LeafGwsFlat(t *testing.T) {
 	}
 	if mode["required"] != false {
 		t.Fatalf("mode required = %v, want false", mode["required"])
+	}
+}
+
+func TestRenderAnnotatedMCPSchema_FixedDynamicLeaf(t *testing.T) {
+	root := buildAnnotatedMCPTestTree()
+	var gotSource string
+	fetch := func(_ context.Context, source string) (map[string]HelperToolSchema, error) {
+		gotSource = source
+		return map[string]HelperToolSchema{"lookup_english_word": englishWordToolSchema()}, nil
+	}
+
+	payload, ok, err := renderAnnotatedMCPSchema(context.Background(), root, "english-dictionary.lookup-english-word", fetch)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected annotated MCP renderer to claim fixed dynamic path")
+	}
+	if gotSource != "published-mcp-1001" {
+		t.Fatalf("source passed to fetcher = %q, want published-mcp-1001", gotSource)
+	}
+	if payload["path"] != "english-dictionary lookup-english-word" {
+		t.Fatalf("path = %v", payload["path"])
+	}
+	if payload["source"] != "mcp:published-mcp-1001" {
+		t.Fatalf("source = %v", payload["source"])
+	}
+	params, _ := payload["parameters"].(map[string]any)
+	word, _ := params["word"].(map[string]any)
+	if word == nil || word["type"] != "string" || word["required"] != true {
+		t.Fatalf("word param = %#v, want required string", word)
+	}
+}
+
+func TestRenderAnnotatedMCPSchema_FixedDynamicGroup(t *testing.T) {
+	root := buildAnnotatedMCPTestTree()
+	payload, ok, err := renderAnnotatedMCPSchema(context.Background(), root, "english-dictionary", nil)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected annotated MCP renderer to claim group path")
+	}
+	if payload["path"] != "english-dictionary" {
+		t.Fatalf("path = %v", payload["path"])
+	}
+	if cmds, _ := payload["commands"].([]map[string]any); len(cmds) != 1 {
+		t.Fatalf("commands = %#v, want one child", payload["commands"])
+	}
+}
+
+func TestNewSchemaCommand_AnnotatedMCPPath(t *testing.T) {
+	root := buildAnnotatedMCPTestTree()
+	root.AddCommand(NewSchemaCommand(nil, fakeFetcher(map[string]HelperToolSchema{
+		"lookup_english_word": englishWordToolSchema(),
+	})))
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"schema", "english-dictionary.lookup-english-word"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["path"] != "english-dictionary lookup-english-word" {
+		t.Fatalf("path = %v", payload["path"])
+	}
+	if payload["source"] != "mcp:published-mcp-1001" {
+		t.Fatalf("source = %v", payload["source"])
 	}
 }
 

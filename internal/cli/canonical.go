@@ -104,6 +104,21 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 				}
 			}
 
+			// Runtime-registered MCP leaves outside helper roots, e.g. fixed
+			// published-MCP commands, carry the same annotations and can reuse
+			// the live MCP schema renderer.
+			if len(args) > 0 && helperTools != nil {
+				payload, ok, err := renderAnnotatedMCPSchema(cmd.Context(), cmd.Root(), args[0], helperTools)
+				if err != nil {
+					return err
+				}
+				if ok {
+					data, _ := json.MarshalIndent(payload, "", "  ")
+					fmt.Fprintln(cmd.OutOrStdout(), string(data))
+					return nil
+				}
+			}
+
 			// Registered local subtrees (event, …): schema synthesized from cobra flags.
 			if len(args) > 0 {
 				payload, ok, err := renderCobraSchema(cmd.Root(), args[0])

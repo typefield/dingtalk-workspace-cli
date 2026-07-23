@@ -99,6 +99,73 @@ func renderHelperSchema(ctx context.Context, root *cobra.Command, rawPath string
 	}, true, nil
 }
 
+// renderAnnotatedMCPSchema handles runtime-registered commands that are not
+// under helperSchemaRoots but still carry the same mcp-tool/mcp-source
+// annotations. Published MCP dynamic commands use this path for their fixed
+// DWS command aliases, while connector mcp published keeps using
+// renderHelperSchema through the connector root.
+func renderAnnotatedMCPSchema(ctx context.Context, root *cobra.Command, rawPath string, fetch HelperToolFetcher) (map[string]any, bool, error) {
+	if root == nil {
+		return nil, false, nil
+	}
+	tokens := splitSchemaPathTokens(rawPath)
+	if len(tokens) == 0 || helperSchemaRoots[tokens[0]] {
+		return nil, false, nil
+	}
+
+	target, rest, err := root.Find(tokens)
+	if err != nil || target == nil {
+		return nil, false, nil
+	}
+	if unknown := firstNonFlag(rest); unknown != "" {
+		if !hasAnnotatedMCPCommand(target) {
+			return nil, false, nil
+		}
+		return map[string]any{
+			"path":      rawPath,
+			"error":     "unknown subcommand \"" + unknown + "\" under \"" + helperCommandPath(target) + "\"",
+			"available": helperSubcommands(target),
+		}, true, nil
+	}
+
+	if target.Runnable() && !target.HasAvailableSubCommands() && hasMCPToolAnnotation(target) {
+		payload, err := helperLeafSchema(ctx, target, fetch)
+		return payload, true, err
+	}
+	if hasAnnotatedMCPCommand(target) {
+		return map[string]any{
+			"path":     helperCommandPath(target),
+			"commands": helperSubcommands(target),
+		}, true, nil
+	}
+	return nil, false, nil
+}
+
+func hasAnnotatedMCPCommand(cmd *cobra.Command) bool {
+	if cmd == nil {
+		return false
+	}
+	if hasMCPToolAnnotation(cmd) {
+		return true
+	}
+	for _, child := range cmd.Commands() {
+		if child == nil || !child.IsAvailableCommand() {
+			continue
+		}
+		if hasAnnotatedMCPCommand(child) {
+			return true
+		}
+	}
+	return false
+}
+
+func hasMCPToolAnnotation(cmd *cobra.Command) bool {
+	if cmd == nil || cmd.Annotations == nil {
+		return false
+	}
+	return strings.TrimSpace(cmd.Annotations["mcp-tool"]) != ""
+}
+
 // helperLeafSchema renders a single leaf command as the gws-flat object,
 // fetching its MCP tool schema live. The command must carry an `mcp-tool`
 // annotation; commands without one (e.g. `dev connect`, `dev doc search`) are
