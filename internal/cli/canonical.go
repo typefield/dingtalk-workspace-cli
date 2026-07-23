@@ -75,10 +75,11 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 		Short: "查看有限的本地 Schema（静态端点模式）",
 		Long: `查看有限的本地 Schema 元数据。
 
-服务发现和动态 schema 已下线。静态端点模式下，schema 覆盖两类命令：
-  1. helper-only 子树（如 dev）：CONTENT 从其绑定的 MCP 服务实时取，source 为 mcp:<server>；
-  2. 登记的本地命令（如 event）：从二进制注册的 cobra flag 合成，source 为 cobra。
-其余普通产品命令和 flag 仍以当前二进制的 --help 为准。`,
+静态端点模式下，schema 覆盖三类命令：
+  1. 已发布 MCP 动态命令：只读取动态命令缓存，不实时访问发现接口或 tools/list；
+  2. helper-only 静态子树（如 dev）：CONTENT 从其绑定的 MCP 服务取，source 为 mcp:<server>；
+  3. 登记的本地命令（如 event）：从二进制注册的 cobra flag 合成，source 为 cobra。
+没有缓存时动态命令不注册，指定路径查询会明确返回不可用；静态 schema 不受影响。`,
 		Args:              cobra.MaximumNArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -107,7 +108,7 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 			// Runtime-registered MCP leaves outside helper roots, e.g. fixed
 			// published-MCP commands, carry cached MCP schema annotations from
 			// dynamic command registration.
-			if len(args) > 0 && helperTools != nil {
+			if len(args) > 0 {
 				payload, ok, err := renderAnnotatedMCPSchema(cmd.Context(), cmd.Root(), args[0], helperTools)
 				if err != nil {
 					return err
@@ -130,6 +131,18 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 					fmt.Fprintln(cmd.OutOrStdout(), string(data))
 					return nil
 				}
+			}
+
+			if len(args) > 0 {
+				payload := map[string]any{
+					"available": false,
+					"error":     "schema unavailable: command is not registered from the dynamic MCP cache and has no static schema",
+					"path":      args[0],
+					"source":    "dynamic-mcp-cache",
+				}
+				data, _ := json.MarshalIndent(payload, "", "  ")
+				fmt.Fprintln(cmd.OutOrStdout(), string(data))
+				return nil
 			}
 
 			fmt.Fprintln(cmd.OutOrStdout(), `{"kind":"schema","count":0,"products":[],"note":"static endpoint mode"}`)

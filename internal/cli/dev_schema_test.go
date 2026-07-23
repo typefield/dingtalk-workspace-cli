@@ -91,6 +91,7 @@ func buildAnnotatedMCPTestTree() *cobra.Command {
 			"mcp-tool":         "lookup_english_word",
 			"mcp-source":       "published-mcp-1001",
 			"mcp-description":  "Look up one English word",
+			"mcp-dynamic":      "true",
 			"mcp-input-schema": `{"type":"object","properties":{"word":{"type":"string","description":"English word, for example: hello."}},"required":["word"]}`,
 		},
 		Run: func(*cobra.Command, []string) {},
@@ -110,6 +111,7 @@ func buildConnectorAnnotatedMCPTestTree() *cobra.Command {
 			"mcp-tool":         "lookup_english_word",
 			"mcp-source":       "published-mcp-1001",
 			"mcp-description":  "Look up one English word",
+			"mcp-dynamic":      "true",
 			"mcp-input-schema": `{"type":"object","properties":{"word":{"type":"string","description":"English word, for example: hello."}},"required":["word"]}`,
 		},
 		Run: func(*cobra.Command, []string) {},
@@ -302,6 +304,136 @@ func TestNewSchemaCommand_AnnotatedMCPPath(t *testing.T) {
 	}
 	if payload["source"] != "mcp:published-mcp-1001" {
 		t.Fatalf("source = %v", payload["source"])
+	}
+}
+
+func TestNewSchemaCommand_DynamicMCPWithoutCachedSchemaIsUnavailable(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	lookup := &cobra.Command{
+		Use:   "lookup-english-word",
+		Short: "Lookup English Word",
+		Annotations: map[string]string{
+			"mcp-tool":    "lookup_english_word",
+			"mcp-source":  "published-mcp-1001",
+			"mcp-dynamic": "true",
+		},
+		Run: func(*cobra.Command, []string) {},
+	}
+	service := &cobra.Command{Use: "english-dictionary"}
+	service.AddCommand(lookup)
+	root.AddCommand(service)
+
+	calledFetch := false
+	root.AddCommand(NewSchemaCommand(nil, func(context.Context, string) (map[string]HelperToolSchema, error) {
+		calledFetch = true
+		return map[string]HelperToolSchema{"lookup_english_word": englishWordToolSchema()}, nil
+	}))
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"schema", "english-dictionary.lookup-english-word"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if calledFetch {
+		t.Fatal("dynamic schema without cache must not use the live fetcher")
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["error"] != "cached MCP schema is unavailable; refresh dynamic MCP commands before querying schema" {
+		t.Fatalf("error = %v", payload["error"])
+	}
+}
+
+func TestNewSchemaCommand_StaticSchemaUnaffectedByMissingDynamicCache(t *testing.T) {
+	root := buildEventTestTree()
+	dynamic := &cobra.Command{
+		Use: "dynamic-tool",
+		Annotations: map[string]string{
+			"mcp-tool":    "dynamic_tool",
+			"mcp-source":  "published-mcp-1001",
+			"mcp-dynamic": "true",
+		},
+		Run: func(*cobra.Command, []string) {},
+	}
+	root.AddCommand(dynamic)
+
+	calledFetch := false
+	root.AddCommand(NewSchemaCommand(nil, func(context.Context, string) (map[string]HelperToolSchema, error) {
+		calledFetch = true
+		return nil, errors.New("static schema must not call the MCP fetcher")
+	}))
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"schema", "event.consume"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if calledFetch {
+		t.Fatal("static schema must remain independent from the dynamic MCP cache")
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["source"] != "cobra" || payload["path"] != "event consume" {
+		t.Fatalf("static schema = %#v", payload)
+	}
+}
+
+func TestNewSchemaCommand_UnregisteredDynamicPathIsExplicitlyUnavailable(t *testing.T) {
+	root := buildEventTestTree()
+	calledFetch := false
+	root.AddCommand(NewSchemaCommand(nil, func(context.Context, string) (map[string]HelperToolSchema, error) {
+		calledFetch = true
+		return nil, errors.New("unregistered dynamic schema must not call the MCP fetcher")
+	}))
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetArgs([]string{"schema", "english-dictionary.lookup-english-word"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("Execute() error = %v", err)
+	}
+	if calledFetch {
+		t.Fatal("unregistered dynamic schema must not use the live fetcher")
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["available"] != false || payload["source"] != "dynamic-mcp-cache" {
+		t.Fatalf("unavailable schema = %#v", payload)
+	}
+}
+
+func BenchmarkRenderAnnotatedMCPSchemaCached(b *testing.B) {
+	root := buildAnnotatedMCPTestTree()
+	b.ReportAllocs()
+	for b.Loop() {
+		payload, ok, err := renderAnnotatedMCPSchema(
+			context.Background(),
+			root,
+			"english-dictionary.lookup-english-word",
+			nil,
+		)
+		if err != nil || !ok || payload["source"] != "mcp:published-mcp-1001" {
+			b.Fatalf("render failed: ok=%v err=%v payload=%#v", ok, err, payload)
+		}
+	}
+}
+
+func BenchmarkRenderCobraSchemaStatic(b *testing.B) {
+	root := buildEventTestTree()
+	b.ReportAllocs()
+	for b.Loop() {
+		payload, ok, err := renderCobraSchema(root, "event.consume")
+		if err != nil || !ok || payload["source"] != "cobra" {
+			b.Fatalf("render failed: ok=%v err=%v payload=%#v", ok, err, payload)
+		}
 	}
 }
 

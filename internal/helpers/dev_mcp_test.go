@@ -18,18 +18,34 @@ func TestConnectorMCPCommandTree(t *testing.T) {
 	}
 	for _, path := range [][]string{
 		{"mcp", "service", "list"},
+		{"mcp", "service", "get"},
 		{"mcp", "service", "create"},
+		{"mcp", "service", "update"},
+		{"mcp", "service", "delete"},
+		{"mcp", "tool", "list"},
+		{"mcp", "tool", "get"},
 		{"mcp", "tool", "create"},
+		{"mcp", "tool", "update"},
 		{"mcp", "tool", "debug"},
 		{"mcp", "tool", "publish"},
+		{"mcp", "tool", "delete"},
+		{"mcp", "tool", "versions"},
+		{"mcp", "tool", "create-hsf"},
+		{"mcp", "tool", "update-hsf"},
 		{"mcp", "url", "get"},
 		{"mcp", "auth", "get"},
 		{"mcp", "auth", "save"},
-		{"mcp", "credential", "save"},
 		{"mcp", "credential", "list"},
+		{"mcp", "credential", "get"},
+		{"mcp", "credential", "save"},
+		{"mcp", "credential", "debug"},
+		{"mcp", "credential", "bind"},
+		{"mcp", "credential", "unbind"},
+		{"mcp", "credential", "delete"},
 		{"mcp", "member", "list"},
 		{"mcp", "member", "add"},
 		{"mcp", "member", "remove"},
+		{"mcp", "hsf", "method-list"},
 	} {
 		cmd, _, err := connector.Find(path)
 		if err != nil {
@@ -38,6 +54,14 @@ func TestConnectorMCPCommandTree(t *testing.T) {
 		if cmd == nil || cmd.Annotations["mcp-source"] != devMCPProduct || cmd.Annotations["mcp-tool"] == "" {
 			t.Fatalf("Find(%v) missing MCP annotations: %#v", path, cmd)
 		}
+	}
+
+	serviceCreate, _, err := connector.Find([]string{"mcp", "service", "create"})
+	if err != nil {
+		t.Fatalf("Find(service create) error = %v", err)
+	}
+	if !strings.Contains(serviceCreate.Example, "--server-name customer-info") {
+		t.Fatalf("service create example must teach the semantic dynamic command name: %q", serviceCreate.Example)
 	}
 }
 

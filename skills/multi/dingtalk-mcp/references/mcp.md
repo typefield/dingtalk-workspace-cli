@@ -128,6 +128,8 @@ dws connector mcp published --help
 缓存规则：
 
 - DWS 会缓存已发布 MCP 的工具描述，TTL 10 分钟。
+- 动态命令的 `dws schema <service>.<tool>` 只读取同一份命令缓存，不实时调用发现接口或 `tools/list`；没有缓存时动态命令不注册，残留命令缺少 schema 缓存时明确返回不可用。
+- 静态管理命令的 schema（如 `connector.mcp.service.create`）使用其原有 schema 来源，不受动态命令缓存是否存在影响。
 - `refresh` 会主动拉取预发/线上 Portal 发现接口并重建缓存；`--timeout` 同时作为发现请求和单个 MCP `tools/list` 的超时。
 - MCP 工具发现使用有限并发和独立超时：单个服务失败不会取消后续服务；健康服务更新，失败服务保留上次缓存。
 - 返回中的 `partial` 表示部分成功，`failedServices` 给出失败的 mcpId/脱敏端点/原因，`cacheUpdated` 表示合并后的缓存已持久化。
@@ -339,7 +341,7 @@ dws connector mcp service list --keyword <关键词> --format json
 dws connector mcp service get --mcp-id <mcpId> --format json
 
 # 创建 / 修改 / 删除服务
-dws connector mcp service create --name <服务名> --description <描述> --dry-run --format json
+dws connector mcp service create --name <服务名> --server-name <kebab-case> --description <描述> --dry-run --format json
 dws connector mcp service update --mcp-id <mcpId> --description <新描述> --dry-run --format json
 dws connector mcp service delete --mcp-id <mcpId> --dry-run --format json
 ```
@@ -421,7 +423,7 @@ dws connector mcp url get --mcp-id <mcpId> --source MARKET --format json
 
 ## Schema
 
-helper-only 命令需要确认 JSON 参数结构时用：
+静态管理命令需要确认 JSON 参数结构时用：
 
 ```bash
 dws schema connector.mcp.service.create --format json
@@ -429,3 +431,11 @@ dws schema connector.mcp.tool.create --format json
 dws schema connector.mcp.tool.update --format json
 dws schema connector.mcp.tool.debug --format json
 ```
+
+已发布 MCP 的动态命令 schema 来自 10 分钟命令缓存：
+
+```bash
+dws schema <service-or-tool-slug>.<tool-slug> --format json
+```
+
+该命令不会为补 schema 偷偷访问远程服务。缓存不存在时动态命令不注册；命令存在但 schema 缓存损坏或缺失时返回 `cached MCP schema is unavailable`。这不影响上面的静态管理命令 schema。

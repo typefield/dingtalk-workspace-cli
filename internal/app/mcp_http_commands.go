@@ -1346,6 +1346,7 @@ func annotateMCPHTTPDynamicCommand(cmd *cobra.Command, descriptor mcpHTTPCommand
 		"mcp-tool":        descriptor.Tool,
 		"mcp-source":      descriptor.ProductID,
 		"mcp-description": descriptor.Description,
+		"mcp-dynamic":     "true",
 	}
 	if len(descriptor.InputSchema) > 0 {
 		if data, err := json.Marshal(descriptor.InputSchema); err == nil {
@@ -1650,15 +1651,21 @@ func registerMCPHTTPRuntimeRoutes(commands []mcpHTTPCommandDescriptor) {
 }
 
 func shouldRefreshMCPHTTPCommands(args []string) bool {
-	if strings.EqualFold(strings.TrimSpace(os.Getenv("DWS_MCP_HTTP_COMMAND_REFRESH")), "always") {
-		return true
-	}
 	var tokens []string
 	for _, arg := range args {
 		if strings.HasPrefix(arg, "-") {
 			continue
 		}
 		tokens = append(tokens, splitMCPHTTPPath(arg)...)
+	}
+	// Schema is a cache-only read. A missing dynamic-command cache means the
+	// dynamic command is unavailable; schema inspection must never hide that by
+	// refreshing from Portal or tools/list during startup.
+	if len(tokens) > 0 && tokens[0] == "schema" {
+		return false
+	}
+	if strings.EqualFold(strings.TrimSpace(os.Getenv("DWS_MCP_HTTP_COMMAND_REFRESH")), "always") {
+		return true
 	}
 	for i := 0; i+2 < len(tokens); i++ {
 		if tokens[i] == mcpHTTPCommandRoot && tokens[i+1] == "mcp" && tokens[i+2] == "refresh" {
@@ -1672,11 +1679,6 @@ func shouldRefreshMCPHTTPCommands(args []string) bool {
 	}
 	for _, token := range tokens {
 		if token == mcpHTTPCommandRoot {
-			return true
-		}
-	}
-	for i := 0; i+1 < len(tokens); i++ {
-		if tokens[i] == "schema" && tokens[i+1] == "dev" {
 			return true
 		}
 	}

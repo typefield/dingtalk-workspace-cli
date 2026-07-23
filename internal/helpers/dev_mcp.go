@@ -267,7 +267,7 @@ func newDevMCPServiceCreateCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "create",
 		Short:             "新建 MCP 服务",
-		Example:           "  dws connector mcp service create --name 客户信息查询 --description \"查询客户基础资料\" --dry-run --format json",
+		Example:           "  dws connector mcp service create --name 客户信息查询 --server-name customer-info --description \"查询客户基础资料\" --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {

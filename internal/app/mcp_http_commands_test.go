@@ -778,6 +778,85 @@ func TestShouldRefreshMCPHTTPCommandsSkipsExplicitRefreshStartupFetch(t *testing
 	if !shouldRefreshMCPHTTPCommands([]string{"connector", "mcp", "service", "list"}) {
 		t.Fatal("other connector commands should refresh stale dynamic commands")
 	}
+	if shouldRefreshMCPHTTPCommands([]string{"schema", "connector.mcp.published.weather.get-weather"}) {
+		t.Fatal("schema inspection must not refresh a missing dynamic-command cache")
+	}
+	if shouldRefreshMCPHTTPCommands([]string{"schema", "dev.app.create"}) {
+		t.Fatal("static/helper schema inspection must not refresh the dynamic-command cache")
+	}
+	t.Setenv("DWS_MCP_HTTP_COMMAND_REFRESH", "always")
+	if shouldRefreshMCPHTTPCommands([]string{"schema", "connector.mcp.published.weather.get-weather"}) {
+		t.Fatal("schema inspection must remain cache-only even when forced refresh is configured")
+	}
+}
+
+func TestSchemaWithoutDynamicCacheNeverFetchesDiscovery(t *testing.T) {
+	var requests atomic.Int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		requests.Add(1)
+		_ = json.NewEncoder(w).Encode(map[string]any{
+			"success": true,
+			"result": map[string]any{
+				"values":      []any{},
+				"currentPage": 1,
+				"pageSize":    100,
+				"totalCount":  0,
+				"totalPages":  0,
+			},
+		})
+	}))
+	defer server.Close()
+
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	t.Setenv(mcpHTTPCommandDiscoveryEnv, server.URL)
+	t.Setenv("DWS_MCP_HTTP_COMMAND_REFRESH", "always")
+	originalArgs := append([]string(nil), os.Args...)
+	os.Args = []string{"dws", "schema", "missing-service.missing-tool", "--format", "json"}
+	t.Cleanup(func() {
+		os.Args = originalArgs
+	})
+
+	root := NewRootCommandWithEngine(context.Background(), nil)
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("root construction made %d discovery requests, want 0", got)
+	}
+	if findCommandByPath(root, []string{"missing-service", "missing-tool"}) != nil {
+		t.Fatal("dynamic command must not be registered without a cache")
+	}
+
+	var out bytes.Buffer
+	root.SetOut(&out)
+	root.SetErr(&out)
+	root.SetArgs([]string{"schema", "missing-service.missing-tool", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("dynamic cache-miss schema Execute() error = %v", err)
+	}
+	var unavailable map[string]any
+	if err := json.Unmarshal(out.Bytes(), &unavailable); err != nil {
+		t.Fatalf("dynamic cache-miss schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if unavailable["available"] != false || unavailable["source"] != "dynamic-mcp-cache" {
+		t.Fatalf("dynamic cache-miss schema = %#v", unavailable)
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("dynamic cache-miss schema made %d discovery requests, want 0", got)
+	}
+
+	out.Reset()
+	root.SetArgs([]string{"schema", "event.consume", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("static schema Execute() error = %v", err)
+	}
+	var static map[string]any
+	if err := json.Unmarshal(out.Bytes(), &static); err != nil {
+		t.Fatalf("static schema output is not JSON: %v\n%s", err, out.String())
+	}
+	if static["source"] != "cobra" || static["path"] != "event consume" {
+		t.Fatalf("static schema = %#v", static)
+	}
+	if got := requests.Load(); got != 0 {
+		t.Fatalf("static schema made %d discovery requests, want 0", got)
+	}
 }
 
 func TestAddMCPHTTPCommandsRegistersFixedRunnableCommand(t *testing.T) {
@@ -848,6 +927,9 @@ func TestMCPHTTPDynamicCommandHelpIsAgentFriendly(t *testing.T) {
 	}
 	if cmd.Annotations["mcp-description"] != "Get weather by city.\nUse for read-only weather lookup." {
 		t.Fatalf("mcp-description annotation = %q", cmd.Annotations["mcp-description"])
+	}
+	if cmd.Annotations["mcp-dynamic"] != "true" {
+		t.Fatalf("mcp-dynamic annotation = %q", cmd.Annotations["mcp-dynamic"])
 	}
 	var cachedSchema map[string]any
 	if err := json.Unmarshal([]byte(cmd.Annotations["mcp-input-schema"]), &cachedSchema); err != nil {

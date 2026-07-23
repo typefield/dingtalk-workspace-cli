@@ -129,7 +129,7 @@ func renderAnnotatedMCPSchema(_ context.Context, root *cobra.Command, rawPath st
 		}, true, nil
 	}
 
-	if target.Runnable() && !target.HasAvailableSubCommands() && hasMCPToolAnnotation(target) {
+	if target.Runnable() && !target.HasAvailableSubCommands() && isDynamicMCPCommand(target) {
 		payload, ok, err := cachedMCPLeafSchema(target)
 		if err != nil {
 			return nil, true, err
@@ -155,7 +155,7 @@ func hasAnnotatedMCPCommand(cmd *cobra.Command) bool {
 	if cmd == nil {
 		return false
 	}
-	if hasMCPToolAnnotation(cmd) {
+	if isDynamicMCPCommand(cmd) {
 		return true
 	}
 	for _, child := range cmd.Commands() {
@@ -167,6 +167,14 @@ func hasAnnotatedMCPCommand(cmd *cobra.Command) bool {
 		}
 	}
 	return false
+}
+
+func isDynamicMCPCommand(cmd *cobra.Command) bool {
+	if cmd == nil || cmd.Annotations == nil {
+		return false
+	}
+	return strings.EqualFold(strings.TrimSpace(cmd.Annotations["mcp-dynamic"]), "true") &&
+		hasMCPToolAnnotation(cmd)
 }
 
 func hasMCPToolAnnotation(cmd *cobra.Command) bool {
@@ -256,6 +264,12 @@ func cachedMCPInputSchemaRequired(schema map[string]any) []string {
 func helperLeafSchema(ctx context.Context, cmd *cobra.Command, fetch HelperToolFetcher) (map[string]any, error) {
 	if payload, ok, err := cachedMCPLeafSchema(cmd); ok || err != nil {
 		return payload, err
+	}
+	if isDynamicMCPCommand(cmd) {
+		return map[string]any{
+			"path":  helperCommandPath(cmd),
+			"error": "cached MCP schema is unavailable; refresh dynamic MCP commands before querying schema",
+		}, nil
 	}
 	toolName, source := "", ""
 	if cmd.Annotations != nil {
