@@ -21,6 +21,7 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
@@ -97,6 +98,23 @@ func TestMCPURLGetRejectsBlankID(t *testing.T) {
 	}
 }
 
+func TestMCPURLGroupShowsHelp(t *testing.T) {
+	out, err := executeMCPURLCommand(t, nil, "url")
+	if err != nil {
+		t.Fatalf("execute mcp url: %v", err)
+	}
+	if !strings.Contains(out, "get") {
+		t.Fatalf("help output does not list get command:\n%s", out)
+	}
+}
+
+func TestMCPURLGetRejectsMissingCaller(t *testing.T) {
+	_, err := executeMCPURLCommand(t, nil, "url", "get", "10043")
+	if err == nil || !strings.Contains(err.Error(), "caller is not configured") {
+		t.Fatalf("error = %v, want missing caller error", err)
+	}
+}
+
 func TestMCPURLGetPropagatesCallError(t *testing.T) {
 	caller := &mcpURLTestCaller{err: errors.New("permission denied")}
 	_, err := executeMCPURLCommand(t, caller, "url", "get", "10043")
@@ -112,6 +130,48 @@ func TestMCPURLGetRejectsInvalidJSON(t *testing.T) {
 	_, err := executeMCPURLCommand(t, caller, "url", "get", "10043")
 	if err == nil || !strings.Contains(err.Error(), "无效 JSON") {
 		t.Fatalf("error = %v, want invalid JSON error", err)
+	}
+}
+
+func TestMCPURLGetRejectsEmptyResults(t *testing.T) {
+	tests := []struct {
+		name   string
+		result *edition.ToolResult
+	}{
+		{name: "nil result"},
+		{
+			name: "no usable text content",
+			result: &edition.ToolResult{Content: []edition.ContentBlock{
+				{Type: "image", Text: "ignored"},
+				{Type: "text", Text: "   "},
+			}},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			caller := &mcpURLTestCaller{result: tt.result}
+			_, err := executeMCPURLCommand(t, caller, "url", "get", "10043")
+			if err == nil || !strings.Contains(err.Error(), "返回空结果") {
+				t.Fatalf("error = %v, want empty result error", err)
+			}
+		})
+	}
+}
+
+func TestMCPURLGetClassifiesBusinessError(t *testing.T) {
+	caller := &mcpURLTestCaller{
+		result: &edition.ToolResult{Content: []edition.ContentBlock{{
+			Type: "text",
+			Text: `{"success":false,"errorMsg":"搜索内容不能为空"}`,
+		}}},
+	}
+	_, err := executeMCPURLCommand(t, caller, "url", "get", "10043")
+	if err == nil {
+		t.Fatal("expected classified business error")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "business_error" {
+		t.Fatalf("error = %#v, want classified business error", err)
 	}
 }
 
