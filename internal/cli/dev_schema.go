@@ -15,6 +15,7 @@ package cli
 
 import (
 	"context"
+	"encoding/json"
 	"fmt"
 	"sort"
 	"strings"
@@ -104,7 +105,7 @@ func renderHelperSchema(ctx context.Context, root *cobra.Command, rawPath string
 // annotations. Published MCP dynamic commands use this path for their fixed
 // DWS command aliases, while connector mcp published keeps using
 // renderHelperSchema through the connector root.
-func renderAnnotatedMCPSchema(ctx context.Context, root *cobra.Command, rawPath string, fetch HelperToolFetcher) (map[string]any, bool, error) {
+func renderAnnotatedMCPSchema(_ context.Context, root *cobra.Command, rawPath string, _ HelperToolFetcher) (map[string]any, bool, error) {
 	if root == nil {
 		return nil, false, nil
 	}
@@ -129,8 +130,17 @@ func renderAnnotatedMCPSchema(ctx context.Context, root *cobra.Command, rawPath 
 	}
 
 	if target.Runnable() && !target.HasAvailableSubCommands() && hasMCPToolAnnotation(target) {
-		payload, err := helperLeafSchema(ctx, target, fetch)
-		return payload, true, err
+		payload, ok, err := cachedMCPLeafSchema(target)
+		if err != nil {
+			return nil, true, err
+		}
+		if ok {
+			return payload, true, nil
+		}
+		return map[string]any{
+			"path":  helperCommandPath(target),
+			"error": "cached MCP schema is unavailable; refresh dynamic MCP commands before querying schema",
+		}, true, nil
 	}
 	if hasAnnotatedMCPCommand(target) {
 		return map[string]any{
@@ -166,11 +176,87 @@ func hasMCPToolAnnotation(cmd *cobra.Command) bool {
 	return strings.TrimSpace(cmd.Annotations["mcp-tool"]) != ""
 }
 
-// helperLeafSchema renders a single leaf command as the gws-flat object,
-// fetching its MCP tool schema live. The command must carry an `mcp-tool`
-// annotation; commands without one (e.g. `dev connect`, `dev doc search`) are
-// not devapp tools and get a clear, non-fatal explanation instead.
+func cachedMCPLeafSchema(cmd *cobra.Command) (map[string]any, bool, error) {
+	if cmd == nil || cmd.Annotations == nil {
+		return nil, false, nil
+	}
+	raw := strings.TrimSpace(cmd.Annotations["mcp-input-schema"])
+	if raw == "" {
+		return nil, false, nil
+	}
+	var inputSchema map[string]any
+	if err := json.Unmarshal([]byte(raw), &inputSchema); err != nil {
+		return nil, true, fmt.Errorf("decode cached MCP schema for %s: %w", helperCommandPath(cmd), err)
+	}
+	toolName := strings.TrimSpace(cmd.Annotations["mcp-tool"])
+	source := strings.TrimSpace(cmd.Annotations["mcp-source"])
+	if source == "" {
+		source = "op-app"
+	}
+	description := strings.TrimSpace(cmd.Annotations["mcp-description"])
+	if description == "" {
+		description = strings.TrimSpace(cmd.Short)
+	}
+	tool := HelperToolSchema{
+		Name:        toolName,
+		Description: description,
+		Properties:  cachedMCPInputSchemaProperties(inputSchema),
+		Required:    cachedMCPInputSchemaRequired(inputSchema),
+	}
+	return map[string]any{
+		"description": tool.Description,
+		"path":        helperCommandPath(cmd),
+		"source":      "mcp:" + source,
+		"parameters":  helperFlatParameters(tool),
+	}, true, nil
+}
+
+func cachedMCPInputSchemaProperties(schema map[string]any) map[string]any {
+	if schema == nil {
+		return map[string]any{}
+	}
+	props, _ := schema["properties"].(map[string]any)
+	if props == nil {
+		return map[string]any{}
+	}
+	return props
+}
+
+func cachedMCPInputSchemaRequired(schema map[string]any) []string {
+	if schema == nil {
+		return nil
+	}
+	switch raw := schema["required"].(type) {
+	case []any:
+		out := make([]string, 0, len(raw))
+		for _, value := range raw {
+			if s, ok := value.(string); ok && strings.TrimSpace(s) != "" {
+				out = append(out, strings.TrimSpace(s))
+			}
+		}
+		return out
+	case []string:
+		out := make([]string, 0, len(raw))
+		for _, value := range raw {
+			if strings.TrimSpace(value) != "" {
+				out = append(out, strings.TrimSpace(value))
+			}
+		}
+		return out
+	default:
+		return nil
+	}
+}
+
+// helperLeafSchema renders a single leaf command as the gws-flat object.
+// Runtime dynamic MCP commands carry a cached MCP input schema annotation and
+// are rendered from that cache. Older helper commands without cached schema
+// annotations fetch their MCP tool schema live. Commands without an `mcp-tool`
+// annotation get a clear, non-fatal explanation instead.
 func helperLeafSchema(ctx context.Context, cmd *cobra.Command, fetch HelperToolFetcher) (map[string]any, error) {
+	if payload, ok, err := cachedMCPLeafSchema(cmd); ok || err != nil {
+		return payload, err
+	}
 	toolName, source := "", ""
 	if cmd.Annotations != nil {
 		toolName = strings.TrimSpace(cmd.Annotations["mcp-tool"])

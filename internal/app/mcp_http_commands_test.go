@@ -843,6 +843,19 @@ func TestMCPHTTPDynamicCommandHelpIsAgentFriendly(t *testing.T) {
 	if cmd == nil {
 		t.Fatal("dynamic command was not registered")
 	}
+	if cmd.Annotations["mcp-source"] != "published-mcp-1001" {
+		t.Fatalf("mcp-source annotation = %q", cmd.Annotations["mcp-source"])
+	}
+	if cmd.Annotations["mcp-description"] != "Get weather by city.\nUse for read-only weather lookup." {
+		t.Fatalf("mcp-description annotation = %q", cmd.Annotations["mcp-description"])
+	}
+	var cachedSchema map[string]any
+	if err := json.Unmarshal([]byte(cmd.Annotations["mcp-input-schema"]), &cachedSchema); err != nil {
+		t.Fatalf("mcp-input-schema annotation is not JSON: %v", err)
+	}
+	if props, _ := cachedSchema["properties"].(map[string]any); props["cityName"] == nil {
+		t.Fatalf("cached schema properties = %#v", props)
+	}
 	if strings.Contains(cmd.Short, "\n") {
 		t.Fatalf("short should be single line, got %q", cmd.Short)
 	}

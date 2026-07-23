@@ -1343,8 +1343,14 @@ func mcpHTTPFlagHelpKind(kind string) string {
 
 func annotateMCPHTTPDynamicCommand(cmd *cobra.Command, descriptor mcpHTTPCommandDescriptor) {
 	cmd.Annotations = map[string]string{
-		"mcp-tool":   descriptor.Tool,
-		"mcp-source": descriptor.ProductID,
+		"mcp-tool":        descriptor.Tool,
+		"mcp-source":      descriptor.ProductID,
+		"mcp-description": descriptor.Description,
+	}
+	if len(descriptor.InputSchema) > 0 {
+		if data, err := json.Marshal(descriptor.InputSchema); err == nil {
+			cmd.Annotations["mcp-input-schema"] = string(data)
+		}
 	}
 	if descriptor.Source != "" {
 		cmd.Annotations["mcp-http-source"] = descriptor.Source

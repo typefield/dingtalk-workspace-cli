@@ -105,8 +105,8 @@ func NewSchemaCommand(_ CatalogLoader, helperTools HelperToolFetcher) *cobra.Com
 			}
 
 			// Runtime-registered MCP leaves outside helper roots, e.g. fixed
-			// published-MCP commands, carry the same annotations and can reuse
-			// the live MCP schema renderer.
+			// published-MCP commands, carry cached MCP schema annotations from
+			// dynamic command registration.
 			if len(args) > 0 && helperTools != nil {
 				payload, ok, err := renderAnnotatedMCPSchema(cmd.Context(), cmd.Root(), args[0], helperTools)
 				if err != nil {

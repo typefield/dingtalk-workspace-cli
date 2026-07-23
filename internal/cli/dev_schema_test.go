@@ -88,14 +88,41 @@ func buildAnnotatedMCPTestTree() *cobra.Command {
 		Use:   "lookup-english-word",
 		Short: "Lookup English Word",
 		Annotations: map[string]string{
-			"mcp-tool":   "lookup_english_word",
-			"mcp-source": "published-mcp-1001",
+			"mcp-tool":         "lookup_english_word",
+			"mcp-source":       "published-mcp-1001",
+			"mcp-description":  "Look up one English word",
+			"mcp-input-schema": `{"type":"object","properties":{"word":{"type":"string","description":"English word, for example: hello."}},"required":["word"]}`,
 		},
 		Run: func(*cobra.Command, []string) {},
 	}
 	service := &cobra.Command{Use: "english-dictionary", Short: "English Dictionary"}
 	service.AddCommand(lookup)
 	root.AddCommand(service)
+	return root
+}
+
+func buildConnectorAnnotatedMCPTestTree() *cobra.Command {
+	root := &cobra.Command{Use: "dws"}
+	lookup := &cobra.Command{
+		Use:   "lookup-english-word",
+		Short: "Lookup English Word",
+		Annotations: map[string]string{
+			"mcp-tool":         "lookup_english_word",
+			"mcp-source":       "published-mcp-1001",
+			"mcp-description":  "Look up one English word",
+			"mcp-input-schema": `{"type":"object","properties":{"word":{"type":"string","description":"English word, for example: hello."}},"required":["word"]}`,
+		},
+		Run: func(*cobra.Command, []string) {},
+	}
+	service := &cobra.Command{Use: "english-dictionary", Short: "English Dictionary"}
+	service.AddCommand(lookup)
+	published := &cobra.Command{Use: "published", Short: "Published MCP"}
+	published.AddCommand(service)
+	mcp := &cobra.Command{Use: "mcp", Short: "MCP"}
+	mcp.AddCommand(published)
+	connector := &cobra.Command{Use: "connector", Short: "Connector"}
+	connector.AddCommand(mcp)
+	root.AddCommand(connector)
 	return root
 }
 
@@ -181,10 +208,10 @@ func TestRenderHelperSchema_LeafGwsFlat(t *testing.T) {
 
 func TestRenderAnnotatedMCPSchema_FixedDynamicLeaf(t *testing.T) {
 	root := buildAnnotatedMCPTestTree()
-	var gotSource string
+	calledFetch := false
 	fetch := func(_ context.Context, source string) (map[string]HelperToolSchema, error) {
-		gotSource = source
-		return map[string]HelperToolSchema{"lookup_english_word": englishWordToolSchema()}, nil
+		calledFetch = true
+		return nil, errors.New("fetcher must not be called for cached dynamic MCP schema")
 	}
 
 	payload, ok, err := renderAnnotatedMCPSchema(context.Background(), root, "english-dictionary.lookup-english-word", fetch)
@@ -194,8 +221,8 @@ func TestRenderAnnotatedMCPSchema_FixedDynamicLeaf(t *testing.T) {
 	if !ok {
 		t.Fatal("expected annotated MCP renderer to claim fixed dynamic path")
 	}
-	if gotSource != "published-mcp-1001" {
-		t.Fatalf("source passed to fetcher = %q, want published-mcp-1001", gotSource)
+	if calledFetch {
+		t.Fatal("renderAnnotatedMCPSchema must use cached schema annotations, not live fetcher")
 	}
 	if payload["path"] != "english-dictionary lookup-english-word" {
 		t.Fatalf("path = %v", payload["path"])
@@ -207,6 +234,33 @@ func TestRenderAnnotatedMCPSchema_FixedDynamicLeaf(t *testing.T) {
 	word, _ := params["word"].(map[string]any)
 	if word == nil || word["type"] != "string" || word["required"] != true {
 		t.Fatalf("word param = %#v, want required string", word)
+	}
+}
+
+func TestRenderHelperSchema_CachedDynamicLeafDoesNotFetch(t *testing.T) {
+	root := buildConnectorAnnotatedMCPTestTree()
+	calledFetch := false
+	fetch := func(_ context.Context, source string) (map[string]HelperToolSchema, error) {
+		calledFetch = true
+		return nil, errors.New("fetcher must not be called for cached dynamic MCP schema")
+	}
+
+	payload, ok, err := renderHelperSchema(context.Background(), root, "connector mcp published english-dictionary lookup-english-word", fetch)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !ok {
+		t.Fatal("expected helper renderer to claim connector path")
+	}
+	if calledFetch {
+		t.Fatal("renderHelperSchema must use cached schema annotations for dynamic MCP leaves")
+	}
+	if payload["source"] != "mcp:published-mcp-1001" {
+		t.Fatalf("source = %v", payload["source"])
+	}
+	params, _ := payload["parameters"].(map[string]any)
+	if _, ok := params["word"].(map[string]any); !ok {
+		t.Fatalf("missing cached word param: %#v", params)
 	}
 }
 
@@ -229,9 +283,9 @@ func TestRenderAnnotatedMCPSchema_FixedDynamicGroup(t *testing.T) {
 
 func TestNewSchemaCommand_AnnotatedMCPPath(t *testing.T) {
 	root := buildAnnotatedMCPTestTree()
-	root.AddCommand(NewSchemaCommand(nil, fakeFetcher(map[string]HelperToolSchema{
-		"lookup_english_word": englishWordToolSchema(),
-	})))
+	root.AddCommand(NewSchemaCommand(nil, func(context.Context, string) (map[string]HelperToolSchema, error) {
+		return nil, errors.New("fetcher must not be called for cached dynamic MCP schema")
+	}))
 
 	var out bytes.Buffer
 	root.SetOut(&out)
