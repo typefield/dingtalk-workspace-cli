@@ -79,11 +79,11 @@ func TestRootKeepsMainBranchChatCompatibilityCommands(t *testing.T) {
 	}
 
 	mediaGroup := mustFindCommand(t, root, "chat", "media")
-	if mediaGroup.Deprecated == "" || mediaGroup.Hidden || !mediaGroup.Runnable() {
+	if mediaGroup.Deprecated == "" || !mediaGroup.Hidden || !mediaGroup.Runnable() {
 		t.Fatalf("chat media compatibility contract: deprecated=%q hidden=%v runnable=%v", mediaGroup.Deprecated, mediaGroup.Hidden, mediaGroup.Runnable())
 	}
 	mediaUpload := mustFindCommand(t, mediaGroup, "upload")
-	if mediaUpload.Deprecated == "" || mediaUpload.Hidden || !mediaUpload.Runnable() {
+	if mediaUpload.Deprecated == "" || !mediaUpload.Hidden || !mediaUpload.Runnable() {
 		t.Fatalf("chat media upload compatibility contract: deprecated=%q hidden=%v runnable=%v", mediaUpload.Deprecated, mediaUpload.Hidden, mediaUpload.Runnable())
 	}
 	for _, flag := range []string{"file", "type"} {
@@ -96,6 +96,41 @@ func TestRootKeepsMainBranchChatCompatibilityCommands(t *testing.T) {
 	mustFindCommand(t, root, "contact", "search")
 	mustFindCommand(t, root, "contact", "user", "list")
 	mustFindCommand(t, root, "conference", "meeting", "reserve")
+}
+
+func TestChatHelpAndSchemaHideRetiredMediaUpload(t *testing.T) {
+	for _, args := range [][]string{
+		{"chat", "--help"},
+		{"chat", "media", "--help"},
+	} {
+		root := NewRootCommand()
+		var output bytes.Buffer
+		root.SetOut(&output)
+		root.SetErr(&output)
+		root.SetArgs(args)
+		if err := root.Execute(); err != nil {
+			t.Fatalf("dws %s: %v\n%s", strings.Join(args, " "), err, output.String())
+		}
+		for _, line := range strings.Split(output.String(), "\n") {
+			fields := strings.Fields(line)
+			if len(fields) > 0 && (fields[0] == "media" || fields[0] == "upload") {
+				t.Fatalf("dws %s exposes retired command in Help line %q:\n%s", strings.Join(args, " "), line, output.String())
+			}
+		}
+	}
+
+	root := NewRootCommand()
+	var output bytes.Buffer
+	root.SetOut(&output)
+	root.SetErr(&output)
+	root.SetArgs([]string{"schema", "--cli-path", "chat media upload", "--format", "json"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatalf("retired chat media upload remains queryable from Schema:\n%s", output.String())
+	}
+	if !strings.Contains(err.Error(), "unknown runtime schema path") {
+		t.Fatalf("retired chat media upload Schema error = %v, want unknown path", err)
+	}
 }
 
 func TestRootChatMediaUploadWithoutAppCredentialsReturnsMigrationValidation(t *testing.T) {

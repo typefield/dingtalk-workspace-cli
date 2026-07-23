@@ -25,6 +25,7 @@ func newChatMediaGroup() *cobra.Command {
 		Use:               "media",
 		Short:             "已下线：媒体文件上传兼容入口",
 		Deprecated:        "本地图片和文件请改用 " + chatMediaUploadReplacement,
+		Hidden:            true,
 		Args:              cobra.NoArgs,
 		TraverseChildren:  true,
 		DisableAutoGenTag: true,
@@ -41,6 +42,7 @@ func newChatMediaUploadCommand() *cobra.Command {
 		Use:        "upload",
 		Short:      "已下线：请通过 chat message send 直接发送本地文件",
 		Deprecated: "请改用 " + chatMediaUploadReplacement,
+		Hidden:     true,
 		Long: `此命令仅为 1.x 命令行兼容保留，不再读取应用凭证或调用旧版媒体上传接口。
 
 发送本地图片或文件时，请使用 chat message send --msg-type file --file-path。

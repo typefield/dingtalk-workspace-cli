@@ -66,9 +66,9 @@ func CompareAll(current Snapshot, references map[string]Snapshot) Report {
 }
 
 // Compare enforces the deliberately small admission policy:
-//   - every previously accepted command path must still resolve to a runnable,
-//     visible-compatible target (a rename may preserve the old path as an
-//     alias),
+//   - every previously accepted command path must still resolve to a runnable
+//     target (a rename may preserve the old path as an alias); a command may
+//     leave Help only as a deprecated, still-runnable compatibility tombstone,
 //   - flags accepted at each command path may not disappear, change type, or
 //     become required; an existing path may not gain a new required flag,
 //   - new commands and flags are allowed.
@@ -157,7 +157,7 @@ func compareCommandContract(result *Comparison, acceptedPath string, oldCommand,
 			After:  "non-runnable",
 		})
 	}
-	if !oldCommand.Hidden && newCommand.Hidden {
+	if !oldCommand.Hidden && newCommand.Hidden && !isDeprecatedRunnableTombstone(newCommand) {
 		result.Blocking = append(result.Blocking, Change{
 			Kind:   "command_became_hidden",
 			Path:   acceptedPath,
@@ -165,6 +165,10 @@ func compareCommandContract(result *Comparison, acceptedPath string, oldCommand,
 			After:  "hidden",
 		})
 	}
+}
+
+func isDeprecatedRunnableTombstone(command Command) bool {
+	return command.Hidden && command.Runnable && strings.TrimSpace(command.Deprecated) != ""
 }
 
 func compareEffectiveFlags(result *Comparison, acceptedPath string, oldCommand, newCommand Command) {

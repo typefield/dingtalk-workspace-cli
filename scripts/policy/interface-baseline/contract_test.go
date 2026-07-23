@@ -159,6 +159,25 @@ func TestCompatibilityRejectsCommandContractRegressions(t *testing.T) {
 	}
 }
 
+func TestCompatibilityAllowsDeprecatedRunnableCommandToBecomeHidden(t *testing.T) {
+	baselineRoot := &cobra.Command{Use: "dws"}
+	baselineRoot.AddCommand(&cobra.Command{Use: "old", Run: func(*cobra.Command, []string) {}})
+	baselineRoot.InitDefaultHelpCmd()
+	baseline := snapshot(baselineRoot)
+
+	currentRoot := &cobra.Command{Use: "dws"}
+	currentRoot.AddCommand(&cobra.Command{
+		Use:        "old",
+		Hidden:     true,
+		Deprecated: "use dws replacement",
+		Run:        func(*cobra.Command, []string) {},
+	})
+	currentRoot.InitDefaultHelpCmd()
+	if failures := checkCompatibility(currentRoot, baseline); len(failures) != 0 {
+		t.Fatalf("deprecated runnable tombstone should be compatible: %v", failures)
+	}
+}
+
 func TestCompatibilityRejectsFlagContractRegressions(t *testing.T) {
 	newRoot := func(persistent bool) (*cobra.Command, *cobra.Command) {
 		root := &cobra.Command{Use: "dws"}

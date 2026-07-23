@@ -1506,21 +1506,6 @@ Flags:
   - 支持单聊和群聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
 ```
 
-### media（兼容入口，已下线）
-
-`dws chat media upload` 仅为 1.x 命令行兼容保留，不再读取 AppKey/AppSecret，也不再调用旧版 OAPI 媒体上传接口。
-
-发送本地图片、文件或音视频时统一使用：
-
-```bash
-dws chat message send --group <openConversationId> --msg-type file --file-path ./screenshot.png --format json
-dws chat message send --open-dingtalk-id <openDingTalkId> --msg-type file --file-path ./report.pdf --format json
-```
-
-注意：
-- `.png` / `.jpg` 经 `--file-path` 发送的是可下载的 file 消息，不会生成 mediaId，也不会渲染成内联 image。
-- 仅当上游已经提供有效 mediaId 时，才使用 `chat message send --msg-type image --media-id <mediaId>`。
-
 ### hide (隐藏会话)
 
 #### 隐藏会话 — 在会话列表中隐藏指定会话（支持单聊/群聊），收到新消息时会重新出现

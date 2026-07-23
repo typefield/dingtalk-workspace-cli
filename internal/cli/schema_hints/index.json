@@ -23,6 +23,7 @@
     "event": "metadata/event.json",
     "live": "metadata/live.json",
     "mail": "metadata/mail.json",
+    "mcp": "metadata/mcp.json",
     "minutes": "metadata/minutes.json",
     "oa": "metadata/oa.json",
     "pat": "metadata/pat.json",
@@ -47,6 +48,7 @@
     "event": "selection/event.json",
     "live": "selection/live.json",
     "mail": "selection/mail.json",
+    "mcp": "selection/mcp.json",
     "minutes": "selection/minutes.json",
     "oa": "selection/oa.json",
     "pat": "selection/pat.json",
@@ -431,10 +433,6 @@
       "reason": "旧版 Skill 或说明性引用，当前公开命令面无等价 leaf，禁止词法模糊映射"
     },
     "chat mark-unread": {
-      "status": "stale",
-      "reason": "旧版 Skill 或说明性引用，当前公开命令面无等价 leaf，禁止词法模糊映射"
-    },
-    "chat media upload": {
       "status": "stale",
       "reason": "旧版 Skill 或说明性引用，当前公开命令面无等价 leaf，禁止词法模糊映射"
     },
