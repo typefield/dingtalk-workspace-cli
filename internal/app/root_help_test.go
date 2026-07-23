@@ -79,11 +79,11 @@ func TestRootKeepsMainBranchChatCompatibilityCommands(t *testing.T) {
 	}
 
 	mediaGroup := mustFindCommand(t, root, "chat", "media")
-	if mediaGroup.Deprecated == "" || !mediaGroup.Hidden || !mediaGroup.Runnable() {
+	if mediaGroup.Deprecated == "" || mediaGroup.Hidden || !mediaGroup.Runnable() {
 		t.Fatalf("chat media compatibility contract: deprecated=%q hidden=%v runnable=%v", mediaGroup.Deprecated, mediaGroup.Hidden, mediaGroup.Runnable())
 	}
 	mediaUpload := mustFindCommand(t, mediaGroup, "upload")
-	if mediaUpload.Deprecated == "" || !mediaUpload.Hidden || !mediaUpload.Runnable() {
+	if mediaUpload.Deprecated == "" || mediaUpload.Hidden || !mediaUpload.Runnable() {
 		t.Fatalf("chat media upload compatibility contract: deprecated=%q hidden=%v runnable=%v", mediaUpload.Deprecated, mediaUpload.Hidden, mediaUpload.Runnable())
 	}
 	for _, flag := range []string{"file", "type"} {

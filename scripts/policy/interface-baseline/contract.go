@@ -295,11 +295,7 @@ func checkCompatibility(root *cobra.Command, baseline interfaceContract) []strin
 		if expected.RunnableSet && expected.Runnable && !cmd.Runnable() {
 			failures = append(failures, fmt.Sprintf("historical command %q became non-runnable", displayPath(path)))
 		}
-		// A hidden, deprecated, still-runnable command is an intentional
-		// compatibility tombstone: it leaves Help without breaking historical
-		// argv. Commands that disappear, stop running, or are hidden without an
-		// actionable deprecation remain compatibility failures.
-		if expected.HiddenSet && !expected.Hidden && cmd.Hidden && !isDeprecatedRunnableTombstone(cmd) {
+		if expected.HiddenSet && !expected.Hidden && cmd.Hidden {
 			failures = append(failures, fmt.Sprintf("historical command %q became hidden", displayPath(path)))
 		}
 		for _, alias := range sortedSet(expected.Aliases) {
@@ -359,10 +355,6 @@ func checkCompatibility(root *cobra.Command, baseline interfaceContract) []strin
 		}
 	}
 	return failures
-}
-
-func isDeprecatedRunnableTombstone(cmd *cobra.Command) bool {
-	return cmd != nil && cmd.Hidden && cmd.Runnable() && strings.TrimSpace(cmd.Deprecated) != ""
 }
 
 func resolveCommand(root *cobra.Command, path string) (*cobra.Command, bool) {

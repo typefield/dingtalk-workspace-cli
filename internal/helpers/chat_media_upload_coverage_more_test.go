@@ -7,12 +7,12 @@ import (
 
 func TestCrossPlatformCoverageChatMediaUploadIsDeprecatedCompatibilityStub(t *testing.T) {
 	group := newChatMediaGroup()
-	if group.Deprecated == "" || !group.Hidden || !group.Runnable() {
+	if group.Deprecated == "" || group.Hidden || !group.Runnable() {
 		t.Fatalf("media group compatibility contract: deprecated=%q hidden=%v runnable=%v", group.Deprecated, group.Hidden, group.Runnable())
 	}
 
 	cmd := newChatMediaUploadCommand()
-	if cmd.Deprecated == "" || !cmd.Hidden || !cmd.Runnable() {
+	if cmd.Deprecated == "" || cmd.Hidden || !cmd.Runnable() {
 		t.Fatalf("media upload compatibility contract: deprecated=%q hidden=%v runnable=%v", cmd.Deprecated, cmd.Hidden, cmd.Runnable())
 	}
 	for _, flag := range []string{"file", "type"} {

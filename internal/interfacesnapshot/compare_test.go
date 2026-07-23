@@ -147,22 +147,6 @@ func TestCrossPlatformCoverageCompareBlocksRemovedAlias(t *testing.T) {
 	}
 }
 
-func TestCrossPlatformCoverageCompareAllowsDeprecatedRunnableHiddenTombstone(t *testing.T) {
-	base := testSnapshot(
-		testCommand("dws"),
-		testCommand("dws media upload", testFlag("file", "string", false)),
-	)
-	tombstone := testCommand("dws media upload", testFlag("file", "string", false))
-	tombstone.Hidden = true
-	tombstone.Deprecated = "use dws message send --file"
-	current := testSnapshot(testCommand("dws"), tombstone)
-
-	comparison := Compare(current, base, "base")
-	if !comparison.Compatible {
-		t.Fatalf("deprecated runnable hidden tombstone was blocked: %#v", comparison.Blocking)
-	}
-}
-
 func TestCrossPlatformCoverageCompareBlocksAliasRetargetedToIncompatibleCommand(t *testing.T) {
 	base := testSnapshot(
 		testCommand("dws"),
