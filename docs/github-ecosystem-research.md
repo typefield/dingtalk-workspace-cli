@@ -237,3 +237,127 @@ Stars 差距主要来自：飞书/Lark 的国际化开发者社区更大 + larks
 3. **quick-dingtalk-mcp 验证了 DWS-as-MCP-backend 的可行性**，Remote MCP 模式值得官方化。
 4. **161 个 fork 中仅 2 个有实质修改**，说明社区参与以学习/镜像为主，缺乏贡献者激励。
 5. **社区 issues 集中在产品能力补全**（doc @mention、OA 模板、event Windows），而非框架架构——说明框架层稳定，产品层是主要建设方向。
+
+---
+
+## 八、深度搜索补充发现（2026-07-29 第二轮）
+
+### 8.1 多版本 DWS 架构（akedia/dingtalk-workspace-skill）
+
+**关键发现**：GitHub 上存在一个 DWS skill 包（[akedia/dingtalk-workspace-skill](https://github.com/akedia/dingtalk-workspace-skill)），揭示了 DWS 的**多版本路由架构**：
+
+```
+dws（智能 wrapper）
+├── v1.0.8（dws.local，开源 CLI）
+│   └── aitable / attendance / calendar / chat / contact / devdoc / ding / oa / report / todo / workbench
+└── v0.2.27（PC 旧版，闭源）
+    └── doc / drive / mail / minutes / aiapp / conference / finance / docparse / aidesign
+```
+
+- 用户无感知路由：skill 声明 `⚡PC` 标注的产品由旧版处理
+- `cli_version: ">=1.0.8"` 约束
+- 17 个产品参考文档 + 10+ Python helper scripts
+- 意图判断决策树 + 严格禁止/要求规则
+
+**启示**：DWS 开源版（v1.x）并非全量——doc/drive/mail/minutes/aiapp/conference 等高频产品曾由闭源 PC 版（v0.2.x）承载。当前开源版已逐步覆盖这些产品（command-index 显示 doc 21 命令、drive 6、minutes 19），但 akedia skill 仍保留双版本路由，说明部分用户环境中新旧并存。
+
+### 8.2 AI Agent Runtime 集成
+
+| 项目 | Stars | 与 DWS 关系 |
+|---|---|---|
+| [NanmiCoder/cc-haha](https://github.com/NanmiCoder/cc-haha) | **13,736** | 桌面 AI workspace，DingTalk Stream 集成（bot 身份、QR 绑定、AI Card 流式回复）。不依赖 DWS，用 DingTalk Stream SDK 直连。 |
+| [chenhg5/cc-connect](https://github.com/chenhg5/cc-connect) | **14,492** | 消息桥接（13 平台含 DingTalk），不依赖 DWS。 |
+| [TGYD-helige/pi](https://github.com/TGYD-helige/pi)（pi-dingtalk） | 37 | **直接依赖 DWS**：auto-install dws CLI → 注入 19 个 product skill → 用 dws 做全部 DingTalk 操作。 |
+| [wecode-ai/Wegent](https://github.com/wecode-ai/Wegent) | 672 | AI-native agent OS，package.json 引用 dingtalk-workspace。 |
+
+**pi-dingtalk 的实现模式**（最值得 DWS 官方借鉴）：
+```
+pi agent runtime
+  → pi-dingtalk extension
+    → 检查 dws 是否安装（auto-install）
+    → 从 pi settings 读 clientId/clientSecret
+    → dws auth login --client-id X --client-secret Y（非交互）
+    → dws skill setup --mode multi（注入 19 个 skill）
+    → agent 会话中直接调用 dws 命令
+```
+
+### 8.3 MCP 适配层（完整清单）
+
+| 项目 | Stars | 模式 | 特点 |
+|---|---|---|---|
+| [keithyt06/quick-dingtalk-mcp](https://github.com/keithyt06/quick-dingtalk-mcp) | 7 | exec dws | 用户身份、38 tools、Local + Remote（AWS Lambda） |
+| [sputnicyoji/dingtalk-workspace](https://github.com/sputnicyoji/dingtalk-workspace) | 4 | exec dws | **npm 包**（npx 一行安装）、~80 tools、auto-sync dws 升级、无业务逻辑 |
+| [yingcaihuang/dws-cli-mcp](https://github.com/yingcaihuang/dws-cli-mcp) | 0 | exec dws | 完整使用手册 + 组合工作流示例 |
+| [sfyyy/claude-code-dingtalk-mcp](https://github.com/sfyyy/claude-code-dingtalk-mcp) | 8 | exec dws | Claude Code 专用 |
+| [open-dingtalk/dingtalk-mcp](https://github.com/open-dingtalk/dingtalk-mcp) | 25 | Bot API | 官方 bot 身份（非用户） |
+| [AIInfrastructure/dingtalk_mcp_server](https://github.com/AIInfrastructure/dingtalk_mcp_server) | 1 | Open API | 钉钉开放接口直连 |
+
+**sputnicyoji 的设计哲学**（最纯粹）：
+- "No token handling, no business logic, auto-syncs as dws upgrades"
+- 把 DWS 的全部命令面（~80 个）自动转为 MCP tools
+- 用户只需 `npx -y @sputnicyoji/dingtalk-workspace-mcp`
+- 版本跟随 DWS 升级自动同步
+
+### 8.4 Skill 包 / 模板
+
+| 项目 | 说明 |
+|---|---|
+| [akedia/dingtalk-workspace-skill](https://github.com/akedia/dingtalk-workspace-skill) | 多版本路由 skill（v1.0.8 + v0.2.27 PC），17 产品参考 + scripts |
+| [XucroYuri/dingtalk-office-automation-templates](https://github.com/XucroYuri/dingtalk-office-automation-templates) | 办公自动化模板（inspect-first / draft-first / preview-first 工作流设计） |
+| [duffiewiccan103/dingtalk-wukong-skills](https://github.com/duffiewiccan103/dingtalk-wukong-skills) | ⚠️ 疑似 spam（zip 下载链接、泛化描述、无实质代码） |
+
+### 8.5 分发渠道
+
+| 渠道 | 状态 |
+|---|---|
+| Homebrew | 有 formula（`dingtalk-workspace-cli.rb` + beta） |
+| Scoop | 有 bucket（`dingtalk-workspace-cli.json`，多个 bucket 收录） |
+| npm | `dingtalk-workspace-cli`（官方）+ `@sputnicyoji/dingtalk-workspace-mcp`（社区 MCP 适配） |
+| Docker | 未发现官方镜像 |
+| goreleaser | 未使用（自定义发布脚本） |
+
+### 8.6 Fork 生态完整分析（161 个）
+
+| 类别 | 数量 | 说明 |
+|---|---|---|
+| 纯镜像（无自定义分支） | ~153 | Fork 按钮行为，无实质修改 |
+| 内部团队功能分支 | ~6 | anxiangbo(hrbrain/agoal)、FloralTide(mcp-url)、Freda0909(homebrew/changelog) |
+| 外部贡献者 PR | ~4 | typefield(4 PR)、shangguanxuan633-lab(auth)、huangyuanzhuo-coder(param)、dxy704330469(shortcuts) |
+| 独立衍生 | 2 | PeterGuy326/dws-data（数据包）、WangKangAandy(per-sender OAuth) |
+
+### 8.7 项目全景分类图
+
+```
+钉钉 AI 集成生态
+├── 路径 A: CLI → MCP（用户身份）
+│   ├── DWS 本体（2,563★，官方）
+│   ├── quick-dingtalk-mcp（7★，Local+Remote）
+│   ├── sputnicyoji/dingtalk-workspace（4★，npm 纯适配）
+│   ├── yingcaihuang/dws-cli-mcp（使用手册）
+│   └── sfyyy/claude-code-dingtalk-mcp（8★，Claude 专用）
+├── 路径 B: 消息桥接（bot/Stream）
+│   ├── cc-connect（14,492★，13 平台）
+│   ├── cc-haha（13,736★，桌面 workspace）
+│   └── open-dingtalk/dingtalk-mcp（25★，官方 bot）
+├── 路径 C: Agent Runtime 集成
+│   ├── pi-dingtalk（37★，auto-install dws + 19 skills）
+│   └── Wegent（672★，agent OS）
+├── 路径 D: Skill / 模板
+│   ├── akedia/dingtalk-workspace-skill（多版本路由）
+│   ├── XucroYuri/office-automation-templates（办公模板）
+│   └── DWS 内嵌 skills（26 multi + 1 mono）
+└── 路径 E: 数据 / 基础设施
+    ├── PeterGuy326/dws-data（路由数据包）
+    └── Homebrew / Scoop / npm 分发
+```
+
+---
+
+## 九、更新结论
+
+1. **DWS 是钉钉 AI 集成的核心基础设施**：3 个社区 MCP 适配器、1 个 agent runtime（pi）都直接依赖 DWS CLI 作为后端。
+2. **多版本并存是现实**：akedia skill 揭示 v0.2.x PC 版与 v1.x 开源版在用户环境中共存，路由层是刚需。
+3. **消息入口被 cc-connect/cc-haha 占据**（合计 28K stars），DWS 不需要重复做消息桥接，应专注产品操作深度。
+4. **sputnicyoji 的"纯适配"模式最值得官方化**：零业务逻辑、auto-sync、npx 一行安装。DWS 官方可以出 `@anthropic/dingtalk-mcp` 类似的官方 MCP 适配包。
+5. **pi-dingtalk 的 auto-install + skill inject 模式**是 DWS 作为"被集成方"的最佳实践——DWS 应该优化这个体验（非交互登录、skill 注入速度、版本兼容检查）。
+6. **WorkBuddy 平台上没有 DWS 专属 skill**：39 个专家团全部是通用领域，钉钉生态的 skill 分发仍依赖 DWS 自身的 `skill setup` 机制。
