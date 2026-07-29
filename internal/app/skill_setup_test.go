@@ -391,6 +391,17 @@ func TestFilterMultiSkillNames(t *testing.T) {
 		}
 	})
 
+	t.Run("include exact non-product skill names", func(t *testing.T) {
+		specialAll := append(append([]string(nil), all...), "dws-shared", "recipe-generate-standup-report")
+		got, err := filterMultiSkillNames(specialAll, []string{"recipe-generate-standup-report", "dws-shared"}, nil)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if strings.Join(got, ",") != "dws-shared,recipe-generate-standup-report" {
+			t.Fatalf("got %v", got)
+		}
+	})
+
 	t.Run("include dedups", func(t *testing.T) {
 		got, err := filterMultiSkillNames(all, []string{"aitable", "dingtalk-aitable", "AITABLE"}, nil)
 		if err != nil {

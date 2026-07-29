@@ -270,9 +270,12 @@ func filterMultiSkillNames(all, include, exclude []string) ([]string, error) {
 		var unknown []string
 		seen := make(map[string]bool)
 		for _, r := range raw {
-			n := normalizeMultiSkillName(r)
+			n := strings.ToLower(strings.TrimSpace(r))
 			if n == "" {
 				continue
+			}
+			if _, ok := available[n]; !ok {
+				n = normalizeMultiSkillName(n)
 			}
 			if _, ok := available[n]; !ok {
 				unknown = append(unknown, r)
