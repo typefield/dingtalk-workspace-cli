@@ -144,13 +144,124 @@ type RecoveryAction struct {
 
 ---
 
+## 7. 无统一分页抽象
+
+**现状**：每个命令各自处理 cursor/offset 翻页。LeafSpec 和 Shortcut 都没有分页层——每个 smart shortcut 手写 while 循环。lark-cli 有统一的 `--page-all` / `--limit` / `--auto-paginate` 层，框架自动循环直到耗尽或达到 limit。
+
+**建议**：在 transport 或 output 层加 `PaginatedCall(ctx, tool, args, pageSize) → chan Result`，命令层只需声明 `Paginate: true`。全局 flag `--page-all` / `--limit N` 由框架统一消费。
+
+**预期收益**：消除所有 list 类命令中的重复翻页循环代码（当前至少 15 处手写 while）。
+
+---
+
+## 8. 无通用批量/分片执行器
+
+**现状**：`+record-share-links` 手写了 >20 去重 + 分片 + fanout + 合并；`+replace-batch` 手写了逐组聚合。42 个 gap-buildable 中至少 8 个需要分片编排。每个实现都是独立的 ad-hoc 代码。
+
+**建议**：框架级 `BatchExecutor`：
+
+```go
+type BatchExecutor struct {
+    ChunkSize      int
+    Dedupe         bool
+    Concurrency    int
+    MergeFunc      func(results []any) any
+    OnPartialFail  func(chunk int, err error) // 容错策略
+}
+```
+
+Shortcut 只声明分片策略，框架负责 chunk → fan-out → merge → partial-failure 报告。
+
+**预期收益**：新批量 shortcut 开发从 ~3h 降到 ~30min；行为一致性有框架保证。
+
+---
+
+## 9. 无响应缓存
+
+**现状**：contact 解析、base 元数据、schema 查询等高频读操作每次都走网络。AI agent 同一会话中可能重复解析同一个 contact 5-10 次。lark-cli 对 contact 有 TTL 缓存（默认 5min）。
+
+**建议**：transport 层加 LRU + TTL 缓存（按 tool+args hash），`CacheTTL` 在 LeafSpec/Shortcut 声明。写操作自动 invalidate 相关 key。`--no-cache` 全局 flag 绕过。
+
+**预期收益**：AI agent 场景下减少 60-80% 重复网络调用；交互响应时间显著降低。
+
+---
+
+## 10. 无命令组合 / 结构化管道
+
+**现状**：`dws contact search --name X` 输出 JSON，但 `dws chat send --to` 不能直接消费上一个命令的 stdout。用户必须手动 `--jq` 提取再传参。
+
+**建议**：
+- 支持 `--to -`（从 stdin 读 JSON，按 bind key 自动映射）
+- 或 `dws pipe "contact search --name X" "chat send --to $.userId"` 子命令
+- 输出支持 `--format=env`（`KEY=VALUE` 格式，方便 `eval $(dws ...)`）
+
+**预期收益**：Power user 和 shell 脚本场景效率提升；减少中间变量和 jq 依赖。
+
+---
+
+## 11. 无 dry-run diff 预览
+
+**现状**：`--dry-run` 只打印 tool name + args。对 write 操作，用户看不到"执行后世界会变成什么样"。
+
+**建议**：对支持 `get` 的资源，dry-run 先 get 当前状态，再展示 before/after diff（类似 terraform plan）。在 LeafSpec/Shortcut 声明 `DryRunGetTool: "get_record"` 即可启用。
+
+**预期收益**：write 操作信心提升；AI agent 可在执行前验证预期结果。
+
+---
+
+## 12. 无多组织 / 多环境 profile
+
+**现状**：auth 是全局单例（keychain 里一个 token）。企业用户经常在多个组织间切换，当前必须 `dws auth logout` + `dws auth login` 来回切。
+
+**建议**：
+- `dws profile create/use/list/delete` 子命令
+- 每个 profile 独立 keychain entry + config（`~/.dws/profiles/<name>/`）
+- `DWS_PROFILE=org-b dws ...` 环境变量切换
+- `dws auth login --profile org-b` 登录到指定 profile
+
+**预期收益**：企业多组织用户刚需；ISV 开发/测试/生产环境隔离。
+
+---
+
+## 13. 无动态补全
+
+**现状**：Cobra 静态补全已有（`dws completion bash/zsh/fish`），但无动态补全。补全 baseId、chatId 等高频 ID 参数时，用户只能手动复制粘贴。lark-cli 对高频 ID 参数有 shell completion hook。
+
+**建议**：注册 `ValidArgsFunction`，对声明了 `Completable: true` 的 flag，运行时查询最近使用记录（audit log）或 API 候选列表。缓存 5min 避免补全延迟。
+
+**预期收益**：DX 锦上添花；减少 ID 输入错误。
+
+---
+
+## 14. 无 i18n 框架
+
+**现状**：所有 usage / hint / error 文案硬编码中文。开源社区贡献者无法阅读。`--help` 输出、error hint、safety annotation 全部是中文。
+
+**建议**：
+- `internal/i18n` 包 + `go:embed` 语言文件（`locales/zh.json`, `locales/en.json`）
+- 默认中文、英文 fallback
+- `DWS_LANG=en` 或 `--lang en` 切换
+- 新命令的 usage 文案通过 key 引用，不直接写字符串
+
+**预期收益**：开源社区国际化；为 lark-cli 英文用户迁移降低门槛。
+
+---
+
 ## 优先级总览
 
 | 优先级 | 优化点 | 影响面 | 工作量 |
 |---|---|---|---|
 | **P0** | #1 双框架统一 | 所有新命令开发 | 大（渐进迁移） |
 | **P0** | #2 Circuit Breaker + Streaming | 所有 MCP 调用 | 中（~300 行） |
+| **P0** | #7 统一分页抽象 | 所有 list 类命令 | 中（~200 行） |
+| **P0** | #8 批量/分片执行器 | 42 个 gap-buildable 中 8+ 个 | 中（~250 行） |
 | **P1** | #3 增量 Schema 生成 | CI 效率 | 小（~100 行） |
 | **P1** | #6 可执行 RecoveryAction | AI agent 体验 | 小（~150 行） |
+| **P1** | #9 响应缓存 | AI agent 重复调用 | 中（~200 行） |
+| **P1** | #12 多组织 profile | 企业用户刚需 | 中（~300 行） |
 | **P2** | #4 Plugin 沙箱 + 热加载 | 安全性 + DX | 中（分阶段） |
 | **P2** | #5 运行时 Safety 升级 | 安全性 | 中（~200 行） |
+| **P2** | #10 命令管道 | Power user 效率 | 中（~200 行） |
+| **P2** | #11 dry-run diff | write 操作信心 | 小（~150 行） |
+| **P3** | #13 动态补全 | DX 锦上添花 | 小（~100 行） |
+| **P3** | #14 i18n 框架 | 开源国际化 | 中（~300 行） |
