@@ -225,3 +225,192 @@ DWS 的 skill 系统在 AI agent 生态覆盖上领先 lark-cli，但在机器�
 | **P1** | #7 死代码清理 | 减少混淆 + 二进制体积 | 小（~50 行删除） |
 | **P2** | #2 Workflow Skill | 跨产品编排 UX | 中（新目录 + 格式设计） |
 | **P2** | #6 版本兼容性校验 | 防御性保障 | 小（~80 行） |
+
+---
+
+## 多 Skill 架构优化（参考 WorkBuddy 模式）
+
+> 基于 GitHub 开源项目 [darker2016/workbuddy-skill-groups](https://github.com/darker2016/workbuddy-skill-groups)（39 个专家团、13 个一级分类）和 [Tugoukezhang/workbuddy-skills](https://github.com/Tugoukezhang/workbuddy-skills)（78 个独立 skill）的架构分析。
+
+### WorkBuddy 核心模式
+
+```
+skill-group/
+├── README.md                    ← 团队宣言：成员表 + 工作流概览
+└── skills/
+    ├── <lead>/SKILL.md          ← 主理人：意图识别 → 工作流选择 → 成员调度 → 汇编报告
+    ├── <member-a>/SKILL.md      ← 专业成员：独立产出，不直连其他成员
+    ├── <member-b>/SKILL.md
+    └── ...
+```
+
+**三层结构**：
+1. **主理人（Lead）**：不做具体产出，只做编排。识别意图 → 选择 SOP → 按阶段调度成员 → 收集去重合并 → 输出结构化报告。
+2. **专业成员（Member）**：各自独立的 SKILL.md，可单独加载也可被主理人调度。有稳定 Agent ID（如 `code-reviewer`、`architect`）。
+3. **工作流 SOP**：主理人 SKILL.md 内声明多个命名工作流（如"全面代码审查"、"事故响应"），每个工作流是有序的成员调度步骤。
+
+**协作铁律**：
+- 主理人严禁代写成员产出
+- 成员间严禁直连通信，所有跨成员信息流经主理人中转
+- 团队创建必须且只能由主理人执行
+- 成员结论为准，主理人只做编排与汇编
+
+### DWS 现状 vs WorkBuddy
+
+| 维度 | WorkBuddy | DWS 现状 | 差距 |
+|---|---|---|---|
+| 组织形态 | 域团队（1 lead + 5-6 members） | 28 个扁平 product skill + 1 shared | 无层次 |
+| 路由机制 | Lead SKILL.md 内的 SOP 决策树 | 无（靠 agent 自行推理读哪个 skill） | 无路由 |
+| 跨域编排 | 主理人中转 + 工作流阶段 | 无（跨产品任务靠 mono skill prose） | 无编排 |
+| 成员调度 | 显式 Agent ID + subagent_type | 无 | 无调度协议 |
+| 协作约束 | 铁律（不代写/不直连/中转） | 无 | 无约束 |
+| 可组合性 | 成员可独立使用也可被编排 | product skill 独立但无组合协议 | 无契约 |
+| 工作流声明 | 命名 SOP（步骤 + 成员 + 产出） | 无 | 无 SOP |
+
+### DWS 多 Skill 优化方案
+
+#### 方案：域团队 + 路由 Lead + 工作流 SOP
+
+将 28 个 product skill 重组为 **6 个域团队**，每个团队有一个路由 Lead：
+
+```
+skills/multi/
+├── dws-shared/                      ← 全局前置（不变）
+├── team-collaboration/              ← 协作沟通域
+│   ├── SKILL.md                     ← Lead：路由 chat/calendar/contact/todo/mail
+│   └── members/
+│       ├── dingtalk-chat/
+│       ├── dingtalk-calendar/
+│       ├── dingtalk-contact/
+│       ├── dingtalk-todo/
+│       └── dingtalk-mail/
+├── team-knowledge/                  ← 文档知识域
+│   ├── SKILL.md                     ← Lead：路由 doc/drive/wiki/minutes
+│   └── members/
+│       ├── dingtalk-doc/
+│       ├── dingtalk-drive/
+│       ├── dingtalk-wiki/
+│       └── dingtalk-minutes/
+├── team-data/                       ← 数据表格域
+│   ├── SKILL.md                     ← Lead：路由 aitable/sheet/report
+│   └── members/
+│       ├── dingtalk-aitable/
+│       ├── dingtalk-sheet/
+│       └── dingtalk-report/
+├── team-devops/                     ← 开发运维域
+│   ├── SKILL.md                     ← Lead：路由 dev/devdoc/event/pat
+│   └── members/
+│       ├── dingtalk-dev/
+│       ├── dingtalk-devdoc/
+│       ├── dingtalk-event/
+│       └── dingtalk-pat/
+├── team-admin/                      ← 行政 HR 域
+│   ├── SKILL.md                     ← Lead：路由 attendance/hrbrain/oa/ding
+│   └── members/
+│       ├── dingtalk-attendance/
+│       ├── dingtalk-hrbrain/
+│       ├── dingtalk-oa/
+│       └── dingtalk-ding/
+└── team-media/                      ← 音视频域
+    ├── SKILL.md                     ← Lead：路由 live/markdown
+    └── members/
+        ├── dingtalk-live/
+        └── dingtalk-markdown/
+```
+
+#### Lead SKILL.md 模板
+
+```markdown
+---
+name: team-collaboration
+description: 协作沟通域主理人。路由 chat/calendar/contact/todo/mail 五个产品，
+  处理消息发送、日程管理、联系人解析、任务分配、邮件收发等协作场景。
+cli_version: ">=1.0.40"
+metadata:
+  category: collaboration
+  stability: stable
+  members: [dingtalk-chat, dingtalk-calendar, dingtalk-contact, dingtalk-todo, dingtalk-mail]
+---
+
+# 协作沟通域 - 主理人
+
+你是协作沟通域的路由主理人。你不直接执行产品命令，而是：
+1. 识别用户意图，选择目标产品成员
+2. 跨产品任务按工作流 SOP 编排多成员
+3. 收集成员产出，合并输出
+
+## 成员表
+
+| Agent ID | 产品 | 专长 |
+|---|---|---|
+| `dingtalk-chat` | 群聊/IM | 消息发送、群管理、消息搜索、资源下载 |
+| `dingtalk-calendar` | 日历 | 日程 CRUD、会议室预订、空闲查询 |
+| `dingtalk-contact` | 通讯录 | 人员搜索、部门查询、userId 解析 |
+| `dingtalk-todo` | 待办 | 任务创建、分配、完成、提醒 |
+| `dingtalk-mail` | 邮件 | 收发、草稿、附件、分类 |
+
+## 路由决策树
+
+- 涉及"消息/群/聊天/发送" → `dingtalk-chat`
+- 涉及"日程/会议/日历/预订" → `dingtalk-calendar`
+- 涉及"找人/通讯录/userId" → `dingtalk-contact`
+- 涉及"待办/任务/提醒" → `dingtalk-todo`
+- 涉及"邮件/收发/附件" → `dingtalk-mail`
+- 跨产品 → 走工作流 SOP
+
+## 工作流 SOP
+
+### SOP-1: 约会议（calendar + contact + chat）
+
+1. `dingtalk-contact`：解析参会人姓名 → userId[]
+2. `dingtalk-calendar`：查空闲 → 推荐时间段 + 预订会议室
+3. `dingtalk-calendar`：创建日程（attendees = userId[]）
+4. `dingtalk-chat`：发群通知（日程链接 + 时间地点）
+
+### SOP-2: 任务跟进（todo + chat + contact）
+
+1. `dingtalk-contact`：解析负责人 → userId
+2. `dingtalk-todo`：创建待办（executor = userId）
+3. `dingtalk-chat`：@负责人通知
+
+### SOP-3: 邮件转任务（mail + todo）
+
+1. `dingtalk-mail`：读取邮件内容
+2. `dingtalk-todo`：提取 action items → 创建待办
+3. `dingtalk-mail`：回复确认
+
+## 协作铁律
+
+- 主理人不直接执行 `dws` 命令，只路由到成员
+- 成员间不直连，跨成员数据流经主理人中转
+- 每个成员的产出独立，主理人只做合并
+```
+
+#### 与现有架构的兼容
+
+| 现有 | 变化 | 兼容策略 |
+|---|---|---|
+| `dws skill setup --mode multi` | 新增 `--mode team` | team 模式安装 6 个 Lead + 按需 members |
+| 28 个 product skill 目录 | 移入 `team-*/members/` | 保留独立 SKILL.md，仍可单独安装 |
+| `dws-shared` | 不变 | 所有 Lead 和 member 仍声明 PREREQUISITE |
+| mono 模式 | 不变 | 大 context agent 继续用全量 mono |
+| `gen_skill_shortcut_sections.py` | 扩展 | 为每个 Lead 生成成员 shortcut 汇总表 |
+| CI `skill-command-integrity` | 扩展 | 校验 Lead 路由表中的命令与 catalog 一致 |
+
+#### 预期收益
+
+1. **路由效率**：agent 只需加载 1 个 Lead（~3K tokens）即可路由到正确产品，无需读 28 个 description
+2. **跨产品编排**：SOP 声明式编排，agent 按步骤执行而非自行推理
+3. **Context 节省**：按需加载 member（Lead 判断后才拉取），而非全量 28 个
+4. **可组合性**：member 仍可独立使用（向后兼容），也可被 Lead 编排
+5. **可扩展性**：新增产品只需加入对应 team 的 members/ + 更新 Lead 路由表
+
+#### 实施步骤
+
+| 阶段 | 内容 | 工作量 |
+|---|---|---|
+| Phase 1 | 设计 team 目录结构 + Lead SKILL.md 模板 + manifest.json | 1 周 |
+| Phase 2 | 实现 `dws skill setup --mode team` + Lead 生成器 | 1 周 |
+| Phase 3 | 迁移 28 个 product skill 到 6 个 team（保留独立可用） | 1 周 |
+| Phase 4 | 编写 6 个 Lead 的路由决策树 + 3-5 个跨域 SOP | 1 周 |
+| Phase 5 | CI gate 扩展 + E2E 测试（Lead 路由正确性） | 3 天 |
