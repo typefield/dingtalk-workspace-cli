@@ -270,7 +270,13 @@ func filterMultiSkillNames(all, include, exclude []string) ([]string, error) {
 		var unknown []string
 		seen := make(map[string]bool)
 		for _, r := range raw {
-			n := normalizeMultiSkillName(r)
+			// Accept the name as-is when it already matches a known skill
+			// (e.g. "team-collaboration", "dws-shared"); otherwise normalize
+			// the short form (aitable → dingtalk-aitable).
+			n := strings.ToLower(strings.TrimSpace(r))
+			if _, ok := available[n]; !ok {
+				n = normalizeMultiSkillName(r)
+			}
 			if n == "" {
 				continue
 			}
