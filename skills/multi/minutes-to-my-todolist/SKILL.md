@@ -101,3 +101,20 @@ dws auth status    # 确认 token_valid=true 且 identity=user
 阶段 4: 用户确认                                     ──► 逐条 todo task create
 阶段 5: 汇总报告（成功 N 条 / 跳过 M 条）
 ```
+
+## 权限表
+
+| 命令 | 所需权限 |
+|------|----------|
+| `contact user get-self` | 通讯录只读（Contact.Read） |
+| `minutes +action-items` / `+list-mine` / `+detail` | 听记只读（Minutes.Read） |
+| `todo task create` | 待办写入（Todo.Write） |
+
+> 权限不足时命令会返回具体缺失 scope，按 `dws-shared` 的错误处理流程操作。
+
+## 参考
+
+- [dws-shared](../dws-shared/SKILL.md) — 认证、全局规则（必读）
+- [dingtalk-minutes](../dingtalk-minutes/SKILL.md) — 听记定位 / 待办提取详细用法
+- [dingtalk-todo](../dingtalk-todo/SKILL.md) — 待办创建详细用法
+- [dingtalk-contact](../dingtalk-contact/SKILL.md) — 当前用户信息详细用法

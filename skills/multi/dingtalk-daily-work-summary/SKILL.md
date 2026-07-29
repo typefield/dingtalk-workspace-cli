@@ -119,17 +119,52 @@ dws auth status    # 确认 token_valid=true 且 identity=user
 ## 今日工作摘要（YYYY-MM-DD 星期X）
 
 ### 📅 日程安排（N 场）
-- HH:MM–HH:MM 「标题」 [地点]（时间重叠标 ⚠️ 冲突）
+| 时间 | 事件 | 组织者 | 状态 |
+|------|------|--------|------|
+| 09:00-10:00 | 产品需求评审 | 张三 | 已接受 |
+| 14:00-15:00 | 技术方案讨论 | 李四 | 待确认 |
 
 ### ✅ 未完成待办（M 项）
-- [P1] 任务标题（截止 MM-DD）
+- [ ] [P1] 任务标题（截止：MM-DD）
+- [ ] [P2] 任务标题
 
 ### 📋 待处理审批（K 件）
-- 「流程标题」 来自 {发起人}
+- 「流程标题」 来自 {发起人}（发起时间 MM-DD HH:MM）
 
 ### 🎙 会后待办（最新听记）
 - 待办内容（参与人）
 
-### 💡 提示
-- （可选）日程密集/空闲时段、已逾期待办
+### 💡 小结
+- 共 N 场会议，M 项待办，K 件审批
+- 冲突提醒：{列出时间重叠的日程}
+- 空闲时段：{根据日程推算}
 ```
+
+**数据处理规则：**
+
+1. **时间转换**：API 返回 Unix 毫秒时间戳，需转换为本地时区 `HH:MM` 格式（默认 Asia/Shanghai）
+2. **日程排序**：按开始时间升序排列
+3. **冲突检测**：按时间排序后，检查相邻日程是否重叠（前一个 end > 后一个 start），有则在小结中列出冲突组并标 ⚠️
+4. **待办排序**：先按优先级降序（40=P1 最高），再按截止时间升序；无截止时间排最后；已过期标注「已过期」
+5. **待办折叠**：超过 20 项只展示前 20，其余折叠为「其他 N 项」
+6. **空模块跳过**：任一模块无数据则整段不输出，不留空段落
+7. **部分失败**：某模块查询失败不中断，正常输出成功模块，结尾加「⚠️ {模块名} 查询失败已跳过」
+
+## 权限表
+
+| 命令 | 所需权限 |
+|------|----------|
+| `calendar +agenda` | 日历只读（Calendar.Read） |
+| `todo +get-my-tasks` | 待办只读（Todo.Read） |
+| `oa +list-pending` | OA 审批只读（OA.Read） |
+| `minutes +action-items` | 听记只读（Minutes.Read） |
+
+> 权限不足时命令会返回具体缺失 scope，按 `dws-shared` 的错误处理流程操作。
+
+## 参考
+
+- [dws-shared](../dws-shared/SKILL.md) — 认证、全局规则（必读）
+- [dingtalk-calendar](../dingtalk-calendar/SKILL.md) — `+agenda` 详细用法
+- [dingtalk-todo](../dingtalk-todo/SKILL.md) — `+get-my-tasks` 详细用法
+- [dingtalk-oa](../dingtalk-oa/SKILL.md) — `+list-pending` 详细用法
+- [dingtalk-minutes](../dingtalk-minutes/SKILL.md) — `+action-items` 详细用法
