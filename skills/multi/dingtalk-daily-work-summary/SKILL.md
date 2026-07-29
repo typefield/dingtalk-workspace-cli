@@ -1,5 +1,6 @@
 ---
 name: dingtalk-daily-work-summary
+version: 1.0.0
 description: >
   生成今日工作全景摘要：汇总日程、待办、待处理审批、会后待办等多维度工作数据，输出结构化日报。
   Use when user mentions "今日工作总结", "今天有什么安排", "生成今日日报", "今日事项汇总",
@@ -19,6 +20,7 @@ metadata:
       - dingtalk-todo
       - dingtalk-oa
       - dingtalk-minutes
+  cliHelp: "dws calendar +agenda --help && dws todo +get-my-tasks --help"
 ---
 
 # 今日工作总结（L2 场景技能）
@@ -34,6 +36,14 @@ metadata:
 > 5. **Read [`dingtalk-minutes`](../dingtalk-minutes/SKILL.md)** — 听记待办提取的命令与参数细节
 >
 > 本配方「执行流程」已**内联各步骤的 `dws` 命令**，可直接执行；上面的产品 skill 仅作参数全集与边界约束的**按需参考**——遇到本文未覆盖的参数/字段再去读。
+
+## 身份
+
+本技能**仅支持 user 身份**（`dws auth login` 后的个人登录态）。所有查询均返回当前登录用户自己的数据。不支持 bot 身份——bot 没有日程、待办、审批等个人资源。
+
+```bash
+dws auth status    # 确认 token_valid=true 且 identity=user
+```
 
 通过 `dws` 命令聚合钉钉多产品数据，生成结构化工作日报。
 
@@ -62,12 +72,12 @@ metadata:
 
 ## 能力清单
 
-| 动作 | 命令 | 必填参数 | 安全等级 | 说明 |
-|------|------|----------|----------|------|
-| 获取今日日程 | `dws calendar +agenda` | -- | 只读 | 不传时间默认今天 00:00~23:59；`--start/--end` ISO-8601 |
-| 获取未完成待办 | `dws todo +get-my-tasks --status false` | --status | 只读 | 可加 `--priority 40,30` 过滤高优先级、`--plan-finish-end <毫秒>` 圈截止时间 |
-| 待处理审批 | `dws oa +list-pending` | -- | 只读 | 待我审批的流程列表 |
-| 最新听记待办 | `dws minutes +action-items` | -- | 只读 | 自动取最新一条听记的待办；无听记时提示「暂无妙记」 |
+| 动作 | 命令 | 必填参数 | 安全等级 | 边界与注意事项 |
+|------|------|----------|----------|----------------|
+| 获取今日日程 | `dws calendar +agenda` | -- | 只读 | 不传时间默认今天 00:00~23:59；`--start/--end` 仅 ISO-8601，不支持 "tomorrow"；已取消日程自动过滤；超 40 天自动拆分查询 |
+| 获取未完成待办 | `dws todo +get-my-tasks --status false` | --status | 只读 | 不带 `--status` 会同时返回已完成+未完成；`--plan-finish-end` 是 Unix 毫秒（非 ISO）；`--role-types` 默认 executor |
+| 待处理审批 | `dws oa +list-pending` | -- | 只读 | 返回待当前用户审批的流程；无待审批时返回空列表（非报错） |
+| 最新听记待办 | `dws minutes +action-items` | -- | 只读 | 自动取最新一条听记；无听记时返回「暂无妙记」（非报错）；仅覆盖最新一条，多条听记需逐条 `+detail` |
 
 ## 意图判断
 

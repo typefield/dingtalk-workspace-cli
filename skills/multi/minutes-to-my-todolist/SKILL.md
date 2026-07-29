@@ -1,5 +1,6 @@
 ---
 name: minutes-to-my-todolist
+version: 1.0.0
 description: >
   从听记中提取待办事项，筛选出用户需要负责推进的任务，转换为钉钉待办。
   Use when user mentions "听记待办", "我的听记待办", "会议待办", "把听记里的待办加到待办",
@@ -18,6 +19,7 @@ metadata:
       - dingtalk-minutes
       - dingtalk-todo
       - dingtalk-contact
+  cliHelp: "dws minutes +action-items --help && dws todo task create --help"
 ---
 
 # 听记待办转钉钉待办（L2 场景技能）
@@ -33,6 +35,14 @@ metadata:
 >
 > 本配方「执行流程」已**内联各步骤的 `dws` 命令**，可直接执行；产品 skill 仅作按需参考。
 
+## 身份
+
+本技能**仅支持 user 身份**。听记和待办都是个人资源，bot 无法访问。
+
+```bash
+dws auth status    # 确认 token_valid=true 且 identity=user
+```
+
 从钉钉听记中提取待办事项，识别用户需要负责推进的任务，确认后创建为钉钉待办。
 
 ## 涉及产品
@@ -45,13 +55,13 @@ metadata:
 
 ## 能力清单
 
-| 动作 | 命令 | 必填参数 | 安全等级 | 说明 |
-|------|------|----------|----------|------|
-| 获取当前用户 | `dws contact user get-self` | -- | 只读 | 返回 userId，用于负责人匹配与待办执行人 |
-| 最新听记待办（快捷） | `dws minutes +action-items` | -- | 只读 | 自动取最新一条听记的待办；仅覆盖最新一条 |
-| 按关键词找听记 | `dws minutes +list-mine --query <kw>` | -- | 只读 | 返回听记列表及 taskUuid，`--limit` 默认 10 |
-| 提取指定听记待办 | `dws minutes +detail --id <taskUuid> --artifacts todos` | --id | 只读 | 只拉待办产物，避免拉全量转写 |
-| 创建待办 | `dws todo task create --title <t> --executors <userId>` | --title, --executors | 写入-需确认 | 可加 `--due`（ISO-8601）、`--priority` |
+| 动作 | 命令 | 必填参数 | 安全等级 | 边界与注意事项 |
+|------|------|----------|----------|----------------|
+| 获取当前用户 | `dws contact user get-self` | -- | 只读 | 返回 userId + name；别名 self/me/whoami/current 等价；禁止用 `get --ids me` 代替（返回空数据的假成功） |
+| 最新听记待办（快捷） | `dws minutes +action-items` | -- | 只读 | 自动取最新一条；无听记返回「暂无妙记」（非报错）；仅覆盖最新一条 |
+| 按关键词找听记 | `dws minutes +list-mine --query <kw>` | -- | 只读 | `--limit` 默认 10；多条匹配时列出标题+时间请用户选择，不要自动取第一条 |
+| 提取指定听记待办 | `dws minutes +detail --id <taskUuid> --artifacts todos` | --id | 只读 | 用 `--artifacts todos` 只拉待办，不要默认全量（会连逐字稿一起拉，浪费 context） |
+| 创建待办 | `dws todo task create --title <t> --executors <userId>` | --title, --executors | 写入-需确认 | `--executors` 必须是真实 userId（来自 get-self 或前序返回）；`--due` 是 ISO-8601；单批不超 20 条 |
 
 ## 意图判断
 
