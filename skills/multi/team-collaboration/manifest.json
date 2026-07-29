@@ -1,0 +1,13 @@
+{
+  "name": "team-collaboration",
+  "version": "1.0.0",
+  "description": "协作沟通域主理人。路由 chat/calendar/contact/todo/mail 五个产品。",
+  "requires": ["dws-shared@>=1.0"],
+  "members": ["dingtalk-chat", "dingtalk-calendar", "dingtalk-contact", "dingtalk-todo", "dingtalk-mail"],
+  "provides": ["chat", "calendar", "contact", "todo", "mail", "meeting", "message", "schedule"],
+  "triggers": ["消息", "群", "聊天", "发送", "日程", "会议", "日历", "预订", "找人", "通讯录", "待办", "任务", "提醒", "邮件", "收发", "message", "calendar", "meeting", "contact", "todo", "mail"],
+  "cli_version": ">=1.0.40",
+  "context_budget": 3000,
+  "priority": 10,
+  "stability": "experimental"
+}
