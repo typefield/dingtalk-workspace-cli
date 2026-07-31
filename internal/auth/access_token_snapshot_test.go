@@ -26,6 +26,72 @@ func TestCrossPlatformCoverageOAuthProviderTokenSnapshotPreservesLoadFailure(t *
 	}
 }
 
+func TestOAuthProviderExactProfileSnapshotDoesNotUseRuntimeProfile(t *testing.T) {
+	cleanupKeychain(t)
+	configDir := t.TempDir()
+	profile := Profile{CorpID: "corp-sidecar", UserID: "user-sidecar", Name: "sidecar"}
+	data := &TokenData{
+		AccessToken: "sidecar-access", CorpID: profile.CorpID, UserID: profile.UserID,
+		ExpiresAt: time.Now().Add(time.Hour), RefreshExpAt: time.Now().Add(24 * time.Hour),
+	}
+	if err := SaveProfiles(configDir, &ProfilesConfig{Version: profilesVersion, Profiles: []Profile{profile}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveTokenDataKeychainForIdentity(profile.CorpID, profile.UserID, data); err != nil {
+		t.Fatal(err)
+	}
+	SetRuntimeProfile("different-corp:different-user")
+	snapshot, err := NewOAuthProvider(configDir, nil).GetTokenSnapshotForProfile(context.Background(), ProfileSelector(profile))
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.AccessToken != data.AccessToken {
+		t.Fatalf("access token = %q", snapshot.AccessToken)
+	}
+	if got := RuntimeProfile(); got != "different-corp:different-user" {
+		t.Fatalf("RuntimeProfile() = %q; exact resolver mutated it", got)
+	}
+}
+
+func TestOAuthProviderExactProfileRefreshPassesExplicitSelector(t *testing.T) {
+	cleanupKeychain(t)
+	configDir := t.TempDir()
+	profile := Profile{CorpID: "corp-refresh", UserID: "user-refresh", Name: "refresh"}
+	data := &TokenData{
+		AccessToken: "expired", RefreshToken: "refresh-token", CorpID: profile.CorpID, UserID: profile.UserID,
+		ExpiresAt: time.Now().Add(-time.Hour), RefreshExpAt: time.Now().Add(24 * time.Hour),
+	}
+	if err := SaveProfiles(configDir, &ProfilesConfig{Version: profilesVersion, Profiles: []Profile{profile}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := SaveTokenDataKeychainForIdentity(profile.CorpID, profile.UserID, data); err != nil {
+		t.Fatal(err)
+	}
+	oldRefresh := oauthRefreshTokenForProfile
+	t.Cleanup(func() { oauthRefreshTokenForProfile = oldRefresh })
+	wantSelector := ProfileSelector(profile)
+	oauthRefreshTokenForProfile = func(_ *OAuthProvider, _ context.Context, current *TokenData, selector string) (*TokenData, error) {
+		if selector != wantSelector {
+			t.Fatalf("refresh selector = %q, want %q", selector, wantSelector)
+		}
+		updated := *current
+		updated.AccessToken = "refreshed"
+		updated.ExpiresAt = time.Now().Add(time.Hour)
+		return &updated, nil
+	}
+	SetRuntimeProfile("different-corp:different-user")
+	snapshot, err := NewOAuthProvider(configDir, nil).GetTokenSnapshotForProfile(context.Background(), wantSelector)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if snapshot.AccessToken != "refreshed" {
+		t.Fatalf("access token = %q", snapshot.AccessToken)
+	}
+	if got := RuntimeProfile(); got != "different-corp:different-user" {
+		t.Fatalf("RuntimeProfile() = %q; exact refresh mutated it", got)
+	}
+}
+
 func TestCrossPlatformCoverageOAuthProviderLoginReauthorizesAfterLoadFailureAndRejectsUnreadableTarget(t *testing.T) {
 	cleanupKeychain(t)
 	setLoginPreflightCredentials(t)

@@ -30,6 +30,7 @@ import (
 	"time"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/authsidecar"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
@@ -87,6 +88,10 @@ func Execute() (exitCode int) {
 			exitCode = 5
 		}
 	}()
+	if err := authsidecar.PrepareClient(os.Args[1:]); err != nil {
+		fmt.Fprintf(os.Stderr, "Error: %v\n", err)
+		return 2
+	}
 
 	restoreArgs := rootNormalizeProcessProfileArgs()
 	defer restoreArgs()
@@ -418,6 +423,9 @@ func newRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine, 
 			return cmd.Help()
 		},
 		PersistentPreRunE: func(cmd *cobra.Command, args []string) error {
+			if err := authsidecar.ValidateCommandPath(cmd.CommandPath()); err != nil {
+				return err
+			}
 			// Validate caller-provided identity labels before any edition hook
 			// or command network activity can run. Header-only library callers
 			// use the best-effort path in resolveIdentityHeaders instead.
@@ -504,7 +512,7 @@ func newRootCommandWithEngine(rootCtx context.Context, engine *pipeline.Engine, 
 		fn(root, caller)
 		deduplicateCommands(root)
 	}
-	if loadRuntimeExtensions {
+	if loadRuntimeExtensions && !authsidecar.SidecarModeRequested() {
 		// Resolve plugins only after the complete distribution command tree is
 		// present, so endpoint and Cobra conflict checks see PAT and edition
 		// commands as well as the open-source base.

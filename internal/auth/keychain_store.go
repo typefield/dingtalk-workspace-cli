@@ -362,7 +362,14 @@ func preflightTokenPersistence(configDir string) error {
 // refresh so both paths stay aligned with the same identity/org/global mirror
 // isolation rules.
 func preflightTokenWritePersistence(configDir string, data *TokenData) error {
+	return preflightTokenWritePersistenceForProfile(configDir, data, RuntimeProfile())
+}
+
+func preflightTokenWritePersistenceForProfile(configDir string, data *TokenData, runtimeSelector string) error {
 	if h := edition.Get(); h.SaveToken != nil {
+		if strings.TrimSpace(runtimeSelector) != "" {
+			return fmt.Errorf("profile selection is not supported by the current auth backend")
+		}
 		return nil
 	}
 	cfg, err := LoadProfiles(configDir)
@@ -373,7 +380,7 @@ func preflightTokenWritePersistence(configDir string, data *TokenData) error {
 		return err
 	}
 
-	plan := planTokenPersistenceWrites(cfg, data, RuntimeProfile())
+	plan := planTokenPersistenceWrites(cfg, data, runtimeSelector)
 	if err := validateTokenPersistenceWritePlan(cfg, data, plan); err != nil {
 		return err
 	}
@@ -411,6 +418,10 @@ func preflightTokenWritePersistence(configDir string, data *TokenData) error {
 // its still-valid credentials.
 func preflightTokenRefreshPersistence(configDir string, data *TokenData) error {
 	return preflightTokenWritePersistence(configDir, data)
+}
+
+func preflightTokenRefreshPersistenceForProfile(configDir string, data *TokenData, profile string) error {
+	return preflightTokenWritePersistenceForProfile(configDir, data, profile)
 }
 
 // DeleteTokenDataKeychain removes TokenData from the platform keychain.

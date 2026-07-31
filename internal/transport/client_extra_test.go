@@ -3,12 +3,48 @@ package transport
 import (
 	"bytes"
 	"context"
+	"errors"
 	"io"
 	"log/slog"
 	"net/http"
 	"strings"
 	"testing"
+
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/authsidecar"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
+
+func TestSidecarResponseErrorMapsStableReason(t *testing.T) {
+	response := &http.Response{
+		StatusCode: http.StatusForbidden,
+		Header:     make(http.Header),
+	}
+	response.Header.Set(authsidecar.HeaderError, "policy_denied")
+	err := sidecarResponseError(response, "tools/call", "trace-123")
+	if err == nil {
+		t.Fatal("sidecarResponseError() error = nil, want auth error")
+	}
+
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) {
+		t.Fatalf("sidecarResponseError() error = %T, want *errors.Error", err)
+	}
+	if typed.Category != apperrors.CategoryAuth {
+		t.Fatalf("Category = %q, want %q", typed.Category, apperrors.CategoryAuth)
+	}
+	if typed.Reason != "sidecar_policy_denied" {
+		t.Fatalf("Reason = %q, want sidecar_policy_denied", typed.Reason)
+	}
+	if typed.Operation != "tools/call" {
+		t.Fatalf("Operation = %q, want tools/call", typed.Operation)
+	}
+	if typed.Retryable {
+		t.Fatal("Retryable = true, want false")
+	}
+	if typed.ServerDiag.TraceID != "trace-123" {
+		t.Fatalf("TraceID = %q, want trace-123", typed.ServerDiag.TraceID)
+	}
+}
 
 func TestWithAuth_ClonesCorrectly(t *testing.T) {
 	t.Parallel()

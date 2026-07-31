@@ -340,7 +340,17 @@ func SaveLoginTokenData(configDir string, data *TokenData) error {
 // migration in LoadTokenDataForProfile) must use this instead of SaveTokenData
 // to avoid deadlocking on the non-reentrant lock.
 func saveTokenDataLocked(configDir string, data *TokenData) error {
+	return saveTokenDataLockedForProfile(configDir, data, RuntimeProfile())
+}
+
+// saveTokenDataLockedForProfile is the explicit-profile form used by trusted
+// concurrent runtimes such as the auth sidecar. The caller must already hold
+// the auth dual lock. Ordinary CLI paths continue to use saveTokenDataLocked.
+func saveTokenDataLockedForProfile(configDir string, data *TokenData, runtimeSelector string) error {
 	if h := edition.Get(); h.SaveToken != nil {
+		if strings.TrimSpace(runtimeSelector) != "" {
+			return fmt.Errorf("profile selection is not supported by the current auth backend")
+		}
 		return saveTokenViaHook(h, configDir, data)
 	}
 	if data != nil && strings.TrimSpace(data.CorpID) != "" {
@@ -369,7 +379,7 @@ func saveTokenDataLocked(configDir string, data *TokenData) error {
 		if err := ensureProfilesWritable(cfg); err != nil {
 			return err
 		}
-		plan := planTokenPersistenceWrites(cfg, data, RuntimeProfile())
+		plan := planTokenPersistenceWrites(cfg, data, runtimeSelector)
 		if err := validateTokenPersistenceWritePlan(cfg, data, plan); err != nil {
 			return err
 		}

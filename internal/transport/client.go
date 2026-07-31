@@ -30,6 +30,7 @@ import (
 	"sync"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/authsidecar"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/i18n"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/logging"
@@ -246,6 +247,7 @@ func NewClient(httpClient *http.Client) *Client {
 			httpClient.CheckRedirect = safeRedirectPolicy
 		}
 	}
+	httpClient.Transport = authsidecar.WrapRoundTripper(httpClient.Transport)
 	return &Client{
 		HTTPClient:    httpClient,
 		MaxRetries:    defaultMaxRetries,
@@ -444,6 +446,9 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 
 	if resp.StatusCode < http.StatusOK || resp.StatusCode >= http.StatusMultipleChoices {
 		logging.LogResponseBody(c.FileLogger, request.Method, c.ExecutionId, resp.StatusCode, data, headerTraceID)
+		if err := sidecarResponseError(resp, request.Method, headerTraceID); err != nil {
+			return err
+		}
 		return httpStatusError(request.Method, endpoint, resp.StatusCode, snapshotPath, headerTraceID)
 	}
 
@@ -491,6 +496,25 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 		)
 	}
 	return nil
+}
+
+func sidecarResponseError(response *http.Response, operation, traceID string) error {
+	if response == nil {
+		return nil
+	}
+	code := strings.TrimSpace(response.Header.Get(authsidecar.HeaderError))
+	if code == "" {
+		return nil
+	}
+	retryable := code == "rate_limited" || code == "replay_cache_unavailable" || code == "upstream_unavailable"
+	return apperrors.NewAuth(
+		fmt.Sprintf("auth sidecar rejected %s (HTTP %d)", operation, response.StatusCode),
+		apperrors.WithOperation(operation),
+		apperrors.WithReason("sidecar_"+code),
+		apperrors.WithRetryable(retryable),
+		apperrors.WithHint(i18n.T("检查 Sidecar key binding、endpoint/tool policy、有效期和可信侧服务状态。")),
+		apperrors.WithTraceID(traceID),
+	)
 }
 
 func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, method string) (*http.Response, error) {

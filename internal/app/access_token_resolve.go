@@ -25,6 +25,7 @@ import (
 	"time"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/authsidecar"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
 
@@ -88,6 +89,12 @@ var (
 
 // Get resolves an access token for the active runtime profile.
 func (m *TokenManager) Get(ctx context.Context, configDir, explicitToken string) (AccessTokenSnapshot, error) {
+	if token, active, err := authsidecar.ResolveClientToken(explicitToken); active {
+		if err != nil {
+			return AccessTokenSnapshot{}, err
+		}
+		return AccessTokenSnapshot{AccessToken: token, Source: "sidecar"}, nil
+	}
 	if token := strings.TrimSpace(explicitToken); token != "" {
 		return AccessTokenSnapshot{AccessToken: token, Source: "explicit"}, nil
 	}

@@ -65,6 +65,9 @@ var (
 	oauthRefreshToken  = func(p *OAuthProvider, ctx context.Context, data *TokenData) (*TokenData, error) {
 		return p.refreshWithRefreshToken(ctx, data)
 	}
+	oauthRefreshTokenForProfile = func(p *OAuthProvider, ctx context.Context, data *TokenData, profile string) (*TokenData, error) {
+		return p.refreshWithRefreshTokenForProfile(ctx, data, profile)
+	}
 	oauthSleep = time.Sleep
 )
 
@@ -704,6 +707,38 @@ func (p *OAuthProvider) GetTokenSnapshot(ctx context.Context) (*TokenData, error
 	return nil, fmt.Errorf("%s: %w", i18n.T("所有凭证已失效，请运行 dws auth login 重新登录"), ErrTokenDataNotFound)
 }
 
+// GetTokenSnapshotForProfile resolves and refreshes one exact identity without
+// reading or mutating the process-global RuntimeProfile. This is the safe entry
+// point for concurrent trusted hosts such as dws-auth-sidecar.
+func (p *OAuthProvider) GetTokenSnapshotForProfile(ctx context.Context, profile string) (*TokenData, error) {
+	profile = strings.TrimSpace(profile)
+	if _, _, ok := ParseIdentitySelector(profile); !ok {
+		return nil, fmt.Errorf("profile must be an exact corpId:userId selector")
+	}
+	data, err := LoadTokenDataForProfile(p.configDir, profile)
+	if err != nil {
+		if errors.Is(err, ErrTokenDataNotFound) || os.IsNotExist(err) {
+			return nil, fmt.Errorf("%s: %w", i18n.T("未登录，请运行 dws auth login"), ErrTokenDataNotFound)
+		}
+		return nil, fmt.Errorf("load access token for profile: %w", err)
+	}
+	if data.IsAccessTokenValid() {
+		return data, nil
+	}
+	if data.IsRefreshTokenValid() {
+		refreshed, refreshErr := p.lockedRefreshForProfile(ctx, profile)
+		if refreshErr == nil {
+			return refreshed, nil
+		}
+		if ClassifyRefreshFailure(refreshErr) != RefreshFailureTransient {
+			_ = oauthMarkProfile(p.configDir, profile, ProfileStatusExpired)
+		}
+		return nil, fmt.Errorf("%s: %w", i18n.T("refresh_token 刷新失败"), refreshErr)
+	}
+	_ = oauthMarkProfile(p.configDir, profile, ProfileStatusExpired)
+	return nil, fmt.Errorf("%s: %w", i18n.T("所有凭证已失效，请运行 dws auth login 重新登录"), ErrTokenDataNotFound)
+}
+
 func legacyRefreshReauthorizationGuidance(profileSelector string) string {
 	guidance := "旧版登录态已无法由当前认证服务刷新；本地 profile 已保留，请重新运行 dws auth login 完成一次重新授权"
 	profileSelector = strings.TrimSpace(profileSelector)
@@ -784,6 +819,28 @@ func (p *OAuthProvider) lockedRefresh(ctx context.Context) (*TokenData, error) {
 		p.logger.Debug("refreshing token (dual-locked)")
 	}
 	return oauthRefreshToken(p, ctx, data)
+}
+
+func (p *OAuthProvider) lockedRefreshForProfile(ctx context.Context, profile string) (*TokenData, error) {
+	lock, err := oauthAcquireLock(ctx, p.configDir)
+	if err != nil {
+		return nil, fmt.Errorf("acquiring dual lock: %w", err)
+	}
+	defer lock.Release()
+	data, err := loadOAuthTokenUnderHeldLock(p.configDir, profile)
+	if err != nil {
+		return nil, err
+	}
+	if data.IsAccessTokenValid() {
+		return data, nil
+	}
+	if !data.IsRefreshTokenValid() {
+		return nil, fmt.Errorf("refresh_token 已过期")
+	}
+	if err := preflightTokenRefreshPersistenceForProfile(p.configDir, data, profile); err != nil {
+		return nil, fmt.Errorf("%s: %w", i18n.T("本地登录态无法安全更新"), err)
+	}
+	return oauthRefreshTokenForProfile(p, ctx, data, profile)
 }
 
 // ExchangeAuthCode takes an AuthCode and an optional UserID provided by an

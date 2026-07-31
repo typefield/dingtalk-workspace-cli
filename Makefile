@@ -8,14 +8,16 @@ POLICY_GOTMPDIR ?= $(DWS_POLICY_TMPDIR)/go
 POLICY_ENV = DWS_POLICY_TMPDIR="$(DWS_POLICY_TMPDIR)" GOTMPDIR="$(POLICY_GOTMPDIR)"
 GO_SOURCE_LIST = git ls-files -z --cached --others --exclude-standard -- '*.go'
 
-.PHONY: all help build rebuild test test-plan test-auth-legacy-compat lint format-check fmt policy edition-test interface-integrity authoritative-interface-integrity coverage-gate coverage-gate-platform update-interface-baseline reset-interface-baseline schema-compatibility skill-command-integrity skill-context-budget cli-smoke mock-mcp-smoke test-schema-agent-examples generate-schema generate-schema-agent-metadata fetch-mcp-metadata generate-schema-catalog package release release-pre release-stable changelog-pre changelog-stable publish-homebrew-formula setup-hooks
+.PHONY: all help build build-auth-sidecar rebuild test test-auth-sidecar test-plan test-auth-legacy-compat lint format-check fmt policy edition-test interface-integrity authoritative-interface-integrity coverage-gate coverage-gate-platform update-interface-baseline reset-interface-baseline schema-compatibility skill-command-integrity skill-context-budget cli-smoke mock-mcp-smoke test-schema-agent-examples generate-schema generate-schema-agent-metadata fetch-mcp-metadata generate-schema-catalog package release release-pre release-stable changelog-pre changelog-stable publish-homebrew-formula setup-hooks
 
 all: setup-hooks fmt lint build test rebuild
 
 help:
 	@printf "Available targets:\n"
 	@printf "  make build         - Build the dws CLI binary\n"
+	@printf "  make build-auth-sidecar - Build the tagged sandbox client and trusted sidecar server\n"
 	@printf "  make test          - Run the Go test suite\n"
+	@printf "  make test-auth-sidecar - Run the Go test suite with the authsidecar build tag\n"
 	@printf "  make test-plan     - Verify every default Go package belongs to one CI test shard\n"
 	@printf "  make test-auth-legacy-compat - Run stable legacy authentication compatibility regressions\n"
 	@printf "  make lint          - Run formatting checks, go vet, and staticcheck\n"
@@ -47,11 +49,19 @@ help:
 build:
 	@./scripts/dev/build.sh
 
+build-auth-sidecar:
+	@mkdir -p dist
+	@$(GO) build -buildmode=pie -trimpath -ldflags="-s -w" -tags authsidecar -o dist/dws-authsidecar-client ./cmd
+	@$(GO) build -buildmode=pie -trimpath -ldflags="-s -w" -o dist/dws-auth-sidecar ./cmd/dws-auth-sidecar
+
 rebuild:
 	@./scripts/dev/build.sh
 
 test:
 	@DWS_PACKAGE_VERSION="$(DWS_PACKAGE_VERSION)" $(GO) test -count=1 -timeout=10m ./...
+
+test-auth-sidecar:
+	@DWS_PACKAGE_VERSION="$(DWS_PACKAGE_VERSION)" $(GO) test -tags authsidecar -count=1 -timeout=10m ./...
 
 test-plan:
 	@./scripts/ci/test-packages.sh verify
