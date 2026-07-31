@@ -197,7 +197,8 @@ bodySHA256
 
 - `METHOD` 转为大写；
 - `targetOrigin` 只能是 `https://host[:port]`，禁止 path、query、fragment、userinfo；
-- `pathAndQuery` 使用 Go `URL.RequestURI()` 的结果；
+- `pathAndQuery` 使用 Go `URL.RequestURI()` 的结果；服务端必须拒绝任何 `EscapedPath() != Path` 的请求（即 path 含百分号编码），否则 ACL 会按解码后的 path 授权，而转发使用原始 path，二者可指向不同上游路由；
+- ACL 判定与上游转发必须基于同一个 path 字节序列；
 - timestamp 允许漂移 `±60s`；
 - nonce 使用 CSPRNG 生成 16 字节并 hex 编码；
 - 服务端在验签、policy 和限流全部通过后，以 `(keyId, nonce)` 原子写入 replay cache；重复值返回 `409 replay_detected`；被 ACL 或限流拒绝的请求不占用 replay 状态；
@@ -334,6 +335,8 @@ ResolveAccessTokenForProfile(
 
 “拒绝”必须是明确的 `sidecar_command_unsupported` 或 `sidecar_policy_denied`，不能静默回落现有本地凭证链。
 
+命令拦截实现为 **allowlist，默认拒绝**：只有经过评审的 MCP 产品命令与无认证本地命令进入白名单，其余（含未来新增命令）一律返回 `sidecar_command_unsupported`。这一点是凭证隔离的实际依赖：`event`、`auth`、`recovery` 等路径会绕过 `TokenManager` 直接调用 `authpkg.LoadTokenData`，denylist 一旦漂移就会形成静默本地凭证回落。因此白名单与拒绝原因表必须由针对真实 Cobra 树的完整性测试守护——任何未分类的顶层命令都应使测试失败。
+
 ## 11. 代码结构
 
 当前实现落点：
@@ -392,26 +395,42 @@ cmd/
 
 ### 13.1 安全测试
 
+已覆盖（`internal/authsidecar` 单测与 tagged 集成测试）：
+
+- [x] 修改 target、path、query、body、keyId、timestamp 或 nonce 后验签失败；
+- [x] path 含百分号编码时拒绝（`path_not_canonical`），ACL 与转发不会分叉；
+- [x] 相同 `(keyId, nonce)` 首次成功、再次请求稳定返回 `replay_detected`；
+- [x] `--profile`、`--token`、半配置、标准构建启用 Sidecar 全部 fail closed；
+- [x] 未分类命令默认拒绝，且白名单由真实 Cobra 树完整性测试守护；
+- [x] 非白名单 host、endpoint path、tool、JSON-RPC method 均拒绝；
+- [x] 客户端自带认证头、Cookie 和 Sidecar 协议头不会被转发；
+- [x] 上游回显的 `Authorization` / `x-user-access-token` / `Set-Cookie` 不会返回沙箱；
+- [x] replay cache 满载时不放行未记录 nonce，且与 `replay_detected` 可区分；
+- [x] 审计日志不含 key、token、profile 明文。
+
+待补（Phase 2）：
+
 - [ ] 沙箱进程环境、打开文件和 heap dump 中不存在真实 token/DEK；
-- [ ] 修改 target、path、query、body、keyId、timestamp 或 nonce 后验签失败；
-- [ ] 相同 `(keyId, nonce)` 首次成功、再次请求稳定返回 `replay_detected`；
-- [ ] 未知、过期、禁用 key 均拒绝；
-- [ ] key A 无法选择或回退到 key B 的 profile；
-- [ ] `--profile`、`--token`、半配置、标准构建启用 Sidecar 全部 fail closed；
-- [ ] 非白名单 host、endpoint path、tool、JSON-RPC method 均拒绝；Phase 2 增加风险等级拒绝测试；
-- [ ] 客户端自带认证头、Cookie 和 Sidecar 头不会被转发；
-- [ ] 跨 host redirect 不携带真实认证头；
-- [ ] replay cache 满载时不放行未记录 nonce；
-- [ ] 日志、错误、trace 和 recovery snapshot 不含 key、token、完整用户 ID 或敏感路径参数。
+- [ ] 未知、过期、禁用 key 各自的拒绝路径；
+- [ ] key A 无法选择或回退到 key B 的 profile（当前由 binding 结构保证，缺显式负向测试）；
+- [ ] 风险等级（Schema risk）拒绝测试；
+- [ ] recovery snapshot 不含敏感路径参数。
+
+跨 host redirect 不携带真实认证头这一项由构造保证：上游 client 整体禁用重定向（`CheckRedirect` 返回错误）。
 
 ### 13.2 功能测试
 
-- [ ] 允许的 `initialize`、`tools/list`、`tools/call` 正常工作；
-- [ ] access token 过期后只在可信侧刷新，沙箱无感；
-- [ ] 两个 profile 并发高频调用不串号；
-- [ ] HTTP retry 使用新 nonce，且上游幂等/重试语义与现状一致；
-- [ ] Unix socket 和批准的 same-host 容器链路通过集成测试；
-- [ ] Sidecar 停止、超时、policy deny 和 token refresh 失败均返回可区分错误码。
+- [x] 允许的 `tools/call` 经 unix socket 端到端正常工作，真实 token 只在可信侧注入；
+- [x] 两个 profile 并发高频调用不串号（`-race` 下验证）；
+- [x] 每次请求生成新 nonce，连续请求不会被 replay cache 误拒；
+- [x] Unix socket 链路通过集成测试；
+- [x] policy deny、rate limit、replay、token 解析失败均返回可区分错误码。
+
+待补：
+
+- [ ] access token 过期后只在可信侧刷新，沙箱无感（需 refresh 路径的集成夹具）；
+- [ ] 批准的 same-host 容器 HTTP 链路集成测试；
+- [ ] `initialize` / `tools/list` 的显式用例。
 
 ### 13.3 仓库验证
 

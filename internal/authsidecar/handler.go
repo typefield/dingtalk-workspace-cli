@@ -178,6 +178,13 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusForbidden, "target_invalid", err.Error(), keyID, binding.Profile, started)
 		return
 	}
+	// The ACL and the forwarded URL must agree on one byte sequence. Go decodes
+	// URL.Path but forwards RequestURI(), so a percent-encoded path such as
+	// "/%6dcp" would be authorized as "/mcp" yet forwarded verbatim.
+	if request.URL.EscapedPath() != request.URL.Path {
+		h.reject(response, request, http.StatusForbidden, "path_not_canonical", "target path must not use percent-encoding", keyID, binding.Profile, started)
+		return
+	}
 	canonical := CanonicalRequest{
 		KeyID:        keyID,
 		Timestamp:    timestamp,
@@ -354,11 +361,10 @@ func copyForwardHeaders(destination, source http.Header) {
 
 // forwardableResponseHeaders is an allowlist: upstream credential echoes such
 // as Authorization or x-user-access-token and hop-by-hop headers must never
-// reach the sandbox.
+// reach the sandbox. Content-Length is deliberately absent so net/http derives
+// it from the body actually written.
 var forwardableResponseHeaders = []string{
 	"Content-Type",
-	"Content-Length",
-	"Content-Encoding",
 	"Content-Language",
 	"Cache-Control",
 	"Date",

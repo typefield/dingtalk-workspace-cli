@@ -23,6 +23,7 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"sort"
 	"strings"
 	"time"
 
@@ -156,6 +157,58 @@ func ValidateClientArgs(args []string) error {
 	return nil
 }
 
+// sidecarAllowedCommands is the reviewed allowlist for the MCP-only MVP: the
+// DingTalk product services that route over MCP HTTP, plus local commands that
+// never touch credentials. Everything else is denied by default so a newly
+// added command cannot silently fall back to the local credential chain.
+var sidecarAllowedCommands = map[string]struct{}{
+	"agoal": {}, "aisearch": {}, "aitable": {}, "attendance": {}, "calendar": {},
+	"chat": {}, "conference": {}, "contact": {}, "devapp": {}, "devdoc": {},
+	"ding": {}, "doc": {}, "drive": {}, "hrbrain": {}, "live": {}, "mail": {},
+	"mcp": {}, "minutes": {}, "oa": {}, "report": {}, "sheet": {}, "todo": {},
+	"wiki": {},
+
+	"help": {}, "schema": {}, "version": {},
+}
+
+// sidecarDeniedCommands records the reviewed reason each remaining top-level
+// command stays unavailable. It exists so the completeness test can prove every
+// real command is classified rather than accidentally allowed.
+var sidecarDeniedCommands = map[string]string{
+	"api":        "raw HTTP paths cannot be authorized at MCP tool granularity",
+	"audit":      "audit records belong to the trusted host",
+	"auth":       "the sandbox must not manage trusted-side credentials",
+	"cache":      "cache maintenance reads trusted-side profile state",
+	"catalog":    "catalog maintenance is a trusted-host operation",
+	"completion": "shell integration is unnecessary inside the sandbox",
+	"config":     "configuration changes belong to the trusted host",
+	"dev":        "developer tooling reaches endpoints outside the MCP contract",
+	"doctor":     "diagnostics inspect trusted-side credential storage",
+	"event":      "the long-lived event channel injects credentials outside MCP HTTP",
+	"markdown":   "local file processing is out of the sidecar contract",
+	"pat":        "privilege escalation must not originate in an untrusted sandbox",
+	"plugin":     "plugin endpoints and auth semantics are uncontrolled",
+	"profile":    "identity selection is fixed by the trusted key binding",
+	"recovery":   "recovery snapshots may contain trusted-side state",
+	"shortcut":   "shortcuts span request paths beyond MCP HTTP",
+	"skill":      "skill publish/download uses a separate HTTP client",
+	"upgrade":    "binary replacement must not originate in the sandbox",
+}
+
+// SidecarCommandClassification reports the reviewed allow/deny sets so a test
+// can assert they exactly cover the executable command tree.
+func SidecarCommandClassification() (allowed []string, denied []string) {
+	for name := range sidecarAllowedCommands {
+		allowed = append(allowed, name)
+	}
+	for name := range sidecarDeniedCommands {
+		denied = append(denied, name)
+	}
+	sort.Strings(allowed)
+	sort.Strings(denied)
+	return allowed, denied
+}
+
 func ValidateCommandPath(commandPath string) error {
 	if !SidecarModeRequested() {
 		return nil
@@ -164,13 +217,17 @@ func ValidateCommandPath(commandPath string) error {
 	if len(fields) < 2 {
 		return nil
 	}
-	switch fields[1] {
-	case "api", "audit", "auth", "cache", "catalog", "completion", "config", "dev", "doctor",
-		"event", "markdown", "pat", "plugin", "profile", "recovery", "shortcut", "skill", "upgrade":
-		return fmt.Errorf("sidecar_command_unsupported: %s is not available in the MCP-only sidecar MVP", fields[1])
-	default:
+	command := fields[1]
+	if _, ok := sidecarAllowedCommands[command]; ok {
 		return nil
 	}
+	if reason, denied := sidecarDeniedCommands[command]; denied {
+		return fmt.Errorf("sidecar_command_unsupported: %s is not available in the MCP-only sidecar MVP (%s)", command, reason)
+	}
+	return fmt.Errorf(
+		"sidecar_command_unsupported: %s is not part of the reviewed MCP-only sidecar allowlist; "+
+			"review it explicitly before enabling it in sidecar mode", command,
+	)
 }
 
 func LoadClientConfigFromEnv() (ClientConfig, error) {

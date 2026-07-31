@@ -26,6 +26,7 @@ type ReplayCache struct {
 	buckets        map[string]map[string]time.Time
 	ttl            time.Duration
 	perKeyCapacity int
+	nextSweep      time.Time
 }
 
 func NewReplayCache(perKeyCapacity int, ttl time.Duration) *ReplayCache {
@@ -48,17 +49,15 @@ func (c *ReplayCache) Use(keyID, nonce string, now time.Time) error {
 	}
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for owner, bucket := range c.buckets {
-		for value, expiresAt := range bucket {
-			if !expiresAt.After(now) {
-				delete(bucket, value)
-			}
-		}
-		if len(bucket) == 0 {
-			delete(c.buckets, owner)
-		}
-	}
 	bucket := c.buckets[keyID]
+	// Expiring only this key's bucket keeps the hot path proportional to one
+	// sandbox's in-flight nonces instead of every bucket in the process.
+	pruneExpired(bucket, now)
+	if !now.Before(c.nextSweep) {
+		c.sweepLocked(now)
+		bucket = c.buckets[keyID]
+		c.nextSweep = now.Add(c.ttl)
+	}
 	if bucket == nil {
 		bucket = make(map[string]time.Time)
 		c.buckets[keyID] = bucket
@@ -71,4 +70,23 @@ func (c *ReplayCache) Use(keyID, nonce string, now time.Time) error {
 	}
 	bucket[nonce] = now.Add(c.ttl)
 	return nil
+}
+
+// sweepLocked reclaims buckets belonging to keys that have gone idle. It runs at
+// most once per TTL so an idle sandbox cannot pin memory indefinitely.
+func (c *ReplayCache) sweepLocked(now time.Time) {
+	for owner, bucket := range c.buckets {
+		pruneExpired(bucket, now)
+		if len(bucket) == 0 {
+			delete(c.buckets, owner)
+		}
+	}
+}
+
+func pruneExpired(bucket map[string]time.Time, now time.Time) {
+	for nonce, expiresAt := range bucket {
+		if !expiresAt.After(now) {
+			delete(bucket, nonce)
+		}
+	}
 }
