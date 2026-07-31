@@ -175,6 +175,41 @@ func TestHandlerDeniedRequestsDoNotConsumeReplayNonce(t *testing.T) {
 	}
 }
 
+func TestHandlerStripsClientSuppliedCredentialHeaders(t *testing.T) {
+	var upstreamHeaders http.Header
+	upstream := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		upstreamHeaders = request.Header.Clone()
+		_, _ = io.WriteString(response, `{"jsonrpc":"2.0","result":{}}`)
+	}))
+	defer upstream.Close()
+
+	config, key := testServerConfig(t, upstream.URL, []string{"get_document"})
+	handler, err := NewHandler(config, staticTokenResolver{token: "trusted-token"}, upstream.Client(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(1700000000, 0)
+	handler.now = func() time.Time { return now }
+	body := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_document"}}`)
+	request := signedHandlerRequest(t, key, upstream.URL, body, now, strings.Repeat("f", 32))
+	request.Header.Set("Cookie", "session=sandbox-forged")
+	request.Header.Set("Proxy-Authorization", "Basic forged")
+	request.Header.Set("X-Sandbox-Injected", "1")
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	for _, name := range []string{"Cookie", "Proxy-Authorization", "X-Sandbox-Injected"} {
+		if got := upstreamHeaders.Get(name); got != "" {
+			t.Fatalf("client-supplied header %s reached upstream: %q", name, got)
+		}
+	}
+	if got := upstreamHeaders.Get("Authorization"); got != "Bearer trusted-token" {
+		t.Fatalf("Authorization = %q, want the trusted token", got)
+	}
+}
+
 func TestHandlerPolicyDeniesUnknownPath(t *testing.T) {
 	upstream := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("denied path reached upstream")
