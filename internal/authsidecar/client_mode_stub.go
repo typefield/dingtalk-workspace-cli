@@ -21,6 +21,9 @@ func PrepareClient([]string) error {
 	if err := ValidateAuthMode(); err != nil {
 		return err
 	}
+	if err := ValidateSidecarEnvConsistency(); err != nil {
+		return err
+	}
 	if !SidecarModeRequested() {
 		return nil
 	}

@@ -200,8 +200,8 @@ bodySHA256
 - `pathAndQuery` 使用 Go `URL.RequestURI()` 的结果；
 - timestamp 允许漂移 `±60s`；
 - nonce 使用 CSPRNG 生成 16 字节并 hex 编码；
-- 服务端在验签成功后，以 `(keyId, nonce)` 原子写入 replay cache；重复值返回 `409 replay_detected`；
-- replay cache TTL 至少 120 秒并设置总容量上限，满载时 fail closed，不能通过淘汰新项绕过重放防护；
+- 服务端在验签、policy 和限流全部通过后，以 `(keyId, nonce)` 原子写入 replay cache；重复值返回 `409 replay_detected`；被 ACL 或限流拒绝的请求不占用 replay 状态；
+- replay cache TTL 至少 120 秒并按 key 隔离容量，单 key 满载时仅该 key fail closed，不能淘汰新项绕过重放防护，也不能让一个 key 的洪泛耗尽其他 key 的防重放能力；
 - key 查找必须通过 `keyId` O(1) 完成，不遍历 key 集合。
 
 ### 6.3 转发头规则
@@ -218,7 +218,7 @@ Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accep
    ```
 
 4. 使用独立的 `http.Transport` 直连上游，忽略 `DWS_AUTH_SIDECAR_ADDR`，并沿用 DWS 的 TLS 最低版本、超时、重定向敏感头剥离和目标域校验；
-5. 回包时删除 Sidecar 内部响应头，不把上游 token 或认证诊断内容写入响应。
+5. 回包时按 allowlist 转发响应头（如 `Content-Type`、`Content-Length`、`Cache-Control`、`Mcp-Session-Id`），剥离上游可能回显的 `Authorization`、`x-user-access-token`、`Set-Cookie`、hop-by-hop 头和 Sidecar 内部头。
 
 ## 7. 身份绑定与权限模型
 
@@ -309,9 +309,11 @@ ResolveAccessTokenForProfile(
 
 要求：
 
-- selector 在调用入口已经是精确 `corpId:userId`；
+- selector 在调用入口已经是精确 `corpId:userId`，且解析结果必须与原字符串逐字相等，拒绝 corpName/userName 宽松匹配；
+- 解析出的凭证 `corpId`/`userId` 必须与 binding selector 逐字一致，否则拒绝返回 token；
 - token cache 继续按 `(configDir, exactProfile)` 隔离；
 - refresh token 的读取、轮转、发布 marker 和 profile 更新保持现有原子语义；
+- token 刷新必须使用独立加固的 OAuth HTTP client：不继承环境代理、禁止重定向、TLS 1.2+，防止 refresh token/client secret 经代理或 307/308 泄漏；
 - Sidecar 并发解析不同 profile 时不修改任何进程全局 profile；
 - 该 API 只返回给可信侧调用代码，不进入沙箱构建的实际执行路径。
 

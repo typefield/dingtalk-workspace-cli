@@ -108,6 +108,73 @@ func TestHandlerPolicyDeniesUnknownTool(t *testing.T) {
 	}
 }
 
+func TestHandlerStripsUpstreamCredentialEchoes(t *testing.T) {
+	upstream := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
+		response.Header().Set("Content-Type", "application/json")
+		response.Header().Set("Authorization", "Bearer leaked-token")
+		response.Header().Set("x-user-access-token", "leaked-token")
+		response.Header().Set("Set-Cookie", "session=leaked")
+		response.Header().Set("X-Upstream-Debug", "internal")
+		_, _ = io.WriteString(response, `{"jsonrpc":"2.0","result":{}}`)
+	}))
+	defer upstream.Close()
+
+	config, key := testServerConfig(t, upstream.URL, []string{"get_document"})
+	handler, err := NewHandler(config, staticTokenResolver{token: "token"}, upstream.Client(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(1700000000, 0)
+	handler.now = func() time.Time { return now }
+	body := []byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"get_document"}}`)
+	request := signedHandlerRequest(t, key, upstream.URL, body, now, strings.Repeat("d", 32))
+	recorder := httptest.NewRecorder()
+	handler.ServeHTTP(recorder, request)
+	if recorder.Code != http.StatusOK {
+		t.Fatalf("status = %d, body = %s", recorder.Code, recorder.Body.String())
+	}
+	for _, name := range []string{"Authorization", "x-user-access-token", "Set-Cookie", "X-Upstream-Debug"} {
+		if got := recorder.Header().Get(name); got != "" {
+			t.Fatalf("upstream header %s leaked to the sandbox: %q", name, got)
+		}
+	}
+	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
+		t.Fatalf("Content-Type = %q, want application/json", got)
+	}
+}
+
+func TestHandlerDeniedRequestsDoNotConsumeReplayNonce(t *testing.T) {
+	upstream := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, _ *http.Request) {
+		_, _ = io.WriteString(response, `{"jsonrpc":"2.0","result":{}}`)
+	}))
+	defer upstream.Close()
+	config, key := testServerConfig(t, upstream.URL, []string{"allowed_tool"})
+	handler, err := NewHandler(config, staticTokenResolver{token: "token"}, upstream.Client(), nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	now := time.Unix(1700000000, 0)
+	handler.now = func() time.Time { return now }
+	nonce := strings.Repeat("e", 32)
+
+	denied := signedHandlerRequest(t, key, upstream.URL,
+		[]byte(`{"jsonrpc":"2.0","id":1,"method":"tools/call","params":{"name":"denied_tool"}}`), now, nonce)
+	deniedRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(deniedRecorder, denied)
+	if deniedRecorder.Code != http.StatusForbidden {
+		t.Fatalf("denied status = %d", deniedRecorder.Code)
+	}
+
+	allowed := signedHandlerRequest(t, key, upstream.URL,
+		[]byte(`{"jsonrpc":"2.0","id":2,"method":"tools/call","params":{"name":"allowed_tool"}}`), now, nonce)
+	allowedRecorder := httptest.NewRecorder()
+	handler.ServeHTTP(allowedRecorder, allowed)
+	if allowedRecorder.Code != http.StatusOK {
+		t.Fatalf("policy-denied request consumed the nonce: status = %d, code = %q",
+			allowedRecorder.Code, allowedRecorder.Header().Get(HeaderError))
+	}
+}
+
 func TestHandlerPolicyDeniesUnknownPath(t *testing.T) {
 	upstream := httptest.NewTLSServer(http.HandlerFunc(func(http.ResponseWriter, *http.Request) {
 		t.Fatal("denied path reached upstream")

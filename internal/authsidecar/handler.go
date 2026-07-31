@@ -191,16 +191,6 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusUnauthorized, "signature_invalid", "sidecar request signature is invalid", keyID, binding.Profile, started)
 		return
 	}
-	if err := h.replay.Use(keyID, nonce, now); err != nil {
-		code := "replay_detected"
-		status := http.StatusConflict
-		if !strings.Contains(err.Error(), "replay detected") {
-			code = "replay_cache_unavailable"
-			status = http.StatusServiceUnavailable
-		}
-		h.reject(response, request, status, code, err.Error(), keyID, binding.Profile, started)
-		return
-	}
 	if _, allowed := policy.origins[target]; !allowed {
 		h.reject(response, request, http.StatusForbidden, "target_denied", "target origin is not allowed by sidecar policy", keyID, binding.Profile, started)
 		return
@@ -220,6 +210,18 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 	}
 	if !h.rates.allow(keyID, policy.RequestsPerMinute, now) {
 		h.reject(response, request, http.StatusTooManyRequests, "rate_limited", "sidecar request rate exceeded", keyID, binding.Profile, started)
+		return
+	}
+	// Consume the nonce only after every policy and rate gate has passed, so
+	// rejected floods cannot occupy replay-protection state.
+	if err := h.replay.Use(keyID, nonce, now); err != nil {
+		code := "replay_detected"
+		status := http.StatusConflict
+		if !strings.Contains(err.Error(), "replay detected") {
+			code = "replay_cache_unavailable"
+			status = http.StatusServiceUnavailable
+		}
+		h.reject(response, request, status, code, err.Error(), keyID, binding.Profile, started)
 		return
 	}
 	token, err := h.resolver.ResolveAccessToken(request.Context(), binding.Profile)
@@ -350,13 +352,23 @@ func copyForwardHeaders(destination, source http.Header) {
 	}
 }
 
+// forwardableResponseHeaders is an allowlist: upstream credential echoes such
+// as Authorization or x-user-access-token and hop-by-hop headers must never
+// reach the sandbox.
+var forwardableResponseHeaders = []string{
+	"Content-Type",
+	"Content-Length",
+	"Content-Encoding",
+	"Content-Language",
+	"Cache-Control",
+	"Date",
+	"Retry-After",
+	"Mcp-Session-Id",
+}
+
 func copyResponseHeaders(destination, source http.Header) {
-	for name, values := range source {
-		if strings.HasPrefix(http.CanonicalHeaderKey(name), "X-Dws-Sidecar-") ||
-			strings.EqualFold(name, "Set-Cookie") {
-			continue
-		}
-		for _, value := range values {
+	for _, name := range forwardableResponseHeaders {
+		for _, value := range source.Values(name) {
 			destination.Add(name, value)
 		}
 	}

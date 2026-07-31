@@ -19,41 +19,56 @@ import (
 	"time"
 )
 
+// ReplayCache tracks used nonces per key so one key flooding unique nonces
+// can only exhaust its own bucket, never another sandbox's replay protection.
 type ReplayCache struct {
-	mu       sync.Mutex
-	entries  map[string]time.Time
-	ttl      time.Duration
-	capacity int
+	mu             sync.Mutex
+	buckets        map[string]map[string]time.Time
+	ttl            time.Duration
+	perKeyCapacity int
 }
 
-func NewReplayCache(capacity int, ttl time.Duration) *ReplayCache {
-	if capacity <= 0 {
-		capacity = 10_000
+func NewReplayCache(perKeyCapacity int, ttl time.Duration) *ReplayCache {
+	if perKeyCapacity <= 0 {
+		perKeyCapacity = 10_000
 	}
 	if ttl < 2*MaxTimestampDrift {
 		ttl = 2 * MaxTimestampDrift
 	}
-	return &ReplayCache{entries: make(map[string]time.Time), ttl: ttl, capacity: capacity}
+	return &ReplayCache{
+		buckets:        make(map[string]map[string]time.Time),
+		ttl:            ttl,
+		perKeyCapacity: perKeyCapacity,
+	}
 }
 
 func (c *ReplayCache) Use(keyID, nonce string, now time.Time) error {
 	if c == nil {
 		return fmt.Errorf("replay cache is not configured")
 	}
-	cacheKey := keyID + "\x00" + nonce
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	for key, expiresAt := range c.entries {
-		if !expiresAt.After(now) {
-			delete(c.entries, key)
+	for owner, bucket := range c.buckets {
+		for value, expiresAt := range bucket {
+			if !expiresAt.After(now) {
+				delete(bucket, value)
+			}
+		}
+		if len(bucket) == 0 {
+			delete(c.buckets, owner)
 		}
 	}
-	if _, exists := c.entries[cacheKey]; exists {
+	bucket := c.buckets[keyID]
+	if bucket == nil {
+		bucket = make(map[string]time.Time)
+		c.buckets[keyID] = bucket
+	}
+	if _, exists := bucket[nonce]; exists {
 		return fmt.Errorf("replay detected")
 	}
-	if len(c.entries) >= c.capacity {
-		return fmt.Errorf("replay cache capacity exhausted")
+	if len(bucket) >= c.perKeyCapacity {
+		return fmt.Errorf("replay cache capacity exhausted for this key")
 	}
-	c.entries[cacheKey] = now.Add(c.ttl)
+	bucket[nonce] = now.Add(c.ttl)
 	return nil
 }

@@ -114,6 +114,36 @@ func ValidateAuthMode() error {
 	return fmt.Errorf("unsupported %s value %q", EnvAuthMode, mode)
 }
 
+// ValidateSidecarEnvConsistency fails closed on half configuration: any
+// sidecar client variable without DWS_AUTH_MODE=sidecar must abort instead of
+// silently falling back to local credentials.
+func ValidateSidecarEnvConsistency() error {
+	var set []string
+	for _, name := range []string{EnvSidecarAddress, EnvSidecarKeyID, EnvSidecarKeyFile} {
+		if strings.TrimSpace(os.Getenv(name)) != "" {
+			set = append(set, name)
+		}
+	}
+	if len(set) == 0 || SidecarModeRequested() {
+		return nil
+	}
+	return fmt.Errorf(
+		"sidecar_config_incomplete: %s set without %s=%s; refusing to fall back to local credentials",
+		strings.Join(set, ", "), EnvAuthMode, AuthModeSidecar,
+	)
+}
+
+// ParseExactIdentitySelector accepts only a literal corpId:userId string. It
+// rejects anything the looser profile resolution could reinterpret, such as
+// surrounding whitespace or corpName:userName aliases that drift on rename.
+func ParseExactIdentitySelector(selector string) (corpID, userID string, err error) {
+	corpID, userID, ok := authpkg.ParseIdentitySelector(selector)
+	if !ok || corpID+":"+userID != selector {
+		return "", "", fmt.Errorf("profile must be a literal corpId:userId selector without whitespace")
+	}
+	return corpID, userID, nil
+}
+
 func ValidateClientArgs(args []string) error {
 	for _, arg := range args {
 		switch {
@@ -280,8 +310,8 @@ func (c *ServerConfig) prepare(baseDir string) error {
 		if _, ok := policyNames[binding.Policy]; !ok {
 			return fmt.Errorf("binding %q references unknown policy %q", binding.KeyID, binding.Policy)
 		}
-		if _, _, ok := authpkg.ParseIdentitySelector(binding.Profile); !ok {
-			return fmt.Errorf("binding %q profile must be an exact corpId:userId selector", binding.KeyID)
+		if _, _, err := ParseExactIdentitySelector(binding.Profile); err != nil {
+			return fmt.Errorf("binding %q: %w", binding.KeyID, err)
 		}
 		keyFile := binding.KeyFile
 		if !filepath.IsAbs(keyFile) {

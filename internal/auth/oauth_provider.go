@@ -96,6 +96,15 @@ func NewOAuthProvider(configDir string, logger *slog.Logger) *OAuthProvider {
 	}
 }
 
+// SetHTTPClient replaces the OAuth HTTP client. Trusted hosts such as the
+// auth sidecar inject a hardened client that never inherits environment
+// proxies and never follows redirects while refresh credentials are in flight.
+func (p *OAuthProvider) SetHTTPClient(client *http.Client) {
+	if client != nil {
+		p.httpClient = client
+	}
+}
+
 // resetCredentialState clears any stale credential state inherited from
 // previous login methods before the OAuth flow falls back to MCP-managed
 // credentials. Complete runtime AppKey/AppSecret overrides skip this reset.
