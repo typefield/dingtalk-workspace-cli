@@ -586,6 +586,35 @@ jobs:
               go build -o "$output" ./cmd
           done
 
+  test-auth-sidecar:
+    name: Test (auth sidecar build tag)
+    needs: lint
+    if: ${{ needs.lint.outputs.changelog_only != 'true' && needs.lint.outputs.docs_only != 'true' }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - name: Build tagged sandbox client and trusted server
+        shell: bash
+        run: |
+          set -eu
+          go build -tags authsidecar ./cmd
+          go build ./cmd/dws-auth-sidecar
+
+      - name: Test sidecar packages with the authsidecar tag
+        shell: bash
+        run: |
+          set -eu
+          DWS_PACKAGE_VERSION=0.0.0-test go test -v -race -count=1 -timeout=10m \
+            -tags authsidecar ./internal/authsidecar/... ./cmd/dws-auth-sidecar/...
+
   test:
     name: Test
     needs:
@@ -594,6 +623,7 @@ jobs:
       - test-race
       - test-release-scripts
       - test-cross-platform
+      - test-auth-sidecar
       - test-darwin
       - test-windows
     if: ${{ always() && needs.lint.result == 'success' }}
@@ -611,6 +641,7 @@ jobs:
           RACE_RESULT: ${{ needs.test-race.result }}
           RELEASE_SCRIPTS_RESULT: ${{ needs.test-release-scripts.result }}
           CROSS_PLATFORM_RESULT: ${{ needs.test-cross-platform.result }}
+          AUTH_SIDECAR_RESULT: ${{ needs.test-auth-sidecar.result }}
           DARWIN_RESULT: ${{ needs.test-darwin.result }}
           WINDOWS_RESULT: ${{ needs.test-windows.result }}
         run: |
@@ -621,6 +652,7 @@ jobs:
               "race shards:$RACE_RESULT" \
               "release scripts:$RELEASE_SCRIPTS_RESULT" \
               "cross-platform compile:$CROSS_PLATFORM_RESULT" \
+              "auth sidecar tag:$AUTH_SIDECAR_RESULT" \
               "macOS native:$DARWIN_RESULT" \
               "Windows native:$WINDOWS_RESULT"
             do
@@ -649,7 +681,8 @@ jobs:
             "changed packages:$FOCUSED_RESULT:$focused_expected" \
             "race shards:$RACE_RESULT:$race_expected" \
             "release scripts:$RELEASE_SCRIPTS_RESULT:$release_expected" \
-            "cross-platform compile:$CROSS_PLATFORM_RESULT:success"
+            "cross-platform compile:$CROSS_PLATFORM_RESULT:success" \
+            "auth sidecar tag:$AUTH_SIDECAR_RESULT:success"
           do
             name="${shard%%:*}"
             remainder="${shard#*:}"
