@@ -605,8 +605,8 @@ jobs:
         shell: bash
         run: |
           set -eu
-          go build -tags authsidecar ./cmd
-          go build ./cmd/dws-auth-sidecar
+          go build -tags authsidecar -o "$RUNNER_TEMP/dws-authsidecar-client" ./cmd
+          go build -o "$RUNNER_TEMP/dws-auth-sidecar" ./cmd/dws-auth-sidecar
 
       - name: Test sidecar packages with the authsidecar tag
         shell: bash
@@ -614,6 +614,14 @@ jobs:
           set -eu
           DWS_PACKAGE_VERSION=0.0.0-test go test -v -race -count=1 -timeout=10m \
             -tags authsidecar ./internal/authsidecar/... ./cmd/dws-auth-sidecar/...
+          DWS_PACKAGE_VERSION=0.0.0-test go test -v -race -count=1 -timeout=10m \
+            -tags authsidecar ./internal/app \
+            -run 'Test(SidecarTokenManager|SidecarCommand|SidecarMode)'
+          DWS_PACKAGE_VERSION=0.0.0-test go test -v -race -count=1 -timeout=10m \
+            -tags authsidecar ./internal/auth \
+            -run 'Test(SidecarModeDeniesEveryLocalCredentialReadBoundary|LocalCredentialReadsRemainAvailableOutsideSidecarMode|OAuthProviderExactProfile)'
+          DWS_PACKAGE_VERSION=0.0.0-test go test -v -race -count=1 -timeout=10m \
+            -tags authsidecar ./internal/transport -run 'TestSidecarResponseError'
 
   test:
     name: Test

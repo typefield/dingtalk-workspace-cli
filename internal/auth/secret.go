@@ -108,6 +108,9 @@ func secretAccountKey(clientID string) string {
 // ResolveSecret resolves a SecretInput to a plain string.
 // SecretRef objects are resolved by source (file / keychain).
 func ResolveSecret(input SecretInput) (string, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return "", err
+	}
 	if input.Ref == nil {
 		return input.Plain, nil
 	}

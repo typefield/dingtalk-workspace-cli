@@ -512,6 +512,9 @@ func LoadTokenData(configDir string) (*TokenData, error) {
 // LoadTokenDataForProfile reads TokenData for a profile selector without mutating
 // currentProfile. Empty selector follows the default resolution chain.
 func LoadTokenDataForProfile(configDir, profile string) (*TokenData, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	if h := edition.Get(); h.LoadToken != nil {
 		if strings.TrimSpace(profile) != "" {
 			return nil, fmt.Errorf("profile selection is not supported by the current auth backend")

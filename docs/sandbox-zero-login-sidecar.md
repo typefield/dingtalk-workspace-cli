@@ -1,6 +1,6 @@
 # DWS 沙箱免登 Sidecar 技术方案（修订版）
 
-> 状态：MCP Phase 1 MVP 已实现，等待评审与真实账号联调；Schema risk 自动判定保留在 Phase 2
+> 状态：MCP Phase 1 MVP 已实现并通过自动化验收，等待真实账号联调；Schema risk 自动判定保留在 Phase 2
 > 目标版本：协议 `v1` / MCP 主链路 MVP
 > 适用范围：不可信沙箱与可信宿主位于同一物理机，沙箱必须使用钉钉用户身份，但用户 token 不得进入沙箱
 > 参考实现：飞书开源 CLI 的 auth sidecar；本文结合 DWS 的多 profile、双认证头和 Runtime Schema 安全元数据进行了收敛，不照搬其 demo 设计
@@ -134,6 +134,8 @@ x-user-access-token: <user-access-token>
 
 Sidecar 构建也不是“设置失败就忽略”：配置缺项、地址非法、key 权限错误或连接失败都必须在发出上游请求前终止。
 
+除命令 allowlist 外，认证包的本地凭证读取入口也有第二道 fail-closed：当 `DWS_AUTH_MODE=sidecar` 时，直接读取用户 token、Keychain、加密 `.data`、应用 token 或持久化 client secret 均返回 `sidecar_local_credential_access_denied`（无错误返回值的 secret getter 返回空值）。可信宿主上的 `dws-auth-sidecar` 必须不设置该模式，因此仍能读取绑定 profile。
+
 ### 5.2 沙箱侧配置
 
 ```bash
@@ -161,6 +163,32 @@ export DWS_AUTH_SIDECAR_KEY_FILE=/run/secrets/dws-sidecar.key
 3. `http://host.docker.internal:<port>` 等经过审核的 same-host 别名：仅容器无法共享 socket 时显式启用。
 
 拒绝 HTTPS、userinfo、URL path、跨机 IP、通配地址和未经配置的 DNS 名。跨机安全不能靠“把 Sidecar 地址换成 HTTPS”解决。
+
+### 5.4 沙箱平台接入职责
+
+这里的“平台下发”是创建沙箱时的本地资源注入，不是把钉钉 token 通过网络发给沙箱。调度器需要为每个沙箱完成：
+
+1. 生成独立的 32-byte 随机 HMAC key，并分配不含用户身份的 `keyId`；
+2. 在可信宿主配置 `keyId → exact profile → policy`；
+3. 先启动 Sidecar，再把该沙箱专属 socket 目录和 key 文件只读挂载进容器；
+4. 注入四个 `DWS_AUTH_*` 环境变量；
+5. 作业结束时卸载 key/socket，并禁用或删除 binding。
+
+HMAC key 是受限能力凭据，不是钉钉 access token。攻陷沙箱的进程可以在 key 有效期内调用 policy 允许的工具，因此必须一沙箱一 key、短 TTL、最小工具集合，不能多沙箱共用。
+
+Unix socket 当前固定为 `0600`、父目录要求 `0700`。容器内 DWS 进程必须映射为能够访问该 socket 的同一有效 UID；如果平台不能稳定满足 UID 与目录挂载要求，才评估显式 same-host HTTP，不能为了省事暴露到跨机网络。
+
+可信宿主可在启动前执行只读校验：
+
+```bash
+dws-auth-sidecar \
+  --check-config \
+  --config ~/.dws/sidecar/config.json \
+  --dws-config-dir ~/.dws \
+  --listen unix:///home/user/.dws/sidecar/dws.sock
+```
+
+校验会覆盖配置结构、key 文件、exact profile、policy、监听地址和 DWS 配置目录，但不会创建 socket。Sidecar 配置文件必须是普通文件，Unix 下要求 `0600` 或更严格；这是因为 exact endpoint query 可能包含服务端 key。远端钉钉 MCP 服务无需任何改造。
 
 ## 6. Wire Protocol v1
 
@@ -198,16 +226,25 @@ bodySHA256
 - `METHOD` 转为大写；
 - `targetOrigin` 只能是 `https://host[:port]`，禁止 path、query、fragment、userinfo；
 - `pathAndQuery` 使用 Go `URL.RequestURI()` 的结果；服务端必须拒绝任何 `EscapedPath() != Path` 的请求（即 path 含百分号编码），否则 ACL 会按解码后的 path 授权，而转发使用原始 path，二者可指向不同上游路由；
+- 无 query 的请求由 `allowed_paths` 精确授权；只要存在 query，就必须同时命中 `allowed_request_uris` 的完整 `path?query`，query 顺序和值均属于授权边界，默认拒绝；
 - ACL 判定与上游转发必须基于同一个 path 字节序列；
 - timestamp 允许漂移 `±60s`；
 - nonce 使用 CSPRNG 生成 16 字节并 hex 编码；
-- 服务端在验签、policy 和限流全部通过后，以 `(keyId, nonce)` 原子写入 replay cache；重复值返回 `409 replay_detected`；被 ACL 或限流拒绝的请求不占用 replay 状态；
+- 服务端在验签和 policy 通过后先原子预留 `(keyId, nonce)`，再执行限流；重复值返回 `409 replay_detected` 且不消耗速率额度；限流拒绝时释放预留，使合法调用可在下一窗口重试；
 - replay cache TTL 至少 120 秒并按 key 隔离容量，单 key 满载时仅该 key fail closed，不能淘汰新项绕过重放防护，也不能让一个 key 的洪泛耗尽其他 key 的防重放能力；
 - key 查找必须通过 `keyId` O(1) 完成，不遍历 key 集合。
 
+协议兼容固定向量位于 `internal/authsidecar/protocol_test.go`：raw ASCII key 为 `01234567890123456789012345678901`，空 body、IPv6 target、带 query 请求的 canonical bytes 对应 HMAC-SHA256：
+
+```text
+f7dbb481c80762dfc2bacb662a23d9bb4e736348926ab069c4ccdf0101746c9b
+```
+
+其他语言实现必须复用该向量对拍，不能按语言运行时默认 URL/JSON 规范化规则重新解释字段。
+
 ### 6.3 转发头规则
 
-Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accept`、`X-Cli-Source`、`X-Cli-Version` 和合法的 execution ID。它必须：
+Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accept`、`Mcp-Session-Id`、`Mcp-Protocol-Version`、`X-Cli-Source`、`X-Cli-Version` 和合法的 execution ID。它必须：
 
 1. 删除沙箱请求中的 `Authorization`、`x-user-access-token`、Cookie、Proxy-Authorization 和全部 Sidecar 协议头；
 2. 根据 key binding 获取真实用户 token；
@@ -246,9 +283,11 @@ Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accep
 硬性要求：
 
 - `profile` 必须解析为精确的 `corpId:userId`，禁止只绑定 corpId、current profile、profile 别名或“第一个账号”；
+- 启用中的 binding 必须设置未来的 `expires_at`；漏配或启动时已过期均拒绝加载，禁用的历史 binding 可以保留；
+- 任意两个 binding 不得复用同一 HMAC key 材料；即使 `keyId` 不同，启动校验也必须拒绝；
 - key 未找到、过期、禁用、profile 缺失或 token 刷新失败时 fail closed；
 - 禁止在 profile 解析失败时回退 legacy token；
-- key 文件、binding 配置和 token 存储均只在可信侧；
+- binding 配置、服务端 key 副本和 token 存储只在可信侧；沙箱仅得到同一 HMAC capability key 的只读副本，不得到 binding 或真实 token；
 - MVP 在启动时完整校验配置；Phase 2 支持无需重启的安全 reload，并在校验新配置后原子替换内存快照。
 
 ### 7.2 policy
@@ -258,6 +297,7 @@ Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accep
   "name": "agent-read-write",
   "allowed_origins": ["https://mcp.dingtalk.com"],
   "allowed_paths": ["/server/<reviewed-server-id>"],
+  "allowed_request_uris": ["/server/<reviewed-server-id>?key=<reviewed-server-key>"],
   "allowed_tools": [
     "doc.get_document",
     "doc.create_document",
@@ -268,6 +308,8 @@ Sidecar 只转发明确白名单中的普通头，例如 `Content-Type`、`Accep
   "max_body_bytes": 1048576
 }
 ```
+
+`allowed_request_uris` 仅用于确实带 query 的 endpoint，且其中 path 必须已出现在 `allowed_paths`。例如 `/server/demo?key=A` 被审核后，`/server/demo?key=B`、参数重排或追加参数都不会继承权限。queryless endpoint 不需要配置该字段。
 
 服务端必须从已验签的 JSON-RPC body 解析操作，不能信任客户端额外声明的 tool/risk：
 
@@ -322,7 +364,8 @@ ResolveAccessTokenForProfile(
 
 | 命令类别 | MVP | 说明 |
 |---|---|---|
-| `dws mcp ...` / 映射到 MCP HTTP 的产品命令 | 支持 | 必须通过 endpoint + tool ACL |
+| 映射到 MCP HTTP 的产品命令 | 支持 | 必须通过 endpoint/request URI + tool ACL |
+| `dws mcp ...`（含 `mcp url get`） | 拒绝 | 管理面包含 credential-bearing MCP URL，MVP 不向沙箱开放整个顶层命令 |
 | `help`、`version`、`schema` 等无认证本地命令 | 支持 | 不经过 Sidecar |
 | `auth`、`profile` | 拒绝 | 沙箱不能管理可信侧凭证或选择身份 |
 | `api` 原始 HTTP | 拒绝 | 任意 path 难以做稳定工具级授权，后续单独评审 |
@@ -355,6 +398,9 @@ internal/authsidecar/
 internal/app/
   access_token_resolve.go     # 增加显式 profile token 解析 seam
   root.go                     # 启动校验、命令范围和插件禁用
+
+internal/auth/
+  sidecar_guard.go            # 沙箱模式禁止直接读取本地凭证存储
 
 cmd/
   dws-auth-sidecar/main.go    # 可信侧 server 入口
@@ -397,22 +443,27 @@ cmd/
 
 已覆盖（`internal/authsidecar` 单测与 tagged 集成测试）：
 
+- [x] 固定跨语言 HMAC 向量覆盖空 body、query、IPv6 origin 和方法大小写规范化；
 - [x] 修改 target、path、query、body、keyId、timestamp 或 nonce 后验签失败；
+- [x] 任一协议头重复时在验签前拒绝；
 - [x] path 含百分号编码时拒绝（`path_not_canonical`），ACL 与转发不会分叉；
 - [x] 相同 `(keyId, nonce)` 首次成功、再次请求稳定返回 `replay_detected`；
 - [x] `--profile`、`--token`、半配置、标准构建启用 Sidecar 全部 fail closed；
 - [x] 未分类命令默认拒绝，且白名单由真实 Cobra 树完整性测试守护；
 - [x] 非白名单 host、endpoint path、tool、JSON-RPC method 均拒绝；
+- [x] 带 query 的 endpoint 必须命中 exact `allowed_request_uris`，不能替换 server key 或追加参数；
+- [x] 重复 JSON-RPC method/tool 字段及带空白的非规范授权字段均拒绝；
 - [x] 客户端自带认证头、Cookie 和 Sidecar 协议头不会被转发；
 - [x] 上游回显的 `Authorization` / `x-user-access-token` / `Set-Cookie` 不会返回沙箱；
 - [x] replay cache 满载时不放行未记录 nonce，且与 `replay_detected` 可区分；
-- [x] 审计日志不含 key、token、profile 明文。
+- [x] 审计日志不含 key、token、profile 或 endpoint path 明文；
+- [x] Sidecar 模式直接读取 Keychain、加密 token 文件、应用 token 或 client secret 均 fail closed；
+- [x] 未知、过期、禁用 key 各自返回稳定拒绝码；
+- [x] key A 无法使用 key B 的 endpoint policy，双 profile 并发不串号。
 
 待补（Phase 2）：
 
 - [ ] 沙箱进程环境、打开文件和 heap dump 中不存在真实 token/DEK；
-- [ ] 未知、过期、禁用 key 各自的拒绝路径；
-- [ ] key A 无法选择或回退到 key B 的 profile（当前由 binding 结构保证，缺显式负向测试）；
 - [ ] 风险等级（Schema risk）拒绝测试；
 - [ ] recovery snapshot 不含敏感路径参数。
 
@@ -425,12 +476,13 @@ cmd/
 - [x] 每次请求生成新 nonce，连续请求不会被 replay cache 误拒；
 - [x] Unix socket 链路通过集成测试；
 - [x] policy deny、rate limit、replay、token 解析失败均返回可区分错误码。
+- [x] `initialize` / `tools/list` / `tools/call` 均有显式 handler 用例；
+- [x] `--check-config` 在不创建 socket 的情况下完成启动前校验。
+- [x] 过期 token 由可信侧按 exact profile 刷新并轮转落盘，新 token 注入上游但不进入沙箱响应，全局 runtime profile 不变；
 
 待补：
 
-- [ ] access token 过期后只在可信侧刷新，沙箱无感（需 refresh 路径的集成夹具）；
 - [ ] 批准的 same-host 容器 HTTP 链路集成测试；
-- [ ] `initialize` / `tools/list` 的显式用例。
 
 ### 13.3 仓库验证
 
@@ -444,16 +496,21 @@ DWS_PACKAGE_VERSION=0.0.0-test go test ./...
 
 ## 14. 审计与运维
 
-每次请求至少记录：
+Phase 1 对成功转发记录：
 
-- 时间、request ID、keyId 的不可逆短 hash；
-- profile 的不可逆短 hash；
-- target server、JSON-RPC method、canonical tool ID；
-- policy 名称、决策、拒绝原因；
-- 上游状态码、耗时、重试次数；
-- token refresh 是否发生，但绝不记录 token 内容。
+- 时间、request ID、keyId 和 profile 的不可逆短 hash；
+- policy、target server、JSON-RPC method、canonical tool ID；
+- 上游状态码、耗时和响应复制状态。
 
-key 生命周期操作必须可审计：创建、加载、轮转、禁用、过期和删除。紧急处置只需禁用 key binding，不删除用户 profile，也不破坏宿主机正常 `dws` 登录态。
+拒绝请求只记录当时已经可信解析出的字段，并始终包含 request/key/profile 短 hash、HTTP method、endpoint path 短 hash、稳定拒绝码和耗时；不会为了填满审计字段而解析或记录未验签输入。Phase 2 再增加 token refresh 事件、重试次数和 key 生命周期操作审计。
+
+严禁记录：
+
+- HMAC key、access token、refresh token 或 client secret；
+- profile、keyId、endpoint path/query 的明文；
+- 未经过长度限制和结构校验的请求 body。
+
+计划中的 key 生命周期操作必须可审计：创建、加载、轮转、禁用、过期和删除。紧急处置只需禁用 key binding，不删除用户 profile，也不破坏宿主机正常 `dws` 登录态。
 
 ## 15. 仍需评审的决策
 

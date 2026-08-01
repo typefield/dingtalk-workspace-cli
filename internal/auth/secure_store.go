@@ -161,6 +161,9 @@ func SaveSecureTokenData(configDir string, data *TokenData) error {
 // LoadSecureTokenData decrypts and loads TokenData from .data file.
 // Reads are safe without locking because SaveSecureTokenData uses atomic rename.
 func LoadSecureTokenData(configDir string) (*TokenData, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	password, err := resolvePassword()
 	if err != nil {
 		return nil, err

@@ -14,6 +14,7 @@
 package authsidecar
 
 import (
+	"crypto/sha256"
 	"encoding/hex"
 	"encoding/json"
 	"fmt"
@@ -91,16 +92,18 @@ type Binding struct {
 }
 
 type Policy struct {
-	Name              string   `json:"name"`
-	AllowedOrigins    []string `json:"allowed_origins"`
-	AllowedPaths      []string `json:"allowed_paths"`
-	AllowedTools      []string `json:"allowed_tools"`
-	RequestsPerMinute int      `json:"requests_per_minute,omitempty"`
-	MaxBodyBytes      int64    `json:"max_body_bytes,omitempty"`
+	Name               string   `json:"name"`
+	AllowedOrigins     []string `json:"allowed_origins"`
+	AllowedPaths       []string `json:"allowed_paths"`
+	AllowedRequestURIs []string `json:"allowed_request_uris,omitempty"`
+	AllowedTools       []string `json:"allowed_tools"`
+	RequestsPerMinute  int      `json:"requests_per_minute,omitempty"`
+	MaxBodyBytes       int64    `json:"max_body_bytes,omitempty"`
 
-	origins map[string]struct{}
-	paths   map[string]struct{}
-	tools   map[string]struct{}
+	origins     map[string]struct{}
+	paths       map[string]struct{}
+	requestURIs map[string]struct{}
+	tools       map[string]struct{}
 }
 
 func SidecarModeRequested() bool {
@@ -165,7 +168,7 @@ var sidecarAllowedCommands = map[string]struct{}{
 	"agoal": {}, "aisearch": {}, "aitable": {}, "attendance": {}, "calendar": {},
 	"chat": {}, "conference": {}, "contact": {}, "devapp": {}, "devdoc": {},
 	"ding": {}, "doc": {}, "drive": {}, "hrbrain": {}, "live": {}, "mail": {},
-	"mcp": {}, "minutes": {}, "oa": {}, "report": {}, "sheet": {}, "todo": {},
+	"minutes": {}, "oa": {}, "report": {}, "sheet": {}, "todo": {},
 	"wiki": {},
 
 	"help": {}, "schema": {}, "version": {},
@@ -186,6 +189,7 @@ var sidecarDeniedCommands = map[string]string{
 	"doctor":     "diagnostics inspect trusted-side credential storage",
 	"event":      "the long-lived event channel injects credentials outside MCP HTTP",
 	"markdown":   "local file processing is out of the sidecar contract",
+	"mcp":        "the MCP management surface includes credential-bearing connection URLs",
 	"pat":        "privilege escalation must not originate in an untrusted sandbox",
 	"plugin":     "plugin endpoints and auth semantics are uncontrolled",
 	"profile":    "identity selection is fixed by the trusted key binding",
@@ -242,7 +246,11 @@ func LoadClientConfigFromEnv() (ClientConfig, error) {
 	if !validIdentifier(keyID) {
 		return ClientConfig{}, fmt.Errorf("%s must contain 1-128 letters, digits, '.', '_' or '-'", EnvSidecarKeyID)
 	}
-	key, err := ReadKeyFile(strings.TrimSpace(os.Getenv(EnvSidecarKeyFile)))
+	keyFile := strings.TrimSpace(os.Getenv(EnvSidecarKeyFile))
+	if !filepath.IsAbs(keyFile) {
+		return ClientConfig{}, fmt.Errorf("%s must be an absolute path", EnvSidecarKeyFile)
+	}
+	key, err := ReadKeyFile(keyFile)
 	if err != nil {
 		return ClientConfig{}, fmt.Errorf("%s: %w", EnvSidecarKeyFile, err)
 	}
@@ -307,7 +315,10 @@ func ReadKeyFile(path string) ([]byte, error) {
 	}
 	trimmed := strings.TrimSpace(string(data))
 	decoded, decodeErr := hex.DecodeString(trimmed)
-	if decodeErr == nil && len(decoded) >= 32 {
+	if decodeErr == nil {
+		if len(decoded) < 32 {
+			return nil, fmt.Errorf("hex key must contain at least 64 hex characters")
+		}
 		return decoded, nil
 	}
 	if len(data) < 32 {
@@ -317,6 +328,19 @@ func ReadKeyFile(path string) ([]byte, error) {
 }
 
 func LoadServerConfig(path string) (*ServerConfig, error) {
+	info, err := os.Lstat(path)
+	if err != nil {
+		return nil, fmt.Errorf("stat sidecar config: %w", err)
+	}
+	if !info.Mode().IsRegular() {
+		return nil, fmt.Errorf("sidecar config must be a regular file")
+	}
+	if runtime.GOOS != "windows" && info.Mode().Perm()&0o077 != 0 {
+		return nil, fmt.Errorf(
+			"sidecar config permissions %04o are too broad; require 0600 or stricter",
+			info.Mode().Perm(),
+		)
+	}
 	data, err := os.ReadFile(path)
 	if err != nil {
 		return nil, fmt.Errorf("read sidecar config: %w", err)
@@ -355,6 +379,7 @@ func (c *ServerConfig) prepare(baseDir string) error {
 		}
 	}
 	keyIDs := make(map[string]struct{}, len(c.Bindings))
+	keyFingerprints := make(map[[sha256.Size]byte]string, len(c.Bindings))
 	for index := range c.Bindings {
 		binding := &c.Bindings[index]
 		if !validIdentifier(binding.KeyID) {
@@ -370,6 +395,14 @@ func (c *ServerConfig) prepare(baseDir string) error {
 		if _, _, err := ParseExactIdentitySelector(binding.Profile); err != nil {
 			return fmt.Errorf("binding %q: %w", binding.KeyID, err)
 		}
+		if binding.Enabled {
+			if binding.ExpiresAt.IsZero() {
+				return fmt.Errorf("binding %q must set expires_at while enabled", binding.KeyID)
+			}
+			if !binding.ExpiresAt.After(time.Now()) {
+				return fmt.Errorf("binding %q is already expired", binding.KeyID)
+			}
+		}
 		keyFile := binding.KeyFile
 		if !filepath.IsAbs(keyFile) {
 			keyFile = filepath.Join(baseDir, keyFile)
@@ -378,6 +411,11 @@ func (c *ServerConfig) prepare(baseDir string) error {
 		if err != nil {
 			return fmt.Errorf("binding %q key: %w", binding.KeyID, err)
 		}
+		fingerprint := sha256.Sum256(key)
+		if previousKeyID, reused := keyFingerprints[fingerprint]; reused {
+			return fmt.Errorf("bindings %q and %q reuse the same HMAC key material", previousKeyID, binding.KeyID)
+		}
+		keyFingerprints[fingerprint] = binding.KeyID
 		binding.KeyFile = filepath.Clean(keyFile)
 		binding.key = key
 	}
@@ -397,24 +435,64 @@ func (p *Policy) prepare() error {
 		if err != nil {
 			return err
 		}
+		if normalized != origin {
+			return fmt.Errorf("allowed_origins must contain canonical origins without surrounding whitespace")
+		}
+		if _, duplicate := p.origins[normalized]; duplicate {
+			return fmt.Errorf("allowed_origins contains duplicate origin %q", normalized)
+		}
 		p.origins[normalized] = struct{}{}
 	}
 	p.tools = make(map[string]struct{}, len(p.AllowedTools))
 	p.paths = make(map[string]struct{}, len(p.AllowedPaths))
 	for _, allowedPath := range p.AllowedPaths {
-		allowedPath = strings.TrimSpace(allowedPath)
-		if allowedPath == "" || !strings.HasPrefix(allowedPath, "/") || strings.ContainsAny(allowedPath, "?#") {
+		if strings.TrimSpace(allowedPath) != allowedPath {
+			return fmt.Errorf("allowed_paths must not contain surrounding whitespace")
+		}
+		parsed, err := url.ParseRequestURI(allowedPath)
+		if err != nil || allowedPath == "" || !strings.HasPrefix(allowedPath, "/") ||
+			strings.ContainsAny(allowedPath, "?#") || parsed.RawQuery != "" ||
+			parsed.EscapedPath() != parsed.Path || parsed.Path != allowedPath {
 			return fmt.Errorf("allowed_paths must contain absolute URL paths without query or fragment")
+		}
+		if _, duplicate := p.paths[allowedPath]; duplicate {
+			return fmt.Errorf("allowed_paths contains duplicate path %q", allowedPath)
 		}
 		p.paths[allowedPath] = struct{}{}
 	}
 	if len(p.paths) == 0 {
 		return fmt.Errorf("allowed_paths is empty")
 	}
+	p.requestURIs = make(map[string]struct{}, len(p.AllowedRequestURIs))
+	for _, requestURI := range p.AllowedRequestURIs {
+		if strings.TrimSpace(requestURI) != requestURI {
+			return fmt.Errorf("allowed_request_uris must not contain surrounding whitespace")
+		}
+		parsed, err := url.ParseRequestURI(requestURI)
+		if err != nil || parsed.IsAbs() || parsed.Host != "" || parsed.Fragment != "" ||
+			requestURI == "" || !strings.HasPrefix(requestURI, "/") || parsed.RawQuery == "" ||
+			parsed.EscapedPath() != parsed.Path || parsed.RequestURI() != requestURI {
+			return fmt.Errorf("allowed_request_uris must contain canonical absolute paths with an exact query")
+		}
+		if _, allowedPath := p.paths[parsed.Path]; !allowedPath {
+			return fmt.Errorf("allowed_request_uri %q references a path absent from allowed_paths", requestURI)
+		}
+		if _, duplicate := p.requestURIs[requestURI]; duplicate {
+			return fmt.Errorf("allowed_request_uris contains duplicate request URI %q", requestURI)
+		}
+		p.requestURIs[requestURI] = struct{}{}
+	}
 	for _, tool := range p.AllowedTools {
-		tool = strings.TrimSpace(tool)
-		if tool == "" {
-			return fmt.Errorf("allowed_tools contains an empty tool")
+		if tool == "" || strings.TrimSpace(tool) != tool {
+			return fmt.Errorf("allowed_tools contains an empty or non-canonical tool")
+		}
+		for _, char := range tool {
+			if char < 0x20 || char == 0x7f {
+				return fmt.Errorf("allowed_tools contains a tool with control characters")
+			}
+		}
+		if _, duplicate := p.tools[tool]; duplicate {
+			return fmt.Errorf("allowed_tools contains duplicate tool %q", tool)
 		}
 		p.tools[tool] = struct{}{}
 	}

@@ -151,6 +151,12 @@ func TestHandlerAuditLogRedactsKeyProfileAndToken(t *testing.T) {
 	if !strings.Contains(output, "sidecar_forward") || !strings.Contains(output, "sidecar_reject") {
 		t.Fatalf("audit log missing forward/reject records: %s", output)
 	}
+	if !strings.Contains(output, `"request":`) {
+		t.Fatalf("audit log omitted the request correlation hash: %s", output)
+	}
+	if strings.Contains(output, "/mcp") || !strings.Contains(output, "path_hash") {
+		t.Fatalf("audit log exposed a raw endpoint path or omitted its hash: %s", output)
+	}
 }
 
 func TestReplayCacheFullBucketRejectsUnrecordedNonce(t *testing.T) {
@@ -184,7 +190,7 @@ func twoProfileServerConfig(t *testing.T, origin string) (*ServerConfig, map[str
 		}
 		bindings = append(bindings, map[string]any{
 			"key_id": sandbox.keyID, "key_file": keyPath, "profile": sandbox.profile,
-			"policy": "policy-" + sandbox.keyID, "enabled": true,
+			"policy": "policy-" + sandbox.keyID, "enabled": true, "expires_at": time.Now().Add(24 * time.Hour),
 		})
 		policies = append(policies, map[string]any{
 			"name": "policy-" + sandbox.keyID, "allowed_origins": []string{origin},
@@ -214,6 +220,7 @@ func twoProfileServerConfig(t *testing.T, origin string) (*ServerConfig, map[str
 func signedRequestForKey(t *testing.T, key []byte, keyID, target, requestPath string, body []byte, now time.Time, nonce string) *http.Request {
 	t.Helper()
 	request := httptest.NewRequest(http.MethodPost, "http://sidecar"+requestPath, bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
 	canonical := CanonicalRequest{
 		KeyID: keyID, Timestamp: fmt.Sprint(now.Unix()), Nonce: nonce, Method: http.MethodPost,
 		TargetOrigin: target, PathAndQuery: requestPath, BodySHA256: BodySHA256(body),

@@ -111,6 +111,7 @@ func TestHandlerPolicyDeniesUnknownTool(t *testing.T) {
 func TestHandlerStripsUpstreamCredentialEchoes(t *testing.T) {
 	upstream := httptest.NewTLSServer(http.HandlerFunc(func(response http.ResponseWriter, request *http.Request) {
 		response.Header().Set("Content-Type", "application/json")
+		response.Header().Set("Mcp-Session-Id", "mcp-session-1")
 		response.Header().Set("Authorization", "Bearer leaked-token")
 		response.Header().Set("x-user-access-token", "leaked-token")
 		response.Header().Set("Set-Cookie", "session=leaked")
@@ -140,6 +141,9 @@ func TestHandlerStripsUpstreamCredentialEchoes(t *testing.T) {
 	}
 	if got := recorder.Header().Get("Content-Type"); got != "application/json" {
 		t.Fatalf("Content-Type = %q, want application/json", got)
+	}
+	if got := recorder.Header().Get("Mcp-Session-Id"); got != "mcp-session-1" {
+		t.Fatalf("Mcp-Session-Id = %q, want mcp-session-1", got)
 	}
 }
 
@@ -195,6 +199,8 @@ func TestHandlerStripsClientSuppliedCredentialHeaders(t *testing.T) {
 	request.Header.Set("Cookie", "session=sandbox-forged")
 	request.Header.Set("Proxy-Authorization", "Basic forged")
 	request.Header.Set("X-Sandbox-Injected", "1")
+	request.Header.Set("Mcp-Session-Id", "mcp-session-1")
+	request.Header.Set("Mcp-Protocol-Version", "2025-03-26")
 	recorder := httptest.NewRecorder()
 	handler.ServeHTTP(recorder, request)
 	if recorder.Code != http.StatusOK {
@@ -207,6 +213,12 @@ func TestHandlerStripsClientSuppliedCredentialHeaders(t *testing.T) {
 	}
 	if got := upstreamHeaders.Get("Authorization"); got != "Bearer trusted-token" {
 		t.Fatalf("Authorization = %q, want the trusted token", got)
+	}
+	if got := upstreamHeaders.Get("Mcp-Session-Id"); got != "mcp-session-1" {
+		t.Fatalf("Mcp-Session-Id = %q, want mcp-session-1", got)
+	}
+	if got := upstreamHeaders.Get("Mcp-Protocol-Version"); got != "2025-03-26" {
+		t.Fatalf("Mcp-Protocol-Version = %q, want 2025-03-26", got)
 	}
 }
 
@@ -243,10 +255,11 @@ func testServerConfig(t *testing.T, origin string, tools []string) (*ServerConfi
 		"version": 1,
 		"bindings": []map[string]any{{
 			"key_id": "sandbox-a", "key_file": keyPath, "profile": "corp-a:user-a",
-			"policy": "mcp", "enabled": true,
+			"policy": "mcp", "enabled": true, "expires_at": time.Now().Add(24 * time.Hour),
 		}},
 		"policies": []map[string]any{{
-			"name": "mcp", "allowed_origins": []string{origin}, "allowed_paths": []string{"/mcp"}, "allowed_tools": tools,
+			"name": "mcp", "allowed_origins": []string{origin}, "allowed_paths": []string{"/mcp"},
+			"allowed_request_uris": []string{"/mcp?q=1"}, "allowed_tools": tools,
 		}},
 	}
 	data, err := json.Marshal(payload)
@@ -273,11 +286,16 @@ func signedHandlerRequest(t *testing.T, key []byte, target string, body []byte, 
 }
 
 func signedHandlerRequestForPath(t *testing.T, key []byte, target, requestPath string, body []byte, now time.Time, nonce string) *http.Request {
+	return signedHandlerRequestForURI(t, key, target, requestPath+"?q=1", body, now, nonce)
+}
+
+func signedHandlerRequestForURI(t *testing.T, key []byte, target, requestURI string, body []byte, now time.Time, nonce string) *http.Request {
 	t.Helper()
-	request := httptest.NewRequest(http.MethodPost, "http://sidecar"+requestPath+"?q=1", bytes.NewReader(body))
+	request := httptest.NewRequest(http.MethodPost, "http://sidecar"+requestURI, bytes.NewReader(body))
+	request.Header.Set("Content-Type", "application/json")
 	canonical := CanonicalRequest{
 		KeyID: "sandbox-a", Timestamp: fmt.Sprint(now.Unix()), Nonce: nonce,
-		Method: http.MethodPost, TargetOrigin: target, PathAndQuery: requestPath + "?q=1", BodySHA256: BodySHA256(body),
+		Method: http.MethodPost, TargetOrigin: target, PathAndQuery: requestURI, BodySHA256: BodySHA256(body),
 	}
 	request.Header.Set(HeaderVersion, ProtocolV1)
 	request.Header.Set(HeaderKeyID, canonical.KeyID)

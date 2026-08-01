@@ -51,8 +51,12 @@ func run(args []string) error {
 	configPath := flags.String("config", filepath.Join(defaultDir, "config.json"), "sidecar bindings and policies JSON")
 	listenAddress := flags.String("listen", "unix://"+filepath.Join(defaultDir, "dws.sock"), "unix:///path.sock or loopback http://host:port")
 	dwsConfigDir := flags.String("dws-config-dir", config.DefaultConfigDir(), "trusted DWS config directory containing profiles")
+	checkConfig := flags.Bool("check-config", false, "validate configuration and exit without opening a listener")
 	if err := flags.Parse(args); err != nil {
 		return err
+	}
+	if flags.NArg() != 0 {
+		return fmt.Errorf("unexpected positional arguments: %s", strings.Join(flags.Args(), " "))
 	}
 	serverConfig, err := authsidecar.LoadServerConfig(*configPath)
 	if err != nil {
@@ -62,12 +66,6 @@ func run(args []string) error {
 	if err != nil {
 		return fmt.Errorf("listen address: %w", err)
 	}
-	listener, cleanup, err := listen(address)
-	if err != nil {
-		return err
-	}
-	defer cleanup()
-
 	logger := slog.New(slog.NewJSONHandler(os.Stderr, nil))
 	resolver, err := authsidecar.NewDWSProfileTokenResolver(*dwsConfigDir, logger)
 	if err != nil {
@@ -77,6 +75,15 @@ func run(args []string) error {
 	if err != nil {
 		return err
 	}
+	if *checkConfig {
+		fmt.Fprintf(os.Stdout, "sidecar configuration is valid: bindings=%d policies=%d\n", len(serverConfig.Bindings), len(serverConfig.Policies))
+		return nil
+	}
+	listener, cleanup, err := listen(address)
+	if err != nil {
+		return err
+	}
+	defer cleanup()
 	server := &http.Server{
 		Handler:           handler,
 		ReadHeaderTimeout: 5 * time.Second,

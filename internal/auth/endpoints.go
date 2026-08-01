@@ -262,6 +262,9 @@ func ClientID() string {
 // 3. Environment variable (DWS_CLIENT_SECRET)
 // 4. Default hardcoded value
 func ClientSecret() string {
+	if sidecarCredentialAccessDenied() {
+		return ""
+	}
 	clientMu.RLock()
 	override := runtimeClientSecret
 	clientMu.RUnlock()

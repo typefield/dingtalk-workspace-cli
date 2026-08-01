@@ -123,6 +123,9 @@ func LoadTokenDataKeychainForIdentity(corpID, userID string) (*TokenData, error)
 }
 
 func loadTokenDataKeychainAccount(account string) (*TokenData, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	jsonStr, err := authKeychainGet(keychain.Service, account)
 	if err != nil {
 		return nil, fmt.Errorf("load from keychain: %w", err)
@@ -526,6 +529,9 @@ func SaveClientSecret(clientID, clientSecret string) error {
 // LoadClientSecret retrieves the stored client secret for a specific client ID.
 // Returns empty string if not found.
 func LoadClientSecret(clientID string) string {
+	if sidecarCredentialAccessDenied() {
+		return ""
+	}
 	if clientID == "" {
 		return ""
 	}

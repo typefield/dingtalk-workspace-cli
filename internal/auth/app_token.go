@@ -92,6 +92,9 @@ func SaveAppTokenData(data *AppTokenData) error {
 // LoadAppTokenData loads AppTokenData from keychain for the given clientID.
 // Returns nil, nil if no data exists.
 func LoadAppTokenData(clientID string) (*AppTokenData, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	if clientID == "" {
 		return nil, fmt.Errorf("clientID is required for loading app token data")
 	}

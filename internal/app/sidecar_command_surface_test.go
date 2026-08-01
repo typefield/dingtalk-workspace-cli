@@ -78,4 +78,7 @@ func TestSidecarModeDeniesUnclassifiedCommandByDefault(t *testing.T) {
 	if err := authsidecar.ValidateCommandPath("dws doc get"); err != nil {
 		t.Fatalf("allowlisted MCP command rejected: %v", err)
 	}
+	if err := authsidecar.ValidateCommandPath("dws mcp url get"); err == nil {
+		t.Fatal("credential-bearing mcp url command was allowed in sidecar mode")
+	}
 }

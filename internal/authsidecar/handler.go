@@ -23,7 +23,7 @@ import (
 	"fmt"
 	"io"
 	"log/slog"
-	"math"
+	"mime"
 	"net/http"
 	"strconv"
 	"strings"
@@ -44,15 +44,6 @@ type Handler struct {
 	logger   *slog.Logger
 	now      func() time.Time
 	rates    *rateStore
-}
-
-type rpcRequest struct {
-	Method string          `json:"method"`
-	Params json.RawMessage `json:"params,omitempty"`
-}
-
-type toolCallParams struct {
-	Name string `json:"name"`
 }
 
 type problem struct {
@@ -88,7 +79,7 @@ func NewHandler(config *ServerConfig, resolver TokenResolver, client *http.Clien
 	policies := make(map[string]*Policy, len(config.Policies))
 	for index := range config.Policies {
 		policy := &config.Policies[index]
-		if policy.origins == nil || policy.paths == nil || policy.tools == nil {
+		if policy.origins == nil || policy.paths == nil || policy.requestURIs == nil || policy.tools == nil {
 			return nil, fmt.Errorf("policy %q is not prepared", policy.Name)
 		}
 		policies[policy.Name] = policy
@@ -128,7 +119,18 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 			return
 		}
 	}
-	keyID := strings.TrimSpace(request.Header.Get(HeaderKeyID))
+	for _, name := range []string{"Content-Type", "Mcp-Session-Id", "Mcp-Protocol-Version", "X-Cli-Source", "X-Cli-Version", "X-Cli-Execution-Id"} {
+		if len(request.Header.Values(name)) > 1 {
+			h.reject(response, request, http.StatusBadRequest, "protocol_header_invalid", "single-valued request header appears more than once", "", "", started)
+			return
+		}
+	}
+	rawKeyID := request.Header.Get(HeaderKeyID)
+	keyID := strings.TrimSpace(rawKeyID)
+	if rawKeyID != keyID || !validIdentifier(keyID) {
+		h.reject(response, request, http.StatusBadRequest, "protocol_header_invalid", "sidecar key id is not canonical", "", "", started)
+		return
+	}
 	binding := h.bindings[keyID]
 	if binding == nil {
 		h.reject(response, request, http.StatusUnauthorized, "unknown_key", "sidecar key is not recognized", keyID, "", started)
@@ -152,13 +154,15 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusBadRequest, "unsupported_version", "unsupported sidecar protocol version", keyID, binding.Profile, started)
 		return
 	}
-	timestamp := strings.TrimSpace(request.Header.Get(HeaderTimestamp))
+	timestamp := request.Header.Get(HeaderTimestamp)
 	seconds, err := strconv.ParseInt(timestamp, 10, 64)
-	if err != nil || math.Abs(float64(now.Unix()-seconds)) > MaxTimestampDrift.Seconds() {
+	if err != nil || strconv.FormatInt(seconds, 10) != timestamp ||
+		seconds < now.Unix()-int64(MaxTimestampDrift.Seconds()) ||
+		seconds > now.Unix()+int64(MaxTimestampDrift.Seconds()) {
 		h.reject(response, request, http.StatusUnauthorized, "timestamp_invalid", "sidecar timestamp is invalid or outside the allowed drift", keyID, binding.Profile, started)
 		return
 	}
-	nonce := strings.TrimSpace(request.Header.Get(HeaderNonce))
+	nonce := request.Header.Get(HeaderNonce)
 	if err := ValidateNonce(nonce); err != nil {
 		h.reject(response, request, http.StatusBadRequest, "nonce_invalid", err.Error(), keyID, binding.Profile, started)
 		return
@@ -168,14 +172,19 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusRequestEntityTooLarge, "body_too_large", err.Error(), keyID, binding.Profile, started)
 		return
 	}
-	claimedBodyHash := strings.TrimSpace(request.Header.Get(HeaderBodySHA256))
+	claimedBodyHash := request.Header.Get(HeaderBodySHA256)
 	if claimedBodyHash == "" || claimedBodyHash != BodySHA256(body) {
 		h.reject(response, request, http.StatusBadRequest, "body_hash_mismatch", "request body digest does not match", keyID, binding.Profile, started)
 		return
 	}
-	target, err := ValidateTargetOrigin(request.Header.Get(HeaderTarget))
+	rawTarget := request.Header.Get(HeaderTarget)
+	target, err := ValidateTargetOrigin(rawTarget)
 	if err != nil {
 		h.reject(response, request, http.StatusForbidden, "target_invalid", err.Error(), keyID, binding.Profile, started)
+		return
+	}
+	if target != rawTarget {
+		h.reject(response, request, http.StatusForbidden, "target_invalid", "target origin must use its canonical form", keyID, binding.Profile, started)
 		return
 	}
 	// The ACL and the forwarded URL must agree on one byte sequence. Go decodes
@@ -206,8 +215,23 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusForbidden, "path_denied", "target path is not allowed by sidecar policy", keyID, binding.Profile, started)
 		return
 	}
+	if request.URL.RawQuery != "" {
+		if _, allowed := policy.requestURIs[request.URL.RequestURI()]; !allowed {
+			h.reject(response, request, http.StatusForbidden, "request_uri_denied", "target path and query are not allowed by sidecar policy", keyID, binding.Profile, started)
+			return
+		}
+	}
 	if request.Method != http.MethodPost {
 		h.reject(response, request, http.StatusForbidden, "policy_denied", "MCP sidecar requests must use POST", keyID, binding.Profile, started)
+		return
+	}
+	if len(request.Header.Values("Content-Type")) != 1 {
+		h.reject(response, request, http.StatusForbidden, "policy_denied", "MCP sidecar requests must declare one application/json content type", keyID, binding.Profile, started)
+		return
+	}
+	mediaType, _, err := mime.ParseMediaType(request.Header.Get("Content-Type"))
+	if err != nil || !strings.EqualFold(mediaType, "application/json") {
+		h.reject(response, request, http.StatusForbidden, "policy_denied", "MCP sidecar requests must use application/json", keyID, binding.Profile, started)
 		return
 	}
 	operation, tool, err := authorizeRPC(policy, body)
@@ -215,12 +239,9 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		h.reject(response, request, http.StatusForbidden, "policy_denied", err.Error(), keyID, binding.Profile, started)
 		return
 	}
-	if !h.rates.allow(keyID, policy.RequestsPerMinute, now) {
-		h.reject(response, request, http.StatusTooManyRequests, "rate_limited", "sidecar request rate exceeded", keyID, binding.Profile, started)
-		return
-	}
-	// Consume the nonce only after every policy and rate gate has passed, so
-	// rejected floods cannot occupy replay-protection state.
+	// Reserve the nonce before rate accounting. Replays therefore cannot burn a
+	// key's rate budget; a rate-rejected unique request releases its reservation
+	// so it may be retried after the window rolls over.
 	if err := h.replay.Use(keyID, nonce, now); err != nil {
 		code := "replay_detected"
 		status := http.StatusConflict
@@ -229,6 +250,11 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 			status = http.StatusServiceUnavailable
 		}
 		h.reject(response, request, status, code, err.Error(), keyID, binding.Profile, started)
+		return
+	}
+	if !h.rates.allow(keyID, policy.RequestsPerMinute, now) {
+		h.replay.Release(keyID, nonce)
+		h.reject(response, request, http.StatusTooManyRequests, "rate_limited", "sidecar request rate exceeded", keyID, binding.Profile, started)
 		return
 	}
 	token, err := h.resolver.ResolveAccessToken(request.Context(), binding.Profile)
@@ -255,6 +281,7 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 	response.WriteHeader(result.StatusCode)
 	_, copyErr := io.Copy(response, result.Body)
 	h.logger.Info("sidecar_forward",
+		"request", auditRequestHash(request),
 		"key", shortHash(keyID),
 		"profile", shortHash(binding.Profile),
 		"policy", binding.Policy,
@@ -262,26 +289,34 @@ func (h *Handler) ServeHTTP(response http.ResponseWriter, request *http.Request)
 		"tool", tool,
 		"target", target,
 		"status", result.StatusCode,
-		"duration_ms", time.Since(started).Milliseconds(),
+		"duration_ms", elapsedMilliseconds(h.now(), started),
 		"response_copy_error", copyErr != nil,
 	)
 }
 
 func authorizeRPC(policy *Policy, body []byte) (operation, tool string, err error) {
-	var rpc rpcRequest
-	if err := json.Unmarshal(body, &rpc); err != nil {
+	fields, err := decodeUniqueJSONObject(body)
+	if err != nil {
 		return "", "", fmt.Errorf("request is not valid JSON-RPC JSON")
 	}
-	operation = strings.TrimSpace(rpc.Method)
+	var version string
+	if raw, ok := fields["jsonrpc"]; !ok || json.Unmarshal(raw, &version) != nil || version != "2.0" {
+		return "", "", fmt.Errorf("request must declare JSON-RPC version 2.0")
+	}
+	if raw, ok := fields["method"]; !ok || json.Unmarshal(raw, &operation) != nil || operation == "" || strings.TrimSpace(operation) != operation {
+		return "", "", fmt.Errorf("request has no canonical JSON-RPC method")
+	}
 	switch operation {
 	case "initialize", "notifications/initialized", "tools/list":
 		return operation, "", nil
 	case "tools/call":
-		var params toolCallParams
-		if err := json.Unmarshal(rpc.Params, &params); err != nil || strings.TrimSpace(params.Name) == "" {
+		params, err := decodeUniqueJSONObject(fields["params"])
+		if err != nil {
 			return operation, "", fmt.Errorf("tools/call has no valid tool name")
 		}
-		tool = strings.TrimSpace(params.Name)
+		if raw, ok := params["name"]; !ok || json.Unmarshal(raw, &tool) != nil || tool == "" || strings.TrimSpace(tool) != tool {
+			return operation, "", fmt.Errorf("tools/call has no canonical tool name")
+		}
 		if _, allowed := policy.tools[tool]; !allowed {
 			return operation, tool, fmt.Errorf("MCP tool %q is not allowed by sidecar policy", tool)
 		}
@@ -289,6 +324,43 @@ func authorizeRPC(policy *Policy, body []byte) (operation, tool string, err erro
 	default:
 		return operation, "", fmt.Errorf("JSON-RPC method %q is not allowed by sidecar policy", operation)
 	}
+}
+
+// decodeUniqueJSONObject rejects duplicate member names. Authorization must
+// not depend on whether this proxy and an upstream JSON parser choose the first
+// or last occurrence of an attacker-controlled method or tool name.
+func decodeUniqueJSONObject(data []byte) (map[string]json.RawMessage, error) {
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	opening, err := decoder.Token()
+	if err != nil || opening != json.Delim('{') {
+		return nil, fmt.Errorf("expected JSON object")
+	}
+	fields := make(map[string]json.RawMessage)
+	for decoder.More() {
+		token, err := decoder.Token()
+		if err != nil {
+			return nil, err
+		}
+		name, ok := token.(string)
+		if !ok {
+			return nil, fmt.Errorf("object member name is not a string")
+		}
+		if _, duplicate := fields[name]; duplicate {
+			return nil, fmt.Errorf("duplicate object member %q", name)
+		}
+		var value json.RawMessage
+		if err := decoder.Decode(&value); err != nil {
+			return nil, err
+		}
+		fields[name] = value
+	}
+	if closing, err := decoder.Token(); err != nil || closing != json.Delim('}') {
+		return nil, fmt.Errorf("unterminated JSON object")
+	}
+	if err := decoder.Decode(&struct{}{}); err != io.EOF {
+		return nil, fmt.Errorf("trailing JSON data")
+	}
+	return fields, nil
 }
 
 func readLimitedBody(body io.ReadCloser, maximum int64) ([]byte, error) {
@@ -312,12 +384,13 @@ func (h *Handler) reject(response http.ResponseWriter, request *http.Request, st
 	response.WriteHeader(status)
 	_ = json.NewEncoder(response).Encode(problem{Code: code, Message: message})
 	h.logger.Warn("sidecar_reject",
+		"request", auditRequestHash(request),
 		"key", shortHash(keyID),
 		"profile", shortHash(profile),
 		"code", code,
 		"method", request.Method,
-		"path", sanitizeAuditPath(request.URL.Path),
-		"duration_ms", time.Since(started).Milliseconds(),
+		"path_hash", shortHash(request.URL.EscapedPath()),
+		"duration_ms", elapsedMilliseconds(h.now(), started),
 	)
 }
 
@@ -352,7 +425,11 @@ func stripCredentialHeaders(header http.Header) {
 }
 
 func copyForwardHeaders(destination, source http.Header) {
-	for _, name := range []string{"Content-Type", "Accept", "X-Cli-Source", "X-Cli-Version", "X-Cli-Execution-Id"} {
+	for _, name := range []string{
+		"Content-Type", "Accept",
+		"Mcp-Session-Id", "Mcp-Protocol-Version",
+		"X-Cli-Source", "X-Cli-Version", "X-Cli-Execution-Id",
+	} {
 		for _, value := range source.Values(name) {
 			destination.Add(name, value)
 		}
@@ -388,9 +465,20 @@ func shortHash(value string) string {
 	return hex.EncodeToString(digest[:6])
 }
 
-func sanitizeAuditPath(path string) string {
-	if len(path) > 256 {
-		return path[:256]
+func auditRequestHash(request *http.Request) string {
+	if request == nil {
+		return ""
 	}
-	return path
+	value := request.Header.Get("X-Cli-Execution-Id")
+	if value == "" {
+		value = request.Header.Get(HeaderNonce)
+	}
+	return shortHash(value)
+}
+
+func elapsedMilliseconds(now, started time.Time) int64 {
+	if now.Before(started) {
+		return 0
+	}
+	return now.Sub(started).Milliseconds()
 }

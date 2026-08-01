@@ -87,6 +87,9 @@ func GetAppConfigPath(configDir string) string {
 // LoadAppConfig loads the app configuration from disk.
 // Returns nil, nil if the config file does not exist.
 func LoadAppConfig(configDir string) (*AppConfig, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	path := GetAppConfigPath(configDir)
 	data, err := os.ReadFile(path)
 	if err != nil {
@@ -205,6 +208,9 @@ func DeleteAppConfig(configDir string) error {
 // It loads from disk on first call and caches the result.
 // Returns nil if no configuration exists or loading fails.
 func GetCachedAppConfig(configDir string) *AppConfig {
+	if sidecarCredentialAccessDenied() {
+		return nil
+	}
 	cachedAppConfigOnce.Do(func() {
 		cfg, err := LoadAppConfig(configDir)
 		if err == nil && cfg != nil {
@@ -222,6 +228,9 @@ func GetCachedAppConfig(configDir string) *AppConfig {
 // ReloadAppConfig forces a reload of the app configuration from disk.
 // This should be called after SaveAppConfig to ensure the cache is updated.
 func ReloadAppConfig(configDir string) (*AppConfig, error) {
+	if err := rejectSidecarCredentialAccess(); err != nil {
+		return nil, err
+	}
 	cfg, err := appConfigLoad(configDir)
 	if err != nil {
 		return nil, err
@@ -245,6 +254,9 @@ func HasAppConfig(configDir string) bool {
 // Results are cached to avoid repeated keychain access.
 // Returns empty strings if the config doesn't exist or resolution fails.
 func ResolveAppCredentials(configDir string) (clientID, clientSecret string) {
+	if sidecarCredentialAccessDenied() {
+		return "", ""
+	}
 	// Fast path: check cache first
 	cachedResolvedMu.RLock()
 	if cachedResolvedValid {

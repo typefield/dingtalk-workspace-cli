@@ -20,6 +20,7 @@ import (
 	"io"
 	"log/slog"
 	"net/http"
+	"os"
 	"strings"
 	"time"
 
@@ -33,8 +34,16 @@ type DWSProfileTokenResolver struct {
 }
 
 func NewDWSProfileTokenResolver(configDir string, logger *slog.Logger) (*DWSProfileTokenResolver, error) {
-	if strings.TrimSpace(configDir) == "" {
+	configDir = strings.TrimSpace(configDir)
+	if configDir == "" {
 		return nil, fmt.Errorf("DWS config directory is empty")
+	}
+	info, err := os.Stat(configDir)
+	if err != nil {
+		return nil, fmt.Errorf("inspect DWS config directory: %w", err)
+	}
+	if !info.IsDir() {
+		return nil, fmt.Errorf("DWS config path is not a directory")
 	}
 	if logger == nil {
 		logger = slog.New(slog.NewTextHandler(io.Discard, nil))
@@ -73,7 +82,14 @@ func (r *DWSProfileTokenResolver) ResolveAccessToken(ctx context.Context, profil
 	if err != nil {
 		return "", err
 	}
-	if strings.TrimSpace(snapshot.CorpID) != corpID || strings.TrimSpace(snapshot.UserID) != userID {
+	return tokenForExactIdentity(snapshot, corpID, userID)
+}
+
+func tokenForExactIdentity(snapshot *authpkg.TokenData, corpID, userID string) (string, error) {
+	if snapshot == nil {
+		return "", fmt.Errorf("resolved credential is empty")
+	}
+	if snapshot.CorpID != corpID || snapshot.UserID != userID {
 		return "", fmt.Errorf("resolved credential identity does not literally match the bound corpId:userId selector")
 	}
 	token := strings.TrimSpace(snapshot.AccessToken)

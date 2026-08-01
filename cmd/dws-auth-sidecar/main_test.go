@@ -4,15 +4,59 @@
 package main
 
 import (
+	"encoding/json"
 	"net"
 	"os"
 	"path/filepath"
 	"runtime"
+	"strings"
 	"testing"
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/authsidecar"
 )
+
+func TestRunCheckConfigValidatesWithoutCreatingSocket(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("unix sockets are not available")
+	}
+	t.Setenv(authsidecar.EnvAuthMode, "")
+	directory := shortTempDir(t)
+	keyPath := filepath.Join(directory, "sandbox.key")
+	if err := os.WriteFile(keyPath, []byte(strings.Repeat("ab", 32)), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	configPath := filepath.Join(directory, "config.json")
+	payload := map[string]any{
+		"version": 1,
+		"bindings": []map[string]any{{
+			"key_id": "sandbox-a", "key_file": keyPath, "profile": "corp:user", "policy": "p",
+			"enabled": true, "expires_at": time.Now().Add(24 * time.Hour),
+		}},
+		"policies": []map[string]any{{
+			"name": "p", "allowed_origins": []string{"https://mcp.dingtalk.com"},
+			"allowed_paths": []string{"/mcp"}, "allowed_tools": []string{"get_document"},
+		}},
+	}
+	data, err := json.Marshal(payload)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := os.WriteFile(configPath, data, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	socketPath := filepath.Join(directory, "must-not-exist.sock")
+	err = run([]string{
+		"--check-config", "--config", configPath, "--dws-config-dir", directory,
+		"--listen", "unix://" + socketPath,
+	})
+	if err != nil {
+		t.Fatalf("run(--check-config) error = %v", err)
+	}
+	if _, err := os.Stat(socketPath); !os.IsNotExist(err) {
+		t.Fatalf("--check-config created a socket: %v", err)
+	}
+}
 
 func TestUnixListenerRequiresPrivateDirectoryAndCleansSocket(t *testing.T) {
 	if runtime.GOOS == "windows" {

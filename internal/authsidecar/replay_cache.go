@@ -72,6 +72,23 @@ func (c *ReplayCache) Use(keyID, nonce string, now time.Time) error {
 	return nil
 }
 
+// Release removes a nonce reservation when a later, non-authentication gate
+// (currently rate limiting) rejects the request. Releasing lets a legitimate
+// caller retry that exact signed request after the rate window rolls over,
+// while Use still serializes concurrent copies so only one can proceed.
+func (c *ReplayCache) Release(keyID, nonce string) {
+	if c == nil {
+		return
+	}
+	c.mu.Lock()
+	defer c.mu.Unlock()
+	bucket := c.buckets[keyID]
+	delete(bucket, nonce)
+	if len(bucket) == 0 {
+		delete(c.buckets, keyID)
+	}
+}
+
 // sweepLocked reclaims buckets belonging to keys that have gone idle. It runs at
 // most once per TTL so an idle sandbox cannot pin memory indefinitely.
 func (c *ReplayCache) sweepLocked(now time.Time) {

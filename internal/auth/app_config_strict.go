@@ -83,6 +83,9 @@ func ResolveAppCredentialsStrict(configDir string) (
 	clientIDSource, secretSource CredentialSource,
 	err error,
 ) {
+	if guardErr := rejectSidecarCredentialAccess(); guardErr != nil {
+		return "", "", CredentialSourceUnknown, CredentialSourceUnknown, guardErr
+	}
 	// Step 1: env var fallback (atomic pair)
 	envID := os.Getenv(EnvClientID)
 	envSecret := os.Getenv(EnvClientSecret)
