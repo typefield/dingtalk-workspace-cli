@@ -11,12 +11,20 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
 // ──────────────────────────────────────────────────────────
 // dws calendar — 日历产品命令组
 // ──────────────────────────────────────────────────────────
+
+func calendarInvalidArgument(format string, args ...any) error {
+	return apperrors.NewValidation(
+		fmt.Sprintf(format, args...),
+		apperrors.WithReason("invalid_argument"),
+	)
+}
 
 // calendarInfoHintSubCmd builds a hidden disambiguation subcommand that prints
 // a warning-level "Did you mean" hint to stderr (instead of returning an Error)
@@ -1579,17 +1587,17 @@ func newCalendarCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			userID = strings.TrimSpace(userID)
+			if userID == "" {
+				return calendarInvalidArgument("--user must contain a non-empty user ID")
+			}
 			if err := validateRequiredFlags(cmd, "privilege"); err != nil {
 				return err
 			}
-			privilege := mustGetFlag(cmd, "privilege")
+			privilege := strings.ToLower(strings.TrimSpace(mustGetFlag(cmd, "privilege")))
 			valid := map[string]bool{"free_busy_reader": true, "title_reader": true, "reader": true, "writer": true}
 			if !valid[privilege] {
-				return &CLIError{
-					Code:       CodeMCPToolError,
-					Message:    "invalid --privilege value: " + privilege,
-					Suggestion: "可选值: free_busy_reader(查看忙闲), title_reader(查看标题), reader(查看详情), writer(创建和编辑)",
-				}
+				return calendarInvalidArgument("--privilege must be one of free_busy_reader, title_reader, reader, or writer, got: %s", mustGetFlag(cmd, "privilege"))
 			}
 			toolArgs := map[string]any{
 				"userId":    userID,
@@ -1601,6 +1609,42 @@ func newCalendarCommand() *cobra.Command {
 			return callMCPTool("add_acl", toolArgs)
 		},
 	}
+	DeclareLeafMetadata(aclAddCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "calendar",
+				Name:           "add_acl",
+				CanonicalPath:  "calendar.add_acl",
+				CLIPath:        "calendar acl add",
+				PrimaryCLIPath: "calendar acl add",
+			},
+			Description: "向指定用户授予当前用户主日历的访问权限",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "calendar", RPCName: "add_acl"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "把当前用户的主日历按指定权限共享给某个用户",
+				UseWhen:      []string{"用户明确要求把自己的主日历共享给指定 userId，且查看范围或写权限已经确认时"},
+				AvoidWhen: []string{
+					"目标用户或权限级别未确认时不要授权；writer 会允许对方创建和编辑日程",
+					"只需查看现有共享关系时使用 calendar acl list；撤销已有权限时使用 acl delete",
+				},
+				Examples: []string{"dws calendar acl add --user <USER_ID> --privilege reader"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "no-notification", Property: "sendNotification", Required: boolPtr(false), InterfaceType: "boolean", Description: "CLI 值为 true 时向接口传 sendNotification=false"},
+				{Name: "privilege", Property: "privilege", Required: boolPtr(true), Enum: []string{"free_busy_reader", "title_reader", "reader", "writer"}},
+				{Name: "user", Property: "userId", Required: boolPtr(true)},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	aclDeleteCmd := &cobra.Command{
 		Use:   "delete",
@@ -1613,9 +1657,44 @@ func newCalendarCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			aclID = strings.TrimSpace(aclID)
+			if aclID == "" {
+				return calendarInvalidArgument("--acl-id must contain a non-empty ACL ID")
+			}
 			return callMCPTool("delete_acl", map[string]any{"aclId": aclID})
 		},
 	}
+	DeclareLeafMetadata(aclDeleteCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "calendar",
+				Name:           "delete_acl",
+				CanonicalPath:  "calendar.delete_acl",
+				CLIPath:        "calendar acl delete",
+				PrimaryCLIPath: "calendar acl delete",
+			},
+			Description: "撤销指定的主日历访问控制权限",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "calendar", RPCName: "delete_acl"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "撤销一条已经授予的主日历访问权限",
+				UseWhen:      []string{"用户明确要求取消某人的日历共享权限，且 aclId 已从 acl list 核对时"},
+				AvoidWhen:    []string{"未先查询 ACL 或 aclId 与目标用户关系不明确时不要删除；需要降低权限时先确认是否应删除后重建"},
+				Examples:     []string{"dws calendar acl delete --acl-id <ACL_ID>"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "acl-id", Property: "aclId", Required: boolPtr(true)},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	// ── book: 日历本 ────────────────────────────────────────────
 
@@ -1776,16 +1855,64 @@ func newCalendarCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
+			calendarID = strings.TrimSpace(calendarID)
+			if calendarID == "" {
+				return calendarInvalidArgument("--id must contain a non-empty calendar ID")
+			}
+			if calendarID == "primary" {
+				return calendarInvalidArgument("the primary calendar cannot be updated; choose an owned non-primary calendar ID")
+			}
 			toolArgs := map[string]any{"calendarId": calendarID}
-			if v := flagOrFallback(cmd, "summary", "title"); v != "" {
+			summary := strings.TrimSpace(flagOrFallback(cmd, "summary", "title"))
+			description := strings.TrimSpace(flagOrFallback(cmd, "desc", "description"))
+			if summary == "" && description == "" {
+				return calendarInvalidArgument("at least one of --summary or --desc is required")
+			}
+			if v := summary; v != "" {
 				toolArgs["summary"] = v
 			}
-			if v := flagOrFallback(cmd, "desc", "description"); v != "" {
+			if v := description; v != "" {
 				toolArgs["description"] = v
 			}
 			return callMCPTool("update_calendar", toolArgs)
 		},
 	}
+	DeclareLeafMetadata(bookUpdateCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "medium",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "calendar",
+				Name:           "update_calendar",
+				CanonicalPath:  "calendar.update_calendar",
+				CLIPath:        "calendar book update",
+				PrimaryCLIPath: "calendar book update",
+			},
+			Description: "更新当前用户拥有的非主日历本标题或描述",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "calendar", RPCName: "update_calendar"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "更新当前用户拥有的非主日历本标题或描述",
+				UseWhen:      []string{"用户明确要求修改自己拥有的非主日历本，且至少提供新标题或新描述时"},
+				AvoidWhen: []string{
+					"主日历 primary 或他人共享的日历不支持更新",
+					"未确认 calendarId 或未提供任何实际变更字段时不要调用",
+				},
+				Examples: []string{"dws calendar book update --id <CALENDAR_ID> --summary \"新日历名\""},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "desc", Property: "description", Required: boolPtr(false), RequiredWhen: "summary is not provided"},
+				{Name: "id", Property: "calendarId", Required: boolPtr(true)},
+				{Name: "summary", Property: "summary", Required: boolPtr(false), RequiredWhen: "desc is not provided"},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	// ListEvent flags
 	eventListCmd.Flags().String("start", "", "开始时间 ISO-8601 (例如 2026-03-10T14:00:00+08:00)")
@@ -2565,6 +2692,7 @@ func newCalendarCommand() *cobra.Command {
 	_ = aclAddCmd.Flags().MarkHidden("userId")
 	aclAddCmd.Flags().String("privilege", "", "授予的日历权限 (必填): free_busy_reader|title_reader|reader|writer")
 	aclAddCmd.Flags().Bool("no-notification", false, "不向被授权用户发送提醒 (默认发送)")
+	_ = aclAddCmd.MarkFlagRequired("privilege")
 
 	// DeleteAcl flags
 	aclDeleteCmd.Flags().String("acl-id", "", "已授予权限的 ID (必填，可通过 acl list 查询)")

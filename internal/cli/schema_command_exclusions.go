@@ -88,9 +88,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 		Reason:   "This executable compatibility/helper command has not yet completed stable interface, parameter, and Agent safety review; it must be reviewed before entering the release Catalog.",
 		Reviewed: true,
 		Commands: []string{
-			"calendar acl add",
-			"calendar acl delete",
-			"calendar book update",
 			"chat category add-conv",
 			"chat category create",
 			"chat category delete",
