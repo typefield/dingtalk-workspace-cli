@@ -33,6 +33,17 @@ func reviewedUnpinnedChatInterface(rpcName string) *contract.InterfaceSpec {
 	}
 }
 
+func requiredTrimmedChatFlag(cmd *cobra.Command, primary string, aliases ...string) (string, error) {
+	value := strings.TrimSpace(flagOrFallback(cmd, primary, aliases...))
+	if value == "" {
+		return "", apperrors.NewValidation(
+			fmt.Sprintf("--%s must contain a non-empty value", primary),
+			apperrors.WithReason("missing_required_flags"),
+		)
+	}
+	return value, nil
+}
+
 func resolveMessageForward(cmd *cobra.Command, defaultForward bool) (bool, error) {
 	forwardStr, _ := cmd.Flags().GetString("forward")
 	forward := forwardStr != "false"
@@ -7788,12 +7799,11 @@ status 可选值:
 如何获取 openConversationId（如果上层已有则直接使用，不必再查）：
   - 群聊：dws chat search --query "群名"
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>`,
-		Example: `  dws chat mark-unread --conversation-id <openConversationId>
-  dws chat mark-unread --id <openConversationId>`,
+		Example: `  dws chat mark-unread --conversation-id <openConversationId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat mark-unread --conversation-id <openConversationId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			return callMCPToolOnServer("im", "mark_conversation_unread", map[string]any{
 				"openConversationId": convID,
@@ -7819,11 +7829,7 @@ status 可选值:
 				PrimaryCLIPath: "chat mark-unread",
 			},
 			Description: "将指定会话标记为未读",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "mark_conversation_unread"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("mark_conversation_unread"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "将指定会话标记为未读",
 				UseWhen:      []string{"用户明确要把某个群聊或单聊标记为未读时"},
@@ -7831,10 +7837,9 @@ status 可选值:
 				Examples:     []string{"dws chat mark-unread --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -7848,12 +7853,11 @@ status 可选值:
 如何获取 openConversationId（如果上层已有则直接使用，不必再查）：
   - 群聊：dws chat search --query "群名"
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>`,
-		Example: `  dws chat clear-red-point --conversation-id <openConversationId>
-  dws chat clear-red-point --id <openConversationId>`,
+		Example: `  dws chat clear-red-point --conversation-id <openConversationId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat clear-red-point --conversation-id <openConversationId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			return callMCPToolOnServer("im", "clear_conversation_red_point", map[string]any{
 				"openConversationId": convID,
@@ -7879,11 +7883,7 @@ status 可选值:
 				PrimaryCLIPath: "chat clear-red-point",
 			},
 			Description: "清除指定会话未读红点",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "clear_conversation_red_point"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("clear_conversation_red_point"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "清除指定会话未读红点",
 				UseWhen:      []string{"用户只想清掉某个会话的未读红点时"},
@@ -7891,10 +7891,9 @@ status 可选值:
 				Examples:     []string{"dws chat clear-red-point --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -7923,17 +7922,14 @@ status 可选值:
 				PrimaryCLIPath: "chat clear-all-red-point",
 			},
 			Description: "清除当前用户所有会话未读红点",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "clear_all_red_point"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("clear_all_red_point"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "清除当前用户所有会话未读红点",
 				UseWhen:      []string{"用户明确要求一键清除所有会话未读红点或全部已读时"},
 				AvoidWhen:    []string{"只处理单个会话红点时使用 chat clear-red-point"},
 				Examples:     []string{"dws chat clear-all-red-point"},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8080,19 +8076,19 @@ status 可选值:
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>
 如何获取 openMessageId：
   - dws chat message list --group <openConversationId> --time "2025-03-01 00:00:00"`,
-		Example: `  dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>
-  dws chat mark-read --id <openConversationId> --message-id <openMessageId>`,
+		Example: `  dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
-			if err := validateRequiredFlags(cmd, "message-id"); err != nil {
+			messageID, err := requiredTrimmedChatFlag(cmd, "message-id")
+			if err != nil {
 				return err
 			}
 			return callMCPToolOnServer("im", "mark_message_read", map[string]any{
 				"openConversationId": convID,
-				"openMessageId":      mustGetFlag(cmd, "message-id"),
+				"openMessageId":      messageID,
 			})
 		},
 	}
@@ -8117,11 +8113,7 @@ status 可选值:
 				PrimaryCLIPath: "chat mark-read",
 			},
 			Description: "将指定消息及之前消息标记为已读",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "mark_message_read"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("mark_message_read"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "将指定消息及之前消息标记为已读",
 				UseWhen:      []string{"已有会话和消息 ID，需要把该消息及之前消息标记已读时"},
@@ -8129,11 +8121,10 @@ status 可选值:
 				Examples:     []string{"dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 				{Name: "message-id", Property: "openMessageId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8321,12 +8312,17 @@ status 可选值:
 		Example: `  dws chat group update-alias --group <openConversationId> --alias-title "项目A群"
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "group", "alias-title"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group")
+			if err != nil {
+				return err
+			}
+			aliasTitle, err := requiredTrimmedChatFlag(cmd, "alias-title")
+			if err != nil {
 				return err
 			}
 			return callMCPToolOnServer("im", "update_user_group_alias", map[string]any{
-				"openConversationId": mustGetFlag(cmd, "group"),
-				"aliasTitle":         mustGetFlag(cmd, "alias-title"),
+				"openConversationId": groupID,
+				"aliasTitle":         aliasTitle,
 			})
 		},
 	}
@@ -8337,7 +8333,7 @@ status 可选值:
 	DeclareLeafMetadata(chatGroupUpdateAliasCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "low",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "not_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8348,11 +8344,7 @@ status 可选值:
 				PrimaryCLIPath: "chat group update-alias",
 			},
 			Description: "设置当前用户可见的群备注名称",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "update_user_group_alias"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("update_user_group_alias"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "设置当前用户可见的群备注名称",
 				UseWhen:      []string{"用户要求给指定群设置仅自己可见的备注名时"},
@@ -8363,6 +8355,7 @@ status 可选值:
 				{Name: "alias-title", Property: "aliasTitle", Required: boolPtr(true)},
 				{Name: "group", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8373,13 +8366,12 @@ status 可选值:
 		Short: "会话列表中隐藏会话",
 		Long:  `在会话列表中隐藏指定会话（支持单聊/群聊）。隐藏后会话不再显示在列表中，收到新消息时会重新出现。`,
 		Example: `  dws chat hide --conversation-id <openConversationId>
-  dws chat hide --id <openConversationId>
   # 查询群 ID: dws chat search --query "群名"
   # 查询单聊会话 ID: dws chat conversation-info --user <userId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat hide --conversation-id <openConversationId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			return callMCPToolOnServer("im", "hide_conversation", map[string]any{
 				"openConversationId": convID,
@@ -8394,7 +8386,7 @@ status 可选值:
 	DeclareLeafMetadata(chatHideCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "low",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "not_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8405,11 +8397,7 @@ status 可选值:
 				PrimaryCLIPath: "chat hide",
 			},
 			Description: "在会话列表中隐藏指定会话",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "hide_conversation"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("hide_conversation"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "在会话列表中隐藏指定会话",
 				UseWhen:      []string{"用户要求从当前会话列表隐藏某个单聊或群聊时"},
@@ -8417,10 +8405,9 @@ status 可选值:
 				Examples:     []string{"dws chat hide --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8434,9 +8421,9 @@ status 可选值:
   dws chat mute-at-all --conversation-id <openConversationId> --off
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat mute-at-all --conversation-id <openConversationId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			off, _ := cmd.Flags().GetBool("off")
 			return callMCPToolOnServer("im", "update_at_all_notification_off", map[string]any{
@@ -8454,7 +8441,7 @@ status 可选值:
 	DeclareLeafMetadata(chatMuteAtAllCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "low",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "not_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8465,11 +8452,7 @@ status 可选值:
 				PrimaryCLIPath: "chat mute-at-all",
 			},
 			Description: "关闭或恢复会话中的 @所有人消息提醒",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "update_at_all_notification_off"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("update_at_all_notification_off"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "关闭或恢复会话中的 @所有人消息提醒",
 				UseWhen:      []string{"用户要求关闭或恢复指定会话的 @所有人提醒时"},
@@ -8477,11 +8460,10 @@ status 可选值:
 				Examples:     []string{"dws chat mute-at-all --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 				{Name: "off", Property: "mute", Required: boolPtr(false), InterfaceType: "boolean"},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8495,9 +8477,9 @@ status 可选值:
   dws chat mute-red-envelope --conversation-id <openConversationId> --off
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat mute-red-envelope --conversation-id <openConversationId>")
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			off, _ := cmd.Flags().GetBool("off")
 			return callMCPToolOnServer("im", "update_red_env_notification_off", map[string]any{
@@ -8515,7 +8497,7 @@ status 可选值:
 	DeclareLeafMetadata(chatMuteRedEnvelopeCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "low",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "not_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8526,11 +8508,7 @@ status 可选值:
 				PrimaryCLIPath: "chat mute-red-envelope",
 			},
 			Description: "关闭或恢复会话中的红包消息提醒",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "update_red_env_notification_off"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("update_red_env_notification_off"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "关闭或恢复会话中的红包消息提醒",
 				UseWhen:      []string{"用户要求关闭或恢复指定会话的红包提醒时"},
@@ -8538,11 +8516,10 @@ status 可选值:
 				Examples:     []string{"dws chat mute-red-envelope --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 				{Name: "off", Property: "mute", Required: boolPtr(false), InterfaceType: "boolean"},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 

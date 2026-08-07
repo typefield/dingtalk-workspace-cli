@@ -37,10 +37,12 @@ dws chat conversation-info --open-dingtalk-id <openDingTalkId> --format json
 | `+conversation-list` | 获取当前用户会话 | 要求“全部”时加 `--page-all`；检查 `complete` / `failures` |
 | `+conversation-list-top` | 获取置顶会话列表 | 可选 `--limit` `--cursor` `--exclude-muted`；使用稳定 `conversations[]` |
 | `message list-unread-conversations` | 获取未读会话列表 | 可选 `--count` `--exclude-muted` |
-| `clear-red-point` | 清除指定会话红点 | `--conversation-id`，别名 `--id` / `--chat` |
+| `clear-red-point` | 清除指定会话红点 | `--conversation-id` |
 | `clear-all-red-point` | 清除所有会话红点，一键全部已读 | 无参数 |
 
 翻页时，`hasMore=true` 用返回的 `nextCursor` 作为下次 `--cursor`。
+
+`hide`、`mute-at-all`、`mute-red-envelope`、`mark-unread`、`mark-read`和红点清理都是当前用户的会话状态写操作。需要预览时使用全局 `--dry-run`；Agent 只使用公开的 `--conversation-id`，不依赖隐藏兼容别名。
 
 ### 会话置顶与通知
 

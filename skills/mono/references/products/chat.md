@@ -1634,19 +1634,18 @@ Flags:
 
 ### hide (隐藏会话)
 
+> 以下会话状态修改命令均使用公开的 `--conversation-id`；可先加全局 `--dry-run` 预览请求，预览不调用远端。
+
 #### 隐藏会话 — 在会话列表中隐藏指定会话（支持单聊/群聊），收到新消息时会重新出现
 ```
 Usage:
   dws chat hide [flags]
 Example:
   dws chat hide --conversation-id <openConversationId>
-  dws chat hide --id <openConversationId>
   # 查询群 ID: dws chat search --query "群名"
   # 查询单聊会话 ID: dws chat conversation-info --user <userId>
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
 
 注意:
   - 隐藏后会话不再显示在列表中，收到新消息时会重新出现
@@ -1667,8 +1666,6 @@ Example:
   # 查询群 ID: dws chat search --query "群名"
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
       --off                      恢复接收 @所有人通知（不传则关闭通知）
 
 注意:
@@ -1691,8 +1688,6 @@ Example:
   # 查询群 ID: dws chat search --query "群名"
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持单聊/群聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
       --off                      恢复接收红包通知（不传则关闭通知）
 
 注意:
@@ -1709,11 +1704,8 @@ Usage:
   dws chat mark-unread [flags]
 Example:
   dws chat mark-unread --conversation-id <openConversationId>
-  dws chat mark-unread --id <openConversationId>
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
 
 注意:
   - 支持群聊和单聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
@@ -1728,11 +1720,8 @@ Usage:
   dws chat clear-red-point [flags]
 Example:
   dws chat clear-red-point --conversation-id <openConversationId>
-  dws chat clear-red-point --id <openConversationId>
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
 
 注意:
   - 支持群聊和单聊，openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
@@ -1803,11 +1792,8 @@ Usage:
   dws chat mark-read [flags]
 Example:
   dws chat mark-read --conversation-id <openConversationId> --message-id <openMessageId>
-  dws chat mark-read --id <openConversationId> --message-id <openMessageId>
 Flags:
       --conversation-id string   会话 openConversationId (必填，支持群聊/单聊)
-      --id string                --conversation-id 的别名
-      --chat string              --conversation-id 的别名
       --message-id string        消息 openMessageId (必填)
 
 注意:
