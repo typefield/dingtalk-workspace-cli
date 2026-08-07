@@ -301,9 +301,11 @@ func listRolesProject(data map[string]any) []map[string]any {
 func listRolesProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 	raw, known := listRolesResolveList(data)
 	out := make([]map[string]any, 0, len(raw))
+	complete := known
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
+			complete = false
 			continue
 		}
 		row := map[string]any{}
@@ -315,9 +317,16 @@ func listRolesProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 		}
 		if len(row) > 0 {
 			out = append(out, row)
+		} else {
+			complete = false
 		}
 	}
-	return out, known
+	// A recognized container is not enough to claim a trustworthy projection.
+	// If any non-empty backend row could not be projected, returning the rows we
+	// happened to understand would silently lower the result cardinality.  Make
+	// the command fail closed so an Agent cannot mistake data loss for a complete
+	// role list.
+	return out, complete && len(out) == len(raw)
 }
 
 // listRolesResolveList locates the list payload inside the response, tolerating
@@ -472,10 +481,12 @@ func memberListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 		}
 	}
 	known := raw != nil
+	complete := known
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
+			complete = false
 			continue
 		}
 		// get_dept_members_by_deptId wraps each member under userInfo
@@ -493,9 +504,14 @@ func memberListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 		}
 		if len(row) > 0 {
 			out = append(out, row)
+		} else {
+			complete = false
 		}
 	}
-	return out, known
+	// Preserve lower-layer cardinality. A known list container with unknown
+	// member rows is still an unknown projection, not a successful empty or
+	// partial member list.
+	return out, complete && len(out) == len(raw)
 }
 
 // memberListFindList returns the first slice found under the common list
