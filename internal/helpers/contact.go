@@ -793,6 +793,93 @@ func newContactCommand() *cobra.Command {
 		Example: `  dws contact label list`,
 		RunE:    runContactLabelList,
 	}
+	DeclareLeafMetadata(contactLabelListAllCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "contact",
+				Name:           "get_org_labels",
+				CanonicalPath:  "contact.get_org_labels",
+				CLIPath:        "contact label list",
+				PrimaryCLIPath: "contact label list",
+			},
+			Description: "列出当前企业可见的角色标签",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "contact", RPCName: "get_org_labels"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "列出当前企业可见的角色标签",
+				UseWhen:      []string{"不知道准确角色名称，需要先浏览当前身份可见的角色标签时"},
+				AvoidWhen:    []string{"已知角色 ID 并要查询成员时改用 contact label list-members；结果受当前身份通讯录可见范围限制。"},
+				Examples:     []string{"dws contact label list --format json"},
+			},
+		},
+	})
+	DeclareLeafMetadata(contactLabelGetCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "contact",
+				Name:           "search_label_by_name",
+				CanonicalPath:  "contact.search_label_by_name",
+				CLIPath:        "contact label get",
+				PrimaryCLIPath: "contact label get",
+			},
+			Description: "按一个或多个准确名称查询角色标签",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "contact", RPCName: "search_label_by_name"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "按一个或多个准确名称查询角色标签",
+				UseWhen:      []string{"已知角色名称，需要定位角色 ID 时"},
+				AvoidWhen:    []string{"名称不准确或精确查询无结果时先用 contact label list 浏览并消歧。"},
+				Examples:     []string{"dws contact label get --names \"管理员,财务\" --format json"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "names", Property: "labelNames", Required: boolPtr(true), InterfaceType: "array"},
+			},
+		},
+	})
+	DeclareLeafMetadata(contactLabelListMembersCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "contact",
+				Name:           "get_label_members_by_label_id",
+				CanonicalPath:  "contact.get_label_members_by_label_id",
+				CLIPath:        "contact label list-members",
+				PrimaryCLIPath: "contact label list-members",
+			},
+			Description: "按角色 ID 查询当前身份可见的角色成员",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "contact", RPCName: "get_label_members_by_labelId"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "按角色 ID 查询当前身份可见的角色成员",
+				UseWhen:      []string{"已经取得角色 ID，需要列出该角色成员时"},
+				AvoidWhen:    []string{"只有角色名称时先用 contact label get；返回范围受当前身份通讯录权限限制。"},
+				Examples:     []string{"dws contact label list-members --id 12345 --format json"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "id", Property: "labelId", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	contactLabelCmd.AddCommand(contactLabelListAllCmd, contactLabelGetCmd, contactLabelListMembersCmd)
 
