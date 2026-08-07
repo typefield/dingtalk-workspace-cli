@@ -71,7 +71,7 @@
 
 所有 mail 相关命令，**除非用户明确要求使用个人邮箱，否则一律默认使用企业邮箱**。
 
-**适用范围：** 任何需要传入 `--email` / `--from` / `--sender` 参数的 mail 子命令一律适用。
+**适用范围：** 任何需要传入 `--email` / `--from` 参数的 mail 子命令一律适用。
 
 **默认选择策略：**
 
@@ -283,7 +283,7 @@ Example:
 Flags:
       --content string                     邮件正文 (必填)
       --cc string                       抄送人列表
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --subject string                  邮件标题 (必填)
       --to string                       收件人列表 (必填)
       --attachment stringArray          附件文件路径，可多次指定 (可选)
@@ -796,7 +796,7 @@ Example:
   dws mail message reply --from user@company.com --id <messageId>
   dws mail message reply --from user@company.com --id <messageId> --subject "Re: 周报" --content "已收到，谢谢！"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       收件人列表（可选）
       --id string                       要回复的邮件 ID (必填)
       --subject string                  回复邮件标题（可选）
@@ -828,7 +828,7 @@ Example:
   dws mail message reply-all --from user@company.com --id <messageId>
   dws mail message reply-all --from user@company.com --id <messageId> --subject "Re: 周报" --content "感谢大家的参与！"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       收件人列表（可选，包含发件人及所有原始收件人）
       --id string                       要回复的邮件 ID (必填)
       --subject string                  回复邮件标题（可选）
@@ -860,7 +860,7 @@ Example:
   dws mail message forward --from user@company.com --id <messageId>
   dws mail message forward --from user@company.com --to colleague@company.com --id <messageId> --subject "Fwd: 周报"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       转发收件人列表（可选）
       --id string                       要转发的邮件 ID (必填)
       --subject string                  转发邮件标题（可选）
@@ -1042,7 +1042,7 @@ Example:
   dws mail draft create --from user@company.com --subject "带图片草稿" \
     --content "图表：[inline:chart.png]" --inline-attachment ./chart.png
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --subject string                  邮件标题 (必填)
       --to string                       收件人列表（可选，有确定收件人时才传）
       --cc string                       抄送人列表（可选，有确定抄送人时才传）
@@ -1073,7 +1073,7 @@ Example:
   dws mail draft update --from user@company.com --id <messageId> \
     --content "图表：[inline:chart.png]" --inline-attachment ./chart.png
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --id string                       草稿邮件 ID (必填)
       --to string                       收件人列表（可选）
       --cc string                       抄送人列表（可选）
@@ -1094,7 +1094,7 @@ Usage:
 Example:
   dws mail draft send --from user@company.com --id <messageId>
 Flags:
-      --from string   发件人邮箱 (必填)，别名: --sender
+      --from string   发件人邮箱 (必填)
       --id string     草稿邮件 ID (必填)
 ```
 

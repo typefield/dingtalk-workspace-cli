@@ -71,7 +71,7 @@
 
 所有 mail 相关命令，**除非用户明确要求使用个人邮箱，否则一律默认使用企业邮箱**。
 
-**适用范围：** 任何需要传入 `--email` / `--from` / `--sender` 参数的 mail 子命令一律适用。
+**适用范围：** 任何需要传入 `--email` / `--from` 参数的 mail 子命令一律适用。
 
 **默认选择策略：**
 
@@ -164,8 +164,8 @@ Example:
   dws mail message list --email user@company.com --cursor <nextCursor>
 Flags:
       --email string      邮件所属邮箱地址 (必填)
-      --folder-id string  文件夹 ID（1=已发送, 2=收件箱, 3=垃圾邮件, 5=草稿, 6=已删除），默认为收件箱，别名: --folder
-      --limit string      每页返回数量(最大限制 100, 默认 20)，别名: --size, --page-size
+      --folder-id string  文件夹 ID（1=已发送, 2=收件箱, 3=垃圾邮件, 5=草稿, 6=已删除），默认为收件箱
+      --limit string      每页返回数量(最大限制 100, 默认 20)
       --cursor string     邮件的起始偏移标识, 其值取自响应中的nextCursor字段。""表示从头开始
 ```
 
@@ -188,7 +188,7 @@ Flags:
       --cursor string   邮件的起始偏移标识, 其值取自响应中的nextCursor字段。""表示从头开始
       --email string    搜索目标邮箱地址 (必填)
       --query string    KQL 查询表达式 (必填), 其中 date 格式需遵循 ISO8601 规范
-      --limit string    每页返回数量(最大限制 100, 默认 20)，别名: --size, --page-size
+      --limit string    每页返回数量(最大限制 100, 默认 20)
 ```
 
 KQL 查询字段: date, size, tag, folderId, isRead, hasAttachments, subject, attachname, body, from, to
@@ -293,9 +293,9 @@ Example:
   dws mail message send --from user@company.com --to colleague@company.com \
     --subject "带图文档" --content "见附件，图表：[inline:img.png]" --attachment ./doc.pdf --inline-attachment ./img.png
 Flags:
-      --content string                   邮件正文 (必填)，别名: --body
+      --content string                   邮件正文 (必填)
       --cc string                       抄送人列表
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --subject string                  邮件标题 (必填)
       --to string                       收件人列表 (必填)
       --attachment stringArray          附件文件路径，可多次指定 (可选)
@@ -330,7 +330,7 @@ Example:
   dws mail folder list --email user@company.com --folder <folderId>
 Flags:
       --email string      邮件所属邮箱地址 (必填)
-      --folder string     父文件夹唯一标识，不传则返回顶层文件夹 (可选)，别名: --folder-id
+      --folder string     父文件夹唯一标识，不传则返回顶层文件夹 (可选)
 ```
 
 不传 `--folder` 返回顶层文件夹列表；传入则返回该文件夹的子文件夹列表。
@@ -820,11 +820,11 @@ Example:
   dws mail message reply --from user@company.com --id <messageId>
   dws mail message reply --from user@company.com --id <messageId> --subject "Re: 周报" --content "已收到，谢谢！"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       收件人列表（可选）
       --id string                       要回复的邮件 ID (必填)
       --subject string                  回复邮件标题（可选）
-      --content string                  回复正文（可选），别名: --body
+      --content string                  回复正文（可选）
       --attachment stringArray          附件文件路径，可多次指定 (可选)
       --inline-attachment stringArray   内联图片路径，可多次指定，cid 自动生成 (可选)
 ```
@@ -852,11 +852,11 @@ Example:
   dws mail message reply-all --from user@company.com --id <messageId>
   dws mail message reply-all --from user@company.com --id <messageId> --subject "Re: 周报" --content "感谢大家的参与！"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       收件人列表（可选，包含发件人及所有原始收件人）
       --id string                       要回复的邮件 ID (必填)
       --subject string                  回复邮件标题（可选）
-      --content string                  回复正文（可选），别名: --body
+      --content string                  回复正文（可选）
       --attachment stringArray          附件文件路径，可多次指定 (可选)
       --inline-attachment stringArray   内联图片路径，可多次指定，cid 自动生成 (可选)
 ```
@@ -884,11 +884,11 @@ Example:
   dws mail message forward --from user@company.com --id <messageId>
   dws mail message forward --from user@company.com --to colleague@company.com --id <messageId> --subject "Fwd: 周报"
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --to string                       转发收件人列表（可选）
       --id string                       要转发的邮件 ID (必填)
       --subject string                  转发邮件标题（可选）
-      --content string                  转发附言（可选），别名: --body
+      --content string                  转发附言（可选）
       --attachment stringArray          附件文件路径，可多次指定 (可选)
       --inline-attachment stringArray   内联图片路径，可多次指定，cid 自动生成 (可选)
 ```
@@ -1077,11 +1077,11 @@ Example:
   dws mail draft create --from user@company.com --subject "带图片草稿" \
     --content "图表：[inline:chart.png]" --inline-attachment ./chart.png
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --subject string                  邮件标题 (必填)
       --to string                       收件人列表（可选，有确定收件人时才传）
       --cc string                       抄送人列表（可选，有确定抄送人时才传）
-      --content string                  邮件正文（可选，有正文内容时才传），别名: --body
+      --content string                  邮件正文（可选，有正文内容时才传）
       --attachment stringArray          附件文件路径，可多次指定 (可选)
       --inline-attachment stringArray   内联图片路径，可多次指定，cid 自动生成 (可选)
 ```
@@ -1108,12 +1108,12 @@ Example:
   dws mail draft update --from user@company.com --id <messageId> \
     --content "图表：[inline:chart.png]" --inline-attachment ./chart.png
 Flags:
-      --from string                     发件人邮箱 (必填)，别名: --sender
+      --from string                     发件人邮箱 (必填)
       --id string                       草稿邮件 ID (必填)
       --to string                       收件人列表（可选）
       --cc string                       抄送人列表（可选）
       --subject string                  邮件标题（可选）
-      --content string                  邮件正文（可选），别名: --body
+      --content string                  邮件正文（可选）
       --attachment stringArray          附件文件路径，可多次指定 (可选)
       --inline-attachment stringArray   内联图片路径，可多次指定，cid 自动生成 (可选)
 ```
@@ -1129,7 +1129,7 @@ Usage:
 Example:
   dws mail draft send --from user@company.com --id <messageId>
 Flags:
-      --from string   发件人邮箱 (必填)，别名: --sender
+      --from string   发件人邮箱 (必填)
       --id string     草稿邮件 ID (必填)
 ```
 
@@ -1150,7 +1150,7 @@ Flags:
       --keyword string      搜索关键词（未提供 --employee-no 时为必填）
       --employee-no string  按工号搜索用户；提供此参数时 keyword 不再必填
       --cursor string       分页游标，取自响应中的 nextCursor 字段（可选）
-      --limit string        每页返回数量（可选），别名: --size
+      --limit string        每页返回数量（可选）
 ```
 
 > **重要区别（三个容易混淆的命令）：**
@@ -1195,7 +1195,7 @@ Flags:
       --email string      用户邮箱地址 (必填)
       --from string       模板发件人邮箱 (可选)
       --subject string    模板邮件标题 (必填)
-      --content string    模板邮件正文 (必填)，别名: --body
+      --content string    模板邮件正文 (必填)
       --name string       模板名称 (必填)
       --to string         模板收件人列表，逗号分隔 (可选)
       --cc string         模板抄送人列表，逗号分隔 (可选)
@@ -1214,7 +1214,7 @@ Example:
 Flags:
       --email string    用户邮箱地址 (必填)
       --cursor string   分页游标，取自响应中的 nextCursor 字段 (可选)
-      --limit string    每页返回数量 (必填)，别名: --size
+      --limit string    每页返回数量 (必填)
 ```
 
 ### 获取邮件模板详情
@@ -1243,7 +1243,7 @@ Flags:
       --id string         模板唯一标识 (必填，必须是草稿模板的 ID)
       --from string       模板发件人邮箱 (可选)
       --subject string    模板邮件标题 (可选)
-      --content string    模板邮件正文 (可选)，别名: --body
+      --content string    模板邮件正文 (可选)
       --name string       模板名称 (可选)
       --to string         模板收件人列表，逗号分隔 (可选)
       --cc string         模板抄送人列表，逗号分隔 (可选)
@@ -1288,7 +1288,7 @@ Example:
 Flags:
       --email string    用户邮箱地址 (必填)
       --cursor string   分页游标，取自响应中的 nextCursor 字段 (可选)
-      --limit string    每页返回数量 (必填)，别名: --size
+      --limit string    每页返回数量 (必填)
 ```
 
 ### 更新邮件联系人

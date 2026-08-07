@@ -2659,7 +2659,7 @@ internetMessageId 来源：message send / draft send / message reply / message r
 		},
 	})
 
-	draftSendCmd.Flags().String("from", "", "发件人邮箱 (必填)，别名: --sender")
+	draftSendCmd.Flags().String("from", "", "发件人邮箱 (必填)")
 	draftSendCmd.Flags().String("sender", "", "--from 的别名")
 	_ = draftSendCmd.Flags().MarkHidden("sender")
 	draftSendCmd.Flags().String("id", "", "草稿邮件 ID (必填)")

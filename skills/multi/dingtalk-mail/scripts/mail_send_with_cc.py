@@ -46,6 +46,19 @@ def run_dws(
         return None
 
 
+def unwrap_result(data: Any) -> Any:
+    """Accept both legacy payloads and the framework result envelope."""
+    while isinstance(data, dict):
+        for key in ('result', 'content', 'data'):
+            nested = data.get(key)
+            if isinstance(nested, (dict, list)):
+                data = nested
+                break
+        else:
+            return data
+    return data
+
+
 def validate_emails(emails_str: str) -> bool:
     for email in emails_str.split(','):
         email = email.strip()
@@ -62,6 +75,16 @@ def get_my_email(dry_run: bool = False) -> Optional[str]:
     if dry_run:
         return '<MY_EMAIL>'
     if not data:
+        return None
+    data = unwrap_result(data)
+    if isinstance(data, dict) and isinstance(data.get('emailAccounts'), list):
+        accounts = data['emailAccounts']
+        for acc in accounts:
+            if (isinstance(acc, dict) and acc.get('type') == 'ORG'
+                    and acc.get('email')):
+                return acc['email']
+        if accounts and isinstance(accounts[0], dict):
+            return accounts[0].get('email')
         return None
     if isinstance(data, list) and data:
         item = data[0]
@@ -99,7 +122,7 @@ def main():
         '--from', from_email or '<MY_EMAIL>',
         '--to', args.to,
         '--subject', args.subject,
-        '--body', args.body,
+        '--content', args.body,
         '--format', 'json',
     ]
     if args.cc:

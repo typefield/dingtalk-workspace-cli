@@ -21,6 +21,7 @@
 | 听记脚本对子命令传 `--max` | `minutes list mine` 公开参数是 `--limit` | 保留脚本自身 `--max` 用户选项，但对子进程统一传 canonical `--limit` |
 | 会议室脚本传隐藏 `--available` | `calendar room search` 在传入 `--start/--end` 后即执行时段可用性查询，公开 Help 无该 flag | 删除对子进程的隐藏 flag |
 | mono devdoc 把 `--page/--size` 写成 int | 两个公开入口的 Help 均声明 string，默认值为 `"1"`/`"10"` | 只修类型说明；`devdoc article search` 仍是有效兼容入口，不删除、不弱化路由 |
+| Mail Skill 把隐藏兼容 flag 写成公开别名 | 公开 flag 必须按具体命令的 Help/Schema：消息列表使用 `--folder-id`，文件夹列表使用 `--folder`，其他相关命令使用 `--limit`/`--content`/`--from`；`--size`/`--page-size`/`--body`/`--sender` 以及命令各自的反向 folder 别名只属于执行兼容层 | mono/multi 参考文档只教各命令公开 flag；脚本对 DWS 子进程改传 `--limit`/`--content`，脚本自身仅保留隐藏 `--size` 兼容 |
 
 ## 验收口径
 

@@ -24,6 +24,7 @@
 | mail Schema 仅 41/68，缺不可逆命令 | **代码已修** | 当前 `schema mail` 返回 73 个工具，包含 `mail.recall_sent_message` 与 `mail.trash_mailbox_thread`；全局 Schema/Help/运行时门禁同源检查通过 | 以当前版本重新做“可执行叶子 vs Schema”全量对拍，避免沿用旧 68 基线 |
 | 12 条读命令 12 种 JSON 信封 | **框架已接入，渐进迁移中** | Framework 2.0 已提供统一 `ok/outcome/data/error/meta`、强类型布尔、单 writer、partial/pending；不公开协议选择参数，不输出版本标记 | legacy 命令按 terminal command 继续迁移；不得把迁移责任交给 Agent |
 | mail `success` 字段 string/bool 分裂 | **已关闭（JSON 输出路径）** | Mail JSON 输出会递归把键名严格等于 `success` 的 `"true"`/`"false"` 归一为 Go bool；不转换其他键或普通文本。端到端 helper 输出测试覆盖顶层、嵌套和数组 | 发布后二进制抽取报告同组 14 个样本，确认后端新增响应形状仍经过该 JSON 出口 |
+| mail `--size` 等隐藏别名在 Skill 中被当作公开契约 | **已关闭（当前工作树）** | Help/Schema/Skill 按命令统一：消息列表公开 `--folder-id`，文件夹列表公开 `--folder`，相关命令公开 `--limit`/`--content`/`--from`；`--size`/`--page-size`/`--body`/`--sender` 及反向 folder 别名仅作隐藏兼容。mono/multi 脚本对子进程传 canonical flag，且可解包 legacy/v2 结果容器 | 发布前用 Agent 语义扫描继续检查其他 Mail 兼容 flag，不将隐参数重新暴露给 Agent |
 | `retryable` 与实际重试反向、超时盲重放 | **框架已修，待产品回归** | transport 对执行状态不明确的写调用不再自动重放；错误恢复元数据和 context deadline 已进入统一路径 | 对幂等读、限流、写后超时分别做真实链路复验 |
 | `wiki +node-list` 挂起 | **代码已修，待真实环境复验** | 已发布 canonical `wiki.shortcut_node_list` 及 read/low/not_required/idempotent Safety；无网络测试证明只调用一次 `doc/list_nodes`。未知响应形状不再伪装为空列表，分页矛盾会 typed failure，无分页证据时 `paginationKnown:false` | 发布后二进制执行真实根目录、空目录、分页三组读取，确认服务端不再挂起且字段形状与投影一致 |
 | `drive list --pattern` 失效 | **代码已修** | `drive list` 已公开 `--pattern`；测试覆盖 pattern 投影、JSON 可解析以及与 `--versions` 的冲突 | 发布后二进制用真实目录做 3 组正反例复验 |
@@ -38,6 +39,7 @@
 | Skill/Help/Schema 指令偏移 | **本轮已关闭已知项，持续审阅** | Agent 对拍发现部门查询隐藏别名、AITable 写示例缺身份参数、考勤/听记/会议室脚本隐藏 flag、mono devdoc 类型漂移；已同步修正代码声明、Help、Schema examples、mono/multi Skill 和脚本 | 发布前继续按产品执行 Agent 语义扫描；CI 路径检查不能代替 flag/结果/安全审阅 |
 | sheet 二次回滚 bricking | **未关闭** | 破坏性问题不能以普通单测或无账号 dry-run 证明消失 | 隔离表格、备份和服务端协同下做官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
+| `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
 
 ## attendance 本轮验收证据
 
