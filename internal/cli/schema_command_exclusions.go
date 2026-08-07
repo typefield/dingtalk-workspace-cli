@@ -113,9 +113,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"chat message unset-top-msg",
 			"chat mute-at-all",
 			"chat mute-red-envelope",
-			"oa approval append-task",
-			"oa approval revert-activities",
-			"oa approval revert-task",
 		},
 	},
 }

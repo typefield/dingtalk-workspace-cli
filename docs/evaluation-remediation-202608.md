@@ -38,7 +38,7 @@
 | event 停机契约 | **安全入口已修，真实停机待复验** | `event stop` 为 destructive/high/user_required；无 `--yes` 拦截，`--dry-run` 不停订阅 | 真实订阅执行 stop 后验证进程、订阅和本地状态三者终态一致 |
 | contact 投影层 `8/5/1` 数据丢失 | **代码已修，待真实环境复验** | `+list-roles` 已拍平分组 `labels[]`；角色/部门成员识别 `labelUserList`/`deptUserList` 并解包 `userInfo`。回归测试锁定报告中的 8/5/1 下层计数；任一非空条目无法投影时整体 fail-closed，不再返回成功空/残缺列表 | 用原评测账号复跑三条命令并对拍 lower/upper 数量及稳定 ID |
 | Skill/Help/Schema 指令偏移 | **本轮已关闭已知项，持续审阅** | Agent 对拍发现部门查询隐藏别名、AITable 写示例缺身份参数、考勤/听记/会议室脚本隐藏 flag、mono devdoc 类型漂移；已同步修正代码声明、Help、Schema examples、mono/multi Skill 和脚本 | 发布前继续按产品执行 Agent 语义扫描；CI 路径检查不能代替 flag/结果/安全审阅 |
-| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令、DING/OA 的 4 条纯读命令，以及 DING 的 3 条本人身份写命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1020。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、28 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
+| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令、DING/OA 的 4 条纯读命令、DING 的 3 条本人身份写命令，以及 OA 加签/可退回节点查询/退回 3 条命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1023。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、25 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
 | sheet 二次回滚 bricking | **未关闭** | 破坏性问题不能以普通单测或无账号 dry-run 证明消失 | 隔离表格、备份和服务端协同下做官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
@@ -170,9 +170,37 @@ ding message recall-personal
 7. 三条本人身份 RPC 未进入 pinned metadata，Schema 发布带具体路由证据的
    `composite`，不伪造 interface ref。Runtime Schema 工具数增至 1020。
 
+## OA 加签与退回链路 exclusion、安全和参数语义收敛证据
+
+本轮移出 OA 审批链路的 3 条旧 compatibility exclusion：
+
+```text
+oa approval append-task
+oa approval revert-activities
+oa approval revert-task
+```
+
+这三条命令原本已经被 mono/multi Skill 正向教授，但不在运行时 Schema 中，
+导致 Skill 路由与 Agent 发现层相互矛盾。本轮按完整操作链路审阅：
+
+1. `revert-activities` 是只读、低风险、幂等查询；Agent 必须先从其结果取得
+   `activityId/revertAction`。结果为空时不得猜测节点或继续退回。
+2. `append-task` 是高风险写操作，`revert-task` 是高风险破坏性操作；二者均
+   `user_required`、request dry-run，未确认在调用前以 rc=3 拦截。
+3. 生产二进制 dry-run 实跑返回 `executed:false` 和完整规范化请求，远端请求
+   数为 0；非法枚举、空加签人和非法布尔值返回 typed `invalid_argument`。
+4. `taskId` 先校验为正整数，再以 `json.Number` 传递，避免旧 `float64` 路径
+   对大于 JavaScript 安全整数范围的审批任务 ID 造成精度损失。
+5. 加签类型和激活方式大小写归一，但只允许服务端定义的枚举；退回发起人时
+   强制 `targetActivityId=sid-startevent`。
+6. 修正 multi Skill 快速示例中把字符串 flag `--agree-all` 当作无值 bool flag
+   的错误，明确写为 `--agree-all true|false`。
+7. Runtime Schema 工具数增至 1023；完整 policy 的 Schema 确定性、确认门禁
+   同源和 97 条 Agent dry-run 示例全部通过。
+
 ## 下一批优先级
 
-1. 对剩余 28 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
+1. 对剩余 25 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
    Safety、确认门禁、dry-run 和幂等性审阅，禁止因为追求 exclusion 清零而直接公开。
 2. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
 3. 在隔离数据上完成 sheet 二次回滚官方自证。

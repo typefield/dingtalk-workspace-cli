@@ -11,6 +11,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -42,6 +43,62 @@ func oaFormValues(raw string) ([]map[string]string, error) {
 	return result, nil
 }
 
+func oaInvalidArgument(format string, args ...any) error {
+	return apperrors.NewValidation(
+		fmt.Sprintf(format, args...),
+		apperrors.WithReason("invalid_argument"),
+	)
+}
+
+func parsedOATaskID(raw string) (json.Number, error) {
+	trimmed := strings.TrimSpace(raw)
+	value, err := strconv.ParseUint(trimmed, 10, 64)
+	if err != nil || value == 0 {
+		return "", oaInvalidArgument("--task-id must be a positive integer, got: %s", raw)
+	}
+	return json.Number(strconv.FormatUint(value, 10)), nil
+}
+
+func validatedOAAppendType(raw string) (string, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "before":
+		return "before", nil
+	case "after":
+		return "after", nil
+	case "parallel":
+		return "Parallel", nil
+	default:
+		return "", oaInvalidArgument("--type must be one of: before, after, Parallel, got: %s", raw)
+	}
+}
+
+func validatedOAActivateType(raw string) (string, error) {
+	value := strings.ToUpper(strings.TrimSpace(raw))
+	if value != "ALL" && value != "ONE_BY_ONE" {
+		return "", oaInvalidArgument("--activate-type must be one of: ALL, ONE_BY_ONE, got: %s", raw)
+	}
+	return value, nil
+}
+
+func validatedOABooleanFlag(name, raw string) (bool, error) {
+	switch strings.ToLower(strings.TrimSpace(raw)) {
+	case "true":
+		return true, nil
+	case "false":
+		return false, nil
+	default:
+		return false, oaInvalidArgument("--%s must be 'true' or 'false', got: %s", name, raw)
+	}
+}
+
+func validatedOAUserIDs(flagName, raw string) ([]string, error) {
+	values := parseCSVValues(raw)
+	if len(values) == 0 {
+		return nil, oaInvalidArgument("--%s must contain at least one non-empty user ID", flagName)
+	}
+	return values, nil
+}
+
 // ──────────────────────────────────────────────────────────
 // dws oa — OA 审批
 // MCP tools（tools/list）: list_pending_approvals, get_processInstance_detail,
@@ -58,12 +115,12 @@ func newOaCommand() *cobra.Command {
 	contract.RegisterProductDecl(contract.ProductDecl{
 		ID: "oa",
 		Selection: contract.ProductSelectionDecl{
-			AgentSummary: "查询和处理 OA 审批实例、任务、记录、抄送与评论",
+			AgentSummary: "查询、创建和处理 OA 审批实例、任务、加签、退回、抄送与评论",
 			UseWhen: []string{
-				"查看待审、已办、已发起或抄送审批，并执行同意、拒绝、撤销、转交等审批动作时",
+				"查看待审、已办、已发起或抄送审批，并执行创建、同意、拒绝、撤销、转交、加签或退回等审批动作时",
 			},
 			AvoidWhen: []string{
-				"不要用于普通待办任务或工作日志；需要创建审批实例时先确认当前命令面是否支持",
+				"不要用于普通待办任务或工作日志；任何改变审批流的动作都必须先核对实例、任务、目标节点和操作意图",
 			},
 		},
 	})
@@ -1026,23 +1083,29 @@ func newOaCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "instance-id", "task-id", "type", "appender-user-ids", "activate-type", "agree-all"); err != nil {
 				return err
 			}
-			typeVal := mustGetFlag(cmd, "type")
-			if typeVal != "before" && typeVal != "after" && typeVal != "Parallel" {
-				return fmt.Errorf("--type must be one of: before, after, Parallel, got: %s", typeVal)
-			}
-			activateTypeVal := mustGetFlag(cmd, "activate-type")
-			if activateTypeVal != "ALL" && activateTypeVal != "ONE_BY_ONE" {
-				return fmt.Errorf("--activate-type must be one of: ALL, ONE_BY_ONE, got: %s", activateTypeVal)
-			}
-			appenderUserIdsStr := mustGetFlag(cmd, "appender-user-ids")
-			appenderUserIds := strings.Split(appenderUserIdsStr, ",")
-			agreeAll, err := strconv.ParseBool(mustGetFlag(cmd, "agree-all"))
+			typeVal, err := validatedOAAppendType(mustGetFlag(cmd, "type"))
 			if err != nil {
-				return fmt.Errorf("--agree-all must be 'true' or 'false', got: %s", mustGetFlag(cmd, "agree-all"))
+				return err
+			}
+			activateTypeVal, err := validatedOAActivateType(mustGetFlag(cmd, "activate-type"))
+			if err != nil {
+				return err
+			}
+			appenderUserIds, err := validatedOAUserIDs("appender-user-ids", mustGetFlag(cmd, "appender-user-ids"))
+			if err != nil {
+				return err
+			}
+			agreeAll, err := validatedOABooleanFlag("agree-all", mustGetFlag(cmd, "agree-all"))
+			if err != nil {
+				return err
+			}
+			taskID, err := parsedOATaskID(mustGetFlag(cmd, "task-id"))
+			if err != nil {
+				return err
 			}
 			return callMCPTool("append_task", map[string]any{
 				"processInstanceId": mustGetFlag(cmd, "instance-id"),
-				"taskId":            mustGetFlag(cmd, "task-id"),
+				"taskId":            taskID,
 				"type":              typeVal,
 				"appenderUserIds":   appenderUserIds,
 				"activateType":      activateTypeVal,
@@ -1050,6 +1113,45 @@ func newOaCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(approvalAppendTaskCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "oa",
+				Name:           "append_task",
+				CanonicalPath:  "oa.append_task",
+				CLIPath:        "oa approval append-task",
+				PrimaryCLIPath: "oa approval append-task",
+			},
+			Description: "为指定审批任务追加前加签、后加签或并加签审批人",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "oa", RPCName: "append_task"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "为进行中的审批任务追加审批人",
+				UseWhen:      []string{"用户明确要求对指定审批实例和任务执行前加签、后加签或并加签，且审批人及激活方式已经确认时"},
+				AvoidWhen: []string{
+					"实例、任务、加签人或加签方式未确认时不要执行",
+					"只需转交当前任务时使用 oa approval redirect-task；只需添加抄送人时使用 oa-cc-noticer",
+				},
+				Examples: []string{"dws oa approval append-task --instance-id <processInstanceId> --task-id 123456789 --type before --appender-user-ids <userId1,userId2> --activate-type ALL --agree-all true"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "activate-type", Property: "activateType", Required: boolPtr(true), Enum: []string{"ALL", "ONE_BY_ONE"}},
+				{Name: "agree-all", Property: "agreeAll", Required: boolPtr(true), InterfaceType: "boolean", Enum: []string{"true", "false"}},
+				{Name: "appender-user-ids", Property: "appenderUserIds", Required: boolPtr(true), InterfaceType: "array"},
+				{Name: "instance-id", Property: "processInstanceId", Required: boolPtr(true)},
+				{Name: "task-id", Property: "taskId", Required: boolPtr(true), InterfaceType: "number"},
+				{Name: "type", Property: "type", Required: boolPtr(true), Enum: []string{"before", "after", "Parallel"}},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	// 获取任务可回退的节点信息
 	approvalRevertActivitiesCmd := &cobra.Command{
@@ -1061,15 +1163,45 @@ func newOaCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "task-id"); err != nil {
 				return err
 			}
-			taskIdNum, err := strconv.ParseFloat(mustGetFlag(cmd, "task-id"), 64)
+			taskID, err := parsedOATaskID(mustGetFlag(cmd, "task-id"))
 			if err != nil {
-				return fmt.Errorf("--task-id must be a number, got: %s", mustGetFlag(cmd, "task-id"))
+				return err
 			}
 			return callMCPTool("get_inst_revert_activities", map[string]any{
-				"taskId": taskIdNum,
+				"taskId": taskID,
 			})
 		},
 	}
+	DeclareLeafMetadata(approvalRevertActivitiesCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "oa",
+				Name:           "get_inst_revert_activities",
+				CanonicalPath:  "oa.get_inst_revert_activities",
+				CLIPath:        "oa approval revert-activities",
+				PrimaryCLIPath: "oa approval revert-activities",
+			},
+			Description: "查询审批任务允许退回的节点和退回动作",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "oa", RPCName: "get_inst_revert_activities"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "查询审批任务当前允许退回的目标节点和动作",
+				UseWhen:      []string{"准备退回审批任务时必须先调用，并从结果取得 activityId 与 revertAction"},
+				AvoidWhen:    []string{"返回列表为空时不得猜测节点或继续调用 revert-task；只查询审批详情时使用 detail 或 records"},
+				Examples:     []string{"dws oa approval revert-activities --task-id <taskId>"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "task-id", Property: "taskId", Required: boolPtr(true), InterfaceType: "number"},
+			},
+		},
+	})
 
 	// 退回任务（退回到审批人或发起人）
 	approvalRevertTaskCmd := &cobra.Command{
@@ -1083,22 +1215,22 @@ func newOaCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "instance-id", "task-id", "target-activity-id", "action"); err != nil {
 				return err
 			}
-			action := mustGetFlag(cmd, "action")
+			action := strings.ToUpper(strings.TrimSpace(mustGetFlag(cmd, "action")))
 			if action != "REVERT_FOR_APPROVAL" && action != "REVERT_FOR_RESUBMIT" {
-				return fmt.Errorf("--action must be one of: REVERT_FOR_APPROVAL, REVERT_FOR_RESUBMIT, got: %s", action)
+				return oaInvalidArgument("--action must be one of: REVERT_FOR_APPROVAL, REVERT_FOR_RESUBMIT, got: %s", mustGetFlag(cmd, "action"))
 			}
-			targetActivityId := mustGetFlag(cmd, "target-activity-id")
+			targetActivityId := strings.TrimSpace(mustGetFlag(cmd, "target-activity-id"))
 			// 退回发起人时，targetActivityId 固定为 sid-startevent
 			if action == "REVERT_FOR_RESUBMIT" && targetActivityId != "sid-startevent" {
-				return fmt.Errorf("--action=REVERT_FOR_RESUBMIT 时 --target-activity-id 必须为 sid-startevent，got: %s", targetActivityId)
+				return oaInvalidArgument("--action=REVERT_FOR_RESUBMIT 时 --target-activity-id 必须为 sid-startevent，got: %s", targetActivityId)
 			}
-			taskIdNum, err := strconv.ParseFloat(mustGetFlag(cmd, "task-id"), 64)
+			taskID, err := parsedOATaskID(mustGetFlag(cmd, "task-id"))
 			if err != nil {
-				return fmt.Errorf("--task-id must be a number, got: %s", mustGetFlag(cmd, "task-id"))
+				return err
 			}
 			inner := map[string]any{
 				"processInstanceId": mustGetFlag(cmd, "instance-id"),
-				"taskId":            taskIdNum,
+				"taskId":            taskID,
 				"targetActivityId":  targetActivityId,
 				"revertAction":      action,
 			}
@@ -1110,6 +1242,44 @@ func newOaCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(approvalRevertTaskCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "oa",
+				Name:           "revert_task",
+				CanonicalPath:  "oa.revert_task",
+				CLIPath:        "oa approval revert-task",
+				PrimaryCLIPath: "oa approval revert-task",
+			},
+			Description: "把审批任务退回到服务端允许的审批节点或发起人",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "oa", RPCName: "revert_task"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "把审批任务退回到已核验的审批节点或发起人",
+				UseWhen:      []string{"用户明确要求退回审批，且已先用 revert-activities 取得并核对 targetActivityId 与 revertAction 时"},
+				AvoidWhen: []string{
+					"未先查询可退回节点、返回列表为空或目标节点未确认时不得执行",
+					"只需拒绝当前审批任务时使用 oa approval reject；要撤销自己发起的实例时使用 revoke",
+				},
+				Examples: []string{"dws oa approval revert-task --instance-id <processInstanceId> --task-id 123456789 --target-activity-id <activityId> --action REVERT_FOR_APPROVAL --remark \"重新审批\""},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "action", Property: "RevertTaskRequest.revertAction", Required: boolPtr(true), Enum: []string{"REVERT_FOR_APPROVAL", "REVERT_FOR_RESUBMIT"}},
+				{Name: "instance-id", Property: "RevertTaskRequest.processInstanceId", Required: boolPtr(true)},
+				{Name: "remark", Property: "RevertTaskRequest.remark", Required: boolPtr(false)},
+				{Name: "target-activity-id", Property: "RevertTaskRequest.targetActivityId", Required: boolPtr(true)},
+				{Name: "task-id", Property: "RevertTaskRequest.taskId", Required: boolPtr(true), InterfaceType: "number"},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	approvalFormSchemaCmd := &cobra.Command{
 		Use: "form-schema", Short: "查询审批模板的表单 Schema",
@@ -1364,14 +1534,21 @@ func newOaCommand() *cobra.Command {
 	approvalAppendTaskCmd.Flags().String("appender-user-ids", "", "被加签用户 ID 列表，多个用逗号分隔 (必填)")
 	approvalAppendTaskCmd.Flags().String("activate-type", "", "任务激活类型：ALL（或签），ONE_BY_ONE（依次审批）(必填)")
 	approvalAppendTaskCmd.Flags().String("agree-all", "", "是否需要全部同意，true 或 false (必填)")
+	for _, name := range []string{"instance-id", "task-id", "type", "appender-user-ids", "activate-type", "agree-all"} {
+		_ = approvalAppendTaskCmd.MarkFlagRequired(name)
+	}
 
 	approvalRevertActivitiesCmd.Flags().String("task-id", "", "审批任务 ID (必填)")
+	_ = approvalRevertActivitiesCmd.MarkFlagRequired("task-id")
 
 	approvalRevertTaskCmd.Flags().String("instance-id", "", "审批实例 ID (必填)")
 	approvalRevertTaskCmd.Flags().String("task-id", "", "审批任务 ID (必填)")
 	approvalRevertTaskCmd.Flags().String("target-activity-id", "", "退回到的节点 ID（退回发起人固定传 sid-startevent）(必填)")
 	approvalRevertTaskCmd.Flags().String("action", "", "退回方式：REVERT_FOR_APPROVAL（退回到审批人）/ REVERT_FOR_RESUBMIT（退回到发起人）(必填)")
 	approvalRevertTaskCmd.Flags().String("remark", "", "退回说明 (可选)")
+	for _, name := range []string{"instance-id", "task-id", "target-activity-id", "action"} {
+		_ = approvalRevertTaskCmd.MarkFlagRequired(name)
+	}
 	approvalFormSchemaCmd.Flags().String("process-code", "", "审批模板 processCode (必填)")
 	approvalForecastCmd.Flags().String("process-code", "", "审批模板 processCode（简单模式使用；与 --request 互斥）")
 	approvalForecastCmd.Flags().String("dept-id", "", "发起人部门 ID（简单模式使用；与 --request 互斥）")

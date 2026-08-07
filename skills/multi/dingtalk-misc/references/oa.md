@@ -781,8 +781,8 @@ dws ding message send --robot-code $DINGTALK_DING_ROBOT_CODE --users <userId1,us
 dws ding message send --robot-code $DINGTALK_DING_ROBOT_CODE --users <userId1,userId2> --content "请尽快审批《XXX》" --type sms --format json
 
 # 16. 对审批任务进行加签（instanceId 来自 list-pending/list-submitted/list-executed/detail，taskId 来自list-pending/list-submitted/list-executed/detail中 ，appenderUserIds 来自 aisearch person）
-dws oa approval append-task --instance-id <processInstanceId> --task-id <taskId> --type before --appender-user-ids "userId1,userId2" --activate-type ALL --agree-all --format json
-dws oa approval append-task --instance-id <processInstanceId> --task-id <taskId> --type Parallel --appender-user-ids "userId1" --activate-type ONE_BY_ONE --agree-all --format json
+dws oa approval append-task --instance-id <processInstanceId> --task-id <taskId> --type before --appender-user-ids "userId1,userId2" --activate-type ALL --agree-all true --format json
+dws oa approval append-task --instance-id <processInstanceId> --task-id <taskId> --type Parallel --appender-user-ids "userId1" --activate-type ONE_BY_ONE --agree-all false --format json
 
 # 17. 退回审批任务（instanceId/taskId 来自 list-pending、tasks；targetActivityId 和 action 来自 revert-activities）
 # 17a. 获取可回退节点（必须先调用，从此返回中提取 activityId 和 revertAction）
