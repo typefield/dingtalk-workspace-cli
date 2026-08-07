@@ -44,6 +44,40 @@ func requiredTrimmedChatFlag(cmd *cobra.Command, primary string, aliases ...stri
 	return value, nil
 }
 
+func requiredPositiveChatInt64Flag(cmd *cobra.Command, name string) (int64, error) {
+	value, _ := cmd.Flags().GetInt64(name)
+	if value <= 0 {
+		return 0, apperrors.NewValidation(
+			fmt.Sprintf("--%s must be a positive integer", name),
+			apperrors.WithReason("invalid_flag_value"),
+		)
+	}
+	return value, nil
+}
+
+func requiredPositiveChatIDListFlag(cmd *cobra.Command, name string) ([]int64, error) {
+	raw, err := requiredTrimmedChatFlag(cmd, name)
+	if err != nil {
+		return nil, err
+	}
+	values, err := parseCSVInt64(raw)
+	if err != nil {
+		return nil, apperrors.NewValidation(
+			fmt.Sprintf("--%s: %v", name, err),
+			apperrors.WithReason("invalid_flag_value"),
+		)
+	}
+	for _, value := range values {
+		if value <= 0 {
+			return nil, apperrors.NewValidation(
+				fmt.Sprintf("--%s must contain only positive integers", name),
+				apperrors.WithReason("invalid_flag_value"),
+			)
+		}
+	}
+	return values, nil
+}
+
 func resolveMessageForward(cmd *cobra.Command, defaultForward bool) (bool, error) {
 	forwardStr, _ := cmd.Flags().GetString("forward")
 	forward := forwardStr != "false"
@@ -4305,6 +4339,7 @@ func newChatCommand() *cobra.Command {
 			Parameters: []contract.ParamDecl{
 				{Name: "title", Property: "title", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -4315,11 +4350,11 @@ func newChatCommand() *cobra.Command {
 		Example: `  dws chat category delete --category-id <分组ID>
   # 分组ID 可通过 dws chat category list 获取`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			categoryId, _ := cmd.Flags().GetInt64("category-id")
-			if categoryId == 0 {
-				return fmt.Errorf("flag --category-id is required")
+			categoryID, err := requiredPositiveChatInt64Flag(cmd, "category-id")
+			if err != nil {
+				return err
 			}
-			if !commandBoolFlag(cmd, "yes") {
+			if !commandDryRun(cmd) && !commandBoolFlag(cmd, "yes") {
 				return apperrors.NewValidation(
 					"删除会话分组不可逆；获得用户确认后加 --yes 执行",
 					apperrors.WithReason("confirmation_required"),
@@ -4328,7 +4363,7 @@ func newChatCommand() *cobra.Command {
 				)
 			}
 			return callMCPToolOnServer("im", "delete_conv_category", map[string]any{
-				"categoryId": categoryId,
+				"categoryId": categoryID,
 			})
 		},
 	}
@@ -4359,8 +4394,8 @@ func newChatCommand() *cobra.Command {
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "category-id", Property: "categoryId", Required: boolPtr(true)},
-				{Name: "yes", Property: "", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -4370,9 +4405,9 @@ func newChatCommand() *cobra.Command {
 		Example: `  dws chat category rename --category-id <分组ID> --title "新名称"
   # 分组ID 可通过 dws chat category list 获取`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			categoryId, _ := cmd.Flags().GetInt64("category-id")
-			if categoryId == 0 {
-				return fmt.Errorf("flag --category-id is required")
+			categoryID, err := requiredPositiveChatInt64Flag(cmd, "category-id")
+			if err != nil {
+				return err
 			}
 			if err := validateRequiredFlags(cmd, "title"); err != nil {
 				return err
@@ -4382,7 +4417,7 @@ func newChatCommand() *cobra.Command {
 				return err
 			}
 			return callMCPToolOnServer("im", "rename_conv_category", map[string]any{
-				"categoryId": categoryId,
+				"categoryId": categoryID,
 				"title":      title,
 			})
 		},
@@ -4416,6 +4451,7 @@ func newChatCommand() *cobra.Command {
 				{Name: "category-id", Property: "categoryId", Required: boolPtr(true)},
 				{Name: "title", Property: "title", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -4427,20 +4463,17 @@ func newChatCommand() *cobra.Command {
   # 分组ID 可通过 dws chat category list 获取
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			groupID := flagOrFallback(cmd, "group", "conversation-id", "id")
-			if groupID == "" {
-				return fmt.Errorf("flag --group is required")
-			}
-			if err := validateRequiredFlags(cmd, "category-ids"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group", "conversation-id", "id")
+			if err != nil {
 				return err
 			}
-			categoryIds, err := parseCSVInt64(mustGetFlag(cmd, "category-ids"))
+			categoryIDs, err := requiredPositiveChatIDListFlag(cmd, "category-ids")
 			if err != nil {
-				return fmt.Errorf("--category-ids: %w", err)
+				return err
 			}
 			return callMCPToolOnServer("im", "add_conv_to_categories", map[string]any{
 				"openConversationId": groupID,
-				"categoryIds":        categoryIds,
+				"categoryIds":        categoryIDs,
 			})
 		},
 	}
@@ -4471,10 +4504,9 @@ func newChatCommand() *cobra.Command {
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "category-ids", Property: "categoryIds", Required: boolPtr(true), InterfaceType: "array"},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
 				{Name: "group", Property: "openConversationId", Required: boolPtr(true)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -4486,20 +4518,17 @@ func newChatCommand() *cobra.Command {
   # 分组ID 可通过 dws chat category list 获取
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			groupID := flagOrFallback(cmd, "group", "conversation-id", "id")
-			if groupID == "" {
-				return fmt.Errorf("flag --group is required")
-			}
-			if err := validateRequiredFlags(cmd, "category-ids"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group", "conversation-id", "id")
+			if err != nil {
 				return err
 			}
-			categoryIds, err := parseCSVInt64(mustGetFlag(cmd, "category-ids"))
+			categoryIDs, err := requiredPositiveChatIDListFlag(cmd, "category-ids")
 			if err != nil {
-				return fmt.Errorf("--category-ids: %w", err)
+				return err
 			}
 			return callMCPToolOnServer("im", "remove_conv_from_categories", map[string]any{
 				"openConversationId": groupID,
-				"categoryIds":        categoryIds,
+				"categoryIds":        categoryIDs,
 			})
 		},
 	}
@@ -4530,10 +4559,9 @@ func newChatCommand() *cobra.Command {
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "category-ids", Property: "categoryIds", Required: boolPtr(true), InterfaceType: "array"},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
 				{Name: "group", Property: "openConversationId", Required: boolPtr(true)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -6329,11 +6357,13 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 
 	// category delete flags
 	chatCategoryDeleteCmd.Flags().Int64("category-id", 0, "会话分组 ID (必填)")
+	cli.AnnotateRuntimeRequiredFlags(chatCategoryDeleteCmd, "category-id")
 
 	// category rename flags
 	chatCategoryRenameCmd.Flags().Int64("category-id", 0, "会话分组 ID (必填)")
 	chatCategoryRenameCmd.Flags().String("title", "", "新的分组名称，最多 15 个字符 (必填)")
 	_ = chatCategoryRenameCmd.MarkFlagRequired("title")
+	cli.AnnotateRuntimeRequiredFlags(chatCategoryRenameCmd, "category-id")
 
 	// category add-conv flags
 	chatCategoryAddConvCmd.Flags().String("group", "", "会话 openConversationId (必填)")
@@ -6343,6 +6373,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 	_ = chatCategoryAddConvCmd.Flags().MarkHidden("id")
 	chatCategoryAddConvCmd.Flags().String("category-ids", "", "目标分组 ID 列表，逗号分隔 (必填)")
 	_ = chatCategoryAddConvCmd.MarkFlagRequired("category-ids")
+	cli.AnnotateRuntimeRequiredFlags(chatCategoryAddConvCmd, "group")
 
 	// category remove-conv flags
 	chatCategoryRemoveConvCmd.Flags().String("group", "", "会话 openConversationId (必填)")
@@ -6352,6 +6383,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 	_ = chatCategoryRemoveConvCmd.Flags().MarkHidden("id")
 	chatCategoryRemoveConvCmd.Flags().String("category-ids", "", "目标分组 ID 列表，逗号分隔 (必填)")
 	_ = chatCategoryRemoveConvCmd.MarkFlagRequired("category-ids")
+	cli.AnnotateRuntimeRequiredFlags(chatCategoryRemoveConvCmd, "group")
 
 	// category list-by-conv flags
 	chatCategoryListByConvCmd.Flags().String("group", "", "会话 openConversationId (必填)")

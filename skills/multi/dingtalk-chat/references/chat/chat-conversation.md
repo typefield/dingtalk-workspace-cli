@@ -105,6 +105,8 @@ dws chat category add-conv --group <openConversationId> --category-ids 123,456
 
 `create-smart` 中 `--keywords` 是群名称关键词列表，`--members` 是群内成员 openDingTalkId 列表；两者可单独使用，也可组合使用。
 
+会话分组写操作支持全局 `--dry-run`，预览时不会调用远端。`category delete` 会删除分组配置且不可逆：Agent 必须先向用户确认目标分组及影响范围，只有用户明确同意后才追加全局 `--yes`。`category add-conv` / `remove-conv` 的 Agent 公开会话参数是 `--group`；不要依赖隐藏兼容别名。
+
 ## 常见工作流
 
 ### 获取单聊会话 ID 后置顶

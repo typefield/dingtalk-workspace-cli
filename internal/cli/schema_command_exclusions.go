@@ -88,11 +88,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 		Reason:   "This executable compatibility/helper command has not yet completed stable interface, parameter, and Agent safety review; it must be reviewed before entering the release Catalog.",
 		Reviewed: true,
 		Commands: []string{
-			"chat category add-conv",
-			"chat category create",
-			"chat category delete",
-			"chat category remove-conv",
-			"chat category rename",
 			"chat chmod",
 			"chat clear-messages",
 			"chat data-auth cross-org",

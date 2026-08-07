@@ -1520,6 +1520,9 @@ Flags:
 ```
 
 #### 创建会话分组
+
+> 会话分组写操作均可先加全局 `--dry-run` 预览，预览不调用远端。删除分组不可逆，必须先取得用户明确确认，之后才可追加全局 `--yes`。
+
 ```
 Usage:
   dws chat category create [flags]
@@ -1579,6 +1582,8 @@ Flags:
       --group string          会话 openConversationId (必填)
       --category-ids string   目标分组 ID 列表，逗号分隔 (必填)
 ```
+
+Agent 只使用公开的 `--group`；`--conversation-id` / `--id` 仅作为旧调用兼容，不作为新指令契约。
 
 #### 将会话移出分组
 ```
