@@ -43,6 +43,7 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     ("attendance", "+update-group"): "write",
     ("attendance", "+update-group-members"): "write",
     ("attendance", "+update-leave-type"): "write",
+    ("wiki", "+node-list"): "read",
 }
 
 

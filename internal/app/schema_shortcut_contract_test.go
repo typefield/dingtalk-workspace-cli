@@ -16,12 +16,12 @@ import (
 )
 
 const (
-	publicShortcutCount = 310
+	publicShortcutCount = 311
 	// schemaPublishedShortcutCount counts every delivered *.shortcut_* tool,
 	// including hidden leaves such as minutes.shortcut_minutes_search.
-	schemaPublishedShortcutCount = 311
+	schemaPublishedShortcutCount = 312
 	// publiclyDeliveredShortcutCount is the public-catalog subset of that surface.
-	publiclyDeliveredShortcutCount = 310
+	publiclyDeliveredShortcutCount = 311
 	attendancePublicShortcutCount  = 35
 )
 

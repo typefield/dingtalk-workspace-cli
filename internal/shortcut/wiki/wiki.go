@@ -17,8 +17,12 @@
 package wiki
 
 import (
+	"fmt"
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -195,6 +199,31 @@ var NodeList = shortcut.Shortcut{
 	Description: "列出知识库节点",
 	Intent:      "当你要浏览某个知识库的目录结构、查看某文件夹下有哪些文档/子文件夹并拿到它们的 nodeId 时使用；输入 workspace（可选父节点 folder），分页返回该层级的节点列表，是逐层进入知识库定位文档的常用方式。",
 	Risk:        shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "wiki",
+			Name:           "shortcut_node_list",
+			CanonicalPath:  "wiki.shortcut_node_list",
+			CLIPath:        "wiki +node-list",
+			PrimaryCLIPath: "wiki +node-list",
+		},
+		Description: "列出知识库节点",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the CLI routes the Wiki-facing command to doc/list_nodes and owns validation, pagination truth, output projection, and safety; the complete command contract is not represented by one pinned Wiki interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "列出知识库节点",
+			UseWhen:      []string{"当你要浏览某个知识库的目录结构、查看某文件夹下有哪些文档/子文件夹并拿到它们的 nodeId 时使用；输入 workspace（可选父节点 folder），分页返回该层级的节点列表，是逐层进入知识库定位文档的常用方式。"},
+			AvoidWhen:    []string{"只知道知识库名称时先用 wiki +resolve-space；要按关键词跨目录搜索文档时使用 wiki node search"},
+			Examples:     []string{`dws wiki +node-list --workspace <workspaceId> --folder <parentNodeId>`},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "workspace", Type: shortcut.FlagString, Desc: "知识库 ID", Required: true},
 		{Name: "folder", Type: shortcut.FlagString, Desc: "父节点 nodeId (不传则列出根目录)"},
@@ -217,16 +246,34 @@ var NodeList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		nodes := nodeListProject(data)
-		return rt.Output(map[string]any{"count": len(nodes), "nodes": nodes})
+		nodes, projectionKnown := nodeListProjectWithStatus(data)
+		if !projectionKnown {
+			return apperrors.NewAPI("知识库节点响应结构无法识别，拒绝将未知数据投影为空列表",
+				apperrors.WithReason("projection_unknown"),
+				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏响应形状后提交问题"))
+		}
+		payload := map[string]any{"count": len(nodes), "nodes": nodes}
+		pagination, err := nodeListPagination(data)
+		if err != nil {
+			return err
+		}
+		for key, value := range pagination {
+			payload[key] = value
+		}
+		return rt.Output(payload)
 	},
 }
 
-// nodeListProject reshapes list_nodes into a clean node list (name/nodeId/type)
-// — clean output projection. Container and field keys are probed
-// defensively across candidate aliases; an unrecognized shape yields an empty list.
+// nodeListProject reshapes list_nodes into a clean node list (name/nodeId/type).
+// Execute uses nodeListProjectWithStatus so an unrecognized response fails closed
+// instead of being misreported as a valid empty list.
 func nodeListProject(data map[string]any) []map[string]any {
-	raw := nodeListRawList(data)
+	out, _ := nodeListProjectWithStatus(data)
+	return out
+}
+
+func nodeListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
+	raw, known := nodeListRawList(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
@@ -247,25 +294,84 @@ func nodeListProject(data map[string]any) []map[string]any {
 			out = append(out, row)
 		}
 	}
-	return out
+	return out, known
 }
 
 // nodeListRawList locates the node array across candidate container keys,
 // tolerating a nested {result|data:{list|items|nodes}} wrapper.
-func nodeListRawList(data map[string]any) []any {
+func nodeListRawList(data map[string]any) ([]any, bool) {
 	for _, k := range []string{"result", "data", "list", "items", "nodes"} {
 		if arr, ok := data[k].([]any); ok {
-			return arr
+			return arr, true
 		}
 		if inner, ok := data[k].(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "nodes", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return nil
+	return nil, false
+}
+
+func nodeListPagination(data map[string]any) (map[string]any, error) {
+	hasMore, hasMoreKnown := false, false
+	nextCursor := ""
+	for _, scope := range nodeListPaginationScopes(data) {
+		if !hasMoreKnown {
+			for _, key := range []string{"hasMore", "has_more"} {
+				if value, ok := scope[key].(bool); ok {
+					hasMore, hasMoreKnown = value, true
+					break
+				}
+			}
+		}
+		if nextCursor == "" {
+			for _, key := range []string{"nextCursor", "next_cursor", "nextToken", "next_token", "pageToken"} {
+				if value, ok := scope[key]; ok && value != nil {
+					nextCursor = strings.TrimSpace(fmt.Sprint(value))
+					if nextCursor != "" {
+						break
+					}
+				}
+			}
+		}
+	}
+
+	if hasMoreKnown && hasMore && nextCursor == "" {
+		return nil, apperrors.NewAPI("知识库节点分页声明仍有下一页，但缺少可继续游标",
+			apperrors.WithReason("pagination_inconsistent"),
+			apperrors.WithHint("请勿把当前页当作完整结果；使用 --verbose 记录服务端分页字段"))
+	}
+	if hasMoreKnown && !hasMore && nextCursor != "" {
+		return nil, apperrors.NewAPI("知识库节点分页同时声明已耗尽和下一页游标",
+			apperrors.WithReason("pagination_inconsistent"),
+			apperrors.WithHint("服务端分页字段互相矛盾，CLI 拒绝猜测终态"))
+	}
+
+	payload := map[string]any{"paginationKnown": hasMoreKnown || nextCursor != ""}
+	if hasMoreKnown {
+		payload["hasMore"] = hasMore
+		payload["endpointExhausted"] = !hasMore
+	} else if nextCursor != "" {
+		payload["hasMore"] = true
+		payload["endpointExhausted"] = false
+	}
+	if nextCursor != "" {
+		payload["nextCursor"] = nextCursor
+	}
+	return payload, nil
+}
+
+func nodeListPaginationScopes(data map[string]any) []map[string]any {
+	scopes := make([]map[string]any, 0, 3)
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := data[key].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	return append(scopes, data)
 }
 
 // nodeListFirst returns the first present value among candidate keys.

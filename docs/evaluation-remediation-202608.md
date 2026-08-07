@@ -24,7 +24,7 @@
 | mail Schema 仅 41/68，缺不可逆命令 | **代码已修** | 当前 `schema mail` 返回 73 个工具，包含 `mail.recall_sent_message` 与 `mail.trash_mailbox_thread`；全局 Schema/Help/运行时门禁同源检查通过 | 以当前版本重新做“可执行叶子 vs Schema”全量对拍，避免沿用旧 68 基线 |
 | 12 条读命令 12 种 JSON 信封、字符串布尔值 | **框架已接入，渐进迁移中** | Framework 2.0 已提供统一 `ok/outcome/data/error/meta`、强类型布尔、单 writer、partial/pending；不公开协议选择参数，不输出版本标记 | legacy 命令按 terminal command 继续迁移；不得把迁移责任交给 Agent |
 | `retryable` 与实际重试反向、超时盲重放 | **框架已修，待产品回归** | transport 对执行状态不明确的写调用不再自动重放；错误恢复元数据和 context deadline 已进入统一路径 | 对幂等读、限流、写后超时分别做真实链路复验 |
-| `wiki +node-list` 挂起 | **未完全关闭** | 路由修复已有单测，但当前 `schema --cli-path 'wiki +node-list'` 仍返回 unknown；命令仍不在稳定 Agent surface | 完成 Contract/Safety 审阅并加入公开目录，随后做无网络路由测试和真实读取复验 |
+| `wiki +node-list` 挂起 | **代码已修，待真实环境复验** | 已发布 canonical `wiki.shortcut_node_list` 及 read/low/not_required/idempotent Safety；无网络测试证明只调用一次 `doc/list_nodes`。未知响应形状不再伪装为空列表，分页矛盾会 typed failure，无分页证据时 `paginationKnown:false` | 发布后二进制执行真实根目录、空目录、分页三组读取，确认服务端不再挂起且字段形状与投影一致 |
 | `drive list --pattern` 失效 | **代码已修** | `drive list` 已公开 `--pattern`；测试覆盖 pattern 投影、JSON 可解析以及与 `--versions` 的冲突 | 发布后二进制用真实目录做 3 组正反例复验 |
 | `drive download --format json` 惰性、stdout 日志污染 | **代码已修** | 下载成功与 dry-run JSON 路径均有测试；Framework writer 统一 stdout/stderr 与 format 分发 | 发布后二进制执行成功/失败两条 `jq` 管道复验 |
 | `doc version revert --dry-run` 对不存在版本也放行 | **代码已修** | 针对版本 `999` 的预校验回归测试已存在；dry-run 不触发写请求 | 真实文档分别验证存在/不存在版本号 |
@@ -55,9 +55,23 @@ Schema canonical:     attendance.shortcut_boss_check
 4. 读命令必须是 read/not_required。
 5. 写命令必须要求 user_required。
 
+## Wiki node-list 本轮验收证据
+
+```text
+Schema canonical:            wiki.shortcut_node_list
+Safety:                      read/low/not_required/idempotent
+backend route:               doc/list_nodes
+backend calls per execution: 1
+unknown projection:          typed projection_unknown
+pagination contradiction:    typed pagination_inconsistent
+pagination without evidence: paginationKnown=false
+```
+
+这次只关闭 CLI 路由、可发现性和输出真实性问题，不以单元测试替代真实
+Wiki 服务端读取。真实账号复验仍保留在发布验收中。
+
 ## 下一批优先级
 
-1. 完成 `wiki +node-list` 的公开 Contract 和无挂起验证。
-2. 对剩余 shortcut 跟进项按产品做 Agent 审阅，优先处理写命令和报告点名命令。
-3. 真实环境复验 event stop、todo participant、approval create-instance。
-4. 在隔离数据上完成 sheet 二次回滚官方自证。
+1. 对剩余 shortcut 跟进项按产品做 Agent 审阅，优先处理写命令和报告点名命令。
+2. 真实环境复验 `wiki +node-list`、event stop、todo participant、approval create-instance。
+3. 在隔离数据上完成 sheet 二次回滚官方自证。
