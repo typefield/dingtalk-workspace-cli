@@ -25,6 +25,14 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 )
 
+func reviewedUnpinnedChatInterface(rpcName string) *contract.InterfaceSpec {
+	return &contract.InterfaceSpec{
+		Mode:         "composite",
+		Availability: "available",
+		Reason:       fmt.Sprintf("Reviewed unpinned remote adapter: the executable CLI calls im/%s, which is absent from the pinned MCP metadata snapshot; no pinned semantically equivalent interface_ref can represent the command.", rpcName),
+	}
+}
+
 func resolveMessageForward(cmd *cobra.Command, defaultForward bool) (bool, error) {
 	forwardStr, _ := cmd.Flags().GetString("forward")
 	forward := forwardStr != "false"
@@ -7592,9 +7600,11 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
   dws chat group list-all --limit 100 --cursor <nextCursor>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
-			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
-				toolArgs["limit"] = v
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit < 1 || limit > 200 {
+				return apperrors.NewValidation(fmt.Sprintf("--limit must be between 1 and 200, got %d", limit))
 			}
+			toolArgs["limit"] = limit
 			if v, _ := cmd.Flags().GetString("cursor"); v != "" && v != "0" {
 				toolArgs["cursor"] = v
 			}
@@ -7617,11 +7627,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 				PrimaryCLIPath: "chat group list-all",
 			},
 			Description: "分页获取当前用户加入的所有群聊列表",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_my_groups_pagination"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_my_groups_pagination"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "分页获取当前用户加入的所有群聊列表",
 				UseWhen:      []string{"需要完整翻页盘点当前用户加入的所有群聊时"},
@@ -7647,9 +7653,11 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
   dws chat group list-join-validations --limit 20 --cursor <nextCursor>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
-			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
-				toolArgs["limit"] = v
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit < 1 || limit > 50 {
+				return apperrors.NewValidation(fmt.Sprintf("--limit must be between 1 and 50, got %d", limit))
 			}
+			toolArgs["limit"] = limit
 			if v, _ := cmd.Flags().GetString("cursor"); v != "" {
 				toolArgs["cursor"] = v
 			}
@@ -7672,11 +7680,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 				PrimaryCLIPath: "chat group list-join-validations",
 			},
 			Description: "分页拉取当前用户相关的入群验证记录",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_apply_join_group_records"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_apply_join_group_records"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "分页拉取当前用户相关的入群验证记录",
 				UseWhen:      []string{"需要查看待处理、被拒绝或已处理的入群申请记录时"},
@@ -7946,13 +7950,15 @@ status 可选值:
   dws chat list-all-conversations --exclude-muted`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
-			if v, err := cmd.Flags().GetInt("limit"); err == nil && v > 0 {
-				// 服务端每页上限 100，超过会被静默截断，这里显式拒绝以免误以为取全。
-				if v > 100 {
-					return fmt.Errorf("--limit 最大 100（服务端上限），got %d；如需取全部会话请配合 --cursor 翻页", v)
-				}
-				toolArgs["limit"] = v
+			limit, err := cmd.Flags().GetInt("limit")
+			if err != nil {
+				return apperrors.NewValidation(err.Error())
 			}
+			// 服务端每页上限 100，越界会被静默截断或忽略；显式拒绝以免 Agent 误判覆盖范围。
+			if limit < 1 || limit > 100 {
+				return apperrors.NewValidation(fmt.Sprintf("--limit must be between 1 and 100, got %d; use --cursor to continue pagination", limit))
+			}
+			toolArgs["limit"] = limit
 			if v, _ := cmd.Flags().GetInt64("cursor"); v > 0 {
 				toolArgs["cursor"] = v
 			}
@@ -7979,11 +7985,7 @@ status 可选值:
 				PrimaryCLIPath: "chat list-all-conversations",
 			},
 			Description: "分页获取当前用户的全部会话列表",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_all_conversations"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_all_conversations"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "分页获取当前用户的全部会话列表",
 				UseWhen:      []string{"需要枚举当前用户全部单聊和群聊会话并按 cursor 翻页时"},
@@ -8558,6 +8560,9 @@ status 可选值:
 				return err
 			}
 			users := parseCSVValues(mustGetFlag(cmd, "users"))
+			if len(users) == 0 {
+				return apperrors.NewValidation("--users must contain at least one non-empty openDingTalkId")
+			}
 			return callMCPToolOnServer("im", "list_group_member_by_ids", map[string]any{
 				"openConversationId":    mustGetFlag(cmd, "id"),
 				"memberOpenDingTalkIds": users,
@@ -8582,11 +8587,7 @@ status 可选值:
 				PrimaryCLIPath: "chat group members list-by-ids",
 			},
 			Description: "按成员 openDingTalkId 批量查询群成员详情",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_group_member_by_ids"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_group_member_by_ids"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "按成员 openDingTalkId 批量查询群成员详情",
 				UseWhen:      []string{"已知群 ID 和一组成员 openDingTalkId，需要批量查看这些成员资料时"},
@@ -8778,11 +8779,7 @@ status 可选值:
 				PrimaryCLIPath: "chat group notice get",
 			},
 			Description: "查看指定群公告详情",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "get_group_notice"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("get_group_notice"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查看指定群公告详情",
 				UseWhen:      []string{"已有群公告 dataId，需要查看公告详情、状态或互动统计时"},
@@ -8812,9 +8809,11 @@ status 可选值:
 			toolArgs := map[string]any{
 				"openConversationId": mustGetFlag(cmd, "group"),
 			}
-			if v, _ := cmd.Flags().GetInt("limit"); v > 0 {
-				toolArgs["limit"] = v
+			limit, _ := cmd.Flags().GetInt("limit")
+			if limit < 1 || limit > 100 {
+				return apperrors.NewValidation(fmt.Sprintf("--limit must be between 1 and 100, got %d", limit))
 			}
+			toolArgs["limit"] = limit
 			if v, _ := cmd.Flags().GetString("cursor"); v != "" {
 				toolArgs["cursor"] = v
 			}
@@ -8843,11 +8842,7 @@ status 可选值:
 				PrimaryCLIPath: "chat group notice list",
 			},
 			Description: "分页查看指定群聊的群公告列表",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_group_notices"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_group_notices"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "分页查看指定群聊的群公告列表",
 				UseWhen:      []string{"需要列出群公告、查找公告 dataId 或翻页查看定时公告时"},
@@ -9117,11 +9112,7 @@ status 可选值:
 				PrimaryCLIPath: "chat message list-emotion-replies",
 			},
 			Description: "批量拉取消息的表情回复和文字回复",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "list_message_emotion_replies"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("list_message_emotion_replies"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "批量拉取消息的表情回复和文字回复",
 				UseWhen:      []string{"已有一批消息 ID，需要查看对应 emoji reaction 或文字表情回复时"},
@@ -9160,7 +9151,7 @@ pl_PL, sv_SE, fi_FI, cs_CZ, ar_SA, tl_PH, he_IL, nl_NL, lo_LA, it_IT`,
 			}
 			toLang := mustGetFlag(cmd, "to")
 			if !supportedTranslateLanguages[toLang] {
-				return fmt.Errorf("unsupported target language: %s", toLang)
+				return apperrors.NewValidation(fmt.Sprintf("unsupported target language: %s", toLang))
 			}
 			return callMCPToolOnServer("im", "translate", map[string]any{
 				"query": mustGetFlag(cmd, "query"),
@@ -9186,11 +9177,7 @@ pl_PL, sv_SE, fi_FI, cs_CZ, ar_SA, tl_PH, he_IL, nl_NL, lo_LA, it_IT`,
 				PrimaryCLIPath: "chat text translate",
 			},
 			Description: "将指定文本翻译成目标语言",
-			Interface: &contract.InterfaceSpec{
-				Mode:         "mcp",
-				Availability: "available",
-				Ref:          &contract.InterfaceRefSpec{ProductID: "im", RPCName: "translate"},
-			},
+			Interface:   reviewedUnpinnedChatInterface("translate"),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "将指定文本翻译成目标语言",
 				UseWhen:      []string{"需要把一段文本翻译为指定目标语言代码时"},
