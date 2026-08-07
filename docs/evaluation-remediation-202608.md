@@ -38,7 +38,7 @@
 | event 停机契约 | **安全入口已修，真实停机待复验** | `event stop` 为 destructive/high/user_required；无 `--yes` 拦截，`--dry-run` 不停订阅 | 真实订阅执行 stop 后验证进程、订阅和本地状态三者终态一致 |
 | contact 投影层 `8/5/1` 数据丢失 | **代码已修，待真实环境复验** | `+list-roles` 已拍平分组 `labels[]`；角色/部门成员识别 `labelUserList`/`deptUserList` 并解包 `userInfo`。回归测试锁定报告中的 8/5/1 下层计数；任一非空条目无法投影时整体 fail-closed，不再返回成功空/残缺列表 | 用原评测账号复跑三条命令并对拍 lower/upper 数量及稳定 ID |
 | Skill/Help/Schema 指令偏移 | **本轮已关闭已知项，持续审阅** | Agent 对拍发现部门查询隐藏别名、AITable 写示例缺身份参数、考勤/听记/会议室脚本隐藏 flag、mono devdoc 类型漂移；已同步修正代码声明、Help、Schema examples、mono/multi Skill 和脚本 | 发布前继续按产品执行 Agent 语义扫描；CI 路径检查不能代替 flag/结果/安全审阅 |
-| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令，以及 DING/OA 的 4 条纯读命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1017。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、31 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
+| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令、DING/OA 的 4 条纯读命令，以及 DING 的 3 条本人身份写命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1020。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、28 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
 | sheet 二次回滚 bricking | **未关闭** | 破坏性问题不能以普通单测或无账号 dry-run 证明消失 | 隔离表格、备份和服务端协同下做官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
@@ -142,9 +142,37 @@ oa approval ding-info
 5. Runtime Schema 工具数为 1017，命令路由、参数、Agent 选型、Help 和完整
    pinned interface 映射测试均通过。
 
+## DING 写命令 exclusion 与安全门禁收敛证据
+
+本轮移出 3 条本人身份写命令的旧 compatibility exclusion：
+
+```text
+ding message send-personal
+ding message send-by-message
+ding message recall-personal
+```
+
+审阅同时修正了已经公开的机器人 `ding message send/recall`，避免同一产品
+因入口不同而具有两套安全语义：
+
+1. 本人/机器人发送均为 `write/medium/user_required/unknown`；本人/机器人
+   撤回均为 `destructive/high/user_required/unknown`。
+2. 五条命令都声明 request 级 dry-run。生产二进制实跑证明 dry-run 在鉴权、
+   endpoint 解析和 ToolCaller 之前返回本地请求预览，真实调用次数为 0。
+3. 无 `--yes` 且 stdin 关闭时返回 `confirmation_required`、rc=3，远端调用为
+   0；只有明确确认后才派发一次请求。
+4. `--type` 仅接受 `app/sms/call`，大小写会归一；过去机器人入口把任意未知
+   类型静默降级为应用内 DING，现改为 typed `invalid_argument`。
+5. `--users` 经 CSV/JSON-array 归一后必须至少包含一个非空接收人；`,` 等
+   伪非空值在调用前失败。
+6. 可选 `--uuid` 保留并原样透传，供 Agent 在显式重试时复用幂等键；未提供
+   uuid 时仍诚实声明 idempotency unknown，不假定服务端已经幂等。
+7. 三条本人身份 RPC 未进入 pinned metadata，Schema 发布带具体路由证据的
+   `composite`，不伪造 interface ref。Runtime Schema 工具数增至 1020。
+
 ## 下一批优先级
 
-1. 对剩余 31 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
+1. 对剩余 28 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
    Safety、确认门禁、dry-run 和幂等性审阅，禁止因为追求 exclusion 清零而直接公开。
 2. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
 3. 在隔离数据上完成 sheet 二次回滚官方自证。

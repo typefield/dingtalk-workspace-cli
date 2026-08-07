@@ -30,18 +30,42 @@ func reviewedUnpinnedDingInterface(rpcName string) *contract.InterfaceSpec {
 	}
 }
 
+func validatedDingRemindType(raw string) (string, error) {
+	value := strings.ToLower(strings.TrimSpace(raw))
+	if _, ok := dingRemindTypeMap[value]; !ok {
+		return "", apperrors.NewValidation(
+			fmt.Sprintf("--type must be one of app, sms, or call, got %q", raw),
+			apperrors.WithReason("invalid_argument"),
+		)
+	}
+	return value, nil
+}
+
+func validatedDingRecipients(raw string) ([]string, error) {
+	values := parseCSVValues(raw)
+	if len(values) == 0 {
+		return nil, apperrors.NewValidation(
+			"--users must contain at least one non-empty recipient ID",
+			apperrors.WithReason("invalid_argument"),
+		)
+	}
+	return values, nil
+}
+
 func newDingCommand() *cobra.Command {
 	// Product-level Agent routing Decl (migrated from selection/ding.json
 	// products.ding). Catalog assembly stamps provenance contract_final.
 	contract.RegisterProductDecl(contract.ProductDecl{
 		ID: "ding",
 		Selection: contract.ProductSelectionDecl{
-			AgentSummary: "以企业机器人发送或撤回应用内/短信/电话 DING",
+			AgentSummary: "查询、发送或撤回 DING，支持本人身份和企业机器人身份",
 			UseWhen: []string{
-				"需要机器人身份发送或撤回 DING",
+				"需要查询 DING 历史或接收人已读状态",
+				"需要以本人或企业机器人身份发送、撤回应用内/短信/电话 DING",
 			},
 			AvoidWhen: []string{
-				"普通聊天消息用 chat；用户身份 DING 不要走机器人命令",
+				"普通聊天消息使用 chat；发送前必须区分本人身份与机器人身份",
+				"短信和电话 DING 有成本，目标、内容和提醒类型未确认时不要执行",
 			},
 		},
 	})
@@ -73,23 +97,19 @@ func newDingCommand() *cobra.Command {
 				robotCode = os.Getenv("DINGTALK_DING_ROBOT_CODE")
 			}
 			if robotCode == "" {
-				return fmt.Errorf("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)")
+				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithReason("missing_required_flags"))
 			}
-			typeStr := mustGetFlag(cmd, "type")
-			remindType, ok := dingRemindTypeMap[typeStr]
-			if !ok {
-				remindType = 1 // 默认应用内
+			typeStr, err := validatedDingRemindType(mustGetFlag(cmd, "type"))
+			if err != nil {
+				return err
 			}
-			toStr := mustGetFlag(cmd, "users")
-			var receiverUserIdList []string
-			for _, uid := range strings.Split(toStr, ",") {
-				if u := strings.TrimSpace(uid); u != "" {
-					receiverUserIdList = append(receiverUserIdList, u)
-				}
+			receiverUserIdList, err := validatedDingRecipients(mustGetFlag(cmd, "users"))
+			if err != nil {
+				return err
 			}
 			return callMCPTool("send_ding_message", map[string]any{
 				"robotCode":          robotCode,
-				"remindType":         remindType,
+				"remindType":         dingRemindTypeMap[typeStr],
 				"receiverUserIdList": receiverUserIdList,
 				"content":            mustGetFlag(cmd, "content"),
 			})
@@ -98,7 +118,7 @@ func newDingCommand() *cobra.Command {
 	DeclareLeafMetadata(dingMessageSendCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "user_required", Idempotency: "unknown",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -129,10 +149,11 @@ func newDingCommand() *cobra.Command {
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "content", Required: boolPtr(true)},
-				{Name: "robot-code", Required: boolPtr(true)},
+				{Name: "robot-code", Required: boolPtr(false)},
 				{Name: "type", Property: "remindType"},
 				{Name: "users", Property: "receiverUserIdList", Required: boolPtr(true), InterfaceType: "array"},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -149,7 +170,7 @@ func newDingCommand() *cobra.Command {
 				robotCode = os.Getenv("DINGTALK_DING_ROBOT_CODE")
 			}
 			if robotCode == "" {
-				return fmt.Errorf("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)")
+				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithReason("missing_required_flags"))
 			}
 			return callMCPTool("recall_ding_message", map[string]any{
 				"robotCode":  robotCode,
@@ -159,8 +180,8 @@ func newDingCommand() *cobra.Command {
 	}
 	DeclareLeafMetadata(dingMessageRecallCmd, LeafSpec{
 		Safety: contract.SafetySpec{
-			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -183,8 +204,10 @@ func newDingCommand() *cobra.Command {
 				Examples:     []string{"dws ding message recall --robot-code <ROBOT_CODE> --id <OPEN_DING_ID> --format json"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "id", Property: "openDingId"},
+				{Name: "id", Property: "openDingId", Required: boolPtr(true)},
+				{Name: "robot-code", Property: "robotCode", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -306,11 +329,18 @@ func newDingCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "users", "content"); err != nil {
 				return err
 			}
-			users := parseCSVValues(mustGetFlag(cmd, "users"))
+			users, err := validatedDingRecipients(mustGetFlag(cmd, "users"))
+			if err != nil {
+				return err
+			}
+			remindType, err := validatedDingRemindType(mustGetFlag(cmd, "type"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
 				"receiverOpenDingTalkIds": users,
 				"content":                 mustGetFlag(cmd, "content"),
-				"remindType":              mustGetFlag(cmd, "type"),
+				"remindType":              remindType,
 			}
 			if v, _ := cmd.Flags().GetString("uuid"); v != "" {
 				toolArgs["uuid"] = v
@@ -318,6 +348,36 @@ func newDingCommand() *cobra.Command {
 			return callMCPToolOnServer("im", "send_personal_ding", toolArgs)
 		},
 	}
+	DeclareLeafMetadata(dingMessageSendPersonalCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "medium",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "ding",
+				Name:           "send_personal_ding",
+				CanonicalPath:  "ding.send_personal_ding",
+				CLIPath:        "ding message send-personal",
+				PrimaryCLIPath: "ding message send-personal",
+			},
+			Description: "以当前用户身份向指定人员发送 DING",
+			Interface:   reviewedUnpinnedDingInterface("send_personal_ding"),
+			Selection: contract.SelectionSpec{
+				AgentSummary: "以当前用户身份向指定 openDingTalkId 发送应用内、短信或电话 DING",
+				UseWhen:      []string{"用户明确要求以本人身份向指定人员发送 DING，且接收人、内容和提醒类型已确认时"},
+				AvoidWhen:    []string{"机器人身份发送使用 ding message send；普通聊天消息使用 chat；短信或电话有成本，未明确确认时不要执行"},
+				Examples:     []string{"dws ding message send-personal --users <OPEN_DINGTALK_IDS> --content \"请查看\" --type app"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "content", Property: "content", Required: boolPtr(true)},
+				{Name: "type", Property: "remindType", Required: boolPtr(false)},
+				{Name: "users", Property: "receiverOpenDingTalkIds", Required: boolPtr(true), InterfaceType: "array"},
+				{Name: "uuid", Property: "uuid", Required: boolPtr(false)},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	// ── send-by-message: 消息转 DING ─────────────────────────────
 
@@ -336,12 +396,19 @@ func newDingCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "group", "message-id", "users"); err != nil {
 				return err
 			}
-			users := parseCSVValues(mustGetFlag(cmd, "users"))
+			users, err := validatedDingRecipients(mustGetFlag(cmd, "users"))
+			if err != nil {
+				return err
+			}
+			remindType, err := validatedDingRemindType(mustGetFlag(cmd, "type"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
 				"openConversationId":      mustGetFlag(cmd, "group"),
 				"openMessageId":           mustGetFlag(cmd, "message-id"),
 				"receiverOpenDingTalkIds": users,
-				"remindType":              mustGetFlag(cmd, "type"),
+				"remindType":              remindType,
 			}
 			if v, _ := cmd.Flags().GetString("uuid"); v != "" {
 				toolArgs["uuid"] = v
@@ -349,6 +416,37 @@ func newDingCommand() *cobra.Command {
 			return callMCPToolOnServer("im", "send_ding_by_message", toolArgs)
 		},
 	}
+	DeclareLeafMetadata(dingMessageSendByMessageCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "medium",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "ding",
+				Name:           "send_ding_by_message",
+				CanonicalPath:  "ding.send_ding_by_message",
+				CLIPath:        "ding message send-by-message",
+				PrimaryCLIPath: "ding message send-by-message",
+			},
+			Description: "把指定聊天消息转换为面向指定接收人的 DING 提醒",
+			Interface:   reviewedUnpinnedDingInterface("send_ding_by_message"),
+			Selection: contract.SelectionSpec{
+				AgentSummary: "把已有聊天消息转换为应用内、短信或电话 DING 提醒",
+				UseWhen:      []string{"已有会话、消息和接收人 ID，用户明确要求把该消息作为 DING 强提醒时"},
+				AvoidWhen:    []string{"需要自定义新内容时使用 send-personal；普通转发消息不要使用 DING；短信或电话未确认成本时不要执行"},
+				Examples:     []string{"dws ding message send-by-message --group <OPEN_CONVERSATION_ID> --message-id <OPEN_MESSAGE_ID> --users <OPEN_DINGTALK_IDS> --type app"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "group", Property: "openConversationId", Required: boolPtr(true)},
+				{Name: "message-id", Property: "openMessageId", Required: boolPtr(true)},
+				{Name: "type", Property: "remindType", Required: boolPtr(false)},
+				{Name: "users", Property: "receiverOpenDingTalkIds", Required: boolPtr(true), InterfaceType: "array"},
+				{Name: "uuid", Property: "uuid", Required: boolPtr(false)},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	// ── recall-personal: 以用户身份撤回 DING ────────────────────
 
@@ -367,13 +465,43 @@ func newDingCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(dingMessageRecallPersonalCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "ding",
+				Name:           "recall_personal_ding",
+				CanonicalPath:  "ding.recall_personal_ding",
+				CLIPath:        "ding message recall-personal",
+				PrimaryCLIPath: "ding message recall-personal",
+			},
+			Description: "撤回当前用户已经发送的 DING",
+			Interface:   reviewedUnpinnedDingInterface("recall_personal_ding"),
+			Selection: contract.SelectionSpec{
+				AgentSummary: "撤回当前用户已经发送的指定 DING",
+				UseWhen:      []string{"用户明确要求撤回本人发送的 DING，且 openDingId 已核对时"},
+				AvoidWhen:    []string{"机器人发送的 DING 使用 ding message recall；只查询接收状态不要撤回"},
+				Examples:     []string{"dws ding message recall-personal --id <OPEN_DING_ID>"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "id", Property: "openDingId", Required: boolPtr(true)},
+			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
+		},
+	})
 
 	dingMessageSendCmd.Flags().String("robot-code", "", "机器人 ID，发 DING 的机器人编码 (必填，可从 应用管理→机器人 获取，或设 DINGTALK_DING_ROBOT_CODE)")
 	dingMessageSendCmd.Flags().String("type", "app", "提醒类型: app/sms/call (默认 app)")
 	dingMessageSendCmd.Flags().String("users", "", "接收人 userId 列表 (必填)")
+	_ = dingMessageSendCmd.MarkFlagRequired("users")
 	dingMessageSendCmd.Flags().String("content", "", "消息内容 (必填)")
+	_ = dingMessageSendCmd.MarkFlagRequired("content")
 	dingMessageRecallCmd.Flags().String("robot-code", "", "机器人 ID (必填，或设 DINGTALK_DING_ROBOT_CODE)")
 	dingMessageRecallCmd.Flags().String("id", "", "DING 消息 ID (必填)")
+	_ = dingMessageRecallCmd.MarkFlagRequired("id")
 	dingMessageListCmd.Flags().Int64("cursor", 0, "分页游标（首次传 0，翻页传返回的 nextCursor）")
 	dingMessageListCmd.Flags().String("type", "ALL", "消息类型: ALL / UNREAD / SEND / NEW_COMMENT / DELETED（必填，服务端不接受空值；默认 ALL 全部）")
 	dingMessageReceiverStatusCmd.Flags().String("ding-id", "", "DING 消息 openDingId (必填)")
