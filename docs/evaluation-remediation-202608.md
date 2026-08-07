@@ -38,7 +38,7 @@
 | event 停机契约 | **安全入口已修，真实停机待复验** | `event stop` 为 destructive/high/user_required；无 `--yes` 拦截，`--dry-run` 不停订阅 | 真实订阅执行 stop 后验证进程、订阅和本地状态三者终态一致 |
 | contact 投影层 `8/5/1` 数据丢失 | **代码已修，待真实环境复验** | `+list-roles` 已拍平分组 `labels[]`；角色/部门成员识别 `labelUserList`/`deptUserList` 并解包 `userInfo`。回归测试锁定报告中的 8/5/1 下层计数；任一非空条目无法投影时整体 fail-closed，不再返回成功空/残缺列表 | 用原评测账号复跑三条命令并对拍 lower/upper 数量及稳定 ID |
 | Skill/Help/Schema 指令偏移 | **本轮已关闭已知项，持续审阅** | Agent 对拍发现部门查询隐藏别名、AITable 写示例缺身份参数、考勤/听记/会议室脚本隐藏 flag、mono devdoc 类型漂移；已同步修正代码声明、Help、Schema examples、mono/multi Skill 和脚本 | 发布前继续按产品执行 Agent 语义扫描；CI 路径检查不能代替 flag/结果/安全审阅 |
-| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment` 以及 8 条 Chat 纯读命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1013。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、35 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
+| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令，以及 DING/OA 的 4 条纯读命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1017。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、31 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
 | sheet 二次回滚 bricking | **未关闭** | 破坏性问题不能以普通单测或无账号 dry-run 证明消失 | 隔离表格、备份和服务端协同下做官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
@@ -118,9 +118,33 @@ chat text translate
 5. Runtime Schema 为 1013 条工具，双次装配 registry/source hash 一致；Agent
    examples、Help 参数、Safety 同源和全策略门禁均通过。
 
+## DING / OA 纯读命令 exclusion 收敛证据
+
+本轮继续移出 4 条旧 compatibility exclusion：
+
+```text
+ding message list
+ding message receiver-status
+oa approval search-forms
+oa approval ding-info
+```
+
+审阅结果：
+
+1. 四条命令均为 `read/low/not_required/idempotent`，不执行发送、撤回或催办。
+2. DING 两条命令调用 `im/list_ding_messages` 和
+   `im/list_ding_receiver_status`；对应方法未进入 pinned metadata，因此发布
+   带具体原因的 `composite`，不伪造 MCP ref。
+3. OA 两条命令与 pinned `oa/search_form`、`oa/oa_ding_user` 的参数映射一致，
+   分别绑定 `query` 和 `taskId`。
+4. DING 的负游标和未知类型在远端调用前返回 typed validation；四条命令的
+   缺参经生产根出口统一为 validation/rc=3。
+5. Runtime Schema 工具数为 1017，命令路由、参数、Agent 选型、Help 和完整
+   pinned interface 映射测试均通过。
+
 ## 下一批优先级
 
-1. 对剩余 35 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
+1. 对剩余 31 条 compatibility helper 按产品做 Agent 审阅；写命令先完成真实
    Safety、确认门禁、dry-run 和幂等性审阅，禁止因为追求 exclusion 清零而直接公开。
 2. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
 3. 在隔离数据上完成 sheet 二次回滚官方自证。

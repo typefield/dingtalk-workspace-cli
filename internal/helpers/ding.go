@@ -8,6 +8,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 // ──────────────────────────────────────────────────────────
@@ -16,6 +17,18 @@ import (
 
 // remindType: 服务端 API 1=应用内 2=短信 3=电话
 var dingRemindTypeMap = map[string]int{"app": 1, "sms": 2, "call": 3}
+
+var dingListTypes = map[string]struct{}{
+	"ALL": {}, "UNREAD": {}, "SEND": {}, "NEW_COMMENT": {}, "DELETED": {},
+}
+
+func reviewedUnpinnedDingInterface(rpcName string) *contract.InterfaceSpec {
+	return &contract.InterfaceSpec{
+		Mode:         "composite",
+		Availability: "available",
+		Reason:       fmt.Sprintf("Reviewed unpinned remote adapter: the executable CLI calls im/%s, which is absent from the pinned MCP metadata snapshot; no pinned semantically equivalent interface_ref can represent the command.", rpcName),
+	}
+}
 
 func newDingCommand() *cobra.Command {
 	// Product-level Agent routing Decl (migrated from selection/ding.json
@@ -187,18 +200,53 @@ func newDingCommand() *cobra.Command {
   dws ding message list --type SEND --cursor 10`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			toolArgs := map[string]any{}
-			if v, _ := cmd.Flags().GetInt64("cursor"); v > 0 {
-				toolArgs["cursor"] = v
+			cursor, _ := cmd.Flags().GetInt64("cursor")
+			if cursor < 0 {
+				return apperrors.NewValidation(fmt.Sprintf("--cursor must be zero or greater, got %d", cursor))
+			}
+			if cursor > 0 {
+				toolArgs["cursor"] = cursor
 			}
 			// type 是服务端必填，空值会报错；不传或传空时兜底为 ALL。
-			t, _ := cmd.Flags().GetString("type")
-			if t == "" {
-				t = "ALL"
+			messageType, _ := cmd.Flags().GetString("type")
+			messageType = strings.TrimSpace(messageType)
+			if messageType == "" {
+				messageType = "ALL"
 			}
-			toolArgs["type"] = t
+			if _, ok := dingListTypes[messageType]; !ok {
+				return apperrors.NewValidation(fmt.Sprintf("--type must be one of ALL, UNREAD, SEND, NEW_COMMENT, or DELETED, got %q", messageType))
+			}
+			toolArgs["type"] = messageType
 			return callMCPToolOnServer("im", "list_ding_messages", toolArgs)
 		},
 	}
+	DeclareLeafMetadata(dingMessageListCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "ding",
+				Name:           "list_ding_messages",
+				CanonicalPath:  "ding.list_ding_messages",
+				CLIPath:        "ding message list",
+				PrimaryCLIPath: "ding message list",
+			},
+			Description: "查询当前用户的 DING 消息历史",
+			Interface:   reviewedUnpinnedDingInterface("list_ding_messages"),
+			Selection: contract.SelectionSpec{
+				AgentSummary: "查询当前用户收到或发出的 DING 消息历史",
+				UseWhen:      []string{"需要按类型查看 DING 历史、取得 openDingId，或继续 cursor 分页时"},
+				AvoidWhen:    []string{"已知 openDingId 并只查询接收状态时使用 ding message receiver-status；发送或撤回 DING 不使用本命令"},
+				Examples:     []string{"dws ding message list --type UNREAD --cursor 0"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "cursor", Property: "cursor", Required: boolPtr(false), InterfaceType: "integer"},
+				{Name: "type", Property: "type", Required: boolPtr(false)},
+			},
+		},
+	})
 
 	dingMessageReceiverStatusCmd := &cobra.Command{
 		Use:   "receiver-status",
@@ -215,6 +263,32 @@ func newDingCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(dingMessageReceiverStatusCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "ding",
+				Name:           "list_ding_receiver_status",
+				CanonicalPath:  "ding.list_ding_receiver_status",
+				CLIPath:        "ding message receiver-status",
+				PrimaryCLIPath: "ding message receiver-status",
+			},
+			Description: "查询指定 DING 的接收人已读状态",
+			Interface:   reviewedUnpinnedDingInterface("list_ding_receiver_status"),
+			Selection: contract.SelectionSpec{
+				AgentSummary: "查询指定 DING 的接收人已读或未读状态",
+				UseWhen:      []string{"已有 openDingId，需要确认每位接收人是否已读以便跟进时"},
+				AvoidWhen:    []string{"不知道 openDingId 时先使用 ding message list；本命令不发送催办消息"},
+				Examples:     []string{"dws ding message receiver-status --ding-id <OPEN_DING_ID>"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "ding-id", Property: "openDingId", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	// ── send-personal: 以用户身份发送 DING ──────────────────────
 

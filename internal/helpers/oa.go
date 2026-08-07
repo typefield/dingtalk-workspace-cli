@@ -600,6 +600,36 @@ func newOaCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(approvalSearchFormsCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "oa",
+				Name:           "search_form",
+				CanonicalPath:  "oa.search_form",
+				CLIPath:        "oa approval search-forms",
+				PrimaryCLIPath: "oa approval search-forms",
+			},
+			Description: "按名称或 processCode 搜索当前用户可见的审批表单",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "oa", RPCName: "search_form"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "按关键字搜索当前用户可见的审批表单并取得 processCode",
+				UseWhen:      []string{"已知审批模板的大致名称或 processCode，需要定位可见表单时"},
+				AvoidWhen:    []string{"需要列出全部可见模板时使用 oa approval list-forms；需要查询审批实例时不要使用"},
+				Examples:     []string{"dws oa approval search-forms --query 报销"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "query", Property: "query", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	// 获取审批任务的被催办人 userId
 	// 仅返回 userId；发 DING 的 robotCode 由 $DINGTALK_DING_ROBOT_CODE / --robot-code 提供，content 由 agent 撰写。
@@ -618,6 +648,36 @@ func newOaCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(approvalDingInfoCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "oa",
+				Name:           "oa_ding_user",
+				CanonicalPath:  "oa.oa_ding_user",
+				CLIPath:        "oa approval ding-info",
+				PrimaryCLIPath: "oa approval ding-info",
+			},
+			Description: "获取审批任务当前可催办对象的 userId",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "oa", RPCName: "oa_ding_user"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "获取审批任务的被催办人 userId，供后续显式发送 DING",
+				UseWhen:      []string{"已有审批 taskId，需要确定应向哪些 userId 催办时"},
+				AvoidWhen:    []string{"本命令只读取接收人，不会发送 DING；真正发送前需另用 ding message send 并取得用户确认"},
+				Examples:     []string{"dws oa approval ding-info --task-id <TASK_ID>"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "task-id", Property: "taskId", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	// 已经审批过的
 	approvalExecutedListCmd := &cobra.Command{
@@ -1273,7 +1333,9 @@ func newOaCommand() *cobra.Command {
 	approvalListFormsCmd.Flags().String("size", "100", "每页大小（默认 100，最大 100）")
 	approvalListFormsCmd.Flags().Lookup("size").Hidden = true
 	approvalSearchFormsCmd.Flags().String("query", "", "关键字（匹配 processCode 或表单名称）(必填)")
+	_ = approvalSearchFormsCmd.MarkFlagRequired("query")
 	approvalDingInfoCmd.Flags().String("task-id", "", "审批任务 ID (必填)")
+	_ = approvalDingInfoCmd.MarkFlagRequired("task-id")
 	approvalExecutedListCmd.Flags().String("page", "1", "分页页码（可选）")
 	approvalExecutedListCmd.Flags().String("limit", "20", "每页大小（可选）")
 	approvalExecutedListCmd.Flags().String("query", "", "关键字搜索（可选）")
