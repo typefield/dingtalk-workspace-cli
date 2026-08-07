@@ -16,12 +16,13 @@ import (
 )
 
 const (
-	publicShortcutCount = 294
+	publicShortcutCount = 310
 	// schemaPublishedShortcutCount counts every delivered *.shortcut_* tool,
 	// including hidden leaves such as minutes.shortcut_minutes_search.
-	schemaPublishedShortcutCount = 295
+	schemaPublishedShortcutCount = 311
 	// publiclyDeliveredShortcutCount is the public-catalog subset of that surface.
-	publiclyDeliveredShortcutCount = 294
+	publiclyDeliveredShortcutCount = 310
+	attendancePublicShortcutCount  = 35
 )
 
 func TestDeliverySchemaCoversOrExactlyExcludesEveryPublicShortcutContract(t *testing.T) {
@@ -35,6 +36,15 @@ func TestDeliverySchemaCoversOrExactlyExcludesEveryPublicShortcutContract(t *tes
 	}
 	if got := len(public); got != publicShortcutCount {
 		t.Fatalf("public built-in shortcuts = %d, want %d", got, publicShortcutCount)
+	}
+	attendanceCount := 0
+	for _, candidate := range public {
+		if candidate.Service == "attendance" {
+			attendanceCount++
+		}
+	}
+	if attendanceCount != attendancePublicShortcutCount {
+		t.Fatalf("public attendance shortcuts = %d, want %d", attendanceCount, attendancePublicShortcutCount)
 	}
 
 	deliveredShortcuts := 0

@@ -1953,6 +1953,56 @@ var BossCheck = shortcut.Shortcut{
 	},
 }
 
+// reviewedAttendanceShortcut promotes one previously hidden compatibility
+// shortcut into the reviewed Agent surface. The explicit list in init is the
+// review boundary: registration alone never makes a command public.
+func reviewedAttendanceShortcut(item shortcut.Shortcut) shortcut.Shortcut {
+	command := strings.TrimSpace(item.Command)
+	name := strings.ReplaceAll(strings.TrimPrefix(command, "+"), "-", "_")
+	cliPath := "attendance " + command
+
+	switch item.Risk {
+	case shortcut.RiskWrite:
+		item.Safety = contract.SafetySpec{
+			Effect: "write", Risk: "medium",
+			Confirmation: "user_required", Idempotency: "unknown",
+		}
+	case shortcut.RiskHighWrite:
+		item.Safety = contract.SafetySpec{
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		}
+	default:
+		item.Safety = contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		}
+	}
+
+	item.Contract = corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "attendance",
+			Name:           "shortcut_" + name,
+			CanonicalPath:  "attendance.shortcut_" + name,
+			CLIPath:        cliPath,
+			PrimaryCLIPath: cliPath,
+		},
+		Description: item.Description,
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in attendance shortcut adapter: the CLI owns validation, request projection, safety gating, and output projection; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: item.Description,
+			UseWhen:      []string{item.Intent},
+			AvoidWhen:    []string{"需要 Shortcut 未公开的底层参数或原始响应时，改用对应 attendance 原子命令"},
+			Examples:     append([]string(nil), item.Tips...),
+		},
+	}
+	return item
+}
+
 func init() {
 	shortcut.Register(
 		CheckResult,
@@ -1960,33 +2010,33 @@ func init() {
 		ListApprove,
 		GetApproveTemplate,
 		GetSchedule,
-		ImportSchedule,
+		reviewedAttendanceShortcut(ImportSchedule),
 		SearchClass,
-		GetClass,
-		CreateClass,
-		UpdateClass,
+		reviewedAttendanceShortcut(GetClass),
+		reviewedAttendanceShortcut(CreateClass),
+		reviewedAttendanceShortcut(UpdateClass),
 		GetAdjustmentRule,
 		SearchAdjustmentRule,
 		GetOvertimeRule,
 		SearchOvertimeRule,
 		SearchGroup,
-		GetGroup,
-		GetGroupFiltered,
-		UpdateGroupMembers,
-		CreateGroup,
-		UpdateGroup,
+		reviewedAttendanceShortcut(GetGroup),
+		reviewedAttendanceShortcut(GetGroupFiltered),
+		reviewedAttendanceShortcut(UpdateGroupMembers),
+		reviewedAttendanceShortcut(CreateGroup),
+		reviewedAttendanceShortcut(UpdateGroup),
 		GetSummary,
 		GetSelfSetting,
-		GetGlobalSetting,
-		ListReportColumns,
+		reviewedAttendanceShortcut(GetGlobalSetting),
+		reviewedAttendanceShortcut(ListReportColumns),
 		QueryReportData,
-		QueryReportLeave,
+		reviewedAttendanceShortcut(QueryReportLeave),
 		ListLeaveTypes,
-		GetLeaveBalance,
+		reviewedAttendanceShortcut(GetLeaveBalance),
 		GetLeaveRecords,
-		UpdateLeaveType,
-		SaveLeaveBalance,
+		reviewedAttendanceShortcut(UpdateLeaveType),
+		reviewedAttendanceShortcut(SaveLeaveBalance),
 		GetCheckinRecord,
-		BossCheck,
+		reviewedAttendanceShortcut(BossCheck),
 	)
 }

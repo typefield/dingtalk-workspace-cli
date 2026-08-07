@@ -1415,25 +1415,41 @@ dws attendance boss-check --plan-id 948964045503 --time "2026-05-13 18:00" --res
 
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
+| `dws attendance +boss-check` | write | BOSS 改签打卡记录（管理员修改打卡时间/结果） |
 | `dws attendance +check-record` | read | 查询用户打卡流水（打卡时间/地点/定位方式） |
 | `dws attendance +check-result` | read | 查询用户打卡结果（迟到/早退/缺卡等） |
+| `dws attendance +create-class` | write | 创建班次（checkTime 用 HH:mm，自动转时间戳） |
+| `dws attendance +create-group` | write | 创建考勤组（复杂子对象用 --group-vo JSON 传入） |
 | `dws attendance +get-adjustment-rule` | read | 根据补卡规则主键 ID 查询补卡规则详情 |
 | `dws attendance +get-approve-template` | read | 查询补卡/请假/加班/外出/出差审批提交链接 |
 | `dws attendance +get-checkin-record` | read | 查询指定员工一段时间内的签到记录 |
+| `dws attendance +get-class` | read | 根据班次 ID 查询班次详情 |
+| `dws attendance +get-global-setting` | read | 查询全局规则设置（仅管理员） |
+| `dws attendance +get-group` | read | 根据考勤组 ID 查询考勤组全量信息 |
+| `dws attendance +get-group-filtered` | read | 按需查询考勤组成员/打卡地址/蓝牙/Wifi 子集 |
+| `dws attendance +get-leave-balance` | read | 查询指定员工的假期余额 |
 | `dws attendance +get-leave-records` | read | 查询指定员工的假期余额变更记录 |
 | `dws attendance +get-overtime-rule` | read | 根据加班规则主键 ID 查询加班规则详情 |
 | `dws attendance +get-schedule` | read | 获取指定用户一段时间内的排班记录 |
 | `dws attendance +get-self-setting` | read | 查询个人规则设置（打卡提醒/极速打卡/缺卡提醒等） |
 | `dws attendance +get-summary` | read | 查询某个人的考勤统计摘要（周/月） |
+| `dws attendance +import-schedule` | write | 导入排班记录到排班制考勤组 |
 | `dws attendance +list-approve` | read | 查询用户考勤审批单（补卡/加班/请假/出差外出） |
 | `dws attendance +list-leave-types` | read | 查询当前用户可用的假期规则列表 |
+| `dws attendance +list-report-columns` | read | 获取企业考勤报表字段列表（仅管理员） |
 | `dws attendance +my-attendance` | read | 查我今天的考勤打卡记录（打卡流水，自动解析当前用户） |
 | `dws attendance +query-report-data` | read | 根据字段查询考勤报表数据（仅管理员） |
+| `dws attendance +query-report-leave` | read | 查询用户假期数据（仅管理员） |
+| `dws attendance +save-leave-balance` | write | 设置员工假期余额（SET 覆盖，非累加） |
 | `dws attendance +search-adjustment-rule` | read | 查询当前用户可管理的补卡规则列表 |
 | `dws attendance +search-class` | read | 查询当前用户可管理的班次详情列表 |
 | `dws attendance +search-group` | read | 查询当前用户可管理的考勤组列表 |
 | `dws attendance +search-overtime-rule` | read | 查询当前用户可管理的加班规则列表 |
 | `dws attendance +this-month` | read | 查我本月的考勤打卡记录（打卡流水，自动解析当前用户） |
+| `dws attendance +update-class` | write | 更新已有班次（仅传要修改的字段） |
+| `dws attendance +update-group` | write | 更新考勤组配置（仅修改需要变更的字段） |
+| `dws attendance +update-group-members` | write | 更新考勤组成员（增删考勤人员/部门/无需考勤人员） |
+| `dws attendance +update-leave-type` | write | 更新已有假期规则（仅传要修改的字段） |
 <!-- VISIBLE_SHORTCUTS_END -->
 
 ## 意图表

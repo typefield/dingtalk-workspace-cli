@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-05T22:43:52.497190",
-  "count": 294,
+  "generated_at": "2026-08-08T01:26:56.589120",
+  "count": 310,
   "results": [
     {
       "suite": "read",
@@ -206,6 +206,13 @@
       "status": "real-ok"
     },
     {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+boss-check",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
       "suite": "read",
       "service": "attendance",
       "command": "+check-record",
@@ -218,6 +225,20 @@
       "command": "+check-result",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+create-class",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+create-group",
+      "risk": "write",
+      "status": "reviewed_available"
     },
     {
       "suite": "read",
@@ -239,6 +260,41 @@
       "command": "+get-checkin-record",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+get-class",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+get-global-setting",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+get-group",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+get-group-filtered",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+get-leave-balance",
+      "risk": "read",
+      "status": "reviewed_available"
     },
     {
       "suite": "read",
@@ -276,6 +332,13 @@
       "status": "real-ok"
     },
     {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+import-schedule",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
       "suite": "read",
       "service": "attendance",
       "command": "+list-approve",
@@ -290,6 +353,13 @@
       "status": "real-ok"
     },
     {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+list-report-columns",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
       "suite": "read",
       "service": "attendance",
       "command": "+my-attendance",
@@ -302,6 +372,20 @@
       "command": "+query-report-data",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+query-report-leave",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+save-leave-balance",
+      "risk": "write",
+      "status": "reviewed_available"
     },
     {
       "suite": "read",
@@ -337,6 +421,34 @@
       "command": "+this-month",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+update-class",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+update-group",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+update-group-members",
+      "risk": "write",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "attendance",
+      "command": "+update-leave-type",
+      "risk": "write",
+      "status": "reviewed_available"
     },
     {
       "suite": "read",

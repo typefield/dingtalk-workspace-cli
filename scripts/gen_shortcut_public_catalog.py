@@ -23,6 +23,28 @@ SEMANTIC_PATHS = [
     ROOT / "internal" / "shortcut" / "semantic_catalog_doc.json",
 ]
 
+# Product-reviewed compatibility shortcuts that are intentionally promoted
+# without relying on account-specific real-run fixtures. Each entry must also
+# have an explicit Contract/Safety declaration in its Go registration.
+REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
+    ("attendance", "+boss-check"): "write",
+    ("attendance", "+create-class"): "write",
+    ("attendance", "+create-group"): "write",
+    ("attendance", "+get-class"): "read",
+    ("attendance", "+get-global-setting"): "read",
+    ("attendance", "+get-group"): "read",
+    ("attendance", "+get-group-filtered"): "read",
+    ("attendance", "+get-leave-balance"): "read",
+    ("attendance", "+import-schedule"): "write",
+    ("attendance", "+list-report-columns"): "read",
+    ("attendance", "+query-report-leave"): "read",
+    ("attendance", "+save-leave-balance"): "write",
+    ("attendance", "+update-class"): "write",
+    ("attendance", "+update-group"): "write",
+    ("attendance", "+update-group-members"): "write",
+    ("attendance", "+update-leave-type"): "write",
+}
+
 
 def load(path: Path) -> dict[str, Any]:
     return json.loads(path.read_text(encoding="utf-8"))
@@ -150,6 +172,20 @@ def collect() -> tuple[list[dict[str, Any]], list[dict[str, Any]]]:
                 "semantic_delta": record.get("semantic_delta") or "",
                 "availability": availability,
             })
+
+    public_keys = {(row["service"], row["command"]) for row in public}
+    for (service, command), risk in REVIEWED_PUBLIC_OVERRIDES.items():
+        if (service, command) in public_keys:
+            continue
+        public.append({
+            "suite": "reviewed_contract",
+            "service": service,
+            "command": command,
+            "risk": risk,
+            "status": "reviewed_available",
+        })
+        public_keys.add((service, command))
+
     public.sort(key=lambda r: (r["service"], r["command"]))
     followups.sort(key=lambda r: (r["suite"], r["service"], r["command"]))
     return public, followups
