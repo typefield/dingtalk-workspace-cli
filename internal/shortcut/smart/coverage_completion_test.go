@@ -373,7 +373,14 @@ func TestCrossPlatformCoverageSearchPaginationFailureModes(t *testing.T) {
 				if decodeErr := json.Unmarshal(output.Bytes(), &payload); decodeErr != nil {
 					t.Fatalf("decode %q: %v", strings.TrimSpace(output.String()), decodeErr)
 				}
-				if payload["complete"] != false && tc.name != "duplicate and inferred cursor" {
+				if _, exists := payload["complete"]; exists {
+					t.Fatalf("search must not publish the over-broad complete field: %#v", payload)
+				}
+				if payload["indexCoverageKnown"] != false {
+					t.Fatalf("search index coverage must remain explicitly unknown: %#v", payload)
+				}
+				wantExhausted := tc.name == "duplicate and inferred cursor"
+				if payload["endpointExhausted"] != wantExhausted {
 					t.Fatalf("payload = %#v", payload)
 				}
 			}

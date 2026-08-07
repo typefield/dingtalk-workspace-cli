@@ -257,7 +257,7 @@ func TestReasonForMethod(t *testing.T) {
 
 // ─── doWithRetry (via CallTool) ────────────────────────────────────────
 
-func TestCallTool_RetriesOn502(t *testing.T) {
+func TestListTools_RetriesOn502(t *testing.T) {
 	attempts := 0
 	srv := newMockMCPServer(t, func(w http.ResponseWriter, r *http.Request) {
 		attempts++
@@ -265,10 +265,8 @@ func TestCallTool_RetriesOn502(t *testing.T) {
 			w.WriteHeader(http.StatusBadGateway)
 			return
 		}
-		result := map[string]any{
-			"content": []any{map[string]any{"type": "text", "text": `{"ok":true}`}},
-		}
-		w.Write(jsonRPCResponse(3, result))
+		result := ToolsListResult{Tools: []ToolDescriptor{{Name: "test-tool"}}}
+		w.Write(jsonRPCResponse(2, result))
 	})
 	c := NewClient(srv.Client())
 	c.TrustedDomains = []string{"*"}
@@ -277,12 +275,12 @@ func TestCallTool_RetriesOn502(t *testing.T) {
 	c.RetryMaxDelay = 10 * time.Millisecond
 	c.sleep = func(ctx context.Context, d time.Duration) error { return nil }
 
-	result, err := c.CallTool(context.Background(), srv.URL, "test", nil)
+	result, err := c.ListTools(context.Background(), srv.URL)
 	if err != nil {
 		t.Fatalf("expected success after retries, got: %v", err)
 	}
-	if result.Content == nil {
-		t.Fatal("expected content")
+	if len(result.Tools) != 1 {
+		t.Fatalf("expected one tool, got %+v", result.Tools)
 	}
 	if attempts <= 2 {
 		t.Fatalf("expected at least 3 attempts, got %d", attempts)

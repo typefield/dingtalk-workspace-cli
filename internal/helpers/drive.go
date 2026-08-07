@@ -484,6 +484,9 @@ func newDriveCommand() *cobra.Command {
 			if v, _ := cmd.Flags().GetBool("thumbnail"); v {
 				argsMap["withThumbnail"] = true
 			}
+			if pattern != "" {
+				return runDriveListPatternPage(cmd, argsMap, pattern)
+			}
 			return callMCPTool("list_files", argsMap)
 		},
 	}
@@ -619,20 +622,23 @@ func newDriveCommand() *cobra.Command {
 				return err
 			}
 			dlOpts.logf = func(format string, a ...any) {
-				deps.Out.PrintInfo(fmt.Sprintf(format, a...))
+				fmt.Fprintf(cmd.ErrOrStderr(), format+"\n", a...)
 			}
 
 			if deps.Caller.DryRun() {
-				deps.Out.PrintKeyValue("操作", "下载钉盘文件")
-				deps.Out.PrintKeyValue("文件ID", fileID)
-				deps.Out.PrintKeyValue("输出", outputPath)
-				return nil
+				return writeCommandPayload(cmd, map[string]any{
+					"dry_run":   true,
+					"executed":  false,
+					"operation": "download_drive_file",
+					"file_id":   fileID,
+					"output":    outputPath,
+				})
 			}
 
 			ctx := cmd.Context()
 
 			// Step 1: 获取下载 URL 和签名请求头
-			deps.Out.PrintInfo("[1/2] 获取下载链接...")
+			fmt.Fprintln(cmd.ErrOrStderr(), "[1/2] 获取下载链接...")
 			text, err := callMCPToolReturnText(ctx, "download_file", argsMap)
 			if err != nil {
 				return err
@@ -654,7 +660,7 @@ func newDriveCommand() *cobra.Command {
 			}
 
 			// Step 2: 分片下载（自动分派 + 401/403 凭证刷新重试）
-			deps.Out.PrintInfo(fmt.Sprintf("[2/2] 下载文件到 %s ...", outputPath))
+			fmt.Fprintf(cmd.ErrOrStderr(), "[2/2] 下载文件到 %s ...\n", outputPath)
 			dlOpts.knownSize = parseDownloadFileSize(text)
 			dlOpts.nodeID = fileID
 			dlOpts.version = parseDownloadFileVersion(text)
@@ -684,8 +690,15 @@ func newDriveCommand() *cobra.Command {
 				return err
 			}
 
-			deps.Out.PrintInfo(fmt.Sprintf("下载完成: %s", outputPath))
-			return nil
+			result := map[string]any{
+				"downloaded": true,
+				"file_id":    fileID,
+				"path":       outputPath,
+			}
+			if info, statErr := os.Stat(outputPath); statErr == nil {
+				result["size"] = info.Size()
+			}
+			return writeCommandPayload(cmd, result)
 		},
 	}
 	DeclareLeafMetadata(driveDownloadCmd, LeafSpec{

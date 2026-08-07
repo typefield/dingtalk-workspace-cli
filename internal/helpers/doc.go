@@ -3968,22 +3968,20 @@ CLI 内部自动完成全部流程:
 				return fmt.Errorf("flag --version is required")
 			}
 			version, _ := cmd.Flags().GetInt("version")
-			if !commandDryRun(cmd) {
-				exists, err := docVersionExists(cmd.Context(), nodeID, version)
-				if err != nil {
-					return err
-				}
-				if !exists {
-					return apperrors.NewValidation(
-						fmt.Sprintf("文档版本 %d 不存在，已停止回滚", version),
-						apperrors.WithReason("version_not_found"),
-						apperrors.WithHint(fmt.Sprintf(
-							"请先执行 dws doc version list --node %s --format json 获取可回滚版本",
-							nodeID,
-						)),
-						apperrors.WithActions("查询可用文档版本", "选择存在的版本号后重新预览"),
-					)
-				}
+			exists, err := docVersionExists(cmd.Context(), nodeID, version)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				return apperrors.NewValidation(
+					fmt.Sprintf("文档版本 %d 不存在，已停止回滚", version),
+					apperrors.WithReason("version_not_found"),
+					apperrors.WithHint(fmt.Sprintf(
+						"请先执行 dws doc version list --node %s --format json 获取可回滚版本",
+						nodeID,
+					)),
+					apperrors.WithActions("查询可用文档版本", "选择存在的版本号后重新预览"),
+				)
 			}
 			return callMCPToolOnServer("doc", "revert_doc_version", map[string]any{
 				"nodeId":  nodeID,
@@ -4002,6 +4000,7 @@ CLI 内部自动完成全部流程:
 				PrimaryCLIPath: "doc version revert",
 			},
 			Description: "将文档回滚到指定历史版本",
+			DryRun:      &contract.DryRunSpec{PreviewKind: "request", RemoteReads: true},
 			Interface: &contract.InterfaceSpec{
 				Mode:         "composite",
 				Availability: "available",

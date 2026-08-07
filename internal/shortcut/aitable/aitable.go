@@ -37,6 +37,11 @@ const serverMain = "aitable"
 // serverHelper is the aitable-helper MCP server id (hosts a subset of tools).
 const serverHelper = "aitable-helper"
 
+const (
+	baseListSummary = "获取 AI 表格 Base 的最近访问列表（非全量目录，支持游标分页）"
+	baseListUseWhen = "当你不知道具体 baseId、想先浏览最近使用过的 AI 表格时使用。这不是当前用户可访问 Base 的权威全量目录；结果可能含失效历史项，也可能漏掉未最近打开的 Base。"
+)
+
 // parseJSONAny parses an arbitrary JSON string (object or array) into any.
 func parseJSONAny(flag, s string) (any, error) {
 	var v any
@@ -68,8 +73,8 @@ var BaseList = shortcut.Shortcut{
 	Service:     "aitable",
 	Command:     "+base-list",
 	Product:     serverMain,
-	Description: "获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）",
-	Intent:      "当你不知道具体 baseId、想先浏览自己最近用过或可访问的 AI 表格清单以便定位目标时使用；支持游标分页，返回 Base 列表及其 baseId。",
+	Description: baseListSummary,
+	Intent:      baseListUseWhen,
 	Risk:        shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
@@ -83,15 +88,15 @@ var BaseList = shortcut.Shortcut{
 			CLIPath:        "aitable +base-list",
 			PrimaryCLIPath: "aitable +base-list",
 		},
-		Description: "获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）",
+		Description: baseListSummary,
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
 			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）",
-			UseWhen:      []string{"当你不知道具体 baseId、想先浏览自己最近用过或可访问的 AI 表格清单以便定位目标时使用；支持游标分页，返回 Base 列表及其 baseId。"},
+			AgentSummary: baseListSummary,
+			UseWhen:      []string{baseListUseWhen},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples: []string{
 				"dws aitable +base-list",
@@ -117,7 +122,7 @@ var BaseList = shortcut.Shortcut{
 			return err
 		}
 		bases := baseListProject(data)
-		return rt.Output(map[string]any{"count": len(bases), "bases": bases})
+		return rt.Output(baseDiscoveryPayload(data, bases, "recently_accessed"))
 	},
 }
 
@@ -231,8 +236,63 @@ var BaseSearch = shortcut.Shortcut{
 			return err
 		}
 		bases := baseListProject(data)
-		return rt.Output(map[string]any{"count": len(bases), "bases": bases})
+		return rt.Output(baseDiscoveryPayload(data, bases, "name_search_index"))
 	},
+}
+
+// baseDiscoveryPayload makes the discovery boundary machine-readable. Neither
+// list_bases nor search_bases is an authoritative inventory of every Base the
+// user can access. Pagination exhaustion therefore remains separate from
+// inventory/index coverage.
+func baseDiscoveryPayload(data map[string]any, bases []map[string]any, sourceKind string) map[string]any {
+	payload := map[string]any{
+		"count":                  len(bases),
+		"bases":                  bases,
+		"sourceKind":             sourceKind,
+		"authoritativeInventory": false,
+		"inventoryCoverageKnown": false,
+		"paginationKnown":        false,
+	}
+	if sourceKind == "name_search_index" {
+		payload["indexCoverageKnown"] = false
+	}
+
+	for _, scope := range baseDiscoveryScopes(data) {
+		hasMore, known := baseDiscoveryBool(scope, "hasMore", "has_more")
+		if !known {
+			continue
+		}
+		payload["paginationKnown"] = true
+		payload["hasMore"] = hasMore
+		payload["endpointExhausted"] = !hasMore
+		if token, ok := baseListFirst(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor"); ok && token != nil {
+			payload["nextCursor"] = token
+		}
+		break
+	}
+	return payload
+}
+
+func baseDiscoveryScopes(data map[string]any) []map[string]any {
+	if data == nil {
+		return nil
+	}
+	scopes := []map[string]any{data}
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := data[key].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	return scopes
+}
+
+func baseDiscoveryBool(data map[string]any, keys ...string) (bool, bool) {
+	for _, key := range keys {
+		if value, ok := data[key].(bool); ok {
+			return value, true
+		}
+	}
+	return false, false
 }
 
 // BaseGet 获取 AI 表格信息（get_base）。

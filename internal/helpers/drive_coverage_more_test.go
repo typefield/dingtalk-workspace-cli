@@ -3,6 +3,7 @@ package helpers
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"io"
 	"os"
@@ -33,6 +34,88 @@ func executeDriveEdge(t *testing.T, caller *scriptedToolCaller, args ...string) 
 	root.SetArgs(args)
 	os.Args = append([]string{"dws", "drive"}, args...)
 	return root.Execute()
+}
+
+func executeDriveEdgeCapture(t *testing.T, caller *scriptedToolCaller, args ...string) (string, string, error) {
+	t.Helper()
+	oldDeps := deps
+	oldArgs := os.Args
+	InitDeps(caller)
+	stdout := &bytes.Buffer{}
+	stderr := &bytes.Buffer{}
+	deps.Out.w = stdout
+	deps.Out.errW = stderr
+	t.Cleanup(func() {
+		deps = oldDeps
+		os.Args = oldArgs
+	})
+	root := newDriveCommand()
+	installExampleGlobalFlags(root)
+	root.SilenceErrors = true
+	root.SilenceUsage = true
+	root.SetOut(stdout)
+	root.SetErr(stderr)
+	root.SetArgs(args)
+	os.Args = append([]string{"dws", "drive"}, args...)
+	err := root.Execute()
+	return stdout.String(), stderr.String(), err
+}
+
+func TestDriveDownloadJSONKeepsStdoutMachineReadable(t *testing.T) {
+	oldGet := httpGetFile
+	httpGetFile = func(_ context.Context, _ string, _ map[string]string, destination string) error {
+		return os.WriteFile(destination, []byte("fixture"), 0o600)
+	}
+	t.Cleanup(func() { httpGetFile = oldGet })
+
+	destination := filepath.Join(t.TempDir(), "download.txt")
+	caller := &scriptedToolCaller{steps: []scriptedToolStep{{
+		text: `{"resourceUrl":"https://download.invalid/download.txt","fileName":"download.txt","fileSize":7}`,
+	}}}
+	stdout, stderr, err := executeDriveEdgeCapture(t, caller,
+		"download", "--node", "node-1", "--output", destination, "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("stdout is not one valid JSON value: %v\nstdout=%q\nstderr=%q", err, stdout, stderr)
+	}
+	if payload["downloaded"] != true || payload["file_id"] != "node-1" || payload["path"] != destination {
+		t.Fatalf("payload = %#v", payload)
+	}
+	if payload["size"] != float64(7) {
+		t.Fatalf("payload size = %#v, want 7", payload["size"])
+	}
+	if strings.Contains(stdout, "[1/2]") || strings.Contains(stdout, "[2/2]") || strings.Contains(stdout, "[INFO]") {
+		t.Fatalf("stdout contains diagnostic text: %q", stdout)
+	}
+	if !strings.Contains(stderr, "[1/2]") || !strings.Contains(stderr, "[2/2]") {
+		t.Fatalf("stderr = %q, want download progress", stderr)
+	}
+}
+
+func TestDriveDownloadDryRunReturnsStructuredJSONWithoutCallingServer(t *testing.T) {
+	caller := &scriptedToolCaller{dry: true}
+	destination := filepath.Join(t.TempDir(), "download.txt")
+	stdout, stderr, err := executeDriveEdgeCapture(t, caller,
+		"download", "--node", "node-1", "--output", destination, "--dry-run", "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if caller.calls != 0 {
+		t.Fatalf("dry-run calls = %d, want zero", caller.calls)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("stdout is not JSON: %v\n%s", err, stdout)
+	}
+	if payload["dry_run"] != true || payload["executed"] != false || payload["operation"] != "download_drive_file" {
+		t.Fatalf("payload = %#v", payload)
+	}
+	if stderr != "" {
+		t.Fatalf("dry-run stderr = %q, want empty", stderr)
+	}
 }
 
 func TestCrossPlatformCoverageParseDriveUploadInfoRemainingCoverage(t *testing.T) {

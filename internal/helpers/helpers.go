@@ -381,6 +381,12 @@ func callMCPToolInternalOpts(explicitServerID, toolName string, args map[string]
 			if flagFormat == "json" {
 				var parsed any
 				if err := json.Unmarshal([]byte(c.Text), &parsed); err == nil {
+					if serverID == "mail" {
+						parsed = normalizeMailSuccessBooleans(parsed)
+					}
+					if serverID == "aitable" && (toolName == "list_bases" || toolName == "search_bases") {
+						parsed = annotateAitableDiscoveryBoundary(parsed, toolName)
+					}
 					return printJSON(parsed)
 				}
 			}
@@ -406,6 +412,100 @@ func callMCPToolInternalOpts(explicitServerID, toolName string, args map[string]
 	}
 	// 无 text 类型内容时，将整个 result 对象序列化为 JSON 输出
 	return printJSON(result)
+}
+
+// normalizeMailSuccessBooleans repairs a wire inconsistency in the mail
+// backend where the same semantic field is returned as both JSON boolean and
+// the strings "true"/"false".  Restricting the conversion to keys named
+// success on the mail server avoids coercing arbitrary user-authored text.
+func normalizeMailSuccessBooleans(value any) any {
+	switch typed := value.(type) {
+	case map[string]any:
+		for key, child := range typed {
+			if key == "success" {
+				if raw, ok := child.(string); ok {
+					switch strings.ToLower(strings.TrimSpace(raw)) {
+					case "true":
+						typed[key] = true
+						continue
+					case "false":
+						typed[key] = false
+						continue
+					}
+				}
+			}
+			typed[key] = normalizeMailSuccessBooleans(child)
+		}
+		return typed
+	case []any:
+		for i := range typed {
+			typed[i] = normalizeMailSuccessBooleans(typed[i])
+		}
+		return typed
+	default:
+		return value
+	}
+}
+
+// annotateAitableDiscoveryBoundary prevents list_bases/search_bases from being
+// mistaken for an authoritative inventory. The service exposes recent-access
+// and search-index views; neither proves that every accessible Base is present
+// or that every returned historical item is still live.
+func annotateAitableDiscoveryBoundary(value any, toolName string) any {
+	root, ok := value.(map[string]any)
+	if !ok {
+		return value
+	}
+	sourceKind := "recently_accessed"
+	if toolName == "search_bases" {
+		sourceKind = "name_search_index"
+		root["indexCoverageKnown"] = false
+	}
+	root["sourceKind"] = sourceKind
+	root["authoritativeInventory"] = false
+	root["inventoryCoverageKnown"] = false
+	root["paginationKnown"] = false
+
+	for _, scope := range aitableDiscoveryScopes(root) {
+		if hasMore, known := boolAtAnyKey(scope, "hasMore", "has_more"); known {
+			root["paginationKnown"] = true
+			root["hasMore"] = hasMore
+			root["endpointExhausted"] = !hasMore
+			if cursor, present := valueAtAnyKey(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor"); present {
+				root["nextCursor"] = cursor
+			}
+			break
+		}
+	}
+	return root
+}
+
+func aitableDiscoveryScopes(root map[string]any) []map[string]any {
+	scopes := []map[string]any{root}
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := root[key].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	return scopes
+}
+
+func boolAtAnyKey(data map[string]any, keys ...string) (bool, bool) {
+	for _, key := range keys {
+		if value, ok := data[key].(bool); ok {
+			return value, true
+		}
+	}
+	return false, false
+}
+
+func valueAtAnyKey(data map[string]any, keys ...string) (any, bool) {
+	for _, key := range keys {
+		if value, ok := data[key]; ok && value != nil {
+			return value, true
+		}
+	}
+	return nil, false
 }
 
 // dumpRawToolResponse emits one opt-in lower-layer record for live projection

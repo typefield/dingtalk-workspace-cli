@@ -36,6 +36,8 @@ func executeDriveCommandCapture(t *testing.T, caller edition.ToolCaller, args ..
 	}
 	root.SilenceErrors = true
 	root.SilenceUsage = true
+	root.SetOut(buf)
+	root.SetErr(io.Discard)
 	root.SetArgs(args)
 	err := root.Execute()
 	return buf, err
@@ -191,6 +193,53 @@ func TestCrossPlatformCoverageDriveListVersionsRejectsPattern(t *testing.T) {
 	}
 	if len(caller.calls) != 0 {
 		t.Fatalf("calls = %#v, want none", caller.calls)
+	}
+}
+
+func TestDriveListPatternFiltersCurrentPageAndPreservesContinuation(t *testing.T) {
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: `{
+  "result": {
+    "dentryList": [
+      {"name":"weekly-report.docx","fileId":"match-1"},
+      {"name":"notes.txt","fileId":"skip-1"}
+    ],
+    "nextToken":"page-2"
+  }
+}`}}}
+	out, err := executeDriveCommandCapture(t, caller,
+		"list", "--folder", "folder-1", "--limit", "20", "--pattern", "*.docx")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("pattern output is not JSON: %v\n%s", err, out.String())
+	}
+	result, ok := payload["result"].(map[string]any)
+	if !ok {
+		t.Fatalf("payload result = %#v", payload["result"])
+	}
+	items, ok := result["dentryList"].([]any)
+	if !ok || len(items) != 1 {
+		t.Fatalf("filtered items = %#v", result["dentryList"])
+	}
+	item, _ := items[0].(map[string]any)
+	if item["fileId"] != "match-1" {
+		t.Fatalf("filtered item = %#v", item)
+	}
+	if result["nextToken"] != "page-2" {
+		t.Fatalf("nextToken = %#v, want page-2", result["nextToken"])
+	}
+	if caller.calls != 1 || caller.tool != "list_files" || caller.args["parentId"] != "folder-1" {
+		t.Fatalf("caller = calls:%d tool:%q args:%#v", caller.calls, caller.tool, caller.args)
+	}
+}
+
+func TestDriveListPatternRejectsUnknownResponseInsteadOfReturningFalseEmpty(t *testing.T) {
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: `{"result":{"unexpected":true}}`}}}
+	_, err := executeDriveCommandCapture(t, caller, "list", "--pattern", "*.docx")
+	if err == nil || !strings.Contains(err.Error(), "缺少 items/dentryList") {
+		t.Fatalf("err = %v, want explicit projection failure", err)
 	}
 }
 

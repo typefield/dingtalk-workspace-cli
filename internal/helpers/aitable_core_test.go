@@ -177,15 +177,6 @@ func TestCrossPlatformCoverageAitableViewConfigAndHelpers(t *testing.T) {
 			t.Errorf("suggestOperator(%q) = %q, want %q", op, got, want)
 		}
 	}
-	for _, tc := range []struct {
-		err  error
-		want bool
-	}{{nil, false}, {errors.New("timeout"), true}, {errors.New("SYSTEM_ERROR"), true}, {errors.New("retryable: true"), true}, {errors.New("bad request"), false}} {
-		if got := isAitableRetryableError(tc.err); got != tc.want {
-			t.Errorf("isAitableRetryableError(%v) = %v", tc.err, got)
-		}
-	}
-
 	if requireViewType("Grid", "sort", []string{"Grid"}) != nil || requireViewType("Gallery", "sort", []string{"Grid"}) == nil {
 		t.Fatal("view type requirement mismatch")
 	}

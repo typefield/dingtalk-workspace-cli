@@ -499,8 +499,16 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 	if operation == "" {
 		operation = "jsonrpc"
 	}
+	effectiveMaxRetries := c.MaxRetries
+	// tools/call can mutate state. A timeout or 5xx may arrive after the
+	// operation was accepted, so replaying it here can duplicate writes. The
+	// caller/Agent may retry only after applying command-specific idempotency or
+	// verification rules.
+	if operation == "tools/call" {
+		effectiveMaxRetries = 0
+	}
 	var lastErr error
-	for attempt := 0; attempt <= c.MaxRetries; attempt++ {
+	for attempt := 0; attempt <= effectiveMaxRetries; attempt++ {
 		req, err := http.NewRequestWithContext(ctx, http.MethodPost, endpoint, bytes.NewReader(body))
 		if err != nil {
 			return nil, apperrors.NewDiscovery(
@@ -548,14 +556,14 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 			if isTimeoutError(err) {
 				break
 			}
-		} else if !retryable(resp.StatusCode) || attempt == c.MaxRetries {
+		} else if !retryable(resp.StatusCode) || attempt == effectiveMaxRetries {
 			return resp, nil
 		} else {
 			lastErr = fmt.Errorf("retryable HTTP %d", resp.StatusCode)
 			resp.Body.Close()
 		}
 
-		if attempt < c.MaxRetries {
+		if attempt < effectiveMaxRetries {
 			retryAfter := ""
 			statusForLog := 0
 			if resp != nil {
@@ -563,7 +571,7 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 				statusForLog = resp.StatusCode
 			}
 			delay := c.retryDelayForAttempt(attempt, retryAfter)
-			logging.LogRetryAttempt(c.FileLogger, operation, c.ExecutionId, attempt, c.MaxRetries, statusForLog, delay, lastErr)
+			logging.LogRetryAttempt(c.FileLogger, operation, c.ExecutionId, attempt, effectiveMaxRetries, statusForLog, delay, lastErr)
 			if err := c.sleepForRetry(ctx, delay); err != nil {
 				opts := []apperrors.Option{
 					apperrors.WithOperation(operation),
@@ -590,13 +598,14 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 		category = apperrors.CategoryAPI
 		actions = networkActions("")
 	}
+	safeToRetry := operation != "tools/call" && !isTimeoutError(lastErr)
 	logging.LogErrorClassified(c.FileLogger, operation, c.ExecutionId,
 		string(category), reason, 0, 0,
-		!isTimeoutError(lastErr), "")
+		safeToRetry, "")
 	opts := []apperrors.Option{
 		apperrors.WithOperation(operation),
 		apperrors.WithReason(reason),
-		apperrors.WithRetryable(!isTimeoutError(lastErr)),
+		apperrors.WithRetryable(safeToRetry),
 		apperrors.WithHint(hint),
 		apperrors.WithActions(actions...),
 		apperrors.WithCause(&CallError{
@@ -857,10 +866,16 @@ func sanitizeBearerToken(raw string) string {
 
 func httpStatusError(method, endpoint string, statusCode int, snapshotPath, headerTraceID string) error {
 	message := fmt.Sprintf("request to %s returned HTTP %d", RedactURL(endpoint), statusCode)
+	safeToRetry := retryable(statusCode)
+	// A tools/call 5xx is ambiguous: the write may already have happened. 429
+	// is an explicit pre-execution rate-limit rejection and remains retryable.
+	if method == "tools/call" && statusCode != http.StatusTooManyRequests {
+		safeToRetry = false
+	}
 	opts := []apperrors.Option{
 		apperrors.WithOperation(method),
 		apperrors.WithReason(fmt.Sprintf("http_%d", statusCode)),
-		apperrors.WithRetryable(retryable(statusCode)),
+		apperrors.WithRetryable(safeToRetry),
 		apperrors.WithSnapshot(snapshotPath),
 		apperrors.WithTraceID(headerTraceID),
 		apperrors.WithCause(&CallError{

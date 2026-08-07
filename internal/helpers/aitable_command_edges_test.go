@@ -63,28 +63,24 @@ func runAitableCoverageCommand(t *testing.T, caller edition.ToolCaller, args ...
 	return root.ExecuteContext(context.Background())
 }
 
-func TestCrossPlatformCoverageAitableRetryWrappersExhaustAndRecover(t *testing.T) {
-	oldDeps, oldSleep := deps, helperSleep
-	t.Cleanup(func() { deps, helperSleep = oldDeps, oldSleep })
-	helperSleep = func(time.Duration) {}
-
-	retryable := fmt.Errorf("timeout: retryable: true")
-	caller := &aitableTestCaller{errors: []error{retryable, retryable, retryable, retryable}}
+func TestCrossPlatformCoverageAitableWrappersNeverReplayAmbiguousFailure(t *testing.T) {
+	ambiguous := fmt.Errorf("timeout: retryable: true")
+	caller := &aitableTestCaller{errors: []error{ambiguous, nil}}
 	installAitableDeps(t, caller)
-	if err := callAitableTool("retry", nil); err == nil {
-		t.Fatal("exhausted aitable retries returned nil")
+	if err := callAitableTool("update_records", nil); err == nil {
+		t.Fatal("ambiguous aitable failure returned nil")
+	}
+	if len(caller.calls) != 1 {
+		t.Fatalf("aitable tools/call attempts = %d, want exactly one", len(caller.calls))
 	}
 
-	caller = &aitableTestCaller{errors: []error{retryable, retryable}}
+	caller = &aitableTestCaller{errors: []error{ambiguous, nil}}
 	installAitableDeps(t, caller)
-	if err := callAitableHelperTool("retry", nil); err != nil {
-		t.Fatalf("helper retry did not recover: %v", err)
+	if err := callAitableHelperTool("record_upsert", nil); err == nil {
+		t.Fatal("ambiguous aitable-helper failure returned nil")
 	}
-
-	caller = &aitableTestCaller{errors: []error{retryable, retryable, retryable, retryable}}
-	installAitableDeps(t, caller)
-	if err := callAitableHelperTool("retry", nil); err == nil {
-		t.Fatal("exhausted helper retries returned nil")
+	if len(caller.calls) != 1 {
+		t.Fatalf("aitable-helper tools/call attempts = %d, want exactly one", len(caller.calls))
 	}
 }
 

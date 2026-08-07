@@ -259,6 +259,80 @@ func TestCrossPlatformCoverageMCPOutputModesAndDevdocFormatting(t *testing.T) {
 	}
 }
 
+func TestMailJSONOutputNormalizesSuccessStringBooleans(t *testing.T) {
+	caller := &helpersCoreCaller{
+		format: "json",
+		result: textToolResult(`{"success":"true","result":{"success":"false","label":"false"}}`),
+	}
+	out, _ := installHelpersCoreDeps(t, caller)
+	if err := callMCPToolInternalOpts("mail", "mail_fixture", nil, false); err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("mail output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["success"] != true {
+		t.Fatalf("top-level success = %#v, want bool true", payload["success"])
+	}
+	result, _ := payload["result"].(map[string]any)
+	if result["success"] != false {
+		t.Fatalf("nested success = %#v, want bool false", result["success"])
+	}
+	if result["label"] != "false" {
+		t.Fatalf("unrelated string was coerced: %#v", result["label"])
+	}
+}
+
+func TestNormalizeMailSuccessBooleansHandlesListsWithoutCoercingOtherKeys(t *testing.T) {
+	payload := normalizeMailSuccessBooleans([]any{
+		map[string]any{"success": " false ", "value": "true"},
+		map[string]any{"success": true},
+	}).([]any)
+	first := payload[0].(map[string]any)
+	if first["success"] != false || first["value"] != "true" {
+		t.Fatalf("normalized payload = %#v", payload)
+	}
+}
+
+func TestAitableJSONOutputPublishesNonAuthoritativeDiscoveryBoundary(t *testing.T) {
+	caller := &helpersCoreCaller{
+		format: "json",
+		result: textToolResult(`{"data":{"bases":[],"hasMore":false,"nextCursor":""}}`),
+	}
+	out, _ := installHelpersCoreDeps(t, caller)
+	if err := callMCPToolInternalOpts("aitable", "list_bases", nil, false); err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal(out.Bytes(), &payload); err != nil {
+		t.Fatalf("aitable output is not JSON: %v\n%s", err, out.String())
+	}
+	if payload["sourceKind"] != "recently_accessed" || payload["authoritativeInventory"] != false ||
+		payload["inventoryCoverageKnown"] != false {
+		t.Fatalf("inventory boundary = %#v", payload)
+	}
+	if payload["paginationKnown"] != true || payload["endpointExhausted"] != true {
+		t.Fatalf("pagination evidence = %#v", payload)
+	}
+	if _, exists := payload["complete"]; exists {
+		t.Fatalf("discovery output must not claim broad completeness: %#v", payload)
+	}
+}
+
+func TestAnnotateAitableSearchBoundaryKeepsUnknownCoverageHonest(t *testing.T) {
+	payload := annotateAitableDiscoveryBoundary(map[string]any{
+		"result": map[string]any{"bases": []any{}},
+	}, "search_bases").(map[string]any)
+	if payload["sourceKind"] != "name_search_index" || payload["indexCoverageKnown"] != false ||
+		payload["paginationKnown"] != false {
+		t.Fatalf("search boundary = %#v", payload)
+	}
+	if _, exists := payload["endpointExhausted"]; exists {
+		t.Fatalf("unknown pagination must not claim exhaustion: %#v", payload)
+	}
+}
+
 func TestCrossPlatformCoverageMCPDryRunJSONOutputIsSingleDocument(t *testing.T) {
 	caller := &helpersCoreCaller{format: "json", dry: true}
 	out, _ := installHelpersCoreDeps(t, caller)

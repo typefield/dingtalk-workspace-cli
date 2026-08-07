@@ -97,6 +97,79 @@ func validateMailRuleConditions(conditions []any) error {
 	return nil
 }
 
+// mailLeafMetadata keeps the remaining compatibility commands on the same
+// runtime-declaration path as the rest of the mail product.  It intentionally
+// produces no generated catalog file: Schema is assembled from the live Cobra
+// tree and these ContractFinal declarations at runtime.
+type mailLeafMetadata struct {
+	cmd             *cobra.Command
+	cliPath         string
+	rpc             string
+	summary         string
+	useWhen         string
+	avoidWhen       string
+	example         string
+	effect          string
+	risk            string
+	confirmation    string
+	idempotency     string
+	dryRun          bool
+	compositeReason string
+}
+
+func declareMailLeafMetadata(spec mailLeafMetadata) {
+	if spec.cmd == nil {
+		panic("declareMailLeafMetadata: cmd is nil")
+	}
+	if strings.TrimSpace(spec.summary) == "" {
+		spec.summary = spec.cmd.Short
+	}
+	interfaceSpec := &contract.InterfaceSpec{
+		Mode:         "mcp",
+		Availability: "available",
+		Ref: &contract.InterfaceRefSpec{
+			ProductID: "mail",
+			RPCName:   spec.rpc,
+		},
+	}
+	if spec.compositeReason != "" {
+		interfaceSpec = &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       spec.compositeReason,
+		}
+	}
+	contractDecl := LeafContract{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "mail",
+			Name:           spec.rpc,
+			CanonicalPath:  "mail." + spec.rpc,
+			CLIPath:        spec.cliPath,
+			PrimaryCLIPath: spec.cliPath,
+		},
+		Description: spec.summary,
+		Interface:   interfaceSpec,
+		Selection: contract.SelectionSpec{
+			AgentSummary: spec.summary,
+			UseWhen:      []string{spec.useWhen},
+			AvoidWhen:    []string{spec.avoidWhen},
+			Examples:     []string{spec.example},
+		},
+	}
+	if spec.dryRun {
+		contractDecl.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: false}
+	}
+	DeclareLeafMetadata(spec.cmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect:       spec.effect,
+			Risk:         spec.risk,
+			Confirmation: spec.confirmation,
+			Idempotency:  spec.idempotency,
+		},
+		Contract: contractDecl,
+	})
+}
+
 func newMailCommand() *cobra.Command {
 	// Product-level Agent routing Decl (migrated from selection/mail.json
 	// products.mail). Catalog assembly stamps provenance contract_final.
@@ -109,7 +182,7 @@ func newMailCommand() *cobra.Command {
 			},
 			AvoidWhen: []string{
 				"即时消息用 chat；开放平台应用配置用 dev",
-				"公开 catalog 不含 thread trash / sent-message recall 等硬 --yes 命令时不要臆造路径",
+				"钉盘文件与文档空间内容管理使用 drive 或 doc，不要把邮件附件当作钉盘文件操作",
 			},
 		},
 	})
@@ -1227,10 +1300,6 @@ func newMailCommand() *cobra.Command {
 			if err := validateRequiredFlags(cmd, "email", "id"); err != nil {
 				return err
 			}
-			yes, _ := cmd.Flags().GetBool("yes")
-			if !yes && !commandDryRun(cmd) {
-				return fmt.Errorf("此操作将删除会话且不可撤销，请添加 --yes 确认执行")
-			}
 			return callMCPTool("trash_mailbox_thread", map[string]any{
 				"email": mustGetFlag(cmd, "email"),
 				"id":    mustGetFlag(cmd, "id"),
@@ -1257,10 +1326,6 @@ func newMailCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "email", "ids"); err != nil {
 				return err
-			}
-			yes, _ := cmd.Flags().GetBool("yes")
-			if !yes && !commandDryRun(cmd) {
-				return fmt.Errorf("此操作将批量删除会话且不可撤销，请添加 --yes 确认执行")
 			}
 			ids := parseRecipients(mustGetFlag(cmd, "ids"))
 			if len(ids) > 100 {
@@ -2462,10 +2527,6 @@ internetMessageId 来源：message send / draft send / message reply / message r
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "email", "id", "subject"); err != nil {
 				return err
-			}
-			yes, _ := cmd.Flags().GetBool("yes")
-			if !yes && !deps.Caller.DryRun() {
-				return fmt.Errorf("此操作为危险操作，需要传入 --yes 确认执行")
 			}
 			return callMCPTool("recall_sent_message", map[string]any{
 				"email":   mustGetFlag(cmd, "email"),
@@ -3834,6 +3895,177 @@ object 与 operation 合法组合：
 	_ = calendarEventListCmd.Flags().MarkHidden("end-time")
 	calendarEventListCmd.Flags().String("cursor", "", "分页光标 (可选)")
 	calendarEventCmd.AddCommand(calendarEventListCmd)
+
+	// These commands used to be executable but intentionally absent from
+	// Runtime Schema.  Declare them in place so Help, Schema, safety gates and
+	// Agent routing all describe the same live command surface.
+	for _, spec := range []mailLeafMetadata{
+		{
+			cmd: mailboxProfileCmd, cliPath: "mail mailbox profile", rpc: "get_mailbox_profile",
+			summary: "获取指定邮箱账号的容量、别名和用户资料", useWhen: "已知邮箱地址并需要核对该邮箱账号资料或容量时",
+			avoidWhen: "列出当前用户可用邮箱时使用 mail mailbox list", example: "dws mail mailbox profile --email user@company.com",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: tagCreateCmd, cliPath: "mail tag create", rpc: "create_mail_tag",
+			summary: "在指定邮箱创建邮件标签", useWhen: "用户明确要求创建新的邮件标签时",
+			avoidWhen: "邮件文件夹使用 mail folder create；只需查看标签时使用 mail tag list", example: "dws mail tag create --email user@company.com --name 项目资料",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "non_idempotent", dryRun: true,
+		},
+		{
+			cmd: tagDeleteCmd, cliPath: "mail tag delete", rpc: "delete_mail_tag",
+			summary: "删除指定邮箱的自定义邮件标签", useWhen: "用户明确要求删除已确认 ID 的自定义邮件标签时",
+			avoidWhen: "标签 ID 未确认时先使用 mail tag list；系统标签不可删除", example: "dws mail tag delete --email user@company.com --id <tagId>",
+			effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: tagUpdateCmd, cliPath: "mail tag update", rpc: "update_mail_tag",
+			summary: "修改指定自定义邮件标签的名称", useWhen: "已知标签 ID 且用户要求重命名标签时",
+			avoidWhen: "标签 ID 未确认时先使用 mail tag list；系统标签不可修改", example: "dws mail tag update --email user@company.com --id <tagId> --name 新名称",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: threadListCmd, cliPath: "mail thread list", rpc: "list_mailbox_threads",
+			summary: "按文件夹和游标列出邮箱会话", useWhen: "需要按邮件文件夹浏览会话并继续分页时",
+			avoidWhen: "按关键词查单封邮件使用 mail message search", example: "dws mail thread list --email user@company.com --folder <folderId> --limit 20",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: threadUpdateCmd, cliPath: "mail thread update", rpc: "update_mailbox_thread",
+			summary: "修改单个邮件会话的已读状态或标签", useWhen: "已知会话 ID 且需要标记已读、未读或调整标签时",
+			avoidWhen: "单封邮件状态使用 mail message batch-update；删除会话使用 mail thread trash", example: "dws mail thread update --email user@company.com --id <conversationId> --action markRead",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: threadBatchUpdateCmd, cliPath: "mail thread batch-update", rpc: "batch_update_mailbox_threads",
+			summary: "批量修改邮件会话的已读状态或标签", useWhen: "已确认多个会话 ID 且需要执行同一种状态或标签变更时",
+			avoidWhen: "只有一个会话时使用 mail thread update；删除会话使用 batch-trash", example: "dws mail thread batch-update --email user@company.com --ids <id1>,<id2> --action markRead",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: threadTrashCmd, cliPath: "mail thread trash", rpc: "trash_mailbox_thread",
+			summary: "将指定邮件会话移入已删除文件夹", useWhen: "用户明确要求删除已确认 ID 的邮件会话时",
+			avoidWhen: "只需标记状态或调整标签时使用 mail thread update", example: "dws mail thread trash --email user@company.com --id <conversationId>",
+			effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: threadBatchTrashCmd, cliPath: "mail thread batch-trash", rpc: "batch_trash_mailbox_threads",
+			summary: "批量将邮件会话移入已删除文件夹", useWhen: "用户明确要求删除多个已确认 ID 的邮件会话时",
+			avoidWhen: "只需修改状态或标签时使用 mail thread batch-update", example: "dws mail thread batch-trash --email user@company.com --ids <id1>,<id2>",
+			effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: messageVerifyCmd, cliPath: "mail message verify", rpc: "get_email_by_internet_message_id",
+			summary: "按 internetMessageId 查询邮件发送状态", useWhen: "发送操作已返回 internetMessageId，需要确认投递状态时",
+			avoidWhen: "按 messageId 读取邮件正文使用 mail message get", example: "dws mail message verify --email user@company.com --internet-message-id <internetMessageId>",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: messageBatchModifyCmd, cliPath: "mail message batch-update", rpc: "batch_update_message",
+			summary: "批量修改邮件的已读状态或标签", useWhen: "已确认多个邮件 ID 且需要执行同一种状态或标签变更时",
+			avoidWhen: "移动或删除邮件分别使用 batch-move 或 batch-delete", example: "dws mail message batch-update --email user@company.com --ids <id1>,<id2> --action markRead",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: messageBatchGetCmd, cliPath: "mail message batch-get", rpc: "batch_get_email_messages",
+			summary: "批量获取最多二十封邮件的完整详情", useWhen: "已知多个 messageId 且需要一次聚合读取邮件正文时",
+			avoidWhen: "只读取一封邮件使用 mail message get；未知 ID 时先 search", example: "dws mail message batch-get --email user@company.com --ids <id1>,<id2>",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+			compositeReason: "命令逐个调用 get_email_by_message_id 并聚合结果，不对应单一批量 RPC",
+		},
+		{
+			cmd: sentMessageRecallCmd, cliPath: "mail sent-message recall", rpc: "recall_sent_message",
+			summary: "发起已发送邮件的撤回任务", useWhen: "用户明确要求撤回已发送邮件且已确认邮件 ID 和主题时",
+			avoidWhen: "只查询撤回任务进度使用 mail sent-message recall-detail", example: "dws mail sent-message recall --email user@company.com --id <mailId> --subject 邮件主题",
+			effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "non_idempotent", dryRun: true,
+		},
+		{
+			cmd: sentMessageRecallDetailCmd, cliPath: "mail sent-message recall-detail", rpc: "get_recall_detail",
+			summary: "查询邮件撤回任务的执行进度和明细", useWhen: "已取得撤回任务 ID，需要确认每封邮件的撤回结果时",
+			avoidWhen: "尚未发起撤回时先使用 mail sent-message recall", example: "dws mail sent-message recall-detail --email user@company.com --id <recallTaskId>",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: autoReplyGetCmd, cliPath: "mail auto-reply get", rpc: "get_auto_reply",
+			summary: "读取指定邮箱的自动回复配置", useWhen: "需要查看自动回复是否启用及其时间、范围和内容时",
+			avoidWhen: "修改自动回复配置使用 mail auto-reply update", example: "dws mail auto-reply get --email user@company.com",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: autoReplyUpdateCmd, cliPath: "mail auto-reply update", rpc: "update_auto_reply",
+			summary: "更新指定邮箱的自动回复配置", useWhen: "用户明确要求启用、停用或修改自动回复内容和时间时",
+			avoidWhen: "修改前需要了解当前配置时先使用 mail auto-reply get", example: "dws mail auto-reply update --email user@company.com --enabled false --start '2026/07/01 09:00:00 +0800' --end '2026/07/07 18:00:00 +0800' --scope all --content 已关闭",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: ruleListCmd, cliPath: "mail rule list", rpc: "list_mail_rules",
+			summary: "列出指定邮箱的个人收信规则", useWhen: "需要查看现有收信规则或取得规则 ID 时",
+			avoidWhen: "企业级邮件路由策略不属于个人收信规则", example: "dws mail rule list --email user@company.com",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: ruleCreateCmd, cliPath: "mail rule create", rpc: "create_mail_rule",
+			summary: "创建个人收信规则", useWhen: "用户明确要求新增邮件匹配条件和自动动作时",
+			avoidWhen: "修改已有规则使用 mail rule update；规则语义未确认时不要创建", example: "dws mail rule create --email user@company.com --name VIP --enabled true --actions '[{\"action\":\"ActFlagMail2\",\"parameters\":[\"asread\"]}]'",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "non_idempotent", dryRun: true,
+		},
+		{
+			cmd: ruleUpdateCmd, cliPath: "mail rule update", rpc: "update_mail_rule",
+			summary: "更新指定个人收信规则", useWhen: "已知规则 ID 且用户要求修改名称、启用状态、条件或动作时",
+			avoidWhen: "修改前需要当前完整配置时先使用 mail rule list", example: "dws mail rule update --email user@company.com --id <ruleId> --name 新规则 --enabled false --actions '[]'",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: ruleDeleteCmd, cliPath: "mail rule delete", rpc: "delete_mail_rule",
+			summary: "删除指定个人收信规则", useWhen: "用户明确要求删除已确认 ID 的收信规则时",
+			avoidWhen: "只需停用规则时使用 mail rule update 将 enabled 设为 false", example: "dws mail rule delete --email user@company.com --id <ruleId>",
+			effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: ruleAdjustCmd, cliPath: "mail rule adjust", rpc: "adjust_mail_rule",
+			summary: "向上或向下调整个人收信规则顺序", useWhen: "已知规则 ID 且用户要求改变规则执行优先级时",
+			avoidWhen: "修改规则内容使用 mail rule update", example: "dws mail rule adjust --email user@company.com --id <ruleId> --direction up",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: allowListListCmd, cliPath: "mail allow-list list", rpc: "list_mailbox_allowlist",
+			summary: "列出个人收信白名单", useWhen: "需要查看当前允许的邮件地址或域名时",
+			avoidWhen: "查看拒收项使用 mail block-list list", example: "dws mail allow-list list --email user@company.com",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: allowListAddCmd, cliPath: "mail allow-list add", rpc: "add_mailbox_allowlist",
+			summary: "向个人收信白名单添加地址或域名", useWhen: "用户明确要求允许指定邮件地址或域名时",
+			avoidWhen: "需要拒收地址时使用 mail block-list add", example: "dws mail allow-list add --email user@company.com --entries a@b.com,@example.com",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: allowListRemoveCmd, cliPath: "mail allow-list remove", rpc: "remove_mailbox_allowlist",
+			summary: "从个人收信白名单移除地址或域名", useWhen: "用户明确要求取消指定地址或域名的白名单状态时",
+			avoidWhen: "移除前需要核对当前条目时先使用 mail allow-list list", example: "dws mail allow-list remove --email user@company.com --entries a@b.com",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+		{
+			cmd: blockListListCmd, cliPath: "mail block-list list", rpc: "list_mailbox_blocklist",
+			summary: "列出个人收信黑名单", useWhen: "需要查看当前拒收的邮件地址或域名时",
+			avoidWhen: "查看允许项使用 mail allow-list list", example: "dws mail block-list list --email user@company.com",
+			effect: "read", risk: "low", confirmation: "not_required", idempotency: "idempotent",
+		},
+		{
+			cmd: blockListAddCmd, cliPath: "mail block-list add", rpc: "add_mailbox_blocklist",
+			summary: "向个人收信黑名单添加地址或域名", useWhen: "用户明确要求拒收指定邮件地址或域名时",
+			avoidWhen: "需要允许地址时使用 mail allow-list add", example: "dws mail block-list add --email user@company.com --entries spam@bad.com,@junk.com",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "unknown", dryRun: true,
+		},
+		{
+			cmd: blockListRemoveCmd, cliPath: "mail block-list remove", rpc: "remove_mailbox_blocklist",
+			summary: "从个人收信黑名单移除地址或域名", useWhen: "用户明确要求取消指定地址或域名的黑名单状态时",
+			avoidWhen: "移除前需要核对当前条目时先使用 mail block-list list", example: "dws mail block-list remove --email user@company.com --entries spam@bad.com",
+			effect: "write", risk: "medium", confirmation: "not_required", idempotency: "idempotent", dryRun: true,
+		},
+	} {
+		declareMailLeafMetadata(spec)
+	}
 
 	root.AddCommand(mailboxCmd, messageCmd, sentMessageCmd, draftCmd, threadCmd, folderCmd, tagCmd, userCmd, attachmentCmd, templateCmd, contactCmd, autoReplyCmd, ruleCmd, allowListCmd, blockListCmd, calendarCmd, calendarEventCmd)
 

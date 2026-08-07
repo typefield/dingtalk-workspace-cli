@@ -6,7 +6,6 @@ import (
 	"net/http"
 	"strings"
 	"testing"
-	"time"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
@@ -31,6 +30,9 @@ func TestHTTPStatusErrorIncludesCallMetadata(t *testing.T) {
 	}
 	if typed.Reason != "http_429" {
 		t.Fatalf("Reason = %q, want http_429", typed.Reason)
+	}
+	if !typed.Retryable {
+		t.Fatal("explicit tools/call rate-limit rejection should remain retryable")
 	}
 }
 
@@ -93,22 +95,29 @@ func TestCallToolRequestFailureUsesAPIClassification(t *testing.T) {
 	if typed.Reason != "connection_refused" {
 		t.Fatalf("Reason = %q, want connection_refused", typed.Reason)
 	}
+	if typed.Retryable {
+		t.Fatal("ambiguous tools/call request failure was marked safe to retry")
+	}
 	actions := strings.Join(typed.Actions, "\n")
 	if strings.Contains(actions, "internal/syncdata") || strings.Contains(actions, "sync-oss") {
 		t.Fatalf("runtime network failure contains discovery-only actions: %q", actions)
 	}
 }
 
-func TestCallToolRetryCancellationUsesAPIClassification(t *testing.T) {
+func TestCallToolDoesNotReplayAmbiguousHTTPFailure(t *testing.T) {
+	attempts := 0
 	client := NewClient(&http.Client{Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
+		attempts++
 		return &http.Response{StatusCode: http.StatusServiceUnavailable, Body: http.NoBody}, nil
 	})})
-	client.MaxRetries = 1
-	client.sleep = func(context.Context, time.Duration) error { return context.Canceled }
+	client.MaxRetries = 3
 
 	_, err := client.CallTool(context.Background(), "https://mcp.dingtalk.com/server", "search_messages", nil)
 	if err == nil {
-		t.Fatal("CallTool() error = nil, want retry cancellation")
+		t.Fatal("CallTool() error = nil, want HTTP failure")
+	}
+	if attempts != 1 {
+		t.Fatalf("tools/call attempts = %d, want exactly 1", attempts)
 	}
 
 	var typed *apperrors.Error
@@ -121,8 +130,11 @@ func TestCallToolRetryCancellationUsesAPIClassification(t *testing.T) {
 	if typed.Operation != "tools/call" {
 		t.Fatalf("Operation = %q, want tools/call", typed.Operation)
 	}
-	if typed.Reason != "request_cancelled" {
-		t.Fatalf("Reason = %q, want request_cancelled", typed.Reason)
+	if typed.Reason != "http_503" {
+		t.Fatalf("Reason = %q, want http_503", typed.Reason)
+	}
+	if typed.Retryable {
+		t.Fatal("ambiguous tools/call HTTP 503 was marked safe to retry")
 	}
 	actions := strings.Join(typed.Actions, "\n")
 	if strings.Contains(actions, "internal/syncdata") || strings.Contains(actions, "sync-oss") {

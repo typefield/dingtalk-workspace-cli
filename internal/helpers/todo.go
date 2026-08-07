@@ -54,6 +54,116 @@ func ensureTodoTaskExists(ctx context.Context, taskID string) error {
 	return nil
 }
 
+// addTodoParticipantsWithVerification addresses an upstream ambiguity observed
+// in production: add_task_participants can return an error after the mutation
+// has already been applied. The write is never replayed. On error, one read-only
+// detail request checks whether the requested participant IDs are present.
+func addTodoParticipantsWithVerification(ctx context.Context, taskID string, participantIDs []string) error {
+	request := map[string]any{
+		"todoParticipantsAddRequest": map[string]any{
+			"taskId":         taskID,
+			"participantIds": participantIDs,
+		},
+	}
+	writeErr := callMCPTool("add_task_participants", request)
+	if writeErr == nil || deps.Caller.DryRun() {
+		return writeErr
+	}
+
+	detail, readErr := callMCPToolReturnTextOnServer(ctx, "todo", "get_todo_detail", map[string]any{"taskId": taskID})
+	if readErr != nil {
+		return todoParticipantOutcomeUnknown(taskID, writeErr, fmt.Sprintf("回读失败: %v", readErr))
+	}
+	present, evidenceKnown, parseErr := todoParticipantIDsFromDetail(detail)
+	if parseErr != nil {
+		return todoParticipantOutcomeUnknown(taskID, writeErr, fmt.Sprintf("详情无法解析: %v", parseErr))
+	}
+	if !evidenceKnown {
+		return todoParticipantOutcomeUnknown(taskID, writeErr, "详情响应不包含可验证的参与人字段")
+	}
+
+	applied := make([]string, 0, len(participantIDs))
+	missing := make([]string, 0, len(participantIDs))
+	for _, id := range participantIDs {
+		if present[id] {
+			applied = append(applied, id)
+		} else {
+			missing = append(missing, id)
+		}
+	}
+	if len(missing) == 0 {
+		payload := map[string]any{
+			"success":              true,
+			"applied":              true,
+			"verified":             true,
+			"taskId":               taskID,
+			"participantIds":       participantIDs,
+			"requestReportedError": true,
+			"verification":         "read_after_error",
+		}
+		if deps.Caller.Format() == "json" {
+			return deps.Out.PrintJSON(payload)
+		}
+		deps.Out.PrintKeyValue("Result", "participants were applied despite an error response")
+		deps.Out.PrintKeyValue("Task ID", taskID)
+		deps.Out.PrintKeyValue("Verified participants", strings.Join(participantIDs, ","))
+		return nil
+	}
+	if len(applied) > 0 {
+		return &CLIError{
+			Code:       CodeMCPToolError,
+			Message:    fmt.Sprintf("添加参与人的请求报错，但回读发现部分已落库；已落库=%s，未确认=%s", strings.Join(applied, ","), strings.Join(missing, ",")),
+			Suggestion: fmt.Sprintf("请先执行 dws todo task get --task-id %s --format json 核对，不要直接重试整批写入", taskID),
+		}
+	}
+	return writeErr
+}
+
+func todoParticipantOutcomeUnknown(taskID string, writeErr error, reason string) error {
+	return &CLIError{
+		Code:       CodeMCPToolError,
+		Message:    fmt.Sprintf("添加参与人的请求报错，远端是否已落库未知: %v（%s）", writeErr, reason),
+		Suggestion: fmt.Sprintf("请先执行 dws todo task get --task-id %s --format json 核对参与人，不要直接重试写入", taskID),
+	}
+}
+
+func todoParticipantIDsFromDetail(raw string) (map[string]bool, bool, error) {
+	var body any
+	if err := json.Unmarshal([]byte(raw), &body); err != nil {
+		return nil, false, err
+	}
+	ids := map[string]bool{}
+	known := false
+	var walk func(any, bool)
+	walk = func(value any, participantContext bool) {
+		switch typed := value.(type) {
+		case map[string]any:
+			for key, child := range typed {
+				childContext := participantContext || strings.Contains(strings.ToLower(key), "participant")
+				if !participantContext && childContext {
+					switch child.(type) {
+					case string, []any, map[string]any:
+						known = true
+					}
+				}
+				walk(child, childContext)
+			}
+		case []any:
+			for _, child := range typed {
+				walk(child, participantContext)
+			}
+		case string:
+			if participantContext {
+				if id := strings.TrimSpace(typed); id != "" {
+					ids[id] = true
+				}
+			}
+		}
+	}
+	walk(body, false)
+	return ids, known, nil
+}
+
 func newTodoCommand() *cobra.Command {
 	// Product-level Agent routing Decl (migrated from selection/todo.json
 	// products.todo). Catalog assembly stamps provenance contract_final.
@@ -746,12 +856,7 @@ reset-reminder 写入的提醒规则。提醒写命令的成功响应只能作�
 			}
 			participantsStr := mustGetFlag(cmd, "participants")
 			participantIds := parseExecutorIds(participantsStr)
-			return callMCPTool("add_task_participants", map[string]any{
-				"todoParticipantsAddRequest": map[string]any{
-					"taskId":         mustGetFlag(cmd, "task-id"),
-					"participantIds": participantIds,
-				},
-			})
+			return addTodoParticipantsWithVerification(cmd.Context(), mustGetFlag(cmd, "task-id"), participantIds)
 		},
 	}
 	DeclareLeafMetadata(todoTaskAddParticipantCmd, LeafSpec{
@@ -767,7 +872,7 @@ reset-reminder 写入的提醒规则。提醒写命令的成功响应只能作�
 				CLIPath:        "todo task add-participant",
 				PrimaryCLIPath: "todo task add-participant",
 			},
-			Description: "添加待办参与人",
+			Description: "添加待办参与人；写请求报错时会回读任务，区分已落库与未知结果",
 			Interface: &contract.InterfaceSpec{
 				Mode:         "mcp",
 				Availability: "available",

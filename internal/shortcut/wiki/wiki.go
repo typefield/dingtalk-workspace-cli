@@ -213,7 +213,7 @@ var NodeList = shortcut.Shortcut{
 		if rt.Changed("cursor") {
 			params["pageToken"] = rt.Str("cursor")
 		}
-		data, err := rt.CallMCPData("wiki", "list_nodes", params)
+		data, err := rt.CallMCPData("doc", "list_nodes", params)
 		if err != nil {
 			return err
 		}

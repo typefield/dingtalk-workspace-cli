@@ -74,3 +74,12 @@ func TestMemberListProjectFlatRoleShape(t *testing.T) {
 		t.Fatalf("flat role-member shape: want 1, got %d (%v)", len(got), got)
 	}
 }
+
+func TestMemberProjectionDistinguishesKnownEmptyFromUnknownShape(t *testing.T) {
+	if members, known := memberListProjectWithStatus(map[string]any{"members": []any{}}); !known || len(members) != 0 {
+		t.Fatalf("known empty members = %#v, known=%v", members, known)
+	}
+	if members, known := memberListProjectWithStatus(map[string]any{"unexpected": []any{}}); known || len(members) != 0 {
+		t.Fatalf("unknown member shape = %#v, known=%v", members, known)
+	}
+}

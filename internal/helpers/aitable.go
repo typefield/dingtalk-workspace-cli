@@ -536,58 +536,19 @@ func suggestOperator(op string) string {
 
 // ─── aitable 专用重试 wrapper ──────────────────────────────────────────────
 //
-// 仅影响 aitable 产品线，不影响其他钉钉业务（calendar/contact/chat 等）。
-// 对网络瞬断、服务端 5xx、retryable:true 的错误自动指数退避重试，
-// 同时解决 CI 偶发失败和线上用户关键链路被阻断的问题。
+// AITable requests share the process-wide exactly-once replay policy.
 
-const aitableMaxRetries = 3
-
-// callAitableTool 是 aitable 专用的 MCP 调用入口，带自动重试。
-// 替代直接调用 callMCPTool，对网络抖动和服务端瞬态错误进行透明重试。
+// callAitableTool executes every business request exactly once. A tools/call
+// request may mutate remote state, and a timeout or 5xx does not prove that the
+// operation was not applied. Never infer replay safety from error-message text.
 func callAitableTool(toolName string, args map[string]any) error {
-	var lastErr error
-	for attempt := 0; attempt <= aitableMaxRetries; attempt++ {
-		if attempt > 0 {
-			backoff := time.Duration(1<<(attempt-1)) * time.Second // 1s, 2s, 4s
-			fmt.Fprintf(os.Stderr, "[aitable retry %d/%d] %s after %v...\n", attempt, aitableMaxRetries, toolName, backoff)
-			helperSleep(backoff)
-		}
-
-		err := callMCPTool(toolName, args)
-		if err == nil {
-			return nil
-		}
-
-		// 判断是否为可重试错误
-		if !isAitableRetryableError(err) {
-			return err
-		}
-		lastErr = err
-	}
-	return lastErr
+	return callMCPTool(toolName, args)
 }
 
-// callAitableHelperTool 是 aitable-helper 专用的 MCP 调用入口，路由到 aitable-helper server，带自动重试。
+// callAitableHelperTool applies the same exactly-once rule to the helper
+// server, which also exposes mutations such as upsert and permission changes.
 func callAitableHelperTool(toolName string, args map[string]any) error {
-	var lastErr error
-	for attempt := 0; attempt <= aitableMaxRetries; attempt++ {
-		if attempt > 0 {
-			backoff := time.Duration(1<<(attempt-1)) * time.Second
-			fmt.Fprintf(os.Stderr, "[aitable-helper retry %d/%d] %s after %v...\n", attempt, aitableMaxRetries, toolName, backoff)
-			helperSleep(backoff)
-		}
-
-		err := callMCPToolOnServer("aitable-helper", toolName, args)
-		if err == nil {
-			return nil
-		}
-
-		if !isAitableRetryableError(err) {
-			return err
-		}
-		lastErr = err
-	}
-	return lastErr
+	return callMCPToolOnServer("aitable-helper", toolName, args)
 }
 
 // ─── view 子命令公共 helper ──────────────────────────────────────────
@@ -773,42 +734,6 @@ func callUpdateViewWithBlock(baseID, tableID, viewID, blockKey string, blockValu
 		toolArgs[k] = v
 	}
 	return callAitableTool("update_view", toolArgs)
-}
-
-// isAitableRetryableError 判断 aitable MCP 调用错误是否值得重试。
-// 仅对网络类错误重试，业务错误（参数/权限/资源不存在）不重试。
-func isAitableRetryableError(err error) bool {
-	if err == nil {
-		return false
-	}
-	msg := strings.ToLower(err.Error())
-
-	// 网络瞬态错误
-	retryablePatterns := []string{
-		"timeout", "deadline exceeded", "connection reset",
-		"connection refused", "broken pipe", "eof",
-		"network is unreachable", "i/o timeout",
-		"tls handshake", "server misbehaving", "temporary failure",
-		"no such host",
-	}
-	for _, p := range retryablePatterns {
-		if strings.Contains(msg, p) {
-			return true
-		}
-	}
-
-	// 服务端 5xx（网关/内部错误）
-	if strings.Contains(msg, "system_error") || strings.Contains(msg, "internal_error") ||
-		strings.Contains(msg, "service_unavailable") || strings.Contains(msg, "gateway_timeout") {
-		return true
-	}
-
-	// MCP 框架层返回的 retryable 标记
-	if strings.Contains(msg, "retryable") && strings.Contains(msg, "true") {
-		return true
-	}
-
-	return false
 }
 
 // parseFieldsJSON parses a --fields value as a JSON array, tolerating

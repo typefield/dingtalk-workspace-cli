@@ -197,3 +197,67 @@ func runDriveListLatest(cmd *cobra.Command, baseArgs map[string]any, rootFolder 
 	}
 	return deps.Out.PrintJSON(map[string]any{"items": collected})
 }
+
+// runDriveListPatternPage applies --pattern to the exact server page selected
+// by --cursor/--limit.  It deliberately preserves the upstream envelope and
+// continuation token: a client-side name filter must not claim that later
+// pages were searched or that the directory is exhausted.
+func runDriveListPatternPage(cmd *cobra.Command, args map[string]any, pattern string) error {
+	if deps.Caller.DryRun() {
+		return writeCommandPayload(cmd, map[string]any{
+			"dry_run":   true,
+			"executed":  false,
+			"tool":      "list_files",
+			"arguments": args,
+			"pattern":   pattern,
+		})
+	}
+	text, err := callMCPToolReturnTextOnServer(cmd.Context(), "drive", "list_files", args)
+	if err != nil {
+		return err
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(text), &payload); err != nil {
+		return &CLIError{
+			Code:    CodeMCPToolError,
+			Message: fmt.Sprintf("无法解析 list_files 响应，拒绝输出未经验证的 --pattern 结果: %v", err),
+		}
+	}
+	target := payload
+	if result, ok := payload["result"].(map[string]any); ok && driveDepthListItemsKey(result) != "" {
+		target = result
+	}
+	key := driveDepthListItemsKey(target)
+	if key == "" {
+		return &CLIError{
+			Code:    CodeMCPToolError,
+			Message: "list_files 响应缺少 items/dentryList，拒绝把未知响应投影为空结果",
+		}
+	}
+	rawItems, _ := target[key].([]any)
+	filtered := make([]any, 0, len(rawItems))
+	for index, raw := range rawItems {
+		item, ok := raw.(map[string]any)
+		if !ok {
+			return &CLIError{
+				Code:    CodeMCPToolError,
+				Message: fmt.Sprintf("list_files %s[%d] 不是对象，拒绝静默丢弃", key, index),
+			}
+		}
+		name, _ := item["name"].(string)
+		if name == "" {
+			name, _ = item["fileName"].(string)
+		}
+		if name == "" {
+			return &CLIError{
+				Code:    CodeMCPToolError,
+				Message: fmt.Sprintf("list_files %s[%d] 缺少 name/fileName，无法可靠应用 --pattern", key, index),
+			}
+		}
+		if matchDriveNamePattern(name, pattern) {
+			filtered = append(filtered, item)
+		}
+	}
+	target[key] = filtered
+	return writeCommandPayload(cmd, payload)
+}

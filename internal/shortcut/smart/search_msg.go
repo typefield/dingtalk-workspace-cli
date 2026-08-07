@@ -29,20 +29,24 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/targetresolver"
 )
 
+const searchMsgUseWhen = "当你要按关键词、发送者、@对象、会话、消息类型或机器人来源组合搜索 IM 消息时使用；会话与发送者过滤使用稳定 ID。默认查询近 7 天，也可指定精确起止时间。" +
+	"--page-all 会连续拉取游标页，默认再按消息 ID 分批富化详情；任何续页或富化失败都会保留已取得结果并返回逐项失败 ledger。" +
+	"endpointExhausted 只表示服务端游标耗尽；indexCoverageKnown 为 false 时，空结果不等于业务数据确定不存在。" +
+	"--download-resources 使用安全本地路径、默认不覆盖和原子落盘。"
+
 // SearchMsg is the semantic message-search entry point. It exposes the native
 // IM search dimensions, can exhaust cursor pagination, and enriches sparse
 // search hits through list_messages_by_ids in chunks of 50. A later-page or
-// enrichment failure never turns a partial result into a false success: the
-// output carries an explicit failure ledger and complete=false.
+// enrichment failure never turns a partial result into a false success. The
+// output separates endpoint pagination exhaustion from unknown search-index
+// coverage and carries an explicit failure ledger.
 var SearchMsg = shortcut.Shortcut{
 	Service:     "chat",
 	Command:     "+search-msg",
 	Product:     "im",
 	Description: "按稳定 ID 和内容等条件跨会话搜索消息，可全量翻页并批量富化",
-	Intent: "当你要按关键词、发送者、@对象、会话、消息类型或机器人来源组合搜索 IM 消息时使用；会话与发送者过滤使用稳定 ID。默认查询近 7 天，也可指定精确起止时间。" +
-		"--page-all 会连续拉取游标页，默认再按消息 ID 分批富化详情；任何续页或富化失败都会保留已取得结果并返回逐项失败 ledger，绝不把截断结果标成完整。" +
-		"--download-resources 使用安全本地路径、默认不覆盖和原子落盘。",
-	Risk: shortcut.RiskRead,
+	Intent:      searchMsgUseWhen,
+	Risk:        shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -63,7 +67,7 @@ var SearchMsg = shortcut.Shortcut{
 		},
 		Selection: contract.SelectionSpec{
 			AgentSummary: "按稳定 ID 和内容等条件跨会话搜索消息，可全量翻页并批量富化",
-			UseWhen:      []string{"当你要按关键词、发送者、@对象、会话、消息类型或机器人来源组合搜索 IM 消息时使用；会话与发送者过滤使用稳定 ID。默认查询近 7 天，也可指定精确起止时间。--page-all 会连续拉取游标页，默认再按消息 ID 分批富化详情；任何续页或富化失败都会保留已取得结果并返回逐项失败 ledger，绝不把截断结果标成完整。--download-resources 使用安全本地路径、默认不覆盖和原子落盘。"},
+			UseWhen:      []string{searchMsgUseWhen},
 			AvoidWhen:    []string{"只想读取一个已知会话的连续历史时使用 +chat-messages；已有精确消息 ID 时使用 +messages-mget"},
 			Examples: []string{
 				"dws chat +search-msg --query \"周报\" --senders <openDingTalkId> --days 3 --page-all",
@@ -148,7 +152,8 @@ var SearchMsg = shortcut.Shortcut{
 		seen := map[string]bool{}
 		failures := make([]map[string]any, 0)
 		pagesFetched := 0
-		complete := true
+		resultPartial := false
+		endpointExhausted := false
 		hasMore := false
 		nextCursor := ""
 		paginationKnown := true
@@ -165,7 +170,7 @@ var SearchMsg = shortcut.Shortcut{
 					"cursor": cursor,
 					"error":  callErr.Error(),
 				})
-				complete = false
+				resultPartial = true
 				break
 			}
 			pagesFetched++
@@ -192,13 +197,15 @@ var SearchMsg = shortcut.Shortcut{
 						"error": "下层未返回 hasMore 或 nextCursor，无法证明结果完整",
 					})
 					paginationKnown = false
-					complete = false
+					resultPartial = true
 					break
 				}
 			}
 			hasMore = hasMoreValue
+			if !hasMore {
+				endpointExhausted = true
+			}
 			if !rt.Bool("page-all") || !hasMore {
-				complete = !hasMore
 				break
 			}
 			if nextCursor == "" || nextCursor == "<nil>" || nextCursor == cursor {
@@ -206,7 +213,7 @@ var SearchMsg = shortcut.Shortcut{
 					"stage": "search-page",
 					"error": "下层返回 hasMore=true，但缺少可继续且会前进的 nextCursor",
 				})
-				complete = false
+				resultPartial = true
 				break
 			}
 			cursor = nextCursor
@@ -216,7 +223,7 @@ var SearchMsg = shortcut.Shortcut{
 				"stage": "search-page-limit",
 				"error": fmt.Sprintf("达到 --page-limit=%d，仍有更多结果", pageLimit),
 			})
-			complete = false
+			resultPartial = true
 		}
 
 		enrichedCount := 0
@@ -225,7 +232,7 @@ var SearchMsg = shortcut.Shortcut{
 			messages, enrichedCount, enrichFailures = enrichSearchMessages(rt, messages)
 			failures = append(failures, enrichFailures...)
 			if len(enrichFailures) > 0 {
-				complete = false
+				resultPartial = true
 			}
 		}
 
@@ -234,17 +241,20 @@ var SearchMsg = shortcut.Shortcut{
 			results = append(results, searchMsgProjectWithReactions(m, !rt.Bool("no-reactions")))
 		}
 		payload := map[string]any{
-			"contractVersion": chatmsg.MessageListContractVersion,
-			"count":           len(results),
-			"messages":        results,
-			"pagesFetched":    pagesFetched,
-			"enrichedCount":   enrichedCount,
-			"complete":        complete,
-			"hasMore":         hasMore,
-			"nextCursor":      "",
-			"paginationKnown": paginationKnown,
-			"failedCount":     len(failures),
-			"failures":        failures,
+			"contractVersion":    chatmsg.MessageListContractVersion,
+			"count":              len(results),
+			"messages":           results,
+			"pagesFetched":       pagesFetched,
+			"enrichedCount":      enrichedCount,
+			"endpointExhausted":  endpointExhausted,
+			"indexCoverageKnown": false,
+			"coverageScope":      "server_search_index",
+			"partial":            resultPartial,
+			"hasMore":            hasMore,
+			"nextCursor":         "",
+			"paginationKnown":    paginationKnown,
+			"failedCount":        len(failures),
+			"failures":           failures,
 		}
 		if hasMore && nextCursor != "" && nextCursor != "<nil>" {
 			payload["nextCursor"] = nextCursor

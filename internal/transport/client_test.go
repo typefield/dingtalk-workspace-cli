@@ -292,7 +292,7 @@ func TestCallToolUsesJSONRPCMethod(t *testing.T) {
 	}
 }
 
-func TestCrossPlatformCoverageCallToolDevAppEventSubscribeRetriesAreBounded(t *testing.T) {
+func TestCrossPlatformCoverageCallToolDevAppEventSubscribeIsNotReplayed(t *testing.T) {
 	attempts := 0
 	httpClient := &http.Client{
 		Transport: roundTripFunc(func(req *http.Request) (*http.Response, error) {
@@ -320,12 +320,15 @@ func TestCrossPlatformCoverageCallToolDevAppEventSubscribeRetriesAreBounded(t *t
 	if err == nil {
 		t.Fatal("CallTool() succeeded after repeated HTTP 503 responses")
 	}
-	wantAttempts := client.MaxRetries + 1
-	if attempts != wantAttempts {
-		t.Fatalf("HTTP attempts = %d, want configured bound %d", attempts, wantAttempts)
+	if attempts != 1 {
+		t.Fatalf("dev app event subscribe HTTP attempts = %d, want exactly 1", attempts)
 	}
-	if attempts > 2 {
-		t.Fatalf("dev app event subscribe HTTP attempts = %d, want at most 2 by default", attempts)
+	var typed *apperrors.Error
+	if !stderrors.As(err, &typed) {
+		t.Fatalf("CallTool() error = %T, want *errors.Error", err)
+	}
+	if typed.Retryable {
+		t.Fatal("ambiguous dev app subscription failure was marked safe to retry")
 	}
 }
 

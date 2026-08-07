@@ -82,3 +82,12 @@ func TestListRolesProjectFlatShape(t *testing.T) {
 		t.Fatalf("flat shape: want 2 roles, got %d (%v)", len(roles), roles)
 	}
 }
+
+func TestListRolesProjectionDistinguishesKnownEmptyFromUnknownShape(t *testing.T) {
+	if roles, known := listRolesProjectWithStatus(map[string]any{"result": []any{}}); !known || len(roles) != 0 {
+		t.Fatalf("known empty roles = %#v, known=%v", roles, known)
+	}
+	if roles, known := listRolesProjectWithStatus(map[string]any{"unexpected": []any{}}); known || len(roles) != 0 {
+		t.Fatalf("unknown role shape = %#v, known=%v", roles, known)
+	}
+}

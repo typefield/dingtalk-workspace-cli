@@ -130,7 +130,12 @@ func TestSearchMsgPagesAndEnrichesWithAdvancedFilters(t *testing.T) {
 	if ids := caller.calls[2].args["openMsgIds"]; !reflect.DeepEqual(ids, []string{"m1", "m2"}) {
 		t.Fatalf("mget ids = %#v", ids)
 	}
-	if payload["complete"] != true || payload["count"] != float64(2) ||
+	if _, exists := payload["complete"]; exists {
+		t.Fatalf("search payload must not publish semantically broad complete: %#v", payload)
+	}
+	if payload["endpointExhausted"] != true || payload["partial"] != false ||
+		payload["indexCoverageKnown"] != false || payload["coverageScope"] != "server_search_index" ||
+		payload["count"] != float64(2) ||
 		payload["pagesFetched"] != float64(2) || payload["enrichedCount"] != float64(2) ||
 		payload["failedCount"] != float64(0) {
 		t.Fatalf("payload = %#v", payload)
@@ -149,7 +154,7 @@ func TestSearchMsgLaterPageFailurePublishesPartialLedger(t *testing.T) {
 		"--page-all",
 		"--no-enrich",
 	)
-	if payload["complete"] != false || payload["count"] != float64(1) ||
+	if payload["endpointExhausted"] != false || payload["partial"] != true || payload["count"] != float64(1) ||
 		payload["failedCount"] != float64(1) {
 		t.Fatalf("payload = %#v", payload)
 	}
@@ -163,7 +168,7 @@ func TestSearchMsgLaterPageFailurePublishesPartialLedger(t *testing.T) {
 func TestSearchMsgEnrichmentFailureKeepsSearchHits(t *testing.T) {
 	caller := &searchMsgExecutionCaller{failEnrichment: true}
 	payload := executeSearchMsg(t, caller, "--query", "周报")
-	if payload["complete"] != false || payload["count"] != float64(1) ||
+	if payload["endpointExhausted"] != false || payload["partial"] != true || payload["count"] != float64(1) ||
 		payload["enrichedCount"] != float64(0) || payload["failedCount"] != float64(1) {
 		t.Fatalf("payload = %#v", payload)
 	}
@@ -172,7 +177,7 @@ func TestSearchMsgEnrichmentFailureKeepsSearchHits(t *testing.T) {
 func TestSearchMsgMissingPaginationCannotClaimComplete(t *testing.T) {
 	caller := &searchMsgExecutionCaller{omitPagination: true}
 	payload := executeSearchMsg(t, caller, "--query", "周报", "--no-enrich")
-	if payload["complete"] != false || payload["count"] != float64(1) ||
+	if payload["endpointExhausted"] != false || payload["partial"] != true || payload["count"] != float64(1) ||
 		payload["failedCount"] != float64(1) {
 		t.Fatalf("payload = %#v", payload)
 	}
@@ -186,7 +191,7 @@ func TestSearchMsgMissingPaginationCannotClaimComplete(t *testing.T) {
 func TestSearchMsgMissingMgetItemPublishesFailureLedger(t *testing.T) {
 	caller := &searchMsgExecutionCaller{omitMgetItem: true}
 	payload := executeSearchMsg(t, caller, "--query", "周报", "--page-all")
-	if payload["complete"] != false || payload["count"] != float64(2) ||
+	if payload["endpointExhausted"] != true || payload["partial"] != true || payload["count"] != float64(2) ||
 		payload["enrichedCount"] != float64(1) || payload["failedCount"] != float64(1) {
 		t.Fatalf("payload = %#v", payload)
 	}

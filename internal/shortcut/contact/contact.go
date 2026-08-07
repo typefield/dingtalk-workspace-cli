@@ -20,6 +20,7 @@ package contact
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -278,7 +279,12 @@ var ListRoles = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		roles := listRolesProject(data)
+		roles, projectionKnown := listRolesProjectWithStatus(data)
+		if !projectionKnown {
+			return apperrors.NewAPI("通讯录角色响应结构无法识别，拒绝将未知数据投影为空列表",
+				apperrors.WithReason("projection_unknown"),
+				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
+		}
 		return rt.Output(map[string]any{"count": len(roles), "roles": roles})
 	},
 }
@@ -288,7 +294,12 @@ var ListRoles = shortcut.Shortcut{
 // The list container and field names are probed defensively across candidate
 // keys so the projection tolerates response-shape drift.
 func listRolesProject(data map[string]any) []map[string]any {
-	raw := listRolesResolveList(data)
+	out, _ := listRolesProjectWithStatus(data)
+	return out
+}
+
+func listRolesProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
+	raw, known := listRolesResolveList(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
@@ -306,30 +317,30 @@ func listRolesProject(data map[string]any) []map[string]any {
 			out = append(out, row)
 		}
 	}
-	return out
+	return out, known
 }
 
 // listRolesResolveList locates the list payload inside the response, tolerating
 // a bare top-level array or nesting under result/data/list/items containers.
-func listRolesResolveList(data map[string]any) []any {
+func listRolesResolveList(data map[string]any) ([]any, bool) {
 	for _, key := range []string{"result", "data", "list", "items", "labels"} {
 		v, ok := data[key]
 		if !ok {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return listRolesFlattenGroups(arr)
+			return listRolesFlattenGroups(arr), true
 		}
 		// container may itself wrap the list one level deeper
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "labels", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return listRolesFlattenGroups(arr)
+					return listRolesFlattenGroups(arr), true
 				}
 			}
 		}
 	}
-	return []any{}
+	return []any{}, false
 }
 
 // listRolesFlattenGroups flattens the grouped get_org_labels response into a
@@ -425,7 +436,12 @@ var ListRoleMembers = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		members := memberListProject(data)
+		members, projectionKnown := memberListProjectWithStatus(data)
+		if !projectionKnown {
+			return apperrors.NewAPI("通讯录角色成员响应结构无法识别，拒绝将未知数据投影为空列表",
+				apperrors.WithReason("projection_unknown"),
+				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
+		}
 		return rt.Output(map[string]any{"count": len(members), "members": members})
 	},
 }
@@ -436,8 +452,13 @@ var ListRoleMembers = shortcut.Shortcut{
 // candidate keys, so an empty/unknown shape yields an empty list rather than a
 // crash or fabricated data. Shared by role-member and dept-member listings.
 func memberListProject(data map[string]any) []map[string]any {
+	out, _ := memberListProjectWithStatus(data)
+	return out
+}
+
+func memberListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 	if data == nil {
-		return []map[string]any{}
+		return []map[string]any{}, false
 	}
 	raw := memberListFindList(data)
 	if raw == nil {
@@ -450,6 +471,7 @@ func memberListProject(data map[string]any) []map[string]any {
 			}
 		}
 	}
+	known := raw != nil
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
@@ -473,7 +495,7 @@ func memberListProject(data map[string]any) []map[string]any {
 			out = append(out, row)
 		}
 	}
-	return out
+	return out, known
 }
 
 // memberListFindList returns the first slice found under the common list
@@ -664,7 +686,12 @@ var ListDeptMembers = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		members := memberListProject(data)
+		members, projectionKnown := memberListProjectWithStatus(data)
+		if !projectionKnown {
+			return apperrors.NewAPI("通讯录部门成员响应结构无法识别，拒绝将未知数据投影为空列表",
+				apperrors.WithReason("projection_unknown"),
+				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
+		}
 		return rt.Output(map[string]any{"count": len(members), "members": members})
 	},
 }

@@ -209,15 +209,15 @@ func TestCrossPlatformCoverageBooleanStickyCannotBypassDestructiveConfirmation(t
 		wantCorrection string
 	}{
 		{name: "bare yes confirms", confirmation: []string{"--yes"}, wantCalls: 1},
-		{name: "glued false stays unconfirmed", confirmation: []string{"--yesfalse"}, wantError: "请添加 --yes 确认执行", wantOriginal: "--yesfalse", wantCorrection: "--yes=false"},
+		{name: "glued false stays unconfirmed", confirmation: []string{"--yesfalse"}, wantError: "需要用户确认", wantOriginal: "--yesfalse", wantCorrection: "--yes=false"},
 		{name: "glued true confirms", confirmation: []string{"--yestrue"}, wantCalls: 1, wantOriginal: "--yestrue", wantCorrection: "--yes=true"},
-		{name: "detached false stays unconfirmed", confirmation: []string{"--yes", "false"}, wantError: "请添加 --yes 确认执行", wantOriginal: "--yes false", wantCorrection: "--yes=false"},
-		{name: "detached no stays unconfirmed", confirmation: []string{"--yes", "no"}, wantError: "请添加 --yes 确认执行", wantOriginal: "--yes no", wantCorrection: "--yes=false"},
-		{name: "detached zero stays unconfirmed", confirmation: []string{"--yes", "0"}, wantError: "请添加 --yes 确认执行", wantOriginal: "--yes 0", wantCorrection: "--yes=false"},
+		{name: "detached false stays unconfirmed", confirmation: []string{"--yes", "false"}, wantError: "需要用户确认", wantOriginal: "--yes false", wantCorrection: "--yes=false"},
+		{name: "detached no stays unconfirmed", confirmation: []string{"--yes", "no"}, wantError: "需要用户确认", wantOriginal: "--yes no", wantCorrection: "--yes=false"},
+		{name: "detached zero stays unconfirmed", confirmation: []string{"--yes", "0"}, wantError: "需要用户确认", wantOriginal: "--yes 0", wantCorrection: "--yes=false"},
 		{name: "detached true confirms", confirmation: []string{"--yes", "true"}, wantCalls: 1, wantOriginal: "--yes true", wantCorrection: "--yes=true"},
 		{name: "detached yes confirms", confirmation: []string{"--yes", "yes"}, wantCalls: 1, wantOriginal: "--yes yes", wantCorrection: "--yes=true"},
 		{name: "detached one confirms", confirmation: []string{"--yes", "1"}, wantCalls: 1, wantOriginal: "--yes 1", wantCorrection: "--yes=true"},
-		{name: "explicit false remains unconfirmed", confirmation: []string{"--yes=false"}, wantError: "请添加 --yes 确认执行"},
+		{name: "explicit false remains unconfirmed", confirmation: []string{"--yes=false"}, wantError: "需要用户确认"},
 		{name: "explicit true confirms", confirmation: []string{"--yes=true"}, wantCalls: 1},
 	}
 
