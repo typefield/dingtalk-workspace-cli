@@ -73,7 +73,7 @@ var BaseList = shortcut.Shortcut{
 	Service:     "aitable",
 	Command:     "+base-list",
 	Product:     serverMain,
-	Description: baseListSummary,
+	Description: "获取 AI 表格 Base 的最近访问列表（非全量目录，支持游标分页）",
 	Intent:      baseListUseWhen,
 	Risk:        shortcut.RiskRead,
 	Safety: contract.SafetySpec{

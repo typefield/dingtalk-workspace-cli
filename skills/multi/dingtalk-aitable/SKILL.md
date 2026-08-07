@@ -25,7 +25,7 @@ metadata:
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
 | `dws aitable +base-get` | read | 获取指定 Base 的目录信息（tables / dashboards summary） |
-| `dws aitable +base-list` | read | 获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页） |
+| `dws aitable +base-list` | read | 获取 AI 表格 Base 的最近访问列表（非全量目录，支持游标分页） |
 | `dws aitable +base-search` | read | 按名称关键词搜索 AI 表格 Base |
 | `dws aitable +chart-get` | read | 获取指定 chart 的详细信息 |
 | `dws aitable +chart-widgets-example` | read | 获取所有图表类型的 widget config 示例 |

@@ -416,8 +416,13 @@ func TestMultiIME2E_NaturalTargetsCompletenessAndWriteBoundaries(t *testing.T) {
 		if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 			t.Fatalf("search output is not JSON: %v\n%s", err, stdout)
 		}
-		if payload["complete"] != false || payload["count"] != float64(1) ||
-			payload["pagesFetched"] != float64(1) || payload["failedCount"] != float64(1) {
+		if _, hasBroadComplete := payload["complete"]; hasBroadComplete {
+			t.Fatalf("partial search must not publish the semantically broad complete field: %#v", payload)
+		}
+		if payload["endpointExhausted"] != false || payload["indexCoverageKnown"] != false ||
+			payload["hasMore"] != true || payload["nextCursor"] != "c2" ||
+			payload["count"] != float64(1) || payload["pagesFetched"] != float64(1) ||
+			payload["failedCount"] != float64(1) {
 			t.Fatalf("partial search contract = %#v", payload)
 		}
 		failures, _ := payload["failures"].([]any)

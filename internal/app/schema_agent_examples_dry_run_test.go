@@ -148,7 +148,10 @@ func TestAgentExamplesDryRun(t *testing.T) {
 // the runtime gate. Capability comes only from the final typed ToolSpec; the
 // example disposition may narrow that set but can never invent support.
 func agentExampleShouldExerciseDryRun(execution cli.AgentExampleExecution) bool {
-	return execution.DryRun != nil && execution.Mode == cli.AgentExampleModeDryRun
+	// Remote-read previews require a product-specific fixture and are covered
+	// by their command tests. This delivery gate is deliberately offline and
+	// exercises only previews that promise zero remote reads.
+	return execution.DryRun != nil && !execution.DryRun.RemoteReads && execution.Mode == cli.AgentExampleModeDryRun
 }
 
 func agentExampleExecutionPlan(t testing.TB) cli.AgentExampleExecutionPlan {

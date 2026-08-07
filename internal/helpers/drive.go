@@ -715,7 +715,7 @@ func newDriveCommand() *cobra.Command {
 				PrimaryCLIPath: "drive download",
 			},
 			Description: "下载钉盘或文档空间文件到本地",
-			DryRun:      &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: false},
+			DryRun:      &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 			Interface: &contract.InterfaceSpec{
 				Mode:         "mcp",
 				Availability: "available",

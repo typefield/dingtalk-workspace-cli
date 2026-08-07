@@ -157,7 +157,10 @@ func declareMailLeafMetadata(spec mailLeafMetadata) {
 		},
 	}
 	if spec.dryRun {
-		contractDecl.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: false}
+		// The generic MCP dry-run renderer exposes the exact request that would
+		// be sent. It does not compute a multi-step plan, so publish the narrower
+		// and truthful capability kind.
+		contractDecl.DryRun = &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false}
 	}
 	DeclareLeafMetadata(spec.cmd, LeafSpec{
 		Safety: contract.SafetySpec{
