@@ -3234,10 +3234,10 @@ fieldWidths 仅支持 Grid 视图。
   - Kanban → kanbanCard {coverFieldId, coverResizeMode, hiddenFieldTitle}
   - Gallery → galleryCard {coverMode, coverFieldId, coverResizeMode, displayFieldName}
 typed flag 与 --json 同时存在时，typed flag 优先。--no-cover 与 --cover-field-id 互斥。`,
-		Example: `  dws aitable view update card --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain
-  dws aitable view update card --table-id TABLE_ID --view-id VIEW_ID --no-cover
-  dws aitable view update card --table-id TABLE_ID --view-id VIEW_ID --cover-mode auto       # Gallery
-  dws aitable view update card --table-id TABLE_ID --view-id VIEW_ID --json '{"hiddenFieldTitle":true}'`,
+		Example: `  dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-field-id fldXXX --cover-resize-mode contain
+  dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --no-cover
+  dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cover-mode auto       # Gallery
+  dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '{"hiddenFieldTitle":true}'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			// flag 级互斥先校验，避免无效请求触发 preflight GET
 			noCover, _ := cmd.Flags().GetBool("no-cover")
@@ -3285,8 +3285,8 @@ typed flag 与 --json 同时存在时，typed flag 优先。--no-cover 与 --cov
 				UseWhen:      []string{"调整卡片封面/标题字段时"},
 				AvoidWhen:    []string{"只读用 get card"},
 				Examples: []string{
-					"dws aitable view update card --view-id KANBAN_ID --cover-field-id fldAttachment --cover-resize-mode contain",
-					"dws aitable view update card --view-id KANBAN_ID --no-cover",
+					"dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id KANBAN_ID --cover-field-id fldAttachment --cover-resize-mode contain",
+					"dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id KANBAN_ID --no-cover",
 				},
 			},
 			Parameters: []contract.ParamDecl{
@@ -3301,8 +3301,8 @@ typed flag 与 --json 同时存在时，typed flag 优先。--no-cover 与 --cov
 		Long: `按属性局部更新 Gantt 视图的 ganttTimebar 配置。
 子字段：startField / endField (date 字段) / displayFieldId / timelineScale (year|quarter|month|weeks) /
 colorConfigs (JSON 数组) / officialHoliday (bool)。`,
-		Example: `  dws aitable view update timebar --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month
-  dws aitable view update timebar --table-id TABLE_ID --view-id VIEW_ID --json '{"colorConfigs":[]}'`,
+		Example: `  dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --start-field fldStart --end-field fldEnd --timeline-scale month
+  dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '{"colorConfigs":[]}'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			baseID, tableID, viewID, blockKey, err := viewUpdateCommonPreflight(cmd, "ganttTimebar", []string{"Gantt"}, false)
 			if err != nil {
@@ -3346,8 +3346,8 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 				UseWhen:      []string{"调整甘特时间条字段时"},
 				AvoidWhen:    []string{"只读用 get timebar"},
 				Examples: []string{
-					"dws aitable view update timebar --view-id GANTT_ID --start-field fldStart --end-field fldEnd --timeline-scale month",
-					"dws aitable view update timebar --view-id GANTT_ID --official-holiday=true",
+					"dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id GANTT_ID --start-field fldStart --end-field fldEnd --timeline-scale month",
+					"dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id GANTT_ID --official-holiday=true",
 				},
 			},
 			Parameters: []contract.ParamDecl{
@@ -3367,9 +3367,9 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Short: "更新视图字段聚合统计（仅 Grid）",
 		Long: `更新 Grid 视图的 aggregate 配置。value 为 map[fieldId]→AggregateAction string，
 传 null 清除单个字段聚合。便捷 flag：--field-id / --action 单字段写入；--clear-field-id 单/多清除。`,
-		Example: `  dws aitable view update aggregate --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM
-  dws aitable view update aggregate --table-id TABLE_ID --view-id VIEW_ID --clear-field-id fldX,fldY
-  dws aitable view update aggregate --table-id TABLE_ID --view-id VIEW_ID --json '{"fldA":"AVG","fldB":"MAX"}'`,
+		Example: `  dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --action SUM
+  dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --clear-field-id fldX,fldY
+  dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '{"fldA":"AVG","fldB":"MAX"}'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			baseID, tableID, viewID, blockKey, err := viewUpdateCommonPreflight(cmd, "aggregate", []string{"Grid"}, false)
 			if err != nil {
@@ -3413,7 +3413,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 				AgentSummary: "更新视图聚合配置",
 				UseWhen:      []string{"需要改聚合指标时"},
 				AvoidWhen:    []string{"只读用 get aggregate"},
-				Examples:     []string{"dws aitable view update aggregate --view-id GRID_ID --field-id fldX --action SUM"},
+				Examples:     []string{"dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --field-id fldX --action SUM"},
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "json", Required: boolPtr(false)},
@@ -3425,8 +3425,8 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Use:   "field-widths",
 		Short: "更新视图字段列宽（仅 Grid）",
 		Long:  `更新 Grid 视图的字段列宽。value 为 map[fieldId]→width(int)，可单字段或批量。`,
-		Example: `  dws aitable view update field-widths --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200
-  dws aitable view update field-widths --table-id TABLE_ID --view-id VIEW_ID --json '{"fldA":120,"fldB":200}'`,
+		Example: `  dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-id fldX --width 200
+  dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '{"fldA":120,"fldB":200}'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			baseID, tableID, viewID, blockKey, err := viewUpdateCommonPreflight(cmd, "fieldWidths", []string{"Grid"}, false)
 			if err != nil {
@@ -3478,8 +3478,8 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Short: "更新视图可见字段列表",
 		Long: `按属性更新视图的 visibleFieldIds（即列顺序）。传入的字段 ID 列表
 完全替换原有顺序；首列字段不可隐藏。所有视图类型都支持。`,
-		Example: `  dws aitable view update visible-fields --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3
-  dws aitable view update visible-fields --table-id TABLE_ID --view-id VIEW_ID --json '["fld1","fld2"]'`,
+		Example: `  dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fld1,fld2,fld3
+  dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '["fld1","fld2"]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			baseID, tableID, viewID, _, err := viewUpdateCommonPreflight(cmd, "visibleFieldIds", nil, false)
 			if err != nil {
@@ -3546,7 +3546,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Long: `按属性更新视图的 filter 数组每项为 {operator,operands} 配置（整组替换）。
 [{"operator":"and","operands":[{"operator":"eq","operands":["fldX","value"]}]}]
 若传对象会自动 wrap 为数组；其他非法格式拒绝。`,
-		Example: `  dws aitable view update filter --view-id VIEW_ID --json '[{"operator":"and","operands":[{"operator":"eq","operands":["fldX","value"]}]}]'`,
+		Example: `  dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"operator":"and","operands":[{"operator":"eq","operands":["fldX","value"]}]}]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAitableViewUpdateArray(cmd, "filter")
 		},
@@ -3567,7 +3567,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 				AgentSummary: "更新视图筛选",
 				UseWhen:      []string{"固化视图筛选条件时"},
 				AvoidWhen:    []string{"一次性查询过滤用 record query --filters"},
-				Examples:     []string{"dws aitable view update filter --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"},
+				Examples:     []string{"dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"operator\":\"and\",\"operands\":[{\"operator\":\"eq\",\"operands\":[\"fldX\",\"value\"]}]}]'"},
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "json", Property: "config.filter"},
@@ -3581,7 +3581,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Long: `按属性更新视图的 sort 数组每项为 {fieldId,direction} 配置（整组替换）。
 [{"fieldId":"fldX","direction":"asc"}]
 若传对象会自动 wrap 为数组；其他非法格式拒绝。`,
-		Example: `  dws aitable view update sort --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'`,
+		Example: `  dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAitableViewUpdateArray(cmd, "sort")
 		},
@@ -3602,7 +3602,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 				AgentSummary: "更新视图排序",
 				UseWhen:      []string{"固化视图排序时"},
 				AvoidWhen:    []string{"一次性查询排序用 record query --sort"},
-				Examples:     []string{"dws aitable view update sort --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"},
+				Examples:     []string{"dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"},
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "json", Property: "config.sort"},
@@ -3616,7 +3616,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Long: `按属性更新视图的 group 数组每项为 {fieldId,direction} 配置（整组替换）。
 [{"fieldId":"fldX","direction":"asc"}]
 若传对象会自动 wrap 为数组；其他非法格式拒绝。`,
-		Example: `  dws aitable view update group --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'`,
+		Example: `  dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			return runAitableViewUpdateArray(cmd, "group")
 		},
@@ -3637,7 +3637,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 				AgentSummary: "更新视图分组",
 				UseWhen:      []string{"设置分组字段时"},
 				AvoidWhen:    []string{"只读用 get group"},
-				Examples:     []string{"dws aitable view update group --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"},
+				Examples:     []string{"dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{\"fieldId\":\"fldX\",\"direction\":\"asc\"}]'"},
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "json", Property: "config.group"},
@@ -3649,7 +3649,7 @@ colorConfigs (JSON 数组) / officialHoliday (bool)。`,
 		Use:     "name",
 		Short:   "重命名视图（= view update --name 的便捷子命令）",
 		Long:    `重命名指定视图，等价于 dws aitable view update --name X。无 config 参数。`,
-		Example: `  dws aitable view update name --table-id TABLE_ID --view-id VIEW_ID --name "新视图名"`,
+		Example: `  dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name "新视图名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "table-id", "view-id", "name"); err != nil {
 				return err
@@ -3832,8 +3832,8 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 		Short: "更新视图冻结列数",
 		Long: `设置视图冻结列数。--count N 表示从首列起冻结 N 列；--count 0 表示取消冻结。
 返回 {baseId, tableId, viewId, count}。`,
-		Example: `  dws aitable view update frozen-cols --table-id TABLE_ID --view-id VIEW_ID --count 1
-  dws aitable view update frozen-cols --table-id TABLE_ID --view-id VIEW_ID --count 0`,
+		Example: `  dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1
+  dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 0`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "table-id", "view-id"); err != nil {
 				return err
@@ -3916,8 +3916,8 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 		Short: "更新视图行高（单元格高度）",
 		Long: `设置视图单元格高度，单位为像素。--cell-height 必填，合法档位 32 / 56 / 88 / 128，默认 32。
 返回 {baseId, tableId, viewId, cellHeight}。`,
-		Example: `  dws aitable view update row-height --table-id TABLE_ID --view-id VIEW_ID --cell-height 32
-  dws aitable view update row-height --table-id TABLE_ID --view-id VIEW_ID --cell-height 56`,
+		Example: `  dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 32
+  dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 56`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "table-id", "view-id"); err != nil {
 				return err
@@ -4002,8 +4002,8 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 - color 必须用 FORMAT_COLORS 代号（如 firstLine1..firstLine11），不支持 hex
 - symbol 取 GT/LT/GTE/LTE/EQ/NE/CONTAIN/EXCLUSIVE/EXIST/UN_EXIST/ALL_OF/ANY_OF/NONE_OF/BEFORE/AFTER/NOT_BEFORE/NOT_AFTER/DATE_EQ/FROM_NOW/DATE_BETWEEN
 - 传 --json '[]' 清空当前视图所有填色规则`,
-		Example: `  dws aitable view update fill-color-rule --view-id VIEW_ID --json '[]'
-  dws aitable view update fill-color-rule --view-id VIEW_ID --json '[{"type":"cell","formatFieldId":"fldX","format":{"color":"firstLine5"},"filters":[{"fieldId":"fldX","symbol":"GT","value":100}]}]'`,
+		Example: `  dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[]'
+  dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"type":"cell","formatFieldId":"fldX","format":{"color":"firstLine5"},"filters":[{"fieldId":"fldX","symbol":"GT","value":100}]}]'`,
 		RunE: func(cmd *cobra.Command, args []string) error {
 			if err := validateRequiredFlags(cmd, "table-id", "view-id"); err != nil {
 				return err
@@ -4046,7 +4046,7 @@ locked 为 true 表示视图已锁定，false 表示未锁定。`,
 				AgentSummary: "更新填充色规则",
 				UseWhen:      []string{"设置视图条件填色时"},
 				AvoidWhen:    []string{"只读用 get fill-color-rule"},
-				Examples:     []string{"dws aitable view update fill-color-rule --view-id GRID_ID --json '[]'"},
+				Examples:     []string{"dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --json '[]'"},
 			},
 			Parameters: []contract.ParamDecl{
 				{Name: "json", Property: "conditionalFormats"},

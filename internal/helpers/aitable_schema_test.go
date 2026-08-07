@@ -139,6 +139,37 @@ func TestAitableDeclareLeafMetadataCoversRegistryHelpers(t *testing.T) {
 	}
 }
 
+func TestAitableViewUpdateExamplesIncludeRequiredIdentityFlags(t *testing.T) {
+	root := newAitableCommand()
+	update := findCLIPath(root, "aitable view update")
+	if update == nil {
+		t.Fatal("aitable view update command not found")
+	}
+	required := []string{"--base-id", "--table-id", "--view-id"}
+	for _, command := range update.Commands() {
+		if !command.Runnable() {
+			continue
+		}
+		for _, flag := range required {
+			if !strings.Contains(command.Example, flag) {
+				t.Errorf("%s Help example omits required %s: %q", command.CommandPath(), flag, command.Example)
+			}
+		}
+		final, ok := contractfinal.RuntimeContractFinal(command)
+		if !ok || final.Selection == nil || len(final.Selection.Examples) == 0 {
+			t.Errorf("%s has no final Agent example", command.CommandPath())
+			continue
+		}
+		for _, example := range final.Selection.Examples {
+			for _, flag := range required {
+				if !strings.Contains(example, flag) {
+					t.Errorf("%s Agent example omits required %s: %q", command.CommandPath(), flag, example)
+				}
+			}
+		}
+	}
+}
+
 func findCLIPath(root *cobra.Command, cliPath string) *cobra.Command {
 	parts := splitCLI(cliPath)
 	if len(parts) == 0 || parts[0] != "aitable" {

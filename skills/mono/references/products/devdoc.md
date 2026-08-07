@@ -14,8 +14,8 @@ Example:
   dws devdoc article search --query "机器人" --size 10
 Flags:
       --query string     搜索关键词 (必填)
-      --page int         分页页码 (从 1 开始，默认 1)
-      --size int         分页大小 (默认 10)
+      --page string      分页页码 (从 1 开始，默认 "1")
+      --size string      分页大小 (默认 "10")
 ```
 
 ## 意图判断

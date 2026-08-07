@@ -9,7 +9,7 @@
 > - 用户说"创建企业 / 新建企业 / 开通企业 / 初始化企业"（**不含"账号"二字**）→ **`org create`**（创建企业组织本身）
 > - **判断口径**：先检查 query 是否含"账号"关键词；含则必须路由 `account create`，**禁止**路由 `org create`。
 >
-> **CRITICAL — 根部门**：钉钉根部门 `deptId=1`。单部门命令查根部门通常传 `--dept 1`；`dept list-members` 传 `--ids 1`。`dept search` 精确命中企业根部门时可能返回 `deptId=-1` 哨兵，后续部门命令必须规范化为 `1`。不要传 `self / me / root / 0`。
+> **CRITICAL — 根部门**：钉钉根部门 `deptId=1`。单部门命令查根部门通常传 `--dept 1`；`dept list-members` 传 `--depts 1`。`dept search` 精确命中企业根部门时可能返回 `deptId=-1` 哨兵，后续部门命令必须规范化为 `1`。不要传 `self / me / root / 0`。
 
 ## 命令总览
 
@@ -238,14 +238,14 @@ Notes:
 Usage:
   dws contact dept list-members [flags]
 Example:
-  dws contact dept list-members --ids 12345,67890
-  dws contact dept list-members --ids 1              # 根部门
+  dws contact dept list-members --depts 12345,67890
+  dws contact dept list-members --depts 1              # 根部门
 Flags:
-      --ids string   部门 ID 列表，逗号分隔 (必填)
+      --depts string   部门 ID 列表，逗号分隔 (必填)
 Notes:
-  - **钉钉根部门 `deptId=1`**；查根部门直属成员用 `--ids 1`
+  - **钉钉根部门 `deptId=1`**；查根部门直属成员用 `--depts 1`
   - 仅返回**本部门**直接成员，**不含下级部门**成员；需含下级请先 `dept list-children` 枚举子部门，再对子 deptId 分别/合并调用 `list-members`
-  - 受组织架构可见性控制；`--ids` 支持逗号分隔批量查询多个部门
+  - 受组织架构可见性控制；`--depts` 支持逗号分隔批量查询多个部门
   - 跨层级成员展开见 [08-directory.md](08-directory.md) 的 `cross-level-dept-members` recipe
 ```
 
@@ -482,7 +482,7 @@ dws contact dept get-info --dept <deptId> --format json
 dws contact dept list-children --dept <父deptId> --format json
 
 # 6. 查看部门成员
-dws contact dept list-members --ids <deptId> --format json
+dws contact dept list-members --depts <deptId> --format json
 
 # 7. 获取企业所有角色列表 — 不知道角色名时先浏览
 dws contact label list --format json
@@ -545,14 +545,14 @@ dws contact dept update --dept 12345 --name "新部门名" --parent 67890 --yes 
 | `user profile fields` | `fieldCode` | profile get 的 --fields |
 | `label list` | `labelId` / `labelName` | `label get --names` 或 `label list-members --id` |
 | `label get` | `labelId` | `label list-members` 的 --id |
-| `dept search/list-children` | `deptId` | dept get-info/list-children/update 的 --dept；dept list-members 的 --ids |
+| `dept search/list-children` | `deptId` | dept get-info/list-children/update 的 --dept；dept list-members 的 --depts |
 | `dept search/list-children` | `deptId` | dismission search 的 --depts |
-| `dept create` | `deptId` | dept get-info/list-children/update 的 --dept；dept list-members 的 --ids |
+| `dept create` | `deptId` | dept get-info/list-children/update 的 --dept；dept list-members 的 --depts |
 
 ## 注意事项
 
 - `user get-self` 是获取 userId 的最快方式，其他产品的 --users/--executor 都需要 userId
-- `user get --ids` 和 `dept list-members --ids` 都支持批量查询，逗号分隔
+- `user get --ids` 和 `dept list-members --depts` 都支持批量查询，逗号分隔
 - `user get` 返回组织管理信息（部门、主管、管理员权限），`user profile get` 返回个人档案信息（学历、家庭、银行卡等），注意区分
 - `user profile get` 的 `--staff-id` 可通过 `user get-self` 或 `aisearch person` 获取
 - `user profile get` 的 `--fields` 可通过 `user profile fields` 获取可用字段 code 列表；不填则查询所有可见字段

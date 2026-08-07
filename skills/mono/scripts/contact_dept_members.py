@@ -62,7 +62,7 @@ def main():
     if args.dry_run:
         run_dws([
             'contact', 'dept', 'list-members',
-            '--ids', '<DEPT_ID>', '--format', 'json',
+            '--depts', '<DEPT_ID>', '--format', 'json',
         ], dry_run=True)
         return
 
@@ -98,7 +98,7 @@ def main():
 
         members_data = run_dws([
             'contact', 'dept', 'list-members',
-            '--ids', str(dept_id), '--format', 'json',
+            '--depts', str(dept_id), '--format', 'json',
         ])
         if not members_data:
             print('  无法获取成员列表')

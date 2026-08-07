@@ -161,8 +161,8 @@ def query_check_results(
             payload = cmn.run_dws([
                 "attendance", "check", "result",
                 "--users", ",".join(user_batch),
-                "--from", from_date,
-                "--to", to_date,
+                "--start", from_date,
+                "--end", to_date,
                 "--offset", str(offset),
                 "--limit", str(CHECK_RESULT_PAGE_SIZE),
             ])
@@ -218,8 +218,8 @@ def query_check_records(
         payload = cmn.run_dws([
             "attendance", "check", "record",
             "--users", ",".join(user_batch),
-            "--from", from_date,
-            "--to", to_date,
+            "--start", from_date,
+            "--end", to_date,
         ])
         stats.total_dws_calls += 1
     except cmn.DwsCallError as exc:

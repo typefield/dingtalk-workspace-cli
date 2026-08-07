@@ -29,7 +29,7 @@
 |------|------|--------|
 | `taskUuid` | `minutes list` | `minutes get summary/info/batch --id(s)` |
 | `userId` | `aisearch person` / `contact user search` / `contact dept list-members` | `contact user get --ids`、`todo --executors`、`calendar --users` |
-| `deptId` | `contact dept search` | `contact dept list-members --ids <deptId1,deptId2...>`；多子部门时对每个子部门分别 `dept search` 取 id |
+| `deptId` | `contact dept search` | `contact dept list-members --depts <deptId1,deptId2...>`；多子部门时对每个子部门分别 `dept search` 取 id |
 | `nodeId` | `drive search` / `wiki node search` | `doc read/update --node`、`drive copy/move/rename/delete --node` |
 | `nodeId` | `wiki node list` 中的 folder 类型节点 / `wiki node create --type folder` | `wiki node list --folder`、`wiki node create --folder`、`drive upload --folder`、`drive copy/move --folder` |
 | `eventId` | `calendar event list` | `calendar event get/update --id` |

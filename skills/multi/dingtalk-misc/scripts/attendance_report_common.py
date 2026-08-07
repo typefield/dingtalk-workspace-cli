@@ -566,7 +566,7 @@ def resolve_users_from_input(raw_ids: list[str]) -> list[str]:
     try:
         result = run_dws([
             "contact", "dept", "list-members",
-            "--ids", ",".join(raw_ids),
+            "--depts", ",".join(raw_ids),
         ])
         members = extract_records(result)
         if members:
@@ -589,7 +589,7 @@ def resolve_users_from_input(raw_ids: list[str]) -> list[str]:
         try:
             result = run_dws([
                 "contact", "dept", "list-members",
-                "--ids", raw_id,
+                "--depts", raw_id,
             ])
             members = extract_records(result)
             if members:

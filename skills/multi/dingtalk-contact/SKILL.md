@@ -49,7 +49,7 @@ metadata:
 | "完整手机号反查用户" | `dws contact user search-mobile --mobile <手机号>` |
 | "按部门名拉成员" | `python scripts/contact_dept_members.py --query "<部门名>"` |
 | "搜部门" | `dws contact dept search --query "<关键词>"` |
-| "部门成员列表" | `dws contact dept list-members --ids <deptId>` |
+| "部门成员列表" | `dws contact dept list-members --depts <deptId>` |
 | "列出企业角色 / 有哪些角色" | `dws contact label list` |
 | "按角色名查角色ID" | `dws contact label get --names "<角色名>"` |
 | "查某角色下有哪些成员" | `dws contact label list-members --id <labelId>` |
@@ -98,7 +98,7 @@ metadata:
 
 **触发**：部门列表/部门成员/角色/角色成员。
 
-1. **执行（必须）**：搜部门 `dws contact dept search --query "<部门名>" --format json`；某部门下子部门 `dws contact dept list-children --dept <父部门ID> --format json`；部门成员 `dws contact dept list-members --ids <部门ID>[,<部门ID2>...] --format json`；部门详情 `dws contact dept get-info --dept <部门ID> --format json`。角色：`dws contact label list` / `dws contact label get --names "<角色名>"` / `dws contact label list-members --id <labelId>`。搜索企业根部门时服务端可能返回 `deptId=-1` 哨兵，后续 `list-children` / `list-members` / `get-info` 必须规范化为真实根部门 `deptId=1`。
+1. **执行（必须）**：搜部门 `dws contact dept search --query "<部门名>" --format json`；某部门下子部门 `dws contact dept list-children --dept <父部门ID> --format json`；部门成员 `dws contact dept list-members --depts <部门ID>[,<部门ID2>...] --format json`；部门详情 `dws contact dept get-info --dept <部门ID> --format json`。角色：`dws contact label list` / `dws contact label get --names "<角色名>"` / `dws contact label list-members --id <labelId>`。搜索企业根部门时服务端可能返回 `deptId=-1` 哨兵，后续 `list-children` / `list-members` / `get-info` 必须规范化为真实根部门 `deptId=1`。
 2. **补详情（必须）**：拿到 userId 后用 `contact user get --ids` 补部门/职位；上下级关系优先经 `dingtalk-aisearch` 的 `supervisor`/`subordinate` 维度。
 
 **禁止**：使用不存在的 `contact dept list`（已废弃/歧义）、编造 deptId/labelId、跳过 aisearch 维度直接猜上下级。

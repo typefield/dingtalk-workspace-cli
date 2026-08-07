@@ -76,10 +76,10 @@ card / timebar / aggregate 三类写入有 viewType 校验（preflight 1 次 get
 | `--json` | JSON | 完整 card 子块对象 |
 
 ```bash
-dws aitable view update card --view-id KANBAN_ID --cover-field-id fldAttachment --cover-resize-mode contain
-dws aitable view update card --view-id KANBAN_ID --no-cover
-dws aitable view update card --view-id GALLERY_ID --cover-mode auto
-dws aitable view update card --view-id GALLERY_ID --json '{"coverMode":"custom","coverFieldId":"fldX","displayFieldName":true}'
+dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id KANBAN_ID --cover-field-id fldAttachment --cover-resize-mode contain
+dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id KANBAN_ID --no-cover
+dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id GALLERY_ID --cover-mode auto
+dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id GALLERY_ID --json '{"coverMode":"custom","coverFieldId":"fldX","displayFieldName":true}'
 ```
 
 ### view update timebar（仅 Gantt）
@@ -95,8 +95,8 @@ dws aitable view update card --view-id GALLERY_ID --json '{"coverMode":"custom",
 | `--json` | JSON | 完整 ganttTimebar 子块 |
 
 ```bash
-dws aitable view update timebar --view-id GANTT_ID --start-field fldStart --end-field fldEnd --timeline-scale month
-dws aitable view update timebar --view-id GANTT_ID --official-holiday=true
+dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id GANTT_ID --start-field fldStart --end-field fldEnd --timeline-scale month
+dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id GANTT_ID --official-holiday=true
 ```
 
 ### view update aggregate（仅 Grid）
@@ -111,9 +111,9 @@ dws aitable view update timebar --view-id GANTT_ID --official-holiday=true
 | `--json` | JSON | 完整 aggregate map |
 
 ```bash
-dws aitable view update aggregate --view-id GRID_ID --field-id fldX --action SUM
-dws aitable view update aggregate --view-id GRID_ID --clear-field-id fldA,fldB
-dws aitable view update aggregate --view-id GRID_ID --json '{"fldX":"AVG","fldY":null}'
+dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --field-id fldX --action SUM
+dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --clear-field-id fldA,fldB
+dws aitable view update aggregate --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --json '{"fldX":"AVG","fldY":null}'
 ```
 
 ### view update field-widths（仅 Grid）
@@ -124,8 +124,8 @@ dws aitable view update aggregate --view-id GRID_ID --json '{"fldX":"AVG","fldY"
 | `--json` | `{fldId: width, ...}` |
 
 ```bash
-dws aitable view update field-widths --view-id GRID_ID --field-id fldX --width 200
-dws aitable view update field-widths --view-id GRID_ID --json '{"fldA":120,"fldB":200}'
+dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --field-id fldX --width 200
+dws aitable view update field-widths --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --json '{"fldA":120,"fldB":200}'
 ```
 
 ### view update visible-fields（通用）
@@ -140,16 +140,16 @@ dws aitable view update field-widths --view-id GRID_ID --json '{"fldA":120,"fldB
 | `--json` | string 数组 JSON（与 `--field-ids` 同传时 `--json` 优先） |
 
 ```bash
-dws aitable view update visible-fields --view-id VIEW_ID --field-ids fldPrimary,fldA,fldB
-dws aitable view update visible-fields --view-id VIEW_ID --json '["fldPrimary","fldA","fldB"]'
+dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --field-ids fldPrimary,fldA,fldB
+dws aitable view update visible-fields --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '["fldPrimary","fldA","fldB"]'
 ```
 
 ### view update filter / sort / group（通用，纯 --json）
 
 ```bash
-dws aitable view update filter --view-id VIEW_ID --json '[{"operator":"and","operands":[{"operator":"eq","operands":["fldX","value"]}]}]'
-dws aitable view update sort   --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'
-dws aitable view update group  --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'
+dws aitable view update filter --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"operator":"and","operands":[{"operator":"eq","operands":["fldX","value"]}]}]'
+dws aitable view update sort --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'
+dws aitable view update group --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --json '[{"fieldId":"fldX","direction":"asc"}]'
 ```
 
 > filter/sort/group 入参格式与 `record query --filters`（对象格式）**不同**：view config 这边外层必须是数组。传对象 CLI 会自动 wrap，建议直接用数组。详见 [aitable-filter-sort.md](./aitable-filter-sort.md)。
@@ -157,10 +157,10 @@ dws aitable view update group  --view-id VIEW_ID --json '[{"fieldId":"fldX","dir
 ### view update name（重命名）
 
 ```bash
-dws aitable view update name --view-id VIEW_ID --name "新视图名"
+dws aitable view update name --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name "新视图名"
 ```
 
-等价于 `dws aitable view update --view-id VIEW_ID --name "新视图名"`，无 `config` 参数。
+等价于 `dws aitable view update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --name "新视图名"`，无 `config` 参数。
 
 ## 服务端字段速查（与 dws CLI 关系）
 
@@ -202,7 +202,7 @@ dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID \
 ### 把 Gantt 时间轴改成季度尺度并加节假日
 
 ```bash
-dws aitable view update timebar --view-id GANTT_ID \
+dws aitable view update timebar --base-id BASE_ID --table-id TABLE_ID --view-id GANTT_ID \
   --timeline-scale quarter --official-holiday=true
 ```
 
@@ -210,14 +210,14 @@ dws aitable view update timebar --view-id GANTT_ID \
 
 ```bash
 for v in viw1 viw2 viw3; do
-  dws aitable view update card --view-id $v --cover-field-id fldNewCover --cover-resize-mode cover --format json | jq .status
+  dws aitable view update card --base-id BASE_ID --table-id TABLE_ID --view-id $v --cover-field-id fldNewCover --cover-resize-mode cover --format json | jq .status
 done
 ```
 
 ### 一次性多属性更新（仍走 legacy --config）
 
 ```bash
-dws aitable view update --view-id VIEW_ID --config '{
+dws aitable view update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --config '{
   "visibleFieldIds":["fldPrimary","fldA","fldB"],
   "filter":[{"operator":"and","operands":[]}],
   "kanbanCard":{"coverFieldId":"fldImg","coverResizeMode":"contain"}

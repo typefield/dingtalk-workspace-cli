@@ -60,7 +60,7 @@ def main():
         print('🎙️ 获取听记列表...')
         data = run_dws([
             'minutes', 'list', 'mine',
-            '--max', str(args.max),
+            '--limit', str(args.max),
             '--format', 'json',
         ], dry_run=args.dry_run)
         if args.dry_run:

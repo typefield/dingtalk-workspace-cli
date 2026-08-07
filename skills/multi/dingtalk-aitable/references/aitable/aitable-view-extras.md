@@ -47,10 +47,10 @@ dws aitable view get lock --view-id VIEW_ID --format json
 
 ```bash
 # 冻结从首列起 1 列
-dws aitable view update frozen-cols --view-id VIEW_ID --count 1
+dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 1
 
 # 取消冻结
-dws aitable view update frozen-cols --view-id VIEW_ID --count 0
+dws aitable view update frozen-cols --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --count 0
 
 # 查询当前冻结列数
 dws aitable view get frozen-cols --view-id VIEW_ID --format json
@@ -65,7 +65,7 @@ dws aitable view get frozen-cols --view-id VIEW_ID --format json
 
 ```bash
 # 设置行高 — 推荐档位 32 / 56 / 88 / 128
-dws aitable view update row-height --view-id VIEW_ID --cell-height 56
+dws aitable view update row-height --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --cell-height 56
 
 # 查询当前行高
 dws aitable view get row-height --view-id VIEW_ID --format json
@@ -115,7 +115,7 @@ dws aitable view get row-height --view-id VIEW_ID --format json
 
 ```bash
 # 1) 给金额字段 > 100 的单元格上 firstLine5 色
-dws aitable view update fill-color-rule --view-id GRID_ID --json '[
+dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --json '[
   {
     "type":"cell",
     "formatFieldId":"fldAmount",
@@ -125,7 +125,7 @@ dws aitable view update fill-color-rule --view-id GRID_ID --json '[
 ]'
 
 # 2) 清空所有规则
-dws aitable view update fill-color-rule --view-id GRID_ID --json '[]'
+dws aitable view update fill-color-rule --base-id BASE_ID --table-id TABLE_ID --view-id GRID_ID --json '[]'
 
 # 3) 查询当前规则
 dws aitable view get fill-color-rule --view-id GRID_ID --format json
