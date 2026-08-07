@@ -226,7 +226,6 @@ func TestCrossPlatformCoverageTodoDeleteCancellationAndConfirmationEdges(t *test
 	os.Args = []string{"dws"}
 	for _, args := range [][]string{
 		{"task", "delete", "--task-id", "1"},
-		// remove-attachment is schema-excluded and still uses confirmDelete (nil cancel).
 		{"task", "remove-attachment", "--task-id", "1", "--attachment-id", "2"},
 		{"comment", "delete", "--task-id", "1", "--comment-id", "2"},
 	} {
@@ -241,16 +240,9 @@ func TestCrossPlatformCoverageTodoDeleteCancellationAndConfirmationEdges(t *test
 		os.Stdin = readEnd
 		err = executeTodoEdge(t, &scriptedToolCaller{}, args...)
 		_ = readEnd.Close()
-		switch args[1] {
-		case "remove-attachment":
-			if err != nil {
-				t.Fatalf("cancel %v: %v", args, err)
-			}
-		default:
-			// Contract ConfirmSafety returns a typed cancel error (not silent nil).
-			if err == nil || !strings.Contains(err.Error(), "用户取消了操作") {
-				t.Fatalf("cancel %v: error = %v, want 用户取消了操作", args, err)
-			}
+		// Contract ConfirmSafety returns a typed cancel error (not silent nil).
+		if err == nil || !strings.Contains(err.Error(), "用户取消了操作") {
+			t.Fatalf("cancel %v: error = %v, want 用户取消了操作", args, err)
 		}
 	}
 

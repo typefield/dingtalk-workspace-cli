@@ -456,6 +456,36 @@ func newTodoCommand() *cobra.Command {
 			})
 		},
 	}
+	DeclareLeafMetadata(todoTaskListSubCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "todo",
+				Name:           "list_sub_tasks",
+				CanonicalPath:  "todo.list_sub_tasks",
+				CLIPath:        "todo task list-sub",
+				PrimaryCLIPath: "todo task list-sub",
+			},
+			Description: "查询指定待办的直接子待办列表",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "composite",
+				Availability: "available",
+				Reason:       "Reviewed unpinned remote adapter: the executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "查询指定待办的直接子待办列表",
+				UseWhen:      []string{"已知父待办 taskId，需要查看它的直接子待办时"},
+				AvoidWhen:    []string{"需要父待办自身详情时改用 todo task get；该命令不声明递归返回更深层子待办。"},
+				Examples:     []string{"dws todo task list-sub --task-id <taskId> --format json"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "task-id", Property: "todoSubTaskListRequest.taskId", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	todoTaskUpdateCmd := &cobra.Command{
 		Use:   "update",
@@ -1270,14 +1300,11 @@ reset-reminder 写入的提醒规则。提醒写命令的成功响应只能作�
   # 查询 taskId: dws todo task list
   # 查询 attachmentId: dws todo task list-attachment --task-id`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "task-id"); err != nil {
+			if err := validateRequiredFlags(cmd, "task-id", "attachment-id"); err != nil {
 				return err
 			}
 			taskId := mustGetFlag(cmd, "task-id")
 			attachmentId := mustGetFlag(cmd, "attachment-id")
-			if !commandDryRun(cmd) && !confirmDelete("附件", attachmentId) {
-				return nil
-			}
 			return callMCPTool("remove_todo_attachment", map[string]any{
 				"todoAttachmentRemoveRequest": map[string]any{
 					"taskId":       taskId,
@@ -1286,6 +1313,41 @@ reset-reminder 写入的提醒规则。提醒写命令的成功响应只能作�
 			})
 		},
 	}
+	DeclareLeafMetadata(todoTaskRemoveAttachmentCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "destructive", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "todo",
+				Name:           "remove_todo_attachment",
+				CanonicalPath:  "todo.remove_todo_attachment",
+				CLIPath:        "todo task remove-attachment",
+				PrimaryCLIPath: "todo task remove-attachment",
+			},
+			Description: "从指定待办删除一个附件",
+			DryRun:      &contract.DryRunSpec{PreviewKind: "request", RemoteReads: false},
+			Interface: &contract.InterfaceSpec{
+				Mode:         "composite",
+				Availability: "available",
+				Reason:       "Reviewed unpinned remote adapter: the executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "从指定待办删除一个附件",
+				UseWhen:      []string{"用户明确要求从已确认的 taskId 删除已确认的 attachmentId 时"},
+				AvoidWhen: []string{
+					"taskId 或 attachmentId 不确定时先用 todo task list-attachment 核对",
+					"只需要查看或下载附件时不要执行删除",
+				},
+				Examples: []string{"dws todo task remove-attachment --task-id <taskId> --attachment-id <attachmentId> --format json"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "task-id", Property: "todoAttachmentRemoveRequest.taskId", Required: boolPtr(true)},
+				{Name: "attachment-id", Property: "todoAttachmentRemoveRequest.attachmentId", Required: boolPtr(true)},
+			},
+		},
+	})
 
 	todoTaskCreateCmd.Flags().String("title", "", "待办标题 (必填)")
 	todoTaskCreateCmd.Flags().String("executors", "", "执行者 userId 列表 (必填)")

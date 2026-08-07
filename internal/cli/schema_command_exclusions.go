@@ -131,8 +131,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"oa approval revert-activities",
 			"oa approval revert-task",
 			"oa approval search-forms",
-			"todo task list-sub",
-			"todo task remove-attachment",
 		},
 	},
 }
