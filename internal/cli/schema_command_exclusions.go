@@ -83,15 +83,4 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"agoal user rules",
 		},
 	},
-	{
-		ID:       "compatibility-helpers-pending-review",
-		Reason:   "This executable compatibility/helper command has not yet completed stable interface, parameter, and Agent safety review; it must be reviewed before entering the release Catalog.",
-		Reviewed: true,
-		Commands: []string{
-			"chat chmod",
-			"chat clear-messages",
-			"chat data-auth cross-org",
-			"chat group audit-join-validation",
-		},
-	},
 }

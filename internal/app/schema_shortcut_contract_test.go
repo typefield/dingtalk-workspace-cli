@@ -123,6 +123,24 @@ func TestDeliveryShortcutProgressiveQueriesReturnCompleteContracts(t *testing.T)
 		t.Fatalf("chat share-invite constraints = %#v, want %#v", got, wantShareInviteConstraints)
 	}
 
+	chmod := executeShortcutSchemaQuery(t, "--cli-path", "chat chmod")
+	wantChmodConstraints := map[string]any{
+		"require_one_of":     [][]string{{"conversation-id", "open-dingtalk-id", "user", "permParam"}},
+		"mutually_exclusive": [][]string{{"conversation-id", "open-dingtalk-id", "user"}},
+	}
+	if got := chmod["constraints"]; !schemaContractJSONEqual(got, wantChmodConstraints) {
+		t.Fatalf("chat chmod constraints = %#v, want %#v", got, wantChmodConstraints)
+	}
+
+	crossOrg := executeShortcutSchemaQuery(t, "--cli-path", "chat data-auth cross-org")
+	wantCrossOrgConstraints := map[string]any{
+		"require_one_of":     [][]string{{"target-org-id", "all"}},
+		"mutually_exclusive": [][]string{{"target-org-id", "all"}},
+	}
+	if got := crossOrg["constraints"]; !schemaContractJSONEqual(got, wantCrossOrgConstraints) {
+		t.Fatalf("chat cross-org data-auth constraints = %#v, want %#v", got, wantCrossOrgConstraints)
+	}
+
 	constrainedLeaf := executeShortcutSchemaQuery(t, "--cli-path", "calendar +freebusy")
 	wantConstraints := map[string]any{
 		"require_one_of": [][]string{{"users", "rooms"}},
@@ -133,7 +151,7 @@ func TestDeliveryShortcutProgressiveQueriesReturnCompleteContracts(t *testing.T)
 
 	product := executeShortcutSchemaQuery(t, "chat")
 	productPayload, _ := product["product"].(map[string]any)
-	if got, want := int(product["count"].(float64)), 213; got != want {
+	if got, want := int(product["count"].(float64)), 217; got != want {
 		t.Fatalf("schema chat count = %d, want %d", got, want)
 	}
 	summaries := schemaContractObjectSlice(productPayload["tools"])

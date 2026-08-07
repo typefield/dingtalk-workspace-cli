@@ -930,28 +930,52 @@ var chatValidGrantTypes = map[string]bool{
 }
 
 func validateChatScope(scope string) error {
+	scope = strings.TrimSpace(scope)
 	if !strings.HasPrefix(scope, "chat.") {
-		return fmt.Errorf("invalid scope %q, dws chat chmod only accepts chat.* scope", scope)
+		return apperrors.NewValidation(
+			fmt.Sprintf("invalid scope %q, dws chat chmod only accepts chat.* scope", scope),
+			apperrors.WithReason("invalid_flag_value"),
+		)
 	}
 	return nil
 }
 
 func buildChatGrantBaseArgs(cmd *cobra.Command, scope string) (map[string]any, error) {
 	grantType, _ := cmd.Flags().GetString("grant-type")
+	grantType = strings.TrimSpace(grantType)
 	if !chatValidGrantTypes[grantType] {
-		return nil, fmt.Errorf("invalid --grant-type %q, must be one of: once, session, timed, permanent", grantType)
+		return nil, apperrors.NewValidation(
+			fmt.Sprintf("invalid --grant-type %q, must be one of: once, session, timed, permanent", grantType),
+			apperrors.WithReason("invalid_flag_value"),
+		)
 	}
 	ttl, _ := cmd.Flags().GetString("ttl")
+	ttl = strings.TrimSpace(ttl)
 	sessionID, _ := cmd.Flags().GetString("session-id")
+	sessionID = strings.TrimSpace(sessionID)
 	if grantType == "timed" && ttl == "" {
-		return nil, fmt.Errorf("--ttl is required when --grant-type is timed")
+		return nil, apperrors.NewValidation(
+			"--ttl is required when --grant-type is timed",
+			apperrors.WithReason("missing_required_flags"),
+		)
 	}
 	if grantType == "session" && sessionID == "" {
-		return nil, fmt.Errorf("--session-id is required when --grant-type is session")
+		return nil, apperrors.NewValidation(
+			"--session-id is required when --grant-type is session",
+			apperrors.WithReason("missing_required_flags"),
+		)
+	}
+	agentCode, _ := cmd.Flags().GetString("agentCode")
+	agentCode = strings.TrimSpace(agentCode)
+	if agentCode == "" {
+		return nil, apperrors.NewValidation(
+			"--agentCode must contain a non-empty value",
+			apperrors.WithReason("missing_required_flags"),
+		)
 	}
 	toolArgs := map[string]any{
-		"agentCode": mustGetFlag(cmd, "agentCode"),
-		"scope":     scope,
+		"agentCode": agentCode,
+		"scope":     strings.TrimSpace(scope),
 		"grantType": grantType,
 	}
 	if grantType == "timed" {
@@ -978,10 +1002,16 @@ func buildChatCrossOrgDataAuthArgs(cmd *cobra.Command) (map[string]any, error) {
 	targetOrgID := strings.TrimSpace(mustGetFlag(cmd, "target-org-id"))
 	all, _ := cmd.Flags().GetBool("all")
 	if targetOrgID == "" && !all {
-		return nil, fmt.Errorf("--target-org-id or --all is required")
+		return nil, apperrors.NewValidation(
+			"exactly one of --target-org-id or --all is required",
+			apperrors.WithReason("missing_required_flags"),
+		)
 	}
 	if targetOrgID != "" && all {
-		return nil, fmt.Errorf("--target-org-id and --all cannot be used together")
+		return nil, apperrors.NewValidation(
+			"--target-org-id and --all are mutually exclusive",
+			apperrors.WithReason("invalid_flag_value"),
+		)
 	}
 	if all {
 		targetOrgID = "*"
@@ -1012,7 +1042,10 @@ func appendChatChmodParams(cmd *cobra.Command, toolArgs map[string]any) error {
 		}
 	}
 	if specified > 1 {
-		return fmt.Errorf("--conversation-id, --open-dingtalk-id and --user are mutually exclusive")
+		return apperrors.NewValidation(
+			"--conversation-id, --open-dingtalk-id and --user are mutually exclusive",
+			apperrors.WithReason("invalid_flag_value"),
+		)
 	}
 	if conversationID != "" {
 		putChatChmodParam(grantParams, "conversationId", conversationID)
@@ -1027,7 +1060,10 @@ func appendChatChmodParams(cmd *cobra.Command, toolArgs map[string]any) error {
 		}
 	}
 	if specified == 0 && len(grantParams) == 0 {
-		return fmt.Errorf("--conversation-id, --open-dingtalk-id, --user or --permParam is required")
+		return apperrors.NewValidation(
+			"at least one of --conversation-id, --open-dingtalk-id, --user or --permParam is required",
+			apperrors.WithReason("missing_required_flags"),
+		)
 	}
 	paramsJSON, _ := marshalJSONRaw(grantParams)
 	toolArgs["grantParams"] = string(paramsJSON)
@@ -1043,7 +1079,10 @@ func parseChatChmodParams(values []string) (map[string]string, error) {
 		}
 		parts := strings.SplitN(item, "=", 2)
 		if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" {
-			return nil, fmt.Errorf("--permParam must be key=value, got %q", raw)
+			return nil, apperrors.NewValidation(
+				fmt.Sprintf("--permParam must be key=value, got %q", raw),
+				apperrors.WithReason("invalid_flag_value"),
+			)
 		}
 		params[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
 	}
@@ -1391,20 +1430,13 @@ func newChatCommand() *cobra.Command {
   dws chat chmod chat.message:send --agentCode agt-wukong-xxxx --grant-type timed --ttl 24h --conversation-id cidXXXXXXXXXX`,
 		Args: cobra.ExactArgs(1),
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateChatScope(args[0]); err != nil {
+			scope := strings.TrimSpace(args[0])
+			if err := validateChatScope(scope); err != nil {
 				return err
 			}
-			toolArgs, err := buildChatChmodArgs(cmd, args[0])
+			toolArgs, err := buildChatChmodArgs(cmd, scope)
 			if err != nil {
 				return err
-			}
-			if !commandBoolFlag(cmd, "yes") {
-				return apperrors.NewValidation(
-					"授予 chat 高风险操作权限需要用户确认；获得用户确认后加 --yes 执行",
-					apperrors.WithReason("confirmation_required"),
-					apperrors.WithHint("先确认授权 scope、目标会话/用户和有效期；用户明确同意后以相同参数追加 --yes"),
-					apperrors.WithActions("确认授权 scope 和影响范围", "获得用户确认后使用 --yes 执行"),
-				)
 			}
 			return callMCPToolOnServer("im", "chat_permission_grant", toolArgs)
 		},
@@ -1417,7 +1449,6 @@ func newChatCommand() *cobra.Command {
 	chatChmodCmd.Flags().String("open-dingtalk-id", "", "单聊目标 openDingTalkId")
 	chatChmodCmd.Flags().String("user", "", "单聊目标 userId（与 --open-dingtalk-id 二选一）")
 	chatChmodCmd.Flags().String("session-id", "", "session 授权的会话标识")
-	chatChmodCmd.Flags().BoolP("yes", "y", false, "确认执行 chat 高风险授权操作")
 	DeclareLeafMetadata(chatChmodCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "high",
@@ -1456,6 +1487,7 @@ func newChatCommand() *cobra.Command {
 				{Name: "ttl", Property: "ttl", Required: boolPtr(false)},
 				{Name: "user", Property: "grantParams.userId", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -1494,8 +1526,8 @@ func newChatCommand() *cobra.Command {
 	chatDataAuthCrossOrgCmd.Flags().String("session-id", "", "session 授权的会话标识")
 	DeclareLeafMetadata(chatDataAuthCrossOrgCmd, LeafSpec{
 		Safety: contract.SafetySpec{
-			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Effect: "write", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -1525,6 +1557,7 @@ func newChatCommand() *cobra.Command {
 				{Name: "target-org-id", Property: "grantParams.targetOrgId", Required: boolPtr(false)},
 				{Name: "ttl", Property: "ttl", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 	chatDataAuthCmd.AddCommand(chatDataAuthCrossOrgCmd)
@@ -7779,7 +7812,7 @@ flow-status 取值：1=处理中(PROCESSING)，2=输入中(INPUTTING)，3=完成
 
 	chatGroupAuditJoinValidationCmd := &cobra.Command{
 		Use:   "audit-join-validation",
-		Short: "审批入群验证（通过、拒绝、删除）",
+		Short: "审批入群验证（通过或删除）",
 		Long: `审批入群验证。真机实测服务端仅接受 AuditApprove / AuditDelete，其余状态会被拒绝（unsupported audit status）。
 
 status 可选值:
@@ -7792,19 +7825,45 @@ status 可选值:
   dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <userId> --inviter <userId> --status AuditDelete --description "不符合入群条件"
   # 查询入群验证记录: dws chat group list-join-validations`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "group", "record-id", "applicant", "inviter", "status"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group")
+			if err != nil {
 				return err
 			}
-			recordID, err := strconv.ParseInt(mustGetFlag(cmd, "record-id"), 10, 64)
+			recordText, err := requiredTrimmedChatFlag(cmd, "record-id")
 			if err != nil {
-				return fmt.Errorf("--record-id must be a valid integer: %w", err)
+				return err
+			}
+			recordID, err := strconv.ParseInt(recordText, 10, 64)
+			if err != nil || recordID <= 0 {
+				return apperrors.NewValidation(
+					"--record-id must be a positive integer",
+					apperrors.WithReason("invalid_flag_value"),
+				)
+			}
+			applicant, err := requiredTrimmedChatFlag(cmd, "applicant")
+			if err != nil {
+				return err
+			}
+			inviter, err := requiredTrimmedChatFlag(cmd, "inviter")
+			if err != nil {
+				return err
+			}
+			status, err := requiredTrimmedChatFlag(cmd, "status")
+			if err != nil {
+				return err
+			}
+			if status != "AuditApprove" && status != "AuditDelete" {
+				return apperrors.NewValidation(
+					"--status must be one of: AuditApprove, AuditDelete",
+					apperrors.WithReason("invalid_flag_value"),
+				)
 			}
 			toolArgs := map[string]any{
-				"openConversationId": mustGetFlag(cmd, "group"),
+				"openConversationId": groupID,
 				"applyRecordId":      recordID,
-				"applicantUid":       mustGetFlag(cmd, "applicant"),
-				"inviterUid":         mustGetFlag(cmd, "inviter"),
-				"status":             mustGetFlag(cmd, "status"),
+				"applicantUid":       applicant,
+				"inviterUid":         inviter,
+				"status":             status,
 			}
 			if v, _ := cmd.Flags().GetString("description"); v != "" {
 				toolArgs["auditDescription"] = v
@@ -7825,8 +7884,8 @@ status 可选值:
 	chatGroupAuditJoinValidationCmd.Flags().String("description", "", "审批说明（可选）")
 	DeclareLeafMetadata(chatGroupAuditJoinValidationCmd, LeafSpec{
 		Safety: contract.SafetySpec{
-			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Effect: "write", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -7854,8 +7913,9 @@ status 可选值:
 				{Name: "group", Property: "openConversationId", Required: boolPtr(true)},
 				{Name: "inviter", Property: "inviterUid", Required: boolPtr(true)},
 				{Name: "record-id", Property: "applyRecordId", Required: boolPtr(true), InterfaceType: "integer"},
-				{Name: "status", Property: "status", Required: boolPtr(true), Enum: []string{"AuditApprove", "AuditDelete", "AuditIgnore", "AuditRefuse", "AuditBlock"}},
+				{Name: "status", Property: "status", Required: boolPtr(true), Enum: []string{"AuditApprove", "AuditDelete"}},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8076,20 +8136,11 @@ status 可选值:
 如何获取 openConversationId（如果上层已有则直接使用，不必再查）：
   - 群聊：dws chat search --query "群名"
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>`,
-		Example: `  dws chat clear-messages --conversation-id <openConversationId>
-  dws chat clear-messages --id <openConversationId>`,
+		Example: `  dws chat clear-messages --conversation-id <openConversationId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			convID := flagOrFallback(cmd, "conversation-id", "id", "chat")
-			if convID == "" {
-				return fmt.Errorf("flag --conversation-id is required\n  hint: dws chat clear-messages --conversation-id <openConversationId>")
-			}
-			if !commandBoolFlag(cmd, "yes") {
-				return apperrors.NewValidation(
-					"清空会话聊天记录不可逆；获得用户确认后加 --yes 执行",
-					apperrors.WithReason("confirmation_required"),
-					apperrors.WithHint("先确认目标会话及影响范围；用户明确同意后以相同参数追加 --yes"),
-					apperrors.WithActions("确认目标会话", "获得用户确认后使用 --yes 执行"),
-				)
+			convID, err := requiredTrimmedChatFlag(cmd, "conversation-id", "id", "chat")
+			if err != nil {
+				return err
 			}
 			return callMCPToolOnServer("im", "clear_conversation_messages", map[string]any{
 				"openConversationId": convID,
@@ -8104,7 +8155,7 @@ status 可选值:
 	DeclareLeafMetadata(chatClearMessagesCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "destructive", Risk: "high",
-			Confirmation: "user_required", Idempotency: "unknown",
+			Confirmation: "user_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8127,10 +8178,9 @@ status 可选值:
 				Examples:     []string{"dws chat clear-messages --conversation-id <openConversationId>"},
 			},
 			Parameters: []contract.ParamDecl{
-				{Name: "chat", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(false)},
-				{Name: "id", Property: "openConversationId", Required: boolPtr(false)},
+				{Name: "conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 

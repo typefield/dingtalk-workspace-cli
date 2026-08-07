@@ -26,6 +26,15 @@
 | 会话置顶、状态和分组 | [chat-conversation](chat/chat-conversation.md) |
 | 相邻低频意图仍需消歧 | [intent-guide](intent-guide.md) |
 
+## 权限恢复入口
+
+只有服务端返回明确的权限恢复信息和真实 `chat.*` scope 时，才使用 `chat chmod`；不得由 Agent 根据自然语言发明 scope。跨组织读取授权使用 `chat data-auth cross-org`，不能代替发送、撤回或群管理授权。两类命令都会扩大权限范围，必须先 `--dry-run` 核对 scope、目标和有效期，取得用户明确确认后才能追加 `--yes`；`--all` 表示所有目标组织，不能默认选择。
+
+```bash
+dws chat chmod chat.message:send --conversation-id <openConversationId> --grant-type timed --ttl 24h --dry-run --format json
+dws chat data-auth cross-org --target-org-id <targetOrgId> --grant-type timed --ttl 24h --dry-run --format json
+```
+
 ## 消息底层能力
 
 | 原子命令 | 仅用于 |

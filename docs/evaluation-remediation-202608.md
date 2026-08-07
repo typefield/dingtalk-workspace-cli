@@ -38,7 +38,7 @@
 | event 停机契约 | **安全入口已修，真实停机待复验** | `event stop` 为 destructive/high/user_required；无 `--yes` 拦截，`--dry-run` 不停订阅 | 真实订阅执行 stop 后验证进程、订阅和本地状态三者终态一致 |
 | contact 投影层 `8/5/1` 数据丢失 | **代码已修，待真实环境复验** | `+list-roles` 已拍平分组 `labels[]`；角色/部门成员识别 `labelUserList`/`deptUserList` 并解包 `userInfo`。回归测试锁定报告中的 8/5/1 下层计数；任一非空条目无法投影时整体 fail-closed，不再返回成功空/残缺列表 | 用原评测账号复跑三条命令并对拍 lower/upper 数量及稳定 ID |
 | Skill/Help/Schema 指令偏移 | **本轮已关闭已知项，持续审阅** | Agent 对拍发现部门查询隐藏别名、AITable 写示例缺身份参数、考勤/听记/会议室脚本隐藏 flag、mono devdoc 类型漂移；已同步修正代码声明、Help、Schema examples、mono/multi Skill 和脚本 | 发布前继续按产品执行 Agent 语义扫描；CI 路径检查不能代替 flag/结果/安全审阅 |
-| public leaf 依赖 Schema exclusion | **渐进收敛中** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令、DING/OA 的 4 条纯读命令、DING 的 3 条本人身份写命令、OA 加签/可退回节点查询/退回 3 条命令、Calendar ACL 授权/撤权与日历本更新 3 条命令、Chat 当前用户会话状态 8 条、Chat 会话分组 5 条，以及 Chat 共享内容写入 5 条命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1044。当前仍有 35 条 CLI 生命周期控制、16 条未开放 Agoal、4 条待审兼容 helper | 只按 terminal command 在完成接口、参数和安全审阅后移除；CLI 控制面和明确未开放产品不为追求数字清零而伪装成 Agent 工具 |
+| public leaf 依赖 Schema exclusion | **兼容 helper 已清零；产品边界 exclusion 保留** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、8 条 Chat 纯读命令、DING/OA 的 4 条纯读命令、DING 的 3 条本人身份写命令、OA 加签/可退回节点查询/退回 3 条命令、Calendar ACL 授权/撤权与日历本更新 3 条命令、Chat 当前用户会话状态 8 条、Chat 会话分组 5 条、Chat 共享内容写入 5 条，以及最后 4 条 Chat 授权/审批/清理命令已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；运行时 Schema 工具数由 1000 增至 1048。待审 compatibility helper 为 0；仍保留 35 条用户操作的 CLI 生命周期控制与 16 条明确未开放的 Agoal 产品命令 | 不把 CLI 登录/配置/插件控制面和未开放产品伪装为 Agent 业务工具；这两类是产品边界，不是待审债务 |
 | sheet 二次回滚 bricking | **未关闭** | 破坏性问题不能以普通单测或无账号 dry-run 证明消失 | 隔离表格、备份和服务端协同下做官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
@@ -308,9 +308,36 @@ chat group share-invite
    `--send-ding` 可能重复触达保守标为 `unknown`；消息置顶/取消置顶为幂等。
 7. Runtime Schema 工具数增至 1044；剩余兼容 helper exclusion 降至 4 条。
 
+## Chat 最后 4 条 compatibility helper exclusion 清零证据
+
+本轮完成最后 4 条待审命令，`compatibility-helpers-pending-review` 分组已删除：
+
+```text
+chat chmod
+chat data-auth cross-org
+chat clear-messages
+chat group audit-join-validation
+```
+
+审阅和修复结论：
+
+1. `chat chmod` 与 `data-auth cross-org` 都会扩大授权范围，统一按
+   high/user_required 发布；仅在本地参数全部合法后进入确认门，request dry-run
+   不调用授权 RPC。`chat chmod` 只接受 `chat.*` scope，目标选择关系进入 Schema；
+   跨组织授权的 `--target-org-id/--all` 以 exactly-one 契约发布。
+2. `clear-messages` 保持 destructive/high，逻辑终态幂等；只公开 canonical
+   `--conversation-id`，隐藏兼容别名不再进入 Agent 参数面。空白 ID 在确认前以
+   typed validation 拒绝，dry-run 不调用清空 RPC。
+3. `audit-join-validation` 按群成员访问变更提升为 high/user_required；CLI、Help、
+   Schema 与 Skill 只发布真机可用的 `AuditApprove/AuditDelete`，其余服务端拒绝值
+   在本地确认前 fail-fast。申请人与邀请人明确为记录返回的 `userId`。
+4. 四条命令均由专项测试锁定 ContractFinal、参数投影、确认前零远端调用、
+   dry-run 零远端调用以及真实执行 exactly-once。
+5. Runtime Schema 工具数增至 1048；待审 compatibility helper exclusion 为 0。
+
 ## 下一批优先级
 
-1. 对剩余 4 条 compatibility helper 按操作风险继续做 Agent 审阅；写命令先完成真实
-   Safety、确认门禁、dry-run 和幂等性审阅，禁止因为追求 exclusion 清零而直接公开。
-2. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
-3. 在隔离数据上完成 sheet 二次回滚官方自证。
+1. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
+2. 在隔离数据上完成 sheet 二次回滚官方自证。
+3. 对保留的 CLI 生命周期与 Agoal 产品边界 exclusion 做发布级复核，确保没有新的业务
+   leaf 被误归入边界组；新增待审业务命令必须在同一变更中完成 Contract/Safety 审阅。

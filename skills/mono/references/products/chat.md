@@ -504,11 +504,23 @@ Flags:
       --exclude-muted    是否排除已设置免打扰的群聊（默认 false）
 ```
 
+### chmod（高风险操作授权）
+
+仅在命令返回明确的权限恢复信息，并给出真实 `chat.*` scope 时使用；禁止根据自然语言自行发明 scope 或扩大授权目标。先用 `--dry-run` 核对 scope、会话/用户、授权类型和有效期。真实授权前必须取得用户明确确认，Agent 才能按相同参数追加 `--yes`；宿主仍可能继续展示授权确认弹窗。
+
+```bash
+dws chat chmod chat.message:send --conversation-id <openConversationId> --grant-type timed --ttl 24h --dry-run --format json
+```
+
+`--conversation-id`、`--open-dingtalk-id`、`--user` 三者互斥；也可使用服务端明确给出的 `--permParam key=value`。不得把 `data-auth cross-org` 用于发送、撤回或群管理授权。
+
 ### data-auth (数据授权)
 
 #### 跨组织数据授权 — 授予 chat 跨组织消息拉取权限
 
 用于跨组织消息拉取等数据访问场景，不用于发送、撤回、群管理等操作。该命令调用 `chat_permission_grant`，固定使用数据授权类别：`scope=chat.data:cross-org`、`grantCategory=data`。
+
+跨组织数据授权会扩大数据可见范围，`--all` 会覆盖所有目标组织。先用 `--dry-run` 核对目标组织、授权类型和有效期；真实授权前必须取得用户明确确认，Agent 才能追加 `--yes`。
 
 ```
 Usage:
@@ -1796,6 +1808,7 @@ Flags:
 注意:
   - 仅清空当前用户视角的消息，不影响其他成员
   - openConversationId 可通过 chat search（群聊）或 chat conversation-info（单聊）获取
+  - 该操作不可逆；先用 `--dry-run` 核对会话，真实清空前必须取得用户明确确认，Agent 才能追加 `--yes`
 ```
 
 ### mark-read (标记消息已读)
@@ -1868,20 +1881,21 @@ Flags:
 Usage:
   dws chat group audit-join-validation [flags]
 Example:
-  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <openDingTalkId> --inviter <openDingTalkId> --status AuditApprove
-  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <openDingTalkId> --inviter <openDingTalkId> --status AuditDelete
+  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <userId> --inviter <userId> --status AuditApprove
+  dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <userId> --inviter <userId> --status AuditDelete
   # 查询入群验证记录: dws chat group list-join-validations
 Flags:
       --group string        群 openConversationId (必填)
       --record-id string    申请记录 ID (必填)
-      --applicant string    申请人 openDingTalkId (必填)
-      --inviter string      邀请人 openDingTalkId (必填)
+      --applicant string    申请人 userId (必填)
+      --inviter string      邀请人 userId (必填)
       --status string       审批动作: AuditApprove(通过) / AuditDelete(删除) (必填)
       --description string  审批说明（可选）
 
 注意:
   - status 仅支持 AuditApprove(通过) 和 AuditDelete(删除)；AuditIgnore(忽略)、AuditRefuse(拒绝)、AuditBlock(拒绝且拉黑) 会被服务端拒绝报 unsupported audit status，属服务端限制
   - record-id、applicant、inviter 可通过 dws chat group list-join-validations 查询获得
+  - 审批会改变群成员访问状态；先用 `--dry-run` 核对申请记录和动作，真实审批前必须取得用户明确确认，Agent 才能追加 `--yes`
 ```
 
 ### toolbar (快捷栏管理)

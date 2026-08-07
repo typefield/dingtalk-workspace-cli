@@ -164,11 +164,11 @@ dws chat group notice edit --group <openConversationId> --notice-id <dataId> --c
 | `group list-join-validations` | 拉取入群验证记录 | 包括自己被拒绝的记录以及作为审批者的记录 |
 | `group audit-join-validation` | 审批入群验证 | `--group` `--record-id` `--applicant` `--inviter` `--status` |
 
-审批动作 `--status`：`AuditApprove`、`AuditDelete`、`AuditIgnore`、`AuditRefuse`、`AuditBlock`。
+审批动作 `--status` 仅支持 `AuditApprove` 和 `AuditDelete`；其余值服务端不可用，不得尝试。`--applicant` 与 `--inviter` 使用记录返回的 `userId`，不是 `openDingTalkId`。审批会改变群成员访问状态，先用 `--dry-run` 核对记录和动作；真实审批前必须取得用户明确确认，Agent 才能追加 `--yes`。
 
 ```bash
 dws chat group list-join-validations --limit 20
-dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <openDingTalkId> --inviter <openDingTalkId> --status AuditApprove
+dws chat group audit-join-validation --group <openConversationId> --record-id 123456 --applicant <userId> --inviter <userId> --status AuditApprove
 ```
 
 ### 群身份

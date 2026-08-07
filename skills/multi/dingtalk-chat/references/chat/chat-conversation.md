@@ -16,6 +16,7 @@
 - 会话状态类命令通常需要 `openConversationId`。群聊只用 `+chat-search --query` 获取唯一候选，单聊可由 `chat conversation-info --user/--open-dingtalk-id` 获取。
 - `set-top` 是会话置顶；`message set-top-msg` 是会话内消息置顶，二者不能混用。
 - `clear-messages` 只清空当前用户视角的消息，不影响其他成员。
+- `clear-messages` 仍是不可逆操作：先用 `--dry-run` 核对会话，真实清空前必须取得用户明确确认，Agent 才能追加 `--yes`。
 - 智能分组规则中的成员使用 openDingTalkId；如果用户只给姓名，先用 `aisearch person --dimension name` 获取。
 
 ## 命令明细

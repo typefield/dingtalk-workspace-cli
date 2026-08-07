@@ -38,6 +38,11 @@ func init() {
 	registerRequireTogether("calendar.update_calendar_event", "recurrence-type", "recurrence-interval", "recurrence-range-type")
 	registerExclusiveOneOf("chat.search_messages_by_sender", "sender-user-id", "sender-open-dingtalk-id")
 	registerExclusiveOneOf("chat.create_and_send_card", "group", "receiver")
+	RegisterRuntimeSchemaConstraints("chat.chat_permission_grant", RuntimeSchemaConstraints{
+		MutuallyExclusive: [][]string{{"conversation-id", "open-dingtalk-id", "user"}},
+		RequireOneOf:      [][]string{{"conversation-id", "open-dingtalk-id", "user", "permParam"}},
+	})
+	registerExclusiveOneOf("chat.chat_permission_grant_cross_org_data", "target-org-id", "all")
 	registerRequireOneOf("chat.add_emoji_reaction", "conversation-id", "group", "id", "chat")
 	registerRequireOneOf("chat.add_text_emotion", "conversation-id", "group", "id", "chat")
 	registerRequireOneOf("chat.update_text_emotion", "conversation-id", "group", "id", "chat")
