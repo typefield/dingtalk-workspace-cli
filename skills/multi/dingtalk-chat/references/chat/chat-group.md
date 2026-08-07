@@ -116,6 +116,8 @@ dws chat group create --name "话题圈" --users userId1,userId2 --thread
 
 `group share-invite` 的 `--source` 是被分享群的 `openConversationId`；`--target` 是接收分享消息的会话，`--receiver` 是接收分享消息的单聊用户 `openDingTalkId`，二者必须二选一。
 
+该命令会实际发送群邀请消息。先用 `--dry-run` 核对来源群、接收方、有效期和幂等键；真实发送前必须取得用户明确确认，Agent 才能追加 `--yes`。
+
 ```bash
 dws chat group share-invite --source <sourceOpenConversationId> --target <targetOpenConversationId>
 dws chat group share-invite --source <sourceOpenConversationId> --receiver <receiverOpenDingTalkId>
@@ -127,6 +129,8 @@ dws chat group user-settings set --items '[{"openConversationId":"cid1","top":tr
 ### 群公告
 
 群公告正文使用 Markdown。支持标题、加粗、斜体、删除线、行内代码、链接、代码块、列表、表格、引用、分割线、图片、段落和换行；下划线、字体色、背景色、字号属于编辑器专属能力，无法通过 Markdown 表达。
+
+`notice create/edit` 会修改群内公共内容，`--send-ding` 会主动触达成员。先用 `--dry-run` 核对完整正文和所有选项；真实发布或修改前必须取得用户明确确认，Agent 才能追加 `--yes`。
 
 | 命令 | 用途 | 必填参数 |
 |------|------|----------|

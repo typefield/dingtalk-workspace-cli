@@ -92,11 +92,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"chat clear-messages",
 			"chat data-auth cross-org",
 			"chat group audit-join-validation",
-			"chat group notice create",
-			"chat group notice edit",
-			"chat group share-invite",
-			"chat message set-top-msg",
-			"chat message unset-top-msg",
 		},
 	},
 }

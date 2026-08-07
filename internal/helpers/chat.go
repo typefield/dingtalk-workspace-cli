@@ -44,6 +44,44 @@ func requiredTrimmedChatFlag(cmd *cobra.Command, primary string, aliases ...stri
 	return value, nil
 }
 
+func requiredNonBlankChatFlag(cmd *cobra.Command, name string) (string, error) {
+	value, _ := cmd.Flags().GetString(name)
+	if strings.TrimSpace(value) == "" {
+		return "", apperrors.NewValidation(
+			fmt.Sprintf("--%s must contain a non-empty value", name),
+			apperrors.WithReason("missing_required_flags"),
+		)
+	}
+	// Preserve the caller's Markdown/text bytes. Trimming is only used to
+	// decide whether the value is blank; it must not rewrite meaningful code
+	// blocks, indentation, or trailing newlines before the remote call.
+	return value, nil
+}
+
+func validatedChatNoticeRunAt(cmd *cobra.Command) (string, error) {
+	value, _ := cmd.Flags().GetString("run-at")
+	value = strings.TrimSpace(value)
+	if value == "" {
+		return "", nil
+	}
+	if _, err := time.Parse(time.RFC3339Nano, value); err == nil {
+		return value, nil
+	}
+	beijing := time.FixedZone("Asia/Shanghai", 8*60*60)
+	for _, layout := range []string{
+		"2006-01-02T15:04:05",
+		"2006-01-02T15:04:05.999999999",
+	} {
+		if _, err := time.ParseInLocation(layout, value, beijing); err == nil {
+			return value, nil
+		}
+	}
+	return "", apperrors.NewValidation(
+		"--run-at must be an ISO-8601 date-time (for example 2026-07-03T09:00:00+08:00)",
+		apperrors.WithReason("invalid_flag_value"),
+	)
+}
+
 func requiredPositiveChatInt64Flag(cmd *cobra.Command, name string) (int64, error) {
 	value, _ := cmd.Flags().GetInt64(name)
 	if value <= 0 {
@@ -8172,12 +8210,17 @@ status 可选值:
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>`,
 		Example: `  dws chat message set-top-msg --open-conversation-id <openConversationId> --msg-id <openMessageId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "open-conversation-id", "msg-id"); err != nil {
+			conversationID, err := requiredTrimmedChatFlag(cmd, "open-conversation-id")
+			if err != nil {
+				return err
+			}
+			messageID, err := requiredTrimmedChatFlag(cmd, "msg-id")
+			if err != nil {
 				return err
 			}
 			return callMCPToolOnServer("im", "set_top_message", map[string]any{
-				"openConversationId": mustGetFlag(cmd, "open-conversation-id"),
-				"openMessageId":      mustGetFlag(cmd, "msg-id"),
+				"openConversationId": conversationID,
+				"openMessageId":      messageID,
 			})
 		},
 	}
@@ -8188,7 +8231,7 @@ status 可选值:
 	DeclareLeafMetadata(chatMessageSetTopMsgCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "idempotent",
+			Confirmation: "user_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8214,6 +8257,7 @@ status 可选值:
 				{Name: "msg-id", Property: "openMessageId", Required: boolPtr(true)},
 				{Name: "open-conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8229,12 +8273,17 @@ status 可选值:
   - 单聊：dws chat conversation-info --open-dingtalk-id <openDingTalkId>`,
 		Example: `  dws chat message unset-top-msg --open-conversation-id <openConversationId> --msg-id <openMessageId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "open-conversation-id", "msg-id"); err != nil {
+			conversationID, err := requiredTrimmedChatFlag(cmd, "open-conversation-id")
+			if err != nil {
+				return err
+			}
+			messageID, err := requiredTrimmedChatFlag(cmd, "msg-id")
+			if err != nil {
 				return err
 			}
 			return callMCPToolOnServer("im", "unset_top_message", map[string]any{
-				"openConversationId": mustGetFlag(cmd, "open-conversation-id"),
-				"openMessageId":      mustGetFlag(cmd, "msg-id"),
+				"openConversationId": conversationID,
+				"openMessageId":      messageID,
 			})
 		},
 	}
@@ -8245,7 +8294,7 @@ status 可选值:
 	DeclareLeafMetadata(chatMessageUnsetTopMsgCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "idempotent",
+			Confirmation: "user_required", Idempotency: "idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8271,6 +8320,7 @@ status 可选值:
 				{Name: "msg-id", Property: "openMessageId", Required: boolPtr(true)},
 				{Name: "open-conversation-id", Property: "openConversationId", Required: boolPtr(true)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8624,12 +8674,21 @@ status 可选值:
   dws chat group notice create --group <openConversationId> --content "明早九点例会" --run-at "2026-07-03T09:00:00+08:00"
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "group", "content"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group")
+			if err != nil {
+				return err
+			}
+			content, err := requiredNonBlankChatFlag(cmd, "content")
+			if err != nil {
+				return err
+			}
+			runAt, err := validatedChatNoticeRunAt(cmd)
+			if err != nil {
 				return err
 			}
 			toolArgs := map[string]any{
-				"openConversationId": mustGetFlag(cmd, "group"),
-				"content":            mustGetFlag(cmd, "content"),
+				"openConversationId": groupID,
+				"content":            content,
 			}
 			if v, _ := cmd.Flags().GetBool("sticky"); v {
 				toolArgs["sticky"] = true
@@ -8637,9 +8696,9 @@ status 可选值:
 			if v, _ := cmd.Flags().GetBool("send-ding"); v {
 				toolArgs["sendDing"] = true
 			}
-			if v, _ := cmd.Flags().GetString("run-at"); v != "" {
+			if runAt != "" {
 				toolArgs["scheduled"] = true
-				toolArgs["runAtText"] = v
+				toolArgs["runAtText"] = runAt
 			}
 			return callMCPToolOnServer("im", "create_group_notice", toolArgs)
 		},
@@ -8654,7 +8713,7 @@ status 可选值:
 	DeclareLeafMetadata(chatGroupNoticeCreateCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "user_required", Idempotency: "non_idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8683,6 +8742,7 @@ status 可选值:
 				{Name: "send-ding", Property: "sendDing", Required: boolPtr(false)},
 				{Name: "sticky", Property: "sticky", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8694,13 +8754,22 @@ status 可选值:
   dws chat group notice edit --group <openConversationId> --notice-id <dataId> --content "更新后的公告内容" --sticky --send-ding
   # 查询公告 ID: dws chat group notice list --group <openConversationId>`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "group", "notice-id", "content"); err != nil {
+			groupID, err := requiredTrimmedChatFlag(cmd, "group")
+			if err != nil {
+				return err
+			}
+			noticeID, err := requiredTrimmedChatFlag(cmd, "notice-id")
+			if err != nil {
+				return err
+			}
+			content, err := requiredNonBlankChatFlag(cmd, "content")
+			if err != nil {
 				return err
 			}
 			toolArgs := map[string]any{
-				"openConversationId": mustGetFlag(cmd, "group"),
-				"dataId":             mustGetFlag(cmd, "notice-id"),
-				"content":            mustGetFlag(cmd, "content"),
+				"openConversationId": groupID,
+				"dataId":             noticeID,
+				"content":            content,
 			}
 			if v, _ := cmd.Flags().GetBool("sticky"); v {
 				toolArgs["sticky"] = true
@@ -8722,7 +8791,7 @@ status 可选值:
 	DeclareLeafMetadata(chatGroupNoticeEditCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "idempotent",
+			Confirmation: "user_required", Idempotency: "unknown",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8751,6 +8820,7 @@ status 可选值:
 				{Name: "send-ding", Property: "sendDing", Required: boolPtr(false)},
 				{Name: "sticky", Property: "sticky", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 
@@ -8877,19 +8947,28 @@ status 可选值:
   dws chat group share-invite --source <openConversationId> --target <openConversationId> --expires-seconds 86400
   # 查询群 ID: dws chat search --query "群名"`,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			if err := validateRequiredFlags(cmd, "source"); err != nil {
+			source, err := requiredTrimmedChatFlag(cmd, "source")
+			if err != nil {
 				return err
 			}
 			target, _ := cmd.Flags().GetString("target")
 			receiver, _ := cmd.Flags().GetString("receiver")
+			target = strings.TrimSpace(target)
+			receiver = strings.TrimSpace(receiver)
 			if target == "" && receiver == "" {
-				return fmt.Errorf("--target or --receiver is required")
+				return apperrors.NewValidation(
+					"exactly one of --target or --receiver is required",
+					apperrors.WithReason("missing_required_flags"),
+				)
 			}
 			if target != "" && receiver != "" {
-				return fmt.Errorf("--target and --receiver are mutually exclusive")
+				return apperrors.NewValidation(
+					"--target and --receiver are mutually exclusive",
+					apperrors.WithReason("invalid_flag_value"),
+				)
 			}
 			toolArgs := map[string]any{
-				"sourceOpenConversationId": mustGetFlag(cmd, "source"),
+				"sourceOpenConversationId": source,
 			}
 			if target != "" {
 				toolArgs["targetOpenConversationId"] = target
@@ -8897,11 +8976,17 @@ status 可选值:
 			if receiver != "" {
 				toolArgs["receiverOpenDingTalkId"] = receiver
 			}
-			if v, _ := cmd.Flags().GetInt64("expires-seconds"); v > 0 || cmd.Flags().Changed("expires-seconds") {
+			if v, _ := cmd.Flags().GetInt64("expires-seconds"); cmd.Flags().Changed("expires-seconds") {
+				if v < 0 {
+					return apperrors.NewValidation(
+						"--expires-seconds must be zero or a positive integer",
+						apperrors.WithReason("invalid_flag_value"),
+					)
+				}
 				toolArgs["expiresSeconds"] = v
 			}
-			if v, _ := cmd.Flags().GetString("uuid"); v != "" {
-				toolArgs["uuid"] = v
+			if v, _ := cmd.Flags().GetString("uuid"); strings.TrimSpace(v) != "" {
+				toolArgs["uuid"] = strings.TrimSpace(v)
 			}
 			return callMCPToolOnServer("im", "share_group_invite_url", toolArgs)
 		},
@@ -8915,7 +9000,7 @@ status 可选值:
 	DeclareLeafMetadata(chatGroupShareInviteCmd, LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
-			Confirmation: "not_required", Idempotency: "unknown",
+			Confirmation: "user_required", Idempotency: "non_idempotent",
 		},
 		Contract: LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -8944,6 +9029,7 @@ status 可选值:
 				{Name: "target", Property: "targetOpenConversationId", Required: boolPtr(false)},
 				{Name: "uuid", Property: "uuid", Required: boolPtr(false)},
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 		},
 	})
 

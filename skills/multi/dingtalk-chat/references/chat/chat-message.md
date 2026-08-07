@@ -224,6 +224,8 @@ dws chat +messages-update-card --biz-id <bizId> --content "最终内容" --flow-
 
 消息置顶 `set-top-msg` 与会话置顶 `chat set-top` 不同：前者置顶会话内消息，后者置顶整个会话。
 
+`set-top-msg/unset-top-msg` 会改变会话参与者可见的公共置顶状态。先用 `--dry-run` 核对会话与消息 ID；真实修改前必须取得用户明确确认，Agent 才能追加 `--yes`。
+
 ### 表情回应
 
 优先查 [chat-emoji-list.md](../chat-emoji-list.md) 中的默认表情名称。

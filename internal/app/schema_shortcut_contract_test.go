@@ -114,6 +114,15 @@ func TestDeliveryShortcutProgressiveQueriesReturnCompleteContracts(t *testing.T)
 		t.Fatalf("shortcut leaf constraints = %#v, want %#v", got, wantMessagesConstraints)
 	}
 
+	shareInvite := executeShortcutSchemaQuery(t, "--cli-path", "chat group share-invite")
+	wantShareInviteConstraints := map[string]any{
+		"require_one_of":     [][]string{{"target", "receiver"}},
+		"mutually_exclusive": [][]string{{"target", "receiver"}},
+	}
+	if got := shareInvite["constraints"]; !schemaContractJSONEqual(got, wantShareInviteConstraints) {
+		t.Fatalf("chat share-invite constraints = %#v, want %#v", got, wantShareInviteConstraints)
+	}
+
 	constrainedLeaf := executeShortcutSchemaQuery(t, "--cli-path", "calendar +freebusy")
 	wantConstraints := map[string]any{
 		"require_one_of": [][]string{{"users", "rooms"}},
@@ -124,7 +133,7 @@ func TestDeliveryShortcutProgressiveQueriesReturnCompleteContracts(t *testing.T)
 
 	product := executeShortcutSchemaQuery(t, "chat")
 	productPayload, _ := product["product"].(map[string]any)
-	if got, want := int(product["count"].(float64)), 208; got != want {
+	if got, want := int(product["count"].(float64)), 213; got != want {
 		t.Fatalf("schema chat count = %d, want %d", got, want)
 	}
 	summaries := schemaContractObjectSlice(productPayload["tools"])

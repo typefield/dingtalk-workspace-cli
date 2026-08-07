@@ -42,6 +42,7 @@ func init() {
 	registerRequireOneOf("chat.add_text_emotion", "conversation-id", "group", "id", "chat")
 	registerRequireOneOf("chat.update_text_emotion", "conversation-id", "group", "id", "chat")
 	registerExclusiveOneOf("chat.get_conversation_info", "group", "user", "open-dingtalk-id")
+	registerExclusiveOneOf("chat.share_group_invite_url", "target", "receiver")
 	registerExclusiveOneOf("chat.list_conversation_message_v2", "group", "user", "open-dingtalk-id")
 	registerExclusiveOneOf("chat.list_individual_chat_message", "user", "open-dingtalk-id")
 	registerRequireOneOf("chat.remove_emoji_reaction", "conversation-id", "group", "id", "chat")

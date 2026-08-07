@@ -404,6 +404,9 @@ func TestLeafCommandCallDispatch(t *testing.T) {
 }
 
 func TestDeclareLeafMetadataInstallsConfirmSafetyForUserRequired(t *testing.T) {
+	testseam.Protect(t, &deps)
+	deps = nil
+
 	// With Validate: confirm runs at RunE entry (after PreRunE), so inner
 	// must not execute without --yes.
 	called := false
@@ -448,6 +451,9 @@ func TestDeclareLeafMetadataInstallsConfirmSafetyForUserRequired(t *testing.T) {
 	if !HasContractConfirmSafety(cmd) || !HasContractValidate(cmd) {
 		t.Fatal("expected contract ConfirmSafety + Validate annotations")
 	}
+	// Use an explicit non-nil argv so Cobra cannot fall back to process-wide
+	// os.Args left by another command-coverage test (which may contain --yes).
+	cmd.SetArgs([]string{})
 	cmd.SetIn(strings.NewReader(""))
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)

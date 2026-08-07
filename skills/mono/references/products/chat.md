@@ -181,6 +181,7 @@ Flags:
 #### 分享群聊链接到会话 — 将指定群的邀请链接分享到另一个会话或单聊用户
 
 `--target` 和 `--receiver` 二选一：`--target` 指定目标会话，`--receiver` 指定单聊用户。
+该命令会向目标会话或用户实际发送邀请消息。先用全局 `--dry-run` 核对来源群、接收方和有效期；真实发送前必须取得用户明确确认，Agent 才能追加 `--yes`。
 
 ```
 Usage:
@@ -336,6 +337,8 @@ Flags:
 
 #### 发布群公告 — 在指定群聊中发布群公告，支持 Markdown、定时发布
 
+发布会改变群内公共可见内容，`--send-ding` 还会主动提醒成员。先用全局 `--dry-run` 核对完整正文、置顶、提醒和定时时间；真实发布前必须取得用户明确确认，Agent 才能追加 `--yes`。
+
 ```
 Usage:
   dws chat group notice create [flags]
@@ -352,6 +355,8 @@ Flags:
 ```
 
 #### 修改群公告 — 整体替换指定群公告的内容
+
+修改会整体替换公共公告正文，`--send-ding` 可能再次提醒成员。先用全局 `--dry-run` 核对完整新正文和选项；真实修改前必须取得用户明确确认，Agent 才能追加 `--yes`。
 ```
 Usage:
   dws chat group notice edit [flags]
@@ -1298,6 +1303,8 @@ Flags:
 ```
 
 #### 置顶消息 — 将指定消息置顶到会话顶部
+
+这是会影响会话参与者所见内容的公共写操作。先用全局 `--dry-run` 核对会话和消息 ID；真实置顶前必须取得用户明确确认，Agent 才能追加 `--yes`。
 ```
 Usage:
   dws chat message set-top-msg [flags]
@@ -1309,6 +1316,8 @@ Flags:
 ```
 
 #### 取消置顶消息 — 取消会话顶部的置顶消息
+
+这是会影响会话参与者所见内容的公共写操作。先用全局 `--dry-run` 核对会话和消息 ID；真实取消前必须取得用户明确确认，Agent 才能追加 `--yes`。
 ```
 Usage:
   dws chat message unset-top-msg [flags]
