@@ -4,6 +4,7 @@ import (
 	"fmt"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -123,6 +124,27 @@ func newSheetVersionCmd() *cobra.Command {
 				return fmt.Errorf("flag --version is required")
 			}
 			version, _ := cmd.Flags().GetInt("version")
+			// A sheet version revert is destructive and historically has been
+			// capable of bricking the workbook when the target version was
+			// stale or invalid.  Resolve the version list through the read
+			// channel before allowing either a preview or a write.  This also
+			// makes dry-run honest: it may read the version list, but never
+			// pretends an unverified target can be reverted.
+			exists, err := docVersionExists(cmd.Context(), nodeID, version)
+			if err != nil {
+				return err
+			}
+			if !exists {
+				return apperrors.NewValidation(
+					fmt.Sprintf("表格版本 %d 不存在，已停止回滚", version),
+					apperrors.WithReason("version_not_found"),
+					apperrors.WithHint(fmt.Sprintf(
+						"请先执行 dws sheet version list --node %s --format json 获取可回滚版本",
+						nodeID,
+					)),
+					apperrors.WithActions("查询可用表格版本", "选择存在的版本号后重新预览"),
+				)
+			}
 			return callMCPToolOnServer("doc", "revert_doc_version", map[string]any{
 				"nodeId":  nodeID,
 				"version": version,
@@ -143,6 +165,7 @@ func newSheetVersionCmd() *cobra.Command {
 				PrimaryCLIPath: "sheet version revert",
 			},
 			Description: "回滚表格到指定历史版本",
+			DryRun:      &contract.DryRunSpec{PreviewKind: "request", RemoteReads: true},
 			Interface: &contract.InterfaceSpec{
 				Mode:         "composite",
 				Availability: "available",

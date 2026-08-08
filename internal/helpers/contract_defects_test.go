@@ -191,6 +191,69 @@ func TestDocVersionRevertPublishesRuntimeSafety(t *testing.T) {
 	}
 }
 
+func TestSheetVersionRevertPreflightsTargetBeforeWrite(t *testing.T) {
+	caller := &contractDefectCaller{
+		responses: map[string]string{
+			"doc/list_doc_versions":  `{"versions":[{"version":7}]}`,
+			"doc/revert_doc_version": `{}`,
+		},
+	}
+	_, err := executeContractDefectCommand(t, caller, newSheetCommand,
+		"version", "revert", "--node", "sheet-1", "--version", "7", "--yes")
+	if err != nil {
+		t.Fatalf("sheet version revert returned error: %v", err)
+	}
+	if len(caller.calls) != 2 || caller.calls[0].toolName != "list_doc_versions" || caller.calls[1].toolName != "revert_doc_version" {
+		t.Fatalf("sheet version revert calls = %#v, want list preflight then revert", caller.calls)
+	}
+}
+
+func TestSheetVersionRevertRejectsMissingTargetBeforeWrite(t *testing.T) {
+	caller := &contractDefectCaller{
+		responses: map[string]string{
+			"doc/list_doc_versions": `{"versions":[{"version":7}]}`,
+		},
+	}
+	output, err := executeContractDefectCommand(t, caller, newSheetCommand,
+		"version", "revert", "--node", "sheet-1", "--version", "999", "--yes")
+	if err == nil {
+		t.Fatal("sheet version revert accepted a missing target")
+	}
+	var appErr *apperrors.Error
+	if !errors.As(err, &appErr) || appErr.Reason != "version_not_found" {
+		t.Fatalf("missing target error = %T %v, want version_not_found", err, err)
+	}
+	if len(caller.calls) != 1 || caller.calls[0].toolName != "list_doc_versions" {
+		t.Fatalf("missing target calls = %#v, want preflight only", caller.calls)
+	}
+	if output != "" {
+		t.Fatalf("missing target output = %q, want no misleading preview", output)
+	}
+}
+
+func TestSheetVersionRevertDryRunReadsButNeverWrites(t *testing.T) {
+	caller := &contractDefectCaller{
+		dryRun: true,
+		responses: map[string]string{
+			"doc/list_doc_versions": `{"versions":[{"version":7}]}`,
+		},
+	}
+	output, err := executeContractDefectCommand(t, caller, newSheetCommand,
+		"version", "revert", "--node", "sheet-1", "--version", "7", "--dry-run")
+	if err != nil {
+		t.Fatalf("sheet version revert dry-run returned error: %v", err)
+	}
+	if len(caller.readCalls) != 1 || caller.readCalls[0].toolName != "list_doc_versions" {
+		t.Fatalf("dry-run reads = %#v, want one version preflight", caller.readCalls)
+	}
+	if len(caller.calls) != 0 {
+		t.Fatalf("dry-run writes = %#v, want none", caller.calls)
+	}
+	if !strings.Contains(output, `"tool": "revert_doc_version"`) || !strings.Contains(output, `"version": 7`) {
+		t.Fatalf("dry-run output = %q, want revert preview", output)
+	}
+}
+
 func TestDriveDeleteDryRunSkipsConfirmationAndEOFIsObservable(t *testing.T) {
 	caller := &contractDefectCaller{dryRun: true}
 	output, err := executeContractDefectCommand(t, caller, newDriveCommand,
