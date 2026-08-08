@@ -28,6 +28,11 @@
 3. 无 format flag 的脚本应明确是固定 JSON、固定文本还是仅供内部调用，避免在 Skill 总则中笼统宣称“所有脚本统一支持”。
 4. 每次新增/修改脚本重新运行本扫描，并把结果追加到评测台账；扫描产物保持 Markdown，不保存 JSON fixture。
 
+本次复核还发现并修正了 AITable Skill 的两个脚本调用偏移：Skill 原先把
+`bulk_add_fields.py`、`upload_attachment.py` 写成 `--base-id/--file` 选项形式，
+但脚本契约是位置参数；现已统一为 `<baseId> <tableId> <fields.json>` 和
+`<baseId> <filePath>`，并在写入口上标出可选 `--dry-run`。
+
 ## 修复边界
 
 本轮只修复了 `--help` 可观测性，不把 42 个入口强行改造成同一 CLI。强行添加两个 flag 会改变脚本参数和输出契约，反而扩大兼容风险；后续应按 Agent 实际使用路径逐个迁移并配套 dry-run 副作用证据。

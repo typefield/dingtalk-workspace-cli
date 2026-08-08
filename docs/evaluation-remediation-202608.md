@@ -391,6 +391,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - 四个 AITable 写/上传入口已由 `scripts/agent/probe_multi_aitable_dry_run.py`
   使用临时 fixture 和 sentinel `dws` 做受控探针，4/4 通过且未观察到 dws/OSS 写入；
   探针结果见 `docs/agent-scans/multi-aitable-dry-run-probe-20260808.md`。
+- Agent 语义复核还发现 AITable Skill 曾把 `bulk_add_fields.py` 和
+  `upload_attachment.py` 误写成选项式调用；已按脚本真实位置参数契约修正，并把
+  该类“Python 脚本参数不受 CLI 命令完整性检查覆盖”的风险加入 Multi 扫描台账。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。
