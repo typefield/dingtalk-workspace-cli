@@ -23,8 +23,8 @@ Flags:
 
 ```bash
 # 步骤 1: 使用脚本一键上传（内部自动完成 prepare + PUT）
-python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf
-# 输出: { "fileToken": "ft_xxx", "fileName": "report.pdf", "size": 204800 }
+python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf --format json
+# 仅 ok:true/outcome:success 时，data.fileToken 才是可写入 records 的文件令牌。
 
 # 步骤 2: 在 record create/update 中使用 fileToken 写入
 dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
@@ -32,6 +32,8 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 ```
 
 > `uploadUrl` 有时效性（`expiresAt`），脚本会自动在获取后立即上传。
+> 若脚本输出 `ok:false` 且 `data.execution_state:unknown`，PUT 可能已到达 OSS；
+> 先核查上传状态，禁止把 `data.fileToken` 当成可用附件或直接重传。
 
 ## 手动流程（不使用脚本）
 

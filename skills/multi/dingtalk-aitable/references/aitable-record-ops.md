@@ -106,8 +106,8 @@ dws aitable record delete --base-id <BASE_ID> --table-id <TABLE_ID> \
 
 ```bash
 # 步骤 1: 一键上传文件
-python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf
-# 输出: { "fileToken": "ft_xxx", "fileName": "report.pdf", "size": 204800 }
+python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf --format json
+# 仅 ok:true/outcome:success 时读取 data.fileToken；unknown 时先核查，禁止盲目重传。
 
 # 步骤 2: 在 record create/update 中使用 fileToken 写入附件字段
 dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \

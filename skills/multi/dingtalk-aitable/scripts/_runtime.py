@@ -15,7 +15,7 @@ import io
 import json
 import subprocess
 import sys
-from collections.abc import Callable, Sequence
+from collections.abc import Callable, Iterable, Sequence
 from dataclasses import dataclass
 from typing import Any, Mapping, Optional, TextIO
 
@@ -76,7 +76,7 @@ def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
 
 
 def run_child_dws(
-    args: Sequence[str], *, timeout: float = 60, executable: str = "dws",
+    args: Sequence[str], *, dry_run: bool = False, timeout: float = 60, executable: str = "dws",
 ) -> ChildDWSResult:
     """Run a JSON-mode child command while preserving execution uncertainty.
 
@@ -85,6 +85,10 @@ def run_child_dws(
     only stable pre-execution failure classes are ``failed``.
     """
     command = (str(executable), *[str(arg) for arg in args])
+    if dry_run:
+        return ChildDWSResult(
+            "success", payload={"command": list(command), "dry_run": True}, command=command,
+        )
     try:
         completed = subprocess.run(list(command), capture_output=True, text=True, timeout=timeout)
     except FileNotFoundError:
@@ -126,6 +130,45 @@ def run_child_dws(
         },
         command=command,
     )
+
+
+def batch_data(
+    *,
+    succeeded: Iterable[Mapping[str, Any]] = (),
+    failed: Iterable[Mapping[str, Any]] = (),
+    unknown: Iterable[Mapping[str, Any]] = (),
+    total: Optional[int] = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Build the strict three-channel form for a non-atomic batch write."""
+    channels = {
+        "succeeded": [dict(item) for item in succeeded],
+        "failed": [dict(item) for item in failed],
+        "unknown": [dict(item) for item in unknown],
+    }
+    for channel, entries in channels.items():
+        for entry in entries:
+            if not isinstance(entry.get("id"), str) or not entry["id"]:
+                raise ValueError(f"{channel} entry requires a non-empty id")
+            if channel == "failed":
+                error = entry.get("error")
+                if not isinstance(error, Mapping) or not isinstance(error.get("type"), str) or not error["type"]:
+                    raise ValueError("failed entry requires a typed error")
+            if channel == "unknown" and (not isinstance(entry.get("reason"), str) or not entry["reason"]):
+                raise ValueError("unknown entry requires a reason")
+    computed_total = sum(len(entries) for entries in channels.values())
+    if total is None:
+        total = computed_total
+    if total != computed_total:
+        raise ValueError(f"batch total {total} does not equal channel count {computed_total}")
+    return {"total": total, **channels, **extra}
+
+
+def batch_outcome(data: Mapping[str, Any]) -> str:
+    """Derive the only truthful terminal outcome for a batch result."""
+    if not data.get("failed") and not data.get("unknown"):
+        return "success"
+    return "partial_failure" if data.get("succeeded") else "failure"
 
 
 def add_contract_flags(parser: argparse.ArgumentParser, *, default: str = "text") -> None:

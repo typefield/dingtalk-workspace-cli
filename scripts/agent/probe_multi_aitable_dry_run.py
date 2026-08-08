@@ -102,7 +102,7 @@ def main() -> int:
         fake.chmod(0o755)
 
         csv = tmp / "records.csv"
-        csv.write_text("a,b\n1,2\n", encoding="utf-8")
+        csv.write_text("a,b\n1,2\n3,4\n", encoding="utf-8")
         fields = tmp / "fields.json"
         fields.write_text('[{"fieldName":"A","type":"text"}]', encoding="utf-8")
         attachment = tmp / "attachment.txt"
@@ -113,9 +113,9 @@ def main() -> int:
 
         checks = [
             ("aitable_import_via_task", SCRIPT_DIR / "aitable_import_via_task.py", [BASE, str(csv), "--dws", str(fake)], True),
-            ("bulk_add_fields", SCRIPT_DIR / "bulk_add_fields.py", [BASE, TABLE, str(fields)], False),
-            ("import_records", SCRIPT_DIR / "import_records.py", [BASE, TABLE, str(csv)], False),
-            ("upload_attachment", SCRIPT_DIR / "upload_attachment.py", [BASE, str(attachment)], False),
+            ("bulk_add_fields", SCRIPT_DIR / "bulk_add_fields.py", [BASE, TABLE, str(fields)], True),
+            ("import_records", SCRIPT_DIR / "import_records.py", [BASE, TABLE, str(csv)], True),
+            ("upload_attachment", SCRIPT_DIR / "upload_attachment.py", [BASE, str(attachment)], True),
         ]
         for name, script, command_args, machine_contract in checks:
             status, detail = check_plan(name, script, command_args, env, machine_contract=machine_contract)
@@ -189,6 +189,36 @@ def main() -> int:
                 SCRIPT_DIR / "aitable_import_via_task.py",
                 [BASE, str(csv), "--dws", str(fake_result), "--format", "json"], env,
             )
+            attachment_success_bin = tmp / "attachment-success-bin"
+            attachment_success_bin.mkdir()
+            fake_attachment = attachment_success_bin / "dws"
+            fake_attachment.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json\n"
+                f"print(json.dumps({{'ok': True, 'data': {{'uploadUrl': {upload_url!r}, 'fileToken': 'file_success'}}, 'meta': {{'transfer': 'prepared'}}}}))\n",
+                encoding="utf-8",
+            )
+            fake_attachment.chmod(0o755)
+            attachment_success = run(
+                SCRIPT_DIR / "upload_attachment.py",
+                [BASE, str(attachment)],
+                {**env, "PATH": f"{attachment_success_bin}{os.pathsep}{env['PATH']}"},
+            )
+            attachment_unknown_bin = tmp / "attachment-unknown-bin"
+            attachment_unknown_bin.mkdir()
+            fake_attachment_unknown = attachment_unknown_bin / "dws"
+            fake_attachment_unknown.write_text(
+                "#!/usr/bin/env python3\n"
+                "import json\n"
+                "print(json.dumps({'ok': True, 'data': {'uploadUrl': 'http://127.0.0.1:1/upload', 'fileToken': 'file_unknown'}}))\n",
+                encoding="utf-8",
+            )
+            fake_attachment_unknown.chmod(0o755)
+            attachment_unknown = run(
+                SCRIPT_DIR / "upload_attachment.py",
+                [BASE, str(attachment)],
+                {**env, "PATH": f"{attachment_unknown_bin}{os.pathsep}{env['PATH']}"},
+            )
         finally:
             put_server.shutdown()
             put_server.server_close()
@@ -208,9 +238,87 @@ def main() -> int:
             and payload.get("data", {}).get("importId") == "import_probe"
             and payload.get("data", {}).get("phase") == "import_data"
             and payload.get("data", {}).get("execution_state") == "unknown"
-            and len(put_requests) == 2
+            and len(put_requests) == 3
         )
         outcomes.append(("导入触发不确定不伪装成功", "PASS" if ambiguous_ok else "FAIL", f"rc={ambiguous.returncode}; {detail}"))
+
+        payload, detail = one_result(attachment_success)
+        attachment_success_ok = (
+            attachment_success.returncode == 0 and payload is not None
+            and payload.get("ok") is True and payload.get("outcome") == "success"
+            and payload.get("data", {}).get("fileToken") == "file_success"
+            and payload.get("meta") == {"transfer": "prepared"}
+        )
+        outcomes.append(("附件 PUT 确认后才返回 fileToken", "PASS" if attachment_success_ok else "FAIL", f"rc={attachment_success.returncode}; {detail}"))
+
+        payload, detail = one_result(attachment_unknown)
+        attachment_unknown_ok = (
+            attachment_unknown.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and payload.get("data", {}).get("fileToken") == "file_unknown"
+            and payload.get("data", {}).get("phase") == "upload_file"
+            and payload.get("data", {}).get("execution_state") == "unknown"
+        )
+        outcomes.append(("附件 PUT 未知不误报可用", "PASS" if attachment_unknown_ok else "FAIL", f"rc={attachment_unknown.returncode}; {detail}"))
+
+        record_bin = tmp / "record-batch-bin"
+        record_bin.mkdir()
+        record_counter = tmp / "record-batch-count"
+        record_dws = record_bin / "dws"
+        record_dws.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json, os\n"
+            "counter = os.environ['PROBE_RECORD_COUNTER']\n"
+            "try:\n"
+            "  count = int(open(counter, encoding='utf-8').read())\n"
+            "except FileNotFoundError:\n"
+            "  count = 0\n"
+            "count += 1\n"
+            "open(counter, 'w', encoding='utf-8').write(str(count))\n"
+            "if count == 1:\n"
+            "  print(json.dumps({'ok': True, 'data': {'newRecordIds': ['record_1']}}))\n"
+            "else:\n"
+            "  print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'ambiguous second batch'}}))\n",
+            encoding="utf-8",
+        )
+        record_dws.chmod(0o755)
+        record_partial = run(
+            SCRIPT_DIR / "import_records.py",
+            [BASE, TABLE, str(csv), "1", "--format", "json"],
+            {**env, "PATH": f"{record_bin}{os.pathsep}{env['PATH']}", "PROBE_RECORD_COUNTER": str(record_counter)},
+        )
+        payload, detail = one_result(record_partial)
+        record_partial_ok = (
+            record_partial.returncode == 7 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "partial_failure"
+            and payload.get("data", {}).get("succeeded", [{}])[0].get("id") == "batch:1"
+            and payload.get("data", {}).get("unknown", [{}])[0].get("id") == "batch:2"
+        )
+        outcomes.append(("记录导入保留成功与未知批次", "PASS" if record_partial_ok else "FAIL", f"rc={record_partial.returncode}; {detail}"))
+
+        field_bin = tmp / "field-create-bin"
+        field_bin.mkdir()
+        field_dws = field_bin / "dws"
+        field_dws.write_text(
+            "#!/usr/bin/env python3\n"
+            "import json\n"
+            "print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'ambiguous field create'}}))\n",
+            encoding="utf-8",
+        )
+        field_dws.chmod(0o755)
+        field_unknown = run(
+            SCRIPT_DIR / "bulk_add_fields.py",
+            [BASE, TABLE, str(fields), "--format", "json"],
+            {**env, "PATH": f"{field_bin}{os.pathsep}{env['PATH']}"},
+        )
+        payload, detail = one_result(field_unknown)
+        field_unknown_ok = (
+            field_unknown.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and payload.get("data", {}).get("execution_state") == "unknown"
+            and payload.get("error", {}).get("type") == "api"
+        )
+        outcomes.append(("字段创建旧业务失败不误报成功", "PASS" if field_unknown_ok else "FAIL", f"rc={field_unknown.returncode}; {detail}"))
 
     passed = sum(1 for _, status, _ in outcomes if status == "PASS")
     report = ["# Multi AITable 脚本 Agent 语义探针", "", "临时 child runner、HTTP PUT 服务和输入文件仅在本次执行期间存在；本报告不保存 JSON fixture。", "", "| 检查 | 结果 | 证据 |", "|---|---|---|"]
@@ -218,7 +326,7 @@ def main() -> int:
         "| {} | {} | {} |".format(name, status, detail.replace("|", "\\|"))
         for name, status, detail in outcomes
     )
-    report.extend(["", f"结论：**{passed}/{len(outcomes)} PASS**。", "", "范围：仅文件导入脚本已迁入 Multi 共享结果边界；其余三个脚本本次只验证 dry-run 零写入，未宣称具有相同的终态/异常契约。", ""])
+    report.extend(["", f"结论：**{passed}/{len(outcomes)} PASS**。", "", "范围：文件导入、字段批量创建、附件上传与记录批量导入均已迁入 Multi 共享结果边界。受控 child runner 只能证明本地分类、stdout 与零写预览，不代替真实服务端终态验证。", ""])
     rendered = "\n".join(report)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
