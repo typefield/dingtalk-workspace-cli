@@ -127,7 +127,7 @@ scripts/_runtime.py
 |---|---|---|
 | 32 个 Agent 入口的 `--format` / `--dry-run` | 已实施 | 逐入口 `--help` 为 32/32、Help 非零为 0；这只证明能力可发现 |
 | `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
-| 7 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
+| 8 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
 | 其余 25 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
 | 三条写编排的 mixed result 映射 | 已受控 child-runner 验证 | 待办保留成功与未知写入；审批任务解析失败不会发送占位写入；文档写入失败只调用一次并标 `unknown`。假子进程只验证编排和信封，不证明真实后端终态 |
 | 真实服务端零写与部分失败/不确定结果 | UNVERIFIED | 需要隔离账号或受控后端，不得由 Help、源码字符串或假子进程推断 |
@@ -185,7 +185,7 @@ dry-run 副作用仍须在报告中分开标注，不能把总审计
 通过解读成真实后端写入安全已被证明。
 
 对高风险写入口，另有 `scripts/agent/probe_mono_dry_run.py` 使用临时 HOME、临时工作区
-和假的 `dws` 子进程做受控探针。它目前覆盖 7 个深层门控 fixture；报告中的 `PASS`
+和假的 `dws` 子进程做受控探针。它目前覆盖 8 个深层门控 fixture；报告中的 `PASS`
 只证明这些 fixture，其他参数/异常/账号路径仍必须保持 `UNVERIFIED`：
 
 ```bash

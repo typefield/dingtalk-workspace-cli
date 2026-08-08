@@ -351,6 +351,34 @@ else:
         )
         outcomes.append(("文档写入失败不自动重放且标记未知", *result("PASS" if doc_child_ok else "FAIL", detail)))
 
+        mail_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "mail_send_with_cc.py"),
+                "--to", "recipient@example.com", "--subject", "probe", "--body", "body", "--format", "json",
+            ],
+            """import json, sys
+args = sys.argv[1:]
+if args[:3] == ['mail', 'mailbox', 'list']:
+    print(json.dumps({'ok': True, 'data': {'emailAccounts': [{'type': 'ORG', 'email': 'sender@example.com'}]}}))
+elif args[:3] == ['mail', 'message', 'send']:
+    # Legacy HTTP/business failure: rc=0 alone must not become "sent".
+    print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'delivery uncertain'}}))
+else:
+    raise SystemExit(9)
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(mail_child)
+        mail_child_ok = (
+            valid and mail_child.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and isinstance(payload.get("data"), dict)
+            and payload["data"].get("execution_state") == "unknown"
+            and isinstance(payload.get("error"), dict) and payload["error"].get("type") == "api"
+            and "邮件已发送" not in mail_child.stderr
+        )
+        outcomes.append(("邮件旧业务失败不误报已发送", *result("PASS" if mail_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",

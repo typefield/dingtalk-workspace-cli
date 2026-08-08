@@ -11,5 +11,6 @@
 | `import_records.py` | PASS | ok |
 | `calendar_schedule_meeting.py` | PASS | ok |
 | `upload_attachment.py` | PASS | ok |
+| `mail_send_with_cc.py` | PASS | ok |
 
-结果：7/7 通过
+结果：8/8 通过

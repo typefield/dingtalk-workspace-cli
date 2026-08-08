@@ -14,13 +14,11 @@
 """
 
 import sys
-import json
-import subprocess
 import re
 import argparse
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
 
 EMAIL_PATTERN = re.compile(
     r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
@@ -29,23 +27,9 @@ EMAIL_PATTERN = re.compile(
 
 def run_dws(
     args: List[str], dry_run: bool = False,
-) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return {'dry_run': True}
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError,
-            FileNotFoundError) as e:
-        print(f"错误：{e}", file=sys.stderr)
-        return None
+) -> ChildDWSResult:
+    """Run a child command without collapsing unknown delivery into success."""
+    return run_child_dws(args, dry_run=dry_run)
 
 
 def validate_emails(emails_str: str) -> bool:
@@ -70,14 +54,15 @@ def unwrap_result(data: Any) -> Any:
 
 
 def get_my_email(dry_run: bool = False) -> Optional[str]:
-    data = run_dws([
+    result = run_dws([
         'mail', 'mailbox', 'list', '--format', 'json',
     ], dry_run=dry_run)
     if dry_run:
         return '<MY_EMAIL>'
-    if not data:
+    if result.state != 'success':
+        print('错误：无法确认邮箱列表，请检查认证或网络后重试', file=sys.stderr)
         return None
-    data = unwrap_result(data)
+    data = unwrap_result(result.payload)
     if isinstance(data, dict) and isinstance(data.get('emailAccounts'), list):
         accounts = data['emailAccounts']
         # 优先企业邮箱(type=ORG)，否则取第一个
@@ -137,19 +122,44 @@ def main() -> int:
 
     print('📤 发送邮件...', file=sys.stderr)
     result = run_dws(cmd_args, dry_run=args.dry_run)
-    if result:
+    delivery = {
+        'from': from_email,
+        'to': args.to,
+        'cc': [x.strip() for x in args.cc.split(',') if x.strip()],
+        'subject': args.subject,
+    }
+    child_meta = {'children': [{'id': 'mail:send', 'meta': result.meta}]} if result.meta else None
+    if result.state == 'success':
         print(f"  ✓ 邮件已发送", file=sys.stderr)
         print(f"    收件人: {args.to}", file=sys.stderr)
         if args.cc:
             print(f"    抄送: {args.cc}", file=sys.stderr)
         print(f"    主题: {args.subject}", file=sys.stderr)
-        return emit(fmt=args.format, outcome='success', data={
-            'from': from_email, 'to': args.to,
-            'cc': [x.strip() for x in args.cc.split(',') if x.strip()],
-            'subject': args.subject,
-        })
-    else:
-        return failure(args.format, '发送失败')
+        return emit(fmt=args.format, outcome='success', data=delivery, meta=child_meta)
+
+    if result.state == 'failed':
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            error=result.error or {'type': 'api', 'message': '邮件发送在执行前被拒绝。'},
+            meta=child_meta,
+            text='发送失败',
+        )
+
+    # A non-terminal child response is not proof that mail was not delivered.
+    # Preserve this uncertainty instead of asking an Agent to blindly resend.
+    error = dict(result.error or {'type': 'api', 'message': '邮件发送未返回可确认终态。'})
+    error.setdefault('hint', '请先核查收件人邮箱或已发送邮件；不要直接重发。')
+    delivery['execution_state'] = 'unknown'
+    print('  ? 邮件发送终态未知；未将其报告为已发送', file=sys.stderr)
+    return emit(
+        fmt=args.format,
+        outcome='failure',
+        data=delivery,
+        error=error,
+        meta=child_meta,
+        text='邮件发送终态未知；请先核查后再决定是否重试。',
+    )
 
 
 if __name__ == '__main__':

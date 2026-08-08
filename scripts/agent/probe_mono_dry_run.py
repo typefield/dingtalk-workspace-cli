@@ -83,6 +83,10 @@ def _cases(root: Path) -> list[tuple[str, list[str]]]:
             "base-probe", str(fixtures / "attachment.txt"),
             "--format", "json", "--dry-run",
         ]),
+        ("mail_send_with_cc", [
+            "--to", "probe@example.com", "--subject", "probe", "--body", "body",
+            "--format", "json", "--dry-run",
+        ]),
     ]
 
 
