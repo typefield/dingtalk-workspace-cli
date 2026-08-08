@@ -248,7 +248,7 @@ func resolveThreadRepliesTarget(rt *shortcut.RuntimeContext) (threadRepliesTarge
 		return threadRepliesTarget{}, apperrors.NewAPI(
 			"未找到指定的话题主消息，无法解析 thread",
 			apperrors.WithOperation("im/list_messages_by_ids"),
-			apperrors.WithReason("thread_root_message_not_found"),
+			apperrors.WithSubtype(apperrors.SubtypeThreadRootMessageNotFound),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithHint("请确认 --message-id 是可读取的话题主消息 openMessageId"),
 		)
@@ -259,7 +259,7 @@ func resolveThreadRepliesTarget(rt *shortcut.RuntimeContext) (threadRepliesTarge
 		return threadRepliesTarget{}, apperrors.NewAPI(
 			"消息详情未返回 conversationId/threadId，无法读取话题回复",
 			apperrors.WithOperation("im/list_messages_by_ids"),
-			apperrors.WithReason("thread_context_missing"),
+			apperrors.WithSubtype(apperrors.SubtypeThreadContextMissing),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithHint("请确认 --message-id 指向话题主消息，或改用 --group 与 --thread-id"),
 		)

@@ -108,6 +108,13 @@ const (
 	SubtypeUnknownShortcut                    Subtype = "unknown_shortcut"
 	SubtypeUnknownSubcommand                  Subtype = "unknown_subcommand"
 	SubtypeUnsupportedAlidocExtension         Subtype = "unsupported_alidoc_extension"
+	SubtypeAtMeIncomplete                     Subtype = "at_me_incomplete"
+	SubtypeThreadRootMessageNotFound          Subtype = "thread_root_message_not_found"
+	SubtypeThreadContextMissing               Subtype = "thread_context_missing"
+	SubtypePATAuthTimeout                     Subtype = "pat_auth_timeout"
+	SubtypePATAuthRejected                    Subtype = "pat_auth_rejected"
+	SubtypePATAuthExpired                     Subtype = "pat_auth_expired"
+	SubtypePATAuthCancelled                   Subtype = "pat_auth_cancelled"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -929,6 +936,69 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: true,
 		DefaultHint:   "先读取文档信息确认 extension；在线表格改用表格读取能力。",
 		Description:   "the document extension is known not to support the requested download route",
+	},
+	SubtypeAtMeIncomplete: {
+		Subtype:       SubtypeAtMeIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "保留已读取消息，按 failures 与 nextCursor 继续读取；不要把当前结果当完整。",
+		Description:   "the idempotent @-mention message read ended with page failures",
+	},
+	SubtypeThreadRootMessageNotFound: {
+		Subtype:       SubtypeThreadRootMessageNotFound,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "确认 message-id 是可读取的话题主消息；必要时显式提供 group 与 thread-id。",
+		Description:   "the requested message cannot be resolved to a readable thread root",
+	},
+	SubtypeThreadContextMissing: {
+		Subtype:       SubtypeThreadContextMissing,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "确认 message-id 指向话题主消息，或显式提供 group 与 thread-id。",
+		Description:   "a readable message did not include the conversation and thread context required for replies",
+	},
+	SubtypePATAuthTimeout: {
+		Subtype:       SubtypePATAuthTimeout,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "授权等待已超时；重新开始认证流程后再执行原命令。",
+		Description:   "the interactive PAT authorization wait expired before approval",
+	},
+	SubtypePATAuthRejected: {
+		Subtype:       SubtypePATAuthRejected,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "用户已拒绝授权；需要授权时重新执行命令并在浏览器完成确认。",
+		Description:   "the user explicitly rejected the interactive PAT authorization request",
+	},
+	SubtypePATAuthExpired: {
+		Subtype:       SubtypePATAuthExpired,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "授权链接已过期；重新执行命令创建新的认证流程。",
+		Description:   "the interactive PAT authorization link expired",
+	},
+	SubtypePATAuthCancelled: {
+		Subtype:       SubtypePATAuthCancelled,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "授权流程已取消；需要继续时重新执行命令。",
+		Description:   "the interactive PAT authorization flow was cancelled before approval",
 	},
 }
 

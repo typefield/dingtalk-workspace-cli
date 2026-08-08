@@ -346,7 +346,7 @@ func retryWithPatAuthRetry(ctx context.Context, runner executor.Runner, invocati
 	if !authorized {
 		return executor.Result{}, apperrors.NewAuth(
 			"等待用户授权超时",
-			apperrors.WithReason("pat_auth_timeout"),
+			apperrors.WithSubtype(apperrors.SubtypePATAuthTimeout),
 			apperrors.WithHint(fmt.Sprintf("授权超时 (%s)，请重新执行命令", PatAuthRetryTimeout)),
 			apperrors.WithActions("dws auth login"),
 		)
@@ -677,7 +677,7 @@ func handlePatAuthCheck(
 		fmt.Fprintf(output, "%s %s\n", tui.StateMark("error"), tui.Bold("用户已拒绝授权"))
 		return executor.Result{}, apperrors.NewAuth(
 			"用户已拒绝授权",
-			apperrors.WithReason("pat_auth_rejected"),
+			apperrors.WithSubtype(apperrors.SubtypePATAuthRejected),
 			apperrors.WithHint("用户在浏览器中拒绝了授权请求，请重新执行命令。"),
 		)
 
@@ -685,7 +685,7 @@ func handlePatAuthCheck(
 		fmt.Fprintf(output, "%s %s\n", tui.StateMark("error"), tui.Bold("授权超时"))
 		return executor.Result{}, apperrors.NewAuth(
 			"授权超时",
-			apperrors.WithReason("pat_auth_expired"),
+			apperrors.WithSubtype(apperrors.SubtypePATAuthExpired),
 			apperrors.WithHint("授权链接已过期，请重新执行命令。"),
 		)
 
@@ -693,7 +693,7 @@ func handlePatAuthCheck(
 		fmt.Fprintf(output, "%s %s\n", tui.StateMark("error"), tui.Bold("操作已取消"))
 		return executor.Result{}, apperrors.NewAuth(
 			"操作已取消",
-			apperrors.WithReason("pat_auth_cancelled"),
+			apperrors.WithSubtype(apperrors.SubtypePATAuthCancelled),
 			apperrors.WithHint("用户取消了授权操作。"),
 		)
 

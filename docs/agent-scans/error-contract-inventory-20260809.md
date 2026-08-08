@@ -6,8 +6,8 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**88** 个；直接 `WithSubtype(Subtype...)` 调用点：**149** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**13** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
+- 已注册 descriptor：**95** 个；直接 `WithSubtype(Subtype...)` 调用点：**156** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**6** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
@@ -20,7 +20,7 @@
 | subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable | retry-after | execution-started | 例子 |
 |---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|
 | `ambiguous_command_fallback` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
-| `at_me_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
+| `at_me_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
 | `attachment_tokens_unavailable` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
 | `auth_refresh_failed` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/chat/batch_write.go:80` |
@@ -60,10 +60,10 @@
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
 | `parameter_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
 | `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
-| `pat_auth_cancelled` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
-| `pat_auth_expired` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:688` |
-| `pat_auth_rejected` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
-| `pat_auth_timeout` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
+| `pat_auth_cancelled` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
+| `pat_auth_expired` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:688` |
+| `pat_auth_rejected` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
+| `pat_auth_timeout` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
 | `personal_subscription_guard_failed` | free 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
 | `personal_subscription_invalid` | free 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
@@ -89,9 +89,9 @@
 | `target_type_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/view_preset.go:79` |
 | `target_type_mismatch` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:182` |
 | `target_verification_failed` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/url_resolve.go:128` |
-| `thread_context_missing` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:262` |
+| `thread_context_missing` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:262` |
 | `thread_replies_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:539` |
-| `thread_root_message_not_found` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
+| `thread_root_message_not_found` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
 | `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/app/root.go:433`<br>`internal/app/root.go:447` |
 | `unknown_shortcut` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
 | `unknown_subcommand` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |

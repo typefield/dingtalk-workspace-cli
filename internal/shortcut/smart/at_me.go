@@ -324,7 +324,7 @@ func readAllAtMePages(rt *shortcut.RuntimeContext, baseParams map[string]any) (m
 	return payload, allItems, apperrors.NewAPI(
 		fmt.Sprintf("@我消息分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 		apperrors.WithOperation("chat/search_at_me_message"),
-		apperrors.WithReason("at_me_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeAtMeIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),
