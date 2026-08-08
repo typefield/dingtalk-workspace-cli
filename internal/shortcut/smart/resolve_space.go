@@ -14,6 +14,8 @@
 package smart
 
 import (
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
@@ -44,6 +46,35 @@ var ResolveSpace = shortcut.Shortcut{
 		"如果只命中一个知识空间就直接返回它的 spaceId；如果命中多个则列出全部候选让你消歧，绝不替你瞎猜；如果一个都没命中则提示未找到。" +
 		"这是纯只读操作，只做搜索与本地投影，不会修改任何知识空间。",
 	Risk: shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "wiki",
+			Name:           "shortcut_resolve_space",
+			CanonicalPath:  "wiki.shortcut_resolve_space",
+			CLIPath:        "wiki +resolve-space",
+			PrimaryCLIPath: "wiki +resolve-space",
+		},
+		Description: "按名称搜索知识空间并解析出唯一 spaceId",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed read-only semantic adapter: the CLI performs keyword search, defensive candidate projection and explicit ambiguity handling; it never guesses a space when multiple candidates match.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "按名称搜索知识空间并解析出唯一 spaceId（只读）",
+			UseWhen: []string{
+				"当你只知道某个知识空间（wiki space）的名称（或名称里的关键词）、想把它解析成可直接用于后续工具的 spaceId 时使用；内部按 --name 关键词调用 search_wikiSpaces 搜索知识空间，再在本地投影出每个候选的 spaceId 和 name。如果只命中一个知识空间就直接返回它的 spaceId；如果命中多个则列出全部候选让你消歧，绝不替你瞎猜；如果一个都没命中则提示未找到。这是纯只读操作，只做搜索与本地投影，不会修改任何知识空间。",
+			},
+			AvoidWhen: []string{
+				"已经知道 spaceId 时直接使用它；需要浏览全部知识库时使用 wiki +space-list；需要原始搜索响应时使用对应原子命令。",
+			},
+			Examples: []string{"dws wiki +resolve-space --name 产品文档"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "name", Type: shortcut.FlagString, Desc: "要搜索的知识空间名称关键词（必填）", Required: true},
 	},

@@ -66,6 +66,9 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # Reviewed read-only Wiki space listing with explicit pagination-aware
     # Contract/Safety and result projection tests.
     ("wiki", "+space-list"): "read",
+    # Reviewed read-only semantic resolver: it never guesses among multiple
+    # wiki spaces and returns explicit candidates for Agent/user disambiguation.
+    ("wiki", "+resolve-space"): "read",
 }
 
 

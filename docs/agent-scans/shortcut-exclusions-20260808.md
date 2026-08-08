@@ -9,10 +9,10 @@
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 380 |
-| exclusion（public=false） | 35 |
+| public=true | 381 |
+| exclusion（public=false） | 34 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 31 |
+| 未 review 的 exclusion | 30 |
 
 ## 逐条队列
 
@@ -51,7 +51,6 @@
 | `todo` | `+related-tasks` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+node-copy` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+node-move` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `wiki` | `+resolve-space` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+wiki-new-doc` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 
 ## 规则

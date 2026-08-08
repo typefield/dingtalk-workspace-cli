@@ -60,7 +60,7 @@ cli_version: ">=1.0.15"
 | `report` | 2 | `dingtalk-misc` |
 | `sheet` | 2 | `dingtalk-misc` |
 | `todo` | 11 | `dingtalk-todo` |
-| `wiki` | 3 | `dingtalk-wiki` |
+| `wiki` | 4 | `dingtalk-wiki` |
 <!-- VISIBLE_SHORTCUTS_OVERVIEW_END -->
 
 ## 多组织 / 多账号

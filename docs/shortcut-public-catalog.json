@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T15:26:05.034242",
-  "count": 380,
+  "generated_at": "2026-08-08T15:34:15.298475",
+  "count": 381,
   "results": [
     {
       "suite": "semantic",
@@ -3350,6 +3350,13 @@
       "suite": "reviewed_contract",
       "service": "wiki",
       "command": "+node-list",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "wiki",
+      "command": "+resolve-space",
       "risk": "read",
       "status": "reviewed_available"
     },

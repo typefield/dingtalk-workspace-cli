@@ -384,6 +384,7 @@ func generatedPublicShortcutCatalog() map[string]struct{} {
 		"todo\u0000+remind":                             {},
 		"todo\u0000+todo-done":                          {},
 		"wiki\u0000+node-list":                          {},
+		"wiki\u0000+resolve-space":                      {},
 		"wiki\u0000+space-list":                         {},
 		"wiki\u0000+space-search":                       {},
 	}
