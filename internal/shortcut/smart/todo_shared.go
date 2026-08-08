@@ -16,6 +16,7 @@ package smart
 import (
 	"strconv"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -54,6 +55,13 @@ func shortcutListAllTodoCards(rt *shortcut.RuntimeContext, base map[string]any) 
 		all = append(all, cards...)
 		if len(cards) < todoPageSize {
 			break
+		}
+		if page == todoMaxPages {
+			// A full final page proves that another page may exist. Never return
+			// this capped result as a complete list: callers would otherwise
+			// project a silently truncated success and Agents could act on an
+			// incomplete todo set.
+			return nil, apperrors.NewValidation("待办列表超过单次聚合上限，请缩小筛选范围后重试")
 		}
 	}
 	return all, nil
