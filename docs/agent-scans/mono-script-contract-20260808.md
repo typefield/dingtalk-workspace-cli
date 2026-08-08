@@ -20,6 +20,11 @@
 对账文件：`docs/rfcs/0002-mono-skill-script-interface.md`
 状态：PASS
 
+## 深层 Skill 脚本参数对拍
+
+状态：PASS
+正向 Python 脚本调用中的 Help 参数偏移：0
+
 ## 入口明细
 
 | 脚本 | help rc | dry-run | format | 状态 |

@@ -398,6 +398,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `--limit`；已改回 `--max`，并把 Python 脚本调用的 flag 对拍纳入扫描器，当前
   `Documented Python-script flag mismatches = 0`。
 - Mono 的同类深层 Minutes recipe 也发现同一偏移，已同步改回脚本参数 `--max`。
+- Mono Agent 扫描器现同时对拍 `skills/mono/**/*.md` 中正向 Python 脚本调用的 flags；使用
+  `--strict-rfc --strict-flags` 时当前 RFC 统计和深层脚本参数偏移均为 0，避免只检查
+  命令路径而漏掉脚本参数漂移。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。

@@ -38,6 +38,50 @@ def md_cell(value: str) -> str:
     return value.replace("|", "\\|").replace("\n", " ").strip()
 
 
+def documented_script_flag_mismatches(root: Path, entries: list[Path]) -> list[str]:
+    """Compare positive Python-script recipes in Mono references with Help.
+
+    This is intentionally an Agent-facing semantic check.  The existing command
+    path checker cannot see flags embedded in ``python scripts/*.py`` recipes.
+    Negative examples are ignored so documentation can still explain deprecated
+    or invalid spellings without making the scan fail.
+    """
+    by_name = {path.name: path for path in entries}
+    pattern = re.compile(r"\bpython3?\s+(?:scripts/)?([^\s`|()]+\.py)([^\n`)]*)")
+    ignored = ("禁止", "错误", "不存在", "不要", "废弃", "反例", "deprecated")
+    mismatches: list[str] = []
+    cache: dict[Path, str] = {}
+    for markdown in (root / "skills" / "mono").rglob("*.md"):
+        text = markdown.read_text(encoding="utf-8", errors="ignore")
+        for line_no, line in enumerate(text.splitlines(), 1):
+            if any(marker in line for marker in ignored):
+                continue
+            match = pattern.search(line)
+            if not match:
+                continue
+            script = by_name.get(Path(match.group(1)).name)
+            if script is None:
+                continue
+            help_text = cache.get(script)
+            if help_text is None:
+                try:
+                    result = subprocess.run(
+                        [sys.executable, str(script), "--help"], cwd=root,
+                        capture_output=True, text=True, timeout=30,
+                    )
+                    help_text = result.stdout + result.stderr
+                except (OSError, subprocess.TimeoutExpired) as exc:
+                    help_text = str(exc)
+                cache[script] = help_text
+            flags = re.findall(r"(?<![\w-])(--[a-z][a-z0-9-]*)", match.group(2))
+            for flag in sorted(set(flags)):
+                if flag not in help_text:
+                    mismatches.append(
+                        f"{markdown.relative_to(root)}:{line_no}: {script.name} {flag}"
+                    )
+    return mismatches
+
+
 def scan(root: Path) -> str:
     script_dir = root / "skills" / "mono" / "scripts"
     files = sorted(script_dir.glob("*.py"))
@@ -92,6 +136,7 @@ def scan(root: Path) -> str:
             rfc_mismatches.append(
                 f"{key}: RFC={match.group(1)} actual={actuals[key]}"
             )
+    flag_mismatches = documented_script_flag_mismatches(root, entries)
     lines = [
         "# Mono Skill 脚本契约 Agent 扫描",
         "",
@@ -117,6 +162,15 @@ def scan(root: Path) -> str:
     ]
     if rfc_mismatches:
         lines.extend(f"- {item}" for item in rfc_mismatches)
+    lines += [
+        "",
+        "## 深层 Skill 脚本参数对拍",
+        "",
+        f"状态：{'PASS' if not flag_mismatches else 'DRIFT'}",
+        f"正向 Python 脚本调用中的 Help 参数偏移：{len(flag_mismatches)}",
+    ]
+    if flag_mismatches:
+        lines.extend(f"- {item}" for item in flag_mismatches)
     lines += [
         "",
         "## 入口明细",
@@ -147,6 +201,8 @@ def main() -> int:
     parser.add_argument("--output", type=Path, help="write Markdown report; default is stdout")
     parser.add_argument("--strict-rfc", action="store_true",
                         help="when set, return non-zero if RFC statistics drift")
+    parser.add_argument("--strict-flags", action="store_true",
+                        help="when set, return non-zero if positive Skill recipes use unknown flags")
     args = parser.parse_args()
     report = scan(args.root.resolve())
     if args.output:
@@ -178,6 +234,11 @@ def main() -> int:
                     r"\| Help 暴露 `--format` \| (\d+)", r"\| Help 非零 \| (\d+)"]
         if not rfc.exists() or any(not re.search(p, text) or int(re.search(p, text).group(1)) != value
                                    for p, value in zip(patterns, expected)):
+            return 1
+    if args.strict_flags:
+        files = sorted((args.root.resolve() / "skills" / "mono" / "scripts").glob("*.py"))
+        entries = [path for path in files if is_agent_entry(path)]
+        if documented_script_flag_mismatches(args.root.resolve(), entries):
             return 1
     return 0
 
