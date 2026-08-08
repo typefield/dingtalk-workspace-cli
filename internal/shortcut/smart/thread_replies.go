@@ -536,7 +536,7 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 		return payload, allItems, pageLedger, apperrors.NewAPI(
 			fmt.Sprintf("话题回复全量读取未完成：%d 页成功，%d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("chat/list_topic_replies"),
-			apperrors.WithReason("thread_replies_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeThreadRepliesIncomplete),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithFailureStage(failureStage),
 			apperrors.WithExecutionStarted(true),

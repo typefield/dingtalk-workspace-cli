@@ -645,7 +645,7 @@ func readAllDirectMessages(rt *shortcut.RuntimeContext, params map[string]any) (
 	return payload, apperrors.NewAPI(
 		fmt.Sprintf("单聊消息分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 		apperrors.WithOperation("chat/list_individual_chat_message"),
-		apperrors.WithReason("messages_list_direct_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeMessagesListDirectIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),

@@ -767,7 +767,7 @@ func collectAllChatMessagesWithLedger(rt *shortcut.RuntimeContext, request chatM
 		return payload, allItems, pageLedger, apperrors.NewAPI(
 			fmt.Sprintf("全量消息读取未完成：%d 页成功，%d 个页面失败", pagesFetched, len(failures)),
 			apperrors.WithOperation("chat/"+request.tool),
-			apperrors.WithReason("chat_messages_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeChatMessagesIncomplete),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithFailureStage(failureStage),
 			apperrors.WithExecutionStarted(true),

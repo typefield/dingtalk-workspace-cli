@@ -27,6 +27,14 @@ const (
 	SubtypeConfirmationRequired               Subtype = "confirmation_required"
 	SubtypeRateLimit                          Subtype = "rate_limit"
 	SubtypePaginationInconsistent             Subtype = "pagination_inconsistent"
+	SubtypeChatSearchIncomplete               Subtype = "chat_search_incomplete"
+	SubtypeChatListAllIncomplete              Subtype = "chat_list_all_incomplete"
+	SubtypeFlagListIncomplete                 Subtype = "flag_list_incomplete"
+	SubtypeChatListIncomplete                 Subtype = "chat_list_incomplete"
+	SubtypeMessagesListDirectIncomplete       Subtype = "messages_list_direct_incomplete"
+	SubtypeChatMessagesIncomplete             Subtype = "chat_messages_incomplete"
+	SubtypeMyGroupsIncomplete                 Subtype = "my_groups_incomplete"
+	SubtypeThreadRepliesIncomplete            Subtype = "thread_replies_incomplete"
 	SubtypeProjectionUnknown                  Subtype = "projection_unknown"
 	SubtypeInputReadFailed                    Subtype = "input_read_failed"
 	SubtypeInvalidJSONInput                   Subtype = "invalid_json_input"
@@ -158,6 +166,78 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请检查上游的分页游标和 hasMore 证据；确认前不要把结果当作完整。",
 		Description:   "pagination evidence is incomplete or contradictory",
+	},
+	SubtypeChatSearchIncomplete: {
+		Subtype:       SubtypeChatSearchIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextCursor 继续读取；不要把当前结果当作完整搜索结果。",
+		Description:   "a group search pagination read stopped before a terminal page was observed",
+	},
+	SubtypeChatListAllIncomplete: {
+		Subtype:       SubtypeChatListAllIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextCursor 继续读取；不要把当前群列表当作完整目录。",
+		Description:   "a joined-group pagination read stopped before a terminal page was observed",
+	},
+	SubtypeFlagListIncomplete: {
+		Subtype:       SubtypeFlagListIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextCursor 继续读取；不要把当前收藏列表当作完整。",
+		Description:   "a message-favorites pagination read stopped before a terminal page was observed",
+	},
+	SubtypeChatListIncomplete: {
+		Subtype:       SubtypeChatListIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextCursor 继续读取；不要把当前会话列表当作完整。",
+		Description:   "a conversation pagination read stopped before a terminal page was observed",
+	},
+	SubtypeMessagesListDirectIncomplete: {
+		Subtype:       SubtypeMessagesListDirectIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextPage 继续读取；不要把当前单聊消息当作完整。",
+		Description:   "a direct-message pagination read stopped before a terminal page was observed",
+	},
+	SubtypeChatMessagesIncomplete: {
+		Subtype:       SubtypeChatMessagesIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextPage 继续读取；不要把当前消息读取结果当作完整。",
+		Description:   "a chat-message pagination read stopped before a terminal page was observed",
+	},
+	SubtypeMyGroupsIncomplete: {
+		Subtype:       SubtypeMyGroupsIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextCursor 继续读取；不要把当前我的群列表当作完整。",
+		Description:   "a personal-group pagination read stopped before a terminal page was observed",
+	},
+	SubtypeThreadRepliesIncomplete: {
+		Subtype:       SubtypeThreadRepliesIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留已读取结果和 failures，使用 nextPage 继续读取；不要把当前话题回复当作完整。",
+		Description:   "a thread-replies pagination read stopped before a terminal page was observed",
 	},
 	SubtypeProjectionUnknown: {
 		Subtype:       SubtypeProjectionUnknown,

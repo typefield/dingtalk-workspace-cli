@@ -758,7 +758,7 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 		return apperrors.NewAPI(
 			fmt.Sprintf("收藏消息分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("im/list_message_favorites"),
-			apperrors.WithReason("flag_list_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeFlagListIncomplete),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithFailureStage("pagination"),
 			apperrors.WithExecutionStarted(true),
@@ -1242,7 +1242,7 @@ func executeChatList(rt *shortcut.RuntimeContext) error {
 		return apperrors.NewAPI(
 			fmt.Sprintf("会话列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("im/list_all_conversations"),
-			apperrors.WithReason("chat_list_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeChatListIncomplete),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithFailureStage("pagination"),
 			apperrors.WithExecutionStarted(true),

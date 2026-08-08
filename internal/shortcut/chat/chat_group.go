@@ -422,7 +422,7 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 		return apperrors.NewAPI(
 			fmt.Sprintf("群搜索分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("im/search_groups"),
-			apperrors.WithReason("chat_search_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeChatSearchIncomplete),
 			apperrors.WithOrigin("mcp_gateway"),
 			apperrors.WithFailureStage("pagination"),
 			apperrors.WithExecutionStarted(true),
@@ -1196,7 +1196,7 @@ func readAllChatListAll(rt *shortcut.RuntimeContext, baseParams map[string]any) 
 	}
 	options := []apperrors.Option{
 		apperrors.WithOperation("im/list_my_groups_pagination"),
-		apperrors.WithReason("chat_list_all_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeChatListAllIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),

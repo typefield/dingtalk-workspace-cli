@@ -26,8 +26,8 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 46 / 107 / 11 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个、transport/服务端响应第四批七个、本地 flag/Skill 市场第五批三个、文档复合写固定五个 reason family，以及 event stop 的 `event_stop_unverified` 已落地；间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
-| `WithReason("…")` 自由字面调用 | 54 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
+| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 54 / 115 / 11 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个、transport/服务端响应第四批七个、本地 flag/Skill 市场第五批三个、文档复合写固定五个 reason family、event stop 的 `event_stop_unverified`，以及 IM 八条幂等只读分页不完整 family 已落地；间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| `WithReason("…")` 自由字面调用 | 46 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
 | 全部 subtype / 调用点 | 80 / 161 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 9 | 绕过 `WithReason` 的第二条入口；Agent 扫描现同时识别枚举转换的赋值，event stop 的 `event_stop_unverified` 已登记 registry |
 | 动态 `WithReason(variable)` | 1 | 仅剩个人订阅状态机；其有限但未审定的 failure family 仍须连同 Category、幂等性与终态语义单独设计，不能靠字符串替换 |
@@ -181,7 +181,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个，以及 event stop 的 `event_stop_unverified` 已登记并在 typed outcome 的普通 failure 分支使用；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`，以及 IM 的八条 `*_incomplete` 幂等只读分页 family 均已登记；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

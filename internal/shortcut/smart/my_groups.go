@@ -266,7 +266,7 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 	return payload, apperrors.NewAPI(
 		fmt.Sprintf("我的群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 		apperrors.WithOperation("im/list_my_groups_pagination"),
-		apperrors.WithReason("my_groups_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeMyGroupsIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),
