@@ -1394,7 +1394,12 @@ func newOaCommand() *cobra.Command {
 			if !commandDryRun(cmd) {
 				yes, _ := cmd.Flags().GetBool("yes")
 				if !yes {
-					return fmt.Errorf("发起审批实例会创建真实业务数据；请先核对参数，然后添加 --yes 确认执行")
+					return apperrors.NewValidation(
+						"发起审批实例会创建真实业务数据；请先核对参数，然后添加 --yes 确认执行",
+						apperrors.WithReason("confirmation_required"),
+						apperrors.WithHint("先使用 --dry-run 预览，确认目标和表单字段后再添加 --yes"),
+						apperrors.WithActions("使用 --dry-run 预览审批请求", "确认后使用 --yes 执行"),
+					)
 				}
 			}
 			var request map[string]any
@@ -1402,7 +1407,7 @@ func newOaCommand() *cobra.Command {
 				var err error
 				request, err = decodeOARequest(raw)
 				if err != nil {
-					return fmt.Errorf("--request JSON 解析失败: %w", err)
+					return oaInvalidArgument("--request JSON 解析失败: %v", err)
 				}
 			} else {
 				if err := validateRequiredFlags(cmd, "process-code", "form-values"); err != nil {
@@ -1410,13 +1415,13 @@ func newOaCommand() *cobra.Command {
 				}
 				values, err := oaFormValues(mustGetFlag(cmd, "form-values"))
 				if err != nil {
-					return fmt.Errorf("--form-values JSON 解析失败: %w", err)
+					return oaInvalidArgument("--form-values JSON 解析失败: %v", err)
 				}
 				request = map[string]any{"processCode": mustGetFlag(cmd, "process-code"), "formComponentValues": values}
 				if dept, _ := cmd.Flags().GetString("dept-id"); dept != "" {
 					value, err := strconv.ParseInt(dept, 10, 64)
 					if err != nil {
-						return fmt.Errorf("--dept-id 必须为整数: %w", err)
+						return oaInvalidArgument("--dept-id 必须为整数: %v", err)
 					}
 					request["deptId"] = value
 				}
@@ -1426,14 +1431,14 @@ func newOaCommand() *cobra.Command {
 				if rawApprovers, _ := cmd.Flags().GetString("approvers"); rawApprovers != "" {
 					action, _ := cmd.Flags().GetString("approvers-action-type")
 					if action != "AND" && action != "OR" && action != "NONE" {
-						return fmt.Errorf("--approvers-action-type 必须为 AND、OR 或 NONE")
+						return oaInvalidArgument("--approvers-action-type 必须为 AND、OR 或 NONE")
 					}
 					request["approvers"] = []map[string]any{{"actionType": action, "userIds": strings.Split(rawApprovers, ",")}}
 				}
 				if rawCC, _ := cmd.Flags().GetString("cc-list"); rawCC != "" {
 					position, _ := cmd.Flags().GetString("cc-position")
 					if position != "START" && position != "FINISH" && position != "START_FINISH" {
-						return fmt.Errorf("--cc-position 必须为 START、FINISH 或 START_FINISH")
+						return oaInvalidArgument("--cc-position 必须为 START、FINISH 或 START_FINISH")
 					}
 					request["ccList"] = strings.Split(rawCC, ",")
 					request["ccPosition"] = position
