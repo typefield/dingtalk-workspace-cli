@@ -417,12 +417,13 @@ func tagListFirst(m map[string]any, keys ...string) (any, bool) {
 
 // UserSearch 按关键词或工号搜索邮箱用户。
 var UserSearch = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+user-search",
-	Product:     "mail",
-	Description: "按关键词或工号搜索邮箱用户（仅企业邮箱）",
-	Intent:      "当你只知道同事的姓名或工号、需要查出其企业邮箱地址以便发信或添加联系人时使用；提供关键词或工号（至少其一），返回匹配的企业邮箱用户列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+user-search",
+	Product:       "mail",
+	Description:   "按关键词或工号搜索邮箱用户（仅企业邮箱）",
+	Intent:        "当你只知道同事的姓名或工号、需要查出其企业邮箱地址以便发信或添加联系人时使用；提供关键词或工号（至少其一），返回匹配的企业邮箱用户列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -490,7 +491,11 @@ var UserSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(users), "users": users})
+		meta, err := mailListMeta(data, len(users))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(users), "users": users}, meta)
 	},
 }
 
@@ -557,12 +562,13 @@ func userSearchFirst(m map[string]any, keys ...string) (any, bool) {
 // TemplateCreate 创建邮件模板。
 // TemplateList 列举邮件模板。
 var TemplateList = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+template-list",
-	Product:     "mail",
-	Description: "列出指定邮箱的所有邮件模板",
-	Intent:      "当你想查看某个邮箱下已有哪些邮件模板、或需要取得模板 ID 以便查看详情或更新时使用；传入邮箱和每页数量，返回模板列表，支持分页。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+template-list",
+	Product:       "mail",
+	Description:   "列出指定邮箱的所有邮件模板",
+	Intent:        "当你想查看某个邮箱下已有哪些邮件模板、或需要取得模板 ID 以便查看详情或更新时使用；传入邮箱和每页数量，返回模板列表，支持分页。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -612,7 +618,11 @@ var TemplateList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(templates), "templates": templates})
+		meta, err := mailListMeta(data, len(templates))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(templates), "templates": templates}, meta)
 	},
 }
 
@@ -676,12 +686,13 @@ func templateListFirst(m map[string]any, keys ...string) (any, bool) {
 // ContactCreate 创建邮件联系人。
 // ContactList 列举邮件联系人。
 var ContactList = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+contact-list",
-	Product:     "mail",
-	Description: "列出指定邮箱的所有邮件联系人",
-	Intent:      "当你想查看某邮箱通讯录里有哪些联系人、或需要取得联系人 ID 以便更新或删除时使用；传入邮箱和每页数量，返回联系人列表，支持分页。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+contact-list",
+	Product:       "mail",
+	Description:   "列出指定邮箱的所有邮件联系人",
+	Intent:        "当你想查看某邮箱通讯录里有哪些联系人、或需要取得联系人 ID 以便更新或删除时使用；传入邮箱和每页数量，返回联系人列表，支持分页。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -731,7 +742,11 @@ var ContactList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(contacts), "contacts": contacts})
+		meta, err := mailListMeta(data, len(contacts))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(contacts), "contacts": contacts}, meta)
 	},
 }
 

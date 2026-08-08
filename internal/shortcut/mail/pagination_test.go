@@ -63,9 +63,16 @@ func TestMailPaginationRejectsInconsistentEvidence(t *testing.T) {
 	}
 }
 
-func TestMailThreadListUsesUnifiedResultAfterPaginationProjection(t *testing.T) {
-	if ThreadList.OutputRollout != output.RolloutUnifiedActive {
-		t.Fatalf("thread-list rollout = %s, want unified_active", ThreadList.OutputRollout)
+func TestMailPaginatedListsUseUnifiedResultAfterPaginationProjection(t *testing.T) {
+	for name, rollout := range map[string]output.RolloutState{
+		"thread-list":   ThreadList.OutputRollout,
+		"user-search":   UserSearch.OutputRollout,
+		"template-list": TemplateList.OutputRollout,
+		"contact-list":  ContactList.OutputRollout,
+	} {
+		if rollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout = %s, want unified_active", name, rollout)
+		}
 	}
 }
 
