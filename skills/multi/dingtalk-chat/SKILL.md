@@ -2,7 +2,7 @@
 name: dingtalk-chat
 description: 钉钉群聊与消息。Use when 用户提到 发消息/编辑或撤回消息/单聊/群聊/建群/普通群升级外部群/群昵称/会话分组/群成员管理/@消息/搜索聊天记录/话题回复/收藏消息/机器人群发/Webhook通知/发送或下载消息图片与文件。不做紧急 DING/短信/电话（走 dingtalk-misc）、邮件（走 dingtalk-mail）、班级群（走 dingtalk-misc）。命令前缀：dws chat。
 metadata:
-  cli_version: ">=0.2.14"
+  cli_version: ">=1.0.15"
   category: product
   requires:
     bins:

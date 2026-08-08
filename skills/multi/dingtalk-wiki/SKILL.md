@@ -2,7 +2,7 @@
 name: dingtalk-wiki
 description: 钉钉知识库与空间管理。Use when 用户说 知识库/wiki/创建知识库/搜索知识库空间/我的文档/团队空间/空间成员/空间内节点创建/列出/搜索/复制/移动/删除/知识库动态。知识库节点复制移动走本 skill，普通钉盘文件复制移动走 dingtalk-drive；空间内单文档内容读写先用本 skill 定位再切到 dingtalk-doc。命令前缀：dws wiki。
 metadata:
-  cli_version: ">=0.2.14"
+  cli_version: ">=1.0.15"
   category: product
   requires:
     bins:
