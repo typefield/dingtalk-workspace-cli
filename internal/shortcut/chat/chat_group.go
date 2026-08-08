@@ -36,7 +36,7 @@ const (
 
 // ChatSearch searches groups by keyword (search_groups on the im server).
 var ChatSearch = shortcut.Shortcut{
-	OutputRollout:            output.RolloutDualValidate,
+	OutputRollout:            output.RolloutUnifiedActive,
 	Service:                  "chat",
 	Command:                  "+chat-search",
 	Aliases:                  []string{"+chat-group-search", "+search-group"},
@@ -252,8 +252,9 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 		}
 		if !breakAfterObservation && !hasMore {
 			if nextCursor != "" {
-				// Legacy output historically discarded this contradictory cursor.
-				// The shadow result fails closed without changing those bytes.
+				// The legacy renderer historically discarded this contradictory cursor.
+				// The active unified result must fail closed instead of claiming
+				// endpoint exhaustion.
 				boundaryFailure = "群搜索返回 hasMore=false，但同时携带 nextCursor"
 				unknownBoundary = true
 			}
