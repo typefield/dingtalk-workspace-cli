@@ -25,6 +25,7 @@ metadata:
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
 | `dws wiki +node-list` | read | 列出知识库节点 |
+| `dws wiki +space-list` | read | 列出组织 / 个人知识库 |
 | `dws wiki +space-search` | read | 搜索知识库 |
 <!-- VISIBLE_SHORTCUTS_END -->
 

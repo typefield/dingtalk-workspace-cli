@@ -63,6 +63,9 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # Reviewed read-only approval-history projection with explicit
     # Contract/Safety and stable title/instance/time fields.
     ("oa", "+done-approvals"): "read",
+    # Reviewed read-only Wiki space listing with explicit pagination-aware
+    # Contract/Safety and result projection tests.
+    ("wiki", "+space-list"): "read",
 }
 
 

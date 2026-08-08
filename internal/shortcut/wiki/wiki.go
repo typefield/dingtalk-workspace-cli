@@ -38,6 +38,31 @@ var SpaceList = shortcut.Shortcut{
 	Description: "列出组织 / 个人知识库",
 	Intent:      "当你想浏览自己有权限访问的知识库、拿到目标知识库的 workspaceId 却不确定具体名称时使用；可按类型（组织知识库或我的知识库）分页列出，返回知识库列表，是定位知识库的常用入口。",
 	Risk:        shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "wiki",
+			Name:           "shortcut_space_list",
+			CanonicalPath:  "wiki.shortcut_space_list",
+			CLIPath:        "wiki +space-list",
+			PrimaryCLIPath: "wiki +space-list",
+		},
+		Description: "列出组织 / 个人知识库",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns type validation, cursor pagination and stable wiki-space projection; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "列出组织 / 个人知识库",
+			UseWhen:      []string{"当你想浏览自己有权限访问的知识库、拿到目标知识库的 workspaceId 却不确定具体名称时使用；可按类型（组织知识库或我的知识库）分页列出，返回知识库列表，是定位知识库的常用入口。"},
+			AvoidWhen:    []string{"已经知道知识库名称并需要精确定位时，优先使用 wiki +resolve-space；需要原始响应时改用对应原子查询"},
+			Examples:     []string{"dws wiki +space-list", "dws wiki +space-list --type myWikiSpace"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "type", Type: shortcut.FlagString, Default: "orgWikiSpace", Desc: "知识库类型: orgWikiSpace(默认) / myWikiSpace", Enum: []string{"orgWikiSpace", "myWikiSpace"}},
 		{Name: "limit", Type: shortcut.FlagString, Desc: "每页数量 1-50 (默认 20)"},
