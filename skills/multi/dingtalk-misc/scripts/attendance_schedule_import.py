@@ -34,10 +34,8 @@ from typing import Any
 from attendance_report_common import (
     run_dws,
     DwsCallError,
-    extract_records,
     resolve_user_names,
     log,
-    warn,
     error,
 )
 from _runtime import add_contract_flags, emit, run_main
@@ -287,39 +285,69 @@ def extract_group_class_names(group_info: dict) -> dict[int, str]:
     return names
 
 
-def fetch_all_classes() -> dict[int, str]:
-    """获取全局所有班次，返回 {classId: className}，用于 ID→名称映射。"""
-    log("🔍 获取班次名称映射 ...")
-    all_classes: dict[int, str] = {}
-    page_index = 1
-    page_size = 200
+def _class_name_from_detail(detail: Any, class_id: int) -> str | None:
+    """Extract a name from an exact ``attendance class get`` response.
 
-    while True:
+    The lookup is issued only for a class ID already bound to the reviewed
+    attendance group.  A detail response may omit that ID at its top level,
+    so a top-level label remains attributable to the requested ID; nested
+    candidates with an explicit different ID are rejected.
+    """
+    if not isinstance(detail, dict):
+        return None
+    candidates: list[dict[str, Any]] = [detail]
+    for key in ("class", "classVO", "shift", "shiftSetting", "data"):
+        nested = detail.get(key)
+        if isinstance(nested, dict):
+            candidates.append(nested)
+    for candidate in candidates:
+        raw_id = candidate.get("id") or candidate.get("classId") or candidate.get("shiftId")
+        if raw_id is not None:
+            try:
+                if int(raw_id) != class_id:
+                    continue
+            except (TypeError, ValueError):
+                continue
+        for key in ("name", "className", "shiftName"):
+            label = candidate.get(key)
+            if isinstance(label, str) and label.strip():
+                return label.strip()
+    return None
+
+
+def resolve_bound_class_names(required_class_ids: set[int], known_names: dict[int, str]) -> dict[int, str]:
+    """Resolve preview labels through exact reads of the group's bound IDs.
+
+    A global class search may surface classes owned by other attendance groups.
+    It is not an acceptable authorization or preview source for a write.  If a
+    bound class cannot yield a human-readable label, stop before confirmation
+    or import instead of asking a user to approve a bare numeric ID.
+    """
+    names = dict(known_names)
+    for class_id in sorted(required_class_ids):
+        if isinstance(names.get(class_id), str) and names[class_id].strip():
+            continue
+        log(f"🔍 查询已绑定班次 {class_id} 的名称 ...")
         try:
-            result = run_dws([
-                "attendance", "class", "search",
-                "--page", str(page_index),
-                "--limit", str(page_size),
+            detail = run_dws([
+                "attendance", "class", "get",
+                "--class-id", str(class_id),
             ])
         except DwsCallError as exc:
-            raise ScheduleError("api", "class_lookup_failed", f"查询班次列表失败：{exc}") from exc
-
-        records = extract_records(result) if result else []
-        if not records:
-            break
-
-        for record in records:
-            class_id = record.get("id") or record.get("classId")
-            class_name = record.get("name") or record.get("className") or str(class_id)
-            if class_id is not None:
-                all_classes[int(class_id)] = class_name
-
-        if len(records) < page_size:
-            break
-        page_index += 1
-
-    log(f"✅ 获取到 {len(all_classes)} 个班次名称")
-    return all_classes
+            raise ScheduleError(
+                "api", "class_detail_lookup_failed",
+                f"无法查询已绑定班次 {class_id} 的名称；排班未执行。",
+                details={"class_id": class_id},
+            ) from exc
+        label = _class_name_from_detail(detail, class_id)
+        if label is None:
+            raise ScheduleError(
+                "api", "class_name_projection_unknown",
+                f"已绑定班次 {class_id} 未返回可展示的名称；排班未执行。",
+                details={"class_id": class_id},
+            )
+        names[class_id] = label
+    return names
 
 
 def validate_class_ids(
@@ -330,23 +358,17 @@ def validate_class_ids(
 ) -> None:
     """校验排班记录中的 classId 都在该考勤组绑定的班次中。
 
-    如果考勤组未提取到绑定班次列表（可能是接口字段差异），
-    则降级为全局班次校验并输出警告。
+    考勤组没有提供绑定班次时，调用方必须 fail-closed；不能以企业
+    全局班次目录替代该组的授权边界。
     """
-    # 如果两个来源都无法获取到班次信息，跳过校验（排班导入接口本身有服务端校验）
-    no_bound = len(group_bound_class_ids) == 0
-    no_global = len(all_classes) == 0
+    if not group_bound_class_ids:
+        _validation(
+            f"考勤组「{group_name}」未返回关联班次，无法安全生成排班预览",
+            subtype="group_class_binding_unknown",
+            details={"group_name": group_name},
+        )
 
-    if no_bound and no_global:
-        warn(f"无法获取考勤组绑定班次和全局班次列表，跳过班次校验（将依赖服务端校验）")
-        return
-
-    use_global_fallback = no_bound
-    if use_global_fallback:
-        warn(f"未能从考勤组「{group_name}」详情中提取绑定班次列表，降级为全局班次校验")
-        check_set = set(all_classes.keys())
-    else:
-        check_set = group_bound_class_ids
+    check_set = group_bound_class_ids
 
     invalid_class_ids: set[int] = set()
 
@@ -355,23 +377,18 @@ def validate_class_ids(
         if is_rest == "Y":
             continue
         class_id = int(schedule.get("classId", 0))
-        if class_id != 0 and class_id not in check_set:
+        if class_id not in check_set:
             invalid_class_ids.add(class_id)
 
     if invalid_class_ids:
         invalid_names = [all_classes.get(cid, f"ID:{cid}") for cid in sorted(invalid_class_ids)]
-        if use_global_fallback:
-            error(f"以下班次不在可用班次列表中: {', '.join(invalid_names)}")
-        else:
-            error(f"以下班次不属于考勤组「{group_name}」: {', '.join(invalid_names)}")
+        error(f"以下班次不属于考勤组「{group_name}」: {', '.join(invalid_names)}")
         log(f"「{group_name}」可用班次:")
-        available_ids = check_set if not use_global_fallback else set(all_classes.keys())
-        for cid in sorted(available_ids):
+        for cid in sorted(check_set):
             cname = all_classes.get(cid, f"ID:{cid}")
             log(f"  - {cname} (ID: {cid})")
         _validation(
-            (f"以下班次不在可用班次列表中: {', '.join(invalid_names)}" if use_global_fallback
-             else f"以下班次不属于考勤组「{group_name}」: {', '.join(invalid_names)}"),
+            f"以下班次不属于考勤组「{group_name}」: {', '.join(invalid_names)}",
             subtype="class_not_available",
             details={"group_name": group_name, "invalid_class_ids": sorted(invalid_class_ids)},
         )
@@ -416,12 +433,19 @@ def schedule_preview(
         user_id = str(schedule["userId"])
         class_id = int(schedule["classId"])
         is_rest = str(schedule["isRest"]).upper()
+        class_name = "休息" if is_rest == "Y" else available_classes.get(class_id)
+        if not class_name:
+            raise ScheduleError(
+                "api", "class_name_projection_unknown",
+                f"班次 {class_id} 未返回可展示的名称；排班未执行。",
+                details={"class_id": class_id},
+            )
         rows.append({
             "user_id": user_id,
             "user_name": user_names.get(user_id, user_id),
             "work_date": str(schedule["workDate"])[:10],
             "class_id": class_id,
-            "class_name": "休息" if is_rest == "Y" else available_classes.get(class_id, f"未知班次(ID:{class_id})"),
+            "class_name": class_name,
             "is_rest": is_rest == "Y",
         })
     dates = sorted({row["work_date"] for row in rows})
@@ -544,12 +568,13 @@ def main() -> int:
         user_names = resolve_user_names(user_ids)
         group_bound_class_ids = extract_group_bound_classes(group_info)
         all_classes = extract_group_class_names(group_info)
-        if not group_bound_class_ids:
-            # The group response has no binding evidence.  A global lookup is
-            # only a last-resort label/validation source and is surfaced in
-            # the validation warning below.
-            all_classes = fetch_all_classes()
         validate_class_ids(schedules, group_bound_class_ids, all_classes, group_name)
+        required_class_ids = {
+            int(schedule["classId"])
+            for schedule in schedules
+            if str(schedule["isRest"]).upper() != "Y"
+        }
+        all_classes = resolve_bound_class_names(required_class_ids, all_classes)
         preview = schedule_preview(group_name, args.group_id, schedules, all_classes, user_names)
         if args.format == "text":
             print_schedule_preview(preview)

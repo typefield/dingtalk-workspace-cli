@@ -72,8 +72,7 @@ Agent 解析用户意图（考勤组、员工、日期范围、班次安排）�
 | `dws attendance group search` | 搜索考勤组（按名称/类型） | 只读 |
 | `dws attendance group get` | 查询考勤组全量信息（含绑定班次列表） | 只读 |
 | `dws attendance group filtered-get` | 查询考勤组详情（成员列表） | 只读 |
-| `dws attendance class search` | 查询班次列表（ID→名称映射） | 只读 |
-| `dws attendance class get` | 查询班次详情 | 只读 |
+| `dws attendance class get` | 按该考勤组已绑定的班次 ID 查询详情/名称 | 只读 |
 | `dws attendance schedule import` | 导入排班记录（**仅由脚本内部调用**） | 写操作（危险） |
 | `dws attendance schedule get` | 查询现有排班记录 | 只读 |
 | `dws aisearch person` | 按姓名搜索用户获取 userId | 只读 |
@@ -192,7 +191,7 @@ dws attendance group get --group-id <groupId> --format json
    **动态选项原则（严格执行）**：
    - 班次选项**必须且只能**来自考勤组的 `shiftVOList`，**严禁编造任何班次名称**（如"正常班"、"早班"、"晚班"、"全部排XX班"等都是编造）
    - 每个班次选项的 `id` 必须是 `shiftVOList` 中的真实 `shiftId`，`label` 必须是真实的 `shiftName`
-   - 如果 `shiftVOList` 为空，降级从 `groupVO.classIds` + `class search` 按 ID 精确查询（不是全局搜索）
+   - 如果 `shiftVOList` 为空但 `groupVO.classIds` 存在，只能逐个调用 `class get --class-id <已绑定ID>` 取名称；若无绑定 ID 或详情未返回名称，停止流程并报错
    - **只收集缺失的参数**：用户已经提供的参数不要重复询问
    - **如果考勤组只有一个班次，直接使用该班次，不需要询问用户选择**
    - **禁止用 `class search` 全局搜索来给用户展示班次选项**——全局班次列表包含不属于该考勤组的班次，用户选了也会被校验拒绝
@@ -359,7 +358,7 @@ python scripts/attendance_schedule_import.py \
 |------|------|------|------|
 | `userId` | string | 是 | 员工的 userId |
 | `workDate` | string | 是 | 排班日期，格式 YYYY-MM-DD |
-| `classId` | int | 是 | 班次 ID（从 `class search` 获取） |
+| `classId` | int | 是 | 考勤组绑定班次的 ID（优先从 `shiftVOList` 取得；缺名称时只可对 `classIds` 做 `class get` 精确查询） |
 | `isRest` | string | 是 | 是否排休，`Y`=排休 / `N`=正常上班 |
 
 排休时 `classId` 传 0，`isRest` 传 `Y`。
@@ -399,15 +398,17 @@ run_dws 解包后的结构（unwrap_result 去掉 success/result 包装后）：
 - 班次名称：`result["groupVO"]["shiftVOList"][N]["shiftSetting"]["shiftName"]`
 - **禁止从 result 顶层直接取 type/name/classIds，那里没有这些字段**
 
-### `dws attendance class search` 返回结构
+### `dws attendance class get` 的精确名称补全
 
 ```
-run_dws 解包后可能为以下之一：
-1. 直接 list[dict]: [{id, name, ...}, ...]
-2. {"data": [...]} 或 {"items": [...]} 或 {"classList": [...]}
+仅在考勤组已经返回关联 `classIds`、但未在 `shiftVOList` 返回名称时调用：
+
+dws attendance class get --class-id <已绑定ID> --format json
+
+run_dws 解包后使用与请求 ID 一致的 `name` / `className` / `shiftName` 作为展示名称。
 ```
 
-**注意**：如果 `class search` 返回 0 条记录，不一定是错误——可能是当前账号没有班次管理权限。此时从 `group get` 的 `shiftVOList` 中也可获取班次名称。
+**注意**：排班导入不得调用 `class search` 全局搜索来补全名称。全局目录可能包含其他考勤组的班次，不能用作当前组的校验依据或确认预览。`classIds` 缺失、`class get` 失败或详情缺少名称时，脚本必须在确认和写入之前 fail-closed。
 
 ### `dws aisearch person` 搜索同名问题
 
@@ -444,7 +445,7 @@ run_dws 解包后可能为以下之一：
 | userId 无效 | 用户 ID 错误或已离职 | 提示具体哪个用户无效 |
 | 脚本执行失败 | 接口异常/配置问题 | 将 stderr 错误信息转告用户 |
 | SECURITY_CHECK_INVOKE_FAILED | userId→姓名转换权限不足 | 仅影响展示，降级用 userId，不中止流程 |
-| class search 返回空列表 | 账号无班次管理权限 | 从 `group get` 的 `shiftVOList` 提取班次名称 |
+| 组绑定 ID 缺失 / `class get` 无名称 | 无法证明可用班次并生成可审阅预览 | 在确认与写入前失败；不得用 `class search` 全局目录替代 |
 
 ## 使用示例
 

@@ -44,9 +44,15 @@ calls = Path(os.environ['SCHEDULE_PROBE_CALLS'])
 calls.write_text((calls.read_text() if calls.exists() else '') + ' '.join(sys.argv[1:]) + '\\n')
 args = sys.argv[1:]
 if args[:3] == ['attendance', 'group', 'get']:
-    print(json.dumps({'success': True, 'result': {'groupVO': {'type': 'TURN', 'name': '研发排班组', 'classIds': [101]}}}))
+    group = {'type': 'TURN', 'name': '研发排班组'}
+    if os.environ.get('SCHEDULE_PROBE_GROUP_BINDING', 'bound') == 'bound':
+        group['classIds'] = [101]
+    print(json.dumps({'success': True, 'result': {'groupVO': group}}))
+elif args[:3] == ['attendance', 'class', 'get']:
+    print(json.dumps({'success': True, 'result': {'classId': 101, 'className': '早班'}}))
 elif args[:3] == ['attendance', 'class', 'search']:
-    print(json.dumps({'success': True, 'result': [{'id': 101, 'name': '早班'}]}))
+    print(json.dumps({'success': False, 'error': {'message': 'global class search must not be used by schedule import'}}))
+    raise SystemExit(1)
 elif args[:3] == ['contact', 'user', 'get']:
     print(json.dumps({'success': True, 'result': [{'userid': 'user_001', 'name': '张三'}]}))
 elif args[:3] == ['attendance', 'schedule', 'import']:
@@ -63,11 +69,18 @@ else:
     path.chmod(0o755)
 
 
-def _run(temp_dir: Path, extra: list[str], *, import_behavior: str = "success") -> subprocess.CompletedProcess[str]:
+def _run(
+    temp_dir: Path,
+    extra: list[str],
+    *,
+    import_behavior: str = "success",
+    group_binding: str = "bound",
+) -> subprocess.CompletedProcess[str]:
     environment = os.environ.copy()
     environment.update({
         "SCHEDULE_PROBE_CALLS": str(temp_dir / "calls.log"),
         "SCHEDULE_PROBE_IMPORT": import_behavior,
+        "SCHEDULE_PROBE_GROUP_BINDING": group_binding,
         "PATH": f"{temp_dir}{os.pathsep}{environment.get('PATH', '')}",
     })
     return subprocess.run(
@@ -104,6 +117,28 @@ def main() -> int:
         valid, payload, detail = _single_json(dry)
         dry_calls = (temp_dir / "calls.log").read_text(encoding="utf-8")
         _record(rows, "dry-run 仅做只读校验且不导入排班", valid and dry.returncode == 0 and payload is not None and payload.get("dry_run") is True and payload.get("data", {}).get("write") == "not_sent" and "attendance schedule import" not in dry_calls, f"rc={dry.returncode}; {detail}; child_reads={len(dry_calls.splitlines())}")
+        _record(
+            rows,
+            "仅精确读取已绑定班次名称，预览不展示裸 classId",
+            valid and payload is not None
+            and payload.get("data", {}).get("preview", {}).get("records", [{}])[0].get("class_name") == "早班"
+            and "attendance class get --class-id 101" in dry_calls
+            and "attendance class search" not in dry_calls,
+            f"class_get={'attendance class get --class-id 101' in dry_calls}; global_search={'attendance class search' in dry_calls}",
+        )
+
+        no_binding = _run(temp_dir, ["--dry-run"], group_binding="missing")
+        valid, payload, detail = _single_json(no_binding)
+        no_binding_calls = (temp_dir / "calls.log").read_text(encoding="utf-8")
+        _record(
+            rows,
+            "组绑定缺失 fail-closed，不回退企业全局班次目录",
+            valid and no_binding.returncode == 1 and payload is not None
+            and payload.get("error", {}).get("subtype") == "group_class_binding_unknown"
+            and "attendance class search" not in no_binding_calls
+            and "attendance schedule import" not in no_binding_calls,
+            f"rc={no_binding.returncode}; {detail}",
+        )
 
         no_yes = _run(temp_dir, [])
         valid, payload, detail = _single_json(no_yes)
