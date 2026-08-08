@@ -77,6 +77,13 @@ def load_public_catalog() -> set[tuple[str, str]]:
     }
 
 
+def load_public_catalog_records() -> list[dict[str, Any]]:
+    if not CATALOG_PATH.exists():
+        return []
+    data = json.loads(CATALOG_PATH.read_text(encoding="utf-8"))
+    return [row for row in data.get("results", []) if isinstance(row, dict)]
+
+
 def collect_visible() -> list[dict[str, Any]]:
     public_catalog = load_public_catalog()
     items = [
@@ -84,6 +91,23 @@ def collect_visible() -> list[dict[str, Any]]:
         for item in shortcut_source.collect()
         if (item["service"], item["command"]) in public_catalog
     ]
+    # Some reviewed semantic entries have no legacy row in the comparison
+    # source (for example the doc history/share adapters). They are still
+    # executable public shortcuts and must be present in Agent references;
+    # use their reviewed semantic description as the generated row text.
+    known = {(item["service"], item["command"]) for item in items}
+    for row in load_public_catalog_records():
+        key = (str(row.get("service") or ""), str(row.get("command") or ""))
+        if key in known or key not in public_catalog:
+            continue
+        items.append(
+            {
+                "service": key[0],
+                "command": key[1],
+                "risk": row.get("risk") or "",
+                "desc": row.get("semantic_delta") or row.get("status") or "",
+            }
+        )
     return sorted(items, key=lambda item: (item["service"], item["command"]))
 
 
