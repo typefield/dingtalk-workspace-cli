@@ -22,6 +22,8 @@ import argparse
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional, Tuple
 
+from _runtime import add_contract_flags, emit, failure
+
 TZ = timezone(timedelta(hours=8))
 SLOT_STEP_MIN = 30
 
@@ -31,7 +33,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -144,7 +146,7 @@ def find_free_slots(
     return free
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='查询多人共同空闲时段'
     )
@@ -166,16 +168,13 @@ def main():
         '--end-hour', type=int, default=18,
         help='工作日结束小时，默认 18',
     )
-    parser.add_argument(
-        '--dry-run', action='store_true', help='仅显示命令'
-    )
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     try:
         date = datetime.strptime(args.date, '%Y-%m-%d')
     except ValueError:
-        print('错误：日期格式应为 YYYY-MM-DD')
-        sys.exit(1)
+        return failure(args.format, '日期格式应为 YYYY-MM-DD')
 
     day_start = date.replace(
         hour=args.start_hour, tzinfo=TZ
@@ -191,22 +190,32 @@ def main():
     ], dry_run=args.dry_run)
 
     if args.dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'date': args.date, 'users': args.users.split(','),
+            'duration': args.duration, 'startHour': args.start_hour,
+            'endHour': args.end_hour,
+        }, dry_run=True, text='[dry-run] 将查询参与人忙闲并计算共同空闲时段')
 
     # 查询失败必须中止, 否则会把"查不到"当成"全天空闲"给出危险结论
     if data is None:
-        print('错误：忙闲查询失败，无法给出空闲时段结论', file=sys.stderr)
-        sys.exit(2)
+        return failure(args.format, '忙闲查询失败，无法给出空闲时段结论')
     if isinstance(data, dict) and data.get('success') is False:
-        print(f"错误：忙闲查询失败: "
-              f"{data.get('errorMsg') or data.get('errorCode') or data}",
-              file=sys.stderr)
-        sys.exit(2)
+        return failure(args.format, f"忙闲查询失败: {data.get('errorMsg') or data.get('errorCode') or data}")
 
     busy = parse_busy_intervals(data)
     free = find_free_slots(day_start, day_end, busy, args.duration)
 
     users_list = args.users.split(',')
+    slots = [{'start': s.isoformat(), 'end': e.isoformat(),
+              'minutes': int((e - s).total_seconds() / 60)}
+             for s, e in free]
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'date': args.date, 'users': users_list,
+            'duration': args.duration, 'busyCount': len(busy),
+            'slots': slots,
+        })
+
     print(f"\n🕐 空闲时段查询 ({args.date})")
     print(f"   参与人: {len(users_list)} 人")
     print(f"   会议时长: {args.duration} 分钟")
@@ -217,7 +226,7 @@ def main():
 
     if not free:
         print('  ❌ 该日无共同空闲时段')
-        return
+        return 0
 
     print(f"\n✅ 找到 {len(free)} 个可用时段:\n")
     for i, (s, e) in enumerate(free, 1):
@@ -225,7 +234,8 @@ def main():
         label = '⭐ 推荐' if i == 1 else f'   备选{i-1}'
         print(f"  {label}  {s.strftime('%H:%M')} ~ "
               f"{e.strftime('%H:%M')}  ({gap_min}分钟)")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

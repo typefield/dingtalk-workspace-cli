@@ -13,6 +13,9 @@ import subprocess
 from datetime import datetime
 from typing import List, Dict, Any, Optional
 
+import argparse
+from _runtime import add_contract_flags, emit, failure
+
 PAGE_SIZE = 50
 MAX_PAGES = 10
 PRIORITY_MAP = {10: '低', 20: '普通', 30: '较高', 40: '紧急'}
@@ -23,7 +26,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -118,22 +121,37 @@ def days_overdue(due_ms) -> int:
         return 0
 
 
-def main():
-    if '--help' in sys.argv or '-h' in sys.argv:
-        print(__doc__)
-        return
-    dry_run = '--dry-run' in sys.argv
+def main() -> int:
+    parser = argparse.ArgumentParser(description='扫描逾期待办')
+    add_contract_flags(parser)
+    args = parser.parse_args()
+    dry_run = args.dry_run
     todos = fetch_all_undone(dry_run=dry_run)
     if dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'plan': 'list unfinished tasks and filter overdue items',
+        }, dry_run=True, text='[dry-run] 将查询未完成待办并筛选逾期项')
     if todos is None:
-        print('错误：待办查询失败，无法给出逾期结论', file=sys.stderr)
-        sys.exit(2)
+        return failure(args.format, '待办查询失败，无法给出逾期结论')
 
     overdue = find_overdue(todos)
     overdue.sort(
         key=lambda t: int(t.get('dueTime') or t.get('due', 0))
     )
+
+    records = []
+    for t in overdue:
+        due = t.get('dueTime') or t.get('due')
+        records.append({
+            'title': t.get('subject') or t.get('title', '无标题'),
+            'due': datetime.fromtimestamp(int(due) / 1000).strftime('%Y-%m-%d'),
+            'daysOverdue': days_overdue(due),
+            'priority': PRIORITY_MAP.get(int(t.get('priority', 20)), '普通'),
+        })
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'count': len(records), 'items': records,
+        })
 
     print(f"\n⏰ 逾期待办检查 ({datetime.now().strftime('%Y-%m-%d %H:%M')})")
     print('=' * 50)
@@ -142,22 +160,13 @@ def main():
         print('  ✅ 没有逾期待办，继续保持！')
         return
 
-    for t in overdue:
-        title = t.get('subject') or t.get('title', '无标题')
-        due = t.get('dueTime') or t.get('due')
-        days = days_overdue(due)
-        pri = PRIORITY_MAP.get(
-            int(t.get('priority', 20)), '普通'
-        )
-        due_str = datetime.fromtimestamp(
-            int(due) / 1000
-        ).strftime('%Y-%m-%d')
-        print(f"  🔴 [{pri}] {title}")
-        print(f"     截止: {due_str}  逾期: {days} 天")
+    for item in records:
+        print(f"  🔴 [{item['priority']}] {item['title']}")
+        print(f"     截止: {item['due']}  逾期: {item['daysOverdue']} 天")
 
     print(f"\n合计: {len(overdue)} 条逾期待办")
-    sys.exit(1 if overdue else 0)
+    return 1 if overdue else 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
