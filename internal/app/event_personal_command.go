@@ -1067,11 +1067,15 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 			return fmt.Errorf("event stop --as user: cancel subscription %s: %w", id, err)
 		}
 	}
+	if err := stopPersonalConsumers(c.ErrOrStderr(), ipcEndpoint, subscribeIDs); err != nil {
+		// Keep the local run state when the consumer could not be stopped.  The
+		// state is the only durable target list available for a later retry;
+		// deleting it first would turn a local-stop failure into an unrecoverable
+		// false-success after the remote subscription has already been cancelled.
+		return fmt.Errorf("event stop --as user: stop matching local consumer: %w", err)
+	}
 	if err := personalRemoveRunStates(workDir, subscribeIDs); err != nil {
 		return fmt.Errorf("event stop --as user: update local state: %w", err)
-	}
-	if err := stopPersonalConsumers(c.ErrOrStderr(), ipcEndpoint, subscribeIDs); err != nil {
-		fmt.Fprintf(c.ErrOrStderr(), "WARN: failed to stop matching local consume process: %v\n", err)
 	}
 
 	remaining, err := personalLoadRunStates(workDir)

@@ -186,6 +186,7 @@ func TestCrossPlatformCoveragePersonalEventRemainingStatusStopAndInterruptCovera
 	oldRemove := personalRemoveRunStates
 	oldLoad := personalLoadRunStates
 	oldStop := personalStopBus
+	oldStopConsumers := personalStopConsumers
 	oldQueryStatus := personalQueryStatus
 	oldFindProcess := personalFindProcess
 	oldSignal := personalSignalProcess
@@ -198,6 +199,7 @@ func TestCrossPlatformCoveragePersonalEventRemainingStatusStopAndInterruptCovera
 		personalRemoveRunStates = oldRemove
 		personalLoadRunStates = oldLoad
 		personalStopBus = oldStop
+		personalStopConsumers = oldStopConsumers
 		personalQueryStatus = oldQueryStatus
 		personalFindProcess = oldFindProcess
 		personalSignalProcess = oldSignal
@@ -239,6 +241,9 @@ func TestCrossPlatformCoveragePersonalEventRemainingStatusStopAndInterruptCovera
 		t.Fatalf("delete error = %v", err)
 	}
 	personalDeleteSubscription = func(*personal.Client, context.Context, string) error { return nil }
+	personalStopConsumers = func(string, []string) (eventtransport.ConsumerStopResp, error) {
+		return eventtransport.ConsumerStopResp{}, nil
+	}
 	personalRemoveRunStates = func(string, []string) error { return wantErr }
 	if err := runPersonalEventStop(cmd, personalStopOptions{SubscribeID: "sub"}); !errors.Is(err, wantErr) {
 		t.Fatalf("remove error = %v", err)
@@ -269,6 +274,21 @@ func TestCrossPlatformCoveragePersonalEventRemainingStatusStopAndInterruptCovera
 	personalStopBus = func(busctl.StopConfig) error { return wantErr }
 	if err := runPersonalEventStop(cmd, personalStopOptions{SubscribeID: "sub"}); !errors.Is(err, wantErr) {
 		t.Fatalf("bus stop error = %v", err)
+	}
+	removedAfterConsumerFailure := false
+	personalStopBus = func(busctl.StopConfig) error { return nil }
+	personalStopConsumers = func(string, []string) (eventtransport.ConsumerStopResp, error) {
+		return eventtransport.ConsumerStopResp{}, wantErr
+	}
+	personalRemoveRunStates = func(string, []string) error {
+		removedAfterConsumerFailure = true
+		return nil
+	}
+	if err := runPersonalEventStop(cmd, personalStopOptions{SubscribeID: "sub"}); !errors.Is(err, wantErr) {
+		t.Fatalf("consumer stop error = %v", err)
+	}
+	if removedAfterConsumerFailure {
+		t.Fatal("local run state was removed after consumer stop failure")
 	}
 
 	personalLoadRunStates = func(string) ([]personal.RunState, error) {
