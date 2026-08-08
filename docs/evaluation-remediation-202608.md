@@ -394,6 +394,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - Agent 语义复核还发现 AITable Skill 曾把 `bulk_add_fields.py` 和
   `upload_attachment.py` 误写成选项式调用；已按脚本真实位置参数契约修正，并把
   该类“Python 脚本参数不受 CLI 命令完整性检查覆盖”的风险加入 Multi 扫描台账。
+- 同一 Agent 扫描进一步发现 Minutes 深层 recipe 将脚本自身的 `--max` 误写成
+  `--limit`；已改回 `--max`，并把 Python 脚本调用的 flag 对拍纳入扫描器，当前
+  `Documented Python-script flag mismatches = 0`。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。

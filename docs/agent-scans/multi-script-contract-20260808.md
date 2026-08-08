@@ -33,6 +33,10 @@
 但脚本契约是位置参数；现已统一为 `<baseId> <tableId> <fields.json>` 和
 `<baseId> <filePath>`，并在写入口上标出可选 `--dry-run`。
 
+随后扫描又发现 Minutes 深层 recipe 把脚本参数 `--max` 写成了 `--limit`；
+`--limit` 只属于脚本内部调用的 `dws minutes list`，已改回脚本自身的 `--max`。
+复扫结果：Documented Python-script flag mismatches = 0。
+
 ## 修复边界
 
 本轮只修复了 `--help` 可观测性，不把 42 个入口强行改造成同一 CLI。强行添加两个 flag 会改变脚本参数和输出契约，反而扩大兼容风险；后续应按 Agent 实际使用路径逐个迁移并配套 dry-run 副作用证据。
