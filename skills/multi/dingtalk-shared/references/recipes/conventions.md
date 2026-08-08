@@ -1,6 +1,6 @@
 # 通用规范
 
-> full recipe 执行时的共享规范。安全门控、危险操作确认、`--format json` 等已在根 [SKILL.md](../../../SKILL.md) 中定义，此处不重复。
+> full recipe 执行时的共享规范。安全门控、危险操作确认、`--format json` 等已在根 [SKILL.md](../../SKILL.md) 中定义，此处不重复。
 > Recipe 元规范（YAML frontmatter、命名、三层架构）见 [meta.md](meta.md)。
 
 ## 批量查询规范
@@ -20,7 +20,7 @@
 - 同条 Shell：`&` 并行 + `wait`；分页须采全。
 - 只保留与主题相关的数据，无关丢弃。
 - 有批量详情接口优先；否则并行拉详情（见上表 #1）。
-- 具体采哪些产品列表由对应 **行动指南 recipe** 与 [SKILL 产品参考](../../../SKILL.md) 决定。
+- 具体采哪些产品列表由对应 **行动指南 recipe** 与 [SKILL 产品参考](../../SKILL.md) 决定。
 
 ## 字段术语与 ID 传递
 
