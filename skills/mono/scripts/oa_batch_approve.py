@@ -168,7 +168,7 @@ def main() -> int:
         'action': args.action, 'total': success + fail,
         'succeeded': [{'id': item} for item in succeeded_ids],
         'failed': failed_ids,
-    }, text=f"\n完成: 成功 {success}, 失败 {fail}")
+    }, dry_run=args.dry_run, text=f"\n完成: 成功 {success}, 失败 {fail}")
 
 
 if __name__ == '__main__':

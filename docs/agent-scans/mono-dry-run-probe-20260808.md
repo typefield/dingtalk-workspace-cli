@@ -1,15 +1,15 @@
-# Mono Skill 深层写脚本 dry-run 受控探针
+# Mono 深层 dry-run Agent 受控探针
 
-> Agent probe：使用临时 HOME/工作区和假的 `dws` 子进程。`PASS` 只证明下面这些固定 fixture 的 dry-run 没有远端调用、没有临时工作区写入且 stdout 是统一 JSON；不替代真实账号、异常分支和全量业务验证。
+> 临时 HOME、临时工作目录和 sentinel dws；不保存 JSON fixture。PASS 表示单一 JSON stdout、dry_run=true、无 dws 调用、无额外本地文件。
 
-| 脚本 | rc | 远端调用 | 临时区写入 | 结果 |
-|---|---:|:---:|:---:|---|
-| `doc_create_and_write` | 0 | no | no | PASS |
-| `oa_batch_approve` | 0 | no | no | PASS |
-| `todo_batch_create` | 0 | no | no | PASS |
-| `bulk_add_fields` | 0 | no | no | PASS |
-| `import_records` | 0 | no | no | PASS |
-| `calendar_schedule_meeting` | 0 | no | no | PASS |
-| `upload_attachment` | 0 | no | no | PASS |
+| 入口 | 结果 | 说明 |
+|---|---|---|
+| `doc_create_and_write.py` | PASS | ok |
+| `oa_batch_approve.py` | PASS | ok |
+| `todo_batch_create.py` | PASS | ok |
+| `bulk_add_fields.py` | PASS | ok |
+| `import_records.py` | PASS | ok |
+| `calendar_schedule_meeting.py` | PASS | ok |
+| `upload_attachment.py` | PASS | ok |
 
-结论：7/7 个受控 fixture 通过；剩余路径仍标记为 `UNVERIFIED`，不得据此扩大为全量安全承诺。
+结果：7/7 通过
