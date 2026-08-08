@@ -33,6 +33,68 @@ func TestHTTPStatusErrorIncludesCallMetadata(t *testing.T) {
 	if typed.Reason != string(apperrors.SubtypeRateLimit) {
 		t.Fatalf("Reason = %q, want %q", typed.Reason, apperrors.SubtypeRateLimit)
 	}
+	if got := typed.Details["http_status"]; got != http.StatusTooManyRequests {
+		t.Fatalf("details.http_status = %#v, want %d", got, http.StatusTooManyRequests)
+	}
+}
+
+func TestUnknownUpstreamCodesStayDiagnosticNotSubtype(t *testing.T) {
+	t.Parallel()
+	for _, tt := range []struct {
+		name     string
+		err      error
+		category apperrors.Category
+		subtype  apperrors.Subtype
+		code     int
+	}{
+		{
+			name:     "tool HTTP",
+			err:      httpStatusError("tools/call", "https://mcp.dingtalk.com/server", 599, "", ""),
+			category: apperrors.CategoryAPI,
+			subtype:  apperrors.SubtypeUpstreamUnclassified,
+			code:     599,
+		},
+		{
+			name:     "discovery HTTP",
+			err:      httpStatusError("initialize", "https://mcp.dingtalk.com/server", 599, "", ""),
+			category: apperrors.CategoryDiscovery,
+			subtype:  apperrors.SubtypeDiscoveryUpstreamUnclassified,
+			code:     599,
+		},
+		{
+			name:     "tool RPC",
+			err:      jsonrpcEnvelopeError("tools/call", &RPCError{Code: -32042, Message: "unrecognised upstream state"}, "", ""),
+			category: apperrors.CategoryAPI,
+			subtype:  apperrors.SubtypeUpstreamUnclassified,
+			code:     -32042,
+		},
+		{
+			name:     "discovery RPC",
+			err:      jsonrpcEnvelopeError("initialize", &RPCError{Code: -32042, Message: "unrecognised upstream state"}, "", ""),
+			category: apperrors.CategoryDiscovery,
+			subtype:  apperrors.SubtypeDiscoveryUpstreamUnclassified,
+			code:     -32042,
+		},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			var typed *apperrors.Error
+			if !errors.As(tt.err, &typed) {
+				t.Fatalf("error = %T, want *errors.Error", tt.err)
+			}
+			if typed.Category != tt.category || typed.Reason != string(tt.subtype) {
+				t.Fatalf("category/reason = %q/%q, want %q/%q", typed.Category, typed.Reason, tt.category, tt.subtype)
+			}
+			if strings.Contains(typed.Reason, "599") || strings.Contains(typed.Reason, "32042") {
+				t.Fatalf("subtype must not encode upstream code: %q", typed.Reason)
+			}
+			if tt.code == 599 && typed.Details["http_status"] != tt.code {
+				t.Fatalf("details.http_status = %#v, want %d", typed.Details["http_status"], tt.code)
+			}
+			if tt.code < 0 && typed.RPCCode != tt.code {
+				t.Fatalf("rpc_code = %d, want %d", typed.RPCCode, tt.code)
+			}
+		})
+	}
 }
 
 func TestJSONRPCEnvelopeErrorIncludesCallMetadata(t *testing.T) {
@@ -128,8 +190,8 @@ func TestCallToolDoesNotReplayAmbiguousOperation(t *testing.T) {
 	if typed.Operation != "tools/call" {
 		t.Fatalf("Operation = %q, want tools/call", typed.Operation)
 	}
-	if typed.Reason != "http_503" {
-		t.Fatalf("Reason = %q, want http_503", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeUpstreamUnclassified) {
+		t.Fatalf("Reason = %q, want %q", typed.Reason, apperrors.SubtypeUpstreamUnclassified)
 	}
 	if attempts != 1 {
 		t.Fatalf("tools/call attempts=%d, want exactly one", attempts)

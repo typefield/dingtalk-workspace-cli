@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：已实施（三批 registry）；渐进迁移进行中
+- 状态：已实施（四批 registry）；渐进迁移进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,11 +26,11 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / `WithSubtype(...)` 调用 | 30 / 104 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个稳定 subtype 已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 37 / 105 / 6 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个，以及 transport/服务端响应第四批七个稳定 subtype 已落地；间接映射函数由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
 | `WithReason("…")` 自由字面调用 | 54 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
-| 全部 subtype / 调用点 | 79 / 158 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 全部 subtype / 调用点 | 79 / 159 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 6 | 绕过 `WithReason` 的第二条入口 |
-| 动态 `WithReason(variable)` | 16 | 上游码或拼接文本可能直接变成 Agent 分支键 |
+| 动态 `WithReason(variable)` | 7 | 仍需审阅；transport 的 HTTP/RPC 拼接路径已改为有限 subtype 映射，原始码保留在诊断字段 |
 | 缺有效恢复提示的 subtype | 16 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
@@ -113,18 +113,37 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 名称、Category 或重试语义的变动按 breaking change 评审。新增 descriptor 必须说明其
 稳定性、触发边界和 Agent 恢复行为。
 
+### 4.2.2 Transport 与服务端响应第四批
+
+这一批解决的是“上游数字/文本被拼成 subtype”的问题。HTTP 状态和 JSON-RPC code 保持在
+`http_status`、`rpc_code`、trace、诊断 details 等事实字段中，但不是 Agent 分支键：
+
+| 场景 | subtype | Category | Agent 恢复边界 |
+|---|---|---|---|
+| 未分类 `tools/call` HTTP/RPC/响应体失败 | `upstream_unclassified` | api | 写调用可能已经开始；先核查 execution/trace，不宣称安全重试 |
+| 未分类发现路径 HTTP/RPC/响应体失败 | `discovery_upstream_unclassified` | discovery | 仅作为幂等只读发现重试；先核对服务版本和网络 |
+| HTTP / RPC 认证或授权拒绝 | `upstream_authentication_required` / `upstream_authorization_denied` | auth | 检查登录、凭证、租户身份或授权范围；不可盲目重放 |
+| JSON-RPC `-32602` | `invalid_argument` | validation | 修正 schema/参数后重新执行；请求未通过工具输入校验 |
+| `tools/call` JSON-RPC 协议不兼容 | `tool_protocol_incompatible` | discovery | 核对工具名、服务版本或升级 CLI；不当作业务写失败 |
+| MCP 后端依赖不可用 / 已知后端参数拒绝 | `backend_dependency_unavailable` / `upstream_request_rejected` | api | 保留 trace；前者等待依赖恢复，后者核对 Help、Schema 与稳定 ID |
+
+映射函数只能返回上述有限 descriptor，并由单元测试覆盖任意 HTTP/RPC 数字不会进入
+subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=unknown`，且不输出
+`retryable:true`。
+
 ### 4.3 未注册与动态上游原因
 
 禁止把服务端任意 `reason`、HTTP 文本或拼接后的字符串直接作为公开 subtype。迁移后：
 
 1. 已知上游状态码/错误码映射到注册 descriptor；
-2. 无法安全映射时使用 `api/upstream_unclassified`；
+2. 无法安全映射时，按 Category 使用 `upstream_unclassified`（api）或
+   `discovery_upstream_unclassified`（discovery）；
 3. 原始上游 reason、HTTP/RPC code、trace 等放入已有诊断字段，不能成为 Agent 的
    稳定分支键；
 4. 对写请求且执行是否开始未知时，不得声明 `retryable:true`；应省略该字段，并保留
    `execution_started` 的已知状态或缺席。
 
-`upstream_unclassified` 的文案只要求 Agent 收集 trace/请求上下文或提示用户，不得诱导
+两个 unclassified subtype 的文案只要求 Agent 收集 trace/请求上下文或提示用户，不得诱导
 盲目重试。
 
 ## 5. 实现原则
@@ -136,8 +155,8 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 3. `internal/errors.Error` 到 `output.ErrorInfo` 的投影从同一 descriptor 读取 Category、
    subtype、退出码和恢复约束。legacy JSON 保持其现有字段形状，但使用同一分类事实。
 4. 统一返回的 active command 最终要求 `error.type` 与 `error.subtype` 均存在；在全量
-   分类完成前，遗漏 subtype 必须降级为受控 `internal/unclassified` 或
-   `api/upstream_unclassified`，不能直接拒绝用户请求后又改写为不相关 internal error。
+   分类完成前，遗漏 subtype 必须降级为受控 `internal/unclassified`、
+   `upstream_unclassified` 或 `discovery_upstream_unclassified`，不能直接拒绝用户请求后又改写为不相关 internal error。
 5. `exit_code` 是框架根据 Category/subtype 推导的结果；业务代码不得自报任意退出码。
 6. `partial_failure` 仍必须由 typed `succeeded/failed/unknown` 数据表达；不能用普通
    error reason 代替逐项事实。
@@ -147,7 +166,7 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个已登记 subtype 的生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个已登记 subtype 的生产调用已迁入 `WithSubtype`；HTTP/RPC 动态上游 reason 已走有限映射器，剩余动态变量继续逐项审阅（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

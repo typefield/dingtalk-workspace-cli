@@ -20,36 +20,43 @@ package errors
 type Subtype string
 
 const (
-	SubtypeMissingRequiredFlags        Subtype = "missing_required_flags"
-	SubtypeInvalidFlagValue            Subtype = "invalid_flag_value"
-	SubtypeInvalidArgument             Subtype = "invalid_argument"
-	SubtypeUnknownFlag                 Subtype = "unknown_flag"
-	SubtypeConfirmationRequired        Subtype = "confirmation_required"
-	SubtypeRateLimit                   Subtype = "rate_limit"
-	SubtypePaginationInconsistent      Subtype = "pagination_inconsistent"
-	SubtypeProjectionUnknown           Subtype = "projection_unknown"
-	SubtypeInputReadFailed             Subtype = "input_read_failed"
-	SubtypeInvalidJSONInput            Subtype = "invalid_json_input"
-	SubtypeFormulaErrorsFound          Subtype = "formula_errors_found"
-	SubtypeDownloadOutputUnavailable   Subtype = "download_output_unavailable"
-	SubtypeDownloadSizeMismatch        Subtype = "download_size_mismatch"
-	SubtypeVersionNotFound             Subtype = "version_not_found"
-	SubtypeTargetTypeMismatch          Subtype = "target_type_mismatch"
-	SubtypeTargetArgumentsConflict     Subtype = "target_arguments_conflict"
-	SubtypeMissingTarget               Subtype = "missing_target"
-	SubtypeResolutionNotFound          Subtype = "resolution_not_found"
-	SubtypeResolutionAmbiguous         Subtype = "resolution_ambiguous"
-	SubtypeResolutionIncomplete        Subtype = "resolution_incomplete"
-	SubtypeResolutionBatchFailed       Subtype = "resolution_batch_failed"
-	SubtypeInvalidAITableURL           Subtype = "invalid_aitable_url"
-	SubtypeTargetNotFound              Subtype = "target_not_found"
-	SubtypeTargetAmbiguous             Subtype = "target_ambiguous"
-	SubtypeTargetTypeConflict          Subtype = "target_type_conflict"
-	SubtypeTargetIncomplete            Subtype = "target_incomplete"
-	SubtypeTargetInvalidResponse       Subtype = "target_invalid_response"
-	SubtypeTargetVerificationFailed    Subtype = "target_verification_failed"
-	SubtypeKeyValueConflict            Subtype = "key_value_conflict"
-	SubtypeAttachmentTokensUnavailable Subtype = "attachment_tokens_unavailable"
+	SubtypeMissingRequiredFlags           Subtype = "missing_required_flags"
+	SubtypeInvalidFlagValue               Subtype = "invalid_flag_value"
+	SubtypeInvalidArgument                Subtype = "invalid_argument"
+	SubtypeUnknownFlag                    Subtype = "unknown_flag"
+	SubtypeConfirmationRequired           Subtype = "confirmation_required"
+	SubtypeRateLimit                      Subtype = "rate_limit"
+	SubtypePaginationInconsistent         Subtype = "pagination_inconsistent"
+	SubtypeProjectionUnknown              Subtype = "projection_unknown"
+	SubtypeInputReadFailed                Subtype = "input_read_failed"
+	SubtypeInvalidJSONInput               Subtype = "invalid_json_input"
+	SubtypeFormulaErrorsFound             Subtype = "formula_errors_found"
+	SubtypeDownloadOutputUnavailable      Subtype = "download_output_unavailable"
+	SubtypeDownloadSizeMismatch           Subtype = "download_size_mismatch"
+	SubtypeVersionNotFound                Subtype = "version_not_found"
+	SubtypeTargetTypeMismatch             Subtype = "target_type_mismatch"
+	SubtypeTargetArgumentsConflict        Subtype = "target_arguments_conflict"
+	SubtypeMissingTarget                  Subtype = "missing_target"
+	SubtypeResolutionNotFound             Subtype = "resolution_not_found"
+	SubtypeResolutionAmbiguous            Subtype = "resolution_ambiguous"
+	SubtypeResolutionIncomplete           Subtype = "resolution_incomplete"
+	SubtypeResolutionBatchFailed          Subtype = "resolution_batch_failed"
+	SubtypeInvalidAITableURL              Subtype = "invalid_aitable_url"
+	SubtypeTargetNotFound                 Subtype = "target_not_found"
+	SubtypeTargetAmbiguous                Subtype = "target_ambiguous"
+	SubtypeTargetTypeConflict             Subtype = "target_type_conflict"
+	SubtypeTargetIncomplete               Subtype = "target_incomplete"
+	SubtypeTargetInvalidResponse          Subtype = "target_invalid_response"
+	SubtypeTargetVerificationFailed       Subtype = "target_verification_failed"
+	SubtypeKeyValueConflict               Subtype = "key_value_conflict"
+	SubtypeAttachmentTokensUnavailable    Subtype = "attachment_tokens_unavailable"
+	SubtypeUpstreamUnclassified           Subtype = "upstream_unclassified"
+	SubtypeDiscoveryUpstreamUnclassified  Subtype = "discovery_upstream_unclassified"
+	SubtypeUpstreamAuthenticationRequired Subtype = "upstream_authentication_required"
+	SubtypeUpstreamAuthorizationDenied    Subtype = "upstream_authorization_denied"
+	SubtypeToolProtocolIncompatible       Subtype = "tool_protocol_incompatible"
+	SubtypeBackendDependencyUnavailable   Subtype = "backend_dependency_unavailable"
+	SubtypeUpstreamRequestRejected        Subtype = "upstream_request_rejected"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -349,6 +356,69 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "当前附件缺少安全覆盖写所需 token；请改用 replace 或先人工核查原附件。",
 		Description:   "attachment read-back omitted tokens required for a safe replacement write",
+	},
+	SubtypeUpstreamUnclassified: {
+		Subtype:       SubtypeUpstreamUnclassified,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "上游未提供可安全分类的失败；请保留 trace、HTTP/RPC 诊断并核查执行状态，禁止盲目重试写操作。",
+		Description:   "an upstream tool-call failure whose detailed code is diagnostic rather than an Agent branch key",
+	},
+	SubtypeDiscoveryUpstreamUnclassified: {
+		Subtype:       SubtypeDiscoveryUpstreamUnclassified,
+		Category:      CategoryDiscovery,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "服务发现未获得可安全分类的上游响应；请保留 trace 并核对服务版本或网络后重试只读发现。",
+		Description:   "a discovery-path upstream failure whose detailed code is diagnostic rather than an Agent branch key",
+	},
+	SubtypeUpstreamAuthenticationRequired: {
+		Subtype:       SubtypeUpstreamAuthenticationRequired,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "上游要求重新认证；请检查登录状态、凭证和租户身份后重新执行。",
+		Description:   "the upstream rejected the current authentication state",
+	},
+	SubtypeUpstreamAuthorizationDenied: {
+		Subtype:       SubtypeUpstreamAuthorizationDenied,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "当前身份没有访问上游资源的权限；请核对授权范围或切换有权限的身份。",
+		Description:   "the upstream denied authorization for the current identity",
+	},
+	SubtypeToolProtocolIncompatible: {
+		Subtype:       SubtypeToolProtocolIncompatible,
+		Category:      CategoryDiscovery,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "工具协议或服务版本不兼容；请核对工具名、服务版本或升级到兼容的 dws 版本。",
+		Description:   "the upstream rejected the JSON-RPC tool protocol before a tool result was produced",
+	},
+	SubtypeBackendDependencyUnavailable: {
+		Subtype:       SubtypeBackendDependencyUnavailable,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryServerDirective,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "MCP 后端依赖暂时不可用；保留 Trace ID，确认服务恢复后再决定是否重试。",
+		Description:   "a declared MCP backend dependency was unavailable",
+	},
+	SubtypeUpstreamRequestRejected: {
+		Subtype:       SubtypeUpstreamRequestRejected,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请求被上游拒绝；请核对当前 leaf Help、Schema 和稳定目标 ID 后重试。",
+		Description:   "the upstream rejected a tool request without a more specific safe classification",
 	},
 }
 

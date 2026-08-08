@@ -21,7 +21,7 @@ import (
 
 type serverFailureClass struct {
 	message string
-	reason  string
+	subtype apperrors.Subtype
 	origin  string
 	stage   string
 	hint    string
@@ -38,7 +38,7 @@ func classifyServerFailure(message string, diag apperrors.ServerDiagnostics) (se
 		strings.Contains(detail, "connection refused") {
 		classified := serverFailureClass{
 			message: "MCP 后端依赖暂时不可用",
-			reason:  "backend_dependency_unavailable",
+			subtype: apperrors.SubtypeBackendDependencyUnavailable,
 			origin:  "mcp_gateway",
 			stage:   "backend_dependency",
 			hint:    "请求参数无需修改；请使用相同参数稍后重试。持续失败时请提供 Trace ID 排查 MCP 服务。",
@@ -59,7 +59,7 @@ func classifyServerFailure(message string, diag apperrors.ServerDiagnostics) (se
 		strings.Contains(text, "openconversationid") && strings.Contains(text, "required") {
 		return serverFailureClass{
 			message: message,
-			reason:  "invalid_request",
+			subtype: apperrors.SubtypeUpstreamRequestRejected,
 			origin:  "dingtalk_api",
 			stage:   "tool_validation",
 			hint:    "请求未通过后端参数校验；请核对当前 leaf Help/Schema 和稳定 ID 类型后重试。",
@@ -76,17 +76,33 @@ func newServerFailureAPIError(
 	serverKey string,
 	diag apperrors.ServerDiagnostics,
 ) error {
+	classified, classifiedOK := classifyServerFailure(message, diag)
+	// A server-provided retryable bit is a diagnostic observation, not proof
+	// that replaying an arbitrary tools/call is safe.  Preserve it as details
+	// unless the reviewed backend-dependency class explicitly accepts service
+	// retry guidance.
+	recoveryDiag := diag
+	if diag.ServerRetryable != nil && (!classifiedOK || classified.subtype != apperrors.SubtypeBackendDependencyUnavailable) {
+		recoveryDiag.ServerRetryable = nil
+	}
 	opts := []apperrors.Option{
 		apperrors.WithOperation("tools/call"),
-		apperrors.WithReason(fallbackReason),
+		// The free-form fallback is retained only as a diagnostic label.  It is
+		// not an Agent branch key: upstream business failures must use a closed
+		// subtype even when their server message changes.
+		apperrors.WithSubtype(apperrors.SubtypeUpstreamUnclassified),
 		apperrors.WithServerKey(serverKey),
 		apperrors.WithHint(fallbackHint),
-		apperrors.WithServerDiag(diag),
+		apperrors.WithServerDiag(recoveryDiag),
+		apperrors.WithDetails(map[string]any{"server_failure_kind": fallbackReason}),
 	}
-	if classified, ok := classifyServerFailure(message, diag); ok {
+	if diag.ServerRetryable != nil && recoveryDiag.ServerRetryable == nil {
+		opts = append(opts, apperrors.WithDetails(map[string]any{"server_retryable": *diag.ServerRetryable}))
+	}
+	if classifiedOK {
 		message = classified.message
 		opts = append(opts,
-			apperrors.WithReason(classified.reason),
+			apperrors.WithSubtype(classified.subtype),
 			apperrors.WithOrigin(classified.origin),
 			apperrors.WithFailureStage(classified.stage),
 			apperrors.WithHint(classified.hint),

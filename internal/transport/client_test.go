@@ -435,8 +435,8 @@ func TestCallToolClassifiesUnauthorizedHTTPAsAuthError(t *testing.T) {
 	if typed.Category != apperrors.CategoryAuth {
 		t.Fatalf("category = %q, want auth", typed.Category)
 	}
-	if typed.Reason != "http_401" {
-		t.Fatalf("reason = %q, want http_401", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeUpstreamAuthenticationRequired) {
+		t.Fatalf("reason = %q, want %q", typed.Reason, apperrors.SubtypeUpstreamAuthenticationRequired)
 	}
 	if typed.Snapshot == "" {
 		t.Fatal("snapshot path should not be empty")
@@ -466,8 +466,8 @@ func TestCallToolClassifiesForbiddenHTTPAsAuthError(t *testing.T) {
 	if typed.Category != apperrors.CategoryAuth {
 		t.Fatalf("category = %q, want auth", typed.Category)
 	}
-	if typed.Reason != "http_403" {
-		t.Fatalf("reason = %q, want http_403", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeUpstreamAuthorizationDenied) {
+		t.Fatalf("reason = %q, want %q", typed.Reason, apperrors.SubtypeUpstreamAuthorizationDenied)
 	}
 }
 
@@ -502,8 +502,8 @@ func TestCallToolClassifiesJSONRPCEnvelopeErrorsAsAPIErrors(t *testing.T) {
 	if typed.Category != apperrors.CategoryAPI {
 		t.Fatalf("category = %q, want api", typed.Category)
 	}
-	if typed.Reason != "tools_call_jsonrpc_internal_error" {
-		t.Fatalf("reason = %q, want tools_call_jsonrpc_internal_error", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeUpstreamUnclassified) {
+		t.Fatalf("reason = %q, want %q", typed.Reason, apperrors.SubtypeUpstreamUnclassified)
 	}
 	if typed.Snapshot == "" {
 		t.Fatal("snapshot path should not be empty")
@@ -539,8 +539,8 @@ func TestCallToolClassifiesJSONRPCInvalidParamsAsValidationError(t *testing.T) {
 	if typed.Category != apperrors.CategoryValidation {
 		t.Fatalf("category = %q, want validation", typed.Category)
 	}
-	if typed.Reason != "tools_call_jsonrpc_invalid_params" {
-		t.Fatalf("reason = %q, want tools_call_jsonrpc_invalid_params", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeInvalidArgument) {
+		t.Fatalf("reason = %q, want %q", typed.Reason, apperrors.SubtypeInvalidArgument)
 	}
 }
 

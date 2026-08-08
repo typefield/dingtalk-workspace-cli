@@ -39,6 +39,13 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeTargetVerificationFailed, CategoryAPI, RetryNever, false},
 		{SubtypeKeyValueConflict, CategoryValidation, RetryNever, false},
 		{SubtypeAttachmentTokensUnavailable, CategoryValidation, RetryNever, false},
+		{SubtypeUpstreamUnclassified, CategoryAPI, RetryNever, false},
+		{SubtypeDiscoveryUpstreamUnclassified, CategoryDiscovery, RetryIdempotentReadOnly, false},
+		{SubtypeUpstreamAuthenticationRequired, CategoryAuth, RetryNever, true},
+		{SubtypeUpstreamAuthorizationDenied, CategoryAuth, RetryNever, true},
+		{SubtypeToolProtocolIncompatible, CategoryDiscovery, RetryNever, false},
+		{SubtypeBackendDependencyUnavailable, CategoryAPI, RetryServerDirective, false},
+		{SubtypeUpstreamRequestRejected, CategoryAPI, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {

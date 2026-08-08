@@ -20,6 +20,7 @@ import re
 
 REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s*\)")
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
+INDIRECT_SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*([a-z][A-Za-z0-9_]*)\(")
 SUBTYPE_CONST = re.compile(r"\b(Subtype[A-Za-z0-9_]+)\s+Subtype\s*=\s*\"([^\"]+)\"")
 DESCRIPTOR_CATEGORY = re.compile(r"\b(Subtype[A-Za-z0-9_]+):\s*\{\s*Subtype:\s*\1,\s*Category:\s*Category([A-Za-z0-9_]+)", re.MULTILINE)
 DESCRIPTOR_DEFAULT_HINT = re.compile(
@@ -81,9 +82,10 @@ def nearby_category(lines: list[str], index: int) -> str:
     return matches[-1].group(1).lower() if matches else "unresolved"
 
 
-def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[str]], dict[str, str]]:
+def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict[str, list[str]], dict[str, str]]:
     facts: dict[str, ReasonFacts] = defaultdict(ReasonFacts)
     dynamic: list[str] = []
+    indirect_subtypes: list[str] = []
     struct_subtypes: dict[str, list[str]] = defaultdict(list)
     excluded = {".git", "vendor", "node_modules", ".worktrees"}
 
@@ -148,6 +150,11 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             )
             facts[subtype].occurrences.append(occurrence)
             facts[subtype].sources.add(relative)
+        for match in INDIRECT_SUBTYPE.finditer(text):
+            line = line_at(text, match.start())
+            if lines[line - 1].lstrip().startswith("//"):
+                continue
+            indirect_subtypes.append(f"{relative}:{line}: `{match.group(0).strip()}`")
         for match in NON_LITERAL_REASON.finditer(text):
             if any(match.start() >= start and match.end() <= end for start, end in literal_spans):
                 continue
@@ -161,7 +168,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             if not lines[line - 1].lstrip().startswith("//"):
                 struct_subtypes[match.group(1)].append(f"{relative}:{line}")
 
-    return facts, sorted(dynamic), dict(sorted(struct_subtypes.items())), dict(sorted(subtype_constants.items()))
+    return facts, sorted(dynamic), sorted(indirect_subtypes), dict(sorted(struct_subtypes.items())), dict(sorted(subtype_constants.items()))
 
 
 def observed(values: list[Occurrence], attr: str) -> str:
@@ -193,7 +200,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True, help="Markdown evidence path")
     args = parser.parse_args()
     root = Path(__file__).resolve().parents[2]
-    facts, dynamic, struct_subtypes, subtype_constants = scan(root)
+    facts, dynamic, indirect_subtypes, struct_subtypes, subtype_constants = scan(root)
     all_occurrences = sum(len(item.occurrences) for item in facts.values())
     registered_occurrences = sum(sum(1 for value in item.occurrences if value.registered) for item in facts.values())
     free_occurrences = all_occurrences - registered_occurrences
@@ -209,14 +216,14 @@ def main() -> int:
         "",
         "## 当前事实",
         "",
-        f"- 已注册 descriptor：**{len(subtype_constants)}** 个；`WithSubtype(...)` 调用点：**{registered_occurrences}** 个。",
+        f"- 已注册 descriptor：**{len(subtype_constants)}** 个；直接 `WithSubtype(Subtype...)` 调用点：**{registered_occurrences}** 个；间接映射调用点：**{len(indirect_subtypes)}** 个。",
         f"- `WithReason(\"…\")` 的自由字面调用点：**{free_occurrences}** 个；与已注册调用合计覆盖 **{len(facts)}** 个 subtype、**{all_occurrences}** 个调用点。",
         f"- 直接构造 `ErrorInfo.Subtype`：**{len(struct_subtypes)}** 个不同值。",
         f"- 动态 `WithReason(variable)` 调用：**{len(dynamic)}** 个。",
         f"- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**{no_hint}** 个。",
         f"- 无法从同一局部构造窗口解析 Category 的 subtype：**{unresolved}** 个。",
         "",
-        "已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。",
+        "已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。",
         "",
         "## 源码 subtype 清单",
         "",
@@ -250,7 +257,7 @@ def main() -> int:
         "",
         "## 动态 subtype 构造",
         "",
-        "动态构造在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么统一归入 `api/upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。",
+        "动态 `WithReason` 在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么按当前 Category 归入 `upstream_unclassified` / `discovery_upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。",
         "",
     ]
     if dynamic:
@@ -260,11 +267,23 @@ def main() -> int:
 
     lines += [
         "",
+        "## 间接稳定 subtype 映射",
+        "",
+        "这类调用使用有限映射函数而非字面量；Agent 必须阅读映射函数和对应测试，确认它没有把上游文本或任意数值重新拼进 subtype。",
+        "",
+    ]
+    if indirect_subtypes:
+        lines.extend(f"- {item}" for item in indirect_subtypes)
+    else:
+        lines.append("- 无")
+
+    lines += [
+        "",
         "## Agent 审阅结论",
         "",
         "1. 当前 `Category`/退出码、`hint/actions/retryable/retry_after_seconds` 已是可复用底座。",
-        "2. 首批 registry 仅代表六个已审定 subtype；剩余 `WithReason(string)` 仍没有闭集，也没有逐 subtype 的恢复字段声明。",
-        "3. 下一步应逐命令迁移高频 subtype 的自由调用，并将动态上游 reason 映射到声明值或 `api/upstream_unclassified`；不应一次性重命名现有 wire 字段或类别。",
+        "2. registry 已覆盖本地校验、目标预检、下载完整性与 transport/服务端响应等高价值路径；剩余 `WithReason(string)` 仍没有闭集，也没有逐 subtype 的恢复字段声明。",
+        "3. 下一步应逐命令迁移高频 subtype 的自由调用，并将动态上游 reason 映射到声明值或当前 Category 对应的 unclassified subtype；不应一次性重命名现有 wire 字段或类别。",
         "4. 扫描只证明源码出现与邻近选项，不能证明服务端终态或 recovery action 在真实账号上可执行。",
     ]
     args.output.parent.mkdir(parents=True, exist_ok=True)

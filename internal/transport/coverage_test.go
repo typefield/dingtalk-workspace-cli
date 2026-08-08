@@ -8,6 +8,8 @@ import (
 	"net/http/httptest"
 	"testing"
 	"time"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 // ─── MCP JSON-RPC mock server ──────────────────────────────────────────
@@ -129,26 +131,46 @@ func TestParseRetryAfter(t *testing.T) {
 	}
 }
 
-// ─── jsonrpcCodeLabel ──────────────────────────────────────────────────
+// ─── stable transport subtype mapping ───────────────────────────────────
 
-func TestJsonrpcCodeLabel(t *testing.T) {
+func TestTransportSubtypeMappingDoesNotEncodeUpstreamCodes(t *testing.T) {
 	t.Parallel()
-	tests := []struct {
-		code int
-		want string
+	for _, tt := range []struct {
+		name   string
+		method string
+		status int
+		want   apperrors.Subtype
 	}{
-		{-32700, "parse_error"},
-		{-32600, "invalid_request"},
-		{-32601, "method_not_found"},
-		{-32602, "invalid_params"},
-		{-32603, "internal_error"},
-		{-32000, "server_error_32000"},
-		{500, "error_500"},
+		{"tool rate limit", "tools/call", http.StatusTooManyRequests, apperrors.SubtypeRateLimit},
+		{"tool unauthorized", "tools/call", http.StatusUnauthorized, apperrors.SubtypeUpstreamAuthenticationRequired},
+		{"tool forbidden", "tools/call", http.StatusForbidden, apperrors.SubtypeUpstreamAuthorizationDenied},
+		{"tool arbitrary status", "tools/call", 599, apperrors.SubtypeUpstreamUnclassified},
+		{"discovery arbitrary status", "initialize", 599, apperrors.SubtypeDiscoveryUpstreamUnclassified},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := httpStatusSubtype(tt.method, tt.status); got != tt.want {
+				t.Fatalf("httpStatusSubtype(%q, %d) = %q, want %q", tt.method, tt.status, got, tt.want)
+			}
+		})
 	}
-	for _, tt := range tests {
-		if got := jsonrpcCodeLabel(tt.code); got != tt.want {
-			t.Errorf("jsonrpcCodeLabel(%d) = %s, want %s", tt.code, got, tt.want)
-		}
+
+	for _, tt := range []struct {
+		name   string
+		method string
+		rpc    *RPCError
+		want   apperrors.Subtype
+	}{
+		{"invalid params", "tools/call", &RPCError{Code: -32602}, apperrors.SubtypeInvalidArgument},
+		{"authorization", "tools/call", &RPCError{Code: http.StatusForbidden}, apperrors.SubtypeUpstreamAuthorizationDenied},
+		{"tool protocol", "tools/call", &RPCError{Code: -32601}, apperrors.SubtypeToolProtocolIncompatible},
+		{"unknown tool rpc", "tools/call", &RPCError{Code: -32042}, apperrors.SubtypeUpstreamUnclassified},
+		{"unknown discovery rpc", "initialize", &RPCError{Code: -32042}, apperrors.SubtypeDiscoveryUpstreamUnclassified},
+	} {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := jsonRPCSubtype(tt.method, tt.rpc); got != tt.want {
+				t.Fatalf("jsonRPCSubtype(%q, %#v) = %q, want %q", tt.method, tt.rpc, got, tt.want)
+			}
+		})
 	}
 }
 
@@ -234,24 +256,6 @@ func TestJsonrpcEnvelopeError_DiscoveryMethod(t *testing.T) {
 	err := jsonrpcEnvelopeError("initialize", &RPCError{Code: -32000, Message: "failed"}, "", "")
 	if err == nil {
 		t.Fatal("expected error")
-	}
-}
-
-// ─── reasonForMethod ───────────────────────────────────────────────────
-
-func TestReasonForMethod(t *testing.T) {
-	t.Parallel()
-	tests := []struct {
-		method, suffix, want string
-	}{
-		{"tools/call", "timeout", "tools_call_timeout"},
-		{"", "error", "jsonrpc_error"},
-		{"my-method", "fail", "my_method_fail"},
-	}
-	for _, tt := range tests {
-		if got := reasonForMethod(tt.method, tt.suffix); got != tt.want {
-			t.Errorf("reasonForMethod(%q, %q) = %q, want %q", tt.method, tt.suffix, got, tt.want)
-		}
 	}
 }
 

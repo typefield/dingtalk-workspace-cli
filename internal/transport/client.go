@@ -458,7 +458,7 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 	if err != nil {
 		opts := []apperrors.Option{
 			apperrors.WithOperation(request.Method),
-			apperrors.WithReason(reasonForMethod(request.Method, "response_read_failed")),
+			apperrors.WithSubtype(transportUpstreamSubtype(request.Method)),
 			apperrors.WithTraceID(headerTraceID),
 		}
 		if request.Method == "tools/call" {
@@ -495,13 +495,13 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 		if request.Method == "tools/call" {
 			return c.ambiguousToolCallResponseError(
 				fmt.Sprintf("unexpected protocol response from %s", RedactURL(endpoint)),
-				reasonForMethod(request.Method, "invalid_response"), snapshotPath, headerTraceID,
+				snapshotPath, headerTraceID,
 			)
 		}
 		return apperrors.NewDiscovery(
 			fmt.Sprintf("unexpected protocol response from %s", RedactURL(endpoint)),
 			apperrors.WithOperation(request.Method),
-			apperrors.WithReason(reasonForMethod(request.Method, "invalid_response")),
+			apperrors.WithSubtype(transportUpstreamSubtype(request.Method)),
 			apperrors.WithHint(i18n.T("MCP 服务返回了无法解析的协议响应；检查服务版本或上游代理。")),
 			apperrors.WithActions(discoveryActions(snapshotPath)...),
 			apperrors.WithSnapshot(snapshotPath),
@@ -516,13 +516,13 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 		if request.Method == "tools/call" {
 			return c.ambiguousToolCallResponseError(
 				fmt.Sprintf("JSON-RPC %s returned an empty result payload", request.Method),
-				reasonForMethod(request.Method, "empty_result"), snapshotPath, headerTraceID,
+				snapshotPath, headerTraceID,
 			)
 		}
 		return apperrors.NewDiscovery(
 			fmt.Sprintf("JSON-RPC %s returned an empty result payload", request.Method),
 			apperrors.WithOperation(request.Method),
-			apperrors.WithReason(reasonForMethod(request.Method, "empty_result")),
+			apperrors.WithSubtype(transportUpstreamSubtype(request.Method)),
 			apperrors.WithHint(i18n.T("服务返回了空结果；请稍后重试。")),
 			apperrors.WithActions(discoveryActions(snapshotPath)...),
 			apperrors.WithSnapshot(snapshotPath),
@@ -535,13 +535,13 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 		if request.Method == "tools/call" {
 			return c.ambiguousToolCallResponseError(
 				fmt.Sprintf("failed to decode JSON-RPC %s result", request.Method),
-				reasonForMethod(request.Method, "result_decode_failed"), snapshotPath, headerTraceID,
+				snapshotPath, headerTraceID,
 			)
 		}
 		return apperrors.NewDiscovery(
 			fmt.Sprintf("failed to decode JSON-RPC %s result", request.Method),
 			apperrors.WithOperation(request.Method),
-			apperrors.WithReason(reasonForMethod(request.Method, "result_decode_failed")),
+			apperrors.WithSubtype(transportUpstreamSubtype(request.Method)),
 			apperrors.WithHint(i18n.T("结果格式与客户端预期不一致；请检查服务协议变更或回退到最近可用版本。")),
 			apperrors.WithActions(discoveryActions(snapshotPath)...),
 			apperrors.WithSnapshot(snapshotPath),
@@ -550,10 +550,10 @@ func (c *Client) callJSONRPC(ctx context.Context, endpoint string, request reque
 	return nil
 }
 
-func (c *Client) ambiguousToolCallResponseError(message, reason, snapshotPath, traceID string) error {
+func (c *Client) ambiguousToolCallResponseError(message, snapshotPath, traceID string) error {
 	opts := []apperrors.Option{
 		apperrors.WithOperation("tools/call"),
-		apperrors.WithReason(reason),
+		apperrors.WithSubtype(apperrors.SubtypeUpstreamUnclassified),
 		apperrors.WithExecutionStarted(true),
 		apperrors.WithHint(ambiguousCallHint()),
 		apperrors.WithActions(ambiguousCallActions(snapshotPath)...),
@@ -1023,19 +1023,14 @@ func httpStatusErrorWithHeader(method, endpoint string, statusCode int, snapshot
 func httpStatusErrorWithRecovery(method, endpoint string, statusCode int, snapshotPath, headerTraceID, executionID string, header http.Header) error {
 	message := fmt.Sprintf("request to %s returned HTTP %d", RedactURL(endpoint), statusCode)
 	ambiguousWrite := method == "tools/call" && (statusCode == http.StatusRequestTimeout || statusCode >= http.StatusInternalServerError)
-	reason := apperrors.WithReason(fmt.Sprintf("http_%d", statusCode))
-	// HTTP 429 is the one transport status whose recovery semantics are both
-	// stable and explicit: the gateway rejected the request for rate limiting,
-	// before it accepted a tool execution. Keep other dynamic HTTP reasons in
-	// the compatibility path until their execution/retry semantics are audited.
-	if statusCode == http.StatusTooManyRequests {
-		reason = apperrors.WithSubtype(apperrors.SubtypeRateLimit)
-	}
 	opts := []apperrors.Option{
 		apperrors.WithOperation(method),
-		reason,
+		apperrors.WithSubtype(httpStatusSubtype(method, statusCode)),
 		apperrors.WithSnapshot(snapshotPath),
 		apperrors.WithTraceID(headerTraceID),
+		// HTTP status remains a diagnostic fact, never a dynamically constructed
+		// subtype that an Agent is expected to branch on.
+		apperrors.WithDetails(map[string]any{"http_status": statusCode}),
 		apperrors.WithCause(&CallError{
 			Stage:      CallStageHTTP,
 			HTTPStatus: statusCode,
@@ -1149,7 +1144,6 @@ func ambiguousCallActions(snapshotPath string) []string {
 
 func jsonrpcEnvelopeError(method string, rpcErr *RPCError, snapshotPath, headerTraceID string) error {
 	message := fmt.Sprintf("JSON-RPC %s failed with code %d: %s", method, rpcErr.Code, rpcErr.Message)
-	reason := reasonForMethod(method, "jsonrpc_"+jsonrpcCodeLabel(rpcErr.Code))
 
 	// Extract structured diagnostics from rpc error data.
 	diag := ExtractServerDiagnostics(rpcErr.Data)
@@ -1160,7 +1154,7 @@ func jsonrpcEnvelopeError(method string, rpcErr *RPCError, snapshotPath, headerT
 
 	opts := []apperrors.Option{
 		apperrors.WithOperation(method),
-		apperrors.WithReason(reason),
+		apperrors.WithSubtype(jsonRPCSubtype(method, rpcErr)),
 		apperrors.WithRPCCode(rpcErr.Code),
 		apperrors.WithRPCData(rpcErr.Data),
 		apperrors.WithSnapshot(snapshotPath),
@@ -1221,33 +1215,46 @@ func looksAuthRPCError(rpcErr *RPCError) bool {
 	return looksAuthRelated(rpcErr.Message)
 }
 
-func jsonrpcCodeLabel(code int) string {
-	switch code {
-	case -32700:
-		return "parse_error"
-	case -32600:
-		return "invalid_request"
-	case -32601:
-		return "method_not_found"
-	case -32602:
-		return "invalid_params"
-	case -32603:
-		return "internal_error"
+// transportUpstreamSubtype deliberately has only two outcomes. The method
+// itself, endpoint response shape, HTTP status, and RPC code are diagnostics;
+// they must not grow the public subtype vocabulary at runtime.
+func transportUpstreamSubtype(method string) apperrors.Subtype {
+	if method == "tools/call" {
+		return apperrors.SubtypeUpstreamUnclassified
+	}
+	return apperrors.SubtypeDiscoveryUpstreamUnclassified
+}
+
+func httpStatusSubtype(method string, statusCode int) apperrors.Subtype {
+	switch statusCode {
+	case http.StatusTooManyRequests:
+		return apperrors.SubtypeRateLimit
+	case http.StatusUnauthorized:
+		return apperrors.SubtypeUpstreamAuthenticationRequired
+	case http.StatusForbidden:
+		return apperrors.SubtypeUpstreamAuthorizationDenied
 	default:
-		if code < 0 {
-			return fmt.Sprintf("server_error_%d", -code)
-		}
-		return fmt.Sprintf("error_%d", code)
+		return transportUpstreamSubtype(method)
 	}
 }
 
-func reasonForMethod(method, suffix string) string {
-	replacer := strings.NewReplacer("/", "_", "-", "_", " ", "_")
-	method = replacer.Replace(strings.TrimSpace(method))
-	if method == "" {
-		method = "jsonrpc"
+func jsonRPCSubtype(method string, rpcErr *RPCError) apperrors.Subtype {
+	if rpcErr == nil {
+		return transportUpstreamSubtype(method)
 	}
-	return method + "_" + suffix
+	if rpcErr.Code == -32602 {
+		return apperrors.SubtypeInvalidArgument
+	}
+	if looksAuthRPCError(rpcErr) {
+		if rpcErr.Code == http.StatusForbidden {
+			return apperrors.SubtypeUpstreamAuthorizationDenied
+		}
+		return apperrors.SubtypeUpstreamAuthenticationRequired
+	}
+	if method == "tools/call" && (rpcErr.Code == -32600 || rpcErr.Code == -32601) {
+		return apperrors.SubtypeToolProtocolIncompatible
+	}
+	return transportUpstreamSubtype(method)
 }
 
 func looksAuthRelated(message string) bool {

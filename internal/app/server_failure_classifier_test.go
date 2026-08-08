@@ -46,7 +46,7 @@ func TestCrossPlatformCoverageServerFailureClassifierBackendMetadataUnavailable(
 	if !errors.As(err, &typed) {
 		t.Fatalf("error = %T, want *errors.Error", err)
 	}
-	if typed.Reason != "backend_dependency_unavailable" || typed.Origin != "mcp_gateway" || typed.FailureStage != "tool_metadata_lookup" {
+	if typed.Reason != string(apperrors.SubtypeBackendDependencyUnavailable) || typed.Origin != "mcp_gateway" || typed.FailureStage != "tool_metadata_lookup" {
 		t.Fatalf("classification = reason %q origin %q stage %q", typed.Reason, typed.Origin, typed.FailureStage)
 	}
 	if typed.ExecutionStarted != nil {
@@ -72,7 +72,7 @@ func TestCrossPlatformCoverageServerFailureClassifierRequiredConversationID(t *t
 	if !errors.As(err, &typed) {
 		t.Fatalf("error = %T, want *errors.Error", err)
 	}
-	if typed.Reason != "invalid_request" || typed.FailureStage != "tool_validation" {
+	if typed.Reason != string(apperrors.SubtypeUpstreamRequestRejected) || typed.FailureStage != "tool_validation" {
 		t.Fatalf("classification = reason %q stage %q", typed.Reason, typed.FailureStage)
 	}
 	if typed.ExecutionStarted != nil {
@@ -81,19 +81,29 @@ func TestCrossPlatformCoverageServerFailureClassifierRequiredConversationID(t *t
 }
 
 func TestCrossPlatformCoverageServerFailureClassifierUnknownFallsBack(t *testing.T) {
+	retryable := true
 	err := newServerFailureAPIError(
 		"business error: success=false",
 		"business_error",
 		"check parameters",
 		"im",
-		apperrors.ServerDiagnostics{},
+		apperrors.ServerDiagnostics{ServerRetryable: &retryable},
 	)
 	var typed *apperrors.Error
 	if !errors.As(err, &typed) {
 		t.Fatalf("error = %T, want *errors.Error", err)
 	}
-	if typed.Reason != "business_error" || typed.Origin != "" || typed.FailureStage != "" || typed.ExecutionStarted != nil {
+	if typed.Reason != string(apperrors.SubtypeUpstreamUnclassified) || typed.Origin != "" || typed.FailureStage != "" || typed.ExecutionStarted != nil {
 		t.Fatalf("unexpected fallback classification: %#v", typed)
+	}
+	if typed.Details["server_failure_kind"] != "business_error" {
+		t.Fatalf("fallback diagnostic = %#v, want business_error", typed.Details)
+	}
+	if typed.RetryableSet || typed.Retryable {
+		t.Fatalf("unclassified tools/call advertised safe retry: set=%v value=%v", typed.RetryableSet, typed.Retryable)
+	}
+	if typed.Details["server_retryable"] != true {
+		t.Fatalf("raw server retryability was not retained as diagnostic: %#v", typed.Details)
 	}
 }
 
@@ -105,7 +115,7 @@ func TestCrossPlatformCoverageServerFailureReasonUsesTypedClassification(t *test
 		"im",
 		apperrors.ServerDiagnostics{ServerErrorCode: "NETWORK_ERROR"},
 	)
-	if got := serverFailureReason(err, "business_error"); got != "backend_dependency_unavailable" {
+	if got := serverFailureReason(err, "business_error"); got != string(apperrors.SubtypeBackendDependencyUnavailable) {
 		t.Fatalf("reason = %q", got)
 	}
 	if got := serverFailureReason(errors.New("plain"), "fallback"); got != "fallback" {
@@ -129,7 +139,7 @@ func TestCrossPlatformCoverageMultiProfileErrorPayloadPreservesFailureSemantics(
 	)
 	payload := multiProfileErrorPayload(err)
 	for key, want := range map[string]any{
-		"reason":            "backend_dependency_unavailable",
+		"reason":            string(apperrors.SubtypeBackendDependencyUnavailable),
 		"origin":            "mcp_gateway",
 		"stage":             "tool_metadata_lookup",
 		"retryable":         true,
@@ -211,7 +221,7 @@ func TestCrossPlatformCoverageExecuteInvocationClassifiesObservedMCPMetadataFail
 	if !errors.As(err, &typed) {
 		t.Fatalf("executeInvocation() error = %T %v, want typed API error", err, err)
 	}
-	if typed.Reason != "backend_dependency_unavailable" || typed.Origin != "mcp_gateway" || typed.FailureStage != "tool_metadata_lookup" {
+	if typed.Reason != string(apperrors.SubtypeBackendDependencyUnavailable) || typed.Origin != "mcp_gateway" || typed.FailureStage != "tool_metadata_lookup" {
 		t.Fatalf("classification = reason %q origin %q stage %q", typed.Reason, typed.Origin, typed.FailureStage)
 	}
 	if typed.ServerDiag.TraceID != "trace-replay" || !typed.RetryableSet || !typed.Retryable {
