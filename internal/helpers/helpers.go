@@ -531,26 +531,49 @@ func annotateAitableDiscoveryBoundary(value any, toolName string) (any, error) {
 	root["inventoryCoverageKnown"] = false
 	root["paginationKnown"] = false
 
+	var evidence []aitablePaginationEvidence
 	for _, scope := range aitableDiscoveryScopes(root) {
-		if hasMore, known := boolAtAnyKey(scope, "hasMore", "has_more"); known {
-			root["paginationKnown"] = true
-			root["hasMore"] = hasMore
-			root["endpointExhausted"] = !hasMore
-			cursor, present := valueAtAnyKey(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor")
-			cursorText := strings.TrimSpace(fmt.Sprint(cursor))
-			if hasMore && (!present || cursorText == "") {
-				return nil, aitableDiscoveryPaginationError(toolName, "hasMore=true but no next cursor was returned")
+		hasMore, known := boolAtAnyKey(scope, "hasMore", "has_more")
+		if !known {
+			continue
+		}
+		cursor, present := valueAtAnyKey(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor")
+		cursorText := strings.TrimSpace(fmt.Sprint(cursor))
+		if hasMore && (!present || cursorText == "") {
+			return nil, aitableDiscoveryPaginationError(toolName, "hasMore=true but no next cursor was returned")
+		}
+		if !hasMore && present && cursorText != "" {
+			return nil, aitableDiscoveryPaginationError(toolName, "hasMore=false but a next cursor was returned")
+		}
+		evidence = append(evidence, aitablePaginationEvidence{
+			hasMore:    hasMore,
+			cursor:     cursorText,
+			cursorRaw:  cursor,
+			cursorSeen: present && cursorText != "",
+		})
+	}
+	if len(evidence) > 0 {
+		first := evidence[0]
+		for _, current := range evidence[1:] {
+			if current.hasMore != first.hasMore || (current.hasMore && current.cursor != first.cursor) {
+				return nil, aitableDiscoveryPaginationError(toolName, "nested pagination evidence disagrees across response containers")
 			}
-			if !hasMore && present && cursorText != "" {
-				return nil, aitableDiscoveryPaginationError(toolName, "hasMore=false but a next cursor was returned")
-			}
-			if present {
-				root["nextCursor"] = cursor
-			}
-			break
+		}
+		root["paginationKnown"] = true
+		root["hasMore"] = first.hasMore
+		root["endpointExhausted"] = !first.hasMore
+		if first.cursorSeen {
+			root["nextCursor"] = first.cursorRaw
 		}
 	}
 	return root, nil
+}
+
+type aitablePaginationEvidence struct {
+	hasMore    bool
+	cursor     string
+	cursorRaw  any
+	cursorSeen bool
 }
 
 func aitableDiscoveryPaginationError(toolName, reason string) error {

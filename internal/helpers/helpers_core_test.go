@@ -391,6 +391,41 @@ func TestAnnotateAitableDiscoveryFindsNestedPageInfo(t *testing.T) {
 	}
 }
 
+func TestAnnotateAitableDiscoveryRejectsConflictingNestedPagination(t *testing.T) {
+	_, err := annotateAitableDiscoveryBoundary(map[string]any{
+		"hasMore": false,
+		"result": map[string]any{
+			"data": map[string]any{
+				"pageInfo": map[string]any{"hasMore": true, "nextCursor": "nested-next"},
+			},
+		},
+	}, "list_bases")
+	if err == nil {
+		t.Fatal("conflicting outer and nested pagination was accepted")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "pagination_inconsistent" {
+		t.Fatalf("error = %T %v, want pagination_inconsistent", err, err)
+	}
+}
+
+func TestAnnotateAitableDiscoveryAcceptsRepeatedConsistentPagination(t *testing.T) {
+	annotated, err := annotateAitableDiscoveryBoundary(map[string]any{
+		"hasMore":    true,
+		"nextCursor": "same-next",
+		"result": map[string]any{
+			"pageInfo": map[string]any{"hasMore": true, "nextCursor": "same-next"},
+		},
+	}, "list_bases")
+	if err != nil {
+		t.Fatalf("consistent repeated pagination: %v", err)
+	}
+	payload := annotated.(map[string]any)
+	if payload["paginationKnown"] != true || payload["endpointExhausted"] != false || payload["nextCursor"] != "same-next" {
+		t.Fatalf("consistent pagination projection = %#v", payload)
+	}
+}
+
 func TestCrossPlatformCoverageMCPDryRunJSONOutputIsSingleDocument(t *testing.T) {
 	caller := &helpersCoreCaller{format: "json", dry: true}
 	out, _ := installHelpersCoreDeps(t, caller)
