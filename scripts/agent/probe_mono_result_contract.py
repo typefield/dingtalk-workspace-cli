@@ -379,6 +379,35 @@ else:
         )
         outcomes.append(("邮件旧业务失败不误报已发送", *result("PASS" if mail_child_ok else "FAIL", detail)))
 
+        calendar_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "calendar_schedule_meeting.py"),
+                "--title", "probe", "--start", "2026-08-09T10:00", "--end", "2026-08-09T11:00",
+                "--users", "user-1", "--format", "json",
+            ],
+            """import json, sys
+args = sys.argv[1:]
+if args[:3] == ['calendar', 'event', 'create']:
+    print(json.dumps({'ok': True, 'data': {'eventId': 'event-1'}}))
+elif args[:3] == ['calendar', 'participant', 'add']:
+    # The event is known to exist; this legacy business failure is uncertain.
+    print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'participant delivery uncertain'}}))
+else:
+    raise SystemExit(9)
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(calendar_child)
+        calendar_child_ok = (
+            valid and calendar_child.returncode == 7 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "partial_failure"
+            and isinstance(payload.get("data"), dict)
+            and [item.get("id") for item in payload["data"].get("succeeded", [])] == ["event-1"]
+            and [item.get("id") for item in payload["data"].get("unknown", [])] == ["event-1:participants"]
+            and "已添加参与者" not in calendar_child.stderr
+        )
+        outcomes.append(("日程后续写入失败保留部分结果", *result("PASS" if calendar_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
