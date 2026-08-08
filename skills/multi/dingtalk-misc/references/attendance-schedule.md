@@ -263,9 +263,18 @@ dws attendance group filtered-get --group-id <groupId> --member --format json
 > **[硬性门禁]** 必须先用普通文本向用户展示**完整的排班明细表格**（包含每个人、每天、具体班次名称），用户看到排班明细后，才能弹出 `ask_question` 确认卡片。
 > **禁止在用户还不知道"谁、哪天、上什么班"的情况下就弹确认卡片**——这等于让用户盲签，体验极差。
 
-**步骤 4a — 展示排班明细（必须在确认卡片之前）**：
+**步骤 4a — 先获得脚本的只读预览，再展示排班明细（必须在确认卡片之前）**：
 
-在调用 `ask_question` 之前，**必须先**用普通文本向用户展示排班内容。表格中**必须包含班次名称**（如"早班 09:00-18:00"），不能只展示 classId 数字：
+先调用脚本的 `--dry-run --format json`。它会复查考勤组、班次和姓名，**只允许远端只读校验，绝不发送排班写入**；从 `data.preview.records[]` 渲染普通文本表格给用户。不要自行拼一个与实际写入参数不一致的预览。
+
+```bash
+python scripts/attendance_schedule_import.py \
+  --group-id <groupId> \
+  --schedules '<JSON数组>' \
+  --dry-run --format json
+```
+
+在调用 `ask_question` 之前，**必须先**用普通文本向用户展示 `data.preview` 的排班内容。表格中**必须包含班次名称**（如"早班 09:00-18:00"），不能只展示 classId 数字：
 
 ```
 排班预览
@@ -319,26 +328,28 @@ ask_question({
 python scripts/attendance_schedule_import.py \
   --group-id <groupId> \
   --schedules '<JSON数组>' \
-  --confirm
+  --yes --format json
 ```
 
 参数说明：
 - `--group-id`（必填）：考勤组 ID
 - `--schedules`（必填）：排班记录 JSON 数组，每条记录包含 `userId`、`workDate`、`classId`、`isRest`
-- `--confirm`（必填）：表示用户已确认，脚本收到此标志才会执行排班
+- `--yes`（必填）：仅在用户已审阅 `data.preview` 并明确确认后传入；缺失时脚本返回 `confirmation_required`，绝不执行排班
+- `--format json`：Agent 读取统一的 `ok/outcome/data/error` 结果；旧 `--confirm` 仅为兼容别名，不应再写入新工作流
 
 脚本内部自动处理：
 1. 二次校验考勤组类型（必须为 TURN）
 2. 从考勤组详情提取绑定班次，二次校验班次 ID 属于该考勤组
 3. 格式化 workDate 为 `yyyy-MM-dd HH:mm:ss`
 4. 调用 `dws attendance schedule import` 执行排班
-5. 输出执行结果摘要（含全部排班明细）
+5. 输出可解析预览、请求结果及验证边界
 
 ### 阶段 6: 返回结果给用户
 
-- 将脚本 stdout 输出的摘要信息原样转告用户
-- 如果脚本输出 warning，原样转告用户
-- 如果执行失败，将 stderr 错误信息转告用户
+- `outcome=failure` 且 `error.type=confirmation_required`：仅把 `data.preview` 展示给用户并请求确认，**不得**猜测为已写入
+- `outcome=success` 且 `data.request.state=accepted`：只说明写请求已成功返回；`verification.state=not_verified` 时必须明确告知用户“尚未逐条核验”，并按人员/日期调用 `attendance schedule get` 核查
+- `outcome=failure` 且 `error.details.execution_state=unknown`：请求可能已到达服务端；保留预览和错误，先核查排班，**不得**盲目重试
+- 诊断信息在 stderr；JSON stdout 只含一条结果信封
 
 ## 排班记录 JSON 格式
 
@@ -459,7 +470,7 @@ dws aisearch person --keyword "张三" --dimension name --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[{"userId":"user001","workDate":"2026-05-19","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-20","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-21","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-22","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-23","classId":789,"isRest":"N"}]' \
-  --confirm
+  --yes --format json
 ```
 
 ### 示例 2: 给员工排休
@@ -479,7 +490,7 @@ dws aisearch person --keyword "李四" --dimension name --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[{"userId":"user002","workDate":"2026-05-21","classId":0,"isRest":"Y"}]' \
-  --confirm
+  --yes --format json
 ```
 
 ### 示例 3: 部门批量排班
@@ -501,14 +512,14 @@ dws contact dept list-members --depts <deptId> --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[...]' \
-  --confirm
+  --yes --format json
 ```
 
 ## 配套脚本
 
 | 脚本 | 用途 | CLI 参数 |
 |------|------|---------|
-| [attendance_schedule_import.py](../scripts/attendance_schedule_import.py) | 排班导入（含校验、回显、执行） | `--group-id --schedules --confirm` |
+| [attendance_schedule_import.py](../scripts/attendance_schedule_import.py) | 排班导入：dry-run 只读预览；明确 `--yes` 后才提交；请求成功与终态核验分开表达 | `--group-id --schedules --format json [--dry-run\|--yes]` |
 | [attendance_schedule_export.py](../scripts/attendance_schedule_export.py) | 排班查询导出（分批查询、排班表 Excel） | `--users --start --end [--output]` |
 
 ---

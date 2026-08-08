@@ -19,7 +19,7 @@
     python attendance_schedule_import.py \
         --group-id 123456 \
         --schedules '[{"userId":"u001","workDate":"2026-05-19","classId":789,"isRest":"N"}]' \
-        --confirm
+        --yes --format json
 """
 
 from __future__ import annotations
@@ -40,9 +40,34 @@ from attendance_report_common import (
     warn,
     error,
 )
+from _runtime import add_contract_flags, emit, run_main
 
 DATE_FMT = "%Y-%m-%d"
 DATETIME_FMT = "%Y-%m-%d %H:%M:%S"
+
+
+class ScheduleError(Exception):
+    """A typed, safe-to-render failure from the schedule preparation flow."""
+
+    def __init__(self, error_type: str, subtype: str, message: str, *, details: Any = None) -> None:
+        super().__init__(message)
+        self.error_type = error_type
+        self.subtype = subtype
+        self.details = details
+
+    def as_error(self) -> dict[str, Any]:
+        payload: dict[str, Any] = {
+            "type": self.error_type,
+            "subtype": self.subtype,
+            "message": str(self),
+        }
+        if self.details is not None:
+            payload["details"] = self.details
+        return payload
+
+
+def _validation(message: str, *, subtype: str = "invalid_schedule", details: Any = None) -> None:
+    raise ScheduleError("validation", subtype, message, details=details)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -88,12 +113,16 @@ def validate_group_is_turn(group_id: int) -> dict:
                 "--group-id", str(group_id),
             ])
         except DwsCallError as exc:
-            error(f"查询考勤组失败: {exc}")
-            raise SystemExit(1) from exc
+            raise ScheduleError(
+                "api", "group_lookup_failed", f"查询考勤组失败：{exc}",
+                details={"group_id": group_id},
+            ) from exc
 
     if not result or not isinstance(result, dict):
-        error(f"考勤组 {group_id} 不存在或返回数据异常")
-        raise SystemExit(1)
+        _validation(
+            f"考勤组 {group_id} 不存在或返回数据异常",
+            subtype="group_not_found_or_unreadable", details={"group_id": group_id},
+        )
 
     # 关键：从 groupVO 中提取 type/name 等字段
     group_vo = _unwrap_group_vo(result)
@@ -101,15 +130,18 @@ def validate_group_is_turn(group_id: int) -> dict:
     group_name = group_vo.get("name", f"ID:{group_id}")
 
     if not group_type:
-        # 调试输出，帮助排查结构
-        log(f"[debug] group get 返回顶层 keys: {list(result.keys())}")
-        error(f"未能从考勤组 {group_id} 返回数据中识别出类型字段")
-        raise SystemExit(1)
+        raise ScheduleError(
+            "api", "group_projection_unknown",
+            f"未能从考勤组 {group_id} 返回数据中识别出类型字段",
+            details={"group_id": group_id, "top_level_keys": sorted(result.keys())},
+        )
 
     if group_type != "TURN":
         type_label = {"FIXED": "固定班制", "NONE": "自由工时"}.get(group_type, group_type)
-        error(f"考勤组「{group_name}」类型为 {type_label}，不是排班制（TURN），无法执行排班操作")
-        raise SystemExit(1)
+        _validation(
+            f"考勤组「{group_name}」类型为 {type_label}，不是排班制（TURN），无法执行排班操作",
+            subtype="group_not_turn", details={"group_id": group_id, "group_type": group_type},
+        )
 
     log(f"✅ 考勤组「{group_name}」确认为排班制")
     return group_vo
@@ -203,6 +235,58 @@ def extract_group_bound_classes(group_info: dict) -> set[int]:
     return bound_ids
 
 
+def extract_group_class_names(group_info: dict) -> dict[int, str]:
+    """Read class labels from the reviewed group's own configuration.
+
+    A global class search can expose classes belonging to other attendance
+    groups.  It is therefore a fallback only when the group response itself
+    contains no usable class binding.
+    """
+    names: dict[int, str] = {}
+    candidates = [group_info]
+    nested = group_info.get("groupVO") if isinstance(group_info, dict) else None
+    if isinstance(nested, dict):
+        candidates.append(nested)
+    for candidate in candidates:
+        for key in ("classes", "selectedClass"):
+            values = candidate.get(key)
+            if not isinstance(values, list):
+                continue
+            for value in values:
+                if not isinstance(value, dict):
+                    continue
+                raw_id = value.get("id") or value.get("classId") or value.get("shiftId")
+                label = value.get("name") or value.get("className") or value.get("shiftName")
+                try:
+                    if raw_id is not None and isinstance(label, str) and label:
+                        names[int(raw_id)] = label
+                except (TypeError, ValueError):
+                    continue
+        shifts = candidate.get("shiftVOList")
+        if isinstance(shifts, list):
+            for shift in shifts:
+                if not isinstance(shift, dict):
+                    continue
+                settings = shift.get("shiftSetting")
+                settings = settings if isinstance(settings, dict) else shift
+                raw_id = settings.get("shiftId") or settings.get("classId") or shift.get("id")
+                label = settings.get("shiftName") or settings.get("className") or settings.get("name")
+                try:
+                    if raw_id is not None and isinstance(label, str) and label:
+                        names[int(raw_id)] = label
+                except (TypeError, ValueError):
+                    continue
+        mapping = candidate.get("classNameIdMap")
+        if isinstance(mapping, dict):
+            for label, raw_id in mapping.items():
+                try:
+                    if isinstance(label, str) and label:
+                        names[int(raw_id)] = label
+                except (TypeError, ValueError):
+                    continue
+    return names
+
+
 def fetch_all_classes() -> dict[int, str]:
     """获取全局所有班次，返回 {classId: className}，用于 ID→名称映射。"""
     log("🔍 获取班次名称映射 ...")
@@ -218,8 +302,7 @@ def fetch_all_classes() -> dict[int, str]:
                 "--limit", str(page_size),
             ])
         except DwsCallError as exc:
-            error(f"查询班次列表失败: {exc}")
-            raise SystemExit(1) from exc
+            raise ScheduleError("api", "class_lookup_failed", f"查询班次列表失败：{exc}") from exc
 
         records = extract_records(result) if result else []
         if not records:
@@ -286,7 +369,12 @@ def validate_class_ids(
         for cid in sorted(available_ids):
             cname = all_classes.get(cid, f"ID:{cid}")
             log(f"  - {cname} (ID: {cid})")
-        raise SystemExit(1)
+        _validation(
+            (f"以下班次不在可用班次列表中: {', '.join(invalid_names)}" if use_global_fallback
+             else f"以下班次不属于考勤组「{group_name}」: {', '.join(invalid_names)}"),
+            subtype="class_not_available",
+            details={"group_name": group_name, "invalid_class_ids": sorted(invalid_class_ids)},
+        )
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -315,49 +403,61 @@ def normalize_work_date(work_date: Any) -> str:
 # 回显排班内容
 # ─────────────────────────────────────────────────────────────────────────────
 
-def print_schedule_preview(
+def schedule_preview(
     group_name: str,
     group_id: int,
     schedules: list[dict],
     available_classes: dict[int, str],
     user_names: dict[str, str],
-) -> None:
-    """向 stdout 打印排班预览表格供用户确认。"""
-    print("\n📋 排班确认")
-    print(f"\n考勤组: {group_name} (ID: {group_id})")
+) -> dict[str, Any]:
+    """Build the reviewable schedule, including stable identifiers for Agents."""
+    rows: list[dict[str, Any]] = []
+    for schedule in sorted(schedules, key=lambda item: (str(item.get("userId", "")), str(item.get("workDate", "")))):
+        user_id = str(schedule["userId"])
+        class_id = int(schedule["classId"])
+        is_rest = str(schedule["isRest"]).upper()
+        rows.append({
+            "user_id": user_id,
+            "user_name": user_names.get(user_id, user_id),
+            "work_date": str(schedule["workDate"])[:10],
+            "class_id": class_id,
+            "class_name": "休息" if is_rest == "Y" else available_classes.get(class_id, f"未知班次(ID:{class_id})"),
+            "is_rest": is_rest == "Y",
+        })
+    dates = sorted({row["work_date"] for row in rows})
+    return {
+        "group": {"id": group_id, "name": group_name},
+        "date_range": {"start": dates[0], "end": dates[-1]} if dates else None,
+        "records": rows,
+        "record_count": len(rows),
+        "user_count": len({row["user_id"] for row in rows}),
+    }
 
-    dates = sorted({s.get("workDate", "")[:10] for s in schedules})
-    if dates:
-        print(f"排班日期: {dates[0]} ~ {dates[-1]}")
+
+def print_schedule_preview(preview: dict[str, Any]) -> None:
+    """Print a human review table; JSON callers receive the same content as data."""
+    print("\n📋 排班确认")
+    group = preview["group"]
+    print(f"\n考勤组: {group['name']} (ID: {group['id']})")
+    date_range = preview.get("date_range")
+    if isinstance(date_range, dict):
+        print(f"排班日期: {date_range['start']} ~ {date_range['end']}")
 
     print(f"\n{'员工姓名':<12} {'日期':<14} {'班次':<16} {'是否排休':<8}")
     print("-" * 54)
 
-    for schedule in sorted(schedules, key=lambda s: (s.get("userId", ""), s.get("workDate", ""))):
-        user_id = schedule.get("userId", "")
-        user_name = user_names.get(user_id, user_id)
-        work_date = str(schedule.get("workDate", ""))[:10]
-        class_id = int(schedule.get("classId", 0))
-        is_rest = str(schedule.get("isRest", "N")).upper()
+    for row in preview["records"]:
+        print(f"{row['user_name']:<12} {row['work_date']:<14} {row['class_name']:<16} {'是' if row['is_rest'] else '否':<8}")
 
-        if is_rest == "Y":
-            class_display = "休息"
-            rest_display = "是"
-        else:
-            class_display = available_classes.get(class_id, f"未知班次(ID:{class_id})")
-            rest_display = "否"
-
-        print(f"{user_name:<12} {work_date:<14} {class_display:<16} {rest_display:<8}")
-
-    print(f"\n共 {len(schedules)} 条排班记录")
+    print(f"\n共 {preview['record_count']} 条排班记录")
 
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 执行排班
 # ─────────────────────────────────────────────────────────────────────────────
 
-def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
-    """调用 dws attendance schedule import 执行排班。"""
+def execute_schedule_import(group_id: int, schedules: list[dict]) -> Any:
+    """Submit the write request without claiming that every row reached its final state."""
     log(f"🚀 正在执行排班导入 ({len(schedules)} 条记录) ...")
 
     schedules_json = json.dumps(schedules, ensure_ascii=False)
@@ -370,12 +470,15 @@ def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
             "--yes",
         ])
     except DwsCallError as exc:
-        error(f"排班导入失败: {exc}")
-        if exc.is_permission_error:
-            error("提示: 当前账号可能不是考勤管理员，请确认权限")
-        raise SystemExit(1) from exc
+        error(f"排班导入请求没有得到可确认的成功响应: {exc}")
+        raise ScheduleError(
+            "authorization" if exc.is_permission_error else "api",
+            "schedule_import_unconfirmed",
+            "排班导入请求未得到可确认的成功响应；请先核查目标人员当日排班，勿直接重试。",
+            details={"group_id": group_id, "records": len(schedules), "execution_state": "unknown"},
+        ) from exc
 
-    log("✅ 排班导入完成")
+    log("✅ 排班导入请求已成功返回；实际排班终态仍需查询确认")
     return result
 
 
@@ -383,116 +486,112 @@ def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
 # 主流程
 # ─────────────────────────────────────────────────────────────────────────────
 
-def main() -> None:
+def _parse_schedules(raw: str) -> list[dict[str, Any]]:
+    try:
+        schedules = json.loads(raw)
+    except json.JSONDecodeError as exc:
+        _validation(f"--schedules JSON 格式错误：{exc}", subtype="invalid_schedule_json")
+    if not isinstance(schedules, list) or not schedules:
+        _validation("--schedules 必须是非空 JSON 数组", subtype="invalid_schedule_list")
+
+    required_fields = ("userId", "workDate", "classId", "isRest")
+    normalized: list[dict[str, Any]] = []
+    for index, schedule in enumerate(schedules):
+        if not isinstance(schedule, dict):
+            _validation(f"schedule[{index}] 必须是对象", subtype="invalid_schedule_entry", details={"index": index})
+        missing = [field for field in required_fields if field not in schedule]
+        if missing:
+            _validation(
+                f"schedule[{index}] 缺少必填字段：{', '.join(missing)}",
+                subtype="missing_schedule_fields", details={"index": index, "missing": missing},
+            )
+        user_id = schedule["userId"]
+        if not isinstance(user_id, str) or not user_id.strip():
+            _validation(f"schedule[{index}].userId 必须是非空字符串", subtype="invalid_user_id", details={"index": index})
+        try:
+            class_id = int(schedule["classId"])
+        except (TypeError, ValueError):
+            _validation(f"schedule[{index}].classId 必须是整数", subtype="invalid_class_id", details={"index": index})
+        is_rest = schedule["isRest"]
+        if not isinstance(is_rest, str) or is_rest.upper() not in {"Y", "N"}:
+            _validation(f"schedule[{index}].isRest 必须是 Y 或 N", subtype="invalid_is_rest", details={"index": index})
+        try:
+            work_date = normalize_work_date(schedule["workDate"])
+        except (TypeError, ValueError) as exc:
+            _validation(f"schedule[{index}] 日期格式错误：{exc}", subtype="invalid_work_date", details={"index": index})
+        normalized.append({"userId": user_id.strip(), "workDate": work_date, "classId": class_id, "isRest": is_rest.upper()})
+    return normalized
+
+
+def main() -> int:
+    """Run the reviewed write path and return one machine-readable result."""
     parser = argparse.ArgumentParser(
-        description="考勤排班导入（含校验、回显、执行）",
-        epilog="执行前必须阅读 attendance-schedule.md",
+        description="考勤排班导入（含校验、预览、受确认写入）",
+        epilog="执行前必须阅读 attendance-schedule.md；--dry-run 允许只读校验，绝不执行排班写入。",
     )
-    parser.add_argument(
-        "--group-id", required=True, type=int,
-        help="考勤组 ID（必填，必须为排班制考勤组）",
-    )
-    parser.add_argument(
-        "--schedules", required=True,
-        help="排班记录 JSON 数组（必填），每条记录包含 userId/workDate/classId/isRest",
-    )
-    parser.add_argument(
-        "--confirm", action="store_true",
-        help="用户已确认排班内容（必填，表示用户已在 Agent 回显中确认）",
-    )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="仅校验和回显，不实际执行排班",
-    )
+    parser.add_argument("--group-id", required=True, type=int, help="考勤组 ID（必须为排班制 TURN）")
+    parser.add_argument("--schedules", required=True, help="排班记录 JSON 数组，含 userId/workDate/classId/isRest")
+    parser.add_argument("--yes", action="store_true", help="用户已审阅预览并明确确认；缺失时不发送写入")
+    parser.add_argument("--confirm", action="store_true", help=argparse.SUPPRESS)
+    add_contract_flags(parser, default="json")
     args = parser.parse_args()
 
-    # ── 解析排班记录 JSON ──
     try:
-        schedules: list[dict] = json.loads(args.schedules)
-    except json.JSONDecodeError as exc:
-        error(f"--schedules JSON 格式错误: {exc}")
-        raise SystemExit(1) from exc
+        schedules = _parse_schedules(args.schedules)
+        group_info = validate_group_is_turn(args.group_id)
+        group_name = str(group_info.get("name") or f"ID:{args.group_id}")
+        user_ids = sorted({schedule["userId"] for schedule in schedules})
+        user_names = resolve_user_names(user_ids)
+        group_bound_class_ids = extract_group_bound_classes(group_info)
+        all_classes = extract_group_class_names(group_info)
+        if not group_bound_class_ids:
+            # The group response has no binding evidence.  A global lookup is
+            # only a last-resort label/validation source and is surfaced in
+            # the validation warning below.
+            all_classes = fetch_all_classes()
+        validate_class_ids(schedules, group_bound_class_ids, all_classes, group_name)
+        preview = schedule_preview(group_name, args.group_id, schedules, all_classes, user_names)
+        if args.format == "text":
+            print_schedule_preview(preview)
 
-    if not isinstance(schedules, list) or len(schedules) == 0:
-        error("--schedules 必须是非空 JSON 数组")
-        raise SystemExit(1)
+        if args.dry_run:
+            return emit(
+                fmt=args.format,
+                outcome="success",
+                data={"preview": preview, "remote_reads": "performed_for_validation", "write": "not_sent"},
+                dry_run=True,
+                text="[dry-run] 已完成只读校验与排班预览；未执行排班写入。",
+            )
+        if not (args.yes or args.confirm):
+            return emit(
+                fmt=args.format,
+                outcome="failure",
+                data={"preview": preview, "write": "not_sent"},
+                error={
+                    "type": "confirmation_required",
+                    "subtype": "schedule_preview_requires_yes",
+                    "message": "排班尚未执行；请向用户展示 preview 后，获得明确确认再使用 --yes。",
+                },
+                text="排班尚未执行：请向用户展示预览并获得确认后使用 --yes。",
+            )
 
-    # ── 校验必填字段 ──
-    required_fields = ("userId", "workDate", "classId", "isRest")
-    for idx, schedule in enumerate(schedules):
-        for field_name in required_fields:
-            if field_name not in schedule:
-                error(f"schedule[{idx}] 缺少必填字段: {field_name}")
-                raise SystemExit(1)
-
-    # ── 标准化日期格式 ──
-    for idx, schedule in enumerate(schedules):
-        try:
-            schedule["workDate"] = normalize_work_date(schedule["workDate"])
-        except ValueError as exc:
-            error(f"schedule[{idx}] 日期格式错误: {exc}")
-            raise SystemExit(1) from exc
-
-    # ── 阶段 1: 校验考勤组（必须为 TURN 排班制） ──
-    group_info = validate_group_is_turn(args.group_id)
-    group_name = group_info.get("name", f"ID:{args.group_id}")
-
-    # ── 阶段 2: 解析员工姓名 ──
-    user_ids = list({s["userId"] for s in schedules})
-    user_names = resolve_user_names(user_ids)
-
-    # ── 阶段 3: 校验班次（必须属于该考勤组） ──
-    group_bound_class_ids = extract_group_bound_classes(group_info)
-    all_classes = fetch_all_classes()
-    if group_bound_class_ids:
-        log(f"📋 考勤组「{group_name}」绑定了 {len(group_bound_class_ids)} 个班次:")
-        for cid in sorted(group_bound_class_ids):
-            cname = all_classes.get(cid, f"ID:{cid}")
-            log(f"   - {cname} (ID: {cid})")
-    validate_class_ids(schedules, group_bound_class_ids, all_classes, group_name)
-    log("✅ 班次校验通过")
-
-    # ── 阶段 4: 回显排班内容 ──
-    print_schedule_preview(group_name, args.group_id, schedules, all_classes, user_names)
-
-    if args.dry_run:
-        print("\n[dry-run] 仅校验和回显，未实际执行排班")
-        return
-
-    if not args.confirm:
-        print("\n⚠️ 未传入 --confirm 参数，排班未执行")
-        print("请在 Agent 回显确认后，添加 --confirm 参数重新执行")
-        return
-
-    # ── 阶段 5: 执行排班 ──
-    execute_schedule_import(args.group_id, schedules)
-
-    # ── 阶段 6: 输出摘要 ──
-    print(f"\n✅ 排班导入成功！")
-    print(f"   考勤组: {group_name}")
-    print(f"   排班人数: {len(user_ids)}")
-    print(f"   排班记录: {len(schedules)} 条")
-    dates = sorted({s.get('workDate', '')[:10] for s in schedules})
-    if dates:
-        print(f"   日期范围: {dates[0]} ~ {dates[-1]}")
-
-    # 展示所有排班明细
-    print(f"\n{'员工姓名':<12} {'日期':<14} {'班次':<16} {'是否排休':<8}")
-    print("-" * 54)
-    for schedule in sorted(schedules, key=lambda s: (s.get("userId", ""), s.get("workDate", ""))):
-        uid = schedule.get("userId", "")
-        uname = user_names.get(uid, uid)
-        wdate = str(schedule.get("workDate", ""))[:10]
-        cid = int(schedule.get("classId", 0))
-        is_rest = str(schedule.get("isRest", "N")).upper()
-        if is_rest == "Y":
-            class_display = "休息"
-            rest_display = "是"
-        else:
-            class_display = all_classes.get(cid, f"未知班次(ID:{cid})")
-            rest_display = "否"
-        print(f"{uname:<12} {wdate:<14} {class_display:<16} {rest_display:<8}")
+        execute_schedule_import(args.group_id, schedules)
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={
+                "preview": preview,
+                "request": {"state": "accepted", "operation": "attendance_schedule_import"},
+                "verification": {
+                    "state": "not_verified",
+                    "reason": "服务端未返回逐条终态；请使用 attendance schedule get 核查目标人员和日期。",
+                },
+            },
+            text="排班导入请求已受理；请查询目标人员和日期核查最终排班。",
+        )
+    except ScheduleError as exc:
+        return emit(fmt=args.format, outcome="failure", error=exc.as_error(), text=f"错误：{exc}")
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(run_main(main, default_format="json"))

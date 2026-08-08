@@ -193,7 +193,13 @@ def run_main(main_fn: Callable[[], Optional[int]], *, default_format: str = "tex
         raise
     except SystemExit as exc:
         status = exc.code if isinstance(exc.code, int) else FAILURE_EXIT
-        if fmt == "text" or status == 0:
+        if fmt == "text":
+            return status
+        # argparse --help exits 0 while its output is still inside the machine
+        # stdout capture.  Help is a discovery surface, not a result envelope;
+        # replay it verbatim instead of silently returning an empty success.
+        if status == 0:
+            sys.stdout.write(captured.getvalue())
             return status
         return emit(fmt=fmt, outcome="failure", error={"type": "validation", "message": "脚本参数或前置校验未通过；请检查 --help。", "details": {"exit_code": status}})
     except Exception as exc:  # noqa: BLE001 - executable boundary by design.
