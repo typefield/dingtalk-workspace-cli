@@ -436,7 +436,11 @@ func callMCPToolInternalOpts(explicitServerID, toolName string, args map[string]
 						parsed = normalizeMailSuccessBooleans(parsed)
 					}
 					if serverID == "aitable" && (toolName == "list_bases" || toolName == "search_bases") {
-						parsed = annotateAitableDiscoveryBoundary(parsed, toolName)
+						var err error
+						parsed, err = annotateAitableDiscoveryBoundary(parsed, toolName)
+						if err != nil {
+							return err
+						}
 					}
 					return printJSON(parsed)
 				}
@@ -512,10 +516,10 @@ func normalizeMailSuccessBooleans(value any) any {
 // mistaken for an authoritative inventory. The service exposes recent-access
 // and search-index views; neither proves that every accessible Base is present
 // or that every returned historical item is still live.
-func annotateAitableDiscoveryBoundary(value any, toolName string) any {
+func annotateAitableDiscoveryBoundary(value any, toolName string) (any, error) {
 	root, ok := value.(map[string]any)
 	if !ok {
-		return value
+		return value, nil
 	}
 	sourceKind := "recently_accessed"
 	if toolName == "search_bases" {
@@ -532,13 +536,33 @@ func annotateAitableDiscoveryBoundary(value any, toolName string) any {
 			root["paginationKnown"] = true
 			root["hasMore"] = hasMore
 			root["endpointExhausted"] = !hasMore
-			if cursor, present := valueAtAnyKey(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor"); present {
+			cursor, present := valueAtAnyKey(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor")
+			cursorText := strings.TrimSpace(fmt.Sprint(cursor))
+			if hasMore && (!present || cursorText == "") {
+				return nil, aitableDiscoveryPaginationError(toolName, "hasMore=true but no next cursor was returned")
+			}
+			if !hasMore && present && cursorText != "" {
+				return nil, aitableDiscoveryPaginationError(toolName, "hasMore=false but a next cursor was returned")
+			}
+			if present {
 				root["nextCursor"] = cursor
 			}
 			break
 		}
 	}
-	return root
+	return root, nil
+}
+
+func aitableDiscoveryPaginationError(toolName, reason string) error {
+	return apperrors.NewAPI(
+		fmt.Sprintf("无法安全读取 AI 表格发现结果 %q：%s", toolName, reason),
+		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("discovery_projection"),
+		apperrors.WithExecutionStarted(false),
+		apperrors.WithRetryable(true),
+		apperrors.WithHint("请重试发现命令；分页证据不完整时不会把结果当作完整目录。"),
+	)
 }
 
 func aitableDiscoveryScopes(root map[string]any) []map[string]any {

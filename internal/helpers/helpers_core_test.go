@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
@@ -333,15 +334,43 @@ func TestAitableJSONOutputPublishesNonAuthoritativeDiscoveryBoundary(t *testing.
 }
 
 func TestAnnotateAitableSearchBoundaryKeepsUnknownCoverageHonest(t *testing.T) {
-	payload := annotateAitableDiscoveryBoundary(map[string]any{
+	annotated, err := annotateAitableDiscoveryBoundary(map[string]any{
 		"result": map[string]any{"bases": []any{}},
-	}, "search_bases").(map[string]any)
+	}, "search_bases")
+	if err != nil {
+		t.Fatalf("annotate search boundary: %v", err)
+	}
+	payload, ok := annotated.(map[string]any)
+	if !ok {
+		t.Fatalf("annotated search boundary = %T, want map", annotated)
+	}
 	if payload["sourceKind"] != "name_search_index" || payload["indexCoverageKnown"] != false ||
 		payload["paginationKnown"] != false {
 		t.Fatalf("search boundary = %#v", payload)
 	}
 	if _, exists := payload["endpointExhausted"]; exists {
 		t.Fatalf("unknown pagination must not claim exhaustion: %#v", payload)
+	}
+}
+
+func TestAnnotateAitableDiscoveryRejectsContradictoryPagination(t *testing.T) {
+	for _, test := range []struct {
+		name string
+		body map[string]any
+	}{
+		{name: "more without cursor", body: map[string]any{"result": map[string]any{"bases": []any{}, "hasMore": true}}},
+		{name: "exhausted with cursor", body: map[string]any{"result": map[string]any{"bases": []any{}, "hasMore": false, "nextCursor": "stale"}}},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := annotateAitableDiscoveryBoundary(test.body, "list_bases")
+			if err == nil {
+				t.Fatal("contradictory pagination was accepted")
+			}
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) || typed.Reason != "pagination_inconsistent" {
+				t.Fatalf("error = %T %v, want pagination_inconsistent", err, err)
+			}
+		})
 	}
 }
 
