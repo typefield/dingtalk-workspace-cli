@@ -152,4 +152,24 @@ func TestThreadRepliesUnifiedPaginationOutcomes(t *testing.T) {
 			t.Fatalf("projection error=%#v", errorInfo)
 		}
 	})
+
+	t.Run("requested resource failure is partial rather than read success", func(t *testing.T) {
+		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
+			"{\"result\":{\"hasMore\":false,\"messages\":[{\"openMessageId\":\"m1\",\"createTime\":\"2026-08-06 21:28:39\",\"content\":\"{\\\"mediaId\\\":\\\"media-1\\\"}\"}]}}",
+		}}, "--group", "cid", "--thread-id", "thread", "--download-resources")
+		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("resource partial envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data, _ := envelope["data"].(map[string]any)
+		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
+			t.Fatalf("resource partial details=%#v", data)
+		}
+		failed := data["failed"].([]any)
+		failure := failed[0].(map[string]any)["error"].(map[string]any)
+		details, _ := failure["details"].(map[string]any)
+		resourceLedger, _ := details["resource_downloads"].(map[string]any)
+		if resourceLedger["failedCount"] != float64(1) {
+			t.Fatalf("resource ledger=%#v", resourceLedger)
+		}
+	})
 }

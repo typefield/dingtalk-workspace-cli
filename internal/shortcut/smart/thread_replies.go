@@ -191,10 +191,14 @@ func executeThreadReplies(rt *shortcut.RuntimeContext) error {
 	order := threadRepliesOrder(rt)
 	applyThreadRepliesResultContract(payload, items, target, order)
 	if err == nil && payload != nil && rt.Bool("download-resources") {
-		chatshortcut.AttachMessageResourceDownloads(
-			payload,
-			chatshortcut.DownloadMessageResources(rt, items, target.conversationID),
-		)
+		resourceLedger := chatshortcut.DownloadMessageResources(rt, items, target.conversationID)
+		chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
+		if failureInfo := threadRepliesResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+			if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
+				return apperrors.NewInternal("记录话题回复资源下载失败状态失败", apperrors.WithCause(recordErr))
+			}
+			pageLedger.SetStopReason("resource_download_failure")
+		}
 	}
 	result, resultErr := threadRepliesUnifiedResult(pageLedger, payload, rt.DryRun())
 	if resultErr != nil {
@@ -558,7 +562,7 @@ func threadRepliesUnifiedResult(pageLedger *output.PageLedger, payload map[strin
 	}
 	data := map[string]any{}
 	if payload != nil {
-		for _, key := range []string{"replies", "count", "conversationId", "threadId", "resolvedFromMessageId", "order", "orderScope"} {
+		for _, key := range []string{"replies", "count", "conversationId", "threadId", "resolvedFromMessageId", "order", "orderScope", "resourceDownloads"} {
 			if value, ok := payload[key]; ok {
 				data[key] = value
 			}
@@ -572,6 +576,48 @@ func threadRepliesUnifiedResult(pageLedger *output.PageLedger, payload map[strin
 		options = append(options, output.WithDryRun())
 	}
 	return pageLedger.Result(data, options...)
+}
+
+// threadRepliesResourceDownloadFailureInfo converts the per-resource local
+// download ledger into the same partial-result channel as a later page
+// failure. A reply page can be read successfully while an explicitly requested
+// local resource copy fails; reporting success for that combined operation
+// would hide the failure from an Agent.
+func threadRepliesResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
+	failedCount := threadRepliesLedgerCount(ledger["failedCount"])
+	if failedCount == 0 {
+		return nil
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          fmt.Sprintf("话题回复资源下载失败：%d 个资源未完成", failedCount),
+		Hint:             "保留已读取回复和已下载文件；查看失败项 error.details.resource_downloads.failures 后仅处理失败资源。",
+		Operation:        "chat/message_resource_download",
+		Origin:           "local_resource_download",
+		Stage:            "resource_download",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"resource_downloads": ledger,
+		},
+	}
+}
+
+func threadRepliesLedgerCount(value any) int {
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int32:
+		return int(typed)
+	case int64:
+		return int(typed)
+	case float32:
+		return int(typed)
+	case float64:
+		return int(typed)
+	default:
+		return 0
+	}
 }
 
 // observeThreadRepliesUnifiedPage converts the service-specific reply page
