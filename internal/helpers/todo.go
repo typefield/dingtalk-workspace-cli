@@ -134,12 +134,12 @@ func todoParticipantOutcomeUnknown(taskID string, writeErr error, reason string)
 		Message:    fmt.Sprintf("添加参与人的请求报错，远端是否已落库未知: %v（%s）", writeErr, reason),
 		Suggestion: fmt.Sprintf("请先执行 dws todo task get --task-id %s --format json 核对参与人，不要直接重试写入", taskID),
 		Details: map[string]any{
-			"outcome":           "unknown",
-			"verification":      "read_after_error",
-			"execution_started": "unknown",
-			"retryable":         false,
-			"task_id":           taskID,
-			"reason":            reason,
+			"outcome":         "unknown",
+			"verification":    "read_after_error",
+			"execution_state": "unknown",
+			"retryable":       false,
+			"task_id":         taskID,
+			"reason":          reason,
 		},
 	}
 }

@@ -61,7 +61,7 @@ func TestAddTodoParticipantsDoesNotReplayWhenVerificationIsUnknown(t *testing.T)
 		t.Fatalf("unknown outcome error = %v", err)
 	}
 	var cliErr *CLIError
-	if !errors.As(err, &cliErr) || cliErr.Details["outcome"] != "unknown" || cliErr.Details["retryable"] != false {
+	if !errors.As(err, &cliErr) || cliErr.Details["outcome"] != "unknown" || cliErr.Details["execution_state"] != "unknown" || cliErr.Details["retryable"] != false {
 		t.Fatalf("unknown recovery details = %#v", cliErr)
 	}
 	if caller.calls != 2 {
