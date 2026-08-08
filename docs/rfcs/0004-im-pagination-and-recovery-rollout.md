@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：Implementing（PageLedger 已落地，`chat +flag-list` 与 `chat +chat-search` 已进入 dual_validate）
+- 状态：Implementing（PageLedger 已落地，首批三条 IM 读命令已进入 dual_validate）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 的可终结、只读分页命令
 - 依赖：RFC-0001（统一返回）、RFC-0003（错误 subtype 治理）
@@ -141,7 +141,8 @@ legacy_only
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
 选择协议。
 
-当前进度：`chat +flag-list` 与 `chat +chat-search` 已通过单次业务执行构建 PageLedger，
+当前进度：`chat +flag-list`、`chat +chat-search` 与 `chat +conversation-list` 已通过
+单次业务执行构建 PageLedger，
 并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为 shadow `CommandResult`；
 两条命令的 legacy JSON 逐字节 golden 均已锁定。`chat-search` 的最大窗口二次探测
 被建模为同一 cursor 的验证步骤：探测成功只记一个逻辑页，探测失败保留首批数据并
@@ -150,6 +151,12 @@ legacy_only
 现有 Agent wire。测试还用同一命令声明临时进入 `unified_active`，验证 continuation 的
 `endpoint_exhausted:false + next_token`、unknown 时分页 meta 缺席，以及后续页失败的
 `partial_failure + exit 7`，不依赖生产 rollout 才能观察晋级后的真实信封。
+
+`conversation-list` 额外使用严格 shadow 投影区分“已识别的空数组”和“未知容器/非法
+条目/缺稳定 ID”：legacy 投影与字节保持不变，统一侧将未知结构归为
+`projection_unknown`。达到本地 `--page-limit` 且仍有合法 cursor 时，统一侧返回可续的
+success，而不是把安全预算耗尽伪装成远端失败；后续页读取失败仍保留成功页并返回
+`partial_failure`。
 
 ## 6. 验收
 
@@ -163,10 +170,10 @@ legacy_only
 
 ### 6.1 2026-08-08 Agent 声明面扫描
 
-Agent 以当前源码构建临时 CLI，并逐项读取两条命令的 leaf Help、`schema --all` 中的精确
+Agent 以当前源码构建临时 CLI，并逐项读取三条命令的 leaf Help、`schema --all` 中的精确
 tool 声明，以及 multi chat Skill 的根路由和精确 reference。结果如下：
 
-- 两条命令均只公开全局 `--format`，没有输出协议选择参数；
+- 三条命令均只公开全局 `--format`，没有输出协议选择参数；
 - canonical path、`--page-all`、`--page-limit`、page size/token 约束与运行时一致；
 - Schema 的 effect/risk/confirmation/idempotency 均为 `read/low/not_required/idempotent`；
 - Skill 路由均指向当前 canonical path，没有要求 Agent 选择 rollout 状态；

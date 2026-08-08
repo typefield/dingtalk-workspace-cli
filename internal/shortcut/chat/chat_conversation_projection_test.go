@@ -15,12 +15,96 @@ package chat
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"reflect"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/jsonutil"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
+
+func TestConversationListPaginationRolloutStartsWithDualValidation(t *testing.T) {
+	if ConversationList.OutputRollout != frameworkoutput.RolloutDualValidate {
+		t.Fatalf("conversation-list rollout = %q, want dual_validate", ConversationList.OutputRollout)
+	}
+}
+
+func runConversationListUnifiedResult(t *testing.T, fake *larkAlignmentCaller, args ...string) (map[string]any, int) {
+	t.Helper()
+	helpers.InitDeps(fake)
+	declaration := ConversationList
+	declaration.OutputRollout = frameworkoutput.RolloutUnifiedActive
+	cmd := corecmd.New(shortcutcore.FromShortcut(declaration))
+	ctx, _ := frameworkoutput.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("active command execution failed: %v", err)
+	}
+	exitCode, emitted, err := frameworkoutput.EmitStoredResult(cmd)
+	if err != nil || !emitted {
+		t.Fatalf("active result emission: code=%d emitted=%v err=%v", exitCode, emitted, err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode active envelope: %v\n%s", err, stdout.String())
+	}
+	if _, leaked := envelope["contract_version"]; leaked {
+		t.Fatalf("active envelope exposed removed contract_version: %#v", envelope)
+	}
+	return envelope, exitCode
+}
+
+func TestConversationListUnifiedPromotionEvidence(t *testing.T) {
+	t.Run("local page limit remains resumable success", func(t *testing.T) {
+		envelope, exitCode := runConversationListUnifiedResult(t, &larkAlignmentCaller{responses: map[string]string{
+			"im/list_all_conversations": `{"result":{"conversationList":[{"openConversationId":"cid-1","title":"一"}],"hasMore":true,"nextCursor":2}}`,
+		}}, "--page-all", "--page-limit", "1")
+		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		pagination := envelope["meta"].(map[string]any)["pagination"].(map[string]any)
+		if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "2" {
+			t.Fatalf("pagination = %#v", pagination)
+		}
+	})
+
+	t.Run("unknown list container fails closed", func(t *testing.T) {
+		envelope, exitCode := runConversationListUnifiedResult(t, &larkAlignmentCaller{responses: map[string]string{
+			"im/list_all_conversations": `{"result":{"unexpected":true},"hasMore":false}`,
+		}})
+		if exitCode != 1 || envelope["ok"] != false || envelope["outcome"] != "failure" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		failure := envelope["error"].(map[string]any)
+		if failure["subtype"] != "projection_unknown" {
+			t.Fatalf("failure = %#v", failure)
+		}
+	})
+
+	t.Run("later read failure preserves first page", func(t *testing.T) {
+		envelope, exitCode := runConversationListUnifiedResult(t, &larkAlignmentCaller{
+			sequenceResponses: map[string][]string{
+				"im/list_all_conversations": {`{"result":{"conversationList":[{"openConversationId":"cid-1","title":"一"}],"hasMore":true,"nextCursor":2}}`},
+			},
+			failProductToolAt: map[string]int{"im/list_all_conversations": 2},
+		}, "--page-all")
+		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data := envelope["data"].(map[string]any)
+		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
+			t.Fatalf("partial data = %#v", data)
+		}
+	})
+}
 
 func TestCrossPlatformCoverageConversationListTopProjectNormalizesAndFiltersType(t *testing.T) {
 	data := map[string]any{
@@ -115,12 +199,35 @@ func TestCrossPlatformCoverageConversationListPageAllFollowsTypedCursor(t *testi
 	}}
 	helpers.InitDeps(fake)
 	root := newPlatformCoverageRoot()
+	var output bytes.Buffer
+	root.SetOut(&output)
 	root.SetArgs([]string{"chat", "+conversation-list", "--page-all"})
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
 	if len(fake.calls) != 2 || fake.calls[1].args["cursor"] != int64(2) {
 		t.Fatalf("calls = %#v", fake.calls)
+	}
+	want, err := jsonutil.MarshalIndent(map[string]any{
+		"count": 2,
+		"conversations": []map[string]any{
+			{"openConversationId": "cid-1", "conversationName": "一"},
+			{"openConversationId": "cid-2", "conversationName": "二"},
+		},
+		"pagesFetched":    2,
+		"complete":        true,
+		"hasMore":         false,
+		"nextCursor":      int64(2),
+		"paginationKnown": true,
+		"failedCount":     0,
+		"failures":        []map[string]any{},
+		"partial":         false,
+	}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := output.String(); got != string(want)+"\n" {
+		t.Fatalf("dual_validate changed legacy bytes:\n%s\nwant:\n%s", got, string(want))
 	}
 }
 
@@ -166,5 +273,22 @@ func TestCrossPlatformCoverageConversationListDeduplicatesStableIDs(t *testing.T
 	}
 	if payload["count"] != float64(1) {
 		t.Fatalf("deduplicated payload = %#v", payload)
+	}
+}
+
+func TestConversationListStrictProjectionDistinguishesEmptyFromUnknown(t *testing.T) {
+	if rows, err := conversationListProjectStrict(map[string]any{"result": map[string]any{"conversationList": []any{}}}); err != nil || len(rows) != 0 {
+		t.Fatalf("known empty projection rows=%#v err=%v", rows, err)
+	}
+	for name, data := range map[string]map[string]any{
+		"unknown container": {"result": map[string]any{"unexpected": true}},
+		"invalid entry":     {"result": map[string]any{"conversationList": []any{"bad"}}},
+		"missing stable id": {"result": map[string]any{"conversationList": []any{map[string]any{"title": "无ID"}}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			if _, err := conversationListProjectStrict(data); err == nil {
+				t.Fatal("strict projection unexpectedly succeeded")
+			}
+		})
 	}
 }

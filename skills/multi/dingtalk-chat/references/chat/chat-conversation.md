@@ -35,7 +35,7 @@ dws chat conversation-info --open-dingtalk-id <openDingTalkId> --format json
 
 | 命令 | 用途 | 参数 |
 |------|------|------|
-| `+conversation-list` | 获取当前用户会话 | 要求“全部”时加 `--page-all`；检查 `complete` / `failures` |
+| `+conversation-list` | 获取当前用户会话 | 要求“全部”时加 `--page-all`；只有明确的 endpoint 耗尽证据才可称完整，续页/失败/未知页必须保留 |
 | `+chat-list` | 列出当前用户会话（默认群聊，可选单聊） | 默认只返回群聊；`--types group,p2p` 可包含单聊；要求全部时加 `--page-all`，合并去重后再过滤类型 |
 | `+chat-list-all` | 获取当前用户加入的全部群 | 要求全部时加 `--page-all`；沿数字 `nextCursor` 去重聚合 |
 | `+my-groups` | 获取并投影当前用户加入的群 | 要求全部时加 `--page-all`；读完后再应用 `--type` 本地过滤 |

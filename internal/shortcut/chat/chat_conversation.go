@@ -23,6 +23,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 )
@@ -282,12 +283,13 @@ var ConversationClearAllRedPoint = shortcut.Shortcut{
 
 // ConversationList paginates all conversations (list_all_conversations, im).
 var ConversationList = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+conversation-list",
-	Product:     "im",
-	Description: "分页或一键全量获取当前用户的会话列表（单聊+群聊）",
-	Intent:      "当你想遍历当前用户的所有会话（单聊+群聊）做统计、清理或批量处理时使用；默认读取一页，明确要求全部时使用 --page-all，CLI 会按服务端每页上限自动翻页并公开完整性 ledger；可用 --exclude-muted 排除已免打扰会话。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "chat",
+	Command:       "+conversation-list",
+	Product:       "im",
+	Description:   "分页或一键全量获取当前用户的会话列表（单聊+群聊）",
+	Intent:        "当你想遍历当前用户的所有会话（单聊+群聊）做统计、清理或批量处理时使用；默认读取一页，明确要求全部时使用 --page-all，CLI 会按服务端每页上限自动翻页并公开完整性 ledger；可用 --exclude-muted 排除已免打扰会话。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -346,15 +348,23 @@ var ConversationList = shortcut.Shortcut{
 		if rt.Bool("page-all") {
 			pageLimit = rt.Int("page-limit")
 		}
+		pageLedger, err := output.NewPageLedger(pageLimit)
+		if err != nil {
+			return apperrors.NewInternal("初始化会话列表分页账本失败", apperrors.WithCause(err))
+		}
 		convs := make([]map[string]any, 0)
 		seenConversations := map[string]bool{}
+		unifiedConvs := make([]map[string]any, 0)
+		seenUnifiedConversations := map[string]bool{}
 		seenCursors := map[int64]bool{cursor: true}
 		pagesFetched := 0
 		complete := false
 		hasMore := false
 		nextCursor := int64(0)
 		failures := make([]map[string]any, 0)
+		shadowInterrupted := false
 		for pagesFetched < pageLimit {
+			pageCursor := cursor
 			params := map[string]any{"limit": rt.Int("limit")}
 			if cursor > 0 {
 				params["cursor"] = cursor
@@ -368,10 +378,17 @@ var ConversationList = shortcut.Shortcut{
 					return err
 				}
 				failures = append(failures, map[string]any{"stage": "conversation-page", "cursor": cursor, "error": err.Error()})
+				if !shadowInterrupted {
+					if recordErr := pageLedger.RecordFailure(strconv.FormatInt(cursor, 10), conversationListReadFailureInfo(err)); recordErr != nil {
+						return apperrors.NewInternal("记录会话列表分页读取失败状态失败", apperrors.WithCause(recordErr))
+					}
+					shadowInterrupted = true
+				}
 				break
 			}
 			pagesFetched++
-			for _, conversation := range conversationListProject(data) {
+			legacyPage := conversationListProject(data)
+			for _, conversation := range legacyPage {
 				id := strings.TrimSpace(fmt.Sprint(conversation["openConversationId"]))
 				if id != "" && id != "<nil>" {
 					if seenConversations[id] {
@@ -381,23 +398,97 @@ var ConversationList = shortcut.Shortcut{
 				}
 				convs = append(convs, conversation)
 			}
+
+			strictPage, projectionErr := conversationListProjectStrict(data)
+			unifiedPage := make([]map[string]any, 0, len(strictPage))
+			if !shadowInterrupted {
+				if projectionErr != nil {
+					if recordErr := pageLedger.RecordFailure(strconv.FormatInt(pageCursor, 10), conversationListProjectionFailureInfo(projectionErr)); recordErr != nil {
+						return apperrors.NewInternal("记录会话列表投影失败状态失败", apperrors.WithCause(recordErr))
+					}
+					shadowInterrupted = true
+				} else {
+					for _, conversation := range strictPage {
+						id := strings.TrimSpace(fmt.Sprint(conversation["openConversationId"]))
+						if seenUnifiedConversations[id] {
+							continue
+						}
+						seenUnifiedConversations[id] = true
+						unifiedConvs = append(unifiedConvs, conversation)
+						unifiedPage = append(unifiedPage, conversation)
+					}
+				}
+			}
+			if projectionErr != nil && output.UsesUnifiedResult(rt.Command()) {
+				// Once this command is active, an unprojectable page is terminal
+				// for the read. dual_validate keeps the legacy call pattern.
+				break
+			}
+
 			page := chatmsg.Pagination(data)
 			hasMoreValue, known := page["hasMore"].(bool)
 			hasMore = hasMoreValue
+			rawNextCursor, rawCursorErr := conversationPaginationCursor(page["nextCursor"])
+			rawCursorUsable := rawCursorErr == nil && rawNextCursor > 0 && !seenCursors[rawNextCursor]
+			boundaryFailure := ""
+			breakAfterObservation := false
 			if !known {
 				failures = append(failures, map[string]any{"stage": "conversation-pagination", "error": "下层未返回 hasMore，无法证明结果完整"})
-				break
-			}
-			if !hasMore {
+				if !rawCursorUsable {
+					boundaryFailure = "会话列表未返回 hasMore，且没有可用 nextCursor"
+				}
+				breakAfterObservation = true
+			} else if !hasMore {
+				if _, present := page["nextCursor"]; present {
+					boundaryFailure = "会话列表返回 hasMore=false，但同时携带 nextCursor"
+				}
 				complete = true
-				break
+				breakAfterObservation = true
+			} else {
+				nextCursor, err = conversationPaginationCursor(page["nextCursor"])
 			}
-			nextCursor, err = conversationPaginationCursor(page["nextCursor"])
-			if err != nil || nextCursor == 0 || seenCursors[nextCursor] {
+			if known && hasMore && (err != nil || nextCursor == 0 || seenCursors[nextCursor]) {
+				boundaryFailure = "会话列表返回 hasMore=true，但 nextCursor 缺失、无效或未前进"
 				failures = append(failures, map[string]any{"stage": "conversation-pagination", "error": "hasMore=true 但 nextCursor 缺失、无效或未前进"})
-				break
+				breakAfterObservation = true
 			}
-			if !rt.Bool("page-all") {
+			if known && hasMore && !breakAfterObservation && !rt.Bool("page-all") {
+				breakAfterObservation = true
+			}
+
+			if !shadowInterrupted {
+				evidence := output.PageEvidence{
+					Cursor: strconv.FormatInt(pageCursor, 10),
+					Items:  len(unifiedPage),
+					Data:   map[string]any{"conversations": unifiedPage},
+				}
+				switch {
+				case boundaryFailure != "":
+					// Successfully decoded data with an untrusted boundary.
+				case !known && rawCursorUsable:
+					evidence.NextToken = strconv.FormatInt(rawNextCursor, 10)
+				case !known:
+					// Unknown is represented by absent pagination meta.
+				case hasMore:
+					more := true
+					evidence.HasMore = &more
+					evidence.NextToken = strconv.FormatInt(nextCursor, 10)
+				default:
+					more := false
+					evidence.HasMore = &more
+				}
+				if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+					return apperrors.NewInternal("会话列表分页证据不满足框架契约", apperrors.WithCause(observeErr))
+				}
+				if boundaryFailure != "" {
+					if recordErr := pageLedger.RecordBoundaryFailure(conversationListPaginationFailureInfo(boundaryFailure)); recordErr != nil {
+						return apperrors.NewInternal("记录会话列表分页边界失败状态失败", apperrors.WithCause(recordErr))
+					}
+					shadowInterrupted = true
+				}
+			}
+
+			if breakAfterObservation {
 				break
 			}
 			seenCursors[nextCursor] = true
@@ -418,8 +509,66 @@ var ConversationList = shortcut.Shortcut{
 			"failures":        failures,
 			"partial":         len(failures) > 0,
 		}
-		return rt.Output(payload)
+		unifiedData := map[string]any{"count": len(unifiedConvs), "conversations": unifiedConvs}
+		if pageLedger.State() == output.PageStateUnknown {
+			unifiedData["pagination_known"] = false
+		}
+		result, resultErr := pageLedger.Result(unifiedData)
+		if resultErr != nil {
+			return apperrors.NewInternal("生成会话列表统一分页结果失败", apperrors.WithCause(resultErr))
+		}
+		return rt.OutputResult(payload, result)
 	},
+}
+
+func conversationListReadFailureInfo(err error) *output.ErrorInfo {
+	message := "会话列表分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败页 cursor 继续；不要重放已经成功的页面",
+		Operation:        "im/list_all_conversations",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true,
+	}
+}
+
+func conversationListPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽",
+		Operation:        "im/list_all_conversations",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func conversationListProjectionFailureInfo(err error) *output.ErrorInfo {
+	message := "会话列表响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          message,
+		Hint:             "保留原始响应诊断；不要把未知结构解释为空会话列表",
+		Operation:        "im/list_all_conversations",
+		Origin:           "mcp_gateway",
+		Stage:            "response_projection",
+		ExecutionStarted: &started,
+	}
 }
 
 func conversationPaginationCursor(value any) (int64, error) {
@@ -465,6 +614,63 @@ func conversationListProject(data map[string]any) []map[string]any {
 		}
 	}
 	return out
+}
+
+// conversationListProjectStrict is the unified-result projection. Unlike the
+// legacy projector it distinguishes a recognized empty list from an unknown
+// response shape and requires every row to retain a stable conversation ID.
+// dual_validate calls both projectors against the same response: legacy bytes
+// stay unchanged while the shadow result fails closed.
+func conversationListProjectStrict(data map[string]any) ([]map[string]any, error) {
+	raw, known := conversationListResolveListStrict(data)
+	if !known {
+		return nil, fmt.Errorf("会话列表响应缺少可识别的列表容器")
+	}
+	out := make([]map[string]any, 0, len(raw))
+	for _, item := range raw {
+		m, ok := item.(map[string]any)
+		if !ok {
+			return nil, fmt.Errorf("会话列表包含无法识别的条目")
+		}
+		id, ok := conversationListFirst(m, "openConversationId", "conversationId", "id")
+		if !ok || strings.TrimSpace(fmt.Sprint(id)) == "" || strings.TrimSpace(fmt.Sprint(id)) == "<nil>" {
+			return nil, fmt.Errorf("会话列表条目缺少稳定 conversation ID")
+		}
+		row := map[string]any{"openConversationId": id}
+		if value, ok := conversationListFirst(m, "conversationName", "name", "title"); ok {
+			row["conversationName"] = value
+		}
+		if value, ok := conversationListFirst(m, "conversationType", "type"); ok {
+			row["conversationType"] = value
+		}
+		out = append(out, row)
+	}
+	return out, nil
+}
+
+func conversationListResolveListStrict(data map[string]any) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	for _, key := range []string{"conversationList", "conversations", "result", "data", "list", "items"} {
+		value, ok := data[key]
+		if !ok {
+			continue
+		}
+		if rows, ok := value.([]any); ok {
+			return unwrapConversationTuple(rows), true
+		}
+		inner, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, innerKey := range []string{"conversationList", "conversations", "list", "items", "result", "data"} {
+			if rows, ok := inner[innerKey].([]any); ok {
+				return unwrapConversationTuple(rows), true
+			}
+		}
+	}
+	return nil, false
 }
 
 // conversationListResolveList locates the conversation array inside the response,
