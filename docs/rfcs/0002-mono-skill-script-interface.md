@@ -15,7 +15,7 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
 - 当前已迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
   `upload_attachment.py`、`doc_create_and_write.py` 和
   `aitable_export_via_task.py`、`mail_unread_summary.py` 和
-  `contact_dept_members.py`，实际扫描结果为 23 个 dry-run、7 个 format、5 个
+  `contact_dept_members.py`、`report_received_today.py`，实际扫描结果为 23 个 dry-run、8 个 format、5 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
@@ -90,7 +90,7 @@ scripts/_runtime.py
 当前 pilot 已完成 `todo_batch_create.py`、`aitable_import_via_task.py`、
 `upload_attachment.py`、`doc_create_and_write.py` 和
 `aitable_export_via_task.py`、`mail_unread_summary.py` 和
-`contact_dept_members.py`；其余脚本继续按阶段一逐个迁移。
+`contact_dept_members.py`、`report_received_today.py`；其余脚本继续按阶段一逐个迁移。
 
 验收重点是 dry-run 零写入、部分失败逐项保留、失败退出码和重试安全。
 

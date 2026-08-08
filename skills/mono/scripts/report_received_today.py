@@ -20,13 +20,15 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional, Tuple
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -117,7 +119,7 @@ def main():
     parser.add_argument(
         '--detail', action='store_true', help='额外拉取每条正文'
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     now = datetime.now()
@@ -126,24 +128,44 @@ def main():
     end = iso_end(now)
 
     label = '今天' if args.days == 1 else f'最近 {args.days} 天'
-    print(f'查看{label}收到的日志...\n')
+    print(f'查看{label}收到的日志...\n', file=sys.stderr)
 
     pairs = fetch_inbox(start, end, args.dry_run)
     if args.dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'days': args.days, 'detail': args.detail,
+            'start': start, 'end': end,
+        }, dry_run=True, text='[dry-run] 将查询收到的日志并按需读取正文')
     if not pairs:
-        print('  暂无收到的日志')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'count': 0, 'items': [], 'start': start, 'end': end,
+        }) if args.format != 'text' else 0
+
+    records = []
+    for item, rid in pairs:
+        records.append({
+            'reportId': rid,
+            'title': item.get('标题') or '日志',
+            'sender': item.get('发送人') or '未知',
+            'date': item.get('日期') or '',
+            'status': item.get('状态') or '',
+            'link': item.get('钉钉链接') or '',
+        })
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'count': len(records), 'items': records,
+            'start': start, 'end': end,
+        })
 
     print(f"{label}日志 ({len(pairs)} 条)")
     print('=' * 50)
 
-    for item, rid in pairs:
-        title = item.get('标题') or '日志'
-        sender = item.get('发送人') or '未知'
-        date = item.get('日期') or ''
-        status = item.get('状态') or ''
-        link = item.get('钉钉链接') or ''
+    for record in records:
+        title = record['title']
+        sender = record['sender']
+        date = record['date']
+        status = record['status']
+        link = record['link']
 
         print(f"\n  {title} - {sender}")
         print(f"     时间: {date}")
@@ -152,9 +174,10 @@ def main():
         if link:
             print(f"     链接: {link}")
 
-        if args.detail and rid:
-            print_detail(rid)
+        if args.detail and record['reportId']:
+            print_detail(record['reportId'])
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
