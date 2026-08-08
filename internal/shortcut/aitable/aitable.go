@@ -128,15 +128,15 @@ var BaseList = shortcut.Shortcut{
 			CLIPath:        "aitable +base-list",
 			PrimaryCLIPath: "aitable +base-list",
 		},
-		Description: "获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）",
+		Description: "获取最近访问的 AI 表格 Base 列表（非权威全量目录，支持游标分页）",
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
 			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "获取当前用户可访问的 AI 表格 Base 列表（最近访问，支持游标分页）",
-			UseWhen:      []string{"当你不知道具体 baseId、想先浏览自己最近用过或可访问的 AI 表格清单以便定位目标时使用；支持游标分页，返回 Base 列表及其 baseId。"},
+			AgentSummary: "获取最近访问的 AI 表格 Base 列表（非权威全量目录，支持游标分页）",
+			UseWhen:      []string{"当你不知道具体 baseId、想先浏览最近访问的 AI 表格以便定位目标时使用；这是发现入口而非权威全量目录，支持游标分页，返回 Base 列表及其 baseId。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples: []string{
 				"dws aitable +base-list",

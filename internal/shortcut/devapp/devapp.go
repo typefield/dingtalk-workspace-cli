@@ -553,8 +553,8 @@ var GetCredentials = shortcut.Shortcut{
 			Reason:       "Reviewed built-in shortcut adapter: credentials are fetched through the devapp MCP tool and sensitive fields are declared for output handling.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "读取指定应用的客户端凭证；敏感字段只在用户明确需要时处理",
-			UseWhen:      []string{"已知 unifiedAppId 且明确需要 clientId 或 clientSecret 时"},
+			AgentSummary: "读取开放平台应用凭证",
+			UseWhen:      []string{"当你需要拿到某应用的鉴权凭证（如 clientId/AppKey、clientSecret/AppSecret）以便在代码或调试中调用开放平台接口时使用；输入 unifiedAppId，返回该应用的凭证信息。"},
 			AvoidWhen:    []string{"普通应用详情查询不要使用；不要把凭证写入日志或回答上下文"},
 			Examples:     []string{"dws devapp +credentials-get --unified-app-id <UNIFIED_APP_ID> --format json"},
 		},
