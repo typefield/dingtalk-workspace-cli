@@ -24,13 +24,18 @@ func executeFormulaVerify(t *testing.T, caller *scriptedToolCaller, stdin *strin
 }
 
 func TestCrossPlatformCoverageSheetFormulaVerifyRejectsNonPositiveLimits(t *testing.T) {
-	if err := executeFormulaVerify(t, &scriptedToolCaller{}, nil,
-		"--node", "n1", "--max-locations-per-error", "0"); err == nil {
-		t.Fatal("max-locations-per-error 0 returned nil")
-	}
-	if err := executeFormulaVerify(t, &scriptedToolCaller{}, nil,
-		"--node", "n1", "--max-cells", "-1"); err == nil {
-		t.Fatal("max-cells -1 returned nil")
+	for _, args := range [][]string{
+		{"--node", "n1", "--max-locations-per-error", "0"},
+		{"--node", "n1", "--max-cells", "-1"},
+	} {
+		err := executeFormulaVerify(t, &scriptedToolCaller{}, nil, args...)
+		if err == nil {
+			t.Fatalf("args %v returned nil", args)
+		}
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason != "invalid_argument" {
+			t.Fatalf("args %v error = %T %#v, want typed validation/invalid_argument", args, err, err)
+		}
 	}
 }
 
@@ -73,6 +78,10 @@ func TestCrossPlatformCoverageSheetFormulaVerifyTargetsFileMissing(t *testing.T)
 	if err == nil || !strings.Contains(err.Error(), "读取 --targets 文件失败") {
 		t.Fatalf("err = %v, want file read failure", err)
 	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason != "input_read_failed" {
+		t.Fatalf("file error = %T %#v, want typed validation/input_read_failed", err, err)
+	}
 }
 
 func TestCrossPlatformCoverageSheetFormulaVerifyTargetsFromStdin(t *testing.T) {
@@ -83,6 +92,18 @@ func TestCrossPlatformCoverageSheetFormulaVerifyTargetsFromStdin(t *testing.T) {
 	}
 	if caller.calls != 1 {
 		t.Fatalf("calls = %d, want 1", caller.calls)
+	}
+}
+
+func TestCrossPlatformCoverageSheetFormulaVerifyRejectsMalformedTargetsAsValidation(t *testing.T) {
+	err := executeFormulaVerify(t, &scriptedToolCaller{}, nil,
+		"--node", "n1", "--targets", "not-json")
+	if err == nil || !strings.Contains(err.Error(), "--targets JSON 解析失败") {
+		t.Fatalf("err = %v, want malformed JSON error", err)
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason != "invalid_json_input" {
+		t.Fatalf("error = %T %#v, want typed validation/invalid_json_input", err, err)
 	}
 }
 
@@ -108,6 +129,10 @@ func TestCrossPlatformCoverageSheetFormulaVerifyTargetsConflict(t *testing.T) {
 		err := executeFormulaVerify(t, &scriptedToolCaller{}, nil, args...)
 		if err == nil || !strings.Contains(err.Error(), "--targets 不能与 --sheet-id 或 --range 同时使用") {
 			t.Fatalf("args %v err = %v, want conflict error", extra, err)
+		}
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason != "invalid_argument" {
+			t.Fatalf("args %v error = %T %#v, want typed validation/invalid_argument", extra, err, err)
 		}
 	}
 }

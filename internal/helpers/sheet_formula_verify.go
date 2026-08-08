@@ -42,14 +42,20 @@ func newSheetFormulaVerifyCmd() *cobra.Command {
 			if cmd.Flags().Changed("max-locations-per-error") {
 				v, _ := cmd.Flags().GetInt("max-locations-per-error")
 				if v <= 0 {
-					return fmt.Errorf("--max-locations-per-error 必须是正整数")
+					return apperrors.NewValidation(
+						"--max-locations-per-error 必须是正整数",
+						apperrors.WithReason("invalid_argument"),
+					)
 				}
 				toolArgs["maxLocationsPerError"] = v
 			}
 			if cmd.Flags().Changed("max-cells") {
 				v, _ := cmd.Flags().GetInt("max-cells")
 				if v <= 0 {
-					return fmt.Errorf("--max-cells 必须是正整数")
+					return apperrors.NewValidation(
+						"--max-cells 必须是正整数",
+						apperrors.WithReason("invalid_argument"),
+					)
 				}
 				toolArgs["maxCells"] = v
 			}
@@ -172,12 +178,18 @@ func formulaVerifyTargetsFromFlags(cmd *cobra.Command) ([]map[string]any, error)
 	rangeStr, _ := cmd.Flags().GetString("range")
 	if v, _ := cmd.Flags().GetString("targets"); v != "" {
 		if strings.TrimSpace(sheetID) != "" || strings.TrimSpace(rangeStr) != "" {
-			return nil, fmt.Errorf("--targets 不能与 --sheet-id 或 --range 同时使用")
+			return nil, apperrors.NewValidation(
+				"--targets 不能与 --sheet-id 或 --range 同时使用",
+				apperrors.WithReason("invalid_argument"),
+			)
 		}
 		return parseFormulaVerifyTargets(cmd, v)
 	}
 	if sheetID == "" && rangeStr != "" {
-		return nil, fmt.Errorf("--range 必须与 --sheet-id 配合使用")
+		return nil, apperrors.NewValidation(
+			"--range 必须与 --sheet-id 配合使用",
+			apperrors.WithReason("invalid_argument"),
+		)
 	}
 	if sheetID != "" {
 		t := map[string]any{"sheetId": sheetID}
@@ -195,19 +207,28 @@ func parseFormulaVerifyTargets(cmd *cobra.Command, raw string) ([]map[string]any
 		filePath := strings.TrimPrefix(raw, "@")
 		content, err := os.ReadFile(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("读取 --targets 文件失败: %w", err)
+			return nil, apperrors.NewValidation(
+				fmt.Sprintf("读取 --targets 文件失败: %v", err),
+				apperrors.WithReason("input_read_failed"),
+			)
 		}
 		data = string(content)
 	} else if raw == "-" {
 		content, err := io.ReadAll(cmd.InOrStdin())
 		if err != nil {
-			return nil, fmt.Errorf("读取 stdin 失败: %w", err)
+			return nil, apperrors.NewValidation(
+				fmt.Sprintf("读取 stdin 失败: %v", err),
+				apperrors.WithReason("input_read_failed"),
+			)
 		}
 		data = string(content)
 	}
 	var targets []map[string]any
 	if err := json.Unmarshal([]byte(data), &targets); err != nil {
-		return nil, fmt.Errorf("--targets JSON 解析失败: %w", err)
+		return nil, apperrors.NewValidation(
+			fmt.Sprintf("--targets JSON 解析失败: %v", err),
+			apperrors.WithReason("invalid_json_input"),
+		)
 	}
 	return targets, nil
 }
