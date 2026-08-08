@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T15:19:53.064528",
-  "count": 378,
+  "generated_at": "2026-08-08T15:22:54.481516",
+  "count": 379,
   "results": [
     {
       "suite": "semantic",
@@ -3177,6 +3177,13 @@
       "command": "+replace-batch",
       "risk": "write",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "oa",
+      "command": "+done-approvals",
+      "risk": "read",
+      "status": "reviewed_available"
     },
     {
       "suite": "read",

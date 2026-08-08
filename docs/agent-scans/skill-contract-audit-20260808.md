@@ -157,21 +157,21 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-ut1_a9g7/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-4f46_aod/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:21:59`
+- generated_at: `2026-08-08T15:24:27`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
 
 | surface | count |
 |---|---:|
-| runtime public | 378 |
-| committed catalog | 378 |
-| Mono Skill total | 378 |
+| runtime public | 379 |
+| committed catalog | 379 |
+| Mono Skill total | 379 |
 
 | service | catalog | Skill |
 |---|---:|---:|
@@ -186,7 +186,7 @@ Documented Python-script flag mismatches: 0
 | `drive` | 7 | 7 |
 | `mail` | 10 | 10 |
 | `minutes` | 7 | 7 |
-| `oa` | 8 | 8 |
+| `oa` | 9 | 9 |
 | `report` | 2 | 2 |
 | `sheet` | 2 | 2 |
 | `todo` | 11 | 11 |
@@ -200,7 +200,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-ut1_a9g7/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-4f46_aod/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -214,10 +214,10 @@ Documented Python-script flag mismatches: 0
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 378 |
-| exclusion（public=false） | 37 |
+| public=true | 379 |
+| exclusion（public=false） | 36 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 33 |
+| 未 review 的 exclusion | 32 |
 
 ## 逐条队列
 
@@ -251,7 +251,6 @@ Documented Python-script flag mismatches: 0
 | `minutes` | `+record-stop` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+transcript` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `oa` | `+approve-by` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `oa` | `+done-approvals` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `report` | `+report-latest` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `todo` | `+due-today` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `todo` | `+related-tasks` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
@@ -274,7 +273,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1140 executable command paths)
+skill command integrity check: ok (1141 executable command paths)
 ```
 
 ## 解释边界

@@ -879,6 +879,7 @@ dws oa approval create-instance --request '{"processCode":"PROC-xxx","deptId":-1
 
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
+| `dws oa +done-approvals` | read | 只读列出我已处理过的审批任务（审批历史）并投影为可读列表 |
 | `dws oa +list-cc` | read | 获取抄送当前用户的审批单列表 |
 | `dws oa +list-executed` | read | 获取当前用户已经处理过的审批单列表 |
 | `dws oa +list-forms` | read | 获取当前用户可见的审批表单列表 |

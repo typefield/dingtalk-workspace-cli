@@ -60,6 +60,9 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # Reviewed read-only approval inbox projection with explicit
     # Contract/Safety and bounded 90-day lookup.
     ("oa", "+pending"): "read",
+    # Reviewed read-only approval-history projection with explicit
+    # Contract/Safety and stable title/instance/time fields.
+    ("oa", "+done-approvals"): "read",
 }
 
 
