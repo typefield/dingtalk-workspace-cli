@@ -7,7 +7,7 @@
 ## 背景
 
 Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有统一运行时接口。
-当前工作树的 Agent 扫描结果（口径必须区分文件、入口和 Help 可观测能力）：
+当前工作树的 Agent 扫描结果（2026-08-08；口径必须区分文件、入口和 Help 可观测能力）。这些数字是扫描快照，后续以 Agent 重跑结果为准：
 
 | 口径 | 数量 | 定义 |
 |------|------|------|
@@ -174,6 +174,17 @@ python3 scripts/agent/scan_mono_script_contract.py \
   --strict-rfc --strict-flags \
   --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
 ```
+
+如需一次性复核 Mono、Multi 和 Shortcut 三类 Skill surface，可运行：
+
+```bash
+python3 scripts/agent/run_skill_contract_audit.py \
+  --output docs/agent-scans/skill-contract-audit-YYYYMMDD.md
+```
+
+编排器只汇总可读 Markdown/text 证据，不接入 CI，也不保存 JSON fixture；Help 对账、
+Skill 参数对拍、运行时目录集合和 dry-run 副作用仍须在报告中分开标注，不能把总审计
+通过解读成真实后端写入安全已被证明。
 
 对高风险写入口，另有 `scripts/agent/probe_mono_dry_run.py` 使用临时 HOME、临时工作区
 和假的 `dws` 子进程做受控探针。它目前覆盖 7 个深层门控 fixture；报告中的 `PASS`
