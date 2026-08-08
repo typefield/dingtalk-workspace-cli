@@ -27,9 +27,12 @@ import sys
 import json
 import subprocess
 import re
+import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
+
+from _runtime import add_contract_flags, emit, failure
 
 ALLOWED_PRIORITIES = {10, 20, 30, 40}
 DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -38,25 +41,25 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 def run_dws(
     args: List[str], dry_run: bool = False,
-) -> Optional[Dict[str, Any]]:
+) -> tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
-        return {'dry_run': True}
+        return True, {'command': cmd, 'dry_run': True}, None
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60
         )
         if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}")
-            return None
-        return json.loads(result.stdout)
+            return False, None, result.stderr.strip() or f"dws exited {result.returncode}"
+        payload = json.loads(result.stdout)
+        if isinstance(payload, dict) and payload.get('ok') is False:
+            error = payload.get('error') or {'type': 'api', 'message': 'dws returned failure'}
+            return False, payload, str(error)
+        return True, payload, None
     except subprocess.TimeoutExpired:
-        print('  ✗ 命令执行超时', file=sys.stderr)
-        return None
+        return False, None, '命令执行超时'
     except (json.JSONDecodeError, FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}", file=sys.stderr)
-        return None
+        return False, None, str(e)
 
 
 def parse_due(due_value) -> Optional[str]:
@@ -69,60 +72,61 @@ def parse_due(due_value) -> Optional[str]:
         dt = datetime.strptime(due_str, '%Y-%m-%d')
         dt = dt.replace(hour=23, minute=59, second=59)
         return str(int(dt.timestamp() * 1000))
-    print(f"  ⚠ 无法解析截止时间：{due_value}，跳过")
+    print(f"  ⚠ 无法解析截止时间：{due_value}，跳过", file=sys.stderr)
     return None
 
 
 def validate_todo(item: Dict[str, Any], idx: int) -> bool:
     if not isinstance(item, dict):
-        print(f"  ✗ #{idx+1} 不是有效对象")
+        print(f"  ✗ #{idx+1} 不是有效对象", file=sys.stderr)
         return False
     if not item.get('title', '').strip():
-        print(f"  ✗ #{idx+1} 缺少 title")
+        print(f"  ✗ #{idx+1} 缺少 title", file=sys.stderr)
         return False
     if not item.get('executors', '').strip():
-        print(f"  ✗ #{idx+1} 缺少 executors")
+        print(f"  ✗ #{idx+1} 缺少 executors", file=sys.stderr)
         return False
     priority = item.get('priority')
     if priority is not None and int(priority) not in ALLOWED_PRIORITIES:
-        print(f"  ✗ #{idx+1} 无效优先级：{priority}")
+        print(f"  ✗ #{idx+1} 无效优先级：{priority}", file=sys.stderr)
         return False
     recurrence = item.get('recurrence')
     if recurrence and not str(recurrence).strip():
-        print(f"  ✗ #{idx+1} recurrence 不能为空字符串")
+        print(f"  ✗ #{idx+1} recurrence 不能为空字符串", file=sys.stderr)
         return False
     if recurrence and not item.get('due'):
-        print(f"  ✗ #{idx+1} 设置 recurrence 时必须提供 due")
+        print(f"  ✗ #{idx+1} 设置 recurrence 时必须提供 due", file=sys.stderr)
         return False
     return True
 
 
-def main():
-    dry_run = '--dry-run' in sys.argv
-    args = [a for a in sys.argv[1:] if a != '--dry-run']
-    if not args:
-        print(__doc__)
-        sys.exit(1)
+def main() -> int:
+    parser = argparse.ArgumentParser(description='从 JSON 文件批量创建待办')
+    parser.add_argument('input', help='待办 JSON 文件')
+    add_contract_flags(parser)
+    args = parser.parse_args()
 
-    file_path = Path(args[0])
+    file_path = Path(args.input)
     if not file_path.exists():
-        print(f"错误：文件不存在：{file_path}")
-        sys.exit(1)
+        return failure(args.format, f"文件不存在：{file_path}")
     if file_path.stat().st_size > MAX_FILE_SIZE:
-        print(f"错误：文件过大 (限制 {MAX_FILE_SIZE // 1024}KB)")
-        sys.exit(1)
+        return failure(args.format, f"文件过大 (限制 {MAX_FILE_SIZE // 1024}KB)")
 
-    with open(file_path, 'r', encoding='utf-8') as f:
-        todos = json.load(f)
+    try:
+        with open(file_path, 'r', encoding='utf-8') as f:
+            todos = json.load(f)
+    except (OSError, json.JSONDecodeError) as exc:
+        return failure(args.format, f"无法读取待办 JSON：{exc}")
     if not isinstance(todos, list) or not todos:
-        print('错误：JSON 文件必须是非空数组')
-        sys.exit(1)
+        return failure(args.format, 'JSON 文件必须是非空数组')
 
     for i, item in enumerate(todos):
         if not validate_todo(item, i):
-            sys.exit(1)
+            return failure(args.format, f'第 {i + 1} 条待办参数无效')
 
-    print(f"📋 准备创建 {len(todos)} 条待办\n")
+    if args.format == 'text':
+        print(f"📋 准备创建 {len(todos)} 条待办\n")
+    records: list[dict[str, Any]] = []
     success, fail = 0, 0
     for i, item in enumerate(todos):
         title = item['title'].strip()
@@ -143,17 +147,39 @@ def main():
             rr = str(recurrence).replace('\\n', '\n')
             cmd_args.extend(['--recurrence', rr])
 
-        result = run_dws(cmd_args, dry_run=dry_run)
-        if result:
-            print(f"  ✓ [{i+1}/{len(todos)}] {title}")
+        succeeded, result, error = run_dws(cmd_args, dry_run=args.dry_run)
+        record: dict[str, Any] = {'index': i + 1, 'title': title, 'command': cmd_args}
+        if succeeded:
+            record.update({'ok': True, 'outcome': 'success', 'result': result})
+            if args.format == 'text':
+                print(f"  ✓ [{i+1}/{len(todos)}] {title}")
             success += 1
         else:
-            print(f"  ✗ [{i+1}/{len(todos)}] {title}")
+            record.update({'ok': False, 'outcome': 'failure', 'error': {'type': 'api', 'message': error or 'unknown error'}})
+            if args.format == 'text':
+                print(f"  ✗ [{i+1}/{len(todos)}] {title}", file=sys.stderr)
             fail += 1
+        records.append(record)
 
-    print(f"\n完成: 成功 {success}, 失败 {fail}")
-    sys.exit(0 if fail == 0 else 1)
+    if args.format == 'text':
+        print(f"\n完成: 成功 {success}, 失败 {fail}")
+    if fail == 0:
+        outcome = 'success'
+    elif success > 0:
+        outcome = 'partial_failure'
+    else:
+        outcome = 'failure'
+    data = {'total': len(records), 'success_count': success, 'failure_count': fail, 'items': records}
+    if args.format == 'text':
+        return 0 if outcome == 'success' else 7 if outcome == 'partial_failure' else 1
+    return emit(
+        fmt=args.format,
+        outcome=outcome,
+        data=data,
+        dry_run=args.dry_run,
+        items=records,
+    )
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

@@ -9,10 +9,12 @@
 Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有统一运行时接口。
 当前工作树的 Agent 扫描结果：
 
-- 34 个 Python 脚本逐个执行 `--help`；
-- 19 个 Help 暴露脚本级 `--dry-run`；
-- 只有 1 个 Help 暴露脚本级 `--format`；
-- 7 个脚本在没有业务参数时 `--help` 返回非零；
+- 34 个可执行 Python 脚本逐个执行 `--help`；
+- 第一阶段迁移前 19 个 Help 暴露脚本级 `--dry-run`，只有 1 个 Help 暴露脚本级
+  `--format`，7 个脚本在没有业务参数时 `--help` 返回非零；
+- 当前已迁移 `todo_batch_create.py`、`aitable_import_via_task.py` 和
+  `upload_attachment.py`，实际扫描结果为 22 个 dry-run、3 个 format、5 个
+  help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
 因此“所有脚本支持 `--dry-run/--format json`”不是当前事实。短期已删除这一
@@ -82,6 +84,9 @@ scripts/_runtime.py
 先迁移 `aitable_import_via_task.py`、`aitable_export_via_task.py`、
 `doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
 `oa_batch_approve.py`、`todo_batch_create.py`。
+
+当前 pilot 已完成 `todo_batch_create.py`、`aitable_import_via_task.py` 和
+`upload_attachment.py`；其余脚本继续按阶段一逐个迁移。
 
 验收重点是 dry-run 零写入、部分失败逐项保留、失败退出码和重试安全。
 

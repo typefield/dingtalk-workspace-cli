@@ -20,6 +20,7 @@
 
 import sys
 import json
+import argparse
 import subprocess
 import os
 import mimetypes
@@ -28,6 +29,8 @@ from pathlib import Path
 from typing import Optional, Dict, Any
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
+
+from _runtime import add_contract_flags, emit, failure
 
 RESOURCE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{8,128}$')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
@@ -84,7 +87,7 @@ def upload_to_oss(upload_url: str, file_path: Path, mime_type: str) -> bool:
         return False
 
 
-def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, Any]]:
+def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False) -> Optional[Dict[str, Any]]:
     """
     执行完整的附件上传流程:
       1. prepare_attachment_upload → uploadUrl + fileToken
@@ -121,6 +124,15 @@ def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, An
         '--mime-type', mime_type,
         '--format', 'json',
     ]
+    if dry_run:
+        return {
+            "baseId": base_id,
+            "fileName": file_name,
+            "size": file_size,
+            "mimeType": mime_type,
+            "steps": ["prepare_attachment_upload", "PUT uploadUrl", "return fileToken"],
+            "request": dws_args,
+        }
     result = run_dws(dws_args)
     if not result:
         return None
@@ -156,35 +168,31 @@ def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, An
     return output
 
 
-def main():
-    if len(sys.argv) != 3:
-        print(__doc__)
-        print('用法:')
-        print('  python upload_attachment.py <baseId> <filePath>')
-        print()
-        print('示例:')
-        print('  python upload_attachment.py G1DKw2zgV2bEk6PMSBooNxlEVB5r9YAn ./report.pdf')
-        print()
-        print('然后在 record create 中使用返回的 fileToken:')
-        print('  dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \\')
-        print('    --records \'[{"cells":{"fldAttachId":[{"fileToken":"ft_xxx"}]}}]\' --format json')
-        sys.exit(1)
+def main() -> int:
+    parser = argparse.ArgumentParser(description="上传附件到钉钉 AI 表格 attachment 字段")
+    parser.add_argument("base_id", help="目标 AI 表格 baseId")
+    parser.add_argument("file_path", help="待上传文件路径")
+    add_contract_flags(parser)
+    args = parser.parse_args()
 
-    base_id = sys.argv[1]
-    file_path = sys.argv[2]
+    base_id = args.base_id
+    file_path = args.file_path
 
     if not validate_resource_id(base_id):
-        print('错误：无效的 baseId 格式', file=sys.stderr)
-        sys.exit(1)
+        return failure(args.format, '无效的 baseId 格式')
 
-    result = upload_attachment(base_id, file_path)
+    result = upload_attachment(base_id, file_path, dry_run=args.dry_run)
     if result is None:
-        sys.exit(1)
+        return failure(args.format, '附件上传失败，请查看 stderr 中的步骤诊断')
 
-    # 正常输出到 stdout（JSON 格式，方便解析）
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-    sys.exit(0)
+    return emit(
+        fmt=args.format,
+        outcome='success',
+        data=result,
+        dry_run=args.dry_run,
+        text=json.dumps(result, ensure_ascii=False, indent=2),
+    )
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

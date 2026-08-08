@@ -24,6 +24,8 @@ from typing import Any, Dict, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
+from _runtime import add_contract_flags, emit, failure
+
 RESOURCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
 
@@ -68,32 +70,43 @@ def put_file(upload_url: str, file_path: Path) -> Tuple[bool, str]:
         return False, f"URL error: {e.reason}"
 
 
-def fail(msg: str, exit_code: int = 1) -> None:
-    print(f"错误：{msg}", file=sys.stderr)
-    sys.exit(exit_code)
-
-
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="通过文件导入任务导入 AI 表格")
     parser.add_argument("base_id", help="目标 AI 表格 baseId")
     parser.add_argument("file_path", help="待导入文件路径（.csv/.xlsx/.xls）")
     parser.add_argument("--timeout-sec", type=int, default=300, help="CLI 内置轮询整体超时（秒），默认 300（5 分钟）")
     parser.add_argument("--dws", default="dws", help="dws 可执行文件路径，默认 dws")
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     base_id = args.base_id.strip()
     file_path = Path(args.file_path).expanduser().resolve()
 
     if not validate_resource_id(base_id):
-        fail("无效的 baseId 格式")
+        return failure(args.format, "无效的 baseId 格式")
     if not file_path.exists() or not file_path.is_file():
-        fail(f"文件不存在或不可读: {file_path}")
+        return failure(args.format, f"文件不存在或不可读: {file_path}")
     if file_path.suffix.lower() not in ALLOWED_EXTENSIONS:
-        fail(f"仅支持 {sorted(ALLOWED_EXTENSIONS)}，当前文件: {file_path.name}")
+        return failure(args.format, f"仅支持 {sorted(ALLOWED_EXTENSIONS)}，当前文件: {file_path.name}")
 
     file_size = file_path.stat().st_size
     if file_size <= 0:
-        fail("文件为空")
+        return failure(args.format, "文件为空")
+
+    plan = {
+        "baseId": base_id,
+        "fileName": file_path.name,
+        "fileSize": file_size,
+        "steps": ["prepare_import_upload", "PUT uploadUrl", "import_data"],
+    }
+    if args.dry_run:
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data=plan,
+            dry_run=True,
+            text="\n".join(f"[dry-run] {step}" for step in plan["steps"]),
+        )
 
     print(f"[1/3] prepare import upload: {file_path.name} ({file_size} bytes)", file=sys.stderr)
     rc, out, err = run_dws(
@@ -113,23 +126,23 @@ def main() -> None:
         ],
     )
     if rc != 0:
-        fail(f"prepare_import_upload 失败: {err or out}", rc)
+        return failure(args.format, f"prepare_import_upload 失败: {err or out}")
     prepare_obj = parse_json_output(out)
     if not prepare_obj:
-        fail(f"prepare_import_upload 返回非 JSON: {out[:300]}")
+        return failure(args.format, f"prepare_import_upload 返回非 JSON: {out[:300]}")
     if prepare_obj.get("status") != "success":
-        fail(f"prepare_import_upload 返回失败: {json.dumps(prepare_obj, ensure_ascii=False)}")
+        return failure(args.format, f"prepare_import_upload 返回失败: {json.dumps(prepare_obj, ensure_ascii=False)}")
 
     pdata = prepare_obj.get("data") or {}
     upload_url = pdata.get("uploadUrl")
     import_id = pdata.get("importId")
     if not upload_url or not import_id:
-        fail(f"prepare_import_upload 缺少 uploadUrl/importId: {json.dumps(pdata, ensure_ascii=False)}")
+        return failure(args.format, f"prepare_import_upload 缺少 uploadUrl/importId: {json.dumps(pdata, ensure_ascii=False)}")
 
     print("[2/3] upload file bytes via PUT", file=sys.stderr)
     ok, put_err = put_file(upload_url, file_path)
     if not ok:
-        fail(f"PUT 上传失败: {put_err}")
+        return failure(args.format, f"PUT 上传失败: {put_err}")
 
     print("[3/3] trigger import_data", file=sys.stderr)
     rc2, out2, err2 = run_dws(
@@ -150,10 +163,10 @@ def main() -> None:
         timeout_sec=max(120, args.timeout_sec + 30),
     )
     if rc2 != 0:
-        fail(f"import_data 调用失败: {err2 or out2}", rc2)
+        return failure(args.format, f"import_data 调用失败: {err2 or out2}")
     import_obj = parse_json_output(out2)
     if not import_obj:
-        fail(f"import_data 返回非 JSON: {out2[:300]}")
+        return failure(args.format, f"import_data 返回非 JSON: {out2[:300]}")
 
     result = {
         "baseId": base_id,
@@ -165,11 +178,15 @@ def main() -> None:
         "data": import_obj.get("data", {}),
         "error": import_obj.get("error", {}),
     }
-    print(json.dumps(result, ensure_ascii=False, indent=2))
-
     if import_obj.get("status") != "success":
-        sys.exit(2)
+        return emit(
+            fmt=args.format,
+            outcome="failure",
+            data=result,
+            error={"type": "api", "message": "import_data 返回失败"},
+        )
+    return emit(fmt=args.format, outcome="success", data=result, text=json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
