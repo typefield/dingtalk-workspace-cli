@@ -37,6 +37,13 @@ var (
 		"dws minutes transcription": true,
 		"dws report inbox":          true,
 	}
+	// These are intentionally retained as badcase examples in the published
+	// Skill. They must not be treated as executable recipes, even though their
+	// parent command exists and the checker can otherwise resolve that path.
+	antiReferences = map[string]bool{
+		"dws minutes get --uuid <uuid>":      true,
+		"dws minutes get --task-uuid <uuid>": true,
+	}
 )
 
 type commandRef struct {
@@ -73,8 +80,8 @@ func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
 	var failures []string
 	checked := map[string]bool{}
 	for _, ref := range refs {
-		path, _, skip := parseReference(ref.Text)
-		if skip || path == "" || antiCommands[path] {
+		path, flags, skip := parseReference(ref.Text)
+		if skip || path == "" || antiCommands[path] || antiReferences[strings.TrimSpace(ref.Text)] {
 			continue
 		}
 		if issue := schemaProjectionIssue(ref.Text); issue != "" {
@@ -92,6 +99,10 @@ func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
 			failures = append(failures, formatFailure(rootPath, ref, "command path does not exist"))
 			continue
 		case resolutionValid:
+			if issue := validateReferenceFlags(root, path, flags); issue != "" {
+				failures = append(failures, formatFailure(rootPath, ref, issue))
+				continue
+			}
 			checked[path] = true
 		}
 	}
@@ -285,6 +296,33 @@ func resolveCommandReference(root *cobra.Command, path string) commandResolution
 		return resolutionSkip
 	}
 	return resolutionInvalid
+}
+
+// validateReferenceFlags checks the flags that a published recipe explicitly
+// passes against the same Cobra leaf used for path resolution. Path-only
+// checks are insufficient: a hidden/deprecated alias may keep executing while
+// a recipe's canonical flag has already drifted or been removed. We accept
+// hidden flags here because they remain valid compatibility inputs; the
+// semantic Agent review can separately enforce which spelling is documented.
+func validateReferenceFlags(root *cobra.Command, path string, flags []string) string {
+	if len(flags) == 0 {
+		return ""
+	}
+	cmd, remaining, err := root.Find(strings.Fields(strings.TrimPrefix(path, "dws ")))
+	if err != nil || cmd == nil || len(remaining) > 0 {
+		return ""
+	}
+	for _, name := range flags {
+		// Cobra installs --help lazily on command execution; it is valid for
+		// every command even when Lookup has not materialized the flag yet.
+		if name == "help" {
+			continue
+		}
+		if cmd.Flags().Lookup(name) == nil && cmd.InheritedFlags().Lookup(name) == nil && cmd.PersistentFlags().Lookup(name) == nil {
+			return fmt.Sprintf("flag --%s is not accepted by the command (run leaf --help)", name)
+		}
+	}
+	return ""
 }
 
 func isPlaceholder(token string) bool {

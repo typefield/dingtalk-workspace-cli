@@ -87,6 +87,7 @@ fmt:
 policy: test-auth-legacy-compat
 	@mkdir -p "$(POLICY_GOTMPDIR)"
 	@$(POLICY_ENV) ./scripts/policy/check-open-source-assets.sh
+	@$(POLICY_ENV) ./scripts/policy/check-skill-commands.sh
 	@$(POLICY_ENV) ./scripts/policy/check-skill-context-budget.sh
 	@$(POLICY_ENV) ./scripts/policy/check-multi-im-skill-chain.sh
 	@python3 scripts/run_chat_shortcut_live_audit_test.py

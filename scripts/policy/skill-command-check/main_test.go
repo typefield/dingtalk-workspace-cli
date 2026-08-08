@@ -157,6 +157,23 @@ func TestResolveCommandReference(t *testing.T) {
 	}
 }
 
+func TestValidateReferenceFlags(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	auth := &cobra.Command{Use: "auth"}
+	login := &cobra.Command{Use: "login"}
+	login.Flags().String("profile", "", "profile")
+	auth.AddCommand(login)
+	root.PersistentFlags().String("format", "json", "output format")
+	root.AddCommand(auth)
+
+	if got := validateReferenceFlags(root, "dws auth login", []string{"profile", "format"}); got != "" {
+		t.Fatalf("valid flags rejected: %s", got)
+	}
+	if got := validateReferenceFlags(root, "dws auth login", []string{"missing"}); !strings.Contains(got, "--missing") {
+		t.Fatalf("missing flag not detected: %q", got)
+	}
+}
+
 func TestIsPlaceholder(t *testing.T) {
 	for _, token := range []string{"<cmd>", "<子命令>", "[optional]"} {
 		if !isPlaceholder(token) {
