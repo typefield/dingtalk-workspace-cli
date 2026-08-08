@@ -57,6 +57,9 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # Reviewed read-only calendar availability lookup with explicit
     # Contract/Safety and stable {roomId,name,capacity} projection.
     ("calendar", "+find-room"): "read",
+    # Reviewed read-only approval inbox projection with explicit
+    # Contract/Safety and bounded 90-day lookup.
+    ("oa", "+pending"): "read",
 }
 
 

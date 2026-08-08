@@ -16,6 +16,8 @@ package smart
 import (
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
@@ -50,6 +52,31 @@ var PendingApprovals = shortcut.Shortcut{
 		"这是纯只读操作，只做列出与本地投影，绝不会同意、拒绝或以任何方式提交/修改审批（要一键通过请改用 `dws oa +approve-by`）；" +
 		"若当前没有待你审批的任务则提示「当前没有待我审批的任务」。",
 	Risk: shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "oa",
+			Name:           "shortcut_pending",
+			CanonicalPath:  "oa.shortcut_pending",
+			CLIPath:        "oa +pending",
+			PrimaryCLIPath: "oa +pending",
+		},
+		Description: "只读列出待我审批的审批任务并投影为可读列表（只看不批）",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns the bounded date window, list projection and read-only safety; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "只读列出待我审批的审批任务并投影为可读列表（只看不批）",
+			UseWhen:      []string{"当你只想快速看一眼「待我审批」的审批任务清单——每条的标题、发起人、审批实例 ID 和创建时间——而不想拿到一大坨原始字段时使用；内部拉取你近三个月待处理的审批单，再在本地投影出可读字段。这是纯只读操作，只做列出与本地投影，绝不会同意、拒绝或以任何方式提交/修改审批（要一键通过请改用 `dws oa +approve-by`）；若当前没有待你审批的任务则提示「当前没有待我审批的任务」。"},
+			AvoidWhen:    []string{"需要同意、拒绝或修改审批时，改用带确认门禁的审批写命令；需要原始审批字段时，改用对应原子查询"},
+			Examples:     []string{"dws oa +pending", "dws oa +pending --limit 10"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "最多列出多少条（可选）", Required: false},
 	},

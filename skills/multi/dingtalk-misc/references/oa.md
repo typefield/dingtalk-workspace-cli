@@ -885,6 +885,7 @@ dws oa approval create-instance --request '{"processCode":"PROC-xxx","deptId":-1
 | `dws oa +list-pending` | read | 查询待我处理的审批（时间范围为 epoch 毫秒） |
 | `dws oa +list-submitted` | read | 获取当前用户已发起的审批单列表 |
 | `dws oa +my-initiated` | read | 列出我发起（提交）的审批单据 |
+| `dws oa +pending` | read | 只读列出待我审批的审批任务并投影为可读列表（只看不批） |
 | `dws oa +search-forms` | read | 按关键字模糊搜索当前用户可见的审批表单 |
 <!-- VISIBLE_SHORTCUTS_END -->
 

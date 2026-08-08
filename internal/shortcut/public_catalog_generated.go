@@ -365,6 +365,7 @@ func generatedPublicShortcutCatalog() map[string]struct{} {
 		"oa\u0000+list-pending":                         {},
 		"oa\u0000+list-submitted":                       {},
 		"oa\u0000+my-initiated":                         {},
+		"oa\u0000+pending":                              {},
 		"oa\u0000+search-forms":                         {},
 		"report\u0000+inbox-list":                       {},
 		"report\u0000+outbox-list":                      {},
