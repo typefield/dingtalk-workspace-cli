@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T15:34:15.298475",
-  "count": 381,
+  "generated_at": "2026-08-08T15:49:15.299830",
+  "count": 383,
   "results": [
     {
       "suite": "semantic",
@@ -3291,6 +3291,13 @@
       "status": "real-ok"
     },
     {
+      "suite": "reviewed_contract",
+      "service": "todo",
+      "command": "+due-today",
+      "risk": "read",
+      "status": "reviewed_available"
+    },
+    {
       "suite": "read",
       "service": "todo",
       "command": "+get",
@@ -3331,6 +3338,13 @@
       "command": "+overdue",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "todo",
+      "command": "+related-tasks",
+      "risk": "read",
+      "status": "reviewed_available"
     },
     {
       "suite": "write",

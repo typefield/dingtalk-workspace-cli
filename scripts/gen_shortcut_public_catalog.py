@@ -69,6 +69,11 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # Reviewed read-only semantic resolver: it never guesses among multiple
     # wiki spaces and returns explicit candidates for Agent/user disambiguation.
     ("wiki", "+resolve-space"): "read",
+    # Reviewed read-only todo aggregation shortcuts. Both enumerate and
+    # project cards only; empty results are successful empty lists rather than
+    # validation failures, so Agents can distinguish "no data" from errors.
+    ("todo", "+related-tasks"): "read",
+    ("todo", "+due-today"): "read",
 }
 
 

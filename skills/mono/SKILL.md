@@ -59,7 +59,7 @@ cli_version: ">=1.0.15"
 | `oa` | 9 | `dingtalk-misc` |
 | `report` | 2 | `dingtalk-misc` |
 | `sheet` | 2 | `dingtalk-misc` |
-| `todo` | 11 | `dingtalk-todo` |
+| `todo` | 13 | `dingtalk-todo` |
 | `wiki` | 4 | `dingtalk-wiki` |
 <!-- VISIBLE_SHORTCUTS_OVERVIEW_END -->
 

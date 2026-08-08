@@ -9,10 +9,10 @@
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 381 |
-| exclusion（public=false） | 34 |
+| public=true | 383 |
+| exclusion（public=false） | 32 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 30 |
+| 未 review 的 exclusion | 28 |
 
 ## 逐条队列
 
@@ -47,8 +47,6 @@
 | `minutes` | `+transcript` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `oa` | `+approve-by` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `report` | `+report-latest` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `todo` | `+due-today` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `todo` | `+related-tasks` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+node-copy` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+node-move` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+wiki-new-doc` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
