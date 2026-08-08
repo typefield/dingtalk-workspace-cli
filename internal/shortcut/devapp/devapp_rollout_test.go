@@ -10,6 +10,34 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
+func TestDevAppProjectedListsPreservePaginationEvidence(t *testing.T) {
+	tests := []struct {
+		name   string
+		source map[string]any
+	}{
+		{name: "top level", source: map[string]any{"hasMore": true, "nextCursor": "next-1"}},
+		{name: "nested result", source: map[string]any{"result": map[string]any{"hasMore": false}}},
+		{name: "nested page info", source: map[string]any{"data": map[string]any{"pageInfo": map[string]any{"hasMore": true, "nextCursor": "next-2"}}}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			projected := projectDevAppPage(tt.source, map[string]any{"count": 1, "items": []any{map[string]any{"id": "item-1"}}})
+			if got, ok := projected["hasMore"].(bool); !ok {
+				t.Fatalf("hasMore missing from projection: %#v", projected)
+			} else if got != (tt.name != "nested result") {
+				t.Fatalf("hasMore=%v, want fixture value", got)
+			}
+			if tt.name != "nested result" {
+				if projected["nextCursor"] == nil {
+					t.Fatalf("nextCursor missing from projection: %#v", projected)
+				}
+			} else if _, exists := projected["nextCursor"]; exists {
+				t.Fatalf("unexpected nextCursor for exhausted page: %#v", projected)
+			}
+		})
+	}
+}
+
 func TestDevAppShortcutsRollOutPerTerminalCommand(t *testing.T) {
 	active := map[string]bool{
 		"+get": true, "+credentials-get": true, "+webapp-get": true,

@@ -139,7 +139,7 @@ var ListApp = shortcut.Shortcut{
 			return err
 		}
 		apps := listAppProject(data)
-		return rt.Output(map[string]any{"count": len(apps), "apps": apps})
+		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(apps), "apps": apps}))
 	},
 }
 
@@ -215,6 +215,41 @@ func listAppFirst(m map[string]any, keys ...string) (any, bool) {
 		}
 	}
 	return nil, false
+}
+
+// projectDevAppPage keeps pagination evidence alongside a projected list.
+// The upstream devapp adapters have returned page fields both at the top
+// level and under result/data across versions.  Dropping these fields while
+// reshaping items makes a non-final page indistinguishable from a complete
+// result, so preserve only the pagination facts needed by the unified output
+// mapper.  Never synthesize hasMore or a cursor.
+func projectDevAppPage(source map[string]any, projected map[string]any) map[string]any {
+	if projected == nil {
+		projected = map[string]any{}
+	}
+	var visit func(map[string]any, int)
+	visit = func(m map[string]any, depth int) {
+		if m == nil || depth > 3 {
+			return
+		}
+		if _, exists := projected["hasMore"]; !exists {
+			if value, ok := m["hasMore"].(bool); ok {
+				projected["hasMore"] = value
+			}
+		}
+		if _, exists := projected["nextCursor"]; !exists {
+			if value, ok := m["nextCursor"].(string); ok && strings.TrimSpace(value) != "" {
+				projected["nextCursor"] = value
+			}
+		}
+		for _, key := range []string{"result", "data", "content", "pageInfo", "pagination"} {
+			if nested, ok := m[key].(map[string]any); ok {
+				visit(nested, depth+1)
+			}
+		}
+	}
+	visit(source, 0)
+	return projected
 }
 
 // GetApp maps helper `get_dev_app`.
@@ -672,7 +707,7 @@ var PermissionList = shortcut.Shortcut{
 			return err
 		}
 		permissions := permissionListProject(data)
-		return rt.Output(map[string]any{"count": len(permissions), "permissions": permissions})
+		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(permissions), "permissions": permissions}))
 	},
 }
 
@@ -1150,7 +1185,7 @@ var EventList = shortcut.Shortcut{
 			return err
 		}
 		events := eventListProject(data)
-		return rt.Output(map[string]any{"count": len(events), "events": events})
+		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(events), "events": events}))
 	},
 }
 
@@ -1337,7 +1372,7 @@ var VersionList = shortcut.Shortcut{
 			return err
 		}
 		versions := versionListProject(data)
-		return rt.Output(map[string]any{"count": len(versions), "versions": versions})
+		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(versions), "versions": versions}))
 	},
 }
 

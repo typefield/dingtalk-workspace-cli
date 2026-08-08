@@ -23,6 +23,7 @@
 | 全域影子 shortcut 扫描 | **未关闭** | attendance 已完成，但真实测试跟进清单仍有 156 条；其中包含真实后端报错，也包含尚未完成稳定接口/安全审阅的命令，不能一键公开。公开状态与真实调用结果是两个维度，不能因完成 Contract 审阅而删除失败证据 | 按产品逐条 Agent 审阅；写命令先审 Safety/dry-run，再决定公开或删除 |
 | mail Schema 仅 41/68，缺不可逆命令 | **代码已修** | 当前 `schema mail` 返回 73 个工具，包含 `mail.recall_sent_message` 与 `mail.trash_mailbox_thread`；全局 Schema/Help/运行时门禁同源检查通过 | 以当前版本重新做“可执行叶子 vs Schema”全量对拍，避免沿用旧 68 基线 |
 | 12 条读命令 12 种 JSON 信封 | **框架已接入，渐进迁移中** | Framework 2.0 已提供统一 `ok/outcome/data/error/meta`、强类型布尔、单 writer、partial/pending；不公开协议选择参数，不输出版本标记 | legacy 命令按 terminal command 继续迁移；不得把迁移责任交给 Agent |
+| devapp shortcut 列表分页投影丢失 | **代码已修，待端到端复验** | `+list`、`+permission-list`、`+event-list`、`+version-list` 保留上游 `hasMore/nextCursor`，统一映射到分页 meta；单元测试覆盖顶层、嵌套 result/pageInfo 形状 | 用真实 devapp 账号验证续翻、末页和矛盾分页字段；同步对拍 `dev` 原子命令与 `devapp` shortcut |
 | mail `success` 字段 string/bool 分裂 | **已关闭（JSON 输出路径）** | Mail JSON 输出会递归把键名严格等于 `success` 的 `"true"`/`"false"` 归一为 Go bool；不转换其他键或普通文本。端到端 helper 输出测试覆盖顶层、嵌套和数组 | 发布后二进制抽取报告同组 14 个样本，确认后端新增响应形状仍经过该 JSON 出口 |
 | mail `--size` 等隐藏别名在 Skill 中被当作公开契约 | **已关闭（当前工作树）** | Help/Schema/Skill 按命令统一：消息列表公开 `--folder-id`，文件夹列表公开 `--folder`，相关命令公开 `--limit`/`--content`/`--from`；`--size`/`--page-size`/`--body`/`--sender` 及反向 folder 别名仅作隐藏兼容。mono/multi 脚本对子进程传 canonical flag，且可解包 legacy/v2 结果容器 | 发布前用 Agent 语义扫描继续检查其他 Mail 兼容 flag，不将隐参数重新暴露给 Agent |
 | `retryable` 与实际重试反向、超时盲重放 | **框架已修，待产品回归** | transport 对执行状态不明确的写调用不再自动重放；错误恢复元数据和 context deadline 已进入统一路径 | 对幂等读、限流、写后超时分别做真实链路复验 |
