@@ -1187,7 +1187,7 @@ func eventStopOutcomeResult(message string, succeeded, failed []string, stage st
 func eventStopPartialError(c *cobra.Command, message string, cause error, succeeded, failed []string, stage string) error {
 	details := eventStopPartialDetails(succeeded, failed, stage)
 	legacy := apperrors.NewAPI(message,
-		apperrors.WithReason("partial_failure"),
+		apperrors.WithSubtype(apperrors.SubtypePartialFailure),
 		apperrors.WithDetails(details),
 		apperrors.WithRetryable(false),
 		apperrors.WithHint("部分订阅已处理，先运行 event status 核对状态后再决定是否重试"),

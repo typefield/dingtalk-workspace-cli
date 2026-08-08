@@ -84,10 +84,14 @@ func toolbarConversationID(cmd *cobra.Command) (string, error) {
 }
 
 func toolbarNewSystemBusyError() error {
-	return apperrors.NewValidation(
-		"服务端繁忙（SYSTEM_BUSY），请稍后重试",
-		apperrors.WithReason("system_busy"),
-		apperrors.WithHint("服务端当前负载较高，建议等待几秒后重试"),
-		apperrors.WithActions("等待后使用相同参数重试"),
+	return apperrors.NewAPI(
+		"服务端繁忙（SYSTEM_BUSY）；写请求已发出，当前终态未知",
+		apperrors.WithSubtype(apperrors.SubtypeSystemBusy),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response"),
+		apperrors.WithExecutionStarted(true),
+		apperrors.WithRetryable(false),
+		apperrors.WithHint("先读取当前快捷入口状态，确认目标未生效后再决定是否重试；不要直接重放写请求。"),
+		apperrors.WithActions("查询当前快捷入口状态", "确认未生效后再决定是否重试"),
 	)
 }

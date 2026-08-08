@@ -23,6 +23,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -442,7 +443,11 @@ func TestToolbarCommandsConvertSystemBusy(t *testing.T) {
 				err: errors.New("remote SYSTEM_BUSY"),
 			}, tt.args...)
 			if err == nil || !strings.Contains(err.Error(), "SYSTEM_BUSY") {
-				t.Fatalf("expected system_busy validation error, got %v", err)
+				t.Fatalf("expected system_busy error, got %v", err)
+			}
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAPI || typed.Reason != string(apperrors.SubtypeSystemBusy) || !typed.RetryableSet || typed.Retryable || typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
+				t.Fatalf("system_busy recovery = %#v", typed)
 			}
 		})
 	}

@@ -268,7 +268,10 @@ func errorInfoFromExecutionError(err error) *output.ErrorInfo {
 	} else {
 		info.Type = string(typed.Category)
 	}
-	info.Subtype = typed.Reason
+	info.Subtype = typed.StableSubtype
+	if info.Subtype == "" {
+		info.Subtype = typed.Reason
+	}
 	if typed.Hint != "" {
 		info.Hint = typed.Hint
 	}

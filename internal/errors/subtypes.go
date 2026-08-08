@@ -115,6 +115,13 @@ const (
 	SubtypePATAuthRejected                    Subtype = "pat_auth_rejected"
 	SubtypePATAuthExpired                     Subtype = "pat_auth_expired"
 	SubtypePATAuthCancelled                   Subtype = "pat_auth_cancelled"
+	SubtypePersonalSubscriptionGuardFailed    Subtype = "personal_subscription_guard_failed"
+	SubtypePersonalSubscriptionInvalid        Subtype = "personal_subscription_invalid"
+	SubtypePartialFailure                     Subtype = "partial_failure"
+	SubtypeSystemBusy                         Subtype = "system_busy"
+	SubtypeBusinessError                      Subtype = "business_error"
+	SubtypeToolRequestBuildFailed             Subtype = "tool_request_build_failed"
+	SubtypeDiscoveryRequestBuildFailed        Subtype = "discovery_request_build_failed"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -1000,6 +1007,69 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		DefaultHint:   "授权流程已取消；需要继续时重新执行命令。",
 		Description:   "the interactive PAT authorization flow was cancelled before approval",
 	},
+	SubtypePersonalSubscriptionGuardFailed: {
+		Subtype:       SubtypePersonalSubscriptionGuardFailed,
+		Category:      CategoryInternal,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "订阅本地保护器未完成；保留诊断并核查现有订阅状态，修复本地状态后再决定是否创建。",
+		Description:   "the local guard for a personal subscription attempt failed before a safe create decision",
+	},
+	SubtypePersonalSubscriptionInvalid: {
+		Subtype:       SubtypePersonalSubscriptionInvalid,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "核对订阅参数与本地配置后再调用；不要以重复提交修复此错误。",
+		Description:   "local personal-subscription parameters or configuration are invalid before submission",
+	},
+	SubtypePartialFailure: {
+		Subtype:       SubtypePartialFailure,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "保留逐项成功、失败与未知事实；先核查目标状态，禁止盲目重放写操作。",
+		Description:   "a legacy API error records partial work and requires item-level state inspection",
+	},
+	SubtypeSystemBusy: {
+		Subtype:       SubtypeSystemBusy,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "服务端繁忙响应发生在写请求之后；先读取当前快捷入口状态，确认未生效后再决定是否重试。",
+		Description:   "the server returned SYSTEM_BUSY after a shortcut-bar write request was sent",
+	},
+	SubtypeBusinessError: {
+		Subtype:       SubtypeBusinessError,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "服务端已明确返回业务失败；依据服务端错误码和提示修正输入或权限后再决定下一步。",
+		Description:   "an MCP response explicitly declared a business-level failure",
+	},
+	SubtypeToolRequestBuildFailed: {
+		Subtype:       SubtypeToolRequestBuildFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "工具请求尚未发出；检查 endpoint 配置后再执行。",
+		Description:   "tools/call could not build its HTTP request before any tool execution started",
+	},
+	SubtypeDiscoveryRequestBuildFailed: {
+		Subtype:       SubtypeDiscoveryRequestBuildFailed,
+		Category:      CategoryDiscovery,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "发现请求尚未发出；检查 endpoint 配置后再执行发现操作。",
+		Description:   "a discovery request could not build its HTTP request before network dispatch",
+	},
 }
 
 // LookupSubtype returns the immutable descriptor for an approved subtype.
@@ -1026,6 +1096,25 @@ func IsRegisteredSubtype(subtype string) bool {
 func WithSubtype(subtype Subtype) Option {
 	return func(err *Error) {
 		err.Reason = string(subtype)
+		err.StableSubtype = string(subtype)
+		if err.Hint != "" {
+			return
+		}
+		if descriptor, ok := LookupSubtype(subtype); ok {
+			err.Hint = descriptor.DefaultHint
+		}
+	}
+}
+
+// WithStableSubtypeAndLegacyReason attaches a reviewed Agent branch key while
+// preserving a pre-existing legacy Reason wire value. It is reserved for
+// migration bridges where one historical reason spans different Category
+// values; new commands must use WithSubtype so reason and subtype remain
+// identical.
+func WithStableSubtypeAndLegacyReason(subtype Subtype, legacyReason string) Option {
+	return func(err *Error) {
+		err.Reason = legacyReason
+		err.StableSubtype = string(subtype)
 		if err.Hint != "" {
 			return
 		}

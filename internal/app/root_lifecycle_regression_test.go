@@ -147,6 +147,16 @@ func TestErrorInfoProjectionKeepsTraceIDDistinctFromRequestID(t *testing.T) {
 	}
 }
 
+func TestErrorInfoProjectionPrefersStableSubtypeOverLegacyReason(t *testing.T) {
+	err := apperrors.NewAPI("request build failed",
+		apperrors.WithStableSubtypeAndLegacyReason(apperrors.SubtypeToolRequestBuildFailed, "request_build_failed"),
+	)
+	info := errorInfoFromExecutionError(err)
+	if info.Type != "api" || info.Subtype != string(apperrors.SubtypeToolRequestBuildFailed) {
+		t.Fatalf("projection = %#v", info)
+	}
+}
+
 func TestErrorInfoProjectionPreservesLegacyCLIRecoveryDetails(t *testing.T) {
 	err := &helpers.CLIError{
 		Code:    helpers.CodeMCPToolError,

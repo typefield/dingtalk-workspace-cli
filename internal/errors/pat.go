@@ -292,7 +292,7 @@ func ClassifyMCPResponseText(text string) error {
 
 	if isBusinessError(body) {
 		return NewAPI(text,
-			WithReason("business_error"),
+			WithSubtype(SubtypeBusinessError),
 			WithHint(suggestForBusinessErrorText(body)),
 		)
 	}

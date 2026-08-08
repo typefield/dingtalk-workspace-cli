@@ -1,6 +1,10 @@
 package errors
 
-import "testing"
+import (
+	"bytes"
+	"encoding/json"
+	"testing"
+)
 
 func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 	tests := []struct {
@@ -104,6 +108,13 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypePATAuthRejected, CategoryAuth, RetryNever, false},
 		{SubtypePATAuthExpired, CategoryAuth, RetryNever, false},
 		{SubtypePATAuthCancelled, CategoryAuth, RetryNever, false},
+		{SubtypePersonalSubscriptionGuardFailed, CategoryInternal, RetryNever, false},
+		{SubtypePersonalSubscriptionInvalid, CategoryValidation, RetryNever, false},
+		{SubtypePartialFailure, CategoryAPI, RetryNever, true},
+		{SubtypeSystemBusy, CategoryAPI, RetryNever, true},
+		{SubtypeBusinessError, CategoryAPI, RetryNever, false},
+		{SubtypeToolRequestBuildFailed, CategoryAPI, RetryNever, false},
+		{SubtypeDiscoveryRequestBuildFailed, CategoryDiscovery, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {
@@ -132,6 +143,28 @@ func TestWithSubtypePreservesLegacyReasonWire(t *testing.T) {
 	}
 	if typed.Reason != string(SubtypeMissingRequiredFlags) || typed.Category != CategoryValidation || typed.ExitCode() != ExitCodeValidation || typed.Hint == "" {
 		t.Fatalf("typed error = %#v", typed)
+	}
+}
+
+func TestWithStableSubtypePreservesLegacyReasonWire(t *testing.T) {
+	err := NewAPI("request cannot be built",
+		WithStableSubtypeAndLegacyReason(SubtypeToolRequestBuildFailed, "request_build_failed"),
+	)
+	typed, ok := err.(*Error)
+	if !ok || typed.Reason != "request_build_failed" || typed.StableSubtype != string(SubtypeToolRequestBuildFailed) {
+		t.Fatalf("typed error = %#v", typed)
+	}
+	var rendered bytes.Buffer
+	if printErr := PrintJSON(&rendered, err); printErr != nil {
+		t.Fatalf("PrintJSON: %v", printErr)
+	}
+	var payload map[string]any
+	if decodeErr := json.Unmarshal(rendered.Bytes(), &payload); decodeErr != nil {
+		t.Fatalf("decode: %v\n%s", decodeErr, rendered.String())
+	}
+	errorPayload, ok := payload["error"].(map[string]any)
+	if !ok || errorPayload["reason"] != "request_build_failed" || errorPayload["subtype"] != string(SubtypeToolRequestBuildFailed) {
+		t.Fatalf("legacy reason/stable subtype = %#v", payload)
 	}
 }
 

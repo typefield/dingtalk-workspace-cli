@@ -6,14 +6,14 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**95** 个；直接 `WithSubtype(Subtype...)` 调用点：**156** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**6** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
+- 已注册 descriptor：**102** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**163** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**0** 个；与已注册调用合计覆盖 **81** 个 subtype、**163** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
-- 无法从同一局部构造窗口解析 Category 的 subtype：**1** 个。
+- 无法从同一局部构造窗口解析 Category 的 subtype：**0** 个。
 
-已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
+所有字面 `WithReason("…")` 已映射到受治理 registry；仍保留的动态 reason 必须继续由 Agent 逐项审阅，不能被计数清零误写成已经 wire-stable。
 
 ## 源码 subtype 清单
 
@@ -24,12 +24,13 @@
 | `attachment_tokens_unavailable` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
 | `auth_refresh_failed` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/chat/batch_write.go:80` |
-| `business_error` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:295` |
+| `business_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:295` |
 | `chat_list_all_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:1199` |
 | `chat_list_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:1245` |
 | `chat_messages_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/chat_messages.go:770` |
 | `chat_search_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:425` |
 | `confirmation_required` | registered 7 | 7 | `validation` | yes | yes | no | no | no | `internal/app/plugin_commands.go:759`<br>`internal/corecmd/corecmd.go:1206`<br>`internal/helpers/chat/toolbar_remove_custom.go:51` … |
+| `discovery_request_build_failed` | registered 1 | 1 | `discovery` | yes | no | no | no | yes | `internal/transport/client.go:602` |
 | `doc_download_preflight_failed` | registered 2 | 2 | `api` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:62`<br>`internal/app/doc_download_preflight.go:72` |
 | `doc_grant_permission_partial_failure` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:448` |
 | `doc_share_message_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:523` |
@@ -58,20 +59,19 @@
 | `not_authenticated` | registered 4 | 4 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` … |
 | `not_configured` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:283` |
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
-| `parameter_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
-| `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
+| `parameter_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:347` |
+| `partial_failure` | registered 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
 | `pat_auth_cancelled` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
 | `pat_auth_expired` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:688` |
 | `pat_auth_rejected` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
-| `personal_subscription_guard_failed` | free 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
-| `personal_subscription_invalid` | free 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
+| `personal_subscription_guard_failed` | registered 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
+| `personal_subscription_invalid` | registered 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
 | `raw_api_credentials_required` | registered 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
-| `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
 | `resolution_ambiguous` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
 | `resolution_batch_failed` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |
 | `resolution_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:686`<br>`internal/shortcut/targetresolver/resolver.go:710` |
@@ -80,7 +80,7 @@
 | `stdio_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:847` |
 | `stdio_initialize_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:817` |
 | `stdio_tools_list_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:826` |
-| `system_busy` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_helpers.go:89` |
+| `system_busy` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/helpers/chat/toolbar_helpers.go:89` |
 | `target_ambiguous` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:250`<br>`internal/shortcut/aitable/view_preset.go:66` |
 | `target_arguments_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:297` |
 | `target_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:230`<br>`internal/shortcut/aitabletarget/resolver.go:423` |
@@ -92,11 +92,12 @@
 | `thread_context_missing` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:262` |
 | `thread_replies_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:539` |
 | `thread_root_message_not_found` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
-| `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/app/root.go:433`<br>`internal/app/root.go:447` |
+| `tool_request_build_failed` | registered 1 | 1 | `api` | yes | no | no | no | yes | `internal/transport/client.go:597` |
+| `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/app/root.go:436`<br>`internal/app/root.go:450` |
 | `unknown_shortcut` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
 | `unknown_subcommand` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |
 | `unsupported_alidoc_extension` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:105` |
-| `unsupported_format` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:616` |
+| `unsupported_format` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:619` |
 | `upstream_unclassified` | registered 2 | 2 | `api` | yes | yes | no | no | yes | `internal/app/server_failure_classifier.go:93`<br>`internal/transport/client.go:556` |
 | `version_not_found` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/helpers/doc.go:4084`<br>`internal/helpers/sheet_version.go:149` |
 
@@ -126,17 +127,17 @@
 
 这类调用使用有限映射函数而非字面量；Agent 必须阅读映射函数和对应测试，确认它没有把上游文本或任意数值重新拼进 subtype。
 
-- internal/app/root.go:407: `apperrors.WithSubtype(subtype)`
+- internal/app/root.go:410: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/aitabletarget/resolver.go:410: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/doc/common.go:125: `apperrors.WithSubtype(subtype)`
-- internal/transport/client.go:1030: `apperrors.WithSubtype(httpStatusSubtype(`
-- internal/transport/client.go:1159: `apperrors.WithSubtype(jsonRPCSubtype(`
+- internal/transport/client.go:1033: `apperrors.WithSubtype(httpStatusSubtype(`
+- internal/transport/client.go:1162: `apperrors.WithSubtype(jsonRPCSubtype(`
 - internal/transport/client.go:461: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:504: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:525: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:544: `apperrors.WithSubtype(transportUpstreamSubtype(`
-- internal/transport/client.go:668: `apperrors.WithSubtype(transportUpstreamSubtype(`
-- internal/transport/client.go:702: `apperrors.WithSubtype(transportUpstreamSubtype(`
+- internal/transport/client.go:671: `apperrors.WithSubtype(transportUpstreamSubtype(`
+- internal/transport/client.go:705: `apperrors.WithSubtype(transportUpstreamSubtype(`
 
 ## Agent 审阅结论
 

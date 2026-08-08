@@ -585,7 +585,6 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 		if err != nil {
 			opts := []apperrors.Option{
 				apperrors.WithOperation(operation),
-				apperrors.WithReason("request_build_failed"),
 				apperrors.WithHint(i18n.T("请检查服务 endpoint 是否为空或格式不合法。")),
 				apperrors.WithCause(&CallError{
 					Stage:     CallStageRequest,
@@ -594,9 +593,13 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 				}),
 			}
 			if operation == "tools/call" {
-				opts = append(opts, apperrors.WithExecutionStarted(false))
+				opts = append(opts,
+					apperrors.WithStableSubtypeAndLegacyReason(apperrors.SubtypeToolRequestBuildFailed, "request_build_failed"),
+					apperrors.WithExecutionStarted(false),
+				)
 				return nil, apperrors.NewAPI("failed to create JSON-RPC request", opts...)
 			}
+			opts = append(opts, apperrors.WithStableSubtypeAndLegacyReason(apperrors.SubtypeDiscoveryRequestBuildFailed, "request_build_failed"))
 			return nil, apperrors.NewDiscovery(
 				"failed to create JSON-RPC request",
 				opts...,

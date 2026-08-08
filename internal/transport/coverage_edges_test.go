@@ -16,6 +16,8 @@ import (
 	"strings"
 	"testing"
 	"time"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 type edgeWriteCloser struct {
@@ -297,6 +299,33 @@ func TestCrossPlatformCoverageRetryAndFailureEdges(t *testing.T) {
 	c.MaxRetries = 3
 	if _, err := c.doWithRetry(context.Background(), "https://x.test", nil, "tools/list"); err == nil {
 		t.Fatal("timeout request succeeded")
+	}
+}
+
+func TestRequestBuildFailureUsesStableSubtypeWithoutChangingLegacyReason(t *testing.T) {
+	for _, test := range []struct {
+		method       string
+		category     apperrors.Category
+		subtype      apperrors.Subtype
+		startedFalse bool
+	}{
+		{"tools/call", apperrors.CategoryAPI, apperrors.SubtypeToolRequestBuildFailed, true},
+		{"tools/list", apperrors.CategoryDiscovery, apperrors.SubtypeDiscoveryRequestBuildFailed, false},
+	} {
+		t.Run(test.method, func(t *testing.T) {
+			_, err := edgeClient(func(*http.Request) (*http.Response, error) { return nil, nil }).doWithRetry(context.Background(), "://", nil, test.method)
+			var typed *apperrors.Error
+			if err == nil || !errors.As(err, &typed) || typed.Category != test.category || typed.Reason != "request_build_failed" || typed.StableSubtype != string(test.subtype) {
+				t.Fatalf("request-build error = %#v", err)
+			}
+			if test.startedFalse {
+				if typed.ExecutionStarted == nil || *typed.ExecutionStarted {
+					t.Fatalf("tools/call execution_started = %#v", typed.ExecutionStarted)
+				}
+			} else if typed.ExecutionStarted != nil {
+				t.Fatalf("discovery execution_started = %#v", typed.ExecutionStarted)
+			}
+		})
 	}
 }
 

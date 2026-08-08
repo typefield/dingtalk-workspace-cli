@@ -20,6 +20,9 @@ import re
 
 REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s*\)")
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
+STABLE_SUBTYPE_BRIDGE = re.compile(
+    r"\b(?:(?:apperrors|errors)\.)?WithStableSubtypeAndLegacyReason\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*,\s*\"[^\"]+\"\s*\)"
+)
 # A stable mapping may be returned by a finite helper, or selected from a
 # finite local enum before it reaches WithSubtype.  Record both forms for
 # Agent review: neither is a free-form public subtype, but neither should be
@@ -139,29 +142,30 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
             )
             facts[reason].occurrences.append(occurrence)
             facts[reason].sources.add(relative)
-        for match in SUBTYPE.finditer(text):
-            constant = match.group(1)
-            line = line_at(text, match.start())
-            if lines[line - 1].lstrip().startswith("//"):
-                continue
-            subtype = subtype_constants.get(constant)
-            if subtype is None:
-                dynamic.append(f"{relative}:{line}: `{match.group(0).strip()}` (unknown subtype constant)")
-                continue
-            context = local_context(lines, line - 1)
-            occurrence = Occurrence(
-                path=relative,
-                line=line,
-                category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
-                hint=bool(HINT.search(context)) or bool(descriptor_default_hints.get(constant)),
-                actions=bool(ACTIONS.search(context)),
-                retryable=bool(RETRYABLE.search(context)),
-                retry_after=bool(RETRY_AFTER.search(context)),
-                execution_started=bool(EXECUTION.search(context)),
-                registered=True,
-            )
-            facts[subtype].occurrences.append(occurrence)
-            facts[subtype].sources.add(relative)
+        for pattern in (SUBTYPE, STABLE_SUBTYPE_BRIDGE):
+            for match in pattern.finditer(text):
+                constant = match.group(1)
+                line = line_at(text, match.start())
+                if lines[line - 1].lstrip().startswith("//"):
+                    continue
+                subtype = subtype_constants.get(constant)
+                if subtype is None:
+                    dynamic.append(f"{relative}:{line}: `{match.group(0).strip()}` (unknown subtype constant)")
+                    continue
+                context = local_context(lines, line - 1)
+                occurrence = Occurrence(
+                    path=relative,
+                    line=line,
+                    category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
+                    hint=bool(HINT.search(context)) or bool(descriptor_default_hints.get(constant)),
+                    actions=bool(ACTIONS.search(context)),
+                    retryable=bool(RETRYABLE.search(context)),
+                    retry_after=bool(RETRY_AFTER.search(context)),
+                    execution_started=bool(EXECUTION.search(context)),
+                    registered=True,
+                )
+                facts[subtype].occurrences.append(occurrence)
+                facts[subtype].sources.add(relative)
         for pattern in (INDIRECT_SUBTYPE_CALL, INDIRECT_SUBTYPE_VARIABLE):
             for match in pattern.finditer(text):
                 line = line_at(text, match.start())
@@ -233,6 +237,11 @@ def main() -> int:
     registered_struct_subtypes = sorted(set(struct_subtypes) & registered_subtype_values)
     unregistered_struct_subtypes = sorted(set(struct_subtypes) - registered_subtype_values)
 
+    registry_status = (
+        "已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。"
+        if free_occurrences
+        else "所有字面 `WithReason(\"…\")` 已映射到受治理 registry；仍保留的动态 reason 必须继续由 Agent 逐项审阅，不能被计数清零误写成已经 wire-stable。"
+    )
     lines = [
         "# DWS 错误契约 Agent 扫描",
         "",
@@ -242,14 +251,14 @@ def main() -> int:
         "",
         "## 当前事实",
         "",
-        f"- 已注册 descriptor：**{len(subtype_constants)}** 个；直接 `WithSubtype(Subtype...)` 调用点：**{registered_occurrences}** 个；间接映射调用点：**{len(indirect_subtypes)}** 个。",
+        f"- 已注册 descriptor：**{len(subtype_constants)}** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**{registered_occurrences}** 个；间接映射调用点：**{len(indirect_subtypes)}** 个。",
         f"- `WithReason(\"…\")` 的自由字面调用点：**{free_occurrences}** 个；与已注册调用合计覆盖 **{len(facts)}** 个 subtype、**{all_occurrences}** 个调用点。",
         f"- 直接构造 `ErrorInfo.Subtype`：**{len(struct_subtypes)}** 个不同值，其中已登记 **{len(registered_struct_subtypes)}** 个、未登记 **{len(unregistered_struct_subtypes)}** 个。",
         f"- 动态 `WithReason(variable)` 调用：**{len(dynamic)}** 个。",
         f"- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**{no_hint}** 个。",
         f"- 无法从同一局部构造窗口解析 Category 的 subtype：**{unresolved}** 个。",
         "",
-        "已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。",
+        registry_status,
         "",
         "## 源码 subtype 清单",
         "",

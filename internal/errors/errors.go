@@ -98,16 +98,21 @@ type Error struct {
 	RetryableSet      bool
 	RetryAfterSeconds *int64
 	NextRetryAt       *time.Time
-	Reason            string
-	Hint              string
-	Actions           []string
-	AvailableFlags    []string
-	Snapshot          string
-	Details           map[string]any
-	RPCCode           int               `json:"rpc_code,omitempty"`
-	RPCData           json.RawMessage   `json:"rpc_data,omitempty"`
-	ServerDiag        ServerDiagnostics `json:"-"`
-	Cause             error             `json:"-"`
+	// Reason is the legacy compatibility label. StableSubtype, when set,
+	// is the reviewed Agent branch key projected as JSON error.subtype.
+	// Most errors keep both values identical; the split exists only while a
+	// legacy reason spans distinct Category values during gradual migration.
+	Reason         string
+	StableSubtype  string
+	Hint           string
+	Actions        []string
+	AvailableFlags []string
+	Snapshot       string
+	Details        map[string]any
+	RPCCode        int               `json:"rpc_code,omitempty"`
+	RPCData        json.RawMessage   `json:"rpc_data,omitempty"`
+	ServerDiag     ServerDiagnostics `json:"-"`
+	Cause          error             `json:"-"`
 }
 
 func (e *Error) Error() string {
@@ -402,9 +407,11 @@ func PrintJSON(w io.Writer, err error) error {
 	if stderrors.As(err, &typed) {
 		if typed.Reason != "" {
 			errorPayload["reason"] = typed.Reason
-			// Reason→subtype 投影（B170，契约 §2.4）：reason 值即 subtype
-			// 规范值（confirmation_required/rate_limit 等），与 output 侧
-			// ErrorInfo.Subtype 对称。仅当 Reason 非空时投影（omitempty）。
+		}
+		if subtype := typed.StableSubtype; subtype != "" {
+			errorPayload["subtype"] = subtype
+		} else if typed.Reason != "" {
+			// 普通路径保持 reason→subtype 同值。仅历史兼容桥允许二者不同。
 			errorPayload["subtype"] = typed.Reason
 		}
 		if typed.Operation != "" {

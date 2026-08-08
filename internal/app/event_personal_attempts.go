@@ -542,7 +542,7 @@ func personalSubscriptionGuardError(cause error) error {
 	return apperrors.NewInternal(
 		fmt.Sprintf("personal subscription attempt guard failed: %v", cause),
 		apperrors.WithOperation(personalSubscriptionAttemptOperation),
-		apperrors.WithReason("personal_subscription_guard_failed"),
+		apperrors.WithSubtype(apperrors.SubtypePersonalSubscriptionGuardFailed),
 		apperrors.WithHint("订阅本地保护器未完成；先保留诊断并核查现有订阅状态，修复本地状态后再决定是否创建。"),
 		apperrors.WithRetryable(false),
 		apperrors.WithCause(cause),
@@ -556,7 +556,7 @@ func personalSubscriptionValidationError(cause error) error {
 	return apperrors.NewValidation(
 		cause.Error(),
 		apperrors.WithOperation(personalSubscriptionAttemptOperation),
-		apperrors.WithReason("personal_subscription_invalid"),
+		apperrors.WithSubtype(apperrors.SubtypePersonalSubscriptionInvalid),
 		apperrors.WithHint("核对订阅参数与本地配置后再调用；该错误不应通过重复提交修复。"),
 		apperrors.WithRetryable(false),
 		apperrors.WithCause(cause),

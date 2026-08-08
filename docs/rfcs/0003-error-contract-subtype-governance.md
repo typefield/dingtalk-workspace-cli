@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：已实施（十三批 registry）；渐进迁移进行中
+- 状态：已实施（十四批 registry）；动态状态机审阅进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,12 +26,12 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 95 / 156 / 11 | 前十批已覆盖本地校验、输入/公式/下载完整性、目标解析/版本预检、transport/服务端响应、Skill/插件协议、复合写、IM 分页与 Agent 身份参数；第十一批补齐认证刷新、网关鉴权过期、未登录/未配置、Raw API 凭证缺失、endpoint 未解析与文档下载预检失败；第十二批收口命令歧义、未知路由、参数冲突、批量 PAT 确认、ID 交集与不支持文档类型；第十三批收口 @我分页不完整、线程目标解析和 PAT 授权终止态。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
-| `WithReason("…")` 自由字面调用 | 6 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
-| 全部 subtype / 调用点 | 80 / 162 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 已注册 descriptor / 直接 `WithSubtype(...)` 或兼容桥调用 / 间接映射 | 102 / 163 / 11 | 前十三批已覆盖本地校验、认证、传输、写前确认、IM 分页、Skill/插件协议与 PAT 终止态；第十四批收口个人订阅的静态 guard/validation、legacy 部分成功、显式业务失败和 `SYSTEM_BUSY` 写入不确定态。`request_build_failed` 是唯一跨 Category 的历史 reason：保留原 `reason` wire，同时以 `WithStableSubtypeAndLegacyReason` 投影 `tool_request_build_failed` 或 `discovery_request_build_failed`，使 Agent 能按 `type + subtype` 稳定分支。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值 |
+| `WithReason("…")` 自由字面调用 | 0 | 所有字面 reason 已进入 registry 或显式兼容桥；这不包含仍待审阅的动态状态机值 |
+| 全部 subtype / 调用点 | 81 / 163 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 9 | 绕过 `WithReason` 的第二条入口；Agent 扫描现同时识别枚举转换的赋值，event stop 的 `event_stop_unverified` 已登记 registry |
 | 动态 `WithReason(variable)` | 1 | 仅剩个人订阅状态机；其有限但未审定的 failure family 仍须连同 Category、幂等性与终态语义单独设计，不能靠字符串替换 |
-| 缺有效恢复提示的 subtype | 0 | 仍有自由 reason 与一条动态构造，但所有已扫描到的 subtype 至少有命令级 hint 或 registry 默认 hint；这不等于服务端终态已验证 |
+| 缺有效恢复提示的 subtype | 0 | 所有已扫描到的 stable subtype 至少有命令级 hint 或 registry 默认 hint；仍有一条动态个人订阅状态机构造待审阅，这不等于服务端终态已验证 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
 `permission=4`、`internal=5`、`discovery=6`、`partial_failure=7`。
@@ -181,7 +181,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output 的 `pagination_invalid` / `pagination_incomplete` / `pagination_conflict` / `invalid_success_type` / `skill_setup_result_invalid` / `skill_setup_failed`、`batch_write_failed` / `doc_grant_permission_partial_failure` / `doc_share_message_failed`、`stdio_initialize_error` / `stdio_tools_list_error` / `stdio_error` / `mcp_tool_error` / `empty_tool_response` / `plugin_tool_not_found` / `plugin_input_schema_invalid` / `unsupported_format`、`invalid_agent_code` / `invalid_agent_host` / `invalid_agent_product`、`auth_refresh_failed` / `gateway_auth_expired` / `not_authenticated` / `not_configured` / `raw_api_credentials_required` / `endpoint_not_resolved` / `doc_download_preflight_failed`、`ambiguous_command_fallback` / `id_intersection` / `parameter_conflict` / `pat_batch_requires_yes` / `unknown_shortcut` / `unknown_subcommand` / `unsupported_alidoc_extension`，以及 `at_me_incomplete` / `thread_root_message_not_found` / `thread_context_missing` / `pat_auth_timeout` / `pat_auth_rejected` / `pat_auth_expired` / `pat_auth_cancelled` 均已登记；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output、复合写、stdio/MCP/plugin/format、Agent 身份参数、认证/发现、路由/确认、@我/线程/PAT 终止态，以及 `personal_subscription_guard_failed` / `personal_subscription_invalid` / `partial_failure` / `system_busy` / `business_error` 均已登记。`request_build_failed` 通过 `tool_request_build_failed` / `discovery_request_build_failed` 的 stable subtype 兼容桥保留 legacy reason；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```
