@@ -104,7 +104,10 @@ scripts/_runtime.py
 `sys.exit(run_main(main))` 进入统一边界。`run_main` 在 JSON/NDJSON 模式将未捕获的
 `Exception` 映射为 `failure + error.type=internal + exit 1`，并将非零 `SystemExit`
 映射为 validation failure；它不输出 traceback，也不回显原始异常消息。正常 Help 的
-`SystemExit(0)` 和 text 模式保留原命令行行为。每个脚本仍负责业务参数校验、步骤编排、
+`SystemExit(0)` 和 text 模式保留原命令行行为。它还验证缓存后的机器 stdout：JSON 必须
+恰好是一条具有 `ok:boolean` 与 `outcome:string` 的对象，并与 0/1/7 退出码一致；NDJSON 的每个非空行必须是对象。
+出现遗留 `print()`、多行或非法 JSON 时，运行时拒绝原 stdout，向 stderr 写无敏感诊断，
+并改发单一 typed internal failure，而不是把污染后的“成功”交给 Agent。每个脚本仍负责业务参数校验、步骤编排、
 子 `dws` 调用和业务数据映射。`run_child_dws` 是写编排的保守运输边界：只有稳定的
 前置失败会标记为 `failed`；超时、非零退出、不可解析输出和未分类上游错误都标为
 `unknown`，因为写入可能已经到达服务端。`batch_data` 固定保留

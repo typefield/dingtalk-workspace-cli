@@ -326,6 +326,54 @@ def _exit_status(value: object) -> int:
     return FAILURE_EXIT
 
 
+def _machine_stdout_is_contract(fmt: str, captured: str, status: int) -> bool:
+    """Return whether buffered machine stdout can be safely passed through.
+
+    ``run_main`` is the last common boundary before a script writes its result
+    to an Agent.  A stray ``print()`` from any business helper would otherwise
+    turn a nominal JSON success into an unparsable multi-line stream.  Do not
+    try to recover or reinterpret that text: a clean typed failure is more
+    truthful than a corrupt success result.
+
+    JSON mode has one terminal envelope and its ``ok/outcome`` must agree with
+    the process exit code. NDJSON is allowed to have no lines for an empty
+    stream, but every non-empty line must still be an object. The detailed
+    per-item schema remains the responsibility of the script's business
+    contract.
+    """
+    lines = [line for line in captured.splitlines() if line.strip()]
+    if fmt == "json":
+        if len(lines) != 1:
+            return False
+        try:
+            payload = json.loads(lines[0])
+        except json.JSONDecodeError:
+            return False
+        if (
+            not isinstance(payload, Mapping)
+            or not isinstance(payload.get("ok"), bool)
+            or not isinstance(payload.get("outcome"), str)
+        ):
+            return False
+        outcome = payload["outcome"]
+        if outcome in {"success", "pending"}:
+            return payload["ok"] is True and status == 0
+        if outcome == "partial_failure":
+            return payload["ok"] is False and status == PARTIAL_EXIT
+        if outcome == "failure":
+            return payload["ok"] is False and status == FAILURE_EXIT
+        return False
+    if fmt == "ndjson":
+        for line in lines:
+            try:
+                if not isinstance(json.loads(line), Mapping):
+                    return False
+            except json.JSONDecodeError:
+                return False
+        return True
+    return True
+
+
 def run_main(
     main_fn: Callable[[], Optional[int]],
     *,
@@ -350,7 +398,27 @@ def run_main(
             return _exit_status(main_fn())
         with contextlib.redirect_stdout(buffered_machine_stdout):
             status = _exit_status(main_fn())
-        output.write(buffered_machine_stdout.getvalue())
+        captured = buffered_machine_stdout.getvalue()
+        if not _machine_stdout_is_contract(fmt, captured, status):
+            # Never forward the captured text: it may contain partially
+            # rendered data or sensitive input. Keep a concise diagnostic on
+            # stderr and replace the whole result with one typed envelope.
+            print(
+                "✗ 脚本输出不符合机器结果契约；已拒绝污染或退出码不一致的 stdout。",
+                file=diagnostics,
+            )
+            return emit(
+                fmt=fmt,
+                outcome="failure",
+                error={
+                    "type": "internal",
+                    "message": "脚本产生了非契约机器输出；请修复脚本后重试。",
+                    "details": {"violation": "machine_stdout_contract"},
+                },
+                text="错误：脚本产生了非契约机器输出；请修复脚本后重试。",
+                stdout=output,
+            )
+        output.write(captured)
         return status
     except KeyboardInterrupt:
         raise

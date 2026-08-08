@@ -120,6 +120,41 @@ def main() -> int:
     )
     outcomes.append(("未捕获异常 JSON 兜底", *result("PASS" if internal_ok else "FAIL", detail)))
 
+    polluted_stdout = runtime_probe(
+        "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print('leaked progress'), 0)[1], argv=['--format','json']))"
+    )
+    valid, payload, detail = parse_single_result(polluted_stdout)
+    polluted_stdout_ok = (
+        valid
+        and polluted_stdout.returncode == 1
+        and payload is not None
+        and payload.get("ok") is False
+        and payload.get("outcome") == "failure"
+        and isinstance(payload.get("error"), dict)
+        and payload["error"].get("type") == "internal"
+        and payload["error"].get("details", {}).get("violation") == "machine_stdout_contract"
+        and "leaked progress" not in polluted_stdout.stdout
+    )
+    outcomes.append(("机器 stdout 污染拒绝", *result("PASS" if polluted_stdout_ok else "FAIL", detail)))
+
+    inconsistent_exit = runtime_probe(
+        "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print('{\"ok\":true,\"outcome\":\"success\"}'), 1)[1], argv=['--format','json']))"
+    )
+    valid, payload, detail = parse_single_result(inconsistent_exit)
+    inconsistent_exit_ok = (
+        valid
+        and inconsistent_exit.returncode == 1
+        and payload is not None
+        and payload.get("ok") is False
+        and payload.get("outcome") == "failure"
+        and isinstance(payload.get("error"), dict)
+        and payload["error"].get("type") == "internal"
+        and payload["error"].get("details", {}).get("violation") == "machine_stdout_contract"
+    )
+    outcomes.append(("机器结果与退出码一致性", *result("PASS" if inconsistent_exit_ok else "FAIL", detail)))
+
     system_exit = runtime_probe(
         "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
         "raise SystemExit(_runtime.run_main(lambda: (_ for _ in ()).throw(SystemExit(2)), argv=['--format','json']))"
