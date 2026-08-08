@@ -34,6 +34,7 @@ func preserveDaemonHooks(t *testing.T) {
 	oldProcessAlive := daemonProcessAlive
 	oldSignalProcess := daemonSignalProcess
 	oldSignalContext := daemonSignalContext
+	oldWaitReady := daemonWaitReady
 	oldReadDir := connectHealthReadDir
 	oldDir := connectDaemonDirOverride
 	oldAfter := helperAfter
@@ -53,6 +54,7 @@ func preserveDaemonHooks(t *testing.T) {
 		daemonProcessAlive = oldProcessAlive
 		daemonSignalProcess = oldSignalProcess
 		daemonSignalContext = oldSignalContext
+		daemonWaitReady = oldWaitReady
 		connectHealthReadDir = oldReadDir
 		connectDaemonDirOverride = oldDir
 		helperAfter = oldAfter
@@ -61,6 +63,10 @@ func preserveDaemonHooks(t *testing.T) {
 	// Tests exercise the platform-independent lifecycle below the public
 	// Windows guard. The dedicated unsupported case resets this to false.
 	daemonDetachEnabled = true
+	// Existing lifecycle tests exercise process/file plumbing with synthetic
+	// children, not a real worker heartbeat. Keep them deterministic; the
+	// readiness implementation itself is covered by TestDaemonReadinessHandshake.
+	daemonWaitReady = func(string, int, time.Duration) (bool, error) { return true, nil }
 }
 
 func daemonTestCommand() *cobra.Command {
@@ -68,6 +74,46 @@ func daemonTestCommand() *cobra.Command {
 	cmd.SetOut(&bytes.Buffer{})
 	cmd.SetErr(&bytes.Buffer{})
 	return cmd
+}
+
+func TestDaemonReadinessHandshake(t *testing.T) {
+	preserveDaemonHooks(t)
+	connectDaemonDirOverride = t.TempDir()
+	daemonProcessAlive = func(pid int) bool { return pid == 42 || pid == 43 }
+
+	dir, err := connectDaemonDir("ready")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonState(dir, daemonState{Pid: 42, DirKey: "ready"}); err != nil {
+		t.Fatal(err)
+	}
+	seedHeartbeat(t, "ready", connectHeartbeat{Pid: 43, ConnectedUnix: time.Now().Unix(), UpdatedUnix: time.Now().Unix()})
+	ready, err := waitForDaemonReady("ready", 42, time.Second)
+	if err != nil || !ready {
+		t.Fatalf("ready handshake = (%v, %v), want (true, nil)", ready, err)
+	}
+
+	// A live supervisor without a connected worker is accepted but non-terminal;
+	// callers must render pending rather than success.
+	connectDaemonDirOverride = t.TempDir()
+	dir, err = connectDaemonDir("starting")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonState(dir, daemonState{Pid: 42, DirKey: "starting"}); err != nil {
+		t.Fatal(err)
+	}
+	ready, err = waitForDaemonReady("starting", 42, 0)
+	if err != nil || ready {
+		t.Fatalf("starting handshake = (%v, %v), want (false, nil)", ready, err)
+	}
+
+	connectDaemonDirOverride = t.TempDir()
+	ready, err = waitForDaemonReady("missing", 42, 0)
+	if err == nil || ready {
+		t.Fatalf("missing handshake = (%v, %v), want (false, error)", ready, err)
+	}
 }
 
 func instantAfter(time.Duration) <-chan time.Time {
@@ -893,8 +939,8 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	restart.SetArgs([]string{"--robot-client-id", "restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
-	if err := restart.Execute(); err != nil {
-		t.Fatalf("restart command = %v", err)
+	if err := restart.Execute(); err == nil {
+		t.Fatal("restart without a newly persisted supervisor state succeeded")
 	}
 
 	if err := writeDaemonState(dir, state); err != nil {
@@ -931,8 +977,8 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	root.SetArgs([]string{"restart", "--robot-client-id", "restart", "--profile", "override", "--yes"})
 	root.SetOut(&bytes.Buffer{})
 	root.SetErr(&bytes.Buffer{})
-	if err := root.Execute(); err != nil {
-		t.Fatalf("restart with profile override = %v", err)
+	if err := root.Execute(); err == nil {
+		t.Fatal("restart with profile override succeeded without readiness")
 	}
 
 	if err := writeDaemonState(dir, state); err != nil {

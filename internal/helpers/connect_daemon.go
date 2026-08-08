@@ -105,7 +105,72 @@ var (
 	daemonSignalContext = func() (context.Context, context.CancelFunc) {
 		return signal.NotifyContext(context.Background(), os.Interrupt, syscall.SIGTERM)
 	}
+	// daemonWaitReady is injectable so lifecycle tests can deterministically
+	// exercise the v2 start/restart contract without starting a real connector.
+	daemonWaitReady = waitForDaemonReady
 )
+
+const daemonReadyTimeout = 5 * time.Second
+
+func waitForDaemonState(dirKey string, timeout time.Duration) (*daemonState, error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		dir, err := connectDaemonDir(dirKey)
+		if err != nil {
+			return nil, err
+		}
+		st, err := readDaemonState(dir)
+		if err != nil {
+			return nil, err
+		}
+		if st != nil && st.Pid > 0 && daemonProcessAlive(st.Pid) {
+			return st, nil
+		}
+		if time.Now().After(deadline) {
+			return nil, fmt.Errorf("daemon supervisor 未在预算内写入状态")
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
+
+// waitForDaemonReady waits for the detached supervisor and its worker to make
+// their state observable. A successful child.Start only proves that a process
+// was forked; it does not prove that the supervisor wrote its state or that the
+// worker established a connection. The bool is false when the supervisor is
+// alive but the worker has not connected before the bounded budget expires.
+func waitForDaemonReady(dirKey string, supervisorPID int, timeout time.Duration) (bool, error) {
+	deadline := time.Now().Add(timeout)
+	for {
+		dir, err := connectDaemonDir(dirKey)
+		if err != nil {
+			return false, err
+		}
+		st, err := readDaemonState(dir)
+		if err != nil {
+			return false, err
+		}
+		supervisorAlive := st != nil && st.Pid == supervisorPID && daemonProcessAlive(supervisorPID)
+		if supervisorAlive {
+			hb, err := readConnectHeartbeat(dir)
+			if err != nil {
+				return false, err
+			}
+			if hb != nil && hb.Pid > 0 && hb.ConnectedUnix > 0 && daemonProcessAlive(hb.Pid) {
+				return true, nil
+			}
+		}
+		if time.Now().After(deadline) {
+			if !supervisorAlive {
+				return false, fmt.Errorf("supervisor %d 未写入状态或已退出", supervisorPID)
+			}
+			// A live supervisor with no connected worker is an accepted,
+			// non-terminal operation. Callers must expose pending rather than
+			// claiming that the connector has already started successfully.
+			return false, nil
+		}
+		time.Sleep(100 * time.Millisecond)
+	}
+}
 
 // daemonDirKey derives a filesystem-safe directory key identifying a connector.
 // Priority: clientId (the robot's AppKey, the natural identity) > unifiedAppID.
@@ -339,22 +404,35 @@ func startDaemon(cmd *cobra.Command, dirKey, clientID, unifiedAppID, channel, no
 		writeConnectDaemonStarted(cmd.OutOrStdout(), pid, logPath, clientID, dirKey)
 		return nil
 	}
+	ready, err := daemonWaitReady(dirKey, pid, daemonReadyTimeout)
+	if err != nil {
+		return apperrors.NewInternal("等待 connect daemon 就绪失败: " + err.Error())
+	}
 
 	// 统一输出 dev 域试点（队列 B110）：人读提示行走 stderr，stdout 由
-	// 结果信封承载（pid/日志路径等机器事实进 data，ok:true + outcome:success）。
+	// 结果信封承载（pid/日志路径等机器事实进 data）。
 	writeConnectDaemonStarted(cmd.ErrOrStderr(), pid, logPath, clientID, dirKey)
-	env := &output.Envelope{
-		OK:      true,
-		Outcome: output.OutcomeSuccess,
-		Data: &connectDaemonStartedResult{
-			Status:   "started",
-			Pid:      pid,
-			LogPath:  logPath,
-			DirKey:   dirKey,
-			ClientID: clientID,
-		},
+	data := &connectDaemonStartedResult{
+		Status:   "started",
+		Pid:      pid,
+		LogPath:  logPath,
+		DirKey:   dirKey,
+		ClientID: clientID,
 	}
-	return writeDevRolloutResult(cmd, output.Success(env.Data), env, output.FormatJSON)
+	if !ready {
+		data.Status = "starting"
+		next := "dws dev connect status" + statusHintArgs(clientID, dirKey) + " --format json"
+		op := &output.OperationInfo{
+			ID:          "connect-daemon:" + dirKey,
+			State:       "starting",
+			NextCommand: next,
+		}
+		env := &output.Envelope{OK: true, Outcome: output.OutcomePending, Data: data,
+			Meta: &output.Meta{Operation: op}}
+		return writeDevRolloutResult(cmd, output.Pending(data, op), env, output.FormatJSON)
+	}
+	env := &output.Envelope{OK: true, Outcome: output.OutcomeSuccess, Data: data}
+	return writeDevRolloutResult(cmd, output.Success(data), env, output.FormatJSON)
 }
 
 // connectDaemonStartedResult 是 `dev connect --daemon` 父进程的结果 DTO
@@ -980,17 +1058,38 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 			if err := restartCmd.Run(); err != nil {
 				return apperrors.NewInternal(fmt.Sprintf("重启失败（旧守护进程已停止，连接器记录已清除）；恢复请手动执行: dws %s", strings.Join(args, " ")))
 			}
-			// 回读刷新后的 daemon-state.json 拿新 supervisor pid（restart 是同步
-			// re-exec，子进程落盘早于返回；读不到则 pid 缺席，status 仍诚实）。
+			// Re-exec returns before the detached supervisor/worker is necessarily
+			// ready. Wait for the new state and heartbeat so restart cannot report
+			// a terminal success while the connector is still starting.
+			fresh, rerr := waitForDaemonState(dirKey, daemonReadyTimeout)
+			if rerr != nil {
+				return apperrors.NewInternal("读取重启后的 daemon 状态失败: " + rerr.Error())
+			}
+			if fresh == nil || fresh.Pid <= 0 {
+				return apperrors.NewInternal("重启后未发现新的 daemon supervisor；旧守护进程已停止，请手动执行恢复命令")
+			}
+			ready, werr := daemonWaitReady(dirKey, fresh.Pid, daemonReadyTimeout)
+			if werr != nil {
+				return apperrors.NewInternal("等待重启后的 connect daemon 就绪失败: " + werr.Error())
+			}
 			result := &connectRestartResult{
 				Status:       "restarted",
 				DirKey:       dirKey,
 				UnifiedAppID: unifiedAppID,
 				Channel:      st.Channel,
 				Command:      "dws " + strings.Join(args, " "),
+				Pid:          fresh.Pid,
 			}
-			if fresh, rerr := readDaemonState(dir); rerr == nil && fresh != nil {
-				result.Pid = fresh.Pid
+			if !ready {
+				result.Status = "starting"
+				op := &output.OperationInfo{
+					ID:          "connect-daemon:" + dirKey,
+					State:       "starting",
+					NextCommand: "dws dev connect status" + statusHintArgs(st.ClientID, dirKey) + " --format json",
+				}
+				env := &output.Envelope{OK: true, Outcome: output.OutcomePending, Data: result,
+					Meta: &output.Meta{Operation: op}}
+				return writeDevRolloutResult(cmd, output.Pending(result, op), env, output.FormatJSON)
 			}
 			env := &output.Envelope{OK: true, Outcome: output.OutcomeSuccess, Data: result}
 			return writeDevRolloutResult(cmd, output.Success(result), env, output.FormatJSON)
