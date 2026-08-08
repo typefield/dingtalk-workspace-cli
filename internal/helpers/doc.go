@@ -64,6 +64,11 @@ func docVersionExists(ctx context.Context, nodeID string, version int) (bool, er
 			return true, nil
 		}
 		nextCursor := docVersionNextCursor(payload)
+		if nextCursor == "" {
+			if hasMore, known := docVersionHasMore(payload); known && hasMore {
+				return false, docVersionPaginationError(nodeID, "版本列表声明仍有更多结果但未提供可继续游标")
+			}
+		}
 		if nextCursor != "" && nextCursor == cursor {
 			return false, docVersionPaginationError(nodeID, "版本列表返回停滞游标，无法证明目标版本不存在")
 		}
@@ -76,6 +81,32 @@ func docVersionExists(ctx context.Context, nodeID string, version int) (bool, er
 		return false, docVersionPaginationError(nodeID, "版本列表超过安全页数上限，无法证明目标版本不存在")
 	}
 	return false, nil
+}
+
+func docVersionHasMore(v any) (hasMore, known bool) {
+	switch val := v.(type) {
+	case map[string]any:
+		for key, item := range val {
+			normalized := strings.ToLower(strings.ReplaceAll(key, "_", ""))
+			if normalized == "hasmore" || normalized == "more" {
+				if flag, ok := item.(bool); ok {
+					return flag, true
+				}
+			}
+		}
+		for _, item := range val {
+			if hasMore, known := docVersionHasMore(item); known {
+				return hasMore, true
+			}
+		}
+	case []any:
+		for _, item := range val {
+			if hasMore, known := docVersionHasMore(item); known {
+				return hasMore, true
+			}
+		}
+	}
+	return false, false
 }
 
 func docVersionPaginationError(nodeID, reason string) error {
