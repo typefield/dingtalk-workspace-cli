@@ -278,7 +278,7 @@ var NodeList = shortcut.Shortcut{
 		nodes, projectionKnown := nodeListProjectWithStatus(data)
 		if !projectionKnown {
 			return apperrors.NewAPI("知识库节点响应结构无法识别，拒绝将未知数据投影为空列表",
-				apperrors.WithReason("projection_unknown"),
+				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏响应形状后提交问题"))
 		}
 		payload, result, err := nodeListResult(data, nodes)
@@ -460,7 +460,7 @@ func nodeListPaginationToken(value any, present bool) (string, error) {
 
 func nodeListPaginationError(message string) error {
 	return apperrors.NewAPI(message,
-		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)

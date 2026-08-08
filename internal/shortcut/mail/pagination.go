@@ -121,7 +121,7 @@ func mailTerminalCursor(cursor string) bool {
 
 func mailPaginationError(message string) error {
 	return apperrors.NewAPI(message,
-		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)

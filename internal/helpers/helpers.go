@@ -589,7 +589,7 @@ type aitablePaginationEvidence struct {
 func aitableDiscoveryPaginationError(toolName, reason string) error {
 	return apperrors.NewAPI(
 		fmt.Sprintf("无法安全读取 AI 表格发现结果 %q：%s", toolName, reason),
-		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("discovery_projection"),
 		apperrors.WithExecutionStarted(false),

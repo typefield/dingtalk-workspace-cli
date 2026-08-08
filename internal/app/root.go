@@ -430,7 +430,7 @@ func flagErrorWithSuggestions(cmd *cobra.Command, err error) error {
 			return apperrors.NewValidation(
 				msgWithTail,
 				apperrors.WithHint(suggestion),
-				apperrors.WithReason("unknown_flag"),
+				apperrors.WithSubtype(apperrors.SubtypeUnknownFlag),
 				apperrors.WithCause(err),
 				apperrors.WithActions(fmt.Sprintf("Run '%s --help' for valid flags", cmd.CommandPath())),
 				apperrors.WithAvailableFlags(cmdutil.VisibleFlagNames(cmd)...),
@@ -444,7 +444,7 @@ func flagErrorWithSuggestions(cmd *cobra.Command, err error) error {
 			return apperrors.NewValidation(
 				msgWithTail,
 				apperrors.WithHint(fix.Suggestion),
-				apperrors.WithReason("unknown_flag"),
+				apperrors.WithSubtype(apperrors.SubtypeUnknownFlag),
 				apperrors.WithCause(err),
 				apperrors.WithActions(fmt.Sprintf("Run '%s --help' for valid flags", cmd.CommandPath())),
 				apperrors.WithAvailableFlags(cmdutil.VisibleFlagNames(cmd)...),

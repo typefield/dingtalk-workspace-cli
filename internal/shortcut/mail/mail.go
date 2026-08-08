@@ -828,7 +828,7 @@ func mailResolveList(data map[string]any, outerKeys, innerKeys []string) ([]any,
 
 func mailProjectionUnknown(message string) error {
 	return apperrors.NewAPI(message,
-		apperrors.WithReason("projection_unknown"),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)

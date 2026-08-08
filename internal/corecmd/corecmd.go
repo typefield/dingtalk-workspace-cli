@@ -677,7 +677,7 @@ func ValidateRequired(cmd *cobra.Command, flags []FlagSpec) error {
 		}
 	}
 	if err := cmdutil.MissingRequiredFlagsError(cmd, plain...); err != nil {
-		return apperrors.NewValidation(err.Error(), apperrors.WithReason("missing_required_flags"))
+		return apperrors.NewValidation(err.Error(), apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 	}
 	for _, flag := range flags {
 		if !flag.Required || flag.ValidationMode == ValidationShortcut ||
@@ -1203,7 +1203,7 @@ func stdinIsTerminal(in io.Reader) bool {
 func confirmationRequiredError(operation string) error {
 	return apperrors.NewValidation(
 		fmt.Sprintf("%s 需要用户确认，当前环境无法交互；加 --dry-run 预览，或确认后加 --yes 执行", operation),
-		apperrors.WithReason("confirmation_required"),
+		apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 		apperrors.WithHint("非交互环境（agent/CI）必须显式传入 --yes，不能依赖 stdin 提示"),
 		apperrors.WithActions("确认目标与变更影响", "以相同参数追加 --yes 执行"),
 	)
