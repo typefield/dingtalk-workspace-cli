@@ -12,12 +12,14 @@ from __future__ import annotations
 import argparse
 import ast
 from datetime import date
+from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 import json
 import os
 from pathlib import Path
 import subprocess
 import sys
 import tempfile
+import threading
 
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -479,6 +481,56 @@ print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'field c
         )
         outcomes.append(("字段创建旧业务失败不误报成功", *result("PASS" if fields_child_ok else "FAIL", detail)))
 
+        class UploadHandler(BaseHTTPRequestHandler):
+            def do_PUT(self) -> None:  # noqa: N802 - standard-library handler signature.
+                self.rfile.read(int(self.headers.get("Content-Length", "0")))
+                self.send_response(200)
+                self.end_headers()
+
+            def log_message(self, _format: str, *_args: object) -> None:
+                return
+
+        upload_server = ThreadingHTTPServer(("127.0.0.1", 0), UploadHandler)
+        server_thread = threading.Thread(target=upload_server.serve_forever, daemon=True)
+        server_thread.start()
+        file_import_path = temp_dir / "import.csv"
+        file_import_path.write_text("name\nprobe\n", encoding="utf-8")
+        try:
+            file_import_child = run_with_fake_dws(
+                [
+                    sys.executable, str(SCRIPT_DIR / "aitable_import_via_task.py"),
+                    "base-001", str(file_import_path), "--dws", str(temp_dir / "dws"), "--format", "json",
+                ],
+                f"""import json, sys
+args = sys.argv[1:]
+if args[:3] == ['aitable', 'import', 'upload']:
+    print(json.dumps({{'ok': True, 'data': {{'uploadUrl': 'http://127.0.0.1:{upload_server.server_port}/upload', 'importId': 'import-1'}}}}))
+elif args[:3] == ['aitable', 'import', 'data']:
+    # The upload completed, but an old business-level failure with rc=0 leaves
+    # the import task ambiguous.  It must not be reported as terminal success.
+    print(json.dumps({{'success': False, 'error': {{'type': 'api', 'message': 'import task uncertain'}}}}))
+else:
+    raise SystemExit(9)
+""",
+                temp_dir=temp_dir,
+            )
+        finally:
+            upload_server.shutdown()
+            upload_server.server_close()
+            server_thread.join(timeout=5)
+        valid, payload, detail = parse_single_result(file_import_child)
+        file_import_child_ok = (
+            valid and file_import_child.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and isinstance(payload.get("data"), dict)
+            and payload["data"].get("phase") == "import_data"
+            and payload["data"].get("execution_state") == "unknown"
+            and payload["data"].get("importId") == "import-1"
+            and isinstance(payload.get("error"), dict) and payload["error"].get("type") == "api"
+            and "import_data 完成" not in file_import_child.stderr
+        )
+        outcomes.append(("文件导入旧业务失败不误报终态", *result("PASS" if file_import_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
@@ -498,7 +550,7 @@ print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'field c
         "## 边界",
         "",
         "- 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。",
-        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入和字段创建的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
+        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入、字段创建和文件导入任务的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
         "- dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。",
         "",
     ])

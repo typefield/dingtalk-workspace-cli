@@ -17,14 +17,14 @@ from __future__ import annotations
 import argparse
 import json
 import re
-import subprocess
 import sys
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Any, Dict, Optional, Tuple
+from typing import Any, Dict, Mapping, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
 
 RESOURCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
@@ -34,26 +34,20 @@ def validate_resource_id(resource_id: str) -> bool:
     return bool(resource_id and RESOURCE_ID_PATTERN.match(resource_id.strip()))
 
 
-def run_dws(dws_bin: str, args: list[str], timeout_sec: int = 120) -> Tuple[int, str, str]:
-    cmd = [dws_bin] + args
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout_sec)
-        return result.returncode, result.stdout.strip(), result.stderr.strip()
-    except subprocess.TimeoutExpired:
-        return 124, "", f"dws command timeout after {timeout_sec}s"
-    except FileNotFoundError:
-        return 127, "", f"dws binary not found: {dws_bin}"
+def run_dws(dws_bin: str, args: list[str], timeout_sec: int = 120) -> ChildDWSResult:
+    """Invoke a child DWS operation without treating transport completion as truth."""
+    return run_child_dws(args, timeout=timeout_sec, executable=dws_bin)
 
 
-def parse_json_output(raw: str) -> Optional[Dict[str, Any]]:
-    try:
-        obj = json.loads(raw)
-        return obj if isinstance(obj, dict) else None
-    except json.JSONDecodeError:
-        return None
+@dataclass(frozen=True)
+class PutResult:
+    """Terminal certainty of the upload-byte phase, separate from the import task."""
+
+    state: str
+    error: Optional[Dict[str, Any]] = None
 
 
-def put_file(upload_url: str, file_path: Path) -> Tuple[bool, str]:
+def put_file(upload_url: str, file_path: Path) -> PutResult:
     payload = file_path.read_bytes()
     req = Request(upload_url, data=payload, method="PUT")
     # 关键：清空 Content-Type，避免 SignatureDoesNotMatch。
@@ -61,13 +55,57 @@ def put_file(upload_url: str, file_path: Path) -> Tuple[bool, str]:
     try:
         with urlopen(req, timeout=180) as resp:
             if resp.status == 200:
-                return True, ""
-            return False, f"unexpected HTTP status: {resp.status}"
+                return PutResult("success")
+            return PutResult("failed", {"type": "api", "message": f"上传服务返回 HTTP {resp.status}"})
     except HTTPError as e:
         body = e.read().decode("utf-8", "ignore")
-        return False, f"HTTP {e.code}: {body[:300]}"
+        return PutResult("failed", {"type": "api", "message": f"HTTP {e.code}: {body[:300]}"})
     except URLError as e:
-        return False, f"URL error: {e.reason}"
+        return PutResult(
+            "unknown",
+            {"type": "network", "message": f"PUT 上传未收到终态响应：{e.reason}"},
+        )
+    except TimeoutError:
+        return PutResult(
+            "unknown",
+            {"type": "network", "message": "PUT 上传超时；文件是否已上传未知。"},
+        )
+
+
+def result_data(result: ChildDWSResult) -> Optional[Dict[str, Any]]:
+    if not isinstance(result.payload, Mapping):
+        return None
+    data = result.payload.get("data")
+    return dict(data) if isinstance(data, Mapping) else None
+
+
+def business_status(result: ChildDWSResult, data: Mapping[str, Any]) -> Optional[str]:
+    """Read an explicit task status without assuming where old/new payloads place it."""
+    if isinstance(result.payload, Mapping) and isinstance(result.payload.get("status"), str):
+        return result.payload["status"]
+    status = data.get("status")
+    return status if isinstance(status, str) else None
+
+
+def child_failure(
+    *,
+    fmt: str,
+    message: str,
+    phase: str,
+    execution_state: str,
+    plan: Dict[str, Any],
+    error: Optional[Mapping[str, Any]] = None,
+    meta: Optional[Mapping[str, Any]] = None,
+) -> int:
+    data = {**plan, "phase": phase, "execution_state": execution_state}
+    return emit(
+        fmt=fmt,
+        outcome="failure",
+        data=data,
+        error=dict(error or {"type": "api", "message": message}),
+        meta=meta,
+        text=message,
+    )
 
 
 def main() -> int:
@@ -109,7 +147,7 @@ def main() -> int:
         )
 
     print(f"[1/3] prepare import upload: {file_path.name} ({file_size} bytes)", file=sys.stderr)
-    rc, out, err = run_dws(
+    prepare = run_dws(
         args.dws,
         [
             "aitable",
@@ -125,27 +163,55 @@ def main() -> int:
             "json",
         ],
     )
-    if rc != 0:
-        return failure(args.format, f"prepare_import_upload 失败: {err or out}")
-    prepare_obj = parse_json_output(out)
-    if not prepare_obj:
-        return failure(args.format, f"prepare_import_upload 返回非 JSON: {out[:300]}")
-    if prepare_obj.get("status") != "success":
-        return failure(args.format, f"prepare_import_upload 返回失败: {json.dumps(prepare_obj, ensure_ascii=False)}")
-
-    pdata = prepare_obj.get("data") or {}
+    if prepare.state != "success":
+        return child_failure(
+            fmt=args.format,
+            message="prepare_import_upload 未返回可确认终态",
+            phase="prepare_import_upload",
+            execution_state="unknown" if prepare.state == "unknown" else "not_executed",
+            plan=plan,
+            error=prepare.error,
+            meta=prepare.meta,
+        )
+    pdata = result_data(prepare)
+    if pdata is None:
+        return child_failure(
+            fmt=args.format,
+            message="prepare_import_upload 返回结构无法验证；请先核查导入任务。",
+            phase="prepare_import_upload",
+            execution_state="unknown",
+            plan=plan,
+            meta=prepare.meta,
+        )
     upload_url = pdata.get("uploadUrl")
     import_id = pdata.get("importId")
     if not upload_url or not import_id:
-        return failure(args.format, f"prepare_import_upload 缺少 uploadUrl/importId: {json.dumps(pdata, ensure_ascii=False)}")
+        return child_failure(
+            fmt=args.format,
+            message="prepare_import_upload 缺少 uploadUrl/importId；请先核查导入任务。",
+            phase="prepare_import_upload",
+            execution_state="unknown",
+            plan=plan,
+            meta=prepare.meta,
+        )
+
+    plan["importId"] = import_id
 
     print("[2/3] upload file bytes via PUT", file=sys.stderr)
-    ok, put_err = put_file(upload_url, file_path)
-    if not ok:
-        return failure(args.format, f"PUT 上传失败: {put_err}")
+    upload = put_file(upload_url, file_path)
+    if upload.state != "success":
+        return child_failure(
+            fmt=args.format,
+            message="PUT 上传未确认完成；请先核查上传与导入任务。",
+            phase="upload_file",
+            execution_state="unknown" if upload.state == "unknown" else "not_executed",
+            plan=plan,
+            error=upload.error,
+            meta=prepare.meta,
+        )
 
     print("[3/3] trigger import_data", file=sys.stderr)
-    rc2, out2, err2 = run_dws(
+    trigger = run_dws(
         args.dws,
         [
             "aitable",
@@ -162,30 +228,58 @@ def main() -> int:
         ],
         timeout_sec=max(120, args.timeout_sec + 30),
     )
-    if rc2 != 0:
-        return failure(args.format, f"import_data 调用失败: {err2 or out2}")
-    import_obj = parse_json_output(out2)
-    if not import_obj:
-        return failure(args.format, f"import_data 返回非 JSON: {out2[:300]}")
+    if trigger.state != "success":
+        return child_failure(
+            fmt=args.format,
+            message="import_data 未返回可确认终态；请先核查导入任务，避免重复触发。",
+            phase="import_data",
+            execution_state="unknown" if trigger.state == "unknown" else "not_executed",
+            plan=plan,
+            error=trigger.error,
+            meta=trigger.meta,
+        )
+    import_data = result_data(trigger)
+    if import_data is None:
+        return child_failure(
+            fmt=args.format,
+            message="import_data 返回结构无法验证；请先核查导入任务。",
+            phase="import_data",
+            execution_state="unknown",
+            plan=plan,
+            meta=trigger.meta,
+        )
 
+    status = business_status(trigger, import_data)
     result = {
         "baseId": base_id,
         "fileName": file_path.name,
         "fileSize": file_size,
         "importId": import_id,
-        "status": import_obj.get("status"),
-        "summary": import_obj.get("summary"),
-        "data": import_obj.get("data", {}),
-        "error": import_obj.get("error", {}),
+        "status": status,
+        "summary": (
+            trigger.payload.get("summary")
+            if isinstance(trigger.payload, Mapping)
+            else import_data.get("summary")
+        ),
+        "data": import_data,
     }
-    if import_obj.get("status") != "success":
-        return emit(
+    if status != "success":
+        return child_failure(
             fmt=args.format,
-            outcome="failure",
-            data=result,
-            error={"type": "api", "message": "import_data 返回失败"},
+            message="import_data 未报告成功；请先核查导入任务，避免重复触发。",
+            phase="import_data",
+            execution_state="unknown",
+            plan=result,
+            error={"type": "api", "message": "import_data 未报告成功"},
+            meta=trigger.meta,
         )
-    return emit(fmt=args.format, outcome="success", data=result, text=json.dumps(result, ensure_ascii=False, indent=2))
+    return emit(
+        fmt=args.format,
+        outcome="success",
+        data=result,
+        meta=trigger.meta,
+        text=json.dumps(result, ensure_ascii=False, indent=2),
+    )
 
 
 if __name__ == "__main__":

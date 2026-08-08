@@ -115,7 +115,8 @@ scripts/_runtime.py
 `unknown`，因为写入可能已经到达服务端。`batch_data` 固定保留
 `succeeded[]/failed[]/unknown[]` 并校验逐项 ID、typed error、未知原因和总数；
 `batch_outcome` 从三通道导出四态结果。当前 `todo_batch_create.py`、
-`oa_batch_approve.py`、`doc_create_and_write.py`、`import_records.py` 和 `bulk_add_fields.py` 已使用这条边界；其余脚本仍负责各自
+`oa_batch_approve.py`、`doc_create_and_write.py`、`import_records.py`、`bulk_add_fields.py` 和
+`aitable_import_via_task.py` 已使用这条边界；其余脚本仍负责各自
 业务映射。它没有 `emit_result`、`emit_error` 或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
 直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
 

@@ -95,6 +95,7 @@ def run_child_dws(
     *,
     dry_run: bool = False,
     timeout: float = 60,
+    executable: str = "dws",
 ) -> ChildDWSResult:
     """Run one JSON-mode child dws command without erasing execution certainty.
 
@@ -104,7 +105,7 @@ def run_child_dws(
     pre-execution error classes become ``failed``.  No child stderr is copied
     into the result envelope because it is diagnostic text, not wire data.
     """
-    command = ("dws", *[str(arg) for arg in args])
+    command = (str(executable), *[str(arg) for arg in args])
     if dry_run:
         return ChildDWSResult(
             state="success",
