@@ -1,10 +1,13 @@
 package helpers
 
 import (
+	"errors"
 	"os"
 	"path/filepath"
 	"strings"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 func executeFormulaVerify(t *testing.T, caller *scriptedToolCaller, stdin *strings.Reader, args ...string) error {
@@ -116,6 +119,10 @@ func TestCrossPlatformCoverageSheetFormulaVerifyExitOnError(t *testing.T) {
 	err := executeFormulaVerify(t, caller, nil, "--node", "n1", "--exit-on-error")
 	if err == nil || !strings.Contains(err.Error(), "formula errors found") {
 		t.Fatalf("err = %v, want formula errors found", err)
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "formula_errors_found" || typed.Details["totalErrors"] != float64(2) {
+		t.Fatalf("formula error classification = %T %#v, want typed formula_errors_found", err, err)
 	}
 
 	caller = &scriptedToolCaller{steps: []scriptedToolStep{

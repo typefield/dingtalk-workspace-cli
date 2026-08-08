@@ -9,6 +9,7 @@ import (
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -118,9 +119,24 @@ func callMCPToolFormulaVerify(toolArgs map[string]any, exitOnError bool) error {
 		return err
 	}
 	if exitOnError && formulaVerifyHasErrors(parsed) {
-		return fmt.Errorf("formula errors found")
+		return formulaVerifyFoundError(parsed)
 	}
 	return nil
+}
+
+func formulaVerifyFoundError(parsed map[string]any) error {
+	result := formulaVerifyResultObject(parsed)
+	details := map[string]any{}
+	for _, key := range []string{"status", "totalErrors", "errorCount", "scannedCells"} {
+		if value, ok := result[key]; ok {
+			details[key] = value
+		}
+	}
+	return apperrors.NewValidation(
+		"formula errors found",
+		apperrors.WithReason("formula_errors_found"),
+		apperrors.WithDetails(details),
+	)
 }
 
 func formulaVerifyHasErrors(parsed map[string]any) bool {
