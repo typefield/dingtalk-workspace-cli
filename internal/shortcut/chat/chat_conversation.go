@@ -591,7 +591,10 @@ func conversationPaginationCursor(value any) (int64, error) {
 		}
 		return typed, nil
 	case float64:
-		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed < 0 || math.Trunc(typed) != typed || typed > float64(math.MaxInt64) {
+		// A float64 cannot represent MaxInt64 exactly: the nearest value is
+		// 2^63, already outside int64. Reject that boundary rather than let a
+		// conversion manufacture a negative cursor.
+		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed < 0 || math.Trunc(typed) != typed || typed >= float64(math.MaxInt64) {
 			return 0, fmt.Errorf("cursor must be a non-negative integer: %v", typed)
 		}
 		return int64(typed), nil

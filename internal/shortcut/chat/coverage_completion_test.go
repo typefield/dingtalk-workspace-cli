@@ -7,6 +7,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"math"
 	"os"
 	"path/filepath"
 	"reflect"
@@ -141,7 +142,7 @@ func TestCrossPlatformCoverageConversationListFailureBoundaries(t *testing.T) {
 			t.Fatalf("cursor %#v = %d, %v; want %d", value, got, err, want)
 		}
 	}
-	for _, value := range []any{struct{}{}, -1, int64(-1), -1.0, 1.5, "-1", "bad"} {
+	for _, value := range []any{struct{}{}, -1, int64(-1), -1.0, 1.5, float64(math.MaxInt64), "-1", "bad"} {
 		if _, err := conversationPaginationCursor(value); err == nil {
 			t.Fatalf("invalid cursor %#v unexpectedly accepted", value)
 		}
