@@ -15,6 +15,21 @@
 
 单元测试通过不等同于服务端问题关闭；Schema 可发现也不等同于真实调用成功。
 
+## 2026-08-08 真实只读复验（脱敏）
+
+在有效用户登录态下，以下命令均以 `--format json` 运行，退出码为 0，stdout
+为单一 JSON 文档；未执行任何写入、删除或审批动作：
+
+| 命令 | 结果 | 验证点 |
+|---|---:|---|
+| `calendar +book-list` | 2 条日历本 | `result` 数组投影到 `calendars[]`，稳定 ID、名称和权限字段可用 |
+| `todo +get-my-tasks --size 1` | 1 条待办 | `result.todoCards` 投影到 `todos[]`，任务 ID 与主题字段可用 |
+| `minutes +list-mine --limit 1` | 1 条听记 | `result.itemList` 投影到 `minutes[]`，`taskUuid` 和 URL 可用 |
+
+这证明正常非空服务端形状仍兼容本轮 fail-closed 投影改造；空结果、分页终态与
+异常形状仍按各行的后续真实复验项继续取证。为保护隐私，本台账不保留实际标题、ID、
+邮箱、日历名或听记链接。
+
 ## 当前结论
 
 | 报告问题 | 当前状态 | 当前证据 | 剩余动作 |
