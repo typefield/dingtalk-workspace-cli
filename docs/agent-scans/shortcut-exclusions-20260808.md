@@ -11,45 +11,45 @@
 | 运行时 shortcut 总数 | 415 |
 | public=true | 383 |
 | exclusion（public=false） | 32 |
-| 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 28 |
+| 已 review 的 exclusion | 32 |
+| 未 review 的 exclusion | 0 |
 
 ## 逐条队列
 
 | service | command | risk | confirmation | reviewed | decision / reason |
 |---|---|---|---|:---:|---|
-| `calendar` | `+respond-event` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `calendar` | `+room-find` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
+| `calendar` | `+respond-event` | `write` | `user_required` | yes | 保留隐藏：会改变他人日程响应状态；虽然有 user_required 门禁，但当前尚缺稳定的 Agent 结果投影与完整状态回读证据。 |
+| `calendar` | `+room-find` | `read` | `not_required` | yes | 保留隐藏：旧版可用性搜索与已公开的 calendar +find-room 能力重叠，参数和返回投影不同；避免 Agent 在两个 canonical 入口间漂移。 |
 | `chat` | `+conversation-mute-at-all` | `write` | `user_required` | yes | 保留隐藏：写操作会影响群成员提醒状态，当前 Agent 选择面暂不发布；运行时继续保留 user_required 门禁。 |
 | `chat` | `+conversation-mute-red-envelope` | `write` | `user_required` | yes | 保留隐藏：写操作会影响群成员红包提醒状态，当前 Agent 选择面暂不发布；运行时继续保留 user_required 门禁。 |
-| `contact` | `+get-roster` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `contact` | `+list-roster-fields` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+event-subscribe` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+event-unsubscribe` | `high-risk-write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+permission-add` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+permission-remove` | `high-risk-write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+robot-config` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+robot-disable` | `high-risk-write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+robot-enable` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+security-config` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+version-create` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `devapp` | `+version-publish` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `ding` | `+send-by-message` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
+| `contact` | `+get-roster` | `read` | `not_required` | yes | 保留隐藏：返回 HR 花名册、合同和银行卡等敏感个人档案；需要字段级授权、脱敏和审计语义后再进入通用 Agent 选择面。 |
+| `contact` | `+list-roster-fields` | `read` | `not_required` | yes | 保留隐藏：该命令枚举敏感 HR 档案字段，会扩大 Agent 对个人数据的发现面；待权限/脱敏策略固化后再公开。 |
+| `devapp` | `+event-subscribe` | `write` | `user_required` | yes | 保留隐藏：会创建长期事件订阅，属于有外部生命周期的写操作；当前缺少稳定 pending/stop 回收和结果投影证据。 |
+| `devapp` | `+event-unsubscribe` | `high-risk-write` | `user_required` | yes | 保留隐藏：会删除事件订阅，属于不可逆或难恢复的写操作；需补回读、幂等和 dry-run 证据后再公开。 |
+| `devapp` | `+permission-add` | `write` | `user_required` | yes | 保留隐藏：会扩大应用权限范围；当前需要逐权限风险解释、审批状态和失败后回读，不能仅凭 user_required 门禁公开。 |
+| `devapp` | `+permission-remove` | `high-risk-write` | `user_required` | yes | 保留隐藏：会撤销应用权限并可能中断线上能力；缺少影响面预览和终态回读证据。 |
+| `devapp` | `+robot-config` | `write` | `user_required` | yes | 保留隐藏：修改机器人线上配置，可能影响消息投递；需补配置差异预览、回滚和验证结果后再公开。 |
+| `devapp` | `+robot-disable` | `high-risk-write` | `user_required` | yes | 保留隐藏：会使机器人下线；需确认门禁、恢复路径和 readiness 终态证据，当前不作为通用 Agent 入口。 |
+| `devapp` | `+robot-enable` | `write` | `user_required` | yes | 保留隐藏：会恢复机器人线上流量；需补启用后健康检查和失败/未知状态表达。 |
+| `devapp` | `+security-config` | `write` | `user_required` | yes | 保留隐藏：涉及应用安全策略与权限边界；字段级风险和回滚语义尚未完成审阅。 |
+| `devapp` | `+version-create` | `write` | `user_required` | yes | 保留隐藏：会创建应用版本并可能产生后续发布资源；当前 pending/清理和幂等证据不足。 |
+| `devapp` | `+version-publish` | `write` | `user_required` | yes | 保留隐藏：会触发线上版本发布及审批链路；需完整 pending/approval/回滚验证后再公开。 |
+| `ding` | `+send-by-message` | `write` | `user_required` | yes | 保留隐藏：会向外部收件人发送消息，涉及收件人消歧、内容确认和不可逆副作用；当前结果回执与重复发送保护不足。 |
 | `doc` | `+comment-create-inline` | `write` | `user_required` | yes | 保留隐藏：文档内联评论写入需要文档位置和内容的额外语义审阅，暂不作为通用 Agent 入口。 |
 | `doc` | `+template-apply` | `write` | `user_required` | yes | 保留隐藏：模板套用会对目标文档产生写入，待 dry-run/回滚和真实投影证据齐全后再决定公开。 |
-| `drive` | `+download` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `drive` | `+list` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+action-items` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+latest-minutes` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+record-pause` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+record-resume` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+record-stop` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+transcript` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `oa` | `+approve-by` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `report` | `+report-latest` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `wiki` | `+node-copy` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `wiki` | `+node-move` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `wiki` | `+wiki-new-doc` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
+| `drive` | `+download` | `read` | `not_required` | yes | 保留隐藏：旧下载入口与统一 file-transfer 路径重叠，输出格式、文件落盘和大文件副作用边界尚未形成稳定 Agent Contract。 |
+| `drive` | `+list` | `read` | `not_required` | yes | 保留隐藏：旧目录入口存在死条目/分页召回风险，当前不对 Agent 承诺权威全量目录；使用已审阅的确定性查询入口。 |
+| `minutes` | `+action-items` | `read` | `not_required` | yes | 保留隐藏：待办抽取结果依赖听记处理状态，可能是 pending/部分结果；当前缺少稳定分页和逐项结果契约。 |
+| `minutes` | `+latest-minutes` | `read` | `not_required` | yes | 保留隐藏：最近听记是时间排序聚合入口，召回范围和分页边界不稳定；避免 Agent 把空结果当作全量不存在。 |
+| `minutes` | `+record-pause` | `write` | `user_required` | yes | 保留隐藏：会暂停正在进行的听记录音，属于有状态写操作；需补恢复/回读和用户确认语义。 |
+| `minutes` | `+record-resume` | `write` | `user_required` | yes | 保留隐藏：会恢复正在进行的听记录音，需验证实际录音状态和重复调用幂等，当前不公开。 |
+| `minutes` | `+record-stop` | `write` | `user_required` | yes | 保留隐藏：会终止听记录音且可能不可恢复；需补确认、终态回读和失败后状态核验。 |
+| `minutes` | `+transcript` | `read` | `not_required` | yes | 保留隐藏：大体量转写读取涉及长响应和分页/异步处理；当前使用明确的 minutes get transcription 路径，避免重复 canonical。 |
+| `oa` | `+approve-by` | `write` | `user_required` | yes | 保留隐藏：会代表用户执行审批动作，涉及审批人/实例消歧和不可逆业务变更；待完整审批结果与幂等证据。 |
+| `report` | `+report-latest` | `read` | `not_required` | yes | 保留隐藏：旧的最近日志聚合入口与 report inbox/outbox 规范路径重叠，展示字段和方向语义不够明确。 |
+| `wiki` | `+node-copy` | `write` | `user_required` | yes | 保留隐藏：会复制知识库节点并产生新资源，需补目标空间确认、幂等和回滚/部分失败投影。 |
+| `wiki` | `+node-move` | `write` | `user_required` | yes | 保留隐藏：会改变知识库节点归属，影响范围和回滚边界较大；待 dry-run、权限和终态回读证据。 |
+| `wiki` | `+wiki-new-doc` | `write` | `user_required` | yes | 保留隐藏：会创建新文档资源，需补重复创建保护、失败后资源未知状态和清理动作。 |
 
 ## 规则
 
