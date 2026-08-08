@@ -362,6 +362,23 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 这些证据关闭的是 CLI 本地生命周期和契约问题，不等同于已证明所有 Agent
 环境都安装成功；发布后仍需在隔离目录复验 mono、多选 multi、失败恢复和升级覆盖。
 
+## Agent 指令偏移专项扫描证据
+
+本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
+
+- 当前 `skills/mono/scripts/` 中 34 个 Python 脚本逐个执行 `python3 <script> --help`；
+  19 个 Help 声明脚本级 `--dry-run`，只有 1 个声明脚本级 `--format`，7 个脚本的
+  `--help` 仍返回非零。由此确认不能在 Skill 顶层宣称“所有脚本都支持这两个参数”。
+- 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
+  `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
+  级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。
+- `devdoc article search` 路由本身是有效能力，保留该入口；文档说明已弱化为“只返回
+  搜索结果和官方链接，不能据此声称链接内容已被 CLI 读取或验证”，并明确 `--page`/
+  `--size` 的当前类型以 Help 为准。
+
+这项扫描发现的是 Agent 可执行语义漂移，不是 CI 路径缺失；后续每次 Skill 变更都应
+继续对 Help、参数、结果形状和安全语义做逐条 Agent 复核。
+
 ## 下一批优先级
 
 1. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。

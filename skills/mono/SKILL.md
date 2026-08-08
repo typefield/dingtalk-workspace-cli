@@ -9,7 +9,7 @@ cli_version: ">=1.0.15"
 通过 `dws` 命令管理钉钉产品能力。
 
 
-> **命令可用性以当前 dws 二进制为准**。本文档随内置 skill 发布，可能滞后于二进制；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。`--help` 决定 Cobra 实际接受的 flags；公开基础命令和内建 `+` shortcut 的 leaf Schema（常规用 `--compact`）决定 Agent 选择、参数/约束和安全确认语义。实际调用前可用 `dws <cmd> --help` 或 `--dry-run` 验证。
+> **命令可用性以当前 dws 二进制为准**。本文档随内置 skill 发布，可能滞后于二进制；如果 `dws <cmd> --help` 不存在，说明当前版本未暴露该命令。`--help` 决定 Cobra 实际接受的 flags；公开基础命令和内建 `+` shortcut 的 leaf Schema（常规用 `--compact`）决定 Agent 选择、参数/约束和安全确认语义。实际调用前先读 leaf `--help`；只有该命令的 Help/Schema 明确声明 `--dry-run` 时才可以使用它。
 
 ## 严格禁止 (NEVER DO)
 - 不要使用 dws 命令以外的方式操作（禁止 curl、HTTP API、浏览器）
@@ -17,7 +17,7 @@ cli_version: ">=1.0.15"
 - 不要猜测字段名/参数值，操作前必须先查询确认
 
 ## 严格要求 (MUST DO)
-- 所有命令必须加 `--format json` 以获取可解析输出
+- 终结型 CLI 命令默认使用 `--format json` 获取可解析输出；先以 leaf Help 确认该 flag。长连接 `event consume` 默认使用 `--format ndjson`，只有设置 `--max-events` 或 `--duration` 后才使用 `json/pretty`；不要把无限事件流强行改成单个 JSON 文档。Skill 脚本是独立入口，脚本本身未必有 `--format` 或 `--dry-run`，应按脚本 Help 调用；脚本内部调用 dws 时再传递合适的格式。
 - 危险操作必须先向用户确认，用户同意后才加 `--yes` 执行
 - 单次批量操作不超过 30 条记录
 - 所有命令必须**严格遵循**对应产品参考文档里面规定的参数格式（如：如果有参数值，则参数和参数值之间至少用一个空格隔开）
