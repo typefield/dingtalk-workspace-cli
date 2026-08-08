@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -69,11 +70,17 @@ func (f *muteMemberResolutionCaller) JQ() string     { return "" }
 
 func newPlatformCoverageRoot() *cobra.Command {
 	root := &cobra.Command{Use: "dws", SilenceUsage: true, SilenceErrors: true}
+	ctx, _ := frameworkoutput.WithResultStore(context.Background())
+	root.SetContext(ctx)
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
 	root.PersistentFlags().Bool("yes", false, "")
 	root.PersistentFlags().Bool("dry-run", false, "")
 	root.PersistentFlags().String("format", "json", "")
+	root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		_, _, err := frameworkoutput.EmitStoredResult(cmd)
+		return err
+	}
 	root.AddCommand(shortcut.Commands()...)
 	return root
 }

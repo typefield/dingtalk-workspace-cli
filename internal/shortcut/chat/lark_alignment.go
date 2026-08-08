@@ -505,7 +505,7 @@ func executeFlagBatch(rt *shortcut.RuntimeContext, tool string) error {
 }
 
 var FlagList = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+flag-list",
 	Product:       "im",
@@ -665,8 +665,9 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 			hasMore = pageHasMore
 			if !hasMore {
 				if cursorErr == nil && nextCursor > 0 {
-					// Legacy output historically accepted this contradiction. The
-					// dual result fails closed without changing legacy bytes.
+					// The legacy renderer historically accepted this contradiction.
+					// The active unified result must fail closed instead of claiming
+					// endpoint exhaustion.
 					boundaryFailure = "收藏列表返回 hasMore=false，但同时携带 nextCursor"
 				}
 				complete = true

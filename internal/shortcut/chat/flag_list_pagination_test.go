@@ -5,19 +5,98 @@ package chat
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/jsonutil"
 	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
-func TestFlagListPaginationRolloutStartsWithDualValidation(t *testing.T) {
-	if FlagList.OutputRollout != frameworkoutput.RolloutDualValidate {
-		t.Fatalf("flag-list rollout = %q, want dual_validate", FlagList.OutputRollout)
+func TestFlagListPaginationRolloutIsUnifiedActive(t *testing.T) {
+	if FlagList.OutputRollout != frameworkoutput.RolloutUnifiedActive {
+		t.Fatalf("flag-list rollout = %q, want unified_active", FlagList.OutputRollout)
 	}
+}
+
+func runFlagListUnifiedResult(t *testing.T, fake *larkAlignmentCaller, args ...string) (map[string]any, int) {
+	t.Helper()
+	helpers.InitDeps(fake)
+	cmd := corecmd.New(shortcutcore.FromShortcut(FlagList))
+	// The application root owns this persistent flag. Mount it here too so the
+	// promotion proof exercises the public Agent form: --format json.
+	cmd.PersistentFlags().String("format", "json", "")
+	ctx, _ := frameworkoutput.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs(args)
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("active command execution failed: %v", err)
+	}
+	exitCode, emitted, err := frameworkoutput.EmitStoredResult(cmd)
+	if err != nil || !emitted {
+		t.Fatalf("active result emission: code=%d emitted=%v err=%v", exitCode, emitted, err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode active envelope: %v\n%s", err, stdout.String())
+	}
+	if _, leaked := envelope["contract_version"]; leaked {
+		t.Fatalf("active envelope exposed removed contract_version: %#v", envelope)
+	}
+	return envelope, exitCode
+}
+
+func TestFlagListUnifiedPromotionEvidence(t *testing.T) {
+	t.Run("page limit exposes a resumable endpoint", func(t *testing.T) {
+		envelope, exitCode := runFlagListUnifiedResult(t, &larkAlignmentCaller{responses: map[string]string{
+			"im/list_message_favorites": `{"result":{"items":[{"openMessageId":"msg-1"}],"hasMore":true,"nextCursor":9}}`,
+		}}, "--format", "json", "--page-all", "--page-limit", "1")
+		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		pagination := envelope["meta"].(map[string]any)["pagination"].(map[string]any)
+		if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "9" || pagination["pages"] != float64(1) {
+			t.Fatalf("pagination=%#v", pagination)
+		}
+	})
+
+	t.Run("unknown legacy boundary does not assert endpoint completion", func(t *testing.T) {
+		envelope, exitCode := runFlagListUnifiedResult(t, &larkAlignmentCaller{responses: map[string]string{
+			"im/list_message_favorites": `{"result":{"items":[]}}`,
+		}}, "--format", "json")
+		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		if _, present := envelope["meta"]; present {
+			t.Fatalf("unknown pagination must omit meta.pagination: %#v", envelope)
+		}
+		data := envelope["data"].(map[string]any)
+		if data["pagination_known"] != false {
+			t.Fatalf("unknown pagination data=%#v", data)
+		}
+	})
+
+	t.Run("later read failure retains completed page", func(t *testing.T) {
+		envelope, exitCode := runFlagListUnifiedResult(t, &larkAlignmentCaller{
+			sequenceResponses: map[string][]string{
+				"im/list_message_favorites": {`{"result":{"items":[{"openMessageId":"msg-1"}],"hasMore":true,"nextCursor":9}}`},
+			},
+			failProductToolAt: map[string]int{"im/list_message_favorites": 2},
+		}, "--format", "json", "--page-all")
+		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data := envelope["data"].(map[string]any)
+		if data["total"] != float64(2) || len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
+			t.Fatalf("partial data=%#v", data)
+		}
+	})
 }
 
 func TestCrossPlatformCoverageFlagListDryRunStopsBeforeRead(t *testing.T) {
@@ -57,31 +136,16 @@ func TestCrossPlatformCoverageFlagListPageAllUsesNumericCursorAndDeduplicates(t 
 	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload["count"] != float64(2) || payload["pagesFetched"] != float64(2) || payload["complete"] != true || payload["hasMore"] != false {
-		t.Fatalf("payload = %#v", payload)
+	if payload["ok"] != true || payload["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", payload)
 	}
-	want, err := jsonutil.MarshalIndent(map[string]any{
-		"count": 2,
-		"items": []map[string]any{
-			{"openMessageId": "msg-1", "openConversationId": "cid-1", "summary": "一"},
-			{"openMessageId": "msg-2", "openConversationId": "cid-2", "summary": "二"},
-		},
-		"pagesFetched":         2,
-		"paginationKnown":      true,
-		"complete":             true,
-		"hasMore":              false,
-		"nextCursor":           0,
-		"stopReason":           "source_complete",
-		"truncatedByPageLimit": false,
-		"failedCount":          0,
-		"failures":             []map[string]any{},
-		"partial":              false,
-	}, "", "  ")
-	if err != nil {
-		t.Fatal(err)
+	data := payload["data"].(map[string]any)
+	if data["count"] != float64(2) || len(data["items"].([]any)) != 2 {
+		t.Fatalf("data = %#v", data)
 	}
-	if got := output.String(); got != string(want)+"\n" {
-		t.Fatalf("dual_validate changed legacy bytes:\n%s\nwant:\n%s", got, string(want))
+	pagination := payload["meta"].(map[string]any)["pagination"].(map[string]any)
+	if pagination["endpoint_exhausted"] != true || pagination["pages"] != float64(2) || pagination["items"] != float64(2) {
+		t.Fatalf("pagination = %#v", pagination)
 	}
 }
 
@@ -104,8 +168,12 @@ func TestCrossPlatformCoverageFlagListPageTokenAndPageLimit(t *testing.T) {
 	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 		t.Fatal(err)
 	}
-	if payload["complete"] != false || payload["nextCursor"] != float64(9) || payload["truncatedByPageLimit"] != true || payload["stopReason"] != "page_limit" {
-		t.Fatalf("payload = %#v", payload)
+	if payload["ok"] != true || payload["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", payload)
+	}
+	pagination := payload["meta"].(map[string]any)["pagination"].(map[string]any)
+	if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "9" || pagination["pages"] != float64(1) {
+		t.Fatalf("pagination = %#v", pagination)
 	}
 }
 
@@ -122,15 +190,19 @@ func TestCrossPlatformCoverageFlagListFailureModes(t *testing.T) {
 		var output bytes.Buffer
 		root.SetOut(&output)
 		root.SetArgs([]string{"chat", "+flag-list", "--page-all"})
-		if err := root.Execute(); err == nil {
-			t.Fatal("expected later-page error")
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
 		}
 		var payload map[string]any
 		if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 			t.Fatal(err)
 		}
-		if payload["count"] != float64(1) || payload["partial"] != true || payload["failedCount"] != float64(1) || payload["stopReason"] != "read_failure" {
-			t.Fatalf("payload = %#v", payload)
+		if payload["ok"] != false || payload["outcome"] != "partial_failure" {
+			t.Fatalf("envelope = %#v", payload)
+		}
+		data := payload["data"].(map[string]any)
+		if data["total"] != float64(2) || len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
+			t.Fatalf("partial data = %#v", data)
 		}
 	})
 
@@ -140,10 +212,18 @@ func TestCrossPlatformCoverageFlagListFailureModes(t *testing.T) {
 		}}
 		helpers.InitDeps(fake)
 		root := newPlatformCoverageRoot()
-		root.SetOut(&bytes.Buffer{})
+		var output bytes.Buffer
+		root.SetOut(&output)
 		root.SetArgs([]string{"chat", "+flag-list", "--cursor", "7", "--page-all"})
-		if err := root.Execute(); err == nil {
-			t.Fatal("stalled cursor unexpectedly succeeded")
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		var envelope map[string]any
+		if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
+			t.Fatal(err)
+		}
+		if envelope["outcome"] != "partial_failure" {
+			t.Fatalf("stalled cursor envelope = %#v", envelope)
 		}
 	})
 
@@ -153,10 +233,18 @@ func TestCrossPlatformCoverageFlagListFailureModes(t *testing.T) {
 		}}
 		helpers.InitDeps(fake)
 		root := newPlatformCoverageRoot()
-		root.SetOut(&bytes.Buffer{})
+		var output bytes.Buffer
+		root.SetOut(&output)
 		root.SetArgs([]string{"chat", "+flag-list", "--page-size", "1"})
-		if err := root.Execute(); err == nil {
-			t.Fatal("full legacy page unexpectedly succeeded")
+		if err := root.Execute(); err != nil {
+			t.Fatal(err)
+		}
+		var envelope map[string]any
+		if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
+			t.Fatal(err)
+		}
+		if envelope["outcome"] != "partial_failure" {
+			t.Fatalf("unknown boundary envelope = %#v", envelope)
 		}
 	})
 }
@@ -210,7 +298,8 @@ func TestCrossPlatformCoverageFlagListAdditionalEdges(t *testing.T) {
 		payload, err := run(t, &larkAlignmentCaller{responses: map[string]string{
 			"im/list_message_favorites": `{"result":{"items":[],"hasMore":false}}`,
 		}}, "--page-token="+token)
-		if err != nil || payload["complete"] != true {
+		pagination := payload["meta"].(map[string]any)["pagination"].(map[string]any)
+		if err != nil || payload["outcome"] != "success" || pagination["endpoint_exhausted"] != true {
 			t.Fatalf("token=%q payload=%#v err=%v", token, payload, err)
 		}
 	}
@@ -229,24 +318,30 @@ func TestCrossPlatformCoverageFlagListAdditionalEdges(t *testing.T) {
 				`{"result":{"items":[],"hasMore":false}}`,
 			},
 		}}, "--page-all")
-		if err != nil || payload["pagesFetched"] != float64(2) || payload["complete"] != true {
+		pagination := payload["meta"].(map[string]any)["pagination"].(map[string]any)
+		if err != nil || payload["outcome"] != "success" || pagination["pages"] != float64(2) || pagination["endpoint_exhausted"] != true {
 			t.Fatalf("payload=%#v err=%v", payload, err)
 		}
 	})
 
 	for _, tc := range []struct {
-		name     string
-		response string
-		wantErr  bool
-		stop     string
+		name        string
+		response    string
+		wantOutcome string
 	}{
-		{name: "single page continuation", response: `{"result":{"items":[{"openMessageId":"m1"}],"hasMore":true,"nextCursor":2}}`, stop: "single_page"},
-		{name: "missing continuation", response: `{"result":{"items":[{"openMessageId":"m1"}],"hasMore":true}}`, wantErr: true, stop: "pagination_error"},
+		{name: "single page continuation", response: `{"result":{"items":[{"openMessageId":"m1"}],"hasMore":true,"nextCursor":2}}`, wantOutcome: "success"},
+		{name: "missing continuation", response: `{"result":{"items":[{"openMessageId":"m1"}],"hasMore":true}}`, wantOutcome: "partial_failure"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := run(t, &larkAlignmentCaller{responses: map[string]string{"im/list_message_favorites": tc.response}})
-			if (err != nil) != tc.wantErr || payload["stopReason"] != tc.stop {
+			if err != nil || payload["outcome"] != tc.wantOutcome {
 				t.Fatalf("payload=%#v err=%v", payload, err)
+			}
+			if tc.wantOutcome == "success" {
+				pagination := payload["meta"].(map[string]any)["pagination"].(map[string]any)
+				if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "2" {
+					t.Fatalf("pagination=%#v", pagination)
+				}
 			}
 		})
 	}
