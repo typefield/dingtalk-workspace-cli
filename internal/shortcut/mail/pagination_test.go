@@ -66,6 +66,8 @@ func TestMailPaginationRejectsInconsistentEvidence(t *testing.T) {
 func TestMailPaginatedListsUseUnifiedResultAfterPaginationProjection(t *testing.T) {
 	for name, rollout := range map[string]output.RolloutState{
 		"thread-list":   ThreadList.OutputRollout,
+		"folder-list":   FolderList.OutputRollout,
+		"tag-list":      TagList.OutputRollout,
 		"user-search":   UserSearch.OutputRollout,
 		"template-list": TemplateList.OutputRollout,
 		"contact-list":  ContactList.OutputRollout,

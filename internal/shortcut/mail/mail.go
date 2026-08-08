@@ -190,12 +190,13 @@ func threadListFirst(m map[string]any, keys ...string) (any, bool) {
 
 // FolderList 列举邮件文件夹。
 var FolderList = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+folder-list",
-	Product:     "mail",
-	Description: "列出顶层文件夹或指定父文件夹下的子文件夹",
-	Intent:      "当你需要了解某个邮箱有哪些文件夹、或要取得文件夹 ID 以便移动邮件、按文件夹列信/建规则时使用；传入邮箱（可选父文件夹 ID 查子级），返回文件夹列表及其 ID。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+folder-list",
+	Product:       "mail",
+	Description:   "列出顶层文件夹或指定父文件夹下的子文件夹",
+	Intent:        "当你需要了解某个邮箱有哪些文件夹、或要取得文件夹 ID 以便移动邮件、按文件夹列信/建规则时使用；传入邮箱（可选父文件夹 ID 查子级），返回文件夹列表及其 ID。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -243,7 +244,11 @@ var FolderList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(folders), "folders": folders})
+		meta, err := mailListMeta(data, len(folders))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(folders), "folders": folders}, meta)
 	},
 }
 
@@ -306,12 +311,13 @@ func folderListFirst(m map[string]any, keys ...string) (any, bool) {
 
 // TagList 列举邮件标签。
 var TagList = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+tag-list",
-	Product:     "mail",
-	Description: "列出指定邮箱下的所有邮件标签",
-	Intent:      "当你要查看邮箱里有哪些标签、或需要取得标签 ID 以便给邮件/会话加标签时使用；传入邮箱地址，返回全部邮件标签及其 ID。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+tag-list",
+	Product:       "mail",
+	Description:   "列出指定邮箱下的所有邮件标签",
+	Intent:        "当你要查看邮箱里有哪些标签、或需要取得标签 ID 以便给邮件/会话加标签时使用；传入邮箱地址，返回全部邮件标签及其 ID。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -354,7 +360,11 @@ var TagList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(tags), "tags": tags})
+		meta, err := mailListMeta(data, len(tags))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(tags), "tags": tags}, meta)
 	},
 }
 
