@@ -1862,7 +1862,7 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 // the native `dev ...` tree and the existing `devapp +...` shortcut tree. Both
 // entry points must classify the same upstream payload into the same v2
 // outcome; only command routing and projection differ.
-func DevAppCommandResultFromPayload(tool string, payload any, dryRun bool) output.CommandResult {
+func DevAppCommandResultFromPayload(tool string, payload any, dryRun bool, params ...map[string]any) output.CommandResult {
 	response := map[string]any{"content": payload}
 	if object, ok := payload.(map[string]any); ok {
 		if _, wrapped := object["content"]; wrapped {
@@ -1876,6 +1876,9 @@ func DevAppCommandResultFromPayload(tool string, payload any, dryRun bool) outpu
 			DryRun:      dryRun,
 		},
 		Response: response,
+	}
+	if len(params) > 0 && params[0] != nil {
+		result.Invocation.Params = params[0]
 	}
 	result = normalizeDevAppServiceResult(result)
 	if strings.TrimSpace(tool) != "" {

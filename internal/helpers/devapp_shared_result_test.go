@@ -89,6 +89,24 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		}
 	})
 
+	t.Run("approval precheck preserves params and stays terminal", func(t *testing.T) {
+		result := DevAppCommandResultFromPayload(devAppVersionPublishTool, map[string]any{
+			"approvalMode": "SELECT_APPROVER",
+			"unifiedAppId": "u1",
+			"versionId":    "v1",
+			"approvalCandidates": []any{
+				map[string]any{"userId": "user-1", "name": "Alice"},
+			},
+		}, false, map[string]any{"precheckOnly": true})
+		env, err := output.EnvelopeFromResult(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if env.Outcome != output.OutcomeSuccess || result.ExitCode() != 0 {
+			t.Fatalf("precheck envelope=%+v rc=%d, want terminal success", env, result.ExitCode())
+		}
+	})
+
 	t.Run("pagination", func(t *testing.T) {
 		result := DevAppCommandResultFromPayload("", map[string]any{
 			"items": []any{}, "hasMore": true, "nextCursor": "next",

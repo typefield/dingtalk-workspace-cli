@@ -143,7 +143,7 @@ func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
 		if err != nil {
 			return err
 		}
-		return rt.storePayload(tool, data)
+		return rt.storePayload(tool, params, data)
 	}
 	if output.CommandRollout(rt.cmd) == output.RolloutDualValidate {
 		preview := any(map[string]any{
@@ -153,7 +153,7 @@ func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
 			"arguments": params,
 		})
 		if rt.DryRun() {
-			if err := output.ValidateResult(rt.resultForPayload(tool, preview)); err != nil {
+			if err := output.ValidateResult(rt.resultForPayload(tool, preview, params)); err != nil {
 				return err
 			}
 			// The legacy caller owns dry-run presentation (including its human
@@ -166,7 +166,7 @@ func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
 			return err
 		}
 		data := legacyMCPPayload(text)
-		if err := output.ValidateResult(rt.resultForPayload(tool, data)); err != nil {
+		if err := output.ValidateResult(rt.resultForPayload(tool, data, params)); err != nil {
 			return err
 		}
 		// dual_validate changes no external bytes: it renders the once-fetched
@@ -330,13 +330,13 @@ func (rt *RuntimeContext) Output(payload any) error {
 	return output.WriteCommandPayload(rt.cmd, payload, output.FormatJSON)
 }
 
-func (rt *RuntimeContext) storePayload(tool string, payload any) error {
-	return output.StoreResult(rt.cmd.Context(), rt.resultForPayload(tool, payload))
+func (rt *RuntimeContext) storePayload(tool string, params map[string]any, payload any) error {
+	return output.StoreResult(rt.cmd.Context(), rt.resultForPayload(tool, payload, params))
 }
 
-func (rt *RuntimeContext) resultForPayload(tool string, payload any) output.CommandResult {
+func (rt *RuntimeContext) resultForPayload(tool string, payload any, params ...map[string]any) output.CommandResult {
 	if rt.shortcut.product() == "devapp" {
-		return helpers.DevAppCommandResultFromPayload(tool, payload, rt.DryRun())
+		return helpers.DevAppCommandResultFromPayload(tool, payload, rt.DryRun(), params...)
 	}
 	options := []output.ResultOption{}
 	if rt.DryRun() {
