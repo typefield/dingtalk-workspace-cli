@@ -974,7 +974,7 @@ func newOaCommand() *cobra.Command {
 			}
 			commentText := flagOrFallback(cmd, "content", "text")
 			if commentText == "" {
-				return fmt.Errorf("--content is required")
+				return oaInvalidArgument("--content is required")
 			}
 			return callMCPTool("dingflow_comments", map[string]any{
 				"processInstanceId": mustGetFlag(cmd, "instance-id"),
@@ -1032,7 +1032,7 @@ func newOaCommand() *cobra.Command {
 			}
 			userListStr := flagOrFallback(cmd, "users", "user-list")
 			if userListStr == "" {
-				return fmt.Errorf("--users is required")
+				return oaInvalidArgument("--users is required")
 			}
 			userList := strings.Split(userListStr, ",")
 			argsMap := map[string]any{
@@ -1335,7 +1335,7 @@ func newOaCommand() *cobra.Command {
 			if raw, _ := cmd.Flags().GetString("request"); raw != "" {
 				request, err := decodeOARequest(raw)
 				if err != nil {
-					return fmt.Errorf("--request JSON 解析失败: %w", err)
+					return oaInvalidArgument("--request JSON 解析失败: %v", err)
 				}
 				return callMCPTool("forecast_process", map[string]any{"ProcessForecastPopRequest": request})
 			}
@@ -1344,11 +1344,11 @@ func newOaCommand() *cobra.Command {
 			}
 			deptID, err := strconv.ParseInt(mustGetFlag(cmd, "dept-id"), 10, 64)
 			if err != nil {
-				return fmt.Errorf("--dept-id 必须为整数: %w", err)
+				return oaInvalidArgument("--dept-id 必须为整数: %v", err)
 			}
 			values, err := oaFormValues(mustGetFlag(cmd, "form-values"))
 			if err != nil {
-				return fmt.Errorf("--form-values JSON 解析失败: %w", err)
+				return oaInvalidArgument("--form-values JSON 解析失败: %v", err)
 			}
 			return callMCPTool("forecast_process", map[string]any{"ProcessForecastPopRequest": map[string]any{"processCode": mustGetFlag(cmd, "process-code"), "deptId": deptID, "formComponentValues": [][]map[string]string{values}}})
 		},
