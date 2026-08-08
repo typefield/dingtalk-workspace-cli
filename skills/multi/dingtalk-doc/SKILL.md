@@ -87,7 +87,7 @@ metadata:
 | 用户说 | 命令 |
 |--------|------|
 | "创建文档（短内容）" | `dws doc create --name "<标题>" --content "<内容>"` |
-| "创建+写入（长内容自动分块）" | `python scripts/doc_create_and_write.py --name "<标题>" --content "<内容>" [--mode append\|overwrite]` |
+| "创建+写入（长内容自动分块）" | 用户确认名称、内容和位置后：`python scripts/doc_create_and_write.py --name "<标题>" --content "<内容>" --yes --format json [--mode append\|overwrite]`；只在 `verification.state=verified` 时答复已回读确认 |
 | "搜在线文字文档 / 找在线文字文档" | `dws drive search --query "<关键词>" --format json` → `dws drive info --node <nodeId> --format json` → 仅 `extension=adoc` 使用 `dws doc read --node <nodeId> --format json` |
 | "读在线文字文档（adoc）内容" | `dws doc read --node <nodeId> --format json` |
 | "更新文档内容 / 分块追加" | `dws doc update --node <nodeId> --content "<分块>" --mode append` |
@@ -102,6 +102,11 @@ metadata:
 ## 标准 SOP（必遵流程）
 
 > 命中以下意图**必须**按对应 SOP 顺序执行；**禁止**跳步、替换命令、编造 nodeId/blockId。结构化命令必须带 `--format json`，执行后必须按"验证"步回读真实字段。文件类操作（上传/下载/复制/移动）切 `dingtalk-drive`；知识库节点管理切 `dingtalk-wiki`。
+
+> `doc_create_and_write.py` 是创建后分块写入的高风险编排：必须带 `--yes`，且不会自动重试
+> `doc update`（避免 append/overwrite 重复写入）。`--dry-run --format json` 仅输出计划，不创建、
+> 不写入也不读取远端。成功结果中的 `verification.state` 为 `verified` 才表示读回正文已逐块对拍；
+> `not_verified` 只代表请求成功，仍需按返回的 `nodeId` 人工或后续 Agent 回读核查。
 
 ### SOP-1 查找并读取文档（query-doc）
 

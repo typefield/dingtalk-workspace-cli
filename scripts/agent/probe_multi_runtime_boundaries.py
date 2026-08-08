@@ -21,7 +21,7 @@ RUNTIMES = {
     "AITable": (ROOT / "skills" / "multi" / "dingtalk-aitable" / "scripts", True),
     "Todo": (ROOT / "skills" / "multi" / "dingtalk-todo" / "scripts", True),
     "Misc": (ROOT / "skills" / "multi" / "dingtalk-misc" / "scripts", True),
-    "Shared": (ROOT / "skills" / "multi" / "dingtalk-shared" / "scripts", False),
+    "Shared": (ROOT / "skills" / "multi" / "dingtalk-shared" / "scripts", True),
 }
 
 

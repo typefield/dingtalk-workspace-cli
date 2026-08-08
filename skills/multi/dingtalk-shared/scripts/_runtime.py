@@ -14,7 +14,7 @@ import io
 import json
 import subprocess
 import sys
-from collections.abc import Callable, Mapping, Sequence
+from collections.abc import Callable, Iterable, Mapping, Sequence
 from dataclasses import dataclass
 from typing import Any, Optional
 
@@ -74,6 +74,50 @@ def run_child_dws(args: Sequence[str], *, dry_run: bool = False, timeout: float 
         )
         return ChildDWSResult("failed" if error["type"] in _NOT_EXECUTED_TYPES else "unknown", payload=payload, error=error, meta=meta, command=command)
     return ChildDWSResult("unknown", error={"type": "api", "message": "dws 未返回可解析的终态结果；请求是否已执行未知，请先核查目标状态。", "exit_code": completed.returncode}, command=command)
+
+
+def batch_data(
+    *,
+    succeeded: Iterable[Mapping[str, Any]] = (),
+    failed: Iterable[Mapping[str, Any]] = (),
+    unknown: Iterable[Mapping[str, Any]] = (),
+    total: Optional[int] = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Create the stable three-channel shape for a multi-step write.
+
+    A ``partial_failure`` result is only truthful when it retains the concrete
+    entries that did succeed and the entries that failed or became uncertain.
+    Callers cannot use this helper to silently drop the latter two channels.
+    """
+    channels = {
+        "succeeded": [dict(item) for item in succeeded],
+        "failed": [dict(item) for item in failed],
+        "unknown": [dict(item) for item in unknown],
+    }
+    for channel, entries in channels.items():
+        for entry in entries:
+            if not isinstance(entry.get("id"), str) or not entry["id"]:
+                raise ValueError(f"{channel} entry requires a non-empty id")
+            if channel == "failed":
+                error = entry.get("error")
+                if not isinstance(error, Mapping) or not isinstance(error.get("type"), str) or not error["type"]:
+                    raise ValueError("failed entry requires a typed error")
+            if channel == "unknown" and (not isinstance(entry.get("reason"), str) or not entry["reason"]):
+                raise ValueError("unknown entry requires a reason")
+    computed = sum(len(entries) for entries in channels.values())
+    if total is None:
+        total = computed
+    if total != computed:
+        raise ValueError(f"batch total {total} does not equal channel count {computed}")
+    return {"total": total, **channels, **extra}
+
+
+def batch_outcome(data: Mapping[str, Any]) -> str:
+    """Derive the outcome without hiding incomplete or uncertain entries."""
+    if not data.get("failed") and not data.get("unknown"):
+        return "success"
+    return "partial_failure" if data.get("succeeded") else "failure"
 
 
 def add_contract_flags(parser: argparse.ArgumentParser, *, default: str = "text") -> None:

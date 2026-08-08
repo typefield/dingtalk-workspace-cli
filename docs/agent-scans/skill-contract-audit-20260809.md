@@ -149,7 +149,7 @@ multi Python files: 56
 Agent entries: 42
 Help nonzero: 0
 Help text mentions --dry-run: 30/42
-Help text mentions --format: 7/42
+Help text mentions --format: 8/42
 
 Nonzero help:
 
@@ -159,7 +159,6 @@ Entries without both flags (review, not automatic failures):
 - skills/multi/dingtalk-calendar/scripts/calendar_schedule_meeting.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-calendar/scripts/calendar_today_agenda.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-contact/scripts/contact_dept_members.py: rc=0, dry_run=True, format=False
-- skills/multi/dingtalk-doc/scripts/doc_create_and_write.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-drive/scripts/drive_tree_list.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-mail/scripts/mail_unread_summary.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-minutes/scripts/minutes_extract_todos.py: rc=0, dry_run=True, format=False
@@ -200,7 +199,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T05:48:42`
+- generated_at: `2026-08-09T05:56:29`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
