@@ -19,11 +19,11 @@ set -eu
 #   check-stdout-json.sh --self-test         scan runtime-generated fixtures
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-. "$ROOT/scripts/policy/output-contract-lib.sh"
+. "$ROOT/scripts/policy/unified-result-lib.sh"
 
 OC_SCRIPT_NAME="stdout-json"
 
-output_contract_usage() {
+unified_result_usage() {
 	printf 'usage: %s [--scope dev|all] | --self-test | --help\n' "$0"
 }
 
@@ -55,11 +55,11 @@ stdout_json_scan() {
 		fi
 	fi
 
-	output_contract_report_violations "$stdout_json_label" "$stdout_json_violations"
+	unified_result_report_violations "$stdout_json_label" "$stdout_json_violations"
 }
 
-output_contract_init "$ROOT"
-output_contract_parse_args "$@"
+unified_result_init "$ROOT"
+unified_result_parse_args "$@"
 
 self_test_cases() {
 	printf 'envelope_legal_success|envelope|pass\n'
@@ -75,7 +75,7 @@ self_test_cases() {
 }
 
 if [ "$SELF_TEST" -eq 1 ]; then
-	output_contract_run_self_test stdout_json_scan
+	unified_result_run_self_test stdout_json_scan
 fi
 
-output_contract_scan_samples stdout_json_scan
+unified_result_scan_samples stdout_json_scan

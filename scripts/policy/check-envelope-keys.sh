@@ -27,11 +27,11 @@ set -eu
 #   check-envelope-keys.sh --self-test         scan runtime-generated fixtures
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-. "$ROOT/scripts/policy/output-contract-lib.sh"
+. "$ROOT/scripts/policy/unified-result-lib.sh"
 
 OC_SCRIPT_NAME="envelope-keys"
 
-output_contract_usage() {
+unified_result_usage() {
 	printf 'usage: %s [--scope dev|all] | --self-test | --help\n' "$0"
 }
 
@@ -43,7 +43,7 @@ envelope_keys_scan() {
 
 	if [ ! -s "$envelope_keys_out" ]; then
 		envelope_keys_violations="stdout is empty; nothing to scan"
-		output_contract_report_violations "$envelope_keys_label" "$envelope_keys_violations"
+		unified_result_report_violations "$envelope_keys_label" "$envelope_keys_violations"
 		return 0
 	fi
 
@@ -54,7 +54,7 @@ envelope_keys_scan() {
 
 	if ! jq empty <"$envelope_keys_out" >/dev/null 2>&1; then
 		envelope_keys_violations="stdout is not parseable JSON; envelope-key scan fails closed (parseability gate: check-stdout-json.sh)"
-		output_contract_report_violations "$envelope_keys_label" "$envelope_keys_violations"
+		unified_result_report_violations "$envelope_keys_label" "$envelope_keys_violations"
 		return 0
 	fi
 
@@ -114,11 +114,11 @@ envelope_keys_scan() {
 		envelope_keys_violations="${envelope_keys_violations:+$envelope_keys_violations; }$envelope_keys_struct_msg"
 	fi
 
-	output_contract_report_violations "$envelope_keys_label" "$envelope_keys_violations"
+	unified_result_report_violations "$envelope_keys_label" "$envelope_keys_violations"
 }
 
-output_contract_init "$ROOT"
-output_contract_parse_args "$@"
+unified_result_init "$ROOT"
+unified_result_parse_args "$@"
 
 self_test_cases() {
 	printf 'envelope_legal_success|envelope|pass\n'
@@ -138,7 +138,7 @@ self_test_cases() {
 	printf 'envelope_i1_mismatch|envelope|fail\n'
 	printf 'envelope_i3_mismatch|envelope|fail\n'
 	printf 'envelope_data_error|envelope|fail\n'
-	printf 'envelope_contract_version|envelope|fail\n'
+	printf 'envelope_disallowed_version_marker|envelope|fail\n'
 	printf 'stdout_two_documents|envelope|fail\n'
 	printf 'legacy_envelope_keys|envelope|fail\n'
 	printf 'legacy_ok|envelope|fail\n'
@@ -146,7 +146,7 @@ self_test_cases() {
 }
 
 if [ "$SELF_TEST" -eq 1 ]; then
-	output_contract_run_self_test envelope_keys_scan
+	unified_result_run_self_test envelope_keys_scan
 fi
 
-output_contract_scan_samples envelope_keys_scan
+unified_result_scan_samples envelope_keys_scan

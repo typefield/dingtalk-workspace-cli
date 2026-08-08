@@ -5,8 +5,8 @@
 - `check-stdout-json.sh`（B161）—— json 模式 stdout 纯 JSON 检查（AC-11）
 - `check-string-bool.sh`（B162）—— 字符串布尔违规扫描（AC-02）
 - `check-envelope-keys.sh`（B163）—— 非标准信封键名扫描（信封顶层键集合固化，G1）
-- `output-contract-lib.sh` —— 三脚本共享库（样本表、隔离 HOME、重试纪律、self-test 框架）；这是内部文件名，不是 CLI 协议或用户接口。
-- `output-contract-lib.sh` —— 在临时目录按需生成 self-test 输入（合法统一返回 + 各类违规样例），仓库不保存派生 JSON fixture。
+- `unified-result-lib.sh` —— 三脚本共享库（样本表、隔离 HOME、重试纪律、self-test 框架）；这是内部文件名，不是 CLI 协议或用户接口。
+- `unified-result-lib.sh` —— 在临时目录按需生成 self-test 输入（合法统一返回 + 各类违规样例），仓库不保存派生 JSON fixture。
 
 ## 定位：原型，非强制门禁（B165）
 
@@ -29,15 +29,15 @@ make build            # 先构建 ./dws（脚本消费真实二进制）
 
 ## 样本与 --scope（B166）
 
-脚本对**代表性命令的真实 stdout** 做扫描，样本表定义在 `output-contract-lib.sh`。
-的 `output_contract_samples()`，按 scope 分两档：
+脚本对**代表性命令的真实 stdout** 做扫描，样本表定义在 `unified-result-lib.sh`。
+的 `unified_result_samples()`，按 scope 分两档：
 
 | scope | 样本 | 说明 |
 |---|---|---|
 | `dev`（默认） | `dev connect list`、`dev connect status`、`dev connect stop --dry-run` | 全部是**离线确定性**统一结果 terminal 样本：隔离新建 HOME + `DWS_DISABLE_KEYCHAIN=1`，无需登录、无网络、无副作用。`dev connect` 根同时承载 stream 与 daemon start，当前整体 legacy，不纳入统一结果信封样本。 |
 | `all` | dev 档 + `dev app list` + `devapp +list` + `schema list` + `auth status` + `version` | 两个 devapp 入口需要登录态（继承真实 HOME），并覆盖原子命令与 shortcut adapter；后三个是**未迁移的非信封 json 输出**（legacy class），只做可解析性与字符串布尔检查，**不做信封形状检查**（那是迁移前已知形态，不是回归） |
 
-样本分两类（`output_contract_samples()` 首列）：
+样本分两类（`unified_result_samples()` 首列）：
 
 - `envelope` —— 已迁移统一信封的输出，三个脚本的全部规则适用；
 - `legacy` —— 迁移前的非信封 json（如 `auth status` 顶层 `success` 键），
@@ -110,7 +110,7 @@ legacy 命名业务字段（如服务端返回的 `hasMore`/`success` 业务字�
 **第一档（原型转正初期，建议）——独立 target，不进 policy 链：**
 
 ```make
-output-contract-prototype:
+unified-result-scan:
 	@$(POLICY_ENV) ./scripts/policy/check-stdout-json.sh
 	@$(POLICY_ENV) ./scripts/policy/check-string-bool.sh
 	@$(POLICY_ENV) ./scripts/policy/check-envelope-keys.sh

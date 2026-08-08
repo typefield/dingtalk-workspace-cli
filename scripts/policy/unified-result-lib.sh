@@ -1,6 +1,6 @@
 #!/bin/sh
 
-# Shared library for the Phase I unified-output-contract CI scan prototypes
+# Shared library for the Phase I unified-result CI scan prototypes
 # (B161~B167): check-stdout-json.sh / check-string-bool.sh /
 # check-envelope-keys.sh. Sourced by the three check scripts; not executable
 # and not a policy gate by itself.
@@ -23,20 +23,20 @@
 # and legacy non-envelope json commands (legacy class is exempt from the
 # envelope-shape checks; see README.md).
 
-output_contract_init() {
-	OC_ROOT="$1"
-	OC_BIN="${DWS_BIN:-$OC_ROOT/dws}"
+unified_result_init() {
+	UR_ROOT="$1"
+	UR_BIN="${DWS_BIN:-$UR_ROOT/dws}"
 	SCOPE="dev"
 	SELF_TEST=0
 	OC_FAILURES=0
 }
 
-output_contract_parse_args() {
+unified_result_parse_args() {
 	while [ $# -gt 0 ]; do
 		case "$1" in
 		--scope)
 			if [ $# -lt 2 ]; then
-				output_contract_die_usage "--scope requires a value (dev|all)"
+				unified_result_die_usage "--scope requires a value (dev|all)"
 			fi
 			shift
 			SCOPE="$1"
@@ -48,11 +48,11 @@ output_contract_parse_args() {
 			SELF_TEST=1
 			;;
 		-h | --help)
-			output_contract_usage
+			unified_result_usage
 			exit 0
 			;;
 		*)
-			output_contract_die_usage "unknown argument: $1"
+			unified_result_die_usage "unknown argument: $1"
 			;;
 		esac
 		shift
@@ -60,24 +60,24 @@ output_contract_parse_args() {
 	case "$SCOPE" in
 	dev | all) ;;
 	*)
-		output_contract_die_usage "invalid --scope: $SCOPE (expected dev|all)"
+		unified_result_die_usage "invalid --scope: $SCOPE (expected dev|all)"
 		;;
 	esac
 }
 
-output_contract_die_usage() {
+unified_result_die_usage() {
 	printf 'error: %s\n' "$1" >&2
-	output_contract_usage >&2
+	unified_result_usage >&2
 	exit 2
 }
 
 # Samples: <class>\t<label>\t<argv>
-# class=envelope: output must be a contract envelope (all checks apply).
+# class=envelope: output must be a unified result envelope (all checks apply).
 # class=legacy:   pre-migration non-envelope json output; parseability and
 #                 string-bool checks apply, envelope-shape checks do not.
 # The dev-domain probe id is a throwaway identifier: no real connector/daemon
 # can match it, so status/stop are side-effect-free no-ops.
-output_contract_samples() {
+unified_result_samples() {
 	printf 'envelope\tdev-connect-list\tdev connect list --format json\n'
 	printf 'envelope\tdev-connect-status\tdev connect status --unified-app-id dws-policy-scan-probe --format json\n'
 	printf 'envelope\tdev-connect-stop-preview\tdev connect stop --unified-app-id dws-policy-scan-probe --dry-run --format json\n'
@@ -93,7 +93,7 @@ output_contract_samples() {
 # A unified failure or partial result intentionally exits nonzero but still owns one
 # JSON envelope on stdout. Only a nonzero command with no stdout is unavailable
 # to these scanners (for example, failure before output initialization).
-output_contract_should_scan_result() {
+unified_result_should_scan_result() {
 	result_rc="$1"
 	result_out="$2"
 	if [ "$result_rc" -eq 0 ] || [ -s "$result_out" ]; then
@@ -102,16 +102,16 @@ output_contract_should_scan_result() {
 	return 1
 }
 
-output_contract_self_test_harness() {
+unified_result_self_test_harness() {
 	harness_test_tmp="$1"
 	harness_test_fail=0
 	: >"$harness_test_tmp/no-stdout"
-	output_contract_materialize_fixture envelope_legal_partial_failure "$harness_test_tmp/partial.out"
-	if ! output_contract_should_scan_result 7 "$harness_test_tmp/partial.out"; then
+	unified_result_materialize_fixture envelope_legal_partial_failure "$harness_test_tmp/partial.out"
+	if ! unified_result_should_scan_result 7 "$harness_test_tmp/partial.out"; then
 		printf 'self-test MISMATCH: nonzero unified envelope was skipped\n' >&2
 		harness_test_fail=1
 	fi
-	if output_contract_should_scan_result 1 "$harness_test_tmp/no-stdout"; then
+	if unified_result_should_scan_result 1 "$harness_test_tmp/no-stdout"; then
 		printf 'self-test MISMATCH: empty nonzero result was not skipped\n' >&2
 		harness_test_fail=1
 	fi
@@ -124,7 +124,7 @@ output_contract_self_test_harness() {
 # Materialize self-test inputs under a temporary directory. Keeping the
 # fixtures executable here avoids a second, committed JSON authority while
 # preserving the scanners' real file/stream behavior.
-output_contract_materialize_fixture() {
+unified_result_materialize_fixture() {
 	fixture_name="$1"
 	fixture_path="$2"
 	case "$fixture_name" in
@@ -185,7 +185,10 @@ output_contract_materialize_fixture() {
 	envelope_data_error)
 		jq -n '{ok:false,outcome:"failure",data:{},error:{type:"fixture",message:"fixture"}}' >"$fixture_path"
 		;;
-	envelope_contract_version)
+	envelope_disallowed_version_marker)
+		# Negative scanner input only: the public unified result must never carry
+		# a protocol-version marker. This file is created in a temporary directory
+		# and is not a CLI result or a repository fixture.
 		jq -n '{ok:true,outcome:"success",contract_version:"2",data:{}}' >"$fixture_path"
 		;;
 	legacy_envelope_keys)
@@ -220,32 +223,32 @@ output_contract_materialize_fixture() {
 		: >"$fixture_path"
 		;;
 	*)
-		printf 'unknown output-contract self-test fixture: %s\n' "$fixture_name" >&2
+		printf 'unknown unified-result self-test fixture: %s\n' "$fixture_name" >&2
 		return 1
 		;;
 	esac
 }
 
-output_contract_require_jq() {
+unified_result_require_jq() {
 	if ! command -v jq >/dev/null 2>&1; then
-		printf 'error: jq is required by the output-contract scan prototypes\n' >&2
+		printf 'error: jq is required by the unified-result scan prototypes\n' >&2
 		exit 2
 	fi
 }
 
-# output_contract_run_self_test <scan_fn>
+# unified_result_run_self_test <scan_fn>
 # <scan_fn> <class> <label> <file> prints violation lines (empty output means
 # pass). Fixtures and expectations come from the caller-defined
 # self_test_cases() emitting "<fixture>|<class>|pass" / "<fixture>|<class>|fail"
 # lines (class is passed through so legacy-exemption rules are testable).
-output_contract_run_self_test() {
+unified_result_run_self_test() {
 	self_test_scan_fn="$1"
-	output_contract_require_jq
+	unified_result_require_jq
 	self_test_tmp="$(mktemp -d)"
 	trap 'rm -rf "$self_test_tmp"' EXIT HUP INT TERM
 	self_test_cases >"$self_test_tmp/cases"
 	self_test_fail=0
-	if ! output_contract_self_test_harness "$self_test_tmp"; then
+	if ! unified_result_self_test_harness "$self_test_tmp"; then
 		self_test_fail=1
 	fi
 	while IFS='|' read -r self_test_fixture self_test_class self_test_expect; do
@@ -253,7 +256,7 @@ output_contract_run_self_test() {
 			continue
 		fi
 		self_test_path="$self_test_tmp/$self_test_fixture.out"
-		if ! output_contract_materialize_fixture "$self_test_fixture" "$self_test_path"; then
+		if ! unified_result_materialize_fixture "$self_test_fixture" "$self_test_path"; then
 			printf 'self-test: failed to materialize fixture %s\n' "$self_test_fixture" >&2
 			self_test_fail=1
 			continue
@@ -283,14 +286,14 @@ output_contract_run_self_test() {
 	exit 0
 }
 
-# output_contract_scan_samples <process_fn>
+# unified_result_scan_samples <process_fn>
 # <process_fn> <class> <label> <stdout_file> <stderr_file> inspects one
 # captured sample and increments OC_FAILURES on violations.
-output_contract_scan_samples() {
+unified_result_scan_samples() {
 	scan_process_fn="$1"
-	output_contract_require_jq
-	if [ ! -x "$OC_BIN" ]; then
-		printf 'error: dws binary not found at %s (run make build first)\n' "$OC_BIN" >&2
+	unified_result_require_jq
+	if [ ! -x "$UR_BIN" ]; then
+		printf 'error: dws binary not found at %s (run make build first)\n' "$UR_BIN" >&2
 		exit 2
 	fi
 	scan_tmp="$(mktemp -d)"
@@ -311,7 +314,7 @@ output_contract_scan_samples() {
 		scan_home="${HOME:-$scan_tmp/home}"
 	fi
 	scan_samples="$scan_tmp/samples"
-	output_contract_samples >"$scan_samples"
+	unified_result_samples >"$scan_samples"
 	scan_tab="$(printf '\t')"
 	scan_total=0
 	scan_verified=0
@@ -330,10 +333,10 @@ output_contract_scan_samples() {
 		while [ "$scan_attempt" -le 2 ]; do
 			scan_rc=0
 			if [ "$scan_disable_keychain" -eq 1 ]; then
-				HOME="$scan_home" DWS_DISABLE_KEYCHAIN=1 "$OC_BIN" $scan_argv \
+				HOME="$scan_home" DWS_DISABLE_KEYCHAIN=1 "$UR_BIN" $scan_argv \
 					>"$scan_out" 2>"$scan_err" </dev/null || scan_rc=$?
 			else
-				HOME="$scan_home" "$OC_BIN" $scan_argv \
+				HOME="$scan_home" "$UR_BIN" $scan_argv \
 					>"$scan_out" 2>"$scan_err" </dev/null || scan_rc=$?
 			fi
 			# A nonzero unified result is still a completed sample. Preserve its first
@@ -343,7 +346,7 @@ output_contract_scan_samples() {
 			fi
 			scan_attempt=$((scan_attempt + 1))
 		done
-		if ! output_contract_should_scan_result "$scan_rc" "$scan_out"; then
+		if ! unified_result_should_scan_result "$scan_rc" "$scan_out"; then
 			scan_skipped=$((scan_skipped + 1))
 			printf '  [skip] %s: exited rc=%s with no stdout after retry; stderr tail: %s\n' \
 				"$scan_label" "$scan_rc" "$(tail -c 160 "$scan_err" 2>/dev/null | tr '\n' ' ')"
@@ -370,8 +373,8 @@ output_contract_scan_samples() {
 		"$OC_SCRIPT_NAME" "$SCOPE" "$scan_verified" "$scan_total" "$scan_skipped"
 }
 
-# output_contract_report_violations <label> <violations>
-output_contract_report_violations() {
+# unified_result_report_violations <label> <violations>
+unified_result_report_violations() {
 	report_label="$1"
 	report_violations="$2"
 	if [ -z "$report_violations" ]; then

@@ -24,11 +24,11 @@ set -eu
 #   check-string-bool.sh --self-test         scan runtime-generated fixtures
 
 ROOT="$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)"
-. "$ROOT/scripts/policy/output-contract-lib.sh"
+. "$ROOT/scripts/policy/unified-result-lib.sh"
 
 OC_SCRIPT_NAME="string-bool"
 
-output_contract_usage() {
+unified_result_usage() {
 	printf 'usage: %s [--scope dev|all] | --self-test | --help\n' "$0"
 }
 
@@ -40,13 +40,13 @@ string_bool_scan() {
 
 	if [ ! -s "$string_bool_out" ]; then
 		string_bool_violations="stdout is empty; nothing to scan"
-		output_contract_report_violations "$string_bool_label" "$string_bool_violations"
+		unified_result_report_violations "$string_bool_label" "$string_bool_violations"
 		return 0
 	fi
 
 	if ! jq empty <"$string_bool_out" >/dev/null 2>&1; then
 		string_bool_violations="stdout is not parseable JSON; string-bool scan fails closed (parseability gate: check-stdout-json.sh)"
-		output_contract_report_violations "$string_bool_label" "$string_bool_violations"
+		unified_result_report_violations "$string_bool_label" "$string_bool_violations"
 		return 0
 	fi
 
@@ -75,11 +75,11 @@ string_bool_scan() {
 		string_bool_violations="${string_bool_violations:+$string_bool_violations; }$string_bool_nested_msg"
 	fi
 
-	output_contract_report_violations "$string_bool_label" "$string_bool_violations"
+	unified_result_report_violations "$string_bool_label" "$string_bool_violations"
 }
 
-output_contract_init "$ROOT"
-output_contract_parse_args "$@"
+unified_result_init "$ROOT"
+unified_result_parse_args "$@"
 
 self_test_cases() {
 	printf 'envelope_legal_success|envelope|pass\n'
@@ -96,7 +96,7 @@ self_test_cases() {
 }
 
 if [ "$SELF_TEST" -eq 1 ]; then
-	output_contract_run_self_test string_bool_scan
+	unified_result_run_self_test string_bool_scan
 fi
 
-output_contract_scan_samples string_bool_scan
+unified_result_scan_samples string_bool_scan
