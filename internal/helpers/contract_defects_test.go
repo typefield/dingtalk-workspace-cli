@@ -254,6 +254,28 @@ func TestSheetVersionRevertDryRunReadsButNeverWrites(t *testing.T) {
 	}
 }
 
+func TestSheetVersionRevertRejectsStalledVersionPaginationBeforeWrite(t *testing.T) {
+	caller := &contractDefectCaller{
+		responses: map[string]string{
+			"doc/list_doc_versions": `{"versions":[{"version":1}],"hasMore":true,"nextCursor":"same"}`,
+		},
+	}
+	_, err := executeContractDefectCommand(t, caller, newSheetCommand,
+		"version", "revert", "--node", "sheet-1", "--version", "7", "--yes")
+	if err == nil {
+		t.Fatal("sheet version revert accepted stalled pagination")
+	}
+	var appErr *apperrors.Error
+	if !errors.As(err, &appErr) || appErr.Reason != "pagination_inconsistent" {
+		t.Fatalf("stalled pagination error = %T %v, want pagination_inconsistent", err, err)
+	}
+	for _, call := range caller.calls {
+		if call.toolName == "revert_doc_version" {
+			t.Fatalf("stalled pagination emitted mutation call = %#v", caller.calls)
+		}
+	}
+}
+
 func TestDriveDeleteDryRunSkipsConfirmationAndEOFIsObservable(t *testing.T) {
 	caller := &contractDefectCaller{dryRun: true}
 	output, err := executeContractDefectCommand(t, caller, newDriveCommand,

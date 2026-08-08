@@ -40,7 +40,14 @@ func docVersionExists(ctx context.Context, nodeID string, version int) (bool, er
 	// 注意: 不传 maxResults —— 服务端实际接受的上限小于 schema 声明的 1-50，
 	// 传大值会直接报错 (与悟空实现一致: 默认分页大小 + 游标翻页)。
 	cursor := ""
+	seenCursors := map[string]bool{}
 	for page := 0; page < 20; page++ {
+		if cursor != "" {
+			if seenCursors[cursor] {
+				return false, docVersionPaginationError(nodeID, "版本列表游标重复，无法证明目标版本不存在")
+			}
+			seenCursors[cursor] = true
+		}
 		toolArgs := map[string]any{"nodeId": nodeID}
 		if cursor != "" {
 			toolArgs["nextCursor"] = cursor
@@ -56,12 +63,31 @@ func docVersionExists(ctx context.Context, nodeID string, version int) (bool, er
 		if docVersionPayloadContains(payload, version) {
 			return true, nil
 		}
-		cursor = docVersionNextCursor(payload)
+		nextCursor := docVersionNextCursor(payload)
+		if nextCursor != "" && nextCursor == cursor {
+			return false, docVersionPaginationError(nodeID, "版本列表返回停滞游标，无法证明目标版本不存在")
+		}
+		cursor = nextCursor
 		if cursor == "" {
 			break
 		}
 	}
+	if cursor != "" {
+		return false, docVersionPaginationError(nodeID, "版本列表超过安全页数上限，无法证明目标版本不存在")
+	}
 	return false, nil
+}
+
+func docVersionPaginationError(nodeID, reason string) error {
+	return apperrors.NewAPI(
+		fmt.Sprintf("无法安全校验文档 %q 的目标版本：%s", nodeID, reason),
+		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("version_preflight"),
+		apperrors.WithExecutionStarted(false),
+		apperrors.WithRetryable(true),
+		apperrors.WithHint("请稍后重试版本列表；在分页证据完整前不会发起回滚写请求。"),
+	)
 }
 
 // docVersionNextCursor 从 list_doc_versions 响应中提取分页游标；没有下一页时返回 ""。
