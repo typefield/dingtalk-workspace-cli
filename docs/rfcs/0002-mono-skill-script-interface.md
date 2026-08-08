@@ -171,6 +171,7 @@ fixture。Agent 应在评测或发布前运行：
 
 ```bash
 python3 scripts/agent/scan_mono_script_contract.py \
+  --strict-rfc --strict-flags \
   --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
 ```
 
