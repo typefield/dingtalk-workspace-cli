@@ -103,6 +103,9 @@ func TestCrossPlatformCoverageMessageReadShortcutsPublishResourceDownloadPlans(t
 			if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 				t.Fatalf("decode output: %v\n%s", err, output.String())
 			}
+			if tc.name == "chat messages" {
+				payload = chatMessagesSuccessData(t, payload)
+			}
 			if tc.name == "thread replies" {
 				payload = threadRepliesSuccessData(t, payload)
 			}

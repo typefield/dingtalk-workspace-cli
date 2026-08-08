@@ -170,11 +170,8 @@ func TestCrossPlatformCoverageChatMessagesOptionallyFiltersResolvedSenderByEithe
 		t.Fatalf("calls = %#v, want message read followed by optional sender resolve", fake.calls)
 	}
 
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatalf("decode output: %v\n%s", err, output.String())
-	}
-	if payload["complete"] != true || payload["count"] != float64(2) {
+	payload := chatMessagesSuccessData(t, decodeChatMessagesEnvelope(t, output.Bytes()))
+	if payload["count"] != float64(2) {
 		t.Fatalf("filtered payload = %#v", payload)
 	}
 	filters, ok := payload["resolvedFilters"].(map[string]any)
@@ -224,21 +221,20 @@ func TestCrossPlatformCoverageChatMessagesSenderResolutionFailureKeepsUnfiltered
 		t.Fatalf("calls = %#v, want message read followed by non-blocking failed resolve", fake.calls)
 	}
 
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatalf("decode output: %v\n%s", err, output.String())
+	payload := chatMessagesPartialData(t, decodeChatMessagesEnvelope(t, output.Bytes()))
+	if len(payload["succeeded"].([]any)) != 1 || len(payload["failed"].([]any)) != 1 {
+		t.Fatalf("unfiltered fallback partial = %#v", payload)
 	}
-	if payload["count"] != float64(1) || payload["complete"] != false ||
-		payload["partial"] != true || payload["failedCount"] != float64(1) ||
-		payload["stopReason"] != "sender_resolution_failed" {
-		t.Fatalf("unfiltered fallback payload = %#v", payload)
+	succeeded := payload["succeeded"].([]any)[0].(map[string]any)
+	pageData, _ := succeeded["data"].(map[string]any)
+	messages, _ := pageData["messages"].([]any)
+	if len(messages) != 1 || messages[0].(map[string]any)["senderId"] != "D1" {
+		t.Fatalf("unfiltered message page was not preserved: %#v", succeeded)
 	}
-	if _, exists := payload["resolvedFilters"]; exists {
-		t.Fatalf("failed resolution unexpectedly published resolvedFilters: %#v", payload)
-	}
-	failures, ok := payload["failures"].([]any)
-	if !ok || len(failures) != 1 || failures[0].(map[string]any)["stage"] != "sender_resolution" {
-		t.Fatalf("resolution failures = %#v", payload["failures"])
+	failure := payload["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+	if failure["subtype"] != "resolution_batch_failed" || failure["stage"] != "target_resolution" ||
+		failure["operation"] != "chat/sender_resolution" {
+		t.Fatalf("resolution partial failure = %#v", failure)
 	}
 }
 

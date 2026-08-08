@@ -23,8 +23,9 @@ import (
 	"testing"
 	"time"
 
-	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -113,6 +114,55 @@ func (chatMessagesFailWriter) Write([]byte) (int, error) {
 	return 0, stderrors.New("fixture output failure")
 }
 
+func decodeChatMessagesEnvelope(t *testing.T, raw []byte) map[string]any {
+	t.Helper()
+	var envelope map[string]any
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		t.Fatalf("decode unified chat-messages envelope: %v\n%s", err, raw)
+	}
+	if _, present := envelope["contract_version"]; present {
+		t.Fatalf("chat-messages must not expose a protocol selector: %#v", envelope)
+	}
+	return envelope
+}
+
+func chatMessagesSuccessData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("expected unified success, got %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("unified success missing data: %#v", envelope)
+	}
+	return data
+}
+
+func chatMessagesPagination(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("unified result missing meta: %#v", envelope)
+	}
+	pagination, ok := meta["pagination"].(map[string]any)
+	if !ok {
+		t.Fatalf("unified result missing pagination: %#v", envelope)
+	}
+	return pagination
+}
+
+func chatMessagesPartialData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	if envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+		t.Fatalf("expected unified partial_failure, got %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("unified partial_failure missing data: %#v", envelope)
+	}
+	return data
+}
+
 func (c *chatMessagesPagingCaller) CallTool(
 	_ context.Context,
 	_, _ string,
@@ -170,14 +220,12 @@ func TestCrossPlatformCoverageChatMessagesPageAllUsesTypedBoundaryAndDeduplicate
 	if len(caller.args) != 2 || caller.args[1]["time"] != wantBoundary {
 		t.Fatalf("pagination calls = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
-	}
-	if payload["complete"] != true || payload["hasMore"] != false ||
-		payload["count"] != float64(3) || payload["pagesFetched"] != float64(2) ||
-		payload["stopReason"] != "source_complete" {
-		t.Fatalf("all-page payload = %#v", payload)
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	payload := chatMessagesSuccessData(t, envelope)
+	pagination := chatMessagesPagination(t, envelope)
+	if payload["count"] != float64(3) || pagination["endpoint_exhausted"] != true ||
+		pagination["pages"] != float64(2) || pagination["items"] != float64(4) {
+		t.Fatalf("all-page envelope = %#v", envelope)
 	}
 }
 
@@ -202,12 +250,11 @@ func TestCrossPlatformCoverageChatMessagesMillisecondCursorDoesNotSkipSameSecond
 	if len(caller.args) != 2 || caller.args[1]["time"] != wantBoundary {
 		t.Fatalf("pagination calls = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
-	}
-	if payload["count"] != float64(4) || payload["complete"] != true || payload["pagesFetched"] != float64(2) {
-		t.Fatalf("payload = %#v", payload)
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	payload := chatMessagesSuccessData(t, envelope)
+	pagination := chatMessagesPagination(t, envelope)
+	if payload["count"] != float64(4) || pagination["endpoint_exhausted"] != true || pagination["pages"] != float64(2) {
+		t.Fatalf("envelope = %#v", envelope)
 	}
 }
 
@@ -234,13 +281,13 @@ func TestCrossPlatformCoverageChatMessagesDescendingRangeStopsAtInclusiveStart(t
 		caller.args[0]["forward"] != false || caller.args[1]["time"] != wantBoundary {
 		t.Fatalf("range calls = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	payload := chatMessagesSuccessData(t, envelope)
+	if payload["count"] != float64(3) || payload["pagination_known"] != false {
+		t.Fatalf("range envelope = %#v", envelope)
 	}
-	if payload["complete"] != true || payload["hasMore"] != false ||
-		payload["count"] != float64(3) || payload["stopReason"] != "range_start" {
-		t.Fatalf("range payload = %#v", payload)
+	if meta, _ := envelope["meta"].(map[string]any); meta != nil && meta["pagination"] != nil {
+		t.Fatalf("range completion must not claim endpoint exhaustion: %#v", envelope)
 	}
 	messages := payload["messages"].([]any)
 	if messages[0].(map[string]any)["messageId"] != "m3" ||
@@ -273,13 +320,13 @@ func TestCrossPlatformCoverageChatMessagesAscendingRangeStopsAtExclusiveEnd(t *t
 		caller.args[0]["forward"] != true {
 		t.Fatalf("ascending call = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	payload := chatMessagesSuccessData(t, envelope)
+	if payload["count"] != float64(2) || payload["pagination_known"] != false {
+		t.Fatalf("ascending envelope = %#v", envelope)
 	}
-	if payload["complete"] != true || payload["hasMore"] != false ||
-		payload["count"] != float64(2) || payload["stopReason"] != "range_end" {
-		t.Fatalf("ascending payload = %#v", payload)
+	if meta, _ := envelope["meta"].(map[string]any); meta != nil && meta["pagination"] != nil {
+		t.Fatalf("range completion must not claim endpoint exhaustion: %#v", envelope)
 	}
 	messages := payload["messages"].([]any)
 	if messages[0].(map[string]any)["messageId"] != "m1" ||
@@ -295,13 +342,18 @@ func TestCrossPlatformCoverageChatMessagesFirstReadFailureSkipsOptionalSenderRes
 	}
 	helpers.InitDeps(caller)
 	root := newPlatformCoverageRoot()
-	root.SetOut(&bytes.Buffer{})
+	var output bytes.Buffer
+	root.SetOut(&output)
 	root.SetArgs([]string{
 		"chat", "+chat-messages", "--conversation-id", "cid", "--page-all",
 		"--sender-query", "张三",
 	})
-	if err := root.Execute(); err == nil {
-		t.Fatal("first-page failure unexpectedly succeeded")
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active first-page failure must emit its typed envelope: %v", err)
+	}
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	if envelope["ok"] != false || envelope["outcome"] != "failure" {
+		t.Fatalf("first-page failure envelope=%#v", envelope)
 	}
 	if len(caller.args) != 1 {
 		t.Fatalf("calls after first read failure = %#v, want only the message read", caller.args)
@@ -345,16 +397,12 @@ func TestCrossPlatformCoverageChatMessagesPageAllPublishesBoundedContinuation(t 
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
-	}
-	next, _ := payload["nextPage"].(map[string]any)
-	wantBoundary := time.UnixMilli(cursorMillis).UTC().Format(time.RFC3339Nano)
-	if payload["complete"] != false || payload["hasMore"] != true ||
-		payload["truncatedByPageLimit"] != true || payload["stopReason"] != "page_limit" ||
-		next["time"] != wantBoundary || next["nextCursor"] != float64(cursorMillis) {
-		t.Fatalf("bounded payload = %#v", payload)
+	envelope := decodeChatMessagesEnvelope(t, output.Bytes())
+	payload := chatMessagesSuccessData(t, envelope)
+	pagination := chatMessagesPagination(t, envelope)
+	if payload["count"] != float64(1) || pagination["endpoint_exhausted"] != false ||
+		pagination["next_token"] != "1767225600123" || pagination["pages"] != float64(1) {
+		t.Fatalf("bounded continuation envelope = %#v", envelope)
 	}
 }
 
@@ -367,20 +415,16 @@ func TestCrossPlatformCoverageChatMessagesPageAllFailsClosedOnStalledBoundary(t 
 	var output bytes.Buffer
 	root.SetOut(&output)
 	root.SetArgs([]string{"chat", "+chat-messages", "--conversation-id", "cid", "--page-all"})
-	err := root.Execute()
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.Category != apperrors.CategoryAPI ||
-		typed.Reason != "chat_messages_incomplete" || !typed.Retryable ||
-		typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
-		t.Fatalf("error = %#v", err)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active stalled boundary must emit partial_failure: %v", err)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
-		t.Fatal(err)
+	payload := chatMessagesPartialData(t, decodeChatMessagesEnvelope(t, output.Bytes()))
+	if len(payload["succeeded"].([]any)) != 1 || len(payload["failed"].([]any)) != 1 {
+		t.Fatalf("stalled partial data = %#v", payload)
 	}
-	if payload["complete"] != false || payload["failedCount"] != float64(1) ||
-		payload["stopReason"] != "pagination_error" {
-		t.Fatalf("stalled payload = %#v", payload)
+	failure := payload["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+	if failure["subtype"] != "pagination_inconsistent" || failure["stage"] != "pagination_projection" {
+		t.Fatalf("stalled partial failure = %#v", failure)
 	}
 }
 
@@ -400,20 +444,15 @@ func TestCrossPlatformCoverageChatMessagesFailedPageDoesNotExportPartialLedger(t
 		"chat", "+chat-messages", "--conversation-id", "cid", "--page-all",
 		"--output", "exports/partial.json",
 	})
-	err := root.Execute()
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.Reason != "chat_messages_incomplete" {
-		t.Fatalf("error = %#v", err)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active later-page failure must emit partial_failure: %v", err)
 	}
 	if _, statErr := os.Lstat("exports/partial.json"); !os.IsNotExist(statErr) {
 		t.Fatalf("partial export exists: %v", statErr)
 	}
-	var ledger map[string]any
-	if err := json.Unmarshal(output.Bytes(), &ledger); err != nil {
-		t.Fatal(err)
-	}
-	if ledger["partial"] != true || ledger["failedCount"] != float64(1) || ledger["count"] != float64(1) {
-		t.Fatalf("failure ledger = %#v", ledger)
+	payload := chatMessagesPartialData(t, decodeChatMessagesEnvelope(t, output.Bytes()))
+	if len(payload["succeeded"].([]any)) != 1 || len(payload["failed"].([]any)) != 1 {
+		t.Fatalf("failure ledger = %#v", payload)
 	}
 }
 
@@ -437,20 +476,24 @@ func TestCrossPlatformCoverageChatMessagesExportIsAtomicAndNoClobber(t *testing.
 			`{"result":{"hasMore":false,"messages":[{"openMessageId":"m1","createTime":"2026-01-01 00:00:00"}]}}`,
 		}}
 	}
-	run := func(overwrite bool) error {
+	run := func(overwrite bool) (map[string]any, error) {
 		helpers.InitDeps(newCaller())
 		root := newPlatformCoverageRoot()
-		root.SetOut(&bytes.Buffer{})
+		var output bytes.Buffer
+		root.SetOut(&output)
 		args := []string{"chat", "+chat-messages", "--conversation-id", "cid", "--page-all", "--output", "exports/messages.json"}
 		if overwrite {
 			args = append(args, "--overwrite")
 		}
 		root.SetArgs(args)
-		return root.Execute()
+		err := root.Execute()
+		return decodeChatMessagesEnvelope(t, output.Bytes()), err
 	}
-	if err := run(false); err != nil {
+	first, err := run(false)
+	if err != nil {
 		t.Fatal(err)
 	}
+	chatMessagesSuccessData(t, first)
 	raw, err := os.ReadFile("exports/messages.json")
 	if err != nil {
 		t.Fatal(err)
@@ -462,12 +505,19 @@ func TestCrossPlatformCoverageChatMessagesExportIsAtomicAndNoClobber(t *testing.
 	if exported["complete"] != true || exported["count"] != float64(1) {
 		t.Fatalf("exported ledger = %#v", exported)
 	}
-	if err := run(false); err == nil {
-		t.Fatal("existing export was overwritten without --overwrite")
+	second, err := run(false)
+	if err != nil {
+		t.Fatalf("existing export must report a partial result, not return a raw error: %v", err)
 	}
-	if err := run(true); err != nil {
+	partial := chatMessagesPartialData(t, second)
+	if len(partial["succeeded"].([]any)) != 1 || len(partial["failed"].([]any)) != 1 {
+		t.Fatalf("existing export partial=%#v", partial)
+	}
+	third, err := run(true)
+	if err != nil {
 		t.Fatal(err)
 	}
+	chatMessagesSuccessData(t, third)
 }
 
 func TestCrossPlatformCoverageChatMessagesExportRejectsNonJSONPlaceholder(t *testing.T) {
@@ -490,11 +540,12 @@ func TestCrossPlatformCoverageChatMessagesExportRejectsNonJSONPlaceholder(t *tes
 
 func chatMessagesRuntimeForTest(t *testing.T, values map[string]string) *shortcut.RuntimeContext {
 	t.Helper()
-	root := newPlatformCoverageRoot()
-	cmd, _, err := root.Find([]string{"chat", "+chat-messages"})
-	if err != nil {
-		t.Fatal(err)
-	}
+	// These direct collector tests exercise the historical payload helper. Keep
+	// that unit isolated from the production command's active result outlet;
+	// external contract coverage is asserted above through the real root.
+	declaration := ChatMessages
+	declaration.OutputRollout = frameworkoutput.RolloutLegacyOnly
+	cmd := corecmd.New(shortcut.FromShortcut(declaration))
 	for name, value := range values {
 		if err := cmd.Flags().Set(name, value); err != nil {
 			t.Fatalf("set --%s=%q: %v", name, value, err)

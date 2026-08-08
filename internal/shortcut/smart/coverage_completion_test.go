@@ -463,19 +463,19 @@ func TestCrossPlatformCoverageChatMessagesValidationAndFailureBoundaries(t *test
 	}
 
 	for _, tc := range []struct {
-		name      string
-		responses []string
-		failAt    int
-		args      []string
-		wantError bool
+		name        string
+		responses   []string
+		failAt      int
+		args        []string
+		wantOutcome string
 	}{
-		{name: "single read failure", failAt: 1, args: []string{"--group", "cid123456789"}, wantError: true},
-		{name: "all first read failure", failAt: 1, args: []string{"--group", "cid123456789", "--page-all"}, wantError: true},
-		{name: "all later read failure", responses: []string{`{"result":{"messages":[{"openMessageId":"m1","createTime":"2"}],"hasMore":true,"nextCursor":1767225600123}}`}, failAt: 2, args: []string{"--group", "cid123456789", "--page-all"}, wantError: true},
-		{name: "missing pagination", responses: []string{`{"result":{"messages":[]}}`}, args: []string{"--group", "cid123456789", "--page-all"}, wantError: true},
-		{name: "empty page with continuation", responses: []string{`{"result":{"messages":[],"hasMore":true}}`}, args: []string{"--group", "cid123456789", "--page-all"}, wantError: true},
-		{name: "result limit without boundary", responses: []string{`{"result":{"messages":[{"openMessageId":"m1"},{"openMessageId":"m2"}],"hasMore":true}}`}, args: []string{"--group", "cid123456789", "--page-all", "--max-results", "1"}, wantError: true},
-		{name: "result limit with boundary", responses: []string{`{"result":{"messages":[{"openMessageId":"m1","createTime":"2"}],"hasMore":true,"nextCursor":1767225600123}}`}, args: []string{"--group", "cid123456789", "--page-all", "--max-results", "1"}},
+		{name: "single read failure", failAt: 1, args: []string{"--group", "cid123456789"}, wantOutcome: "failure"},
+		{name: "all first read failure", failAt: 1, args: []string{"--group", "cid123456789", "--page-all"}, wantOutcome: "failure"},
+		{name: "all later read failure", responses: []string{`{"result":{"messages":[{"openMessageId":"m1","createTime":"2"}],"hasMore":true,"nextCursor":1767225600123}}`}, failAt: 2, args: []string{"--group", "cid123456789", "--page-all"}, wantOutcome: "partial_failure"},
+		{name: "missing pagination", responses: []string{`{"result":{"messages":[]}}`}, args: []string{"--group", "cid123456789", "--page-all"}, wantOutcome: "partial_failure"},
+		{name: "empty page with continuation", responses: []string{`{"result":{"messages":[],"hasMore":true}}`}, args: []string{"--group", "cid123456789", "--page-all"}, wantOutcome: "partial_failure"},
+		{name: "result limit without boundary", responses: []string{`{"result":{"messages":[{"openMessageId":"m1"},{"openMessageId":"m2"}],"hasMore":true}}`}, args: []string{"--group", "cid123456789", "--page-all", "--max-results", "1"}, wantOutcome: "partial_failure"},
+		{name: "result limit with boundary", responses: []string{`{"result":{"messages":[{"openMessageId":"m1","createTime":"2"}],"hasMore":true,"nextCursor":1767225600123}}`}, args: []string{"--group", "cid123456789", "--page-all", "--max-results", "1"}, wantOutcome: "success"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			caller := &smartCoverageCaller{
@@ -484,10 +484,15 @@ func TestCrossPlatformCoverageChatMessagesValidationAndFailureBoundaries(t *test
 			}
 			helpers.InitDeps(caller)
 			root := newPlatformCoverageRoot()
+			var stdout bytes.Buffer
+			root.SetOut(&stdout)
 			root.SetArgs(append([]string{"chat", "+chat-messages"}, tc.args...))
-			err := root.Execute()
-			if (err != nil) != tc.wantError {
-				t.Fatalf("error = %v, wantError=%v", err, tc.wantError)
+			if err := root.Execute(); err != nil {
+				t.Fatalf("active result execution returned raw error: %v", err)
+			}
+			envelope := decodeChatMessagesEnvelope(t, stdout.Bytes())
+			if envelope["outcome"] != tc.wantOutcome {
+				t.Fatalf("envelope=%#v want outcome=%s", envelope, tc.wantOutcome)
 			}
 		})
 	}

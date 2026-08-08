@@ -61,7 +61,11 @@ func formatDingTalkMessageBoundary(now time.Time) string {
 //	dws chat +chat-messages --group <openconversation_id> --time "2025-03-01 00:00:00"
 //	dws chat +chat-messages --user <userId> --time "2025-03-01 00:00:00" --limit 50
 var ChatMessages = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	// The pagination ledger, resource-download ledger, and atomic-export
+	// failure mapping have completed their dual-validation review. This is now
+	// the one public machine contract for the command: callers keep using
+	// --format json and never select a protocol version themselves.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+chat-messages",
 	Product:       "chat",
@@ -222,6 +226,7 @@ type chatMessagesSenderFilter struct {
 	stableIDs   map[string]bool
 	resolutions []targetresolver.UserResolution
 	failure     map[string]any
+	err         error
 }
 
 // resolveOptionalChatMessagesSenderFilter is deliberately local to
@@ -256,6 +261,7 @@ func resolveOptionalChatMessagesSenderFilter(rt *shortcut.RuntimeContext) chatMe
 			}
 		}
 		filter.failure = failure
+		filter.err = err
 		return filter
 	}
 
@@ -416,6 +422,12 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 	}
 	senderFilter := resolveOptionalChatMessagesSenderFilter(rt)
 	rawItems = applyOptionalChatMessagesSenderFilter(rt, payload, rawItems, senderFilter)
+	if senderFilter.failure != nil {
+		if recordErr := pageLedger.RecordPostPageFailure(chatMessagesSenderResolutionFailureInfo(senderFilter)); recordErr != nil {
+			return apperrors.NewInternal("记录消息发送者解析失败状态失败", apperrors.WithCause(recordErr))
+		}
+		pageLedger.SetStopReason("sender_resolution_failed")
+	}
 	result, resultErr = chatMessagesUnifiedResult(pageLedger, payload, rt.DryRun())
 	if resultErr != nil {
 		return apperrors.NewInternal("生成消息列表统一分页结果失败", apperrors.WithCause(resultErr))
@@ -608,10 +620,25 @@ func collectAllChatMessagesWithLedger(rt *shortcut.RuntimeContext, request chatM
 		}
 		pagesFetched++
 		rawItems := chatMessageItems(data)
+		items, terminalReached, rangeFailures := request.timeRange.filter(rawItems)
 		if !shadowInterrupted {
-			nextToken, terminal, observeErr := observeChatMessagesUnifiedPage(
-				pageLedger, ledgerCursor, data, !rt.Bool("no-reactions"), request,
-			)
+			var nextToken string
+			var terminal bool
+			var observeErr error
+			if terminalReached && len(rangeFailures) == 0 {
+				// The requested time range is complete even when the source still
+				// has older/newer pages. Do not reinterpret an irrelevant missing
+				// source cursor as a failed query, and do not claim the endpoint
+				// itself is exhausted. Record only the filtered page and leave
+				// pagination metadata absent (pagination_known:false in data).
+				observeErr = observeChatMessagesRangeTerminalPage(
+					pageLedger, ledgerCursor, items, !rt.Bool("no-reactions"),
+				)
+			} else {
+				nextToken, terminal, observeErr = observeChatMessagesUnifiedPage(
+					pageLedger, ledgerCursor, data, !rt.Bool("no-reactions"), request,
+				)
+			}
 			if observeErr != nil {
 				return nil, nil, nil, observeErr
 			}
@@ -627,7 +654,6 @@ func collectAllChatMessagesWithLedger(rt *shortcut.RuntimeContext, request chatM
 			stopReason = "pagination_error"
 			break
 		}
-		items, terminalReached, rangeFailures := request.timeRange.filter(rawItems)
 		failures = append(failures, rangeFailures...)
 		moreEligibleOnPage := false
 		for _, item := range items {
@@ -836,6 +862,24 @@ func chatMessagesUnifiedResult(pageLedger *output.PageLedger, payload map[string
 	return pageLedger.Result(data, options...)
 }
 
+// observeChatMessagesRangeTerminalPage records a page that completed the
+// caller's explicit [start,end) query range. The service may still expose more
+// messages outside that range, so this must not become endpoint_exhausted=true.
+// It deliberately records unknown endpoint coverage without adding a failed
+// continuation: there is no remaining page the requested query needs to read.
+func observeChatMessagesRangeTerminalPage(
+	pageLedger *output.PageLedger,
+	cursor string,
+	items []map[string]any,
+	includeReactions bool,
+) error {
+	return pageLedger.ObservePage(output.PageEvidence{
+		Cursor: cursor,
+		Items:  len(items),
+		Data:   map[string]any{"messages": projectChatMessages(items, includeReactions)},
+	})
+}
+
 // observeChatMessagesUnifiedPage turns the service-specific time cursor into
 // the framework's opaque continuation token. It is deliberately a shadow
 // observer: it never changes the legacy collection loop while the command is
@@ -1021,6 +1065,70 @@ func chatMessagesExportFailureInfo(path string, overwrite bool, err error) *outp
 		info.Details["local_error"] = typed.Details
 	}
 	return info
+}
+
+// chatMessagesSenderResolutionFailureInfo keeps a requested-but-unapplied
+// sender filter visible to the unified result. The message read is known, but
+// the caller explicitly asked for a narrower set and must not be told that
+// the unfiltered fallback satisfies that operation.
+func chatMessagesSenderResolutionFailureInfo(filter chatMessagesSenderFilter) *output.ErrorInfo {
+	started := true
+	info := &output.ErrorInfo{
+		Type:             string(apperrors.CategoryValidation),
+		Subtype:          string(apperrors.SubtypeResolutionBatchFailed),
+		Message:          "请求的消息发送者筛选未能完成",
+		Hint:             "保留未过滤消息；修正无法唯一解析的发送者，或改用稳定 userId/openDingTalkId 后重试筛选。",
+		Operation:        "chat/sender_resolution",
+		Origin:           "client",
+		Stage:            "target_resolution",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"queries":    append([]string(nil), filterQueries(filter.failure)...),
+			"resolution": filter.failure,
+		},
+	}
+	var typed *apperrors.Error
+	if !errors.As(filter.err, &typed) || typed == nil {
+		return info
+	}
+	if typed.Category != apperrors.CategoryPartial {
+		info.Type = string(typed.Category)
+	}
+	if typed.StableSubtype != "" {
+		info.Subtype = typed.StableSubtype
+	} else if typed.Reason != "" {
+		info.Subtype = typed.Reason
+	}
+	if typed.Message != "" {
+		info.Message = typed.Message
+	}
+	if typed.Hint != "" {
+		info.Hint = typed.Hint
+	}
+	if typed.Operation != "" {
+		info.Operation = typed.Operation
+	}
+	if typed.Origin != "" {
+		info.Origin = typed.Origin
+	}
+	if typed.FailureStage != "" {
+		info.Stage = typed.FailureStage
+	}
+	if typed.ExecutionStarted != nil {
+		info.ExecutionStarted = typed.ExecutionStarted
+	}
+	if len(typed.Details) > 0 {
+		info.Details["local_error"] = typed.Details
+	}
+	return info
+}
+
+func filterQueries(failure map[string]any) []string {
+	if failure == nil {
+		return nil
+	}
+	values, _ := failure["queries"].([]string)
+	return values
 }
 
 func chatMessagesLedgerCount(value any) int {

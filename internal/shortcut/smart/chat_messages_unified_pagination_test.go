@@ -135,6 +135,22 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 		}
 	})
 
+	t.Run("completed time range does not require an irrelevant source cursor", func(t *testing.T) {
+		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
+			`{"result":{"hasMore":true,"messages":[{"openMessageId":"before","createTime":"2026-01-01 11:59:59"}]}}`,
+		}}, "--format", "json", "--conversation-id", "cid", "--start", "2026-01-02 00:00:00", "--end", "2026-01-03 00:00:00", "--page-all")
+		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+			t.Fatalf("range completion envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data, _ := envelope["data"].(map[string]any)
+		if data["pagination_known"] != false || data["count"] != float64(0) {
+			t.Fatalf("range completion data=%#v", data)
+		}
+		if meta, _ := envelope["meta"].(map[string]any); meta != nil && meta["pagination"] != nil {
+			t.Fatalf("range completion must not claim endpoint exhaustion: %#v", envelope)
+		}
+	})
+
 	t.Run("later read failure preserves successful pages", func(t *testing.T) {
 		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{
 			responses: []string{`{"result":{"hasMore":true,"nextCursor":1786022919361,"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`},
