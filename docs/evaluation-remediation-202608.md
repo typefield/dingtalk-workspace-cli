@@ -418,6 +418,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 
 本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
 
+- **2026-08-09 复扫**：`mono-script-contract-20260809.md` 重新确认 35 个 Python 文件中 32 个为 Agent 入口，Help 为 `32/32` dry-run、`32/32` format、0 个非零；`mono-result-contract-20260809.md` 对共享 `run_main` 的未捕获异常、非零 `SystemExit`、partial rc=7、meta 透传和三条 child-dws 编排路径均为 `9/9 PASS`。因此“类型错误导致 traceback 打破 JSON”与“脚本信封不能承载 meta”是修复前快照的问题，不能再写入当前缺陷。`mono-dry-run-probe-20260809.md` 用临时 HOME/工作区和 sentinel dws 验证 7 个深层门控写入口均未调用子进程、未新增本地文件；它仍不替代真实后端零写或其余 25 个入口的逐路径验证。
 - 当前 `skills/mono/scripts/` 中共有 35 个 Python 文件，其中 32 个是含
   `if __name__ == "__main__"` 的 Agent 入口，另有 3 个内部模块；对 32 个入口逐个执行
   `python3 <script> --help`，实测 32/32 声明脚本级 `--dry-run`、32/32 声明脚本级
