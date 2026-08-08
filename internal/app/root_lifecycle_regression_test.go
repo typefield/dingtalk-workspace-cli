@@ -10,6 +10,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pipeline"
 	"github.com/spf13/cobra"
@@ -143,5 +144,24 @@ func TestErrorInfoProjectionKeepsTraceIDDistinctFromRequestID(t *testing.T) {
 	info := errorInfoFromExecutionError(err)
 	if info.TraceID != "trace-1" || info.RequestID != "" {
 		t.Fatalf("projection trace_id=%q request_id=%q", info.TraceID, info.RequestID)
+	}
+}
+
+func TestErrorInfoProjectionPreservesLegacyCLIRecoveryDetails(t *testing.T) {
+	err := &helpers.CLIError{
+		Code:    helpers.CodeMCPToolError,
+		Message: "write response lost",
+		Details: map[string]any{
+			"outcome":      "partial_failure",
+			"verification": "read_after_error",
+			"retryable":    false,
+		},
+	}
+	info := errorInfoFromExecutionError(err)
+	if info.UpstreamCode != helpers.CodeMCPToolError {
+		t.Fatalf("upstream_code=%#v", info.UpstreamCode)
+	}
+	if info.Details["outcome"] != "partial_failure" || info.Details["verification"] != "read_after_error" {
+		t.Fatalf("recovery details=%#v", info.Details)
 	}
 }

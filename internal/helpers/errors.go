@@ -46,7 +46,11 @@ type CLIError struct {
 	Message    string
 	Suggestion string
 	Operation  string // the operation that failed (for traceability)
-	Cause      error
+	// Details carries stable machine-readable recovery facts without changing
+	// the legacy human-facing error text.  It is intentionally optional so
+	// existing callers keep the historical wire shape.
+	Details map[string]any
+	Cause   error
 }
 
 func (e *CLIError) Error() string {
@@ -100,6 +104,9 @@ func (e *CLIError) ToJSON() map[string]any {
 	}
 	if e.Cause != nil {
 		errMap["cause"] = e.Cause.Error()
+	}
+	if len(e.Details) > 0 {
+		errMap["details"] = e.Details
 	}
 	return map[string]any{"error": errMap}
 }

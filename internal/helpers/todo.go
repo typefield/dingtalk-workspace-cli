@@ -114,6 +114,15 @@ func addTodoParticipantsWithVerification(ctx context.Context, taskID string, par
 			Code:       CodeMCPToolError,
 			Message:    fmt.Sprintf("添加参与人的请求报错，但回读发现部分已落库；已落库=%s，未确认=%s", strings.Join(applied, ","), strings.Join(missing, ",")),
 			Suggestion: fmt.Sprintf("请先执行 dws todo task get --task-id %s --format json 核对，不要直接重试整批写入", taskID),
+			Details: map[string]any{
+				"outcome":                 "partial_failure",
+				"verification":            "read_after_error",
+				"execution_started":       true,
+				"retryable":               false,
+				"task_id":                 taskID,
+				"applied_participant_ids": applied,
+				"missing_participant_ids": appliedIDsAsAny(missing),
+			},
 		}
 	}
 	return writeErr
@@ -124,7 +133,23 @@ func todoParticipantOutcomeUnknown(taskID string, writeErr error, reason string)
 		Code:       CodeMCPToolError,
 		Message:    fmt.Sprintf("添加参与人的请求报错，远端是否已落库未知: %v（%s）", writeErr, reason),
 		Suggestion: fmt.Sprintf("请先执行 dws todo task get --task-id %s --format json 核对参与人，不要直接重试写入", taskID),
+		Details: map[string]any{
+			"outcome":           "unknown",
+			"verification":      "read_after_error",
+			"execution_started": "unknown",
+			"retryable":         false,
+			"task_id":           taskID,
+			"reason":            reason,
+		},
 	}
+}
+
+func appliedIDsAsAny(ids []string) []any {
+	out := make([]any, len(ids))
+	for i, id := range ids {
+		out[i] = id
+	}
+	return out
 }
 
 func todoParticipantIDsFromDetail(raw string) (map[string]bool, bool, error) {
