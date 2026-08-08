@@ -199,6 +199,35 @@ func (l *PageLedger) RecordBoundaryFailure(info *ErrorInfo) error {
 	return nil
 }
 
+// RecordPostPageFailure records a typed failure discovered after a page was
+// successfully decoded but before the product can safely claim a terminal
+// result. Typical callers are a typed projection or range-validation step.
+// Unlike RecordBoundaryFailure, it does not require pagination evidence to be
+// unknown: a local post-processing failure can invalidate an otherwise
+// exhausted page just as readily as a continuation page.
+func (l *PageLedger) RecordPostPageFailure(info *ErrorInfo) error {
+	if l == nil {
+		return paginationInvariant("nil PageLedger")
+	}
+	if len(l.successfulRecords()) == 0 {
+		return paginationInvariant("post-page failure requires at least one successful page")
+	}
+	if info == nil {
+		return paginationInvariant("post-page failure requires a typed error")
+	}
+	if err := info.Validate(); err != nil {
+		return paginationInvariant("post-page failure error is invalid: %v", err)
+	}
+	l.records = append(l.records, PageRecord{
+		Page:   len(l.records) + 1,
+		Status: pageStatusFailed,
+		Error:  cloneErrorInfo(info),
+	})
+	l.state = PageStateInterrupted
+	l.nextToken = ""
+	return nil
+}
+
 // RecordUnknown records a later page whose terminal state cannot be confirmed.
 // With no successful page, callers must instead return an ordinary typed
 // failure: partial_failure is forbidden when succeeded is empty.

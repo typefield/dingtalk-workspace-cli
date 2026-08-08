@@ -24,6 +24,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	chatshortcut "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
@@ -53,14 +54,15 @@ func formatDingTalkMessageBoundary(now time.Time) string {
 //	dws chat +chat-messages --group <openconversation_id> --time "2025-03-01 00:00:00"
 //	dws chat +chat-messages --user <userId> --time "2025-03-01 00:00:00" --limit 50
 var ChatMessages = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+chat-messages",
-	Product:     "chat",
-	Description: "读取指定群聊或单聊的消息记录，支持有界全量分页与原子 JSON 导出",
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "chat",
+	Command:       "+chat-messages",
+	Product:       "chat",
+	Description:   "读取指定群聊或单聊的消息记录，支持有界全量分页与原子 JSON 导出",
 	Intent: "当你要读取或导出一个指定群聊或单聊的消息记录时使用；可附带发送者姓名解析，无稳定身份时保留全部消息，唯一解析出稳定身份后按 senderId 筛选同一次读取结果；" +
 		"群聊的 --group 可传群名或 openConversationId，单聊可传 --user 或 --open-dingtalk-id，所有目标参数互斥且必须选一个。自然群名只在唯一解析后读取，多候选会返回结构化 candidates。" +
 		"省略时间参数时默认从当前时间向前读取最近消息；兼容模式可用 --time/--direction，范围模式可用公开可选的 --start/--end/--order（兼容 --start-time/--end-time/--sort），范围语义为 [start,end)。" +
-		"全量读取用 --page-all，并由 --page-limit/--max-results 保持有界；结果公开 complete、hasMore、nextPage、stopReason、截断和逐页失败，不能把部分结果称为完整。--output 把同一 ledger 原子写为工作目录内 JSON。" +
+		"全量读取用 --page-all，并由 --page-limit/--max-results 保持有界；结果会保留明确的续页凭据、分页失败或未知边界，不能把部分结果称为完整。--output 把同一 ledger 原子写为工作目录内 JSON。" +
 		"默认只读；--download-resources 使用工作目录内安全路径、默认不覆盖和原子落盘。",
 	Risk: shortcut.RiskRead,
 	Safety: contract.SafetySpec{
@@ -86,7 +88,7 @@ var ChatMessages = shortcut.Shortcut{
 			UseWhen: []string{"当你要读取或导出一个指定群聊或单聊的消息记录时使用；可附带发送者姓名解析，无稳定身份时保留全部消息，唯一解析出稳定身份后按 senderId 筛选同一次读取结果；" +
 				"群聊的 --group 可传群名或 openConversationId，单聊可传 --user 或 --open-dingtalk-id，所有目标参数互斥且必须选一个。自然群名只在唯一解析后读取，多候选会返回结构化 candidates。" +
 				"省略时间参数时默认从当前时间向前读取最近消息；兼容模式可用 --time/--direction，范围模式可用公开可选的 --start/--end/--order（兼容 --start-time/--end-time/--sort），范围语义为 [start,end)。" +
-				"全量读取用 --page-all，并由 --page-limit/--max-results 保持有界；结果公开 complete、hasMore、nextPage、stopReason、截断和逐页失败，不能把部分结果称为完整。--output 把同一 ledger 原子写为工作目录内 JSON。" +
+				"全量读取用 --page-all，并由 --page-limit/--max-results 保持有界；结果会保留明确的续页凭据、分页失败或未知边界，不能把部分结果称为完整。--output 把同一 ledger 原子写为工作目录内 JSON。" +
 				"默认只读；--download-resources 使用工作目录内安全路径、默认不覆盖和原子落盘。"},
 			AvoidWhen: []string{"以发送者、关键词、@对象或消息类型为主的直接条件检索优先使用 +search-msg；已有一批精确消息 ID 时使用 +messages-mget。已选择会话读取时可在同一次调用附带发送者姓名，不需要再搜索消息"},
 			Examples: []string{
@@ -376,15 +378,28 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 	}
 	var payload map[string]any
 	var rawItems []map[string]any
+	var pageLedger *output.PageLedger
 	if rt.Bool("page-all") {
-		payload, rawItems, err = collectAllChatMessages(rt, request)
+		payload, rawItems, pageLedger, err = collectAllChatMessagesWithLedger(rt, request)
 	} else {
-		payload, rawItems, err = collectOneChatMessagesPage(rt, request)
+		payload, rawItems, pageLedger, err = collectOneChatMessagesPageWithLedger(rt, request)
+	}
+	result, resultErr := chatMessagesUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成消息列表统一分页结果失败", apperrors.WithCause(resultErr))
 	}
 	if err != nil && (payload == nil || payload["pagesFetched"] == 0) {
 		// A sender name is only an optional post-read filter. If the primary
 		// message read never produced a page, do not make a misleading and
 		// unnecessary directory request before returning the read failure.
+		if output.UsesUnifiedResult(rt.Command()) {
+			return rt.OutputResult(payload, result)
+		}
+		if output.CommandRollout(rt.Command()) == output.RolloutDualValidate {
+			if validateErr := output.ValidateResult(result); validateErr != nil {
+				return validateErr
+			}
+		}
 		if payload != nil {
 			if outputErr := rt.Output(payload); outputErr != nil {
 				return outputErr
@@ -394,12 +409,19 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 	}
 	senderFilter := resolveOptionalChatMessagesSenderFilter(rt)
 	rawItems = applyOptionalChatMessagesSenderFilter(rt, payload, rawItems, senderFilter)
+	result, resultErr = chatMessagesUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成消息列表统一分页结果失败", apperrors.WithCause(resultErr))
+	}
 	if err != nil {
 		// Full-page collection returns its failure ledger together with a
 		// non-zero error. Publish that ledger for diagnosis, but stop before
 		// resource downloads or a requested export can look successful.
+		if output.UsesUnifiedResult(rt.Command()) {
+			return rt.OutputResult(payload, result)
+		}
 		if payload != nil {
-			if outputErr := rt.Output(payload); outputErr != nil {
+			if outputErr := rt.OutputResult(payload, result); outputErr != nil {
 				return outputErr
 			}
 		}
@@ -432,13 +454,29 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 			}
 		}
 	}
-	return rt.Output(payload)
+	result, resultErr = chatMessagesUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成消息列表统一分页结果失败", apperrors.WithCause(resultErr))
+	}
+	return rt.OutputResult(payload, result)
 }
 
 func collectOneChatMessagesPage(rt *shortcut.RuntimeContext, request chatMessagesRequest) (map[string]any, []map[string]any, error) {
+	payload, items, _, err := collectOneChatMessagesPageWithLedger(rt, request)
+	return payload, items, err
+}
+
+func collectOneChatMessagesPageWithLedger(rt *shortcut.RuntimeContext, request chatMessagesRequest) (map[string]any, []map[string]any, *output.PageLedger, error) {
+	pageLedger, err := output.NewPageLedger(1)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	data, err := rt.CallMCPData("chat", request.tool, request.params)
 	if err != nil {
-		return nil, nil, err
+		if recordErr := pageLedger.RecordFailure(chatMessagesInitialLedgerCursor(request.params), chatMessagesReadFailureInfo(request, err)); recordErr != nil {
+			return nil, nil, nil, recordErr
+		}
+		return nil, nil, pageLedger, err
 	}
 	rawItems := chatMessageItems(data)
 	items, terminalReached, rangeFailures := request.timeRange.filter(rawItems)
@@ -457,25 +495,49 @@ func collectOneChatMessagesPage(rt *shortcut.RuntimeContext, request chatMessage
 		payload["complete"] = false
 		payload["partial"] = len(items) > 0
 		payload["stopReason"] = "time_filter_error"
-		return payload, items, nil
+		if _, _, observeErr := observeChatMessagesUnifiedPage(pageLedger, chatMessagesInitialLedgerCursor(request.params), data, !rt.Bool("no-reactions"), request); observeErr != nil {
+			return nil, nil, nil, observeErr
+		}
+		if recordErr := pageLedger.RecordPostPageFailure(chatMessagesPaginationFailureInfo(request, "消息时间范围投影失败，无法确认结果终态")); recordErr != nil {
+			return nil, nil, nil, recordErr
+		}
+		pageLedger.SetStopReason("time_filter_error")
+		return payload, items, pageLedger, nil
 	}
 	if terminalReached {
 		payload["complete"] = true
 		payload["hasMore"] = false
 		payload["stopReason"] = request.timeRange.stopReason()
 		delete(payload, "nextPage")
-		return payload, items, nil
+		if _, _, observeErr := observeChatMessagesUnifiedPage(pageLedger, chatMessagesInitialLedgerCursor(request.params), data, !rt.Bool("no-reactions"), request); observeErr != nil {
+			return nil, nil, nil, observeErr
+		}
+		pageLedger.SetStopReason(fmt.Sprint(payload["stopReason"]))
+		return payload, items, pageLedger, nil
 	}
 	if payload["complete"] == true {
 		payload["stopReason"] = "source_complete"
 	} else {
 		payload["stopReason"] = "single_page"
 	}
-	return payload, items, nil
+	if _, _, observeErr := observeChatMessagesUnifiedPage(pageLedger, chatMessagesInitialLedgerCursor(request.params), data, !rt.Bool("no-reactions"), request); observeErr != nil {
+		return nil, nil, nil, observeErr
+	}
+	pageLedger.SetStopReason(fmt.Sprint(payload["stopReason"]))
+	return payload, items, pageLedger, nil
 }
 
 func collectAllChatMessages(rt *shortcut.RuntimeContext, request chatMessagesRequest) (map[string]any, []map[string]any, error) {
+	payload, items, _, err := collectAllChatMessagesWithLedger(rt, request)
+	return payload, items, err
+}
+
+func collectAllChatMessagesWithLedger(rt *shortcut.RuntimeContext, request chatMessagesRequest) (map[string]any, []map[string]any, *output.PageLedger, error) {
 	pageLimit := defaultChatPageLimit(rt.Int("page-limit"), chatMessagesDefaultPageLimit)
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	maxResults := rt.Int("max-results")
 	basePageSize, _ := request.params["limit"].(int)
 	if basePageSize <= 0 {
@@ -493,6 +555,8 @@ func collectAllChatMessages(rt *shortcut.RuntimeContext, request chatMessagesReq
 	truncatedByPageLimit := false
 	truncatedByResultLimit := false
 	var nextPage map[string]any
+	ledgerCursor := chatMessagesInitialLedgerCursor(request.params)
+	shadowInterrupted := false
 
 	for pagesFetched < pageLimit {
 		request.params["limit"] = basePageSize
@@ -509,11 +573,36 @@ func collectAllChatMessages(rt *shortcut.RuntimeContext, request chatMessagesReq
 				"stage": "read",
 				"error": err.Error(),
 			})
+			if !shadowInterrupted {
+				if recordErr := pageLedger.RecordFailure(ledgerCursor, chatMessagesReadFailureInfo(request, err)); recordErr != nil {
+					return nil, nil, nil, recordErr
+				}
+				shadowInterrupted = true
+			}
 			stopReason = "read_failure"
 			break
 		}
 		pagesFetched++
 		rawItems := chatMessageItems(data)
+		if !shadowInterrupted {
+			nextToken, terminal, observeErr := observeChatMessagesUnifiedPage(
+				pageLedger, ledgerCursor, data, !rt.Bool("no-reactions"), request,
+			)
+			if observeErr != nil {
+				return nil, nil, nil, observeErr
+			}
+			if nextToken != "" {
+				ledgerCursor = nextToken
+			}
+			shadowInterrupted = terminal
+		}
+		if shadowInterrupted && output.UsesUnifiedResult(rt.Command()) {
+			// A promoted command must not continue after an unprojectable page or
+			// an unsafe boundary. Dual validation intentionally keeps the legacy
+			// collector's historical control flow.
+			stopReason = "pagination_error"
+			break
+		}
 		items, terminalReached, rangeFailures := request.timeRange.filter(rawItems)
 		failures = append(failures, rangeFailures...)
 		moreEligibleOnPage := false
@@ -662,13 +751,20 @@ func collectAllChatMessages(rt *shortcut.RuntimeContext, request chatMessagesReq
 		payload["nextPage"] = nextPage
 	}
 	if len(failures) > 0 {
+		if !shadowInterrupted {
+			if recordErr := pageLedger.RecordPostPageFailure(chatMessagesPaginationFailureInfo(request, "消息分页未完成："+stopReason)); recordErr != nil {
+				return nil, nil, nil, recordErr
+			}
+			shadowInterrupted = true
+		}
 		failureStage := "pagination"
 		if stopReason == "read_failure" {
 			failureStage = "read"
 		} else if stopReason == "time_filter_error" {
 			failureStage = "time_filter"
 		}
-		return payload, allItems, apperrors.NewAPI(
+		pageLedger.SetStopReason(stopReason)
+		return payload, allItems, pageLedger, apperrors.NewAPI(
 			fmt.Sprintf("全量消息读取未完成：%d 页成功，%d 个页面失败", pagesFetched, len(failures)),
 			apperrors.WithOperation("chat/"+request.tool),
 			apperrors.WithReason("chat_messages_incomplete"),
@@ -686,7 +782,187 @@ func collectAllChatMessages(rt *shortcut.RuntimeContext, request chatMessagesReq
 			}),
 		)
 	}
-	return payload, allItems, nil
+	pageLedger.SetStopReason(stopReason)
+	return payload, allItems, pageLedger, nil
+}
+
+// chatMessagesUnifiedResult builds the new result beside the historical
+// payload. During dual validation the payload remains the exact renderer input;
+// this adapter is only validated. Once promoted, the ledger is the authority
+// for outcome and pagination metadata.
+func chatMessagesUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
+	if pageLedger == nil {
+		return nil, fmt.Errorf("missing pagination ledger")
+	}
+	data := map[string]any{}
+	if payload != nil {
+		for _, key := range []string{"messages", "count", "queryRange", "resolvedFilters", "export"} {
+			if value, ok := payload[key]; ok {
+				data[key] = value
+			}
+		}
+	}
+	if pageLedger.State() == output.PageStateUnknown {
+		data["pagination_known"] = false
+	}
+	options := make([]output.ResultOption, 0, 1)
+	if dryRun {
+		options = append(options, output.WithDryRun())
+	}
+	return pageLedger.Result(data, options...)
+}
+
+// observeChatMessagesUnifiedPage turns the service-specific time cursor into
+// the framework's opaque continuation token. It is deliberately a shadow
+// observer: it never changes the legacy collection loop while the command is
+// in dual_validate. The terminal return only matters to an activated command.
+func observeChatMessagesUnifiedPage(
+	pageLedger *output.PageLedger,
+	cursor string,
+	data map[string]any,
+	includeReactions bool,
+	request chatMessagesRequest,
+) (nextToken string, terminal bool, err error) {
+	items, projectionErr := chatMessageItemsStrict(data)
+	if projectionErr != nil {
+		if recordErr := pageLedger.RecordFailure(cursor, chatMessagesProjectionFailureInfo(request, projectionErr)); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	evidence := output.PageEvidence{
+		Cursor: cursor,
+		Items:  len(items),
+		Data:   map[string]any{"messages": projectChatMessages(items, includeReactions)},
+	}
+	page := chatmsg.Pagination(data)
+	hasMore, known := page["hasMore"].(bool)
+	if !known {
+		if token, _, tokenErr := chatMessagesNextCursorBoundary(page["nextCursor"]); tokenErr == nil {
+			evidence.NextToken = token
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, chatMessagesRecordUnifiedBoundary(pageLedger, evidence, request, observeErr.Error())
+			}
+			return token, false, nil
+		}
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+
+	if !hasMore {
+		if chatMessagesCursorProvided(page["nextCursor"]) {
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, chatMessagesRecordUnifiedBoundary(pageLedger, evidence, request, observeErr.Error())
+			}
+			if recordErr := pageLedger.RecordBoundaryFailure(chatMessagesPaginationFailureInfo(request, "hasMore=false，但同时携带 nextCursor")); recordErr != nil {
+				return "", true, recordErr
+			}
+			return "", true, nil
+		}
+		more := false
+		evidence.HasMore = &more
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+
+	token, _, tokenErr := chatMessagesNextCursorBoundary(page["nextCursor"])
+	if tokenErr != nil {
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		if recordErr := pageLedger.RecordBoundaryFailure(chatMessagesPaginationFailureInfo(request, "hasMore=true 但 nextCursor 无效："+tokenErr.Error())); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	more := true
+	evidence.HasMore = &more
+	evidence.NextToken = token
+	if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+		return "", true, chatMessagesRecordUnifiedBoundary(pageLedger, evidence, request, observeErr.Error())
+	}
+	return token, false, nil
+}
+
+func chatMessagesRecordUnifiedBoundary(pageLedger *output.PageLedger, evidence output.PageEvidence, request chatMessagesRequest, message string) error {
+	evidence.HasMore = nil
+	evidence.NextToken = ""
+	if err := pageLedger.ObservePage(evidence); err != nil {
+		return err
+	}
+	return pageLedger.RecordBoundaryFailure(chatMessagesPaginationFailureInfo(request, message))
+}
+
+func chatMessagesInitialLedgerCursor(params map[string]any) string {
+	if params == nil {
+		return "initial"
+	}
+	if boundary := strings.TrimSpace(fmt.Sprint(params["time"])); boundary != "" && boundary != "<nil>" {
+		return "initial:" + boundary
+	}
+	return "initial"
+}
+
+func chatMessagesCursorProvided(value any) bool {
+	if value == nil {
+		return false
+	}
+	text := strings.TrimSpace(fmt.Sprint(value))
+	return text != "" && text != "<nil>"
+}
+
+func chatMessagesReadFailureInfo(request chatMessagesRequest, err error) *output.ErrorInfo {
+	message := "消息分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败页边界继续；不要重放已经成功的页面",
+		Operation:        "chat/" + request.tool,
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true, // idempotent read
+	}
+}
+
+func chatMessagesPaginationFailureInfo(request chatMessagesRequest, message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽",
+		Operation:        "chat/" + request.tool,
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func chatMessagesProjectionFailureInfo(request chatMessagesRequest, err error) *output.ErrorInfo {
+	message := "消息响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          message,
+		Hint:             "保留原始响应证据并检查服务端返回结构；不要把空消息解释为确认无消息",
+		Operation:        "chat/" + request.tool,
+		Origin:           "mcp_gateway",
+		Stage:            "projection",
+		ExecutionStarted: &started,
+	}
 }
 
 func projectChatMessages(items []map[string]any, includeReactions bool) []map[string]any {
@@ -768,6 +1044,51 @@ func chatMessageItems(data map[string]any) []map[string]any {
 		}
 	}
 	return nil
+}
+
+// chatMessageItemsStrict is intentionally narrower than the legacy unwrapping
+// helper. Legacy rendering historically tolerates an unknown container as an
+// empty list; unified output must instead fail closed so an Agent cannot read
+// an incompatible response as proof that no messages exist.
+func chatMessageItemsStrict(data map[string]any) ([]map[string]any, error) {
+	if data == nil {
+		return nil, fmt.Errorf("响应为空，未找到消息列表容器")
+	}
+	scopes := []map[string]any{data}
+	for _, wrap := range []string{"result", "data"} {
+		if inner, ok := data[wrap].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	for _, scope := range scopes {
+		for _, key := range []string{"messages", "list", "items", "records", "data", "result"} {
+			raw, present := scope[key]
+			if !present {
+				continue
+			}
+			rows, isSlice := raw.([]any)
+			if !isSlice {
+				// data/result may be a nested wrapper; it is not itself a list.
+				if key == "data" || key == "result" {
+					continue
+				}
+				return nil, fmt.Errorf("消息列表字段 %q 不是数组", key)
+			}
+			items := make([]map[string]any, 0, len(rows))
+			for index, row := range rows {
+				message, ok := row.(map[string]any)
+				if !ok {
+					return nil, fmt.Errorf("消息列表第 %d 项不是对象", index+1)
+				}
+				if chatmsg.StableMessageID(message) == "" {
+					return nil, fmt.Errorf("消息列表第 %d 项缺少稳定 message ID", index+1)
+				}
+				items = append(items, message)
+			}
+			return items, nil
+		}
+	}
+	return nil, fmt.Errorf("响应未包含可识别的消息列表容器")
 }
 
 // projectChatMessage reshapes one raw message into the clean

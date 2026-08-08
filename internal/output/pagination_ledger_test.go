@@ -194,6 +194,32 @@ func TestPageLedgerBoundaryFailurePreservesCurrentPage(t *testing.T) {
 	}
 }
 
+func TestPageLedgerPostPageFailureCanInterruptAnExhaustedPage(t *testing.T) {
+	ledger, _ := NewPageLedger(2)
+	if err := ledger.ObservePage(PageEvidence{Cursor: "0", Items: 1, Data: []any{"a"}, HasMore: boolEvidence(false)}); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.RecordPostPageFailure(&ErrorInfo{
+		Type: "api", Subtype: "projection_unknown", Message: "range projection failed",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	result, err := ledger.Result(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if result.Outcome() != OutcomePartialFailure || result.ExitCode() == 0 {
+		t.Fatalf("result = outcome %q rc %d", result.Outcome(), result.ExitCode())
+	}
+	if err := ValidateResult(result); err != nil {
+		t.Fatal(err)
+	}
+	partial := result.envelope().Data.(*PartialData)
+	if len(partial.Succeeded) != 1 || len(partial.Failed) != 1 || partial.Failed[0].Error.Subtype != "projection_unknown" {
+		t.Fatalf("partial = %#v", partial)
+	}
+}
+
 func TestPageLedgerRecordsAreDefensiveCopies(t *testing.T) {
 	payload := map[string]any{"items": []string{"a"}}
 	ledger, _ := NewPageLedger(1)

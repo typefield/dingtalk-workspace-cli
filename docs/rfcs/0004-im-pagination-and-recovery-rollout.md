@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：Implementing（PageLedger 已落地，首批四条 IM 读命令已进入 dual_validate）
+- 状态：Implementing（PageLedger 已落地，首批五条 IM 读命令已进入 dual_validate）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 与 `internal/shortcut/smart` 的可终结、只读分页命令
 - 依赖：RFC-0001（统一返回）、RFC-0003（错误 subtype 治理）
@@ -127,27 +127,28 @@ legacy_only
   -> unified_stable
 ```
 
-迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批仅选择只读、分页事实明确
-且没有资源下载副作用的命令：
+迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批选择只读、分页事实明确的
+命令；带可选资源下载/导出的本地写入模式只保持 dual_validate：
 
 1. `chat +flag-list`；
 2. `chat +chat-search`；
 3. `chat +conversation-list` / `+chat-list`（以当前 canonical path 为准）。
 4. `chat +thread-replies`。
+5. `chat +chat-messages`。
 
-消息列表和资源下载保持 legacy/dual_validate，直到它们的时间游标、资源下载和页面错误单位
-均有单独的 CommandResult 映射。`+thread-replies` 已完成只读分页的 shadow 映射，但含
-`--download-resources` 的本地写入路径仍只停留在 dual_validate，未进入 active。写命令不因本 RFC 改变 retry 行为。
+`+chat-messages` 与 `+thread-replies` 均完成只读分页的 shadow 映射，但含
+`--download-resources`、`+chat-messages --output` 的本地写入路径仍只停留在
+dual_validate，未进入 active。写命令不因本 RFC 改变 retry 行为。
 
 每个 `dual_validate` 命令必须：一次业务调用、legacy stdout 字节不变、shadow
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
 选择协议。
 
-当前进度：`chat +flag-list`、`chat +chat-search`、`chat +conversation-list` 与
-`chat +thread-replies` 已通过
+当前进度：`chat +flag-list`、`chat +chat-search`、`chat +conversation-list`、
+`chat +thread-replies` 与 `chat +chat-messages` 已通过
 单次业务执行构建 PageLedger，
 并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为 shadow `CommandResult`；
-四条命令的 legacy JSON 逐字节 golden 均已锁定。`chat-search` 的最大窗口二次探测
+五条命令的 legacy JSON 逐字节 golden 均已锁定。`chat-search` 的最大窗口二次探测
 被建模为同一 cursor 的验证步骤：探测成功只记一个逻辑页，探测失败保留首批数据并
 进入 `partial_failure`，不会把探测次数伪装成 endpoint 页数。`hasMore=false` 同时
 携带 cursor 这类旧路径曾接受的矛盾只在 shadow 中 fail closed，避免 dual 阶段改变
@@ -167,6 +168,13 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 却携带可用游标、或未知/非法回复容器时，统一侧分别输出 `partial_failure` 或 typed
 `pagination_inconsistent` / `projection_unknown`。dual 阶段所有 legacy bytes 保持不变。
 
+`chat-messages` 保留既有的毫秒时间边界、跨页稳定 ID 去重、时间范围和最大结果预算；
+统一侧只旁路观察同一次下层响应。已知继续页输出 `endpoint_exhausted:false + next_token`，
+未知分页证据不伪造 meta，后续读取失败保留成功页面并输出 `partial_failure`；
+`hasMore=false` 却携带游标以及无法投影的消息容器则为 typed
+`pagination_inconsistent` / `projection_unknown`。时间范围后处理失败也会中断统一结果，
+不会把已读页伪装成完整终态。
+
 ## 6. 验收
 
 1. `hasMore=true` 必须带可续 `next_token`；`endpoint_exhausted:true` 禁止带 token。
@@ -179,10 +187,10 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 
 ### 6.1 2026-08-08 Agent 声明面扫描
 
-Agent 以当前源码构建临时 CLI，并逐项读取四条命令的 leaf Help、`schema --all` 中的精确
+Agent 以当前源码构建临时 CLI，并逐项读取五条命令的 leaf Help、`schema --all` 中的精确
 tool 声明，以及 multi chat Skill 的根路由和精确 reference。结果如下：
 
-- 四条命令均只公开全局 `--format`，没有输出协议选择参数；
+- 五条命令均只公开全局 `--format`，没有输出协议选择参数；
 - canonical path、`--page-all`、`--page-limit`、page size/token 约束与运行时一致；
 - Schema 的 effect/risk/confirmation/idempotency 均为 `read/low/not_required/idempotent`；
 - Skill 路由均指向当前 canonical path，没有要求 Agent 选择 rollout 状态；

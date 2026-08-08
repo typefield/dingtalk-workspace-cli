@@ -4,7 +4,7 @@
 
 | Recipe | 行动指南（固定路线） |
 |--------|-------------------|
-| query-group-chat | `dws chat +chat-messages --group "<群名>" --time "<yyyy-MM-dd HH:mm:ss>" --page-all --output ./exports/messages.json --format json`；只接受唯一解析结果，并检查 `complete/hasMore/failures`。 |
+| query-group-chat | `dws chat +chat-messages --group "<群名>" --time "<yyyy-MM-dd HH:mm:ss>" --page-all --output ./exports/messages.json --format json`；只接受唯一解析结果；只有明确的 endpoint 耗尽证据才能表述为完整，必须保留续页凭据、失败或未知分页边界。 |
 | query-private-chat | 先解析唯一用户 ID，再执行 `dws chat +chat-messages --user "<userId>" --time "<yyyy-MM-dd HH:mm:ss>" --page-all --format json`；零命中/多候选停止消歧。 |
 | escalate-ding | 三级升级：<br>1. `ding message send --robot-code <robotCode> --type app --users <userId> --content "<内容>"`（必填项见 [ding.md](../products/ding.md)）<br>2. `dws chat +messages-send --as user --group <openConversationId> --text "<内容>" --format json` 群里提醒；Runtime 会在缺少确认时停止，必须先完成收件人、内容与影响确认，再以相同参数追加 `--yes`<br>3. `todo task create --title "<标题>" --executors <userId> --priority 40` 建紧急待办<br>所有稳定 ID 来自同一 profile 的真实返回，不选搜索第一项。 |
 | send-by-bot | 单群用 `--group`；多群用 `dws chat +messages-send --as bot --robot-code <robotCode> --groups <cid1,cid2> --title "<标题>" --text "<内容>" --format json`。Runtime 要求先确认再追加 `--yes`，并去重、返回 `im.batch-write.v1` 逐目标 ledger；未知投递状态时停止重发。 |
