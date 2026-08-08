@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -285,10 +286,10 @@ func runDocStyleCoverSet(cmd *cobra.Command, _ []string) error {
 	// --image 与 --file/--file-path 互斥。cobra 的 MarkFlagsMutuallyExclusive 只认主名
 	// image/file，拦不住别名 --file-path，故在此显式兜底。
 	if image != "" && filePath != "" {
-		return fmt.Errorf("--image and --file/--file-path are mutually exclusive; specify only one")
+		return apperrors.NewValidation("--image and --file/--file-path are mutually exclusive; specify only one")
 	}
 	if image == "" && filePath == "" {
-		return fmt.Errorf("flag --image or --file is required for `cover set`")
+		return apperrors.NewValidation("flag --image or --file is required for `cover set`")
 	}
 
 	cover := map[string]any{"action": "set"}
@@ -296,7 +297,7 @@ func runDocStyleCoverSet(cmd *cobra.Command, _ []string) error {
 	if cmd.Flags().Changed("position") {
 		pos, _ := cmd.Flags().GetFloat64("position")
 		if pos < 0 || pos > 1 {
-			return fmt.Errorf("--position must be within [0,1], got %v", pos)
+			return apperrors.NewValidation(fmt.Sprintf("--position must be within [0,1], got %v", pos))
 		}
 		cover["position"] = pos
 	}
@@ -308,7 +309,7 @@ func runDocStyleCoverSet(cmd *cobra.Command, _ []string) error {
 		// 绝不读取/上传本地文件。
 		mimeType, fileSize, err := validateCoverImageFile(filePath)
 		if err != nil {
-			return err
+			return apperrors.NewValidation(err.Error())
 		}
 		if deps.Caller.DryRun() {
 			cover["resourceId"] = fmt.Sprintf("(pending upload from --file %s)", filePath)
@@ -351,11 +352,11 @@ func runDocStyleBackgroundSet(cmd *cobra.Command, _ []string) error {
 	// 背景仅支持纯色（对齐前端，不支持背景图片上传）。
 	color, _ := cmd.Flags().GetString("color")
 	if color == "" {
-		return fmt.Errorf("flag --color is required for `background set`")
+		return apperrors.NewValidation("flag --color is required for `background set`")
 	}
 	// 帮助文档承诺 #RRGGBB 十六进制纯色，非法值直接报错，不下发请求。
 	if !isHexColor(color) {
-		return fmt.Errorf("--color must be a hex color like #E8F2FE, got %q", color)
+		return apperrors.NewValidation(fmt.Sprintf("--color must be a hex color like #E8F2FE, got %q", color))
 	}
 	return callMCPToolOnServer("doc", docStyleToolName, map[string]any{
 		"nodeId": nodeID,

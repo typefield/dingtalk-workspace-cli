@@ -29,12 +29,22 @@ var (
 	hintSubCmd           = cmdutil.HintSubCmd
 	mustGetFlag          = cmdutil.MustGetFlag
 	flagOrFallback       = cmdutil.FlagOrFallback
-	mustFlagOrFallback   = cmdutil.MustFlagOrFallback
 	parseISOTimeToMillis = cmdutil.ParseISOTimeToMillis
 	validateTimeRange    = cmdutil.ValidateTimeRange
 	helperSleep          = time.Sleep
 	helperAfter          = time.After
 )
+
+// mustFlagOrFallback makes a missing local command flag a typed validation
+// failure. cmdutil deliberately remains transport-agnostic, while every
+// helper command is part of DWS's public error contract.
+func mustFlagOrFallback(cmd *cobra.Command, primary string, aliases ...string) (string, error) {
+	value, err := cmdutil.MustFlagOrFallback(cmd, primary, aliases...)
+	if err == nil {
+		return value, nil
+	}
+	return "", apperrors.NewValidation(err.Error(), apperrors.WithReason("missing_required_flags"))
+}
 
 func validateRequiredFlags(cmd *cobra.Command, names ...string) error {
 	err := cmdutil.ValidateRequiredFlags(cmd, names...)

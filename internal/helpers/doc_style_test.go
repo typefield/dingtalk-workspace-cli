@@ -7,6 +7,8 @@ import (
 	"path/filepath"
 	"strings"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 func writeTempImage(t *testing.T, name string) string {
@@ -61,6 +63,7 @@ func TestCrossPlatformCoverageDocStyleCoverSetMutualExclusion(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "mutually exclusive") {
 		t.Fatalf("err = %v, want mutual exclusion", err)
 	}
+	assertDocStyleValidationError(t, err)
 }
 
 func TestCrossPlatformCoverageDocStyleCoverSetPositionValidation(t *testing.T) {
@@ -69,6 +72,7 @@ func TestCrossPlatformCoverageDocStyleCoverSetPositionValidation(t *testing.T) {
 	if err == nil || !strings.Contains(err.Error(), "--position must be within [0,1]") {
 		t.Fatalf("err = %v, want position range error", err)
 	}
+	assertDocStyleValidationError(t, err)
 
 	caller := &scriptedToolCaller{}
 	if err := executeDocStyleCommand(t, caller,
@@ -77,6 +81,28 @@ func TestCrossPlatformCoverageDocStyleCoverSetPositionValidation(t *testing.T) {
 	}
 	if caller.calls != 1 {
 		t.Fatalf("calls = %d, want 1", caller.calls)
+	}
+}
+
+func assertDocStyleValidationError(t *testing.T, err error) {
+	t.Helper()
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+		t.Fatalf("err = %#v, want typed validation error", err)
+	}
+}
+
+func TestCrossPlatformCoverageDocStyleLocalInputsAreTypedValidation(t *testing.T) {
+	for _, args := range [][]string{
+		{"cover", "set", "--node", "n1"},
+		{"background", "set", "--node", "n1"},
+		{"background", "set", "--node", "n1", "--color", "blue"},
+	} {
+		err := executeDocStyleCommand(t, &scriptedToolCaller{}, args...)
+		if err == nil {
+			t.Fatalf("args %q unexpectedly succeeded", args)
+		}
+		assertDocStyleValidationError(t, err)
 	}
 }
 
