@@ -174,6 +174,15 @@ python3 scripts/agent/scan_mono_script_contract.py \
   --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
 ```
 
+对高风险写入口，另有 `scripts/agent/probe_mono_dry_run.py` 使用临时 HOME、临时工作区
+和假的 `dws` 子进程做受控探针。它目前覆盖 7 个深层门控 fixture；报告中的 `PASS`
+只证明这些 fixture，其他参数/异常/账号路径仍必须保持 `UNVERIFIED`：
+
+```bash
+python3 scripts/agent/probe_mono_dry_run.py \
+  --output docs/agent-scans/mono-dry-run-probe-YYYYMMDD.md
+```
+
 ## 兼容与回滚
 
 迁移脚本保留原有业务参数和人读 `text` 输出；`json` 只在脚本明确宣布迁移后
