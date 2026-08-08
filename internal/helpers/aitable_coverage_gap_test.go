@@ -85,7 +85,7 @@ func TestCrossPlatformCoverageAITableExplicitUnlimitedPaginationE2E(t *testing.T
 	if len(caller.calls) != len(responses) {
 		t.Fatalf("explicit unlimited pagination calls = %d, want %d", len(caller.calls), len(responses))
 	}
-	for _, want := range []string{`"pages": 51`, `"fetchedCount": 51`, `"complete": true`} {
+	for _, want := range []string{`"pages": 51`, `"fetchedCount": 51`, `"endpointExhausted": true`} {
 		if !strings.Contains(out.String(), want) {
 			t.Fatalf("explicit unlimited output missing %s: %s", want, out.String())
 		}

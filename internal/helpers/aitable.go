@@ -173,11 +173,11 @@ func recordQueryFetchAll(toolArgs map[string]any, pageLimit int) error {
 
 	fmt.Fprintf(os.Stderr, "[pagination] complete: %d pages, %d fetched records\n", result.Pages, len(result.Records))
 	mergedData := map[string]any{
-		"records":      result.Records,
-		"fetchedCount": len(result.Records),
-		"hasMore":      false,
-		"complete":     true,
-		"pages":        result.Pages,
+		"records":           result.Records,
+		"fetchedCount":      len(result.Records),
+		"hasMore":           false,
+		"endpointExhausted": true,
+		"pages":             result.Pages,
 	}
 	if result.TotalCount != nil {
 		mergedData["totalCount"] = *result.TotalCount
@@ -279,13 +279,13 @@ func parseOptionalNonNegativeInt(value any) (*int, error) {
 
 func recordQueryIncompleteError(result paging.Result, pageLimit int) error {
 	incomplete := map[string]any{
-		"records":      result.Records,
-		"fetchedCount": len(result.Records),
-		"pages":        result.Pages,
-		"attempts":     result.Attempts,
-		"complete":     false,
-		"hasMore":      result.HasMore,
-		"stopReason":   result.StopReason,
+		"records":           result.Records,
+		"fetchedCount":      len(result.Records),
+		"pages":             result.Pages,
+		"attempts":          result.Attempts,
+		"endpointExhausted": false,
+		"hasMore":           result.HasMore,
+		"stopReason":        result.StopReason,
 	}
 	if result.LastCursor != "" {
 		incomplete["cursor"] = result.LastCursor

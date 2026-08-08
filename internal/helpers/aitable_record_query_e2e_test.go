@@ -81,7 +81,7 @@ func TestCrossPlatformCoverageRecordQueryCLICompleteE2E(t *testing.T) {
 	if err != nil {
 		t.Fatalf("record query CLI returned error: %v", err)
 	}
-	for _, want := range []string{`"complete": true`, `"fetchedCount": 3`, `"totalCount": 3`, `"id": "r3"`} {
+	for _, want := range []string{`"endpointExhausted": true`, `"fetchedCount": 3`, `"totalCount": 3`, `"id": "r3"`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
 			t.Fatalf("record query CLI output missing %s:\n%s", want, out)
 		}
