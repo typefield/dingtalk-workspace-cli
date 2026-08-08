@@ -25,6 +25,7 @@
 package devapp
 
 import (
+	"encoding/json"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -528,6 +529,36 @@ var GetCredentials = shortcut.Shortcut{
 	Description: "读取开放平台应用凭证",
 	Intent:      "当你需要拿到某应用的鉴权凭证（如 clientId/AppKey、clientSecret/AppSecret）以便在代码或调试中调用开放平台接口时使用；输入 unifiedAppId，返回该应用的凭证信息。",
 	Risk:        shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "devapp",
+			Name:           "shortcut_credentials_get",
+			CanonicalPath:  "devapp.shortcut_credentials_get",
+			CLIPath:        "devapp +credentials-get",
+			PrimaryCLIPath: "devapp +credentials-get",
+		},
+		Description: "读取开放平台应用凭证",
+		Result: &contract.ResultSpec{
+			Outcomes:       []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure},
+			DataSchema:     json.RawMessage(`{"type":"object","properties":{"clientId":{"type":"string"},"clientSecret":{"type":"string"},"appKey":{"type":"string"},"appSecret":{"type":"string"}},"additionalProperties":true}`),
+			SensitivePaths: []string{"appSecret", "clientSecret"},
+		},
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: credentials are fetched through the devapp MCP tool and sensitive fields are declared for output handling.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "读取指定应用的客户端凭证；敏感字段只在用户明确需要时处理",
+			UseWhen:      []string{"已知 unifiedAppId 且明确需要 clientId 或 clientSecret 时"},
+			AvoidWhen:    []string{"普通应用详情查询不要使用；不要把凭证写入日志或回答上下文"},
+			Examples:     []string{"dws devapp +credentials-get --unified-app-id <UNIFIED_APP_ID> --format json"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "unified-app-id", Type: shortcut.FlagString, Desc: "开放平台统一应用 ID", Required: true},
 	},
