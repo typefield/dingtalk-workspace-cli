@@ -396,15 +396,15 @@ func flagErrorWithSuggestions(cmd *cobra.Command, err error) error {
 	msgWithTail := errMsg + tail
 	if flag, protection, ok := reviewedFlagProtection(cmd, errMsg); ok {
 		hint := fmt.Sprintf("Parameter --%s is blocked from automatic normalization on %q; choose an explicit flag from --help.", flag, cmd.CommandPath())
-		reason := "blocked_flag"
+		subtype := apperrors.SubtypeBlockedFlag
 		if protection == pipeline.FlagProtectionAmbiguous {
 			hint = fmt.Sprintf("Parameter --%s is ambiguous on %q and cannot be normalized safely; choose the intended explicit flag from --help.", flag, cmd.CommandPath())
-			reason = "ambiguous_flag"
+			subtype = apperrors.SubtypeAmbiguousFlag
 		}
 		return apperrors.NewValidation(
 			msgWithTail,
 			apperrors.WithHint(hint),
-			apperrors.WithReason(reason),
+			apperrors.WithSubtype(subtype),
 			apperrors.WithCause(err),
 			apperrors.WithActions(fmt.Sprintf("Run '%s --help' for valid flags", cmd.CommandPath())),
 			apperrors.WithAvailableFlags(cmdutil.VisibleFlagNames(cmd)...),

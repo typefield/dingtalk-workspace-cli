@@ -13,6 +13,7 @@ import (
 	"testing"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -128,8 +129,18 @@ func TestCrossPlatformCoverageSkillCommandHighLevelRemainingCoverage(t *testing.
 		{Success: true, Result: &downloadSkillResult{}},
 	} {
 		skillFetchDownloadInfo = func(context.Context, string, string) (*downloadSkillResponse, error) { return response, nil }
-		if err := runSkillAdd(cmd, []string{"id", "target"}); err == nil {
+		err := runSkillAdd(cmd, []string{"id", "target"})
+		if err == nil {
 			t.Fatalf("invalid download response %#v should fail", response)
+		}
+		if response.ErrorCode != "" {
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) {
+				t.Fatalf("download-info error = %T, want *errors.Error", err)
+			}
+			if typed.Reason != string(apperrors.SubtypeSkillDownloadInfoUnavailable) || typed.ServerDiag.ServerErrorCode != response.ErrorCode || typed.Operation != "skill.install.download_info" {
+				t.Fatalf("download-info error = %#v", typed)
+			}
 		}
 	}
 	skillFetchDownloadInfo = func(context.Context, string, string) (*downloadSkillResponse, error) {

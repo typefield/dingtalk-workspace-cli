@@ -46,6 +46,9 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeToolProtocolIncompatible, CategoryDiscovery, RetryNever, false},
 		{SubtypeBackendDependencyUnavailable, CategoryAPI, RetryServerDirective, false},
 		{SubtypeUpstreamRequestRejected, CategoryAPI, RetryNever, false},
+		{SubtypeBlockedFlag, CategoryValidation, RetryNever, true},
+		{SubtypeAmbiguousFlag, CategoryValidation, RetryNever, true},
+		{SubtypeSkillDownloadInfoUnavailable, CategoryAPI, RetryIdempotentReadOnly, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {

@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：已实施（四批 registry）；渐进迁移进行中
+- 状态：已实施（五批 registry）；渐进迁移进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,11 +26,11 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 37 / 105 / 6 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个，以及 transport/服务端响应第四批七个稳定 subtype 已落地；间接映射函数由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 40 / 107 / 10 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个、transport/服务端响应第四批七个，以及本地 flag/Skill 市场第五批三个稳定 subtype 已落地；间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
 | `WithReason("…")` 自由字面调用 | 54 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
-| 全部 subtype / 调用点 | 79 / 159 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 全部 subtype / 调用点 | 80 / 161 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 6 | 绕过 `WithReason` 的第二条入口 |
-| 动态 `WithReason(variable)` | 7 | 仍需审阅；transport 的 HTTP/RPC 拼接路径已改为有限 subtype 映射，原始码保留在诊断字段 |
+| 动态 `WithReason(variable)` | 2 | 仅剩个人订阅状态机与文档复合写 partial error；二者须连同 Category/终态语义单独设计，不能靠字符串替换 |
 | 缺有效恢复提示的 subtype | 16 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
@@ -131,6 +131,21 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=unknown`，且不输出
 `retryable:true`。
 
+### 4.2.3 本地 flag、Skill 市场与网络观测第五批
+
+本批收敛有限本地枚举和“上游码只作诊断”的边界：
+
+| 场景 | subtype | Category | Agent 恢复边界 |
+|---|---|---|---|
+| 兼容 flag 被安全策略阻断或存在歧义 | `blocked_flag` / `ambiguous_flag` | validation | 读取当前 leaf Help，显式选择正确 flag；不得自动归一化 |
+| Skill 市场未返回下载信息 | `skill_download_info_unavailable` | api | 原始 `errorCode` 仅作为 server diagnostic；读取下载信息是幂等操作，可先核对登录/网络后重试 |
+| Smart Chat 本地页大小、时间等 flag 值不合法 | `invalid_flag_value` | validation | 具体 `validation_reason` 只作诊断，按 message/actions 修正对应 flag |
+| transport 网络观测 | `upstream_unclassified` / `discovery_upstream_unclassified` | api/discovery | `connection_refused`、DNS、deadline 等有限观测放入 `details.transport_failure`；不得再直接进入 subtype |
+
+这样保留了诊断颗粒度，而 Agent 的稳定分支仍只依赖 descriptor。对 `tools/call`，即使
+观测为连接拒绝，也只有已知 pre-submission 事实才标 `execution_started:false`；不自动把
+诊断观测解释为业务写入没有发生。
+
 ### 4.3 未注册与动态上游原因
 
 禁止把服务端任意 `reason`、HTTP 文本或拼接后的字符串直接作为公开 subtype。迁移后：
@@ -166,7 +181,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个已登记 subtype 的生产调用已迁入 `WithSubtype`；HTTP/RPC 动态上游 reason 已走有限映射器，剩余动态变量继续逐项审阅（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个已登记 subtype 的生产调用已迁入 `WithSubtype`；动态 reason 已从 16 降至 2，剩余个人订阅/文档 partial 路径继续逐项审阅（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

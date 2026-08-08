@@ -580,7 +580,12 @@ func runSkillAdd(cmd *cobra.Command, args []string) error {
 			errMsg = "unknown error"
 		}
 		return apperrors.NewAPI(fmt.Sprintf("failed to get skill download info: %s", errMsg),
-			apperrors.WithReason(downloadResp.ErrorCode))
+			apperrors.WithOperation("skill.install.download_info"),
+			apperrors.WithSubtype(apperrors.SubtypeSkillDownloadInfoUnavailable),
+			apperrors.WithServerDiag(apperrors.ServerDiagnostics{
+				ServerErrorCode: strings.TrimSpace(downloadResp.ErrorCode),
+			}),
+		)
 	}
 
 	if downloadResp.Result == nil || downloadResp.Result.DownloadURL == "" {

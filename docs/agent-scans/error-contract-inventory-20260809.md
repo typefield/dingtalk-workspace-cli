@@ -6,10 +6,10 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**37** 个；直接 `WithSubtype(Subtype...)` 调用点：**105** 个；间接映射调用点：**6** 个。
-- `WithReason("…")` 的自由字面调用点：**54** 个；与已注册调用合计覆盖 **79** 个 subtype、**159** 个调用点。
+- 已注册 descriptor：**40** 个；直接 `WithSubtype(Subtype...)` 调用点：**107** 个；间接映射调用点：**10** 个。
+- `WithReason("…")` 的自由字面调用点：**54** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
-- 动态 `WithReason(variable)` 调用：**7** 个。
+- 动态 `WithReason(variable)` 调用：**2** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**16** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
@@ -47,7 +47,7 @@
 | `invalid_agent_product` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_product.go:46` |
 | `invalid_aitable_url` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
 | `invalid_argument` | registered 10 | 10 | `validation` | yes | no | no | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
-| `invalid_flag_value` | registered 13 | 13 | `validation` | yes | no | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
+| `invalid_flag_value` | registered 14 | 14 | `validation` | yes | yes | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
 | `invalid_json_input` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:230` |
 | `key_value_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
 | `mcp_tool_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:855` |
@@ -55,7 +55,7 @@
 | `missing_required_flags` | registered 22 | 22 | `validation` | yes | yes | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
 | `missing_target` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
 | `my_groups_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/my_groups.go:269` |
-| `not_authenticated` | free 3 | 3 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:646` |
+| `not_authenticated` | free 3 | 3 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` |
 | `not_configured` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:281` |
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
 | `parameter_conflict` | free 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
@@ -76,6 +76,7 @@
 | `resolution_batch_failed` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |
 | `resolution_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:686`<br>`internal/shortcut/targetresolver/resolver.go:710` |
 | `resolution_not_found` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:651` |
+| `skill_download_info_unavailable` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/skill_command.go:584` |
 | `stdio_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:847` |
 | `stdio_initialize_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:817` |
 | `stdio_tools_list_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:826` |
@@ -117,23 +118,22 @@
 动态 `WithReason` 在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么按当前 Category 归入 `upstream_unclassified` / `discovery_upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。
 
 - internal/app/event_personal_attempts.go:489: `apperrors.WithReason(reason)`
-- internal/app/root.go:407: `apperrors.WithReason(reason)`
-- internal/app/skill_command.go:583: `apperrors.WithReason(downloadResp.ErrorCode)`
 - internal/shortcut/doc/common.go:122: `apperrors.WithReason(reason)`
-- internal/shortcut/smart/local_chat_validation.go:32: `apperrors.WithReason(reason)`
-- internal/transport/client.go:668: `apperrors.WithReason(reason)`
-- internal/transport/client.go:701: `apperrors.WithReason(reason)`
 
 ## 间接稳定 subtype 映射
 
 这类调用使用有限映射函数而非字面量；Agent 必须阅读映射函数和对应测试，确认它没有把上游文本或任意数值重新拼进 subtype。
 
-- internal/transport/client.go:1028: `apperrors.WithSubtype(httpStatusSubtype(`
-- internal/transport/client.go:1157: `apperrors.WithSubtype(jsonRPCSubtype(`
+- internal/app/root.go:407: `apperrors.WithSubtype(subtype)`
+- internal/shortcut/aitabletarget/resolver.go:410: `apperrors.WithSubtype(subtype)`
+- internal/transport/client.go:1030: `apperrors.WithSubtype(httpStatusSubtype(`
+- internal/transport/client.go:1159: `apperrors.WithSubtype(jsonRPCSubtype(`
 - internal/transport/client.go:461: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:504: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:525: `apperrors.WithSubtype(transportUpstreamSubtype(`
 - internal/transport/client.go:544: `apperrors.WithSubtype(transportUpstreamSubtype(`
+- internal/transport/client.go:668: `apperrors.WithSubtype(transportUpstreamSubtype(`
+- internal/transport/client.go:702: `apperrors.WithSubtype(transportUpstreamSubtype(`
 
 ## Agent 审阅结论
 

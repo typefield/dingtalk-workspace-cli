@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/targetresolver"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
@@ -394,6 +395,11 @@ func TestCrossPlatformCoverageSmartResolutionAdapters(t *testing.T) {
 	}
 	if err := localChatOptionError("fixture", "fixture"); err == nil {
 		t.Fatal("local validation error unexpectedly nil")
+	} else {
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Reason != string(apperrors.SubtypeInvalidFlagValue) || typed.Details["validation_reason"] != "fixture" {
+			t.Fatalf("local validation error = %#v", err)
+		}
 	}
 	users := []contactUser{
 		{userID: "u1", openDingTalkID: "d1", name: "甲"},

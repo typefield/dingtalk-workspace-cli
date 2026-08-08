@@ -20,7 +20,12 @@ import re
 
 REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s*\)")
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
-INDIRECT_SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*([a-z][A-Za-z0-9_]*)\(")
+# A stable mapping may be returned by a finite helper, or selected from a
+# finite local enum before it reaches WithSubtype.  Record both forms for
+# Agent review: neither is a free-form public subtype, but neither should be
+# silently omitted from the evidence count either.
+INDIRECT_SUBTYPE_CALL = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*([a-z][A-Za-z0-9_]*)\(")
+INDIRECT_SUBTYPE_VARIABLE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*([a-z][A-Za-z0-9_]*)\s*\)")
 SUBTYPE_CONST = re.compile(r"\b(Subtype[A-Za-z0-9_]+)\s+Subtype\s*=\s*\"([^\"]+)\"")
 DESCRIPTOR_CATEGORY = re.compile(r"\b(Subtype[A-Za-z0-9_]+):\s*\{\s*Subtype:\s*\1,\s*Category:\s*Category([A-Za-z0-9_]+)", re.MULTILINE)
 DESCRIPTOR_DEFAULT_HINT = re.compile(
@@ -150,11 +155,12 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
             )
             facts[subtype].occurrences.append(occurrence)
             facts[subtype].sources.add(relative)
-        for match in INDIRECT_SUBTYPE.finditer(text):
-            line = line_at(text, match.start())
-            if lines[line - 1].lstrip().startswith("//"):
-                continue
-            indirect_subtypes.append(f"{relative}:{line}: `{match.group(0).strip()}`")
+        for pattern in (INDIRECT_SUBTYPE_CALL, INDIRECT_SUBTYPE_VARIABLE):
+            for match in pattern.finditer(text):
+                line = line_at(text, match.start())
+                if lines[line - 1].lstrip().startswith("//"):
+                    continue
+                indirect_subtypes.append(f"{relative}:{line}: `{match.group(0).strip()}`")
         for match in NON_LITERAL_REASON.finditer(text):
             if any(match.start() >= start and match.end() <= end for start, end in literal_spans):
                 continue

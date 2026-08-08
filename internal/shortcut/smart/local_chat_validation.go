@@ -29,7 +29,11 @@ func localChatOptionError(reason, message string, flags ...string) error {
 	}
 	return apperrors.NewValidation(
 		message,
-		apperrors.WithReason(reason),
+		// Individual local validation labels are diagnostics.  The public branch
+		// key is the stable flag-value category; callers already receive the
+		// concrete parameter name in message/actions.
+		apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
+		apperrors.WithDetails(map[string]any{"validation_reason": reason}),
 		apperrors.WithActions(action),
 	)
 }

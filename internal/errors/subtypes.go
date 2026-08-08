@@ -57,6 +57,9 @@ const (
 	SubtypeToolProtocolIncompatible       Subtype = "tool_protocol_incompatible"
 	SubtypeBackendDependencyUnavailable   Subtype = "backend_dependency_unavailable"
 	SubtypeUpstreamRequestRejected        Subtype = "upstream_request_rejected"
+	SubtypeBlockedFlag                    Subtype = "blocked_flag"
+	SubtypeAmbiguousFlag                  Subtype = "ambiguous_flag"
+	SubtypeSkillDownloadInfoUnavailable   Subtype = "skill_download_info_unavailable"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -419,6 +422,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请求被上游拒绝；请核对当前 leaf Help、Schema 和稳定目标 ID 后重试。",
 		Description:   "the upstream rejected a tool request without a more specific safe classification",
+	},
+	SubtypeBlockedFlag: {
+		Subtype:       SubtypeBlockedFlag,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "该参数不能被自动归一化；请查看当前 leaf Help 并显式选择正确参数。",
+		Description:   "a compatibility flag was intentionally blocked from unsafe automatic normalization",
+	},
+	SubtypeAmbiguousFlag: {
+		Subtype:       SubtypeAmbiguousFlag,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "该参数在当前命令中存在歧义；请查看 leaf Help 并显式选择目标参数。",
+		Description:   "a compatibility flag could not be normalized because multiple meanings are plausible",
+	},
+	SubtypeSkillDownloadInfoUnavailable: {
+		Subtype:       SubtypeSkillDownloadInfoUnavailable,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "技能市场未返回可用下载信息；请保留上游错误码，确认网络和登录状态后重试读取。",
+		Description:   "a read-only skill-market download-info lookup did not return a usable result",
 	},
 }
 

@@ -665,8 +665,9 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 				reason, hint := classifyRequestFailure(err)
 				opts := []apperrors.Option{
 					apperrors.WithOperation(operation),
-					apperrors.WithReason(reason),
+					apperrors.WithSubtype(transportUpstreamSubtype(operation)),
 					apperrors.WithHint(hint),
+					apperrors.WithDetails(map[string]any{"transport_failure": reason}),
 					apperrors.WithCause(&CallError{
 						Stage: CallStageRequest,
 						Cause: err,
@@ -698,9 +699,10 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 		agentRetryable, "")
 	opts := []apperrors.Option{
 		apperrors.WithOperation(operation),
-		apperrors.WithReason(reason),
+		apperrors.WithSubtype(transportUpstreamSubtype(operation)),
 		apperrors.WithHint(hint),
 		apperrors.WithActions(actions...),
+		apperrors.WithDetails(map[string]any{"transport_failure": reason}),
 		apperrors.WithCause(&CallError{
 			Stage:     CallStageRequest,
 			RequestID: c.ExecutionId,
