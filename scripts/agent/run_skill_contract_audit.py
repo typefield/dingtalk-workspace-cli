@@ -55,6 +55,11 @@ def main() -> int:
                 [sys.executable, "scripts/agent/scan_shortcut_surface_alignment.py",
                  "--output", str(shortcut_report)],
             ),
+            (
+                "Shortcut exclusion 逐条审阅队列",
+                [sys.executable, "scripts/agent/scan_shortcut_exclusions.py",
+                 "--output", str(Path(temp_dir) / "shortcut-exclusions.md")],
+            ),
         ]
 
         sections: list[str] = [
@@ -72,8 +77,10 @@ def main() -> int:
         results: list[tuple[str, int, str]] = []
         for title, command in probes:
             rc, output = run(root, command)
-            if title.startswith("Shortcut") and shortcut_report.exists():
-                output = shortcut_report.read_text(encoding="utf-8")
+            if title.startswith("Shortcut"):
+                generated = shortcut_report if "集合" in title else Path(temp_dir) / "shortcut-exclusions.md"
+                if generated.exists():
+                    output = generated.read_text(encoding="utf-8")
             results.append((title, rc, output))
             sections.append(f"| {title} | {'PASS' if rc == 0 else f'REVIEW (rc={rc})'} |")
 
