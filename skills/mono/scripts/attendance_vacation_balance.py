@@ -22,6 +22,7 @@ from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit
 
 MAX_USERS_PER_BALANCE_BATCH = 20
 BASE_HEADERS = ["姓名", "部门", "入职时间", "首次工作时间"]
@@ -93,6 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--leave-keywords", default="", help="按假期名称关键词筛选列，逗号分隔；默认导出全部")
     parser.add_argument("--out", default="", help="输出 xlsx 文件名；不传则自动生成")
     parser.add_argument("--inspect", action="store_true", help="打印首条假期类型和余额原始结构到 stderr")
+    add_contract_flags(parser)
     return parser.parse_args()
 
 
@@ -590,6 +592,19 @@ def main() -> int:
     title = "假期余额列表"
     subtitle = f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}；员工数：{len(user_ids)}；假期规则数：{len(leave_columns)}"
 
+    result_data = {
+        "users": user_ids,
+        "employeeCount": len(user_ids),
+        "leaveColumnCount": len(leave_columns),
+        "rowCount": len(rows),
+        "output": os.path.abspath(out_name),
+        "keywords": keywords,
+    }
+    if args.dry_run:
+        return emit(fmt=args.format, outcome="success", data={
+            **result_data, "write": False,
+        }, dry_run=True, text="[dry-run] 已完成远端只读查询和报表预览，不写入 Excel 文件")
+
     try:
         cmn.write_excel(
             out_name,
@@ -603,6 +618,8 @@ def main() -> int:
         cmn.error(str(error))
         return 1
 
+    if args.format != "text":
+        return emit(fmt=args.format, outcome="success", data=result_data)
     print("✅ 假期余额 Excel 导出完成")
     print(f"- 输出文件：{os.path.abspath(out_name)}")
     print(f"- 员工数量：{len(user_ids)}")
