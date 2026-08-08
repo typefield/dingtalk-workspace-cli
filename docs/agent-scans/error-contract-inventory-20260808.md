@@ -6,11 +6,11 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**6** 个；`WithSubtype(...)` 调用点：**9** 个。
-- `WithReason("…")` 的自由字面调用点：**148** 个；与已注册调用合计覆盖 **79** 个 subtype、**157** 个调用点。
+- 已注册 descriptor：**6** 个；`WithSubtype(...)` 调用点：**10** 个。
+- `WithReason("…")` 的自由字面调用点：**148** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
 - 动态 `WithReason(variable)` 调用：**16** 个。
-- 至少一个调用点缺少邻近 `WithHint` 的 subtype：**30** 个。
+- 至少一个调用点缺少邻近 `WithHint` 的 subtype：**31** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
 已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
@@ -71,6 +71,7 @@
 | `plugin_input_schema_invalid` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 2 / free 12 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1149`<br>`internal/shortcut/contact/contact.go:285` … |
+| `rate_limit` | registered 1 | 1 | `api` | no | no | no | no | no | `internal/transport/client.go:1032` |
 | `raw_api_credentials_required` | free 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
 | `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
 | `resolution_ambiguous` | free 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
@@ -123,8 +124,8 @@
 - internal/app/skill_command.go:583: `apperrors.WithReason(downloadResp.ErrorCode)`
 - internal/shortcut/doc/common.go:122: `apperrors.WithReason(reason)`
 - internal/shortcut/smart/local_chat_validation.go:32: `apperrors.WithReason(reason)`
-- internal/transport/client.go:1028: `apperrors.WithReason(fmt.Sprintf("http_%d", statusCode)`
-- internal/transport/client.go:1155: `apperrors.WithReason(reason)`
+- internal/transport/client.go:1026: `apperrors.WithReason(fmt.Sprintf("http_%d", statusCode)`
+- internal/transport/client.go:1163: `apperrors.WithReason(reason)`
 - internal/transport/client.go:461: `apperrors.WithReason(reasonForMethod(request.Method, "response_read_failed")`
 - internal/transport/client.go:504: `apperrors.WithReason(reasonForMethod(request.Method, "invalid_response")`
 - internal/transport/client.go:525: `apperrors.WithReason(reasonForMethod(request.Method, "empty_result")`

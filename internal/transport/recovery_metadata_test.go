@@ -30,8 +30,8 @@ func TestHTTPStatusErrorIncludesCallMetadata(t *testing.T) {
 	if !errors.As(err, &typed) {
 		t.Fatalf("expected structured errors.Error, got %T", err)
 	}
-	if typed.Reason != "http_429" {
-		t.Fatalf("Reason = %q, want http_429", typed.Reason)
+	if typed.Reason != string(apperrors.SubtypeRateLimit) {
+		t.Fatalf("Reason = %q, want %q", typed.Reason, apperrors.SubtypeRateLimit)
 	}
 }
 

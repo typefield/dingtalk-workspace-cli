@@ -21,6 +21,7 @@ import re
 REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s*\)")
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
 SUBTYPE_CONST = re.compile(r"\b(Subtype[A-Za-z0-9_]+)\s+Subtype\s*=\s*\"([^\"]+)\"")
+DESCRIPTOR_CATEGORY = re.compile(r"\b(Subtype[A-Za-z0-9_]+):\s*\{\s*Subtype:\s*\1,\s*Category:\s*Category([A-Za-z0-9_]+)", re.MULTILINE)
 # Deliberately line-bounded: a call spread across lines needs manual Agent
 # review, but a broad `[^)]` expression accidentally sees function/test names
 # containing the word WithReason as runtime construction sites.
@@ -84,9 +85,11 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
 
     paths = [path for path in sorted(root.rglob("*.go")) if not path.name.endswith("_test.go") and not any(part in excluded for part in path.parts)]
     subtype_constants: dict[str, str] = {}
+    descriptor_categories: dict[str, str] = {}
     for path in paths:
         text = path.read_text(encoding="utf-8")
         subtype_constants.update({match.group(1): match.group(2) for match in SUBTYPE_CONST.finditer(text)})
+        descriptor_categories.update({match.group(1): match.group(2).lower() for match in DESCRIPTOR_CATEGORY.finditer(text)})
 
     for path in paths:
         text = path.read_text(encoding="utf-8")
@@ -103,7 +106,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             occurrence = Occurrence(
                 path=relative,
                 line=line,
-                category=nearby_category(lines, line - 1),
+				category=nearby_category(lines, line - 1),
                 hint=bool(HINT.search(context)),
                 actions=bool(ACTIONS.search(context)),
                 retryable=bool(RETRYABLE.search(context)),
@@ -126,7 +129,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             occurrence = Occurrence(
                 path=relative,
                 line=line,
-                category=nearby_category(lines, line - 1),
+				category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
                 hint=bool(HINT.search(context)),
                 actions=bool(ACTIONS.search(context)),
                 retryable=bool(RETRYABLE.search(context)),

@@ -1023,9 +1023,17 @@ func httpStatusErrorWithHeader(method, endpoint string, statusCode int, snapshot
 func httpStatusErrorWithRecovery(method, endpoint string, statusCode int, snapshotPath, headerTraceID, executionID string, header http.Header) error {
 	message := fmt.Sprintf("request to %s returned HTTP %d", RedactURL(endpoint), statusCode)
 	ambiguousWrite := method == "tools/call" && (statusCode == http.StatusRequestTimeout || statusCode >= http.StatusInternalServerError)
+	reason := apperrors.WithReason(fmt.Sprintf("http_%d", statusCode))
+	// HTTP 429 is the one transport status whose recovery semantics are both
+	// stable and explicit: the gateway rejected the request for rate limiting,
+	// before it accepted a tool execution. Keep other dynamic HTTP reasons in
+	// the compatibility path until their execution/retry semantics are audited.
+	if statusCode == http.StatusTooManyRequests {
+		reason = apperrors.WithSubtype(apperrors.SubtypeRateLimit)
+	}
 	opts := []apperrors.Option{
 		apperrors.WithOperation(method),
-		apperrors.WithReason(fmt.Sprintf("http_%d", statusCode)),
+		reason,
 		apperrors.WithSnapshot(snapshotPath),
 		apperrors.WithTraceID(headerTraceID),
 		apperrors.WithCause(&CallError{
