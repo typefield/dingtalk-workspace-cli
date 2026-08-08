@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"strings"
 
@@ -22,6 +23,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -257,7 +259,7 @@ func DeclareLeafMetadata(cmd *cobra.Command, spec LeafSpec) *cobra.Command {
 	}
 	// cmd.Annotations is always non-nil here: AttachContract above registers the
 	// runtime-contract annotation on every declared leaf via the cli seam.
-	rt := &contractRuntime{validate: spec.Validate, confirm: confirm}
+	rt := &contractRuntime{validate: normalizeLeafValidation(spec.Validate), confirm: confirm}
 	if confirm {
 		rt.safety = spec.Safety
 		cmd.Annotations[contractConfirmSafetyAnnotation] = "true"
@@ -271,6 +273,27 @@ func DeclareLeafMetadata(cmd *cobra.Command, spec LeafSpec) *cobra.Command {
 	storeContractRuntime(cmd, rt)
 	installContractRunEPipeline(cmd, rt)
 	return cmd
+}
+
+// normalizeLeafValidation gives metadata-only leaves the same failure
+// semantics as corecmd-managed required flags and constraints. LeafSpec.Validate
+// is explicitly a local, pre-effect validation hook; a plain error from it is
+// therefore user-correctable input, not a framework failure. Preserve typed
+// errors so a callback can deliberately return a richer category.
+func normalizeLeafValidation(validate func(*cobra.Command, []string) error) func(*cobra.Command, []string) error {
+	if validate == nil {
+		return nil
+	}
+	return func(cmd *cobra.Command, args []string) error {
+		if err := validate(cmd, args); err != nil {
+			var typed *apperrors.Error
+			if errors.As(err, &typed) {
+				return err
+			}
+			return apperrors.NewValidation(err.Error())
+		}
+		return nil
+	}
 }
 
 // installContractRunEPipeline wraps RunE so Validate and ConfirmSafety share

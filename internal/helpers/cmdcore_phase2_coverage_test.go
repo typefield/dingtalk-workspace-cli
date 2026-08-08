@@ -15,6 +15,7 @@ package helpers
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"io"
 	"reflect"
@@ -24,6 +25,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -191,6 +193,11 @@ func TestCrossPlatformCoverageDeclareLeafMetadataValidateWithoutConfirmRunsInner
 	// Validate failure short-circuits before the inner RunE.
 	if err := cmd.Execute(); err == nil || !strings.Contains(err.Error(), "flag --id is required") {
 		t.Fatalf("Execute() error = %v, want Validate failure", err)
+	} else {
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+			t.Fatalf("Validate error = %T %v, want typed validation", err, err)
+		}
 	}
 	if ran {
 		t.Fatal("inner RunE must not run when Validate fails")
@@ -205,6 +212,25 @@ func TestCrossPlatformCoverageDeclareLeafMetadataValidateWithoutConfirmRunsInner
 	}
 	if !ran {
 		t.Fatal("inner RunE must run after Validate passes")
+	}
+}
+
+func TestDeclareLeafMetadataPreservesTypedValidateErrors(t *testing.T) {
+	cmd := &cobra.Command{Use: "typed", RunE: func(*cobra.Command, []string) error { return nil }}
+	DeclareLeafMetadata(cmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low", Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Validate: func(*cobra.Command, []string) error {
+			return apperrors.NewAPI("service preflight rejected request")
+		},
+		Contract: contractCoverageSchema("typed validation fixture"),
+	})
+	cmd.SetArgs(nil)
+	err := cmd.Execute()
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAPI {
+		t.Fatalf("typed Validate error = %T %v, want API error unchanged", err, err)
 	}
 }
 
