@@ -307,19 +307,35 @@ func reportPaginationToken(value any, present bool) (string, error) {
 	}
 	switch typed := value.(type) {
 	case string:
-		return strings.TrimSpace(typed), nil
+		cursor := strings.TrimSpace(typed)
+		if cursor == "0" {
+			return "", nil
+		}
+		return cursor, nil
 	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
-		return fmt.Sprint(typed), nil
+		cursor := fmt.Sprint(typed)
+		if cursor == "0" {
+			return "", nil
+		}
+		return cursor, nil
 	case float32:
 		if typed != float32(int64(typed)) {
 			return "", reportPaginationError("报告列表的 nextCursor 必须是整数或字符串")
 		}
-		return fmt.Sprint(int64(typed)), nil
+		cursor := fmt.Sprint(int64(typed))
+		if cursor == "0" {
+			return "", nil
+		}
+		return cursor, nil
 	case float64:
 		if typed != float64(int64(typed)) {
 			return "", reportPaginationError("报告列表的 nextCursor 必须是整数或字符串")
 		}
-		return fmt.Sprint(int64(typed)), nil
+		cursor := fmt.Sprint(int64(typed))
+		if cursor == "0" {
+			return "", nil
+		}
+		return cursor, nil
 	default:
 		return "", reportPaginationError("报告列表的 nextCursor 必须是整数或字符串")
 	}

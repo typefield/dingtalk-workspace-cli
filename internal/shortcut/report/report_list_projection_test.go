@@ -89,6 +89,14 @@ func TestReportListPaginationMapsContinuationAndTerminalPages(t *testing.T) {
 	if err != nil || !known || !page.EndpointExhausted || page.NextToken != "" {
 		t.Fatalf("terminal pagination = %#v, known=%v, err=%v", page, known, err)
 	}
+	for _, sentinel := range []any{0, float64(0), "0"} {
+		page, known, err = reportListPagination(map[string]any{"hasMore": false, "nextCursor": sentinel})
+		if err != nil || !known || !page.EndpointExhausted || page.NextToken != "" {
+			t.Fatalf("terminal pagination sentinel=%#v => %#v, known=%v, err=%v", sentinel, page, known, err)
+		}
+	}
+	_, _, err = reportListPagination(map[string]any{"hasMore": true, "nextCursor": 0})
+	assertReportPaginationError(t, err)
 
 	payload, result, err := reportListResult(map[string]any{"hasMore": true, "nextCursor": "next"}, []map[string]any{})
 	if err != nil || payload["hasMore"] != true || payload["nextCursor"] != "next" || result.Outcome() != output.OutcomeSuccess {
