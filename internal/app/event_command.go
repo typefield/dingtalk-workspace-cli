@@ -42,6 +42,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/registry"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/source"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/transport"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -1187,6 +1188,10 @@ func newEventStopCommand() *cobra.Command {
 			return nil
 		},
 	}
+	// The terminal outcome bridge is intentionally shadow-only for now.  The
+	// existing human/legacy output stays byte-compatible while we validate that
+	// every partial stop can be represented without losing completed actions.
+	output.SetCommandRollout(cmd, output.RolloutDualValidate)
 	cmd.Flags().StringVar(&asIdentity, "as", "user", "事件身份: user")
 	cmd.Flags().StringVar(&opts.ControlBaseURL, "personal-event-base-url", "", "个人事件控制面 base URL；默认由 MCP base 派生 /dws")
 	cmd.Flags().StringVar(&opts.StreamSourceID, "stream-source-id", strings.TrimSpace(os.Getenv("DWS_STREAM_SOURCE_ID")),

@@ -37,6 +37,13 @@ DESCRIPTOR_DEFAULT_HINT = re.compile(
 # containing the word WithReason as runtime construction sites.
 NON_LITERAL_REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*(?!\")([^\n)]*)\)")
 STRUCT_SUBTYPE = re.compile(r"\bSubtype\s*:\s*\"([^\"]+)\"")
+# Unified output uses ErrorInfo.Subtype (a string field), so the type-safe
+# spelling is `string(apperrors.SubtypeFoo)`. It is still a direct machine
+# subtype assignment and must stay visible to Agent review rather than being
+# hidden merely because it is not a quoted literal.
+STRUCT_SUBTYPE_CONST = re.compile(
+    r"\bSubtype\s*:\s*string\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)"
+)
 CONSTRUCTOR = re.compile(r"\b(?:apperrors\.)?New(API|Auth|Validation|Discovery|Internal)\(")
 HINT = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithHint\(")
 ACTIONS = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithActions\(")
@@ -173,6 +180,16 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
             line = line_at(text, match.start())
             if not lines[line - 1].lstrip().startswith("//"):
                 struct_subtypes[match.group(1)].append(f"{relative}:{line}")
+        for match in STRUCT_SUBTYPE_CONST.finditer(text):
+            line = line_at(text, match.start())
+            if lines[line - 1].lstrip().startswith("//"):
+                continue
+            constant = match.group(1)
+            subtype = subtype_constants.get(constant)
+            if subtype is None:
+                dynamic.append(f"{relative}:{line}: `{match.group(0).strip()}` (unknown ErrorInfo subtype constant)")
+                continue
+            struct_subtypes[subtype].append(f"{relative}:{line}")
 
     return facts, sorted(dynamic), sorted(indirect_subtypes), dict(sorted(struct_subtypes.items())), dict(sorted(subtype_constants.items()))
 

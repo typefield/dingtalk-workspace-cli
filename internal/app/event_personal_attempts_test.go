@@ -657,8 +657,12 @@ func TestCrossPlatformCoveragePersonalSubscriptionBatchClaimFailureMakesZeroCrea
 		t.Fatalf("batch claim = %d, %#v", recording.claimCalls, recording.specs)
 	}
 	var typed *apperrors.Error
+	// A local cooldown still suppresses another create attempt, but it is not
+	// evidence that replay is safe. The Agent-facing result must therefore
+	// withhold retry timing and direct the caller to inspect existing state.
 	if !errors.As(err, &typed) || typed.RetryableSet ||
-		typed.NextRetryAt == nil || !typed.NextRetryAt.Equal(next) {
+		typed.RetryAfterSeconds != nil || typed.NextRetryAt != nil ||
+		typed.Hint == "" || len(typed.Actions) == 0 {
 		t.Fatalf("blocked error = %#v, %v", typed, err)
 	}
 }

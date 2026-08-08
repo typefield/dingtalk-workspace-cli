@@ -65,6 +65,7 @@ const (
 	SubtypeDocCheckpointUpdateFailed          Subtype = "doc_checkpoint_update_failed"
 	SubtypeDocCheckpointVerificationFailed    Subtype = "doc_checkpoint_verification_failed"
 	SubtypeDocHistoryRevertVerificationFailed Subtype = "doc_history_revert_verification_failed"
+	SubtypeEventStopUnverified                Subtype = "event_stop_unverified"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -499,6 +500,15 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: true,
 		DefaultHint:   "版本回滚可能已完成但读回验证失败；请先检查当前文档，不要重复回滚。",
 		Description:   "a document version revert could not be verified after the revert request completed",
+	},
+	SubtypeEventStopUnverified: {
+		Subtype:       SubtypeEventStopUnverified,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "部分订阅可能已取消但停机终态未确认；先运行 dws event status 核对订阅和本地状态，不要盲目重复停止。",
+		Description:   "an event-stop composite workflow did not produce a fully verifiable terminal state after at least one control-plane step",
 	},
 }
 

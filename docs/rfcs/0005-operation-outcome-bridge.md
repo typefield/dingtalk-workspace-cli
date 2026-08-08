@@ -1,8 +1,8 @@
 # RFC-0005：状态机阻断与复合写的 operation outcome 接入
 
-- 状态：实施中；doc 三条复合写已进入 dual validation，个人订阅仍待语义审阅
+- 状态：实施中；doc 三条复合写与 `event stop` 已进入 dual validation，个人订阅仍待语义审阅
 - 日期：2026-08-09
-- 适用范围：个人订阅尝试状态机、`doc` 复合写 shortcut
+- 适用范围：个人订阅尝试状态机、`doc` 复合写 shortcut、`event stop` 复合停机
 - 依赖：RFC-0001（统一返回渐进 rollout）、RFC-0003（稳定错误 subtype）和
   [分页框架契约与能力](../pagination-framework-contract.md)
 
@@ -88,9 +88,11 @@ idempotency key、`execution_started` 和服务端恢复语义；不能把 timeo
 - 未经幂等性证明的历史 timeout/network/5xx 不输出 `retryable:true`；
 - Agent 扫描展示有限映射与每个状态的命令级测试，不保存运行时 JSON fixture。
 
-## 4. 文档复合写
+## 4. 复合操作的 typed outcome bridge
 
-### 4.1 步骤到三通道的映射
+### 4.1 文档复合写
+
+#### 步骤到三通道的映射
 
 `docPartialWriteError` 的现有 `steps` 是业务事实，应在其旁边建立 typed
 `output.PartialData`，但不可由框架猜测：
@@ -114,7 +116,7 @@ idempotency key、`execution_started` 和服务端恢复语义；不能把 timeo
 `doc_history_revert_verification_failed`。它们都是 api 类别、不可自动重试；补偿计划和
 已完成步骤仍保留在 details。
 
-### 4.2 Runner bridge
+#### Runner bridge
 
 `Shortcut.Execute` 的返回类型是 `error`，而 active unified command 需要向
 `ResultStore` 交付 `CommandResult`。因此新增的桥接必须同时满足：
@@ -136,7 +138,7 @@ unified_active:
 尝试第二个 error envelope。`doc` 每个 terminal leaf 独立 rollout：先是三个复合写命令
 的 dual validation，确认 legacy golden 不变后才逐条 active。
 
-### 4.3 验收
+#### 验收
 
 1. legacy/dual 的 stdout 与 rc 均逐字保持；同一 fixture 只触发一次 MCP 写调用；
 2. active 的 create/checkpoint/revert partial 都是 `outcome:partial_failure`、rc=7，且
@@ -145,11 +147,45 @@ unified_active:
 4. verification failure 不扩大为“写入未发生”或“验证通过”；
 5. 全失败走普通 typed `failure`，不用空 `partial_failure`。
 
+### 4.2 `event stop` 的取消/本地清理桥接
+
+`event stop` 的顺序是：远端取消 subscription → 停止本地 consumer → 删除本地 run
+state → 核查剩余状态 → 按需停止 personal bus。任一后续阶段失败时，已经完成的远端取消
+是业务事实，不能压缩为“普通 API error 后可整体重试”。但控制面返回错误也不能证明该阶段
+完全未执行，因此失败的远端取消和失败的本地清理都进入 `unknown[]`，而不是武断归入
+`failed[]`。
+
+| 已观察事实 | unified channel |
+|---|---|
+| 已确认远端取消的 subscription | `succeeded[]`，条目带 `id`、`state:cancelled`、`stage:remote_subscription_cancel` |
+| 某 subscription 取消请求返回错误 | `unknown[]`，保留 subscription ID 并要求先 `dws event status` |
+| consumer/state/bus 清理阶段返回错误 | `unknown[]`，使用稳定 `stage:<name>` ID，不伪装为订阅未取消 |
+| 首个远端取消即失败、没有已确认 mutation | 普通 `failure`，不构造空 `partial_failure` |
+
+没有已确认 mutation 的 typed `failure` 使用已登记的
+`event_stop_unverified` subtype。dual 阶段的 legacy error 仍保留
+`reason=partial_failure`，避免在尚未切 active 的命令上静默改变既有 wire。
+
+当前命令为 `dual_validate`：每次业务流程只执行一次，同时构建并 `ValidateResult`；既有
+legacy error、stdout 和退出码保持不变。它尚未进入 active，原因是成功路径仍使用 legacy
+renderer，不能只让错误路径单独切换协议。
+
+#### 验收
+
+1. 远端已取消一项、下一项错误时产生 `partial_failure`、rc=7，`succeeded` 与
+   `unknown` 均可识别且总数对账；
+2. 本地清理失败时已取消的 subscription 保持 `succeeded`，失败阶段以独立 unknown
+   条目出现；
+3. 首项失败为 typed `failure`，而非违反契约的空 partial；
+4. dual 阶段仍返回原始 `partial_failure` API error 并保留 `errors.Is` cause；
+5. 真实账号复验远端订阅、本地 consumer、run state、bus 的终态一致性后，才可逐条转
+   active。
+
 ## 5. 迁移顺序与非目标
 
 ```text
 P0  个人状态机的 Category/幂等性源码审阅；登记 doc 五个既有 reason descriptor（后者已完成）
-P1  在 doc create / checkpoint-update / history-revert 建 shadow PartialData（已完成）；dual 下保留 legacy error 与 rc，并以单元测试锁定三通道与单次结果出口
+P1  在 doc create / checkpoint-update / history-revert 以及 event stop 建 shadow PartialData（已完成）；dual 下保留 legacy error 与 rc，并以单元测试锁定三通道与单次结果出口
 P2  按命令转 active；受控真实账号复验已应用/补偿事实
 P3  审阅个人订阅请求失败分类与 idempotency，再迁其余 failure family
 ```

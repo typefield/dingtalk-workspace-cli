@@ -42,6 +42,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/personal"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/source"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/transport"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/config"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -1066,7 +1067,7 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 	var cancelled []string
 	for _, id := range subscribeIDs {
 		if err := personalDeleteSubscription(client, ctx, id); err != nil {
-			return eventStopPartialError(
+			return eventStopPartialError(c,
 				fmt.Sprintf("event stop --as user: cancel subscription %s", id),
 				err, cancelled, []string{id}, "remote_subscription_cancel",
 			)
@@ -1078,13 +1079,13 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 		// state is the only durable target list available for a later retry;
 		// deleting it first would turn a local-stop failure into an unrecoverable
 		// false-success after the remote subscription has already been cancelled.
-		return eventStopPartialError(
+		return eventStopPartialError(c,
 			"event stop --as user: stop matching local consumer",
 			err, cancelled, nil, "local_consumer_stop",
 		)
 	}
 	if err := personalRemoveRunStates(workDir, subscribeIDs); err != nil {
-		return eventStopPartialError(
+		return eventStopPartialError(c,
 			"event stop --as user: update local state",
 			err, cancelled, nil, "local_state_remove",
 		)
@@ -1092,7 +1093,7 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 
 	remaining, err := personalLoadRunStates(workDir)
 	if err != nil {
-		return eventStopPartialError(
+		return eventStopPartialError(c,
 			"event stop --as user: load remaining local state",
 			err, cancelled, nil, "local_state_verify",
 		)
@@ -1107,7 +1108,7 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 		if errors.Is(err, busctl.ErrNotRunning) {
 			busState = "personal bus is not running"
 		} else {
-			return eventStopPartialError(
+			return eventStopPartialError(c,
 				"event stop --as user: stop personal bus",
 				err, cancelled, nil, "personal_bus_stop",
 			)
@@ -1122,8 +1123,8 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 // like nothing happened and invites a blind retry, even though one or more
 // subscriptions may already have been cancelled. Keep the original cause so
 // callers relying on errors.Is/errors.As continue to work.
-func eventStopPartialError(message string, cause error, succeeded, failed []string, stage string) error {
-	details := map[string]any{
+func eventStopPartialDetails(succeeded, failed []string, stage string) map[string]any {
+	return map[string]any{
 		"operation":               "event.stop",
 		"outcome":                 "partial_failure",
 		"execution_state":         "unknown",
@@ -1133,7 +1134,59 @@ func eventStopPartialError(message string, cause error, succeeded, failed []stri
 		"failed_subscribe_ids":    append([]string(nil), failed...),
 		"recovery_required":       true,
 	}
-	return apperrors.NewAPI(message,
+}
+
+// eventStopOutcomeResult is the framework representation of a stop that has
+// already completed one or more remote cancellations but cannot confirm a
+// later stage.  The unknown channel is deliberate: a control-plane error does
+// not prove that its request had no effect.  When nothing was confirmed yet,
+// the truthful shape is a normal failure rather than an empty partial result.
+func eventStopOutcomeResult(message string, succeeded, failed []string, stage string) (output.CommandResult, error) {
+	details := eventStopPartialDetails(succeeded, failed, stage)
+	if len(succeeded) == 0 {
+		return output.Failure(&output.ErrorInfo{
+			Type:      "api",
+			Subtype:   string(apperrors.SubtypeEventStopUnverified),
+			Message:   message,
+			Hint:      "未获得可确认成功；先运行 dws event status 核对状态后再决定是否重试",
+			Operation: "event.stop",
+			Stage:     stage,
+			Details:   details,
+			Actions:   []string{"dws event status", "不要盲目重复 dws event stop"},
+		}), nil
+	}
+
+	succeededEntries := make([]any, 0, len(succeeded))
+	for _, id := range succeeded {
+		succeededEntries = append(succeededEntries, map[string]any{
+			"id": id, "state": "cancelled", "stage": "remote_subscription_cancel",
+		})
+	}
+	unknownEntries := make([]output.PartialUnknownEntry, 0, max(1, len(failed)))
+	reason := fmt.Sprintf("%s returned an error; its terminal state is unknown. Run dws event status before retrying.", stage)
+	for _, id := range failed {
+		unknownEntries = append(unknownEntries, output.PartialUnknownEntry{ID: id, Reason: reason})
+	}
+	if len(unknownEntries) == 0 {
+		unknownEntries = append(unknownEntries, output.PartialUnknownEntry{
+			ID: "stage:" + stage, Reason: reason,
+		})
+	}
+	partial, err := output.NewPartialData(
+		len(succeededEntries)+len(unknownEntries),
+		succeededEntries,
+		[]output.PartialFailedEntry{},
+		unknownEntries,
+	)
+	if err != nil {
+		return nil, err
+	}
+	return output.Partial(partial), nil
+}
+
+func eventStopPartialError(c *cobra.Command, message string, cause error, succeeded, failed []string, stage string) error {
+	details := eventStopPartialDetails(succeeded, failed, stage)
+	legacy := apperrors.NewAPI(message,
 		apperrors.WithReason("partial_failure"),
 		apperrors.WithDetails(details),
 		apperrors.WithRetryable(false),
@@ -1141,6 +1194,20 @@ func eventStopPartialError(message string, cause error, succeeded, failed []stri
 		apperrors.WithActions("event status", "不要盲目重复 event stop"),
 		apperrors.WithCause(cause),
 	)
+	if output.CommandRollout(c) == output.RolloutDualValidate {
+		result, err := eventStopOutcomeResult(message, succeeded, failed, stage)
+		if err != nil {
+			return apperrors.NewInternal("event stop: cannot construct a truthful outcome result",
+				apperrors.WithCause(err),
+			)
+		}
+		if err := output.ValidateResult(result); err != nil {
+			return apperrors.NewInternal("event stop: outcome result violates the output contract",
+				apperrors.WithCause(err),
+			)
+		}
+	}
+	return legacy
 }
 
 func personalStopTargets(workDir, explicit string, all bool) ([]string, error) {

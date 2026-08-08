@@ -54,6 +54,7 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeDocCheckpointUpdateFailed, CategoryAPI, RetryNever, true},
 		{SubtypeDocCheckpointVerificationFailed, CategoryAPI, RetryNever, true},
 		{SubtypeDocHistoryRevertVerificationFailed, CategoryAPI, RetryNever, true},
+		{SubtypeEventStopUnverified, CategoryAPI, RetryNever, true},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {

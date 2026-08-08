@@ -6,9 +6,9 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**45** 个；直接 `WithSubtype(Subtype...)` 调用点：**107** 个；间接映射调用点：**11** 个。
+- 已注册 descriptor：**46** 个；直接 `WithSubtype(Subtype...)` 调用点：**107** 个；间接映射调用点：**11** 个。
 - `WithReason("…")` 的自由字面调用点：**54** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
-- 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
+- 直接构造 `ErrorInfo.Subtype`：**9** 个不同值。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**16** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
@@ -59,7 +59,7 @@
 | `not_configured` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:281` |
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
 | `parameter_conflict` | free 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
-| `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1137` |
+| `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
 | `pat_auth_cancelled` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
 | `pat_auth_expired` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:688` |
 | `pat_auth_rejected` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
@@ -106,10 +106,13 @@
 
 | subtype | 位置 |
 |---|---|
+| `event_stop_unverified` | `internal/app/event_personal_command.go:1149` |
 | `invalid_success_type` | `internal/shortcut/runner.go:410` |
 | `pagination_conflict` | `internal/helpers/devapp.go:2016` |
 | `pagination_incomplete` | `internal/helpers/devapp.go:2009`, `internal/helpers/devapp.go:2023` |
+| `pagination_inconsistent` | `internal/shortcut/chat/chat_conversation.go:546`, `internal/shortcut/chat/chat_group.go:458`, `internal/shortcut/chat/lark_alignment.go:794`, `internal/shortcut/smart/chat_messages.go:940`, `internal/shortcut/smart/thread_replies.go:697` |
 | `pagination_invalid` | `internal/helpers/devapp.go:2000` |
+| `projection_unknown` | `internal/shortcut/chat/chat_conversation.go:564`, `internal/shortcut/smart/chat_messages.go:958`, `internal/shortcut/smart/thread_replies.go:715` |
 | `skill_setup_failed` | `internal/app/skill_setup.go:795` |
 | `skill_setup_result_invalid` | `internal/app/skill_setup.go:785` |
 
