@@ -210,7 +210,7 @@ def add_contract_flags(parser: argparse.ArgumentParser, *, dry_run: bool = True)
         parser.add_argument(
             "--dry-run",
             action="store_true",
-            help="生成预览；不得执行远端/本地写入。是否包含远端只读探测以对应 Skill 的 dry-run 说明为准。",
+            help="生成预览；不得执行远端/本地写入。远端只读探测边界由对应 Skill 的 Agent 扫描台账说明。",
         )
 
 
