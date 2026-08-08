@@ -10,6 +10,7 @@
 | 未捕获异常 JSON 兜底 | PASS | ok |
 | 机器 stdout 污染拒绝 | PASS | ok |
 | 机器结果与退出码一致性 | PASS | ok |
+| 子 dws 严格布尔失败识别 | PASS | ok |
 | 非零 SystemExit JSON 兜底 | PASS | ok |
 | 部分成功结果与退出码 | PASS | ok |
 | 可选 meta 承载 | PASS | ok |
@@ -18,7 +19,7 @@
 | 审批任务解析失败不发送占位写入 | PASS | ok |
 | 文档写入失败不自动重放且标记未知 | PASS | ok |
 
-结果：11/11 通过
+结果：12/12 通过
 
 ## 边界
 

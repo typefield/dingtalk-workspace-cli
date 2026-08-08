@@ -76,6 +76,20 @@ def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
     return None
 
 
+def _child_explicitly_failed(payload: Any) -> bool:
+    """Recognize only typed, unambiguous failure declarations from a child.
+
+    Older DWS payloads may use ``success`` while the unified envelope uses
+    ``ok``.  Both are accepted only when they are actual booleans: the string
+    ``"false"`` is data-quality drift, not a safe execution fact.  Treating
+    that string as a Python truthy/falsy shortcut would recreate the exact
+    cross-language ambiguity this runtime is meant to prevent.
+    """
+    if not isinstance(payload, Mapping):
+        return False
+    return payload.get("ok") is False or payload.get("success") is False
+
+
 def run_child_dws(
     args: Sequence[str],
     *,
@@ -133,7 +147,7 @@ def run_child_dws(
             pass
     meta = _meta_from_child(payload)
     if completed.returncode == 0 and decoded:
-        if not (isinstance(payload, Mapping) and payload.get("ok") is False):
+        if not _child_explicitly_failed(payload):
             return ChildDWSResult("success", payload=payload, meta=meta, command=command)
 
     if decoded and isinstance(payload, Mapping):
