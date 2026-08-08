@@ -94,6 +94,9 @@ scripts/_runtime.py
   add_contract_flags(parser, *, dry_run=True)
   emit(*, fmt, outcome, data=None, error=None, meta=None, dry_run=False, text=None, items=None)
   failure(fmt, message, *, details=None, meta=None)
+  run_child_dws(args, *, dry_run=False, timeout=60) -> ChildDWSResult
+  batch_data(*, succeeded, failed, unknown, total=None, **extra)
+  batch_outcome(data)
   run_main(main_fn)
 ```
 
@@ -102,8 +105,13 @@ scripts/_runtime.py
 `Exception` 映射为 `failure + error.type=internal + exit 1`，并将非零 `SystemExit`
 映射为 validation failure；它不输出 traceback，也不回显原始异常消息。正常 Help 的
 `SystemExit(0)` 和 text 模式保留原命令行行为。每个脚本仍负责业务参数校验、步骤编排、
-子 `dws` 调用和业务数据映射。它**没有** `run_child_dws`、`emit_result`、`emit_error`
-或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
+子 `dws` 调用和业务数据映射。`run_child_dws` 是写编排的保守运输边界：只有稳定的
+前置失败会标记为 `failed`；超时、非零退出、不可解析输出和未分类上游错误都标为
+`unknown`，因为写入可能已经到达服务端。`batch_data` 固定保留
+`succeeded[]/failed[]/unknown[]` 并校验逐项 ID、typed error、未知原因和总数；
+`batch_outcome` 从三通道导出四态结果。当前 `todo_batch_create.py`、
+`oa_batch_approve.py` 和 `doc_create_and_write.py` 已使用这条边界；其余脚本仍负责各自
+业务映射。它没有 `emit_result`、`emit_error` 或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
 直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
 
 ## 实施状态与后续验证
@@ -116,6 +124,7 @@ scripts/_runtime.py
 | `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
 | 7 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
 | 其余 25 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
+| 三条写编排的 mixed result 映射 | 已受控 child-runner 验证 | 待办保留成功与未知写入；审批任务解析失败不会发送占位写入；文档写入失败只调用一次并标 `unknown`。假子进程只验证编排和信封，不证明真实后端终态 |
 | 真实服务端零写与部分失败/不确定结果 | UNVERIFIED | 需要隔离账号或受控后端，不得由 Help、源码字符串或假子进程推断 |
 
 入口数、Help 可观测数和 dry-run 副作用验证数必须分别记录，不能把“已接入参数”直接

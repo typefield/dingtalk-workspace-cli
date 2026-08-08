@@ -13,6 +13,7 @@ import argparse
 import ast
 from datetime import date
 import json
+import os
 from pathlib import Path
 import subprocess
 import sys
@@ -65,6 +66,28 @@ def result(status: str, detail: str) -> tuple[str, str]:
     return status, detail.replace("|", "\\|").replace("\n", " ")
 
 
+def run_with_fake_dws(
+    command: list[str],
+    fake_source: str,
+    *,
+    temp_dir: Path,
+) -> subprocess.CompletedProcess[str]:
+    """Execute one script against a temporary child runner, never a real tenant."""
+    fake_dws = temp_dir / "dws"
+    fake_dws.write_text("#!/usr/bin/env python3\n" + fake_source, encoding="utf-8")
+    fake_dws.chmod(0o755)
+    environment = os.environ.copy()
+    environment["PATH"] = f"{temp_dir}{os.pathsep}{environment.get('PATH', '')}"
+    return subprocess.run(
+        command,
+        cwd=ROOT,
+        capture_output=True,
+        text=True,
+        timeout=30,
+        env=environment,
+    )
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, help="write Markdown report; default is stdout")
@@ -114,7 +137,8 @@ def main() -> int:
 
     partial = runtime_probe(
         "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
-        "raise SystemExit(_runtime.emit(fmt='json', outcome='partial_failure', data={'items':[{'id':'a'}]}))"
+        "raise SystemExit(_runtime.emit(fmt='json', outcome='partial_failure', data="
+        "_runtime.batch_data(succeeded=[{'id':'a'}],failed=[{'id':'b','error':{'type':'validation','message':'bad'}}],unknown=[])))"
     )
     valid, payload, detail = parse_single_result(partial)
     partial_ok = (
@@ -170,6 +194,105 @@ def main() -> int:
     )
     outcomes.append(("待办错误类型输入", *result("PASS" if todo_ok else "FAIL", detail)))
 
+    with tempfile.TemporaryDirectory(prefix="dws-mono-child-outcome-") as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        todo_path = temp_dir / "todos.json"
+        todo_path.write_text(
+            json.dumps([
+                {"title": "confirmed", "executors": "u1"},
+                {"title": "ambiguous", "executors": "u2"},
+            ]),
+            encoding="utf-8",
+        )
+        todo_child = run_with_fake_dws(
+            [sys.executable, str(SCRIPT_DIR / "todo_batch_create.py"), str(todo_path), "--format", "json"],
+            """import json, sys
+title = sys.argv[sys.argv.index('--title') + 1]
+if title == 'confirmed':
+    print(json.dumps({'ok': True, 'data': {'taskId': 'task-1'}, 'meta': {'request': 'one'}}))
+else:
+    print(json.dumps({'ok': False, 'error': {'type': 'api', 'message': 'connection dropped'}, 'meta': {'request': 'two'}}))
+    raise SystemExit(1)
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(todo_child)
+        todo_child_ok = (
+            valid and todo_child.returncode == 7 and payload is not None
+            and payload.get("outcome") == "partial_failure"
+            and isinstance(payload.get("data"), dict)
+            and [item.get("id") for item in payload["data"].get("succeeded", [])] == ["1"]
+            and [item.get("id") for item in payload["data"].get("unknown", [])] == ["2"]
+            and payload.get("meta", {}).get("children", [])[0].get("id") == "1"
+        )
+        outcomes.append(("待办保留成功与未知写入", *result("PASS" if todo_child_ok else "FAIL", detail)))
+
+        oa_log = temp_dir / "oa-calls.log"
+        oa_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "oa_batch_approve.py"),
+                "--action", "approve", "--instance-ids", "a,b", "--yes", "--format", "json",
+            ],
+            f"""import json, pathlib, sys
+args = sys.argv[1:]
+pathlib.Path({str(oa_log)!r}).open('a', encoding='utf-8').write(' '.join(args) + '\\n')
+instance = args[args.index('--instance-id') + 1] if '--instance-id' in args else ''
+if args[:3] == ['oa', 'approval', 'tasks']:
+    if instance == 'a':
+        print(json.dumps({{'ok': True, 'data': {{'tasks': [{{'taskId': 'task-a'}}]}}}}))
+    else:
+        print(json.dumps({{'ok': False, 'error': {{'type': 'validation', 'message': 'invalid instance'}}}}))
+        raise SystemExit(3)
+elif args[:3] == ['oa', 'approval', 'approve']:
+    print(json.dumps({{'ok': True, 'data': {{'instanceId': instance}}}}))
+else:
+    raise SystemExit(9)
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(oa_child)
+        oa_calls = oa_log.read_text(encoding="utf-8") if oa_log.exists() else ""
+        oa_child_ok = (
+            valid and oa_child.returncode == 7 and payload is not None
+            and payload.get("outcome") == "partial_failure"
+            and isinstance(payload.get("data"), dict)
+            and [item.get("id") for item in payload["data"].get("succeeded", [])] == ["a"]
+            and [item.get("id") for item in payload["data"].get("failed", [])] == ["b"]
+            and "approve --instance-id b" not in oa_calls
+        )
+        outcomes.append(("审批任务解析失败不发送占位写入", *result("PASS" if oa_child_ok else "FAIL", detail)))
+
+        doc_log = temp_dir / "doc-calls.log"
+        doc_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "doc_create_and_write.py"),
+                "--name", "probe", "--content", "body", "--max-retries", "3", "--format", "json",
+            ],
+            f"""import json, pathlib, sys
+args = sys.argv[1:]
+pathlib.Path({str(doc_log)!r}).open('a', encoding='utf-8').write(' '.join(args) + '\\n')
+if args[:2] == ['doc', 'create']:
+    print(json.dumps({{'ok': True, 'data': {{'nodeId': 'node-1'}}}}))
+elif args[:2] == ['doc', 'update']:
+    print(json.dumps({{'ok': False, 'error': {{'type': 'api', 'message': 'connection dropped'}}}}))
+    raise SystemExit(1)
+else:
+    raise SystemExit(9)
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(doc_child)
+        doc_calls = doc_log.read_text(encoding="utf-8") if doc_log.exists() else ""
+        doc_child_ok = (
+            valid and doc_child.returncode == 7 and payload is not None
+            and payload.get("outcome") == "partial_failure"
+            and isinstance(payload.get("data"), dict)
+            and [item.get("id") for item in payload["data"].get("succeeded", [])] == ["document:create"]
+            and [item.get("id") for item in payload["data"].get("unknown", [])] == ["node-1:chunk:1"]
+            and sum(1 for line in doc_calls.splitlines() if line.startswith("doc update")) == 1
+        )
+        outcomes.append(("文档写入失败不自动重放且标记未知", *result("PASS" if doc_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
@@ -189,7 +312,7 @@ def main() -> int:
         "## 边界",
         "",
         "- 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。",
-        "- `meta` 只证明统一信封可承载补充事实；各脚本是否已保留所有子 dws 分页/异步元数据，仍要按业务流逐项 Agent 审阅。",
+        "- 子 dws 探针覆盖待办、审批和文档的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
         "- dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。",
         "",
     ])

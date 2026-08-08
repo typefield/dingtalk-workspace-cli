@@ -10,34 +10,47 @@
 """
 
 import sys
-import json
-import subprocess
 import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 
 def run_dws(
     args: List[str], dry_run: bool = False,
-) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return {'dry_run': True}
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError,
-            FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}", file=sys.stderr)
+) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
+
+
+def child_data(payload: Any) -> Any:
+    """Unwrap both legacy payloads and the unified CLI envelope."""
+    if isinstance(payload, dict):
+        return payload.get('data', payload.get('result', payload))
+    return payload
+
+
+def list_items(payload: Any, *keys: str) -> Optional[list[Any]]:
+    """Return a declared list or None when the child projection is ambiguous."""
+    data = child_data(payload)
+    if isinstance(data, list):
+        return data
+    if not isinstance(data, dict):
         return None
+    for key in keys:
+        value = data.get(key)
+        if isinstance(value, list):
+            return value
+    return None
 
 
 def to_iso(dt: datetime) -> str:
@@ -70,26 +83,36 @@ def main() -> int:
     else:
         now = datetime.now()
         start = now - timedelta(days=args.days)
-        data = run_dws([
+        pending = run_dws([
             'oa', 'approval', 'list-pending',
             '--start', to_iso(start),
             '--end', to_iso(now),
             '--format', 'json',
         ], dry_run=args.dry_run)
-        if not args.dry_run and data:
-            if isinstance(data, list):
-                items = data
-            elif isinstance(data, dict):
-                inner = data.get('result', data)
-                if isinstance(inner, dict):
-                    items = inner.get('processInstanceList',
-                                      inner.get('items', []))
-                elif isinstance(inner, list):
-                    items = inner
-                else:
-                    items = []
-            else:
-                items = []
+        if not args.dry_run:
+            if pending.state != 'success':
+                return emit(
+                    fmt=args.format,
+                    outcome='failure',
+                    error=pending.error or {
+                        'type': 'api',
+                        'message': '读取待审批列表未得到可确认结果。',
+                    },
+                    meta={'children': [{'id': 'pending-list', 'meta': pending.meta}]} if pending.meta else None,
+                    text='无法确认待审批列表，未执行审批动作',
+                )
+            items = list_items(pending.payload, 'processInstanceList', 'items')
+            if items is None:
+                return emit(
+                    fmt=args.format,
+                    outcome='failure',
+                    error={
+                        'type': 'api',
+                        'message': '待审批列表返回形状未知，未执行审批动作。',
+                    },
+                    meta={'children': [{'id': 'pending-list', 'meta': pending.meta}]} if pending.meta else None,
+                    text='待审批列表返回形状未知，未执行审批动作',
+                )
             instance_ids = [
                 item.get('processInstanceId') or item.get('id')
                 for item in items
@@ -99,7 +122,7 @@ def main() -> int:
 
     if not instance_ids and not args.dry_run:
         return emit(fmt=args.format, outcome='success', data={
-            'total': 0, 'succeeded': [], 'failed': [],
+            'total': 0, 'succeeded': [], 'failed': [], 'unknown': [],
         }, text='✅ 没有待处理的审批')
 
     if args.dry_run and not args.instance_ids:
@@ -116,33 +139,50 @@ def main() -> int:
         if confirm != 'y':
             return failure(args.format, '用户取消审批操作')
 
-    success, fail = 0, 0
-    succeeded_ids: List[str] = []
-    failed_ids: List[dict] = []
+    succeeded_items: List[dict[str, Any]] = []
+    failed_items: List[dict[str, Any]] = []
+    unknown_items: List[dict[str, Any]] = []
+    child_meta: List[dict[str, Any]] = []
     for i, inst_id in enumerate(instance_ids or ['<INST_ID>'], 1):
-        tasks_data = run_dws([
+        tasks = run_dws([
             'oa', 'approval', 'tasks',
             '--instance-id', inst_id,
             '--format', 'json',
         ], dry_run=args.dry_run)
 
-        task_id = None
-        if not args.dry_run and tasks_data:
-            if isinstance(tasks_data, list):
-                task_ids = tasks_data
-            elif isinstance(tasks_data, dict):
-                inner = tasks_data.get('result', tasks_data)
-                if isinstance(inner, dict):
-                    task_ids = inner.get('tasks', inner.get('items', []))
-                elif isinstance(inner, list):
-                    task_ids = inner
-                else:
-                    task_ids = []
+        if tasks.meta:
+            child_meta.append({'id': f'{inst_id}:tasks', 'meta': tasks.meta})
+        if tasks.state != 'success':
+            if tasks.state == 'failed':
+                failed_items.append({
+                    'id': inst_id,
+                    'error': tasks.error or {'type': 'api', 'message': '读取审批任务失败'},
+                })
             else:
-                task_ids = []
-            if task_ids:
-                task_id = (task_ids[0] if isinstance(task_ids[0], str)
-                           else task_ids[0].get('taskId', ''))
+                unknown_items.append({
+                    'id': inst_id,
+                    'reason': '任务查询未返回终态结果；未尝试审批，请先核查审批任务。',
+                    'error': tasks.error,
+                })
+            print(f"  ✗ [{i}/{count}] {inst_id}（未发送审批动作）", file=sys.stderr)
+            continue
+
+        task_ids = list_items(tasks.payload, 'tasks', 'items') if not args.dry_run else ['<TASK_ID>']
+        task_id = (
+            task_ids[0] if task_ids and isinstance(task_ids[0], str)
+            else task_ids[0].get('taskId', '') if task_ids and isinstance(task_ids[0], dict)
+            else ''
+        )
+        if not task_id:
+            failed_items.append({
+                'id': inst_id,
+                'error': {
+                    'type': 'precondition',
+                    'message': '未找到可执行的审批 taskId；未发送审批动作。',
+                },
+            })
+            print(f"  ✗ [{i}/{count}] {inst_id}（没有可执行任务）", file=sys.stderr)
+            continue
 
         cmd_args = [
             'oa', 'approval', args.action,
@@ -154,21 +194,51 @@ def main() -> int:
             cmd_args.extend(['--remark', args.remark])
 
         result = run_dws(cmd_args, dry_run=args.dry_run)
-        if result:
+        if result.meta:
+            child_meta.append({'id': inst_id, 'meta': result.meta})
+        if result.state == 'success':
             print(f"  ✓ [{i}/{count}] {inst_id} → {action_label}", file=sys.stderr)
-            success += 1
-            succeeded_ids.append(inst_id)
-        else:
+            succeeded_items.append({'id': inst_id, 'data': result.payload})
+        elif result.state == 'failed':
+            failed_items.append({
+                'id': inst_id,
+                'error': result.error or {'type': 'api', 'message': '审批动作未执行'},
+            })
             print(f"  ✗ [{i}/{count}] {inst_id}", file=sys.stderr)
-            fail += 1
-            failed_ids.append({'id': inst_id})
+        else:
+            unknown_items.append({
+                'id': inst_id,
+                'reason': '审批请求未返回可确认终态；不要盲目重试，请先核查审批状态。',
+                'error': result.error,
+            })
+            print(f"  ✗ [{i}/{count}] {inst_id}", file=sys.stderr)
 
-    outcome = 'success' if fail == 0 else ('partial_failure' if success else 'failure')
-    return emit(fmt=args.format, outcome=outcome, data={
-        'action': args.action, 'total': success + fail,
-        'succeeded': [{'id': item} for item in succeeded_ids],
-        'failed': failed_ids,
-    }, dry_run=args.dry_run, text=f"\n完成: 成功 {success}, 失败 {fail}")
+    data = batch_data(
+        succeeded=succeeded_items,
+        failed=failed_items,
+        unknown=unknown_items,
+        total=len(instance_ids or ['<INST_ID>']),
+        action=args.action,
+    )
+    outcome = batch_outcome(data)
+    top_error = None
+    if outcome == 'failure':
+        top_error = (
+            failed_items[0]['error'] if failed_items else
+            {'type': 'api', 'message': '审批动作未获得任何可确认成功；请先核查 unknown 项。'}
+        )
+    return emit(
+        fmt=args.format,
+        outcome=outcome,
+        data=data,
+        error=top_error,
+        meta={'children': child_meta} if child_meta else None,
+        dry_run=args.dry_run,
+        text=(
+            f"\n完成: 成功 {len(succeeded_items)}, 明确失败 {len(failed_items)}, "
+            f"结果未知 {len(unknown_items)}"
+        ),
+    )
 
 
 if __name__ == '__main__':

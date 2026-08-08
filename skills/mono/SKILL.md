@@ -33,7 +33,7 @@ cli_version: ">=1.0.15"
 
 - `success` / `pending`：`ok: true`、退出码 `0`。`pending` 只表示已得到非终态结果，必须按 `data` 中的后续信息继续，不得当作终态成功。
 - `failure`：`ok: false`、退出码 `1`。先读取 `error.type`、`message` 和可选 `details`；`validation` 表示输入或前置校验，修正后再执行；`internal` 表示脚本未预期异常，保留诊断并停止，不要依据 traceback 盲目改参重试。
-- `partial_failure`：`ok: false`、退出码 `7`。这不是普通失败：必须保留并读取 `data` 中逐项结果，已成功项不得重做，失败项才按各自 `error` 处理。
+- `partial_failure`：`ok: false`、退出码 `7`。这不是普通失败：必须保留并读取 `data.succeeded[]`、`data.failed[]`、`data.unknown[]` 三个通道；已成功项不得重做，`failed[]` 才按各自 typed `error` 修复，`unknown[]` 表示请求可能已经生效，必须先核查目标状态，禁止盲目重试。
 - `meta` 是可选补充事实（例如子 `dws` 的分页、异步或传输信息）。缺失只表示脚本没有可透传的补充事实，不能扩大为“数据完整”或“操作已验证”。
 
 脚本级 `--dry-run` 的远端只读探测边界以对应产品 Skill 和 Agent 扫描台账为准；Help 的 `--dry-run` 只承诺预览不写入，不能据此推断零远端调用。

@@ -25,14 +25,22 @@ todos.json 格式:
 
 import sys
 import json
-import subprocess
 import re
 import argparse
 from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 ALLOWED_PRIORITIES = {10, 20, 30, 40}
 DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -41,25 +49,8 @@ MAX_FILE_SIZE = 10 * 1024 * 1024
 
 def run_dws(
     args: List[str], dry_run: bool = False,
-) -> tuple[bool, Optional[Dict[str, Any]], Optional[str]]:
-    cmd = ['dws'] + args
-    if dry_run:
-        return True, {'command': cmd, 'dry_run': True}, None
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            return False, None, result.stderr.strip() or f"dws exited {result.returncode}"
-        payload = json.loads(result.stdout)
-        if isinstance(payload, dict) and payload.get('ok') is False:
-            error = payload.get('error') or {'type': 'api', 'message': 'dws returned failure'}
-            return False, payload, str(error)
-        return True, payload, None
-    except subprocess.TimeoutExpired:
-        return False, None, '命令执行超时'
-    except (json.JSONDecodeError, FileNotFoundError) as e:
-        return False, None, str(e)
+) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
 
 
 def parse_due(due_value) -> Optional[str]:
@@ -134,8 +125,12 @@ def main() -> int:
     if args.format == 'text':
         print(f"📋 准备创建 {len(todos)} 条待办\n")
     records: list[dict[str, Any]] = []
-    success, fail = 0, 0
+    succeeded_items: list[dict[str, Any]] = []
+    failed_items: list[dict[str, Any]] = []
+    unknown_items: list[dict[str, Any]] = []
+    child_meta: list[dict[str, Any]] = []
     for i, item in enumerate(todos):
+        entry_id = str(i + 1)
         title = item['title'].strip()
         cmd_args = [
             'todo', 'task', 'create',
@@ -154,35 +149,57 @@ def main() -> int:
             rr = str(recurrence).replace('\\n', '\n')
             cmd_args.extend(['--recurrence', rr])
 
-        succeeded, result, error = run_dws(cmd_args, dry_run=args.dry_run)
-        record: dict[str, Any] = {'index': i + 1, 'title': title, 'command': cmd_args}
-        if succeeded:
-            record.update({'ok': True, 'outcome': 'success', 'result': result})
+        result = run_dws(cmd_args, dry_run=args.dry_run)
+        record: dict[str, Any] = {'id': entry_id, 'index': i + 1, 'title': title}
+        if result.meta:
+            child_meta.append({'id': entry_id, 'meta': result.meta})
+        if result.state == 'success':
+            record.update({'outcome': 'success', 'data': result.payload})
+            succeeded_items.append(dict(record))
             if args.format == 'text':
                 print(f"  ✓ [{i+1}/{len(todos)}] {title}")
-            success += 1
-        else:
-            record.update({'ok': False, 'outcome': 'failure', 'error': {'type': 'api', 'message': error or 'unknown error'}})
+        elif result.state == 'failed':
+            error = result.error or {'type': 'api', 'message': '待办创建未执行'}
+            record.update({'outcome': 'failure', 'error': error})
+            failed_items.append({'id': entry_id, 'error': error, 'title': title})
             if args.format == 'text':
                 print(f"  ✗ [{i+1}/{len(todos)}] {title}", file=sys.stderr)
-            fail += 1
+        else:
+            error = result.error or {'type': 'api', 'message': '待办创建终态未知'}
+            reason = '创建请求未返回可确认终态；不要盲目重试，请先核查待办是否已创建。'
+            record.update({'outcome': 'unknown', 'reason': reason, 'error': error})
+            unknown_items.append({'id': entry_id, 'reason': reason, 'title': title, 'error': error})
+            if args.format == 'text':
+                print(f"  ✗ [{i+1}/{len(todos)}] {title}", file=sys.stderr)
         records.append(record)
 
+    data = batch_data(
+        succeeded=succeeded_items,
+        failed=failed_items,
+        unknown=unknown_items,
+        total=len(records),
+        items=records,
+    )
+    outcome = batch_outcome(data)
     if args.format == 'text':
-        print(f"\n完成: 成功 {success}, 失败 {fail}")
-    if fail == 0:
-        outcome = 'success'
-    elif success > 0:
-        outcome = 'partial_failure'
-    else:
-        outcome = 'failure'
-    data = {'total': len(records), 'success_count': success, 'failure_count': fail, 'items': records}
+        print(
+            f"\n完成: 成功 {len(succeeded_items)}, 明确失败 {len(failed_items)}, "
+            f"结果未知 {len(unknown_items)}"
+        )
     if args.format == 'text':
         return 0 if outcome == 'success' else 7 if outcome == 'partial_failure' else 1
+    top_error = None
+    if outcome == 'failure':
+        top_error = (
+            failed_items[0]['error'] if failed_items else
+            {'type': 'api', 'message': '待办创建未获得任何可确认成功；请先核查 unknown 项。'}
+        )
     return emit(
         fmt=args.format,
         outcome=outcome,
         data=data,
+        error=top_error,
+        meta={'children': child_meta} if child_meta else None,
         dry_run=args.dry_run,
         items=records,
     )

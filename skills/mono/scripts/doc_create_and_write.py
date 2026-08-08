@@ -18,54 +18,43 @@
 """
 
 import sys
-import json
-import time
-import subprocess
 import argparse
 from pathlib import Path
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 
 def run_dws(
     args: List[str], dry_run: bool = False,
-) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return {'dry_run': True}
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError,
-            FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}", file=sys.stderr)
-        return None
+) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
 
 
-def run_dws_with_retry(
-    args: List[str],
-    dry_run: bool = False,
-    max_retries: int = 3,
-    retry_delay: float = 1.0,
-) -> Optional[Any]:
-    """带重试机制的 dws 命令执行"""
-    last_error = None
-    for attempt in range(1, max_retries + 1):
-        result = run_dws(args, dry_run=dry_run)
-        if result is not None:
-            return result
-        if attempt < max_retries:
-            print(f"  ⚠️  第 {attempt} 次尝试失败，{retry_delay}秒后重试...")
-            time.sleep(retry_delay)
-            retry_delay *= 1.5  # 指数退避
-    return None
+def child_data(payload: Any) -> Any:
+    if isinstance(payload, dict):
+        return payload.get('data', payload.get('result', payload))
+    return payload
+
+
+def document_id(payload: Any) -> str:
+    data = child_data(payload)
+    if not isinstance(data, dict):
+        return ''
+    return str(data.get('nodeId') or data.get('dentryUuid') or data.get('id') or '')
+
+
+def child_meta(entry_id: str, result: ChildDWSResult) -> Optional[dict[str, Any]]:
+    return {'id': entry_id, 'meta': result.meta} if result.meta else None
 
 
 def main():
@@ -83,7 +72,7 @@ def main():
     )
     parser.add_argument(
         '--max-retries', type=int, default=3,
-        help='每块写入失败时的最大重试次数 (默认 3)',
+        help='兼容参数；为避免重复写入，文档写入不会自动重试',
     )
     add_contract_flags(parser)
     args = parser.parse_args()
@@ -104,83 +93,147 @@ def main():
     if args.workspace:
         create_args.extend(['--workspace', args.workspace])
 
+    if args.max_retries > 1 and not args.dry_run:
+        print(
+            '⚠️  --max-retries 仅为兼容保留；为避免 append/overwrite 重复写入，脚本不会自动重放 doc update。',
+            file=sys.stderr,
+        )
+
     print(f'\n📝 创建文档: {args.name}', file=sys.stderr)
-    create_data = run_dws(create_args, dry_run=args.dry_run)
+    create = run_dws(create_args, dry_run=args.dry_run)
+    meta_entries: list[dict[str, Any]] = []
+    if (entry := child_meta('document:create', create)):
+        meta_entries.append(entry)
+    if create.state != 'success':
+        state_channel = 'failed' if create.state == 'failed' else 'unknown'
+        create_error = create.error or {'type': 'api', 'message': '创建文档未获得终态结果'}
+        channels: dict[str, list[dict[str, Any]]] = {
+            'succeeded': [], 'failed': [], 'unknown': [],
+        }
+        if state_channel == 'failed':
+            channels['failed'].append({'id': 'document:create', 'error': create_error})
+        else:
+            channels['unknown'].append({
+                'id': 'document:create',
+                'reason': '创建请求未返回可确认终态；文档可能已经创建，请先核查。',
+                'error': create_error,
+            })
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=batch_data(total=1, **channels, name=args.name),
+            error=create_error,
+            meta={'children': meta_entries} if meta_entries else None,
+            text='创建文档未得到可确认结果',
+            dry_run=args.dry_run,
+        )
 
-    node_id = None
-    if not args.dry_run:
-        if not create_data:
-            return failure(args.format, '创建文档失败')
-        node_id = (create_data.get('nodeId')
-                   or create_data.get('dentryUuid')
-                   or create_data.get('id', ''))
-        print(f"  ✓ 文档已创建 (ID: {node_id})", file=sys.stderr)
+    node_id = document_id(create.payload)
+    if not args.dry_run and not node_id:
+        unknown = {
+            'id': 'document:create',
+            'reason': '创建调用成功但未返回文档 ID；文档是否已创建需要人工核查。',
+            'error': {'type': 'api', 'message': '创建文档响应缺少 nodeId'},
+        }
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=batch_data(total=1, unknown=[unknown], name=args.name),
+            error=unknown['error'],
+            meta={'children': meta_entries} if meta_entries else None,
+            text='创建文档响应缺少 nodeId，请先核查是否已创建',
+        )
+    node_id = node_id or '<NODE_ID>'
+    print(f"  ✓ 文档已创建 (ID: {node_id})", file=sys.stderr)
 
-    if len(content) <= chunk_size:
-        mode_label = '追加' if args.mode == 'append' else '覆盖'
-        print(f'\n✍️  写入内容 (模式: {mode_label}, {len(content)} 字符)...', file=sys.stderr)
-        write_data = run_dws([
-            'doc', 'update',
-            '--node', node_id or '<NODE_ID>',
-            '--content', content,
-            '--mode', args.mode,
-            '--format', 'json',
-        ], dry_run=args.dry_run)
-        if write_data:
-            print(f"  ✓ 内容已写入 ({len(content)} 字符)", file=sys.stderr)
+    chunks: list[str] = []
+    pos = 0
+    while pos < len(content):
+        end = min(pos + chunk_size, len(content))
+        if end < len(content):
+            newline_pos = content.rfind('\n', pos, end)
+            if newline_pos > pos:
+                end = newline_pos + 1
+        chunks.append(content[pos:end])
+        pos = end
+    total_chunks = len(chunks)
+    if total_chunks == 1:
+        print(f'\n✍️  写入内容 (模式: {"追加" if args.mode == "append" else "覆盖"}, {len(content)} 字符)...', file=sys.stderr)
     else:
-        chunks = []
-        pos = 0
-        while pos < len(content):
-            end = min(pos + chunk_size, len(content))
-            if end < len(content):
-                newline_pos = content.rfind('\n', pos, end)
-                if newline_pos > pos:
-                    end = newline_pos + 1
-            chunks.append(content[pos:end])
-            pos = end
-
-        total_chunks = len(chunks)
         print(f'\n✍️  内容较长 ({len(content)} 字符), 分 {total_chunks} 块写入...', file=sys.stderr)
 
-        success_chunks = 0
-        for idx, chunk in enumerate(chunks):
-            chunk_mode = args.mode if idx == 0 else 'append'
-            write_data = run_dws_with_retry(
-                [
-                    'doc', 'update',
-                    '--node', node_id or '<NODE_ID>',
-                    '--content', chunk,
-                    '--mode', chunk_mode,
-                    '--format', 'json',
-                ],
-                dry_run=args.dry_run,
-                max_retries=args.max_retries,
-            )
-            if write_data:
-                print(f"  ✓ 块 {idx + 1}/{total_chunks} 已写入 ({len(chunk)} 字符)", file=sys.stderr)
-                success_chunks += 1
-            elif not args.dry_run:
-                # 写入失败，报告部分写入状态
-                print(f"\n❌ 块 {idx + 1}/{total_chunks} 写入失败（已重试 {args.max_retries} 次）", file=sys.stderr)
-                print(f"\n⚠️  文档处于部分写入状态:", file=sys.stderr)
-                print(f"   - 文档 ID: {node_id}", file=sys.stderr)
-                print(f"   - 已写入: {success_chunks}/{total_chunks} 块", file=sys.stderr)
-                print(f"   - 失败位置: 第 {idx + 1} 块", file=sys.stderr)
-                if args.mode == 'overwrite':
-                    print(f"   - 模式: 覆盖模式，文档可能包含不完整内容", file=sys.stderr)
-                    print(f"   - 建议: 手动检查文档内容，或删除后重新创建", file=sys.stderr)
-                else:
-                    print(f"   - 模式: 追加模式，已写入内容已保存", file=sys.stderr)
-                    print(f"   - 建议: 可手动补充剩余内容，或重新运行脚本", file=sys.stderr)
-                return emit(fmt=args.format, outcome="partial_failure", data={
-                    "nodeId": node_id, "succeededChunks": success_chunks,
-                    "totalChunks": total_chunks, "failedChunk": idx + 1,
-                }, text="文档已部分写入", dry_run=args.dry_run)
-    return emit(fmt=args.format, outcome="success", data={
-        "nodeId": node_id, "characters": len(content),
-        "chunks": 1 if len(content) <= chunk_size else total_chunks,
-    }, text='\n✅ 完成!', dry_run=args.dry_run)
+    succeeded_items: list[dict[str, Any]] = [
+        {'id': 'document:create', 'nodeId': node_id, 'data': create.payload},
+    ]
+    failed_items: list[dict[str, Any]] = []
+    unknown_items: list[dict[str, Any]] = []
+    for index, chunk in enumerate(chunks):
+        chunk_id = f'{node_id}:chunk:{index + 1}'
+        chunk_mode = args.mode if index == 0 else 'append'
+        write = run_dws([
+            'doc', 'update',
+            '--node', node_id,
+            '--content', chunk,
+            '--mode', chunk_mode,
+            '--format', 'json',
+        ], dry_run=args.dry_run)
+        if (entry := child_meta(chunk_id, write)):
+            meta_entries.append(entry)
+        if write.state == 'success':
+            succeeded_items.append({
+                'id': chunk_id,
+                'chunk': index + 1,
+                'characters': len(chunk),
+                'data': write.payload,
+            })
+            print(f"  ✓ 块 {index + 1}/{total_chunks} 已写入 ({len(chunk)} 字符)", file=sys.stderr)
+            continue
+
+        error = write.error or {'type': 'api', 'message': '文档写入未获得终态结果'}
+        if write.state == 'failed':
+            failed_items.append({'id': chunk_id, 'error': error})
+        else:
+            unknown_items.append({
+                'id': chunk_id,
+                'reason': '写入请求未返回可确认终态；该块可能已经写入，请先回读文档。',
+                'error': error,
+            })
+        for remaining in range(index + 1, total_chunks):
+            failed_items.append({
+                'id': f'{node_id}:chunk:{remaining + 1}',
+                'error': {
+                    'type': 'precondition',
+                    'message': '前一块未得到终态结果，后续块未执行。',
+                },
+            })
+        print(f"\n❌ 块 {index + 1}/{total_chunks} 未得到可确认结果；停止后续写入", file=sys.stderr)
+        break
+
+    data = batch_data(
+        succeeded=succeeded_items,
+        failed=failed_items,
+        unknown=unknown_items,
+        total=1 + total_chunks,
+        nodeId=node_id,
+        characters=len(content),
+        chunks=total_chunks,
+    )
+    outcome = batch_outcome(data)
+    top_error = None
+    if outcome == 'failure':
+        top_error = (
+            failed_items[0]['error'] if failed_items else
+            {'type': 'api', 'message': '文档写入未获得任何可确认成功。'}
+        )
+    return emit(
+        fmt=args.format,
+        outcome=outcome,
+        data=data,
+        error=top_error,
+        meta={'children': meta_entries} if meta_entries else None,
+        text='\n✅ 完成!' if outcome == 'success' else '文档已部分写入或终态未知，请先回读核查',
+        dry_run=args.dry_run,
+    )
 
 
 if __name__ == '__main__':

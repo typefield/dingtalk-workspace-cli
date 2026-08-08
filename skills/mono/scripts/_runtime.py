@@ -12,13 +12,190 @@ import argparse
 import contextlib
 import io
 import json
+import subprocess
 import sys
 from collections.abc import Callable, Sequence
+from dataclasses import dataclass
 from typing import Any, Iterable, Mapping, Optional, TextIO
 
 
 PARTIAL_EXIT = 7
 FAILURE_EXIT = 1
+
+
+@dataclass(frozen=True)
+class ChildDWSResult:
+    """The only three truthful states a script can infer from a child dws call.
+
+    ``failed`` means the child supplied a pre-execution failure (for example a
+    local validation or confirmation gate).  ``unknown`` is deliberately the
+    conservative default for a request that may have reached DingTalk but did
+    not produce a terminal success response.  A batch caller must preserve
+    that distinction instead of converting both cases into a boolean.
+    """
+
+    state: str
+    payload: Any = None
+    error: Optional[dict[str, Any]] = None
+    meta: Optional[dict[str, Any]] = None
+    command: tuple[str, ...] = ()
+
+
+_DEFINITELY_NOT_EXECUTED = {
+    "validation",
+    "policy",
+    "confirmation_required",
+    "precondition",
+    "auth",
+    "authorization",
+}
+
+
+def _child_error(payload: Any, fallback: str, *, exit_code: Optional[int] = None) -> dict[str, Any]:
+    """Project a child error without inventing a terminal business result."""
+    candidate: Any = payload.get("error") if isinstance(payload, Mapping) else None
+    if not isinstance(candidate, Mapping):
+        candidate = {}
+    error_type = candidate.get("type") or candidate.get("category") or "api"
+    message = candidate.get("message") or fallback
+    error: dict[str, Any] = {
+        "type": str(error_type),
+        "message": str(message),
+    }
+    for key in ("subtype", "hint", "retryable", "retry_after_seconds"):
+        if key in candidate:
+            error[key] = candidate[key]
+    if exit_code is not None:
+        error["exit_code"] = exit_code
+    return error
+
+
+def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
+    if isinstance(payload, Mapping) and isinstance(payload.get("meta"), Mapping):
+        return dict(payload["meta"])
+    return None
+
+
+def run_child_dws(
+    args: Sequence[str],
+    *,
+    dry_run: bool = False,
+    timeout: float = 60,
+) -> ChildDWSResult:
+    """Run one JSON-mode child dws command without erasing execution certainty.
+
+    Callers must include ``--format json`` in ``args``.  A non-zero child exit,
+    timeout, malformed JSON, or untyped upstream failure is *not* evidence
+    that a write did not happen, so it becomes ``unknown``.  Only stable
+    pre-execution error classes become ``failed``.  No child stderr is copied
+    into the result envelope because it is diagnostic text, not wire data.
+    """
+    command = ("dws", *[str(arg) for arg in args])
+    if dry_run:
+        return ChildDWSResult(
+            state="success",
+            payload={"command": list(command), "dry_run": True},
+            command=command,
+        )
+    try:
+        completed = subprocess.run(
+            list(command), capture_output=True, text=True, timeout=timeout,
+        )
+    except FileNotFoundError:
+        return ChildDWSResult(
+            state="failed",
+            error={"type": "internal", "message": "未找到 dws 可执行文件。"},
+            command=command,
+        )
+    except subprocess.TimeoutExpired:
+        return ChildDWSResult(
+            state="unknown",
+            error={
+                "type": "network",
+                "message": "dws 调用超时；请求是否已执行未知，请先核查目标状态。",
+            },
+            command=command,
+        )
+    except OSError as exc:
+        return ChildDWSResult(
+            state="failed",
+            error={"type": "internal", "message": f"无法启动 dws：{type(exc).__name__}"},
+            command=command,
+        )
+
+    payload: Any = None
+    decoded = False
+    if completed.stdout.strip():
+        try:
+            payload = json.loads(completed.stdout)
+            decoded = True
+        except json.JSONDecodeError:
+            pass
+    meta = _meta_from_child(payload)
+    if completed.returncode == 0 and decoded:
+        if not (isinstance(payload, Mapping) and payload.get("ok") is False):
+            return ChildDWSResult("success", payload=payload, meta=meta, command=command)
+
+    if decoded and isinstance(payload, Mapping):
+        error = _child_error(
+            payload,
+            f"dws 未返回终态成功（exit {completed.returncode}）。",
+            exit_code=completed.returncode or None,
+        )
+        state = "failed" if error["type"] in _DEFINITELY_NOT_EXECUTED else "unknown"
+        return ChildDWSResult(state, payload=payload, error=error, meta=meta, command=command)
+
+    return ChildDWSResult(
+        state="unknown",
+        error={
+            "type": "api",
+            "message": "dws 未返回可解析的终态结果；请求是否已执行未知，请先核查目标状态。",
+            "exit_code": completed.returncode,
+        },
+        command=command,
+    )
+
+
+def batch_data(
+    *,
+    succeeded: Iterable[Mapping[str, Any]] = (),
+    failed: Iterable[Mapping[str, Any]] = (),
+    unknown: Iterable[Mapping[str, Any]] = (),
+    total: Optional[int] = None,
+    **extra: Any,
+) -> dict[str, Any]:
+    """Build the portable three-channel batch shape used by partial results."""
+    channels = {
+        "succeeded": [dict(item) for item in succeeded],
+        "failed": [dict(item) for item in failed],
+        "unknown": [dict(item) for item in unknown],
+    }
+    for channel, entries in channels.items():
+        for entry in entries:
+            if not isinstance(entry.get("id"), str) or not entry["id"]:
+                raise ValueError(f"{channel} entry requires a non-empty id")
+            if channel == "failed":
+                error = entry.get("error")
+                if not isinstance(error, Mapping) or not isinstance(error.get("type"), str) or not error["type"]:
+                    raise ValueError("failed entry requires a typed error")
+            if channel == "unknown" and (not isinstance(entry.get("reason"), str) or not entry["reason"]):
+                raise ValueError("unknown entry requires a reason")
+    computed_total = sum(len(entries) for entries in channels.values())
+    if total is None:
+        total = computed_total
+    if total != computed_total:
+        raise ValueError(f"batch total {total} does not equal channel count {computed_total}")
+    return {"total": total, **channels, **extra}
+
+
+def batch_outcome(data: Mapping[str, Any]) -> str:
+    """Derive the terminal outcome from a ``batch_data`` result."""
+    succeeded = data.get("succeeded") or []
+    failed = data.get("failed") or []
+    unknown = data.get("unknown") or []
+    if not failed and not unknown:
+        return "success"
+    return "partial_failure" if succeeded else "failure"
 
 
 def add_contract_flags(parser: argparse.ArgumentParser, *, dry_run: bool = True) -> None:
