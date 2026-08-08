@@ -22,18 +22,17 @@ func runSheetExport(cmd *cobra.Command, _ []string) error {
 	outputPath, _ := cmd.Flags().GetString("output")
 
 	if deps.Caller.DryRun() {
-		deps.Out.PrintKeyValue("操作", "导出钉钉表格为 xlsx")
-		deps.Out.PrintKeyValue("节点", nodeID)
-		if outputPath != "" {
-			deps.Out.PrintKeyValue("输出", outputPath)
-		}
-		return nil
+		return writeCommandPayload(cmd, map[string]any{
+			"executed":  false,
+			"operation": "export_sheet_xlsx",
+			"node_id":   nodeID,
+			"output":    outputPath,
+		})
 	}
 
 	ctx := context.Background()
 
-	// json 模式下进度提示会污染 stdout（PrintInfo/PrintKeyValue 都写 stdout），
-	// 使得 agent 无法按 JSON 解析。故 json 模式抑制进度、末尾统一输出结果 JSON。
+	// JSON 模式下进度只允许走 stderr，stdout 由统一返回在命令终点一次写出。
 	jsonMode := deps.Caller.Format() == "json"
 
 	// Step 1: submit export job
@@ -61,19 +60,12 @@ func runSheetExport(cmd *cobra.Command, _ []string) error {
 		return err
 	}
 
-	// No output path: print the downloadUrl and exit
+	// No output path: return the expiring download URL without downloading.
 	if outputPath == "" {
-		if jsonMode {
-			return deps.Out.PrintJSON(map[string]any{
-				"success":     true,
-				"jobId":       jobID,
-				"downloadUrl": downloadURL,
-			})
-		}
-		deps.Out.PrintKeyValue("jobId", jobID)
-		deps.Out.PrintKeyValue("downloadUrl", downloadURL)
-		deps.Out.PrintInfo("导出完成。downloadUrl 具有时效性，请尽快下载。")
-		return nil
+		return writeCommandPayload(cmd, map[string]any{
+			"job_id":       jobID,
+			"download_url": downloadURL,
+		})
 	}
 
 	// Step 3: download to local file
@@ -92,16 +84,11 @@ func runSheetExport(cmd *cobra.Command, _ []string) error {
 	if err := httpGetFile(ctx, downloadURL, map[string]string{}, outputPath); err != nil {
 		return fmt.Errorf("下载 xlsx 失败: %w", err)
 	}
-	if jsonMode {
-		return deps.Out.PrintJSON(map[string]any{
-			"success":     true,
-			"jobId":       jobID,
-			"outputPath":  outputPath,
-			"downloadUrl": downloadURL,
-		})
-	}
-	deps.Out.PrintInfo(fmt.Sprintf("导出完成: %s", outputPath))
-	return nil
+	return writeCommandPayload(cmd, map[string]any{
+		"job_id":       jobID,
+		"output_path":  outputPath,
+		"download_url": downloadURL,
+	})
 }
 
 // parseExportSubmitResult extracts jobId from submit_export_job MCP response.
