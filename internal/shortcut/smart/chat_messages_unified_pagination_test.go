@@ -87,7 +87,7 @@ func TestChatMessagesDualValidateKeepsLegacyBytes(t *testing.T) {
 }
 
 func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
-	baseArgs := []string{"--conversation-id", "cid", "--page-all"}
+	baseArgs := []string{"--format", "json", "--conversation-id", "cid", "--page-all"}
 	t.Run("terminal zero cursor is exhausted success", func(t *testing.T) {
 		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"hasMore":false,"nextCursor":0,"messages":[]}}`,
@@ -121,7 +121,7 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 	t.Run("missing endpoint evidence is not exhaustion", func(t *testing.T) {
 		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`,
-		}}, "--conversation-id", "cid")
+		}}, "--format", "json", "--conversation-id", "cid")
 		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
 			t.Fatalf("unknown envelope=%#v exit=%d", envelope, exitCode)
 		}

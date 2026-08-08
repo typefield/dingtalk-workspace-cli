@@ -31,6 +31,9 @@ func runThreadRepliesUnifiedResult(t *testing.T, fake *chatMessagesPagingCaller,
 	declaration := ThreadReplies
 	declaration.OutputRollout = frameworkoutput.RolloutUnifiedActive
 	cmd := corecmd.New(shortcutcore.FromShortcut(declaration))
+	// The application root owns this persistent flag. Mount it here too so the
+	// promotion probe exercises the public Agent form: --format json.
+	cmd.PersistentFlags().String("format", "json", "")
 	ctx, _ := frameworkoutput.WithResultStore(context.Background())
 	cmd.SetContext(ctx)
 	var stdout bytes.Buffer
@@ -81,7 +84,7 @@ func TestThreadRepliesDualValidateKeepsLegacyBytes(t *testing.T) {
 }
 
 func TestThreadRepliesUnifiedPaginationOutcomes(t *testing.T) {
-	baseArgs := []string{"--group", "cid", "--thread-id", "thread", "--page-all"}
+	baseArgs := []string{"--format", "json", "--group", "cid", "--thread-id", "thread", "--page-all"}
 	t.Run("continuation is resumable success", func(t *testing.T) {
 		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"hasMore":true,"nextCursor":1786022919361,"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`,
@@ -156,7 +159,7 @@ func TestThreadRepliesUnifiedPaginationOutcomes(t *testing.T) {
 	t.Run("requested resource failure is partial rather than read success", func(t *testing.T) {
 		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			"{\"result\":{\"hasMore\":false,\"messages\":[{\"openMessageId\":\"m1\",\"createTime\":\"2026-08-06 21:28:39\",\"content\":\"{\\\"mediaId\\\":\\\"media-1\\\"}\"}]}}",
-		}}, "--group", "cid", "--thread-id", "thread", "--download-resources")
+		}}, "--format", "json", "--group", "cid", "--thread-id", "thread", "--download-resources")
 		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
 			t.Fatalf("resource partial envelope=%#v exit=%d", envelope, exitCode)
 		}
