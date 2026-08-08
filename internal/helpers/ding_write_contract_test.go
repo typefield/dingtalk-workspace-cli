@@ -156,7 +156,7 @@ func TestDingWriteCommandsRouteOnceAfterExplicitConfirmation(t *testing.T) {
 		{"robot_send", []string{"message", "send", "--robot-code", "robot-1", "--users", " user-1,user-2 ", "--content", "hello", "--type", "SMS", "--yes"}, "ding", "send_ding_message", map[string]any{"robotCode": "robot-1", "remindType": 2, "receiverUserIdList": []string{"user-1", "user-2"}, "content": "hello"}},
 		{"robot_recall", []string{"message", "recall", "--robot-code", "robot-1", "--id", "ding-1", "--yes"}, "ding", "recall_ding_message", map[string]any{"robotCode": "robot-1", "openDingId": "ding-1"}},
 		{"personal_send", []string{"message", "send-personal", "--users", "open-1,open-2", "--content", "hello", "--type", "CALL", "--uuid", "request-1", "--yes"}, "im", "send_personal_ding", map[string]any{"receiverOpenDingTalkIds": []string{"open-1", "open-2"}, "content": "hello", "remindType": "call", "uuid": "request-1"}},
-		{"message_send", []string{"message", "send-by-message", "--group", "cid-1", "--message-id", "msg-1", "--users", "open-1", "--type", "APP", "--yes"}, "im", "send_ding_by_message", map[string]any{"openConversationId": "cid-1", "openMessageId": "msg-1", "receiverOpenDingTalkIds": []string{"open-1"}, "remindType": "app"}},
+		{"message_send", []string{"message", "send-by-message", "--group", "cid-1", "--message-id", "msg-1", "--users", "open-1", "--type", "APP", "--yes"}, "im", "send_ding_by_message", map[string]any{"openConversationId": "cid-1", "openMessageId": "msg-1", "receiverOpenDingTalkIds": []string{"open-1"}, "remindType": "APP"}},
 		{"personal_recall", []string{"message", "recall-personal", "--id", "ding-1", "--yes"}, "im", "recall_personal_ding", map[string]any{"openDingId": "ding-1"}},
 	}
 	for _, test := range tests {

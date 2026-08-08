@@ -41,6 +41,19 @@ func validatedDingRemindType(raw string) (string, error) {
 	return value, nil
 }
 
+// validatedDingMessageRemindType is the wire contract for the IM
+// send_ding_by_message endpoint.  The CLI intentionally accepts the same
+// lowercase values as the other DING commands, while this endpoint expects
+// the upstream enum spelling APP/SMS/PHONE.  Keeping the conversion at the
+// RPC boundary avoids leaking backend casing into the user-facing flag.
+func validatedDingMessageRemindType(raw string) (string, error) {
+	value, err := validatedDingRemindType(raw)
+	if err != nil {
+		return "", err
+	}
+	return map[string]string{"app": "APP", "sms": "SMS", "call": "PHONE"}[value], nil
+}
+
 func validatedDingRecipients(raw string) ([]string, error) {
 	values := parseCSVValues(raw)
 	if len(values) == 0 {
@@ -400,7 +413,7 @@ func newDingCommand() *cobra.Command {
 			if err != nil {
 				return err
 			}
-			remindType, err := validatedDingRemindType(mustGetFlag(cmd, "type"))
+			remindType, err := validatedDingMessageRemindType(mustGetFlag(cmd, "type"))
 			if err != nil {
 				return err
 			}

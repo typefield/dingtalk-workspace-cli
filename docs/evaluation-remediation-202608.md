@@ -175,6 +175,11 @@ ding message recall-personal
    uuid 时仍诚实声明 idempotency unknown，不假定服务端已经幂等。
 7. 三条本人身份 RPC 未进入 pinned metadata，Schema 发布带具体路由证据的
    `composite`，不伪造 interface ref。Runtime Schema 工具数增至 1020。
+8. 实测 follow-up 发现 `send_ding_by_message` 的上游枚举要求为
+   `APP/SMS/PHONE`，而 CLI 继续对用户接受 `app/sms/call`；已在 RPC 边界做
+   `app→APP`、`sms→SMS`、`call→PHONE` 归一，并用路由契约测试锁定。需在真实
+   账号上用合法消息/群 fixture 复跑，确认后端业务校验通过；本地修复不等同于
+   真实环境闭环。
 
 ## OA 加签与退回链路 exclusion、安全和参数语义收敛证据
 
