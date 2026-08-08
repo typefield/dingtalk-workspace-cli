@@ -109,8 +109,8 @@ scripts/_runtime.py
 出现遗留 `print()`、多行或非法 JSON 时，运行时拒绝原 stdout，向 stderr 写无敏感诊断，
 并改发单一 typed internal failure，而不是把污染后的“成功”交给 Agent。每个脚本仍负责业务参数校验、步骤编排、
 子 `dws` 调用和业务数据映射。`run_child_dws` 同时严格识别统一 `ok:false` 与旧信封的
-布尔 `success:false`；字符串 `"false"` 不是可分支的执行事实，绝不按 Python truthiness
-猜测。它是写编排的保守运输边界：只有稳定的
+布尔 `success:false`；任何顶层非布尔 `ok`/`success` 都会作为 `untyped_status` 标为
+`unknown`，绝不按 Python truthiness 或 `rc=0` 猜测成功。它是写编排的保守运输边界：只有稳定的
 前置失败会标记为 `failed`；超时、非零退出、不可解析输出和未分类上游错误都标为
 `unknown`，因为写入可能已经到达服务端。`batch_data` 固定保留
 `succeeded[]/failed[]/unknown[]` 并校验逐项 ID、typed error、未知原因和总数；

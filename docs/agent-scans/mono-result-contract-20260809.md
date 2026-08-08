@@ -11,6 +11,7 @@
 | 机器 stdout 污染拒绝 | PASS | ok |
 | 机器结果与退出码一致性 | PASS | ok |
 | 子 dws 严格布尔失败识别 | PASS | ok |
+| 子 dws 非布尔状态不伪装成功 | PASS | ok |
 | 非零 SystemExit JSON 兜底 | PASS | ok |
 | 部分成功结果与退出码 | PASS | ok |
 | 可选 meta 承载 | PASS | ok |
@@ -25,7 +26,7 @@
 | 文件导入旧业务失败不误报终态 | PASS | ok |
 | 附件 PUT 未知不误报可用 | PASS | ok |
 
-结果：18/18 通过
+结果：19/19 通过
 
 ## 边界
 

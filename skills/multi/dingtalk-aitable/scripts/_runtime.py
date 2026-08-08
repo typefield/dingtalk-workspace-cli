@@ -69,6 +69,14 @@ def _child_explicitly_failed(payload: Any) -> bool:
     )
 
 
+def _child_status_is_ambiguous(payload: Any) -> bool:
+    """Only boolean top-level outcome flags can establish child success."""
+    return isinstance(payload, Mapping) and any(
+        key in payload and not isinstance(payload[key], bool)
+        for key in ("ok", "success")
+    )
+
+
 def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
     if isinstance(payload, Mapping) and isinstance(payload.get("meta"), Mapping):
         return dict(payload["meta"])
@@ -115,10 +123,14 @@ def run_child_dws(
         except json.JSONDecodeError:
             pass
     meta = _meta_from_child(payload)
-    if completed.returncode == 0 and decoded and not _child_explicitly_failed(payload):
+    if completed.returncode == 0 and decoded and not _child_explicitly_failed(payload) and not _child_status_is_ambiguous(payload):
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if decoded and isinstance(payload, Mapping):
-        error = _child_error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
+        error = (
+            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了非布尔 ok/success 字段，执行结果无法可靠判断。"}
+            if _child_status_is_ambiguous(payload)
+            else _child_error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
+        )
         state = "failed" if error["type"] in _DEFINITELY_NOT_EXECUTED else "unknown"
         return ChildDWSResult(state, payload=payload, error=error, meta=meta, command=command)
     return ChildDWSResult(

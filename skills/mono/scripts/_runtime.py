@@ -90,6 +90,14 @@ def _child_explicitly_failed(payload: Any) -> bool:
     return payload.get("ok") is False or payload.get("success") is False
 
 
+def _child_status_is_ambiguous(payload: Any) -> bool:
+    """Reject top-level status fields whose type is not the wire-contract bool."""
+    return isinstance(payload, Mapping) and any(
+        key in payload and not isinstance(payload[key], bool)
+        for key in ("ok", "success")
+    )
+
+
 def run_child_dws(
     args: Sequence[str],
     *,
@@ -148,15 +156,22 @@ def run_child_dws(
             pass
     meta = _meta_from_child(payload)
     if completed.returncode == 0 and decoded:
-        if not _child_explicitly_failed(payload):
+        if not _child_explicitly_failed(payload) and not _child_status_is_ambiguous(payload):
             return ChildDWSResult("success", payload=payload, meta=meta, command=command)
 
     if decoded and isinstance(payload, Mapping):
-        error = _child_error(
-            payload,
-            f"dws 未返回终态成功（exit {completed.returncode}）。",
-            exit_code=completed.returncode or None,
-        )
+        if _child_status_is_ambiguous(payload):
+            error = {
+                "type": "api",
+                "subtype": "untyped_status",
+                "message": "dws 返回了非布尔 ok/success 字段，执行结果无法可靠判断。",
+            }
+        else:
+            error = _child_error(
+                payload,
+                f"dws 未返回终态成功（exit {completed.returncode}）。",
+                exit_code=completed.returncode or None,
+            )
         state = "failed" if error["type"] in _DEFINITELY_NOT_EXECUTED else "unknown"
         return ChildDWSResult(state, payload=payload, error=error, meta=meta, command=command)
 

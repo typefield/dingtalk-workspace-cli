@@ -70,10 +70,15 @@ def run_child_dws(
         payload = None
     meta = dict(payload["meta"]) if isinstance(payload, Mapping) and isinstance(payload.get("meta"), Mapping) else None
     explicitly_failed = isinstance(payload, Mapping) and (payload.get("ok") is False or payload.get("success") is False)
-    if completed.returncode == 0 and payload is not None and not explicitly_failed:
+    ambiguous_status = isinstance(payload, Mapping) and any(key in payload and not isinstance(payload[key], bool) for key in ("ok", "success"))
+    if completed.returncode == 0 and payload is not None and not explicitly_failed and not ambiguous_status:
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if isinstance(payload, Mapping):
-        error = _error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
+        error = (
+            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了非布尔 ok/success 字段，执行结果无法可靠判断。"}
+            if ambiguous_status
+            else _error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
+        )
         state = "failed" if error["type"] in _NOT_EXECUTED_TYPES else "unknown"
         return ChildDWSResult(state, payload=payload, error=error, meta=meta, command=command)
     return ChildDWSResult(

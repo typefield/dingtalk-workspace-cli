@@ -44,7 +44,7 @@ metadata:
 | "发邮件给 a@b.com" | `dws mail mailbox list --format json` → `dws mail message send --from <邮箱> --to a@b.com --subject "<标题>" --content "<正文>" --format json` |
 | "回复 / 全部回复 / 转发" | `dws mail message reply` / `reply-all` / `forward` |
 | "今天未读邮件" | `python scripts/mail_unread_summary.py` |
-| "带抄送发送" | `python scripts/mail_send_with_cc.py --to a@b.com --cc c@d.com --subject "<标题>" --body "<正文>"` |
+| "带抄送发送" | 收件人与正文经用户确认后：`python scripts/mail_send_with_cc.py --to a@b.com --cc c@d.com --subject "<标题>" --body "<正文>" --yes --format json`；只有 `outcome=success` 且 `data.verification.state=verified` 才能答复投递已确认 |
 
 ## 标准 SOP（必遵流程）
 
@@ -78,6 +78,11 @@ metadata:
 4. **验证（必须）**：从发送返回取真实 `internetMessageId`，执行 `dws mail message verify --email <发件邮箱> --internet-message-id <internetMessageId> --format json` 查发送状态；不要把普通 `messageId` 传给 verify。
 
 **禁止**：猜测收件邮箱、发送后不确认状态就答复"已发送"。
+
+> 带抄送的专用脚本会先解析发件邮箱、发送，再按真实 `internetMessageId` 调用
+> `mail message verify`。脚本需要 `--yes`；`--dry-run --format json` 只输出计划且不读取
+> 邮箱、不发送邮件。若结果为 `failure`、`partial_failure`，或
+> `verification.state` 不是 `verified`，必须先核查状态，禁止直接重发。
 
 ### SOP-4 回复 / 转发（reply-forward）
 

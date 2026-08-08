@@ -18,9 +18,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 RUNTIMES = {
-    "AITable": ROOT / "skills" / "multi" / "dingtalk-aitable" / "scripts",
-    "Todo": ROOT / "skills" / "multi" / "dingtalk-todo" / "scripts",
-    "Misc": ROOT / "skills" / "multi" / "dingtalk-misc" / "scripts",
+    "AITable": (ROOT / "skills" / "multi" / "dingtalk-aitable" / "scripts", True),
+    "Todo": (ROOT / "skills" / "multi" / "dingtalk-todo" / "scripts", True),
+    "Misc": (ROOT / "skills" / "multi" / "dingtalk-misc" / "scripts", True),
+    "Shared": (ROOT / "skills" / "multi" / "dingtalk-shared" / "scripts", False),
 }
 
 
@@ -44,7 +45,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, help="write Markdown report; default is stdout")
     args = parser.parse_args()
     checks: list[tuple[str, str, str]] = []
-    for name, directory in RUNTIMES.items():
+    for name, (directory, has_batch_helpers) in RUNTIMES.items():
         exception = run(directory, "\n".join([
             "import sys",
             f"sys.path.insert(0, {str(directory)!r})",
@@ -76,12 +77,36 @@ def main() -> int:
         child_ok = child.returncode == 0 and child_payload == {"state": "unknown", "error_type": "api"}
         checks.append((f"{name}: 旧 success:false 不按 truthiness 成功", "PASS" if child_ok else "FAIL", f"rc={child.returncode}; payload={child_payload}"))
 
-        partial = run(directory, "\n".join([
+        untyped = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "result = _runtime.run_child_dws(['-c', \"import json; print(json.dumps({'success': 'false'}))\"], executable=sys.executable)",
+            "print(json.dumps({'state': result.state, 'subtype': (result.error or {}).get('subtype')}))",
+        ]))
+        try:
+            untyped_payload = json.loads(untyped.stdout)
+        except json.JSONDecodeError:
+            untyped_payload = None
+        untyped_ok = untyped.returncode == 0 and untyped_payload == {"state": "unknown", "subtype": "untyped_status"}
+        checks.append((f"{name}: success 字符串不伪装执行成功", "PASS" if untyped_ok else "FAIL", f"rc={untyped.returncode}; payload={untyped_payload}"))
+
+        partial_lines = [
             f"import sys; sys.path.insert(0, {str(directory)!r})",
             "import _runtime",
-            "data = _runtime.batch_data(succeeded=[{'id': 'ok'}], unknown=[{'id': 'maybe', 'reason': 'ambiguous'}], total=2)",
-            "raise SystemExit(_runtime.emit(fmt='json', outcome=_runtime.batch_outcome(data), data=data))",
-        ]))
+        ]
+        if has_batch_helpers:
+            partial_lines.extend([
+                "data = _runtime.batch_data(succeeded=[{'id': 'ok'}], unknown=[{'id': 'maybe', 'reason': 'ambiguous'}], total=2)",
+                "outcome = _runtime.batch_outcome(data)",
+            ])
+        else:
+            partial_lines.extend([
+                "data = {'total': 2, 'succeeded': [{'id': 'ok'}], 'failed': [], 'unknown': [{'id': 'maybe', 'reason': 'ambiguous'}]}",
+                "outcome = 'partial_failure'",
+            ])
+        partial_lines.append("raise SystemExit(_runtime.emit(fmt='json', outcome=outcome, data=data))")
+        partial = run(directory, "\n".join(partial_lines))
         payload = exactly_one_envelope(partial.stdout)
         partial_ok = (
             partial.returncode == 7 and payload is not None and payload.get("ok") is False
@@ -93,13 +118,13 @@ def main() -> int:
 
     passed = sum(1 for _, status, _ in checks if status == "PASS")
     lines = [
-        "# Multi 本地结果边界 Agent 语义对拍", "",
+        "# Multi 结果边界 Agent 语义对拍", "",
         "各运行时仅在临时 Python 子进程中加载；本报告不保存 JSON fixture，不调用 dws，也不替代真实服务端终态验证。", "",
         "| 检查 | 结果 | 证据 |", "|---|---|---|",
     ]
     for check, status, detail in checks:
         lines.append("| {} | {} | {} |".format(check, status, detail.replace("|", "\\|")))
-    lines.extend(["", f"结论：**{passed}/{len(checks)} PASS**。", "", "范围：横向验证异常边界、历史字符串布尔失败分类和批量部分成功的机器契约；业务写入、分页和服务端终态仍由各产品的 Agent 探针与真实环境证据负责。", ""])
+    lines.extend(["", f"结论：**{passed}/{len(checks)} PASS**。", "", "范围：横向验证局部与 shared 运行时的异常边界、历史字符串布尔失败分类和 partial_failure/rc=7 机器契约；业务写入、分页和服务端终态仍由各产品的 Agent 探针与真实环境证据负责。", ""])
     report = "\n".join(lines)
     if args.output:
         args.output.parent.mkdir(parents=True, exist_ok=True)
