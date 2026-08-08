@@ -27,6 +27,9 @@ const (
 	SubtypeConfirmationRequired               Subtype = "confirmation_required"
 	SubtypeRateLimit                          Subtype = "rate_limit"
 	SubtypePaginationInconsistent             Subtype = "pagination_inconsistent"
+	SubtypePaginationInvalid                  Subtype = "pagination_invalid"
+	SubtypePaginationIncomplete               Subtype = "pagination_incomplete"
+	SubtypePaginationConflict                 Subtype = "pagination_conflict"
 	SubtypeChatSearchIncomplete               Subtype = "chat_search_incomplete"
 	SubtypeChatListAllIncomplete              Subtype = "chat_list_all_incomplete"
 	SubtypeFlagListIncomplete                 Subtype = "flag_list_incomplete"
@@ -74,6 +77,9 @@ const (
 	SubtypeDocCheckpointVerificationFailed    Subtype = "doc_checkpoint_verification_failed"
 	SubtypeDocHistoryRevertVerificationFailed Subtype = "doc_history_revert_verification_failed"
 	SubtypeEventStopUnverified                Subtype = "event_stop_unverified"
+	SubtypeInvalidSuccessType                 Subtype = "invalid_success_type"
+	SubtypeSkillSetupResultInvalid            Subtype = "skill_setup_result_invalid"
+	SubtypeSkillSetupFailed                   Subtype = "skill_setup_failed"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -166,6 +172,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请检查上游的分页游标和 hasMore 证据；确认前不要把结果当作完整。",
 		Description:   "pagination evidence is incomplete or contradictory",
+	},
+	SubtypePaginationInvalid: {
+		Subtype:       SubtypePaginationInvalid,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "上游分页字段类型无效；不要将结果当作完整列表，保留脱敏响应证据后排查上游。",
+		Description:   "an upstream pagination field has an invalid local projection type",
+	},
+	SubtypePaginationIncomplete: {
+		Subtype:       SubtypePaginationIncomplete,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "上游表示仍有下一页但没有可用游标；不要将结果当作完整列表，保留脱敏响应证据后排查上游。",
+		Description:   "an upstream pagination response cannot be resumed safely",
+	},
+	SubtypePaginationConflict: {
+		Subtype:       SubtypePaginationConflict,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "上游分页终态与续页游标相互矛盾；不要将结果当作完整列表，保留脱敏响应证据后排查上游。",
+		Description:   "an upstream pagination response contains contradictory terminal and continuation evidence",
 	},
 	SubtypeChatSearchIncomplete: {
 		Subtype:       SubtypeChatSearchIncomplete,
@@ -589,6 +622,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: true,
 		DefaultHint:   "部分订阅可能已取消但停机终态未确认；先运行 dws event status 核对订阅和本地状态，不要盲目重复停止。",
 		Description:   "an event-stop composite workflow did not produce a fully verifiable terminal state after at least one control-plane step",
+	},
+	SubtypeInvalidSuccessType: {
+		Subtype:       SubtypeInvalidSuccessType,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "上游 success 字段不是布尔值；写操作先核查目标状态，读取操作保留脱敏响应后排查上游。",
+		Description:   "an upstream shortcut response uses a non-boolean success field",
+	},
+	SubtypeSkillSetupResultInvalid: {
+		Subtype:       SubtypeSkillSetupResultInvalid,
+		Category:      CategoryInternal,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "Skill 安装结果违反三通道契约；先检查已列出的目标路径和诊断信息，再决定是否人工清理或重试。",
+		Description:   "skill setup produced an invalid partial-result projection",
+	},
+	SubtypeSkillSetupFailed: {
+		Subtype:       SubtypeSkillSetupFailed,
+		Category:      CategoryInternal,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "Skill 安装未完成任何目标；先检查各目标路径，未知项可能已经发生文件变更。",
+		Description:   "skill setup completed no target operation and retained diagnostic facts",
 	},
 }
 

@@ -6,9 +6,9 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**54** 个；直接 `WithSubtype(Subtype...)` 调用点：**115** 个；间接映射调用点：**11** 个。
+- 已注册 descriptor：**60** 个；直接 `WithSubtype(Subtype...)` 调用点：**115** 个；间接映射调用点：**11** 个。
 - `WithReason("…")` 的自由字面调用点：**46** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
-- 直接构造 `ErrorInfo.Subtype`：**9** 个不同值。
+- 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**16** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**1** 个。
@@ -104,17 +104,17 @@
 
 这类值绕过 `WithReason`；迁移到注册表时必须一并纳入，不能只扫描错误构造函数。
 
-| subtype | 位置 |
-|---|---|
-| `event_stop_unverified` | `internal/app/event_personal_command.go:1149` |
-| `invalid_success_type` | `internal/shortcut/runner.go:410` |
-| `pagination_conflict` | `internal/helpers/devapp.go:2016` |
-| `pagination_incomplete` | `internal/helpers/devapp.go:2009`, `internal/helpers/devapp.go:2023` |
-| `pagination_inconsistent` | `internal/shortcut/chat/chat_conversation.go:546`, `internal/shortcut/chat/chat_group.go:458`, `internal/shortcut/chat/lark_alignment.go:794`, `internal/shortcut/smart/chat_messages.go:940`, `internal/shortcut/smart/thread_replies.go:697` |
-| `pagination_invalid` | `internal/helpers/devapp.go:2000` |
-| `projection_unknown` | `internal/shortcut/chat/chat_conversation.go:564`, `internal/shortcut/smart/chat_messages.go:958`, `internal/shortcut/smart/thread_replies.go:715` |
-| `skill_setup_failed` | `internal/app/skill_setup.go:795` |
-| `skill_setup_result_invalid` | `internal/app/skill_setup.go:785` |
+| subtype | registry | 位置 |
+|---|---|---|
+| `event_stop_unverified` | registered | `internal/app/event_personal_command.go:1149` |
+| `invalid_success_type` | registered | `internal/shortcut/runner.go:410` |
+| `pagination_conflict` | registered | `internal/helpers/devapp.go:2020` |
+| `pagination_incomplete` | registered | `internal/helpers/devapp.go:2011`, `internal/helpers/devapp.go:2029` |
+| `pagination_inconsistent` | registered | `internal/shortcut/chat/chat_conversation.go:546`, `internal/shortcut/chat/chat_group.go:458`, `internal/shortcut/chat/lark_alignment.go:794`, `internal/shortcut/smart/chat_messages.go:940`, `internal/shortcut/smart/thread_replies.go:697` |
+| `pagination_invalid` | registered | `internal/helpers/devapp.go:2000` |
+| `projection_unknown` | registered | `internal/shortcut/chat/chat_conversation.go:564`, `internal/shortcut/smart/chat_messages.go:958`, `internal/shortcut/smart/thread_replies.go:715` |
+| `skill_setup_failed` | registered | `internal/app/skill_setup.go:797` |
+| `skill_setup_result_invalid` | registered | `internal/app/skill_setup.go:786` |
 
 ## 动态 subtype 构造
 

@@ -782,8 +782,10 @@ func skillSetupResult(mode, source string, dests, skillNames []string, report sk
 			return output.Partial(partial)
 		}
 		return output.Failure(&output.ErrorInfo{
-			Type: "internal", Subtype: "skill_setup_result_invalid",
+			Type:    "internal",
+			Subtype: string(apperrors.SubtypeSkillSetupResultInvalid),
 			Message: err.Error(),
+			Hint:    "先检查已列出的目标路径和诊断信息，再决定是否人工清理或重试。",
 		})
 	}
 
@@ -791,10 +793,11 @@ func skillSetupResult(mode, source string, dests, skillNames []string, report sk
 	// failure/unknown fact in details so an Agent can inspect the filesystem
 	// before retrying instead of assuming no mutation occurred.
 	return output.Failure(&output.ErrorInfo{
-		Type:    "internal",
-		Subtype: "skill_setup_failed",
-		Message: "skill setup did not complete any operation",
-		Hint:    "inspect the listed paths before retrying; unknown entries may have been modified",
+		Type:      "internal",
+		Subtype:   string(apperrors.SubtypeSkillSetupFailed),
+		Message:   "skill setup did not complete any operation",
+		Hint:      "inspect the listed paths before retrying; unknown entries may have been modified",
+		Operation: "skill.setup",
 		Details: map[string]any{
 			"mode": mode, "source": source,
 			"failed": report.Failed, "unknown": report.Unknown,

@@ -1996,32 +1996,40 @@ func devAppPaginationError(payload map[string]any) *output.ErrorInfo {
 	hasMore, moreOK := rawMore.(bool)
 	if hasMoreKey && !moreOK {
 		return &output.ErrorInfo{
-			Type:    "validation",
-			Subtype: "pagination_invalid",
-			Message: "devapp pagination hasMore must be a boolean",
+			Type:      "validation",
+			Subtype:   string(apperrors.SubtypePaginationInvalid),
+			Message:   "devapp pagination hasMore must be a boolean",
+			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
+			Operation: "devapp.pagination_projection",
 		}
 	}
 	cursor, cursorOK := rawCursor.(string)
 	cursor = strings.TrimSpace(cursor)
 	if hasCursorKey && (!cursorOK || (cursor == "" && hasMore)) {
 		return &output.ErrorInfo{
-			Type:    "validation",
-			Subtype: "pagination_incomplete",
-			Message: "devapp pagination continuation is missing nextCursor",
+			Type:      "validation",
+			Subtype:   string(apperrors.SubtypePaginationIncomplete),
+			Message:   "devapp pagination continuation is missing nextCursor",
+			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
+			Operation: "devapp.pagination_projection",
 		}
 	}
 	if hasMoreKey && !hasMore && cursor != "" {
 		return &output.ErrorInfo{
-			Type:    "validation",
-			Subtype: "pagination_conflict",
-			Message: "devapp pagination cannot be exhausted while nextCursor is present",
+			Type:      "validation",
+			Subtype:   string(apperrors.SubtypePaginationConflict),
+			Message:   "devapp pagination cannot be exhausted while nextCursor is present",
+			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
+			Operation: "devapp.pagination_projection",
 		}
 	}
 	if hasMore && cursor == "" {
 		return &output.ErrorInfo{
-			Type:    "validation",
-			Subtype: "pagination_incomplete",
-			Message: "devapp pagination hasMore=true requires nextCursor",
+			Type:      "validation",
+			Subtype:   string(apperrors.SubtypePaginationIncomplete),
+			Message:   "devapp pagination hasMore=true requires nextCursor",
+			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
+			Operation: "devapp.pagination_projection",
 		}
 	}
 	return nil

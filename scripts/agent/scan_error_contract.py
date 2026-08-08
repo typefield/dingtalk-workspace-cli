@@ -229,6 +229,9 @@ def main() -> int:
     free_occurrences = all_occurrences - registered_occurrences
     no_hint = sum(1 for item in facts.values() if not any(value.hint for value in item.occurrences))
     unresolved = sum(1 for item in facts.values() if "unresolved" in {value.category for value in item.occurrences})
+    registered_subtype_values = set(subtype_constants.values())
+    registered_struct_subtypes = sorted(set(struct_subtypes) & registered_subtype_values)
+    unregistered_struct_subtypes = sorted(set(struct_subtypes) - registered_subtype_values)
 
     lines = [
         "# DWS 错误契约 Agent 扫描",
@@ -241,7 +244,7 @@ def main() -> int:
         "",
         f"- 已注册 descriptor：**{len(subtype_constants)}** 个；直接 `WithSubtype(Subtype...)` 调用点：**{registered_occurrences}** 个；间接映射调用点：**{len(indirect_subtypes)}** 个。",
         f"- `WithReason(\"…\")` 的自由字面调用点：**{free_occurrences}** 个；与已注册调用合计覆盖 **{len(facts)}** 个 subtype、**{all_occurrences}** 个调用点。",
-        f"- 直接构造 `ErrorInfo.Subtype`：**{len(struct_subtypes)}** 个不同值。",
+        f"- 直接构造 `ErrorInfo.Subtype`：**{len(struct_subtypes)}** 个不同值，其中已登记 **{len(registered_struct_subtypes)}** 个、未登记 **{len(unregistered_struct_subtypes)}** 个。",
         f"- 动态 `WithReason(variable)` 调用：**{len(dynamic)}** 个。",
         f"- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**{no_hint}** 个。",
         f"- 无法从同一局部构造窗口解析 Category 的 subtype：**{unresolved}** 个。",
@@ -267,14 +270,15 @@ def main() -> int:
         "",
         "这类值绕过 `WithReason`；迁移到注册表时必须一并纳入，不能只扫描错误构造函数。",
         "",
-        "| subtype | 位置 |",
-        "|---|---|",
+        "| subtype | registry | 位置 |",
+        "|---|---|---|",
     ]
     if struct_subtypes:
         for subtype, locations in struct_subtypes.items():
-            lines.append(f"| `{subtype}` | {', '.join(f'`{location}`' for location in locations[:5])}{' …' if len(locations) > 5 else ''} |")
+            registry = "registered" if subtype in registered_subtype_values else "unregistered"
+            lines.append(f"| `{subtype}` | {registry} | {', '.join(f'`{location}`' for location in locations[:5])}{' …' if len(locations) > 5 else ''} |")
     else:
-        lines.append("| — | — |")
+        lines.append("| — | — | — |")
 
     lines += [
         "",

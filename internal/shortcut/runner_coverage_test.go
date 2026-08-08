@@ -28,7 +28,9 @@ func TestShortcutCommandResultRejectsStringSuccess(t *testing.T) {
 	if err != nil {
 		t.Fatal(err)
 	}
-	if env.Outcome != output.OutcomeFailure || env.Error == nil || env.Error.Subtype != "invalid_success_type" {
+	if env.Outcome != output.OutcomeFailure || env.Error == nil ||
+		env.Error.Subtype != "invalid_success_type" || env.Error.Hint == "" ||
+		env.Error.Operation != "shortcut.response_projection" {
 		t.Fatalf("string success result = %#v, envelope=%+v", result, env)
 	}
 	if result.ExitCode() == 0 {

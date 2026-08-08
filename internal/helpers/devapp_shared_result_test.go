@@ -128,7 +128,9 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil || env.Error.Subtype != "pagination_conflict" {
+		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil ||
+			env.Error.Subtype != "pagination_conflict" || env.Error.Hint == "" ||
+			env.Error.Operation != "devapp.pagination_projection" {
 			t.Fatalf("contradictory pagination envelope=%+v rc=%d", env, result.ExitCode())
 		}
 	})
@@ -141,7 +143,9 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		if err != nil {
 			t.Fatal(err)
 		}
-		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil || env.Error.Subtype != "pagination_incomplete" {
+		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil ||
+			env.Error.Subtype != "pagination_incomplete" || env.Error.Hint == "" ||
+			env.Error.Operation != "devapp.pagination_projection" {
 			t.Fatalf("incomplete pagination envelope=%+v rc=%d", env, result.ExitCode())
 		}
 	})

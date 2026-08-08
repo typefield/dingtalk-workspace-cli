@@ -406,10 +406,12 @@ func shortcutCommandResult(payload any, options ...output.ResultOption) output.C
 			success, isBool := rawSuccess.(bool)
 			if !isBool {
 				return output.Failure(&output.ErrorInfo{
-					Type:    "api",
-					Subtype: "invalid_success_type",
-					Message: "shortcut response success field must be a JSON boolean",
-					Details: map[string]any{"actual_type": fmt.Sprintf("%T", rawSuccess)},
+					Type:      "api",
+					Subtype:   string(apperrors.SubtypeInvalidSuccessType),
+					Message:   "shortcut response success field must be a JSON boolean",
+					Hint:      "写操作先核查目标状态；读取操作保留脱敏响应证据后排查上游。",
+					Details:   map[string]any{"actual_type": fmt.Sprintf("%T", rawSuccess)},
+					Operation: "shortcut.response_projection",
 				}, options...)
 			}
 			if !success {

@@ -16,6 +16,9 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeConfirmationRequired, CategoryValidation, RetryNever, true},
 		{SubtypeRateLimit, CategoryAPI, RetryServerDirective, false},
 		{SubtypePaginationInconsistent, CategoryAPI, RetryNever, false},
+		{SubtypePaginationInvalid, CategoryValidation, RetryNever, false},
+		{SubtypePaginationIncomplete, CategoryValidation, RetryNever, false},
+		{SubtypePaginationConflict, CategoryValidation, RetryNever, false},
 		{SubtypeChatSearchIncomplete, CategoryAPI, RetryIdempotentReadOnly, false},
 		{SubtypeChatListAllIncomplete, CategoryAPI, RetryIdempotentReadOnly, false},
 		{SubtypeFlagListIncomplete, CategoryAPI, RetryIdempotentReadOnly, false},
@@ -63,6 +66,9 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeDocCheckpointVerificationFailed, CategoryAPI, RetryNever, true},
 		{SubtypeDocHistoryRevertVerificationFailed, CategoryAPI, RetryNever, true},
 		{SubtypeEventStopUnverified, CategoryAPI, RetryNever, true},
+		{SubtypeInvalidSuccessType, CategoryAPI, RetryNever, false},
+		{SubtypeSkillSetupResultInvalid, CategoryInternal, RetryNever, false},
+		{SubtypeSkillSetupFailed, CategoryInternal, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {
