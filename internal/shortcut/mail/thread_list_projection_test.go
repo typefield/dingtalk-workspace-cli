@@ -32,7 +32,10 @@ func TestThreadListProjectConversationsShape(t *testing.T) {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
 
-	got := threadListProject(data)
+	got, err := threadListProject(data)
+	if err != nil {
+		t.Fatalf("projection returned error: %v", err)
+	}
 	if len(got) != 1 {
 		t.Fatalf("lower/upper mismatch: result.conversations has 1 entry, projection returned %d (%v)", len(got), got)
 	}

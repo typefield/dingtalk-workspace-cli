@@ -20,6 +20,7 @@ package mail
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -110,7 +111,10 @@ var ThreadList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		threads := threadListProject(data)
+		threads, err := threadListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(threads), "threads": threads})
 	},
 }
@@ -118,15 +122,19 @@ var ThreadList = shortcut.Shortcut{
 // threadListProject reshapes the raw list_mailbox_threads response into a clean
 // {conversationId, subject, lastUpdated, isRead} thread list —
 // clean output projection. Both the list container and per-item
-// field names are probed defensively across candidate keys, so an empty/unknown
-// shape yields an empty list rather than a crash or fabricated data.
-func threadListProject(data map[string]any) []map[string]any {
-	raw := threadListResolveList(data)
+// field names are probed defensively across candidate keys. Known empty lists
+// remain successful; unknown response shapes are typed failures, never a
+// fabricated "no threads" result.
+func threadListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := threadListResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件会话列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件会话列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := threadListFirst(m, "conversationId", "conversation_id", "id", "threadId"); ok {
@@ -141,33 +149,20 @@ func threadListProject(data map[string]any) []map[string]any {
 		if v, ok := threadListFirst(m, "isRead", "is_read", "read", "unread"); ok {
 			row["isRead"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件会话列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // threadListResolveList locates the list payload inside the response, tolerating
 // a bare top-level array container or nesting one level deeper.
-func threadListResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "threads", "conversations"} {
-		v, ok := data[key]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "threads", "conversations", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+func threadListResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "threads", "conversations"},
+		[]string{"list", "items", "threads", "conversations", "result", "data"})
 }
 
 // threadListFirst returns the first present candidate key's value.
@@ -238,7 +233,10 @@ var FolderList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		folders := folderListProject(data)
+		folders, err := folderListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(folders), "folders": folders})
 	},
 }
@@ -246,15 +244,18 @@ var FolderList = shortcut.Shortcut{
 // folderListProject reshapes the raw list_folders response into a clean
 // {id, name, parentId} folder list — clean output projection. Both
 // the list container and per-item field names are probed defensively across
-// candidate keys, so an empty/unknown shape yields an empty list rather than a
-// crash or fabricated data.
-func folderListProject(data map[string]any) []map[string]any {
-	raw := folderListResolveList(data)
+// candidate keys. Known empty lists remain successful; unknown response
+// shapes are typed failures rather than fabricated empty results.
+func folderListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := folderListResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件文件夹列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件文件夹列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := folderListFirst(m, "id", "folderId", "folder_id"); ok {
@@ -266,33 +267,20 @@ func folderListProject(data map[string]any) []map[string]any {
 		if v, ok := folderListFirst(m, "parentId", "parent_id", "parentFolderId"); ok {
 			row["parentId"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件文件夹列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // folderListResolveList locates the list payload inside the response, tolerating
 // a bare top-level array container or nesting one level deeper.
-func folderListResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "folders"} {
-		v, ok := data[key]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "folders", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+func folderListResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "folders"},
+		[]string{"list", "items", "folders", "result", "data"})
 }
 
 // folderListFirst returns the first present candidate key's value.
@@ -356,7 +344,10 @@ var TagList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		tags := tagListProject(data)
+		tags, err := tagListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(tags), "tags": tags})
 	},
 }
@@ -364,15 +355,18 @@ var TagList = shortcut.Shortcut{
 // tagListProject reshapes the raw list_tags response into a clean
 // {id, name, parentId} tag list — clean output projection. Both the
 // list container and per-item field names are probed defensively across
-// candidate keys, so an empty/unknown shape yields an empty list rather than a
-// crash or fabricated data.
-func tagListProject(data map[string]any) []map[string]any {
-	raw := tagListResolveList(data)
+// candidate keys. Known empty lists remain successful; unknown response
+// shapes are typed failures rather than fabricated empty results.
+func tagListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := tagListResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件标签列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件标签列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := tagListFirst(m, "id", "tagId", "tag_id"); ok {
@@ -384,33 +378,20 @@ func tagListProject(data map[string]any) []map[string]any {
 		if v, ok := tagListFirst(m, "parentId", "parent_id"); ok {
 			row["parentId"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件标签列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // tagListResolveList locates the list payload inside the response, tolerating a
 // bare top-level array container or nesting one level deeper.
-func tagListResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "tags"} {
-		v, ok := data[key]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "tags", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+func tagListResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "tags"},
+		[]string{"list", "items", "tags", "result", "data"})
 }
 
 // tagListFirst returns the first present candidate key's value.
@@ -499,7 +480,10 @@ var UserSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		users := userSearchProject(data)
+		users, err := userSearchProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(users), "users": users})
 	},
 }
@@ -507,15 +491,18 @@ var UserSearch = shortcut.Shortcut{
 // userSearchProject reshapes the raw search_mail_users response into a clean
 // {name, email, employeeNo, userId} user list — clean output projection.
 // Both the list container and per-item field names are probed defensively
-// across candidate keys, so an empty/unknown shape yields an empty list rather
-// than a crash or fabricated data.
-func userSearchProject(data map[string]any) []map[string]any {
-	raw := userSearchResolveList(data)
+// across candidate keys. Known empty lists remain successful; unknown response
+// shapes are typed failures rather than fabricated empty results.
+func userSearchProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := userSearchResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件用户搜索响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件用户搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := userSearchFirst(m, "name", "userName", "displayName", "nickName"); ok {
@@ -530,33 +517,20 @@ func userSearchProject(data map[string]any) []map[string]any {
 		if v, ok := userSearchFirst(m, "userId", "user_id", "id"); ok {
 			row["userId"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件用户搜索条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // userSearchResolveList locates the list payload inside the response, tolerating
 // a bare top-level array container or nesting one level deeper.
-func userSearchResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "users"} {
-		v, ok := data[key]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "users", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+func userSearchResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "users"},
+		[]string{"list", "items", "users", "result", "data"})
 }
 
 // userSearchFirst returns the first present candidate key's value.
@@ -628,7 +602,10 @@ var TemplateList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		templates := templateListProject(data)
+		templates, err := templateListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(templates), "templates": templates})
 	},
 }
@@ -636,15 +613,18 @@ var TemplateList = shortcut.Shortcut{
 // templateListProject reshapes the raw list_user_message_templates response into
 // a clean {id, name, subject} template list — clean output projection.
 // Both the list container and per-item field names are probed defensively
-// across candidate keys, so an empty/unknown shape yields an empty list rather
-// than a crash or fabricated data.
-func templateListProject(data map[string]any) []map[string]any {
-	raw := templateListResolveList(data)
+// across candidate keys. Known empty lists remain successful; unknown response
+// shapes are typed failures rather than fabricated empty results.
+func templateListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := templateListResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件模板列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件模板列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := templateListFirst(m, "id", "templateId", "template_id"); ok {
@@ -656,33 +636,20 @@ func templateListProject(data map[string]any) []map[string]any {
 		if v, ok := templateListFirst(m, "subject", "title"); ok {
 			row["subject"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件模板列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // templateListResolveList locates the list payload inside the response,
 // tolerating a bare top-level array container or nesting one level deeper.
-func templateListResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "templates"} {
-		v, ok := data[key]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "templates", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+func templateListResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "templates"},
+		[]string{"list", "items", "templates", "result", "data"})
 }
 
 // templateListFirst returns the first present candidate key's value.
@@ -754,23 +721,28 @@ var ContactList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		contacts := contactListProject(data)
+		contacts, err := contactListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(contacts), "contacts": contacts})
 	},
 }
 
 // contactListProject reshapes the raw list_user_mail_contacts response into a
-// clean {id, contactEmail, displayName} contact list — output-projection
-// clean output projection. Both the list container and per-item field names are probed
-// defensively across candidate keys, so an empty/unknown shape yields an empty
-// list rather than a crash or fabricated data.
-func contactListProject(data map[string]any) []map[string]any {
-	raw := contactListResolveList(data)
+// clean {id, contactEmail, displayName} contact list. Both the list container
+// and per-item field names are probed defensively across candidate keys. Known
+// empty lists remain successful; unknown response shapes are typed failures.
+func contactListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := contactListResolveList(data)
+	if !known {
+		return nil, mailProjectionUnknown("邮件联系人列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, mailProjectionUnknown("邮件联系人列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := contactListFirst(m, "id", "contactId", "contact_id"); ok {
@@ -782,33 +754,53 @@ func contactListProject(data map[string]any) []map[string]any {
 		if v, ok := contactListFirst(m, "displayName", "display_name", "name"); ok {
 			row["displayName"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, mailProjectionUnknown("邮件联系人列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // contactListResolveList locates the list payload inside the response,
 // tolerating a bare top-level array container or nesting one level deeper.
-func contactListResolveList(data map[string]any) []any {
-	for _, key := range []string{"result", "data", "list", "items", "contacts"} {
-		v, ok := data[key]
+func contactListResolveList(data map[string]any) ([]any, bool) {
+	return mailResolveList(data,
+		[]string{"result", "data", "list", "items", "contacts"},
+		[]string{"list", "items", "contacts", "result", "data"})
+}
+
+// mailResolveList locates a list payload in a known top-level or one-level
+// nested response shape. An empty slice is a known empty result; absence of a
+// recognized slice is deliberately distinct from that result.
+func mailResolveList(data map[string]any, outerKeys, innerKeys []string) ([]any, bool) {
+	for _, key := range outerKeys {
+		value, ok := data[key]
 		if !ok {
 			continue
 		}
-		if arr, ok := v.([]any); ok {
-			return arr
+		if rows, ok := value.([]any); ok {
+			return rows, true
 		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "contacts", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
+		inner, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, innerKey := range innerKeys {
+			if rows, ok := inner[innerKey].([]any); ok {
+				return rows, true
 			}
 		}
 	}
-	return []any{}
+	return nil, false
+}
+
+func mailProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // contactListFirst returns the first present candidate key's value.
