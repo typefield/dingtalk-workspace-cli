@@ -397,6 +397,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - 同一 Agent 扫描进一步发现 Minutes 深层 recipe 将脚本自身的 `--max` 误写成
   `--limit`；已改回 `--max`，并把 Python 脚本调用的 flag 对拍纳入扫描器，当前
   `Documented Python-script flag mismatches = 0`。
+- Mono 的同类深层 Minutes recipe 也发现同一偏移，已同步改回脚本参数 `--max`。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。
