@@ -27,8 +27,8 @@ func TestEnvelopeIsOKComputesFromOutcome(t *testing.T) {
 	if env.IsOK() {
 		t.Fatalf("IsOK must ignore the tampered OK field: outcome=failure requires false")
 	}
-	env2 := &Envelope{OK: false, Outcome: OutcomeSuccess}
-	if !env2.IsOK() {
+	invalidSuccess := &Envelope{OK: false, Outcome: OutcomeSuccess}
+	if !invalidSuccess.IsOK() {
 		t.Fatalf("IsOK must compute from outcome: success requires true regardless of OK field")
 	}
 }

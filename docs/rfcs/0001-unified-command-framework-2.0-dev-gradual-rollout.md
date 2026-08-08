@@ -12,7 +12,7 @@ Framework 2.0 将命令的声明、执行结果、序列化、stdout/stderr 和�
 
 本 RFC 的核心裁决是：
 
-1. **不公开 `--output-contract`，也不增加等价别名。** Agent 始终使用已有的 `--format json`。
+1. **不公开任何输出协议选择参数，也不增加等价别名。** Agent 始终使用已有的 `--format json`。
 2. **每条命令在每个 release 中只有一个 active contract。** 已迁移命令默认输出统一结果；未迁移命令保持 legacy。
 3. contract 选择是命令声明和 release 的属性，不由用户、Agent、会话能力协商或环境变量决定。
 4. 内部迁移状态固定为：
@@ -63,7 +63,7 @@ Framework 2.0 解决的是协议层和执行框架层问题：
 
 ### 3.2 非目标
 
-- 不提供任何 `--output-contract` 选择器。
+- 不提供任何输出协议选择器。
 - 不做会话级 contract negotiation。
 - 不要求消费者把 `devapp +...` 改成 `dev ...`，也不做前缀 redirect。
 - 不在本 RFC 中定义通用 `changed/verified` 自动校验。
@@ -181,9 +181,7 @@ dws devapp +list --format json
 禁止新增或公开：
 
 ```text
---output-contract
---contract-version
---legacy-output
+任何输出协议版本、兼容模式或 legacy 选择参数
 ```
 
 Framework 2.0 也不新增 `--json` 别名。历史命令自带的局部 `--json` 只作为 legacy 兼容事实存在，不进入新的 Agent 示例；迁移后的标准写法始终是 `--format json`。
@@ -499,7 +497,7 @@ dws devapp +list ...
 
 ### 12.1 静态门禁
 
-- Schema/help 不得出现 `--output-contract` 或任何 contract selector。
+- Schema/help 不得出现任何输出协议或兼容模式选择参数。
 - Agent skill 中统一结果示例只允许 `--format json`，不得新增 `--json`。
 - 统一结果 handler 禁止直接写 stdout、手拼 envelope 或字符串布尔。
 - active unified command 必须存在 `CommandResult` 生产路径。
@@ -587,7 +585,7 @@ DWS_PACKAGE_VERSION=0.0.0-test go test ./...
 
 Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 
-- [ ] 无公开 `--output-contract`、别名、环境变量或 session negotiation。
+- [ ] 无公开输出协议选择参数、别名、环境变量或 session negotiation。
 - [ ] Agent 文档统一使用 `--format json`。
 - [ ] 每个 terminal command 在一个 release 只有一个 active contract。
 - [ ] 已迁移命令默认返回统一结果；未迁移命令保持 legacy。

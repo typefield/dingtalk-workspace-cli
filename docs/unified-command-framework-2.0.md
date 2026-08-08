@@ -4,7 +4,7 @@
 
 ## 1. 产品裁决
 
-1. 不公开 `--output-contract`，也不增加任何等价别名。
+1. 不公开任何输出协议选择参数，也不增加任何等价别名。
 2. Agent 继续只使用既有 `--format json`。
 3. 每条 terminal command 在一个 release 中只有一个 active wire contract：已迁移命令直接使用统一结果，未迁移命令保持 legacy。
 4. contract 不由用户参数、环境变量、会话能力协商或 Agent 选择。
@@ -101,7 +101,7 @@ one invocation emits exactly one primary result
 1. success/failure/dry-run golden；批量或异步命令另有 partial/pending golden。
 2. 业务请求 exactly once；dual validation 不得二次调用服务端。
 3. legacy 命令 stdout/stderr/rc 字节级回归不变。
-4. Help、Skill、Schema 和全仓示例不存在 `--output-contract`。
+4. Help、Skill、Schema 和全仓示例不存在输出协议或兼容模式选择参数。
 5. `--format json` 输出单个合法统一结果文档，stdout 无日志污染。
 6. typed error、进程 rc 与信封 `error.exit_code` 一致。
 7. 安全声明、确认门禁与 dry-run 运行时行为同源。
