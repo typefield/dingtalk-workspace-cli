@@ -371,9 +371,11 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 
 本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
 
-- 当前 `skills/mono/scripts/` 中 34 个可执行 Python 脚本逐个执行 `python3 <script> --help`；
-  第二阶段迁移后 32 个 Help 声明脚本级 `--dry-run`，32 个声明脚本级 `--format`，0 个脚本的
-  `--help` 仍返回非零。由此确认不能在 Skill 顶层宣称“所有脚本都支持这两个参数”。
+- 当前 `skills/mono/scripts/` 中共有 35 个 Python 文件，其中 32 个是含
+  `if __name__ == "__main__"` 的 Agent 入口，另有 3 个内部模块；对 32 个入口逐个执行
+  `python3 <script> --help`，实测 32/32 声明脚本级 `--dry-run`、32/32 声明脚本级
+  `--format`，且 Help 非零为 0。由此确认统计必须区分文件数、入口数和 Help 可观测能力，
+  不能在 Skill 顶层把内部模块算作脚本入口，也不能仅凭参数存在宣称副作用安全。
 - 本轮已先迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
   `upload_attachment.py`、`doc_create_and_write.py` 和
   `aitable_export_via_task.py`、`mail_unread_summary.py` 和
@@ -383,7 +385,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `todo_overdue_check.py`、`minutes_recent_summary.py`、`minutes_extract_todos.py`、
   `calendar_today_agenda.py`、`attendance_team_shift.py`、`attendance_schedule_export.py`、`attendance_my_record.py`、`import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、`attendance_vacation_balance.py`、`attendance_report_record.py`、`attendance_report_daily.py`、`attendance_report_monthly.py`、`attendance_report_detail.py`、`attendance_report_checkin.py`、`attendance_schedule_import.py`：三十二者均接受 `--format text|json|ndjson` 和
   `--dry-run`；
-  dry-run 只生成本地计划，JSON/NDJSON 结果统一包含 `ok/outcome/data`。
+  dry-run 输出统一包含 `ok/outcome/data`；其中报表/查询类入口可能执行远端只读探测，
+  “零远端写入、零本地写入”必须以受控 Agent 探针或真实隔离环境证据为准，不能概括为
+  所有脚本都只生成本地计划。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。
