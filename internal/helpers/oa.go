@@ -6,6 +6,7 @@ import (
 	"errors"
 	"fmt"
 	"io"
+	"sort"
 	"strconv"
 	"strings"
 
@@ -37,7 +38,13 @@ func oaFormValues(raw string) ([]map[string]string, error) {
 		return nil, err
 	}
 	result := make([]map[string]string, 0, len(values))
-	for name, value := range values {
+	names := make([]string, 0, len(values))
+	for name := range values {
+		names = append(names, name)
+	}
+	sort.Strings(names)
+	for _, name := range names {
+		value := values[name]
 		result = append(result, map[string]string{"name": name, "value": value})
 	}
 	return result, nil

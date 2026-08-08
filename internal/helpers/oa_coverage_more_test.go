@@ -101,6 +101,22 @@ func TestCrossPlatformCoverageOAApprovalCreateInstanceMapsInternalSimpleOptions(
 	}
 }
 
+func TestOAFormValuesUsesDeterministicFieldOrder(t *testing.T) {
+	values, err := oaFormValues(`{"z":"last","a":"first","m":"middle"}`)
+	if err != nil {
+		t.Fatalf("oaFormValues: %v", err)
+	}
+	want := []string{"a", "m", "z"}
+	if len(values) != len(want) {
+		t.Fatalf("field count = %d, want %d: %#v", len(values), len(want), values)
+	}
+	for i, name := range want {
+		if values[i]["name"] != name {
+			t.Fatalf("field[%d] name = %q, want %q: %#v", i, values[i]["name"], name, values)
+		}
+	}
+}
+
 func TestCrossPlatformCoverageOAApprovalCreateInstanceRejectsMixedRequestModes(t *testing.T) {
 	caller := &scriptedToolCaller{}
 	err := executeOACommand(t, caller,
