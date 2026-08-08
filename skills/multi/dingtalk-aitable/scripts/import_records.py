@@ -291,6 +291,10 @@ def import_records(
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        print('用法示例: python import_records.py <baseId> <tableId> <data.csv|data.json> [batch_size]')
+        return
     if len(sys.argv) < 4 or len(sys.argv) > 5:
         print(__doc__)
         print('用法示例:')

@@ -385,6 +385,9 @@ def run_all() -> None:
 
 
 def main() -> int:
+    if '--help' in sys.argv:
+        print(__doc__)
+        return 0
     try:
         run_all()
     except AssertionError as exc:

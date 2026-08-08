@@ -94,6 +94,9 @@ def days_overdue(due_ms) -> int:
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        return
     dry_run = '--dry-run' in sys.argv
     todos = fetch_all_undone(dry_run=dry_run)
     if dry_run:

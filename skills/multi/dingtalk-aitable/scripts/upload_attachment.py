@@ -157,6 +157,9 @@ def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, An
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        return
     if len(sys.argv) != 3:
         print(__doc__)
         print('用法:')

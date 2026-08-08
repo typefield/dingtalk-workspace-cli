@@ -376,18 +376,17 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `python3 <script> --help`，实测 32/32 声明脚本级 `--dry-run`、32/32 声明脚本级
   `--format`，且 Help 非零为 0。由此确认统计必须区分文件数、入口数和 Help 可观测能力，
   不能在 Skill 顶层把内部模块算作脚本入口，也不能仅凭参数存在宣称副作用安全。
-- 本轮已先迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
-  `upload_attachment.py`、`doc_create_and_write.py` 和
-  `aitable_export_via_task.py`、`mail_unread_summary.py` 和
-  `contact_dept_members.py`、`report_received_today.py`、`oa_batch_approve.py`、
-  `calendar_schedule_meeting.py`、`mail_send_with_cc.py`、`oa_pending_review.py`、
-  `report_inbox_today.py`、`drive_tree_list.py`、`calendar_free_slot_finder.py`、
-  `todo_overdue_check.py`、`minutes_recent_summary.py`、`minutes_extract_todos.py`、
-  `calendar_today_agenda.py`、`attendance_team_shift.py`、`attendance_schedule_export.py`、`attendance_my_record.py`、`import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、`attendance_vacation_balance.py`、`attendance_report_record.py`、`attendance_report_daily.py`、`attendance_report_monthly.py`、`attendance_report_detail.py`、`attendance_report_checkin.py`、`attendance_schedule_import.py`：三十二者均接受 `--format text|json|ndjson` 和
-  `--dry-run`；
-  dry-run 输出统一包含 `ok/outcome/data`；其中报表/查询类入口可能执行远端只读探测，
-  “零远端写入、零本地写入”必须以受控 Agent 探针或真实隔离环境证据为准，不能概括为
-  所有脚本都只生成本地计划。
+- 上述“三十二者均接受脚本级 `--format`/`--dry-run`”只适用于已完成审计的
+  `skills/mono/scripts/` 32 个 Agent 入口，不适用于 Multi Skill。此前把 Mono
+  迁移清单混写成全仓结论是口径错误，已由独立 Multi 扫描纠正。
+- Multi 的 Agent 扫描见 `docs/agent-scans/multi-script-contract-20260808.md`：
+  52 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本仅有 26/42
+  提及 `--dry-run`、1/42 提及脚本级 `--format`（这不是 argparse 能力证明）。这不是要求强行给所有工具增加两个参数，
+  而是要求 Skill 对固定输出、内部检查器和真正的 Agent 契约分别声明，不能笼统宣称
+  “所有脚本统一支持”。
+- 本轮修复了 Multi 9 个入口把 `--help` 当业务参数导致的非零返回；这只证明 Help
+  可观测，不证明 dry-run 没有远端副作用。深层门控型脚本仍需受控 Agent 探针或隔离
+  环境逐项取证，计划型脚本才可直接宣称零写入。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。

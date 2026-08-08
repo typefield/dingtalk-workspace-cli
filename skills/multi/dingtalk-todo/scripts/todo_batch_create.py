@@ -98,6 +98,9 @@ def validate_todo(item: Dict[str, Any], idx: int) -> bool:
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        return
     dry_run = '--dry-run' in sys.argv
     args = [a for a in sys.argv[1:] if a != '--dry-run']
     if not args:

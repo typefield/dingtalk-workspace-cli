@@ -74,6 +74,9 @@ def fmt_time(iso_str: str) -> str:
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        return
     dry_run = '--dry-run' in sys.argv
     args = [a for a in sys.argv[1:] if a != '--dry-run']
     scope = args[0] if args else 'today'

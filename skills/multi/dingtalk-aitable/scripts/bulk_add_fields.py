@@ -248,6 +248,10 @@ def bulk_add_fields(
 
 
 def main():
+    if '--help' in sys.argv:
+        print(__doc__)
+        print('用法示例: python bulk_add_fields.py <baseId> <tableId> <fields.json>')
+        return
     if len(sys.argv) != 4:
         print(__doc__)
         print('用法示例:')
