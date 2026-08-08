@@ -74,7 +74,7 @@ func TestMigratedDevAppDefaultsToFrameworkV2(t *testing.T) {
 		t.Fatalf("runner calls=%d, want 1", runner.calls)
 	}
 	if !bytes.Contains(stdout.Bytes(), []byte(`"outcome": "success"`)) || bytes.Contains(stdout.Bytes(), []byte(`"contract_version"`)) {
-		t.Fatalf("migrated dev command did not use v2 by default: %s", stdout.String())
+		t.Fatalf("migrated dev command did not use the unified result by default: %s", stdout.String())
 	}
 }
 
