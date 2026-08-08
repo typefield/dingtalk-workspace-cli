@@ -18,6 +18,7 @@ package minutes
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -173,7 +174,10 @@ func callList(rt *shortcut.RuntimeContext, belonging string) error {
 	if err != nil {
 		return err
 	}
-	minutes := callListProject(data)
+	minutes, err := callListProject(data)
+	if err != nil {
+		return err
+	}
 	return rt.Output(map[string]any{"count": len(minutes), "minutes": minutes})
 }
 
@@ -181,15 +185,18 @@ func callList(rt *shortcut.RuntimeContext, belonging string) error {
 // clean listening-note list (taskUuid/title/creator/startTime/endTime/url/status)
 // — the clean output projection applied to every list command.
 // The list container and field names are probed defensively across candidate
-// keys so the projection tolerates response-shape drift; unknown keys are never
-// invented.
-func callListProject(data map[string]any) []map[string]any {
-	raw := callListResolveList(data)
+// keys. Known empty results remain successful; an unknown response shape never
+// becomes a fabricated empty minutes list.
+func callListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := callListResolveList(data)
+	if !known {
+		return nil, minutesProjectionUnknown("听记列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, minutesProjectionUnknown("听记列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		// Only real taskUuid spellings map to taskUuid: the downstream
@@ -219,16 +226,17 @@ func callListProject(data map[string]any) []map[string]any {
 		if v, ok := callListFirst(m, "status", "taskStatus", "state"); ok {
 			row["status"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, minutesProjectionUnknown("听记列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // callListResolveList locates the list payload inside the response, tolerating a
 // bare top-level array or nesting under result/data/list/items/records containers.
-func callListResolveList(data map[string]any) []any {
+func callListResolveList(data map[string]any) ([]any, bool) {
 	// list_by_keyword_and_time_range nests the minutes under result.itemList;
 	// "itemList" MUST be probed or +list-all/+list-mine/+list-shared silently
 	// return empty despite the backend returning minutes.
@@ -238,18 +246,26 @@ func callListResolveList(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		// container may itself wrap the list one level deeper
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "itemList", "records", "dataList", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
+}
+
+func minutesProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // callListFirst returns the first present candidate key's value.

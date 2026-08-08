@@ -15,7 +15,10 @@ package minutes
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 // TestCallListProjectItemListShape guards against projection-data-loss end to
@@ -32,11 +35,43 @@ func TestCallListProjectItemListShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &data); err != nil {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
-	got := callListProject(data)
+	got, err := callListProject(data)
+	if err != nil {
+		t.Fatalf("projection returned error: %v", err)
+	}
 	if len(got) != 2 {
 		t.Fatalf("lower/upper mismatch: itemList has 2 entries, projection returned %d", len(got))
 	}
 	if got[0]["taskUuid"] != "uuid-1" || got[1]["taskUuid"] != "uuid-2" {
 		t.Fatalf("taskUuid not projected from taskUuid/task_uuid keys: %v", got)
+	}
+}
+
+func TestCallListProjectSeparatesKnownEmptyFromUnknown(t *testing.T) {
+	minutes, err := callListProject(map[string]any{"items": []any{}})
+	if err != nil || minutes == nil || len(minutes) != 0 {
+		t.Fatalf("known empty = %#v, %v; want non-nil empty list", minutes, err)
+	}
+
+	for name, data := range map[string]map[string]any{
+		"unknown container": {"unexpected": []any{}},
+		"malformed row":     {"items": []any{"opaque"}},
+		"unknown row":       {"items": []any{map[string]any{"opaque": true}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := callListProject(data)
+			assertMinutesProjectionUnknown(t, err)
+		})
+	}
+}
+
+func assertMinutesProjectionUnknown(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("projection unexpectedly succeeded")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "projection_unknown" || typed.Retryable {
+		t.Fatalf("projection error = %T %#v, want non-retryable projection_unknown", err, err)
 	}
 }
