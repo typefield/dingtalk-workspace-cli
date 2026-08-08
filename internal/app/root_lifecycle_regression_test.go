@@ -30,14 +30,14 @@ func TestPublicRootDirectExecuteFailsWhenV2SinkCannotPublish(t *testing.T) {
 
 	root := NewRootCommand(context.Background())
 	leaf := &cobra.Command{
-		Use: "lifecycle-v2",
+		Use: "lifecycle-unified",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return output.StoreResult(cmd.Context(), output.Success(map[string]any{"id": "ok"}))
 		},
 	}
 	output.SetCommandRollout(leaf, output.RolloutUnifiedActive)
 	root.AddCommand(leaf)
-	root.SetArgs([]string{"lifecycle-v2", "--output", filepath.Join(t.TempDir(), "result.json")})
+	root.SetArgs([]string{"lifecycle-unified", "--output", filepath.Join(t.TempDir(), "result.json")})
 
 	executed, err := root.ExecuteC()
 	if err == nil || apperrors.ExitCode(err) != 5 {

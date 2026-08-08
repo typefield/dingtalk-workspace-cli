@@ -159,16 +159,16 @@ func TestOutputSinkV2PublicationFailureFailsAndLeavesNoFinalFile(t *testing.T) {
 
 	root := NewRootCommand()
 	leaf := &cobra.Command{
-		Use: "atomic-output-v2",
+		Use: "atomic-output-unified",
 		RunE: func(cmd *cobra.Command, _ []string) error {
 			return output.StoreResult(cmd.Context(), output.Success(map[string]any{"id": "ok"}))
 		},
 	}
 	output.SetCommandRollout(leaf, output.RolloutUnifiedActive)
 	root.AddCommand(leaf)
-	root.SetArgs([]string{"atomic-output-v2", "--output", target})
+	root.SetArgs([]string{"atomic-output-unified", "--output", target})
 	if _, err := root.ExecuteC(); err == nil {
-		t.Fatal("v2 ExecuteC succeeded without publishing its output")
+		t.Fatal("unified-result ExecuteC succeeded without publishing its output")
 	} else if code := apperrors.ExitCode(err); code != 5 {
 		t.Fatalf("publication exit code=%d, want 5: %v", code, err)
 	}

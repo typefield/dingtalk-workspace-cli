@@ -208,7 +208,7 @@ func runSkillSetup(cmd *cobra.Command, _ []string) error {
 	dryRun := corecmd.BoolFlag(cmd, "dry-run")
 
 	// Mode selection diagnostics belong on stderr. stdout is reserved for the
-	// one framework result document once this command is v2-active.
+	// one framework result document once this command is unified-active.
 	mode, err := skillSetupResolveMode(mode, autoYes, cmd.ErrOrStderr())
 	if err != nil {
 		return apperrors.NewValidation(err.Error())
