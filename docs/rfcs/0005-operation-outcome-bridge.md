@@ -46,6 +46,11 @@ verification outcome 写后读回是否确认预期终态
 其中 `personalSubscriptionFailureClass.reason` 有多种有限来源，虽然当前扫描只看到一次
 `WithReason(reason)` 调用，不能把“2 个动态调用位置”误读成“2 个动态值”。
 
+创建请求会把由 identity + event/rule/filter 导出的 `idempotencyKey` 放入请求 `ext`，并用
+同一 key 构造本地 attempt fingerprint；这是避免本地重复尝试的必要条件。但仓库没有受控
+服务端证据证明该 endpoint 对该 key 做到了去重或“响应丢失后的安全重放”，所以它**不是**
+对 Agent 输出 `retryable:true` 的充分条件。
+
 ### 3.2 迁移方案
 
 第一阶段只迁移**已被本地状态机阻断**的路径，不改变订阅请求失败分类：
@@ -59,7 +64,8 @@ verification outcome 写后读回是否确认预期终态
 3. 仅在当前 invocation 尚未发送订阅请求的证明成立时，允许
    `execution_started:false`。这并不声称**上一次**请求没有写入。
 4. `retryable:true` 只能表示“本地等待到期后可以再次尝试”；若 server 失败的幂等性和
-   已执行状态不能证明，则省略 retryable，即使上一次错误文本看起来像超时。
+   已执行状态不能证明，则省略 retryable，即使上一次错误文本看起来像超时。当前只证明
+   key 已发送，尚未证明服务端去重，因此不得以此例外。
 
 第二阶段再审阅 `personalSubscriptionFailureClass` 的每个来源：需要同时证明订阅请求的
 idempotency key、`execution_started` 和服务端恢复语义；不能把 timeout/network/5xx 的
