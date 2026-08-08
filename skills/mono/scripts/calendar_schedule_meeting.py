@@ -21,6 +21,8 @@ import argparse
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 TZ = timezone(timedelta(hours=8))
 
 
@@ -29,19 +31,19 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return {'dry_run': True}
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60
         )
         if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}")
+            print(f"  ✗ 错误：{result.stderr.strip()}", file=sys.stderr)
             return None
         return json.loads(result.stdout)
     except (subprocess.TimeoutExpired, json.JSONDecodeError,
             FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}")
+        print(f"  ✗ 错误：{e}", file=sys.stderr)
         return None
 
 
@@ -59,7 +61,7 @@ def normalize_time(time_str: str) -> str:
     raise ValueError(f"无法解析时间：{time_str}")
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='一键创建日程 + 添加参与者 + 预定会议室'
     )
@@ -71,19 +73,16 @@ def main():
     parser.add_argument(
         '--book-room', action='store_true', help='自动预定会议室'
     )
-    parser.add_argument(
-        '--dry-run', action='store_true', help='仅显示命令'
-    )
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     try:
         start_iso = normalize_time(args.start)
         end_iso = normalize_time(args.end)
     except ValueError as e:
-        print(f"错误：{e}")
-        sys.exit(1)
+        return failure(args.format, str(e))
 
-    print('📅 创建日程...')
+    print('📅 创建日程...', file=sys.stderr)
     create_args = [
         'calendar', 'event', 'create',
         '--title', args.title,
@@ -96,7 +95,7 @@ def main():
 
     result = run_dws(create_args, dry_run=args.dry_run)
     if not result:
-        sys.exit(1)
+        return failure(args.format, '创建日程失败')
 
     event_id = None
     if not args.dry_run and isinstance(result, dict):
@@ -106,10 +105,12 @@ def main():
         event_id = (inner.get('eventId') or inner.get('id')
                     or result.get('eventId') or result.get('id'))
     print(f"  ✓ 日程已创建" +
-          (f" (eventId: {event_id})" if event_id else ""))
+          (f" (eventId: {event_id})" if event_id else ""), file=sys.stderr)
+
+    result_data: Dict[str, Any] = {'eventId': event_id, 'participants': [], 'room': None}
 
     if args.users and event_id:
-        print('\n👥 添加参与者...')
+        print('\n👥 添加参与者...', file=sys.stderr)
         r = run_dws([
             'calendar', 'participant', 'add',
             '--event', event_id,
@@ -117,7 +118,8 @@ def main():
             '--format', 'json',
         ], dry_run=args.dry_run)
         if r:
-            print(f"  ✓ 已添加参与者: {args.users}")
+            print(f"  ✓ 已添加参与者: {args.users}", file=sys.stderr)
+            result_data['participants'] = [u for u in args.users.split(',') if u]
     elif args.users and args.dry_run:
         run_dws([
             'calendar', 'participant', 'add',
@@ -127,7 +129,7 @@ def main():
         ], dry_run=True)
 
     if args.book_room:
-        print('\n🏢 搜索空闲会议室...')
+        print('\n🏢 搜索空闲会议室...', file=sys.stderr)
         rooms_data = run_dws([
             'calendar', 'room', 'search',
             '--start', start_iso,
@@ -142,7 +144,7 @@ def main():
                 room = rooms[0]
                 room_id = room.get('roomId') or room.get('id')
                 room_name = room.get('roomName') or room.get('name')
-                print(f"  找到空闲会议室: {room_name}")
+                print(f"  找到空闲会议室: {room_name}", file=sys.stderr)
                 if event_id and room_id:
                     r = run_dws([
                         'calendar', 'room', 'add',
@@ -151,12 +153,16 @@ def main():
                         '--format', 'json',
                     ], dry_run=args.dry_run)
                     if r:
-                        print(f"  ✓ 已预定: {room_name}")
+                        print(f"  ✓ 已预定: {room_name}", file=sys.stderr)
+                        result_data['room'] = {'id': room_id, 'name': room_name}
             else:
-                print('  ⚠ 该时段无空闲会议室')
+                print('  ⚠ 该时段无空闲会议室', file=sys.stderr)
 
-    print('\n✅ 完成!')
+    return emit(fmt=args.format, outcome='success', data={
+        **result_data, 'start': start_iso, 'end': end_iso,
+        'bookRoom': args.book_room,
+    }, dry_run=args.dry_run, text='\n✅ 完成!')
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

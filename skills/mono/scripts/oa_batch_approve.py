@@ -16,25 +16,27 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return {'dry_run': True}
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60
         )
         if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}")
+            print(f"  ✗ 错误：{result.stderr.strip()}", file=sys.stderr)
             return None
         return json.loads(result.stdout)
     except (subprocess.TimeoutExpired, json.JSONDecodeError,
             FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}")
+        print(f"  ✗ 错误：{e}", file=sys.stderr)
         return None
 
 
@@ -42,7 +44,7 @@ def to_iso(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%dT%H:%M:%S+08:00')
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='批量同意/拒绝审批'
     )
@@ -58,7 +60,7 @@ def main():
     parser.add_argument(
         '--yes', action='store_true', help='跳过确认'
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     instance_ids: List[str] = []
@@ -96,19 +98,27 @@ def main():
             ]
 
     if not instance_ids and not args.dry_run:
-        print('✅ 没有待处理的审批')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'total': 0, 'succeeded': [], 'failed': [],
+        }, text='✅ 没有待处理的审批')
+
+    if args.dry_run and not args.instance_ids:
+        return emit(fmt=args.format, outcome='success', data={
+            'action': args.action, 'days': args.days,
+            'plan': 'list pending approvals, resolve tasks, then apply action',
+        }, dry_run=True, text='[dry-run] 将查询待审批项、解析 taskId 并执行审批动作')
 
     action_label = '同意' if args.action == 'approve' else '拒绝'
     count = len(instance_ids) if instance_ids else '?'
-    print(f"\n⚠️  即将 {action_label} {count} 条审批")
+    print(f"\n⚠️  即将 {action_label} {count} 条审批", file=sys.stderr)
     if not args.yes and not args.dry_run:
         confirm = input('确认执行？(y/N): ').strip().lower()
         if confirm != 'y':
-            print('已取消')
-            return
+            return failure(args.format, '用户取消审批操作')
 
     success, fail = 0, 0
+    succeeded_ids: List[str] = []
+    failed_ids: List[dict] = []
     for i, inst_id in enumerate(instance_ids or ['<INST_ID>'], 1):
         tasks_data = run_dws([
             'oa', 'approval', 'tasks',
@@ -145,14 +155,21 @@ def main():
 
         result = run_dws(cmd_args, dry_run=args.dry_run)
         if result:
-            print(f"  ✓ [{i}/{count}] {inst_id} → {action_label}")
+            print(f"  ✓ [{i}/{count}] {inst_id} → {action_label}", file=sys.stderr)
             success += 1
+            succeeded_ids.append(inst_id)
         else:
-            print(f"  ✗ [{i}/{count}] {inst_id}")
+            print(f"  ✗ [{i}/{count}] {inst_id}", file=sys.stderr)
             fail += 1
+            failed_ids.append({'id': inst_id})
 
-    print(f"\n完成: 成功 {success}, 失败 {fail}")
+    outcome = 'success' if fail == 0 else ('partial_failure' if success else 'failure')
+    return emit(fmt=args.format, outcome=outcome, data={
+        'action': args.action, 'total': success + fail,
+        'succeeded': [{'id': item} for item in succeeded_ids],
+        'failed': failed_ids,
+    }, text=f"\n完成: 成功 {success}, 失败 {fail}")
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
