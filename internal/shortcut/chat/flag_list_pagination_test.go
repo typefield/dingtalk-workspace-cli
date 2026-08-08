@@ -10,7 +10,15 @@ import (
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/jsonutil"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
+
+func TestFlagListPaginationRolloutStartsWithDualValidation(t *testing.T) {
+	if FlagList.OutputRollout != frameworkoutput.RolloutDualValidate {
+		t.Fatalf("flag-list rollout = %q, want dual_validate", FlagList.OutputRollout)
+	}
+}
 
 func TestCrossPlatformCoverageFlagListDryRunStopsBeforeRead(t *testing.T) {
 	fake := &larkAlignmentCaller{dryRun: true}
@@ -51,6 +59,29 @@ func TestCrossPlatformCoverageFlagListPageAllUsesNumericCursorAndDeduplicates(t 
 	}
 	if payload["count"] != float64(2) || payload["pagesFetched"] != float64(2) || payload["complete"] != true || payload["hasMore"] != false {
 		t.Fatalf("payload = %#v", payload)
+	}
+	want, err := jsonutil.MarshalIndent(map[string]any{
+		"count": 2,
+		"items": []map[string]any{
+			{"openMessageId": "msg-1", "openConversationId": "cid-1", "summary": "一"},
+			{"openMessageId": "msg-2", "openConversationId": "cid-2", "summary": "二"},
+		},
+		"pagesFetched":         2,
+		"paginationKnown":      true,
+		"complete":             true,
+		"hasMore":              false,
+		"nextCursor":           0,
+		"stopReason":           "source_complete",
+		"truncatedByPageLimit": false,
+		"failedCount":          0,
+		"failures":             []map[string]any{},
+		"partial":              false,
+	}, "", "  ")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if got := output.String(); got != string(want)+"\n" {
+		t.Fatalf("dual_validate changed legacy bytes:\n%s\nwant:\n%s", got, string(want))
 	}
 }
 

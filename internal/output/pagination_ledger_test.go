@@ -168,6 +168,32 @@ func TestPageLedgerUnknownLaterPageProducesPartialUnknown(t *testing.T) {
 	}
 }
 
+func TestPageLedgerBoundaryFailurePreservesCurrentPage(t *testing.T) {
+	ledger, _ := NewPageLedger(2)
+	if err := ledger.ObservePage(PageEvidence{Cursor: "0", Items: 2, Data: []any{"a", "b"}}); err != nil {
+		t.Fatal(err)
+	}
+	if err := ledger.RecordBoundaryFailure(&ErrorInfo{
+		Type: "api", Subtype: "pagination_inconsistent", Message: "full page omitted pagination evidence",
+	}); err != nil {
+		t.Fatal(err)
+	}
+	result, err := ledger.Result(nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := ValidateResult(result); err != nil {
+		t.Fatal(err)
+	}
+	partial := result.envelope().Data.(*PartialData)
+	if len(partial.Succeeded) != 1 || len(partial.Failed) != 1 {
+		t.Fatalf("partial = %#v", partial)
+	}
+	if partial.Failed[0].ID != "page:2" || partial.Failed[0].Error.Subtype != "pagination_inconsistent" {
+		t.Fatalf("boundary failure = %#v", partial.Failed[0])
+	}
+}
+
 func TestPageLedgerRecordsAreDefensiveCopies(t *testing.T) {
 	payload := map[string]any{"items": []string{"a"}}
 	ledger, _ := NewPageLedger(1)

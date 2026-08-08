@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/targetresolver"
@@ -504,12 +505,13 @@ func executeFlagBatch(rt *shortcut.RuntimeContext, tool string) error {
 }
 
 var FlagList = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+flag-list",
-	Product:     "im",
-	Description: "分页查询当前用户收藏的消息，支持有界自动翻页",
-	Intent:      "当你要查看当前用户的 DingTalk message favorite 列表时使用；默认读取一页，明确要求全部收藏时加 --page-all，并用 --page-limit 保持有界。底层实际使用数字 cursor，结果按 openMessageId 去重并公开 complete、hasMore、nextCursor、stopReason 和 failures；它不把 message favorite 与 Pin、会话置顶或 Lark feed-layer thread flag 混为一谈。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "chat",
+	Command:       "+flag-list",
+	Product:       "im",
+	Description:   "分页查询当前用户收藏的消息，支持有界自动翻页",
+	Intent:        "当你要查看当前用户的 DingTalk message favorite 列表时使用；默认读取一页，明确要求全部收藏时加 --page-all，并用 --page-limit 保持有界。底层实际使用数字 cursor，结果按 openMessageId 去重并公开 complete、hasMore、nextCursor、stopReason 和 failures；它不把 message favorite 与 Pin、会话置顶或 Lark feed-layer thread flag 混为一谈。",
+	Risk:          shortcut.RiskRead,
 	Flags: []shortcut.Flag{
 		{Name: "page-size", Type: shortcut.FlagInt, Default: "20", Desc: "每页数量；下游真实上限为 30，显式页大小必须在 1-30 之间"},
 		{Name: "size", Type: shortcut.FlagInt, Default: "20", Desc: "--page-size 的兼容别名；下游真实上限为 30，显式页大小必须在 1-30 之间"},
@@ -586,6 +588,10 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 	if rt.Bool("page-all") {
 		pageLimit = rt.Int("page-limit")
 	}
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return apperrors.NewInternal("初始化收藏消息分页账本失败", apperrors.WithCause(err))
+	}
 	seenCursors := map[int]bool{cursor: true}
 	seenMessages := map[string]bool{}
 	items := make([]map[string]any, 0)
@@ -608,11 +614,15 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 			failures = append(failures, map[string]any{
 				"page": pagesFetched + 1, "stage": "read", "cursor": cursor, "error": callErr.Error(),
 			})
+			if err := pageLedger.RecordFailure(strconv.Itoa(cursor), flagListReadFailureInfo(callErr)); err != nil {
+				return apperrors.NewInternal("记录收藏消息分页读取失败状态失败", apperrors.WithCause(err))
+			}
 			stopReason = "read_failure"
 			break
 		}
 		pagesFetched++
 		pageItems := flagListItems(data)
+		pageOutputItems := make([]map[string]any, 0, len(pageItems))
 		for _, item := range pageItems {
 			messageID := firstNonEmptyMapString(item, "openMessageId", "messageId", "itemId", "id")
 			if messageID != "" && seenMessages[messageID] {
@@ -622,11 +632,14 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 				seenMessages[messageID] = true
 			}
 			items = append(items, item)
+			pageOutputItems = append(pageOutputItems, item)
 		}
 
 		page := chatmsg.Pagination(data)
 		pageHasMore, hasMoreKnown := page["hasMore"].(bool)
 		nextCursor, cursorErr = flagListNextCursor(page["nextCursor"])
+		boundaryFailure := ""
+		breakAfterObservation := false
 		if !hasMoreKnown {
 			switch {
 			case nextCursor > 0:
@@ -636,35 +649,73 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 				complete = true
 				hasMore = false
 				stopReason = "legacy_short_page"
+				breakAfterObservation = true
 			default:
 				paginationKnown = false
+				boundaryFailure = "收藏列表返回满页结果但缺少 hasMore/nextCursor，无法证明结果完整"
 				failures = append(failures, map[string]any{
 					"page": pagesFetched, "stage": "pagination",
-					"error": "收藏列表返回满页结果但缺少 hasMore/nextCursor，无法证明结果完整",
+					"error": boundaryFailure,
 				})
 				stopReason = "pagination_error"
-			}
-			if complete || len(failures) > 0 {
-				break
+				breakAfterObservation = true
 			}
 		}
-		hasMore = pageHasMore
-		if !hasMore {
-			complete = true
-			nextCursor = 0
-			stopReason = "source_complete"
-			break
+		if !breakAfterObservation {
+			hasMore = pageHasMore
+			if !hasMore {
+				if cursorErr == nil && nextCursor > 0 {
+					// Legacy output historically accepted this contradiction. The
+					// dual result fails closed without changing legacy bytes.
+					boundaryFailure = "收藏列表返回 hasMore=false，但同时携带 nextCursor"
+				}
+				complete = true
+				nextCursor = 0
+				stopReason = "source_complete"
+				breakAfterObservation = true
+			} else if cursorErr != nil || nextCursor <= 0 || seenCursors[nextCursor] {
+				boundaryFailure = "收藏列表返回 hasMore=true，但数字 nextCursor 缺失、无效或未前进"
+				failures = append(failures, map[string]any{
+					"page": pagesFetched, "stage": "pagination", "error": boundaryFailure,
+				})
+				stopReason = "pagination_error"
+				breakAfterObservation = true
+			} else if !rt.Bool("page-all") {
+				stopReason = "single_page"
+				breakAfterObservation = true
+			}
 		}
-		if cursorErr != nil || nextCursor <= 0 || seenCursors[nextCursor] {
-			failures = append(failures, map[string]any{
-				"page": pagesFetched, "stage": "pagination",
-				"error": "收藏列表返回 hasMore=true，但数字 nextCursor 缺失、无效或未前进",
-			})
-			stopReason = "pagination_error"
-			break
+
+		pageEvidence := output.PageEvidence{
+			Cursor: strconv.Itoa(cursor),
+			Items:  len(pageOutputItems),
+			Data:   map[string]any{"items": pageOutputItems},
 		}
-		if !rt.Bool("page-all") {
-			stopReason = "single_page"
+		switch {
+		case boundaryFailure != "":
+			// Preserve the successfully decoded page, but do not assert an
+			// endpoint state that the response did not prove.
+		case !hasMoreKnown && nextCursor > 0:
+			pageEvidence.NextToken = strconv.Itoa(nextCursor)
+		case !hasMoreKnown:
+			// Unknown is represented by absent pagination meta.
+		case hasMore:
+			more := true
+			pageEvidence.HasMore = &more
+			pageEvidence.NextToken = strconv.Itoa(nextCursor)
+		default:
+			more := false
+			pageEvidence.HasMore = &more
+		}
+		if err := pageLedger.ObservePage(pageEvidence); err != nil {
+			return apperrors.NewInternal("收藏消息分页证据不满足框架契约", apperrors.WithCause(err))
+		}
+		if boundaryFailure != "" {
+			if err := pageLedger.RecordBoundaryFailure(flagListPaginationFailureInfo(boundaryFailure)); err != nil {
+				return apperrors.NewInternal("记录收藏消息分页边界失败状态失败", apperrors.WithCause(err))
+			}
+		}
+		if breakAfterObservation {
 			break
 		}
 		seenCursors[nextCursor] = true
@@ -677,6 +728,7 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 			stopReason = "page_limit"
 		}
 	}
+	pageLedger.SetStopReason(stopReason)
 	payload := map[string]any{
 		"count":                len(items),
 		"items":                items,
@@ -691,10 +743,15 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 		"failures":             failures,
 		"partial":              len(failures) > 0 && len(items) > 0,
 	}
-	if outputErr := rt.Output(payload); outputErr != nil {
+	unifiedData := map[string]any{"count": len(items), "items": items}
+	result, resultErr := pageLedger.Result(unifiedData)
+	if resultErr != nil {
+		return apperrors.NewInternal("生成收藏消息统一分页结果失败", apperrors.WithCause(resultErr))
+	}
+	if outputErr := rt.OutputResult(payload, result); outputErr != nil {
 		return outputErr
 	}
-	if len(failures) > 0 {
+	if len(failures) > 0 && !output.UsesUnifiedResult(rt.Command()) {
 		return apperrors.NewAPI(
 			fmt.Sprintf("收藏消息分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("im/list_message_favorites"),
@@ -707,6 +764,38 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 		)
 	}
 	return nil
+}
+
+func flagListReadFailureInfo(err error) *output.ErrorInfo {
+	message := "收藏消息分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败页 cursor 继续；不要重放已经成功的页面",
+		Operation:        "im/list_message_favorites",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true, // list_message_favorites is an idempotent read.
+	}
+}
+
+func flagListPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽",
+		Operation:        "im/list_message_favorites",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
 }
 
 func flagListRequestParams(cursor, pageSize int) map[string]any {

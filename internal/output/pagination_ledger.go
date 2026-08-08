@@ -169,6 +169,36 @@ func (l *PageLedger) RecordFailure(cursor string, info *ErrorInfo) error {
 	return nil
 }
 
+// RecordBoundaryFailure records a pagination-contract failure discovered only
+// after the current page's business data was successfully decoded. The page is
+// preserved in succeeded; the failed unit represents the unknown continuation
+// boundary immediately after it. Callers first ObservePage with unknown
+// evidence, then attach the typed boundary error here.
+func (l *PageLedger) RecordBoundaryFailure(info *ErrorInfo) error {
+	if l == nil {
+		return paginationInvariant("nil PageLedger")
+	}
+	if len(l.successfulRecords()) == 0 {
+		return paginationInvariant("boundary failure requires at least one successful page")
+	}
+	if l.state != PageStateUnknown {
+		return paginationInvariant("boundary failure requires unknown pagination evidence, got %q", l.state)
+	}
+	if info == nil {
+		return paginationInvariant("boundary failure requires a typed error")
+	}
+	if err := info.Validate(); err != nil {
+		return paginationInvariant("boundary failure error is invalid: %v", err)
+	}
+	l.records = append(l.records, PageRecord{
+		Page:   len(l.records) + 1,
+		Status: pageStatusFailed,
+		Error:  cloneErrorInfo(info),
+	})
+	l.state = PageStateInterrupted
+	return nil
+}
+
 // RecordUnknown records a later page whose terminal state cannot be confirmed.
 // With no successful page, callers must instead return an ordinary typed
 // failure: partial_failure is forbidden when succeeded is empty.

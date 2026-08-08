@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：Implementing（PageLedger 已落地，IM terminal command 尚未激活）
+- 状态：Implementing（PageLedger 已落地，`chat +flag-list` 已进入 dual_validate）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 的可终结、只读分页命令
 - 依赖：RFC-0001（统一返回）、RFC-0003（错误 subtype 治理）
@@ -140,6 +140,11 @@ legacy_only
 每个 `dual_validate` 命令必须：一次业务调用、legacy stdout 字节不变、shadow
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
 选择协议。
+
+当前进度：`chat +flag-list` 已通过一次调用构建 PageLedger，并将成功、首屏失败、后续页
+失败、分页边界矛盾分别投影为 shadow `CommandResult`；对外仍由 legacy renderer 输出。
+`hasMore=false` 同时携带 cursor 这类旧路径曾接受的矛盾只在 shadow 中 fail closed，避免
+dual 阶段改变现有 Agent wire。
 
 ## 6. 验收
 
