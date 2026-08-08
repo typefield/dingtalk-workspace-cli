@@ -150,10 +150,21 @@ func formulaVerifyHasErrors(parsed map[string]any) bool {
 }
 
 func formulaVerifyResultObject(parsed map[string]any) map[string]any {
-	if result, ok := parsed["result"].(map[string]any); ok {
-		return result
+	current := parsed
+	for depth := 0; depth < 3; depth++ {
+		var next map[string]any
+		for _, key := range []string{"result", "data"} {
+			if nested, ok := current[key].(map[string]any); ok {
+				next = nested
+				break
+			}
+		}
+		if next == nil {
+			break
+		}
+		current = next
 	}
-	return parsed
+	return current
 }
 
 func formulaVerifyTargetsFromFlags(cmd *cobra.Command) ([]map[string]any, error) {

@@ -134,6 +134,14 @@ func TestCrossPlatformCoverageSheetFormulaVerifyExitOnError(t *testing.T) {
 	}
 
 	caller = &scriptedToolCaller{steps: []scriptedToolStep{
+		{text: `{"data":{"status":"ERRORS_FOUND","totalErrors":3}}`},
+	}}
+	err = executeFormulaVerify(t, caller, nil, "--node", "n1", "--exit-on-error")
+	if err == nil || !strings.Contains(err.Error(), "formula errors found") {
+		t.Fatalf("data-wrapped formula error = %v, want formula errors found", err)
+	}
+
+	caller = &scriptedToolCaller{steps: []scriptedToolStep{
 		{text: `{"status":"clean","totalErrors":0}`},
 	}}
 	if err := executeFormulaVerify(t, caller, nil, "--node", "n1", "--exit-on-error"); err != nil {
