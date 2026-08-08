@@ -423,6 +423,12 @@ func TestCrossPlatformCoverageEventCommandPureCoverage(t *testing.T) {
 		if got != tc.want || (err != nil) != tc.err {
 			t.Errorf("normalizeEventAs(%q) = %q, %v", tc.value, got, err)
 		}
+		if tc.err {
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+				t.Errorf("normalizeEventAs(%q) error = %#v, want typed validation", tc.value, err)
+			}
+		}
 	}
 	if firstArg(nil) != "" || firstArg([]string{"one"}) != "one" {
 		t.Fatal("firstArg mismatch")

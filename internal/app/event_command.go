@@ -1321,9 +1321,9 @@ func normalizeEventAs(v string) (string, error) {
 	case "app", "bot":
 		// App stream implementation is intentionally retained for future use,
 		// while the public event command currently exposes only user events.
-		return "", fmt.Errorf("app event is not publicly available yet")
+		return "", apperrors.NewValidation("app event is not publicly available yet")
 	default:
-		return "", fmt.Errorf("--as only supports user")
+		return "", apperrors.NewValidation("--as only supports user")
 	}
 }
 
