@@ -21,6 +21,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -46,12 +47,13 @@ import (
 
 // ThreadList 列出指定邮箱文件夹下的邮件会话。
 var ThreadList = shortcut.Shortcut{
-	Service:     "mail",
-	Command:     "+thread-list",
-	Product:     "mail",
-	Description: "列出指定邮箱文件夹下的邮件会话（thread）",
-	Intent:      "当你想按会话（同一往来主题的邮件串）而非单封邮件来浏览某个文件夹时使用；传入邮箱和文件夹 ID，可按时间范围和升降序筛选，返回会话列表及其 conversationId，供 +thread 查看详情。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "mail",
+	Command:       "+thread-list",
+	Product:       "mail",
+	Description:   "列出指定邮箱文件夹下的邮件会话（thread）",
+	Intent:        "当你想按会话（同一往来主题的邮件串）而非单封邮件来浏览某个文件夹时使用；传入邮箱和文件夹 ID，可按时间范围和升降序筛选，返回会话列表及其 conversationId，供 +thread 查看详情。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -115,7 +117,11 @@ var ThreadList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(threads), "threads": threads})
+		meta, err := mailListMeta(data, len(threads))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(map[string]any{"count": len(threads), "threads": threads}, meta)
 	},
 }
 

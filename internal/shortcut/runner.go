@@ -322,6 +322,18 @@ func (rt *RuntimeContext) Output(payload any) error {
 	return rt.OutputResult(payload, rt.resultForPayload("", payload))
 }
 
+// OutputWithMeta emits a projected payload with product-owned metadata. This
+// is deliberately narrow: the shortcut supplies facts such as authoritative
+// pagination, while the runner continues to own the active output behavior,
+// dry-run marker, and result validation.
+func (rt *RuntimeContext) OutputWithMeta(payload any, meta *output.Meta) error {
+	options := []output.ResultOption{output.WithMeta(meta)}
+	if rt.DryRun() {
+		options = append(options, output.WithDryRun())
+	}
+	return rt.OutputResult(payload, shortcutCommandResult(payload, options...))
+}
+
 // OutputResult emits payload through the command's single active contract.
 // It gives composite shortcuts a narrow escape hatch to attach framework meta
 // (for example authoritative pagination) without making the legacy renderer
