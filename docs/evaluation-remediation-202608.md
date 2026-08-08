@@ -388,6 +388,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - 本轮修复了 Multi 9 个入口把 `--help` 当业务参数导致的非零返回；这只证明 Help
   可观测，不证明 dry-run 没有远端副作用。深层门控型脚本仍需受控 Agent 探针或隔离
   环境逐项取证，计划型脚本才可直接宣称零写入。
+- 四个 AITable 写/上传入口已由 `scripts/agent/probe_multi_aitable_dry_run.py`
+  使用临时 fixture 和 sentinel `dws` 做受控探针，4/4 通过且未观察到 dws/OSS 写入；
+  探针结果见 `docs/agent-scans/multi-aitable-dry-run-probe-20260808.md`。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
 级参数以各脚本 Help 为准，脚本内部调用 dws 时再传递格式。
