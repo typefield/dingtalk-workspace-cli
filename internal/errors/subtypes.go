@@ -80,6 +80,9 @@ const (
 	SubtypeInvalidSuccessType                 Subtype = "invalid_success_type"
 	SubtypeSkillSetupResultInvalid            Subtype = "skill_setup_result_invalid"
 	SubtypeSkillSetupFailed                   Subtype = "skill_setup_failed"
+	SubtypeBatchWriteFailed                   Subtype = "batch_write_failed"
+	SubtypeDocGrantPermissionPartialFailure   Subtype = "doc_grant_permission_partial_failure"
+	SubtypeDocShareMessageFailed              Subtype = "doc_share_message_failed"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -649,6 +652,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "Skill 安装未完成任何目标；先检查各目标路径，未知项可能已经发生文件变更。",
 		Description:   "skill setup completed no target operation and retained diagnostic facts",
+	},
+	SubtypeBatchWriteFailed: {
+		Subtype:       SubtypeBatchWriteFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "批量写入可能已部分完成；先检查 succeeded 与 failures，只重试尚未确认的目标，不要整体重放。",
+		Description:   "a batch mutation completed with one or more target failures",
+	},
+	SubtypeDocGrantPermissionPartialFailure: {
+		Subtype:       SubtypeDocGrantPermissionPartialFailure,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "部分权限可能已写入；先检查当前权限并按 compensation 决定补偿或只重试未完成步骤。",
+		Description:   "document permission grants completed before a later role update failed",
+	},
+	SubtypeDocShareMessageFailed: {
+		Subtype:       SubtypeDocShareMessageFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "部分消息可能已经送达；先检查 recipients 台账，只重试未确认送达的接收人。",
+		Description:   "document share-message delivery did not complete for every recipient",
 	},
 }
 

@@ -69,6 +69,9 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeInvalidSuccessType, CategoryAPI, RetryNever, false},
 		{SubtypeSkillSetupResultInvalid, CategoryInternal, RetryNever, false},
 		{SubtypeSkillSetupFailed, CategoryInternal, RetryNever, false},
+		{SubtypeBatchWriteFailed, CategoryAPI, RetryNever, true},
+		{SubtypeDocGrantPermissionPartialFailure, CategoryAPI, RetryNever, true},
+		{SubtypeDocShareMessageFailed, CategoryAPI, RetryNever, true},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {

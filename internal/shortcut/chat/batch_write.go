@@ -77,9 +77,10 @@ func executeShortcutBatchWrite(rt *shortcut.RuntimeContext, product, tool string
 		return apperrors.NewAPI(
 			fmt.Sprintf("批量执行 %s 失败：%d/%d 个目标未完成", tool, len(failures), len(items)),
 			apperrors.WithOperation(product+"/"+tool),
-			apperrors.WithReason("batch_write_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeBatchWriteFailed),
 			apperrors.WithExecutionStarted(true),
 			apperrors.WithRetryable(false),
+			apperrors.WithActions("inspect succeeded and failures before retrying", "retry only targets whose terminal state is not confirmed"),
 			apperrors.WithDetails(map[string]any{
 				"requestedCount": len(items),
 				"succeededCount": len(succeeded),

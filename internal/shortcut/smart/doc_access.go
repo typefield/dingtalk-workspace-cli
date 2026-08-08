@@ -445,7 +445,7 @@ func executeGrantAndShare(rt *shortcut.RuntimeContext) error {
 				return apperrors.NewAPI(
 					"部分新增权限已写入，但既有用户的角色升级失败；消息尚未发送，请勿直接重试整个命令",
 					apperrors.WithOperation("doc.grant_and_share"),
-					apperrors.WithReason("doc_grant_permission_partial_failure"),
+					apperrors.WithSubtype(apperrors.SubtypeDocGrantPermissionPartialFailure),
 					apperrors.WithFailureStage("update_permission"),
 					apperrors.WithExecutionStarted(true),
 					apperrors.WithRetryable(false),
@@ -520,9 +520,10 @@ func sendDocLinks(rt *shortcut.RuntimeContext, users []contactUser, operation st
 		return apperrors.NewAPI(
 			fmt.Sprintf("文档链接发送未全部完成：%d/%d 个接收人失败", failed, len(users)),
 			apperrors.WithOperation(operation),
-			apperrors.WithReason("doc_share_message_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeDocShareMessageFailed),
 			apperrors.WithExecutionStarted(true),
 			apperrors.WithRetryable(false),
+			apperrors.WithActions("inspect recipient ledger before retrying", "retry only recipients whose delivery state is not confirmed"),
 			apperrors.WithDetails(map[string]any{
 				"requestedCount": len(users), "succeededCount": succeeded, "failedCount": failed,
 				"partial": succeeded > 0,

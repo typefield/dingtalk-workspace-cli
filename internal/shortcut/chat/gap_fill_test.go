@@ -200,7 +200,7 @@ func TestCrossPlatformCoverageMessagesSendBotMultiGroupFailuresReturnNonzero(t *
 			}
 			var typed *apperrors.Error
 			if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAPI ||
-				typed.Reason != "batch_write_failed" || typed.ExitCode() == 0 {
+				typed.Reason != "batch_write_failed" || typed.ExitCode() == 0 || typed.Hint == "" || len(typed.Actions) == 0 || typed.Retryable {
 				t.Fatalf("batch error = %#v (%v)", typed, err)
 			}
 

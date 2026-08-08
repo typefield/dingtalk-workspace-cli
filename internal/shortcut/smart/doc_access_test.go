@@ -268,7 +268,7 @@ func TestCrossPlatformCoverageDocShareFailureExitContracts(t *testing.T) {
 			t.Fatal("message failure must return a non-zero exit error")
 		}
 		var typed *apperrors.Error
-		if !errors.As(err, &typed) || typed.Reason != "doc_share_message_failed" || typed.ExitCode() != 1 {
+		if !errors.As(err, &typed) || typed.Reason != "doc_share_message_failed" || typed.ExitCode() != 1 || typed.Hint == "" || len(typed.Actions) == 0 || typed.Retryable {
 			t.Fatalf("message error = %#v", err)
 		}
 		if payload["ok"] != false || payload["status"] != wantStatus {
@@ -317,7 +317,7 @@ func TestCrossPlatformCoverageDocGrantAndSharePartialPermissionFailure(t *testin
 		t.Fatal("partial permission write unexpectedly succeeded")
 	}
 	var typed *apperrors.Error
-	if !errors.As(err, &typed) || typed.Reason != "doc_grant_permission_partial_failure" || typed.FailureStage != "update_permission" || typed.ExecutionStarted == nil || !*typed.ExecutionStarted || !typed.RetryableSet || typed.Retryable {
+	if !errors.As(err, &typed) || typed.Reason != "doc_grant_permission_partial_failure" || typed.FailureStage != "update_permission" || typed.ExecutionStarted == nil || !*typed.ExecutionStarted || !typed.RetryableSet || typed.Retryable || typed.Hint == "" || len(typed.Actions) == 0 {
 		t.Fatalf("partial permission error = %#v", err)
 	}
 	if typed.Details["status"] != "partial_success" {
