@@ -21,8 +21,9 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `minutes_recent_summary.py`、`minutes_extract_todos.py`、
   `calendar_today_agenda.py`、`attendance_team_shift.py`、
   `attendance_schedule_export.py`、`attendance_my_record.py`、
-  `import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py` 和
-  `attendance_vacation_balance.py`，实际扫描结果为 27 个 dry-run、26 个
+  `import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、
+  `attendance_vacation_balance.py` 和 `attendance_report_record.py`，实际扫描结果为
+  28 个 dry-run、27 个
   format、0 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
@@ -95,7 +96,7 @@ scripts/_runtime.py
 `doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
 `oa_batch_approve.py`、`todo_batch_create.py`。
 
-当前 pilot 已完成上述 26 个脚本；其余脚本继续按阶段一逐个迁移。
+当前 pilot 已完成上述 27 个脚本；其余脚本继续按阶段一逐个迁移。
 
 `attendance_vacation_balance.py` 与排班导出一样，dry-run 会远端只读查询并构造内存中的
 Excel 计划，但不会写本地文件。

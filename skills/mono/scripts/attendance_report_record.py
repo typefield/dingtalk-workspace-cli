@@ -44,6 +44,7 @@ from attendance_report_common import (
     DwsCallError,
     DATE_FMT,
 )
+from _runtime import add_contract_flags, emit
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 常量
@@ -761,10 +762,11 @@ def parse_args() -> argparse.Namespace:
                         help="结束日期 YYYY-MM-DD")
     parser.add_argument("--out", default="",
                         help="输出文件路径（不传则自动生成）")
+    add_contract_flags(parser)
     return parser.parse_args()
 
 
-def main() -> None:
+def main() -> int:
     args = parse_args()
     record_type: str = args.type
     user_ids = [u.strip() for u in args.users.split(",") if u.strip()]
@@ -773,14 +775,14 @@ def main() -> None:
 
     if not user_ids:
         error("--users 不能为空")
-        sys.exit(1)
+        return 1
 
     try:
         datetime.strptime(start_date, DATE_FMT)
         datetime.strptime(end_date, DATE_FMT)
     except ValueError:
         error("日期格式错误，请使用 YYYY-MM-DD")
-        sys.exit(1)
+        return 1
 
     sheet_name = SHEET_NAMES[record_type]
     log(f"开始导出{sheet_name}：{len(user_ids)} 人，{start_date} ~ {end_date}")
@@ -792,8 +794,9 @@ def main() -> None:
 
     if not approve_records:
         log("未查询到任何记录")
-        print(f"{sheet_name}：0 条记录，无需生成文件")
-        sys.exit(0)
+        return emit(fmt=args.format, outcome="success", data={
+            "type": record_type, "count": 0, "output": None,
+        }, dry_run=args.dry_run, text=f"{sheet_name}：0 条记录，无需生成文件")
 
     # 从 approve list 记录中提取 corpId（用于构建审批单跳转链接）
     corp_id = ""
@@ -889,11 +892,23 @@ def main() -> None:
 
     if not all_rows:
         log("无有效数据行")
-        print(f"{sheet_name}：解析后 0 行有效数据，无需生成文件")
-        sys.exit(0)
+        return emit(fmt=args.format, outcome="success", data={
+            "type": record_type, "count": 0, "approvalCount": len(instance_ids),
+            "output": None,
+        }, dry_run=args.dry_run, text=f"{sheet_name}：解析后 0 行有效数据，无需生成文件")
 
     # ── 写入 Excel ──
     out_path = args.out or f"attendance_report_record_{record_type}_{start_date}_{end_date}.xlsx"
+    result_data = {
+        "type": record_type,
+        "rowCount": len(all_rows),
+        "approvalCount": len(instance_ids),
+        "output": os.path.abspath(out_path),
+    }
+    if args.dry_run:
+        return emit(fmt=args.format, outcome="success", data={
+            **result_data, "write": False,
+        }, dry_run=True, text="[dry-run] 已完成远端只读解析，不写入 Excel 文件")
     headers = COLUMNS[record_type]
     title = f"{sheet_name}  统计日期：{start_date} 至 {end_date}"
     subtitle = f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
@@ -940,8 +955,11 @@ def main() -> None:
 
     abs_path = os.path.abspath(out_path)
     log(f"✅ 导出完成: {abs_path}")
+    if args.format != "text":
+        return emit(fmt=args.format, outcome="success", data=result_data)
     print(f"{sheet_name}导出完成：{abs_path}（{len(all_rows)} 行，{len(instance_ids)} 个审批单）")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
