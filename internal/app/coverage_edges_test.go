@@ -1473,6 +1473,11 @@ func TestCrossPlatformCoveragePersonalSubscriptionAndSourceCoverage(t *testing.T
 func TestCrossPlatformCoveragePersonalEventCommandRuntimeCoverage(t *testing.T) {
 	authpkg.SetRuntimeProfile("")
 	t.Cleanup(func() { authpkg.SetRuntimeProfile("") })
+	oldStopConsumers := personalStopConsumers
+	personalStopConsumers = func(string, []string) (eventtransport.ConsumerStopResp, error) {
+		return eventtransport.ConsumerStopResp{}, nil
+	}
+	t.Cleanup(func() { personalStopConsumers = oldStopConsumers })
 	configDir := setupPersonalIdentityToken(t, &authpkg.TokenData{
 		AccessToken: "access", RefreshToken: "refresh", ExpiresAt: time.Now().Add(time.Hour),
 		CorpID: "corp", UserID: "user", ClientID: "client",
