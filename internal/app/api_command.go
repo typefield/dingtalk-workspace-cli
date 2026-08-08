@@ -304,15 +304,30 @@ func resolveRawAPIToken(ctx context.Context, explicitToken string) (string, erro
 
 	if appKey == "" || appSecret == "" || strings.HasPrefix(appKey, "<") || strings.HasPrefix(appSecret, "<") {
 		return "", apperrors.NewAuth(
-			"缺少应用凭证。dws api 需要使用自有应用的 AppKey/AppSecret 获取 accessToken。\n\n" +
-				"解决方法:\n" +
-				"  1. 使用自有应用凭证登录:\n" +
-				"     dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET>\n\n" +
-				"  2. 或通过环境变量设置:\n" +
-				"     export DWS_CLIENT_ID=<APP_KEY>\n" +
-				"     export DWS_CLIENT_SECRET=<APP_SECRET>\n" +
-				"     dws auth login\n\n" +
+			"缺少应用凭证。dws api 需要使用自有应用的 AppKey/AppSecret 获取 accessToken。\n\n"+
+				"解决方法:\n"+
+				"  1. 使用自有应用凭证登录:\n"+
+				"     dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET>\n\n"+
+				"  2. 或通过环境变量设置:\n"+
+				"     export DWS_CLIENT_ID=<APP_KEY>\n"+
+				"     export DWS_CLIENT_SECRET=<APP_SECRET>\n"+
+				"     dws auth login\n\n"+
 				"说明: 通过 MCP 默认凭证登录的加密 token 无法用于 raw API 调用。",
+			apperrors.WithReason("raw_api_credentials_required"),
+			apperrors.WithOrigin("client"),
+			apperrors.WithFailureStage("auth"),
+			apperrors.WithExecutionStarted(false),
+			apperrors.WithRetryable(false),
+			apperrors.WithHint("raw API 不会尝试把 MCP 加密登录态当作 OpenAPI access token；请配置自有应用凭证后重新执行。"),
+			apperrors.WithActions(
+				"dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET>",
+				"设置 DWS_CLIENT_ID 与 DWS_CLIENT_SECRET 后执行 dws auth login",
+			),
+			apperrors.WithDetails(map[string]any{
+				"capability":               "raw_api",
+				"credential_kind_required": "app_credentials",
+				"mcp_default_token_usable": false,
+			}),
 		)
 	}
 

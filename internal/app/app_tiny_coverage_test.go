@@ -13,6 +13,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/apiclient"
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/mcptypes"
 	"github.com/spf13/cobra"
@@ -38,6 +39,11 @@ func TestCrossPlatformCoverageAPIAndTimingRemainingCoverage(t *testing.T) {
 	apiClientSecret = func() string { return "" }
 	if _, err := resolveRawAPIToken(context.Background(), ""); err == nil {
 		t.Fatal("missing raw API credentials succeeded")
+	} else {
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Reason != "raw_api_credentials_required" || !typed.RetryableSet || typed.Retryable || typed.Details["mcp_default_token_usable"] != false {
+			t.Fatalf("missing credentials recovery metadata = %#v", err)
+		}
 	}
 	apiClientID = func() string { return "<placeholder>" }
 	apiClientSecret = func() string { return "secret" }

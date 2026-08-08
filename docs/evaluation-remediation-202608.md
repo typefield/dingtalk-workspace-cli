@@ -48,7 +48,7 @@
 | public leaf 依赖 Schema exclusion | **兼容 helper 已清零；产品边界 exclusion 已逐条审阅** | `contact label list/get/list-members`、`todo task list-sub/remove-attachment`、Chat/DING/OA/Calendar 的已审阅命令均已完成 Identity、接口/参数、Safety 和 Agent 选型审阅并移出 exclusion；当前 Runtime shortcut 为 415 条，其中 383 条进入 public，32 条保留隐藏，32/32 已有明确 Agent 决策理由。保留项集中在敏感 HR 数据、应用/订阅/权限生命周期写操作、重复旧入口以及分页/结果契约尚不足的读取入口；不因可执行就强行公开。上游 main 合并后当前运行时 Schema 工具数为 1119 | 继续按真实产品证据决定是否开放；保留隐藏是产品边界，不再作为无人审阅债务 |
 | sheet 二次回滚 bricking | **CLI 侧已加防护，终态未关闭** | `sheet version revert` 现在先通过只读版本列表预校验；不存在版本不会发起回滚，dry-run 允许读版本但不写入 | 仍需隔离表格、备份和服务端协同做二次回滚官方自证；失败时保留可恢复证据 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据 | 使用获授权测试审批模板完成一次真实创建并清理测试实例 |
-| `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前正确 fail-closed 并返回 typed auth 错误 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
+| `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前 fail-closed，并返回 `raw_api_credentials_required`、`mcp_default_token_usable:false`、可执行认证 actions，且不标记可重试 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
 
 ## attendance 本轮验收证据
 
