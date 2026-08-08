@@ -12,6 +12,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -27,6 +28,8 @@ func executeDriveEdge(t *testing.T, caller *scriptedToolCaller, args ...string) 
 		os.Args = oldArgs
 	})
 	root := newDriveCommand()
+	rootCtx, _ := output.WithResultStore(context.Background())
+	root.SetContext(rootCtx)
 	installExampleGlobalFlags(root)
 	root.SilenceErrors = true
 	root.SilenceUsage = true
@@ -51,6 +54,8 @@ func executeDriveEdgeCapture(t *testing.T, caller *scriptedToolCaller, args ...s
 		os.Args = oldArgs
 	})
 	root := newDriveCommand()
+	rootCtx, _ := output.WithResultStore(context.Background())
+	root.SetContext(rootCtx)
 	installExampleGlobalFlags(root)
 	root.SilenceErrors = true
 	root.SilenceUsage = true
@@ -58,7 +63,17 @@ func executeDriveEdgeCapture(t *testing.T, caller *scriptedToolCaller, args ...s
 	root.SetErr(stderr)
 	root.SetArgs(args)
 	os.Args = append([]string{"dws", "drive"}, args...)
+	leaf, _, findErr := root.Find(args)
+	if findErr != nil {
+		t.Fatalf("find %q: %v", args, findErr)
+	}
+	leaf.SetContext(rootCtx)
 	err := root.Execute()
+	if err == nil && output.UsesUnifiedResult(leaf) {
+		if _, _, emitErr := output.EmitStoredResult(leaf); emitErr != nil {
+			err = emitErr
+		}
+	}
 	return stdout.String(), stderr.String(), err
 }
 
@@ -82,11 +97,18 @@ func TestDriveDownloadJSONKeepsStdoutMachineReadable(t *testing.T) {
 	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 		t.Fatalf("stdout is not one valid JSON value: %v\nstdout=%q\nstderr=%q", err, stdout, stderr)
 	}
-	if payload["downloaded"] != true || payload["file_id"] != "node-1" || payload["path"] != destination {
+	if payload["ok"] != true || payload["outcome"] != "success" {
 		t.Fatalf("payload = %#v", payload)
 	}
-	if payload["size"] != float64(7) {
-		t.Fatalf("payload size = %#v, want 7", payload["size"])
+	if _, present := payload["contract_version"]; present {
+		t.Fatalf("unified result must not expose a protocol version: %#v", payload)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok || data["downloaded"] != true || data["file_id"] != "node-1" || data["path"] != destination {
+		t.Fatalf("payload data = %#v", payload["data"])
+	}
+	if data["size"] != float64(7) {
+		t.Fatalf("payload data size = %#v, want 7", data["size"])
 	}
 	if strings.Contains(stdout, "[1/2]") || strings.Contains(stdout, "[2/2]") || strings.Contains(stdout, "[INFO]") {
 		t.Fatalf("stdout contains diagnostic text: %q", stdout)
@@ -111,8 +133,15 @@ func TestDriveDownloadDryRunReturnsStructuredJSONWithoutCallingServer(t *testing
 	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 		t.Fatalf("stdout is not JSON: %v\n%s", err, stdout)
 	}
-	if payload["dry_run"] != true || payload["executed"] != false || payload["operation"] != "download_drive_file" {
+	if payload["ok"] != true || payload["outcome"] != "success" || payload["dry_run"] != true {
 		t.Fatalf("payload = %#v", payload)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok || data["executed"] != false || data["operation"] != "download_drive_file" {
+		t.Fatalf("payload data = %#v", payload["data"])
+	}
+	if _, duplicated := data["dry_run"]; duplicated {
+		t.Fatalf("unified dry-run marker must not be duplicated in data: %#v", data)
 	}
 	if stderr != "" {
 		t.Fatalf("dry-run stderr = %q, want empty", stderr)

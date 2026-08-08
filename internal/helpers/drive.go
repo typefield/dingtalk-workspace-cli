@@ -14,6 +14,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 // ──────────────────────────────────────────────────────────
@@ -627,13 +628,19 @@ func newDriveCommand() *cobra.Command {
 			}
 
 			if deps.Caller.DryRun() {
-				return writeCommandPayload(cmd, map[string]any{
+				preview := map[string]any{
 					"dry_run":   true,
 					"executed":  false,
 					"operation": "download_drive_file",
 					"file_id":   fileID,
 					"output":    outputPath,
-				})
+				}
+				// Unified results carry dry_run at the envelope level. Keep the
+				// legacy payload byte-compatible until its own callers migrate.
+				if output.UsesUnifiedResult(cmd) {
+					delete(preview, "dry_run")
+				}
+				return writeCommandPayload(cmd, preview)
 			}
 
 			ctx := cmd.Context()
@@ -703,6 +710,7 @@ func newDriveCommand() *cobra.Command {
 		},
 	}
 	DeclareLeafMetadata(driveDownloadCmd, LeafSpec{
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",

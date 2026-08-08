@@ -39,10 +39,21 @@ func resolveCommandFormat(cmd *cobra.Command) output.Format {
 // 重定向，不硬编码 os.Stdout）。nil cmd 按 json 渲染进 io.Discard（与
 // output.WriteCommandPayload 的容错口径一致）。
 func writeCommandPayload(cmd *cobra.Command, payload any) error {
-	format := resolveCommandFormat(cmd)
 	if cmd == nil {
-		return output.Write(io.Discard, format, payload)
+		return output.Write(io.Discard, resolveCommandFormat(cmd), payload)
 	}
+	// Promoted commands do not render an ad-hoc JSON object themselves. Their
+	// sole result is stored here and emitted once by the root lifecycle as the
+	// unified result envelope. Legacy commands intentionally retain their exact
+	// historical rendering until their own migration is approved.
+	if output.UsesUnifiedResult(cmd) {
+		opts := make([]output.ResultOption, 0, 1)
+		if commandDryRun(cmd) || (deps != nil && deps.Caller != nil && deps.Caller.DryRun()) {
+			opts = append(opts, output.WithDryRun())
+		}
+		return output.StoreResult(cmd.Context(), output.Success(payload, opts...))
+	}
+	format := resolveCommandFormat(cmd)
 	return output.WriteFiltered(cmd.OutOrStdout(), format, payload, output.ResolveFields(cmd), output.ResolveJQ(cmd))
 }
 
