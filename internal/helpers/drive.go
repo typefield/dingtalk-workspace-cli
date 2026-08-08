@@ -605,11 +605,11 @@ func newDriveCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fileID := flagOrFallback(cmd, "node", "file-id")
 			if fileID == "" {
-				return fmt.Errorf("flag --node is required")
+				return apperrors.NewValidation("flag --node is required", apperrors.WithReason("missing_required_flags"))
 			}
 			outputPath, _ := cmd.Flags().GetString("output")
 			if outputPath == "" {
-				return fmt.Errorf("flag --output is required")
+				return apperrors.NewValidation("flag --output is required", apperrors.WithReason("missing_required_flags"))
 			}
 
 			argsMap := map[string]any{"fileId": fileID}

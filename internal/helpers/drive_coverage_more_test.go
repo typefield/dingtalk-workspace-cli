@@ -119,6 +119,22 @@ func TestDriveDownloadDryRunReturnsStructuredJSONWithoutCallingServer(t *testing
 	}
 }
 
+func TestDriveDownloadMissingLocalInputsAreTypedValidation(t *testing.T) {
+	for _, args := range [][]string{
+		{"download", "--output", filepath.Join(t.TempDir(), "download.txt"), "--dry-run", "--format", "json"},
+		{"download", "--node", "node-1", "--dry-run", "--format", "json"},
+	} {
+		_, _, err := executeDriveEdgeCapture(t, &scriptedToolCaller{dry: true}, args...)
+		if err == nil {
+			t.Fatalf("args %q unexpectedly succeeded", args)
+		}
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+			t.Fatalf("args %q error = %#v, want typed validation", args, err)
+		}
+	}
+}
+
 func TestCrossPlatformCoverageParseDriveUploadInfoRemainingCoverage(t *testing.T) {
 	cases := []struct {
 		name string
