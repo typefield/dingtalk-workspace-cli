@@ -402,6 +402,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   脚本自身的 Help 示例中，避免把隐藏别名继续扩散成 canonical 指令。
 - 复核 multi Drive 的 `drive_tree_list.py` 时发现脚本内部仍调用隐藏的 `drive list
   --max`；已改为当前 Help 的 canonical `--limit`，并用脚本 `--dry-run` 实测命令串。
+- 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
+  `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
+  把可用能力错误降级为“只能在客户端手动导出”。
 
 这项扫描发现的是 Agent 可执行语义漂移，不是 CI 路径缺失；后续每次 Skill 变更都应
 继续对 Help、参数、结果形状和安全语义做逐条 Agent 复核。
