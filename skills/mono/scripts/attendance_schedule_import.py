@@ -534,15 +534,16 @@ def main() -> int:
 
 if __name__ == "__main__":
     try:
-        sys.exit(main())
+        exit_code = main()
     except SystemExit as exc:
         # 业务校验函数沿用公共模块的 SystemExit；机器模式仍必须得到一个
         # 可解析的 failure envelope，而不是只得到 stderr 文本。
         fmt = _requested_format()
-        if fmt == "text":
+        if fmt == "text" or exc.code == 0:
             raise
-        sys.exit(emit(
+        exit_code = emit(
             fmt=fmt,
             outcome="failure",
             error={"type": "execution", "message": "排班校验或执行失败"},
-        ))
+        )
+    sys.exit(exit_code)
