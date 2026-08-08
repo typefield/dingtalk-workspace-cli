@@ -22,7 +22,9 @@ import (
 	"time"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	tea "github.com/charmbracelet/bubbletea"
 	"github.com/charmbracelet/lipgloss"
 	"github.com/muesli/termenv"
@@ -30,6 +32,14 @@ import (
 )
 
 func newProfileCommand() *cobra.Command {
+	contract.RegisterProductDecl(contract.ProductDecl{
+		ID: "profile",
+		Selection: contract.ProductSelectionDecl{
+			AgentSummary: "发现本机已登录的组织和账号，并取得稳定 profile 选择器",
+			UseWhen:      []string{"业务任务需要跨组织查找，或需要确定同一链路应使用的 corpId:userId"},
+			AvoidWhen:    []string{"持久切换默认账号属于用户管理操作；单次业务执行优先传全局 --profile"},
+		},
+	})
 	cmd := &cobra.Command{
 		Use:   "profile",
 		Short: "组织 profile 管理",
@@ -56,7 +66,7 @@ func newProfileCommand() *cobra.Command {
 }
 
 func newProfileListCommand() *cobra.Command {
-	return &cobra.Command{
+	cmd := &cobra.Command{
 		Use:     "list",
 		Aliases: []string{"ls"},
 		Short:   "列出全部已登录账号 profile",
@@ -82,6 +92,35 @@ func newProfileListCommand() *cobra.Command {
 			return nil
 		},
 	}
+	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: helpers.LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "profile",
+				Name:           "list",
+				CanonicalPath:  "profile.list",
+				CLIPath:        "profile list",
+				PrimaryCLIPath: "profile list",
+				Aliases:        []string{"profile ls"},
+			},
+			Description: "列出本机全部已登录账号 profile 及其稳定选择器和 Token 状态",
+			Interface: &contract.InterfaceSpec{
+				Mode:         contract.InterfaceModeLocal,
+				Availability: contract.InterfaceAvailable,
+				Reason:       "命令只读取本机 profile 注册表和加密 Token 元数据，不调用远端接口",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "列出本机全部已登录账号 profile 及其稳定选择器和 Token 状态",
+				UseWhen:      []string{"需要选择稳定 corpId:userId 身份，或判断当前是否存在多个组织/账号"},
+				AvoidWhen:    []string{"只检查或刷新一个指定身份的登录态时使用 auth status", "切换默认身份属于持久写入，应使用 profile switch/use 并由用户操作"},
+				Examples:     []string{"dws profile list --format json"},
+			},
+		},
+	})
+	return cmd
 }
 
 func newProfileUseCommand() *cobra.Command {

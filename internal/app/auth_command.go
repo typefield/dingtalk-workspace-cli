@@ -27,6 +27,7 @@ import (
 	"time"
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/keychain"
@@ -67,6 +68,14 @@ var (
 )
 
 func buildAuthCommand(patCaller edition.ToolCaller) *cobra.Command {
+	contract.RegisterProductDecl(contract.ProductDecl{
+		ID: "auth",
+		Selection: contract.ProductSelectionDecl{
+			AgentSummary: "检查 DWS 当前或指定 profile 的认证状态",
+			UseWhen:      []string{"业务命令返回认证错误，需要读取真实登录状态、刷新结果和恢复提示"},
+			AvoidWhen:    []string{"登录、退出、导入、导出、迁移或清除凭据属于用户管理操作，不应由普通业务意图自动选择"},
+		},
+	})
 	cmd := &cobra.Command{
 		Use:               "auth",
 		Short:             "认证管理",
@@ -606,6 +615,37 @@ func newAuthStatusCommand() *cobra.Command {
 		},
 	}
 	cmd.Flags().String("profile", "", "指定组织或账号：corpId、corpName、corpId:userId、corpId:userName、corpName:userId、corpName:userName 或本地 profile 名")
+	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "unknown",
+		},
+		Contract: helpers.LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "auth",
+				Name:           "status",
+				CanonicalPath:  "auth.status",
+				CLIPath:        "auth status",
+				PrimaryCLIPath: "auth status",
+			},
+			Description: "检查当前或指定 profile 的认证状态，并在需要时刷新该身份的 access token",
+			Interface: &contract.InterfaceSpec{
+				Mode:         contract.InterfaceModeComposite,
+				Availability: contract.InterfaceAvailable,
+				Reason:       "命令读取本地加密登录态，并可能通过 OAuth 刷新选中 token slot；不对应单个 pinned MCP RPC",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "检查当前或指定 profile 的认证状态，并在需要时刷新该身份的 access token",
+				UseWhen:      []string{"业务命令返回认证错误，需要检查同一 profile 的真实登录态和恢复提示"},
+				AvoidWhen:    []string{"需要列出并选择所有已登录身份时使用 profile list", "需要登录、退出、导入或清除凭据时应由用户明确操作对应 auth 命令"},
+				Examples: []string{
+					"dws auth status --format json",
+					"dws auth status --profile <corpId>:<userId> --format json",
+				},
+			},
+			Parameters: []contract.ParamDecl{{Name: "profile", Description: "可选稳定 profile 选择器 corpId:userId"}},
+		},
+	})
 	return cmd
 }
 

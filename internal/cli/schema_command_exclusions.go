@@ -20,7 +20,7 @@ package cli
 var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 	{
 		ID:       "cli-management",
-		Reason:   "Local CLI lifecycle, authentication, configuration, and plugin-management commands are user-operated controls rather than stable Agent tools.",
+		Reason:   "Unreviewed local CLI lifecycle, credential mutation, configuration, and plugin-management commands remain user-operated controls rather than stable Agent tools.",
 		Reviewed: true,
 		Commands: []string{
 			"api",
@@ -30,7 +30,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"auth logout",
 			"auth migrate-keychain",
 			"auth reset",
-			"auth status",
 			"completion",
 			"config list",
 			"doctor",
@@ -48,16 +47,11 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"plugin list",
 			"plugin remove",
 			"plugin validate",
-			"profile list",
 			"profile switch",
 			"profile use",
 			"schema",
-			"skill get",
-			"skill install",
-			"skill search",
 			"skill setup",
 			"upgrade",
-			"version",
 		},
 	},
 	{

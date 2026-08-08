@@ -1713,7 +1713,9 @@ func TestCrossPlatformCoverageSkillCommandHTTPCoverage(t *testing.T) {
 	if output, err := run(newSkillGetCommand(), "--skill-id", "id"); err != nil || !strings.Contains(output, "dws-skill-") {
 		t.Fatalf("skill get = %q, %v", output, err)
 	}
-	if output, err := run(newSkillInstallCommand(), "id", "agents"); err != nil || !strings.Contains(output, "技能安装成功") {
+	install := newSkillInstallCommand()
+	install.SetIn(strings.NewReader("yes\n"))
+	if output, err := run(install, "id", "agents"); err != nil || !strings.Contains(output, "技能安装成功") {
 		t.Fatalf("skill install = %q, %v", output, err)
 	}
 	if _, err := os.Stat(filepath.Join(home, ".agents", "skills", "demo", "SKILL.md")); err != nil {

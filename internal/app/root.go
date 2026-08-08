@@ -30,6 +30,7 @@ import (
 
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
@@ -863,17 +864,21 @@ func newSkillCommand() *cobra.Command {
 }
 
 func newVersionCommand() *cobra.Command {
-	return &cobra.Command{
+	contract.RegisterProductDecl(contract.ProductDecl{
+		ID: "cli",
+		Selection: contract.ProductSelectionDecl{
+			AgentSummary: "读取当前 DWS CLI 的版本与构建信息",
+			UseWhen:      []string{"需要核对当前二进制版本，或判断 Skill 的 cli_version 要求是否满足"},
+			AvoidWhen:    []string{"不需要版本判断的普通业务任务不要调用；检查远端更新走 upgrade 流程"},
+		},
+	})
+	cmd := &cobra.Command{
 		Use:               "version",
 		Short:             "显示版本信息",
 		Example:           "  dws version\n  dws version --format json",
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
-			wantJSON := cmd.Flags().Changed("format")
-			if wantJSON {
-				format, _ := cmd.Flags().GetString("format")
-				wantJSON = (format == "json")
-			}
+			wantJSON := commandRequestsJSONErrors(cmd)
 
 			editionName := edition.Get().Name
 			if editionName == "" {
@@ -916,6 +921,34 @@ func newVersionCommand() *cobra.Command {
 			return nil
 		},
 	}
+	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: helpers.LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "cli",
+				Name:           "version",
+				CanonicalPath:  "cli.version",
+				CLIPath:        "version",
+				PrimaryCLIPath: "version",
+			},
+			Description: "显示当前 DWS CLI 的版本、发行版、构建和架构信息",
+			Interface: &contract.InterfaceSpec{
+				Mode:         contract.InterfaceModeLocal,
+				Availability: contract.InterfaceAvailable,
+				Reason:       "命令只读取编译时注入的 CLI 版本与构建元数据，不调用远端接口",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "显示当前 DWS CLI 的版本、发行版、构建和架构信息",
+				UseWhen:      []string{"需要核对当前二进制版本或判断 Skill 声明的 cli_version 是否满足时"},
+				AvoidWhen:    []string{"需要检查远端是否有新版时使用 upgrade 的检查流程", "不要把 CLI 版本当成单个 Skill 制品版本"},
+				Examples:     []string{"dws version --format json"},
+			},
+		},
+	})
+	return cmd
 }
 
 // hideNonDirectRuntimeCommands marks top-level product commands as hidden

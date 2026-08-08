@@ -408,7 +408,7 @@ func TestSkillInstallRequiresAuth(t *testing.T) {
 	}
 
 	cmd := NewRootCommand()
-	cmd.SetArgs([]string{"skill", "install", "skill-123", "qoder"})
+	cmd.SetArgs([]string{"skill", "install", "skill-123", "qoder", "--yes"})
 
 	var out bytes.Buffer
 	cmd.SetOut(&out)
