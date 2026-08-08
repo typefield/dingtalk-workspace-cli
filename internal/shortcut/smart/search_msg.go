@@ -85,10 +85,10 @@ var SearchMsg = shortcut.Shortcut{
 		{Name: "id", Type: shortcut.FlagString, Desc: "--group 的别名", Hidden: true},
 		{Name: "groups", Type: shortcut.FlagStringSlice, Desc: "多个会话 openConversationId"},
 		{Name: "chat-id", Type: shortcut.FlagStringSlice, Desc: "--groups 的 lark-cli 对齐别名"},
-		{Name: "chat-query", Type: shortcut.FlagStringSlice, Desc: "按群名解析会话的兼容入口", Hidden: true},
+		{Name: "chat-query", Type: shortcut.FlagStringSlice, Desc: "按群名唯一解析会话过滤条件（可选，可重复或逗号分隔）"},
 		{Name: "senders", Type: shortcut.FlagStringSlice, Desc: "发送者 userId/openDingTalkId 列表"},
 		{Name: "sender", Type: shortcut.FlagStringSlice, Desc: "--senders 的 lark-cli 对齐别名"},
-		{Name: "sender-query", Type: shortcut.FlagStringSlice, Desc: "按姓名解析发送者的兼容入口", Hidden: true},
+		{Name: "sender-query", Type: shortcut.FlagStringSlice, Desc: "按姓名唯一解析发送者过滤条件（可选，可重复或逗号分隔）"},
 		{Name: "at-me", Type: shortcut.FlagBool, Desc: "只搜索 @我 的消息"},
 		{Name: "is-at-me", Type: shortcut.FlagBool, Desc: "--at-me 的 lark-cli 对齐别名"},
 		{Name: "at-ids", Type: shortcut.FlagStringSlice, Desc: "@对象 userId/openDingTalkId 列表"},
@@ -97,8 +97,12 @@ var SearchMsg = shortcut.Shortcut{
 		{Name: "conversation-type", Type: shortcut.FlagString, Desc: "下层会话类型过滤值（以当前 IM Schema 为准）"},
 		{Name: "chat-type", Type: shortcut.FlagString, Desc: "--conversation-type 的 lark-cli 对齐别名"},
 		{Name: "days", Type: shortcut.FlagInt, Desc: "默认时间窗的回溯天数", Default: "7"},
-		{Name: "start", Type: shortcut.FlagString, Desc: "精确开始时间（RFC3339，需与 --end 一起传）"},
-		{Name: "end", Type: shortcut.FlagString, Desc: "精确结束时间（RFC3339，需与 --start 一起传）"},
+		{Name: "start", Type: shortcut.FlagString, Desc: "精确开始时间（RFC3339，需与 --end 一起传；也支持 --end-time）"},
+		{Name: "start-time", Type: shortcut.FlagString, Desc: "--start 的 lark-cli 对齐别名（RFC3339，需与 --end 一起传；也支持 --end-time）"},
+		{Name: "end", Type: shortcut.FlagString, Desc: "精确结束时间（RFC3339，需与 --start 一起传；也支持 --start-time）"},
+		{Name: "end-time", Type: shortcut.FlagString, Desc: "--end 的 lark-cli 对齐别名（RFC3339，需与 --start 一起传；也支持 --start-time）"},
+		{Name: "order", Type: shortcut.FlagString, Enum: []string{"asc", "desc"}, Desc: "按消息创建时间稳定排列输出 asc/desc（可选，默认 desc）"},
+		{Name: "sort", Type: shortcut.FlagString, Enum: []string{"asc", "desc"}, Desc: "--order 的 lark-cli 对齐别名（可选）"},
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页返回数量（1-100）", Default: "100"},
 		{Name: "page-size", Type: shortcut.FlagInt, Desc: "--limit 的 lark-cli 对齐别名（1-100）"},
 		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，翻页传上次的 nextCursor", Default: "0"},
@@ -116,15 +120,18 @@ var SearchMsg = shortcut.Shortcut{
 		},
 		{
 			Kind:        shortcut.ConstraintCustom,
-			Flags:       []string{"start"},
+			Flags:       []string{"start", "start-time"},
 			Description: "需与 --end 一起传",
 		},
 		{
 			Kind:        shortcut.ConstraintCustom,
-			Flags:       []string{"end"},
+			Flags:       []string{"end", "end-time"},
 			Description: "需与 --start 一起传",
 		},
 		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"groups", "chat-id"}},
+		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"start", "start-time"}},
+		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"end", "end-time"}},
+		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"order", "sort"}},
 		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"senders", "sender"}},
 		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"at-me", "is-at-me"}},
 		{Kind: shortcut.ConstraintMutuallyExclusive, Flags: []string{"conversation-type", "chat-type"}},
@@ -138,7 +145,7 @@ var SearchMsg = shortcut.Shortcut{
 	},
 	Validate: validateSearchMsgWithResources,
 	Execute: func(rt *shortcut.RuntimeContext) error {
-		params, err := searchMsgParams(rt)
+		params, resolvedFilters, err := searchMsgParams(rt)
 		if err != nil {
 			return err
 		}
@@ -236,6 +243,11 @@ var SearchMsg = shortcut.Shortcut{
 			}
 		}
 
+		order := strings.ToLower(strings.TrimSpace(rt.StrFirst("order", "sort")))
+		if order == "" {
+			order = "desc"
+		}
+		sortMessagesByCreateTimeStable(messages, order)
 		results := make([]map[string]any, 0, len(messages))
 		for _, m := range messages {
 			results = append(results, searchMsgProjectWithReactions(m, !rt.Bool("no-reactions")))
@@ -255,6 +267,10 @@ var SearchMsg = shortcut.Shortcut{
 			"paginationKnown":    paginationKnown,
 			"failedCount":        len(failures),
 			"failures":           failures,
+			"queryRange":         searchMessageQueryRange(params, order),
+		}
+		if len(resolvedFilters.Senders) > 0 {
+			payload["resolvedFilters"] = resolvedFilters
 		}
 		if hasMore && nextCursor != "" && nextCursor != "<nil>" {
 			payload["nextCursor"] = nextCursor
@@ -307,8 +323,13 @@ func validateSearchMsg(rt *shortcut.RuntimeContext) error {
 	return nil
 }
 
-func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, error) {
+type searchResolvedFilters struct {
+	Senders []targetresolver.UserResolution `json:"senders,omitempty"`
+}
+
+func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, searchResolvedFilters, error) {
 	params := map[string]any{"limit": rt.IntFirst("limit", "page-size")}
+	resolvedFilters := searchResolvedFilters{}
 	if value := rt.StrFirst("query", "keyword", "text", "text-query"); value != "" {
 		params["keyword"] = value
 	}
@@ -321,7 +342,7 @@ func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, error) {
 		for _, query := range queries {
 			resolved, err := targetresolver.ResolveChatTarget(rt, "", query)
 			if err != nil {
-				return nil, err
+				return nil, searchResolvedFilters{}, err
 			}
 			conversationIDs = append(conversationIDs, resolved.Selected.OpenConversationID)
 		}
@@ -334,9 +355,10 @@ func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, error) {
 	if queries := rt.StrSlice("sender-query"); len(queries) > 0 {
 		resolvedUsers, err := targetresolver.ResolveUsers(rt, queries, targetresolver.IdentityAny)
 		if err != nil {
-			return nil, err
+			return nil, searchResolvedFilters{}, err
 		}
 		for _, resolved := range resolvedUsers {
+			resolvedFilters.Senders = append(resolvedFilters.Senders, resolved)
 			identity := resolved.Selected.OpenDingTalkID
 			if identity == "" {
 				identity = resolved.Selected.UserID
@@ -359,17 +381,22 @@ func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, error) {
 		params["searchConvType"] = value
 	}
 
-	if rt.Changed("start") && rt.Changed("end") {
+	startValue := rt.StrFirst("start", "start-time")
+	endValue := rt.StrFirst("end", "end-time")
+	if startValue != "" && endValue != "" {
 		start, err := time.Parse(time.RFC3339, rt.Str("start"))
-		if err != nil {
-			return nil, apperrors.NewValidation(fmt.Sprintf("--start 必须是 RFC3339 时间: %v", err))
+		if rt.Str("start") == "" {
+			start, err = time.Parse(time.RFC3339, startValue)
 		}
-		end, err := time.Parse(time.RFC3339, rt.Str("end"))
 		if err != nil {
-			return nil, apperrors.NewValidation(fmt.Sprintf("--end 必须是 RFC3339 时间: %v", err))
+			return nil, searchResolvedFilters{}, apperrors.NewValidation(fmt.Sprintf("--start 必须是 RFC3339 时间: %v", err))
+		}
+		end, err := time.Parse(time.RFC3339, endValue)
+		if err != nil {
+			return nil, searchResolvedFilters{}, apperrors.NewValidation(fmt.Sprintf("--end 必须是 RFC3339 时间: %v", err))
 		}
 		if !end.After(start) {
-			return nil, apperrors.NewValidation("--end 必须晚于 --start")
+			return nil, searchResolvedFilters{}, apperrors.NewValidation("--end 必须晚于 --start")
 		}
 		params["startTime"] = start.UnixMilli()
 		params["endTime"] = end.UnixMilli()
@@ -378,7 +405,7 @@ func searchMsgParams(rt *shortcut.RuntimeContext) (map[string]any, error) {
 		params["startTime"] = now.AddDate(0, 0, -rt.Int("days")).UnixMilli()
 		params["endTime"] = now.UnixMilli()
 	}
-	return params, nil
+	return params, resolvedFilters, nil
 }
 
 func appendSearchActorIDs(params map[string]any, values []string, userKey, openIDKey string) {

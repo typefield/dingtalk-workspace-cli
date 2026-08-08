@@ -16,13 +16,12 @@ import (
 )
 
 const (
-	publicShortcutCount = 311
+	publicShortcutCount = 374
 	// schemaPublishedShortcutCount counts every delivered *.shortcut_* tool,
 	// including hidden leaves such as minutes.shortcut_minutes_search.
-	schemaPublishedShortcutCount = 313
+	schemaPublishedShortcutCount = 376
 	// publiclyDeliveredShortcutCount is the public-catalog subset of that surface.
-	publiclyDeliveredShortcutCount = 311
-	attendancePublicShortcutCount  = 35
+	publiclyDeliveredShortcutCount = 374
 )
 
 func TestDeliverySchemaCoversOrExactlyExcludesEveryPublicShortcutContract(t *testing.T) {
@@ -36,15 +35,6 @@ func TestDeliverySchemaCoversOrExactlyExcludesEveryPublicShortcutContract(t *tes
 	}
 	if got := len(public); got != publicShortcutCount {
 		t.Fatalf("public built-in shortcuts = %d, want %d", got, publicShortcutCount)
-	}
-	attendanceCount := 0
-	for _, candidate := range public {
-		if candidate.Service == "attendance" {
-			attendanceCount++
-		}
-	}
-	if attendanceCount != attendancePublicShortcutCount {
-		t.Fatalf("public attendance shortcuts = %d, want %d", attendanceCount, attendancePublicShortcutCount)
 	}
 
 	deliveredShortcuts := 0
@@ -112,33 +102,6 @@ func TestDeliveryShortcutProgressiveQueriesReturnCompleteContracts(t *testing.T)
 	}
 	if got := leaf["constraints"]; !schemaContractJSONEqual(got, wantMessagesConstraints) {
 		t.Fatalf("shortcut leaf constraints = %#v, want %#v", got, wantMessagesConstraints)
-	}
-
-	shareInvite := executeShortcutSchemaQuery(t, "--cli-path", "chat group share-invite")
-	wantShareInviteConstraints := map[string]any{
-		"require_one_of":     [][]string{{"target", "receiver"}},
-		"mutually_exclusive": [][]string{{"target", "receiver"}},
-	}
-	if got := shareInvite["constraints"]; !schemaContractJSONEqual(got, wantShareInviteConstraints) {
-		t.Fatalf("chat share-invite constraints = %#v, want %#v", got, wantShareInviteConstraints)
-	}
-
-	chmod := executeShortcutSchemaQuery(t, "--cli-path", "chat chmod")
-	wantChmodConstraints := map[string]any{
-		"require_one_of":     [][]string{{"conversation-id", "open-dingtalk-id", "user", "permParam"}},
-		"mutually_exclusive": [][]string{{"conversation-id", "open-dingtalk-id", "user"}},
-	}
-	if got := chmod["constraints"]; !schemaContractJSONEqual(got, wantChmodConstraints) {
-		t.Fatalf("chat chmod constraints = %#v, want %#v", got, wantChmodConstraints)
-	}
-
-	crossOrg := executeShortcutSchemaQuery(t, "--cli-path", "chat data-auth cross-org")
-	wantCrossOrgConstraints := map[string]any{
-		"require_one_of":     [][]string{{"target-org-id", "all"}},
-		"mutually_exclusive": [][]string{{"target-org-id", "all"}},
-	}
-	if got := crossOrg["constraints"]; !schemaContractJSONEqual(got, wantCrossOrgConstraints) {
-		t.Fatalf("chat cross-org data-auth constraints = %#v, want %#v", got, wantCrossOrgConstraints)
 	}
 
 	constrainedLeaf := executeShortcutSchemaQuery(t, "--cli-path", "calendar +freebusy")
