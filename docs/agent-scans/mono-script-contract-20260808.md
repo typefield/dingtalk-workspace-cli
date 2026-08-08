@@ -15,6 +15,11 @@
 | Help 暴露 `--format` | 32/32 | 逐入口运行 `--help` |
 | Help 非零 | 0 | 退出码非 0 的入口 |
 
+## RFC 对账
+
+对账文件：`docs/rfcs/0002-mono-skill-script-interface.md`
+状态：PASS
+
 ## 入口明细
 
 | 脚本 | help rc | dry-run | format | 状态 |
