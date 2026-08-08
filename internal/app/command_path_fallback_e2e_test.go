@@ -487,6 +487,11 @@ func TestCrossPlatformCoverageCommandFallbackNamesStayOutOfHelpSchemaAndShortcut
 		"+send-media":                 true,
 		"+group-send-text":            true,
 	}
+	// NewSchemaSourceRootCommand intentionally only builds the declaration tree;
+	// install the same Schema delivery factory used by production before this
+	// test exercises ResolveMeta.  Without this setup the test panics depending
+	// on package test order, masking the fallback-name assertions below.
+	registerSchemaRuntimeDelivery()
 	root := NewSchemaSourceRootCommand()
 	chat := exactAppCommand(root, "chat")
 	if chat == nil {
