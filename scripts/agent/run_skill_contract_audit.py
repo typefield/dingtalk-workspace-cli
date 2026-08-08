@@ -29,6 +29,17 @@ def run(root: Path, command: list[str]) -> tuple[int, str]:
     return result.returncode, output.rstrip()
 
 
+def redact_temp_path(output: str, temp_dir: Path) -> str:
+    """Keep checked-in evidence stable across runs.
+
+    The child probes need a real temporary directory, but its host-specific
+    absolute path is not evidence and causes needless Markdown churn.  Replace
+    only this run's directory; leave all other command/output text intact.
+    """
+
+    return output.replace(str(temp_dir), "<agent-temp>")
+
+
 def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -94,7 +105,16 @@ def main() -> int:
 
         sections += ["", "## 原始 Agent 证据", ""]
         for (title, command), (_, rc, output) in zip(probes, results):
-            sections += [f"### {title}", "", f"命令：`{' '.join(command)}`", "", "```text", output, "```", ""]
+            sections += [
+                f"### {title}",
+                "",
+                f"命令：`{' '.join(command)}`".replace(str(temp_dir), "<agent-temp>"),
+                "",
+                "```text",
+                redact_temp_path(output, temp_dir),
+                "```",
+                "",
+            ]
 
         sections += [
             "## 解释边界",
