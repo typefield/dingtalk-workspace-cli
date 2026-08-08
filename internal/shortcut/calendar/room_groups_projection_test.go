@@ -31,7 +31,11 @@ func TestRoomGroupsProjectGroupListShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &data); err != nil {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
-	if got := roomGroupsProject(data); len(got) != 2 {
+	got, err := roomGroupsProject(data)
+	if err != nil {
+		t.Fatalf("projection returned error: %v", err)
+	}
+	if len(got) != 2 {
 		t.Fatalf("lower/upper mismatch: result.groupList has 2 entries, projection returned %d", len(got))
 	}
 }

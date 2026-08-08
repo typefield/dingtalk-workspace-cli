@@ -25,6 +25,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -122,7 +123,10 @@ var EventList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		events := eventListProject(data)
+		events, err := eventListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(events), "events": events})
 	},
 }
@@ -132,16 +136,17 @@ var EventList = shortcut.Shortcut{
 // the clean output projection applied to every list command. The
 // list container and each field are probed defensively across candidate keys,
 // since event payloads may nest under result/data/list/items with aliases.
-func eventListProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
+// Known empty results remain successful; unknown response shapes fail closed.
+func eventListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := eventListContainer(data)
+	if !known {
+		return nil, calendarProjectionUnknown("日程列表响应缺少可识别的列表容器")
 	}
-	raw := eventListContainer(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("日程列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := eventListFirst(m, "eventId", "event_id", "id"); ok {
@@ -162,16 +167,17 @@ func eventListProject(data map[string]any) []map[string]any {
 		if v, ok := eventListFirst(m, "location", "locationName", "location_name"); ok {
 			row["location"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("日程列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // eventListContainer locates the event slice across candidate wrapper keys,
 // unwrapping one nested object layer (e.g. result.list) when needed.
-func eventListContainer(data map[string]any) []any {
+func eventListContainer(data map[string]any) ([]any, bool) {
 	keys := []string{"result", "data", "list", "items", "events"}
 	for _, k := range keys {
 		v, ok := data[k]
@@ -179,17 +185,17 @@ func eventListContainer(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if nested, ok := v.(map[string]any); ok {
 			for _, nk := range keys {
 				if arr, ok := nested[nk].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // eventListFirst returns the first present, non-nil value among candidate keys.
@@ -257,7 +263,10 @@ var AttendeeList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		attendees := attendeeListProject(data)
+		attendees, err := attendeeListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(attendees), "attendees": attendees})
 	},
 }
@@ -267,16 +276,17 @@ var AttendeeList = shortcut.Shortcut{
 // the clean output projection applied to every list command.
 // The list container and each field are probed defensively across candidate keys,
 // since participant payloads may nest under result/data/list/items with aliases.
-func attendeeListProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
+// Known empty results remain successful; unknown response shapes fail closed.
+func attendeeListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := attendeeListContainer(data)
+	if !known {
+		return nil, calendarProjectionUnknown("日程参会人响应缺少可识别的列表容器")
 	}
-	raw := attendeeListContainer(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("日程参会人列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := attendeeFirst(m, "displayName", "display_name", "name", "userName", "user_name", "nick", "nickName"); ok {
@@ -288,16 +298,17 @@ func attendeeListProject(data map[string]any) []map[string]any {
 		if v, ok := attendeeFirst(m, "responseStatus", "response_status", "status", "attendeeStatus", "attendee_status", "responseType", "response"); ok {
 			row["responseStatus"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("日程参会人条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // attendeeListContainer locates the participant slice across candidate wrapper
 // keys, unwrapping one nested object layer (e.g. result.list) when needed.
-func attendeeListContainer(data map[string]any) []any {
+func attendeeListContainer(data map[string]any) ([]any, bool) {
 	keys := []string{"result", "data", "list", "items", "attendees", "participants"}
 	for _, k := range keys {
 		v, ok := data[k]
@@ -305,17 +316,17 @@ func attendeeListContainer(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if nested, ok := v.(map[string]any); ok {
 			for _, nk := range keys {
 				if arr, ok := nested[nk].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // attendeeFirst returns the first present, non-nil value among candidate keys.
@@ -375,7 +386,10 @@ var RoomSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		rooms := roomSearchProject(data)
+		rooms, err := roomSearchProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(rooms), "rooms": rooms})
 	},
 }
@@ -384,17 +398,18 @@ var RoomSearch = shortcut.Shortcut{
 // room list (roomId/roomName/capacity/location) — the output-projection fidelity
 // the framework applies to every list command. The list container and each field
 // are probed defensively across candidate keys, since room payloads may nest
-// under result/data/list/items with aliases.
-func roomSearchProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
+// under result/data/list/items with aliases. Known empty results remain
+// successful; unknown response shapes fail closed.
+func roomSearchProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := roomSearchContainer(data)
+	if !known {
+		return nil, calendarProjectionUnknown("会议室搜索响应缺少可识别的列表容器")
 	}
-	raw := roomSearchContainer(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("会议室搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := roomSearchFirst(m, "roomId", "room_id", "id"); ok {
@@ -409,16 +424,17 @@ func roomSearchProject(data map[string]any) []map[string]any {
 		if v, ok := roomSearchFirst(m, "location", "floor", "building", "address"); ok {
 			row["location"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("会议室搜索条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // roomSearchContainer locates the room slice across candidate wrapper keys,
 // unwrapping one nested object layer (e.g. result.list) when needed.
-func roomSearchContainer(data map[string]any) []any {
+func roomSearchContainer(data map[string]any) ([]any, bool) {
 	keys := []string{"result", "data", "list", "items", "rooms"}
 	for _, k := range keys {
 		v, ok := data[k]
@@ -426,17 +442,17 @@ func roomSearchContainer(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if nested, ok := v.(map[string]any); ok {
 			for _, nk := range keys {
 				if arr, ok := nested[nk].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // roomSearchFirst returns the first present, non-nil value among candidate keys.
@@ -562,7 +578,10 @@ var RoomGroups = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		groups := roomGroupsProject(data)
+		groups, err := roomGroupsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(groups), "groups": groups})
 	},
 }
@@ -571,17 +590,18 @@ var RoomGroups = shortcut.Shortcut{
 // clean, stable group list (groupId/groupName) — the output-projection fidelity
 // the framework applies to every list command. The list container and each field
 // are probed defensively across candidate keys, since group payloads may nest
-// under result/data/list/items with aliases.
-func roomGroupsProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
+// under result/data/list/items with aliases. Known empty results remain
+// successful; unknown response shapes fail closed.
+func roomGroupsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := roomGroupsContainer(data)
+	if !known {
+		return nil, calendarProjectionUnknown("会议室分组列表响应缺少可识别的列表容器")
 	}
-	raw := roomGroupsContainer(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("会议室分组列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := roomGroupsFirst(m, "groupId", "group_id", "id"); ok {
@@ -590,16 +610,17 @@ func roomGroupsProject(data map[string]any) []map[string]any {
 		if v, ok := roomGroupsFirst(m, "groupName", "group_name", "name", "summary"); ok {
 			row["groupName"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("会议室分组条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // roomGroupsContainer locates the group slice across candidate wrapper keys,
 // unwrapping one nested object layer (e.g. result.list) when needed.
-func roomGroupsContainer(data map[string]any) []any {
+func roomGroupsContainer(data map[string]any) ([]any, bool) {
 	// list_meeting_room_groups nests the groups under result.groupList;
 	// "groupList" MUST be probed or +room-groups silently returns empty despite
 	// the backend returning meeting-room groups.
@@ -610,17 +631,17 @@ func roomGroupsContainer(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if nested, ok := v.(map[string]any); ok {
 			for _, nk := range keys {
 				if arr, ok := nested[nk].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // roomGroupsFirst returns the first present, non-nil value among candidate keys.
@@ -752,23 +773,27 @@ var BookList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		books := bookListProject(data)
+		books, err := bookListProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(books), "calendars": books})
 	},
 }
 
 // bookListProject reshapes list_calendars into a clean calendar-book list
-// (calendarId/summary/privilege/type) — clean output projection.
-func bookListProject(data map[string]any) []map[string]any {
+// (calendarId/summary/privilege/type) — clean output projection. A known empty
+// result is successful; an unrecognized response cannot claim no calendars.
+func bookListProject(data map[string]any) ([]map[string]any, error) {
 	raw, ok := data["result"].([]any)
 	if !ok {
-		return []map[string]any{}
+		return nil, calendarProjectionUnknown("日历本列表响应缺少 result 数组")
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("日历本列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		for _, k := range []string{"calendarId", "summary", "privilege", "type", "description"} {
@@ -776,11 +801,12 @@ func bookListProject(data map[string]any) []map[string]any {
 				row[k] = v
 			}
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("日历本列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // BookGet → get_calendar
@@ -826,7 +852,10 @@ var BookSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		calendars := bookSearchProject(data)
+		calendars, err := bookSearchProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(calendars), "calendars": calendars})
 	},
 }
@@ -835,16 +864,17 @@ var BookSearch = shortcut.Shortcut{
 // stable calendar-book list (calendarId/summary/privilege/type) — output-projection
 // clean output projection. The list container and each field are probed defensively
 // across candidate keys, tolerating nesting under result/data/list/items.
-func bookSearchProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
+// Known empty results remain successful; unknown response shapes fail closed.
+func bookSearchProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := bookSearchContainer(data)
+	if !known {
+		return nil, calendarProjectionUnknown("日历本搜索响应缺少可识别的列表容器")
 	}
-	raw := bookSearchContainer(data)
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, calendarProjectionUnknown("日历本搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := bookSearchFirst(m, "calendarId", "calendar_id", "id"); ok {
@@ -859,16 +889,17 @@ func bookSearchProject(data map[string]any) []map[string]any {
 		if v, ok := bookSearchFirst(m, "type", "calendarType", "calendar_type"); ok {
 			row["type"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, calendarProjectionUnknown("日历本搜索条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // bookSearchContainer locates the calendar slice across candidate wrapper keys,
 // unwrapping one nested object layer (e.g. result.list) when needed.
-func bookSearchContainer(data map[string]any) []any {
+func bookSearchContainer(data map[string]any) ([]any, bool) {
 	keys := []string{"result", "data", "list", "items", "calendars"}
 	for _, k := range keys {
 		v, ok := data[k]
@@ -876,17 +907,25 @@ func bookSearchContainer(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if nested, ok := v.(map[string]any); ok {
 			for _, nk := range keys {
 				if arr, ok := nested[nk].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
+}
+
+func calendarProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // bookSearchFirst returns the first present, non-nil value among candidate keys.
