@@ -374,6 +374,23 @@ func TestAnnotateAitableDiscoveryRejectsContradictoryPagination(t *testing.T) {
 	}
 }
 
+func TestAnnotateAitableDiscoveryFindsNestedPageInfo(t *testing.T) {
+	annotated, err := annotateAitableDiscoveryBoundary(map[string]any{
+		"result": map[string]any{
+			"data": map[string]any{
+				"pageInfo": map[string]any{"hasMore": true, "nextCursor": "nested-next"},
+			},
+		},
+	}, "list_bases")
+	if err != nil {
+		t.Fatalf("annotate nested page info: %v", err)
+	}
+	payload, ok := annotated.(map[string]any)
+	if !ok || payload["paginationKnown"] != true || payload["endpointExhausted"] != false || payload["nextCursor"] != "nested-next" {
+		t.Fatalf("nested page info projection = %#v", annotated)
+	}
+}
+
 func TestCrossPlatformCoverageMCPDryRunJSONOutputIsSingleDocument(t *testing.T) {
 	caller := &helpersCoreCaller{format: "json", dry: true}
 	out, _ := installHelpersCoreDeps(t, caller)

@@ -566,12 +566,23 @@ func aitableDiscoveryPaginationError(toolName, reason string) error {
 }
 
 func aitableDiscoveryScopes(root map[string]any) []map[string]any {
-	scopes := []map[string]any{root}
-	for _, key := range []string{"result", "data"} {
-		if inner, ok := root[key].(map[string]any); ok {
-			scopes = append(scopes, inner)
+	var scopes []map[string]any
+	var walk func(map[string]any, int)
+	walk = func(scope map[string]any, depth int) {
+		if scope == nil || depth > 4 {
+			return
+		}
+		scopes = append(scopes, scope)
+		// Gateway responses commonly wrap the actual page under result/data,
+		// with some versions adding pageInfo. Follow only these known envelope
+		// keys so arbitrary Base fields cannot be mistaken for pagination.
+		for _, key := range []string{"result", "data", "pageInfo", "page_info"} {
+			if inner, ok := scope[key].(map[string]any); ok {
+				walk(inner, depth+1)
+			}
 		}
 	}
+	walk(root, 0)
 	return scopes
 }
 
