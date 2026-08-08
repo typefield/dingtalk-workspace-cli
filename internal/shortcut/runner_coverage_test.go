@@ -10,6 +10,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -18,6 +19,20 @@ func TestCrossPlatformCoverageRuntimeContextForTest(t *testing.T) {
 	rt := RuntimeContextForTest(cmd, Shortcut{Service: "sample", Command: "run"})
 	if rt == nil || rt.cmd != cmd || rt.shortcut.Service != "sample" {
 		t.Fatalf("RuntimeContextForTest = %#v", rt)
+	}
+}
+
+func TestShortcutCommandResultRejectsStringSuccess(t *testing.T) {
+	result := shortcutCommandResult(map[string]any{"success": "false"})
+	env, err := output.EnvelopeFromResult(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if env.Outcome != output.OutcomeFailure || env.Error == nil || env.Error.Subtype != "invalid_success_type" {
+		t.Fatalf("string success result = %#v, envelope=%+v", result, env)
+	}
+	if result.ExitCode() == 0 {
+		t.Fatal("string success type drift returned success exit code")
 	}
 }
 

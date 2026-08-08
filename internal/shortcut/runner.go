@@ -351,15 +351,26 @@ func shortcutCommandResult(payload any, options ...output.ResultOption) output.C
 		if content, ok := object["content"].(map[string]any); ok {
 			status = content
 		}
-		if success, present := status["success"].(bool); present && !success {
-			message := "shortcut operation failed"
-			for _, key := range []string{"errorMsg", "errorMessage", "message"} {
-				if value, ok := status[key].(string); ok && strings.TrimSpace(value) != "" {
-					message = strings.TrimSpace(value)
-					break
-				}
+		if rawSuccess, present := status["success"]; present {
+			success, isBool := rawSuccess.(bool)
+			if !isBool {
+				return output.Failure(&output.ErrorInfo{
+					Type:    "api",
+					Subtype: "invalid_success_type",
+					Message: "shortcut response success field must be a JSON boolean",
+					Details: map[string]any{"actual_type": fmt.Sprintf("%T", rawSuccess)},
+				}, options...)
 			}
-			return output.Failure(&output.ErrorInfo{Type: "api", Message: message}, options...)
+			if !success {
+				message := "shortcut operation failed"
+				for _, key := range []string{"errorMsg", "errorMessage", "message"} {
+					if value, ok := status[key].(string); ok && strings.TrimSpace(value) != "" {
+						message = strings.TrimSpace(value)
+						break
+					}
+				}
+				return output.Failure(&output.ErrorInfo{Type: "api", Message: message}, options...)
+			}
 		}
 	}
 	return output.Success(payload, options...)
