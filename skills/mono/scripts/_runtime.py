@@ -27,7 +27,11 @@ def add_contract_flags(parser: argparse.ArgumentParser, *, dry_run: bool = True)
         help="输出格式：text|json|ndjson（默认 text）",
     )
     if dry_run:
-        parser.add_argument("--dry-run", action="store_true", help="只生成计划，不执行远端写入或本地写入")
+        parser.add_argument(
+            "--dry-run",
+            action="store_true",
+            help="生成计划；不得执行远端/本地写入（脚本可按 Help 说明执行只读探测）",
+        )
 
 
 def _envelope(

@@ -18,10 +18,9 @@ cli_version: ">=1.0.15"
 
 ## 严格要求 (MUST DO)
 - 终结型 CLI 命令默认使用 `--format json` 获取可解析输出；先以 leaf Help 确认该 flag。长连接 `event consume` 默认使用 `--format ndjson`，只有设置 `--max-events` 或 `--duration` 后才使用 `json/pretty`；不要把无限事件流强行改成单个 JSON 文档。Skill 脚本是独立入口，脚本本身未必有 `--format` 或 `--dry-run`，应按脚本 Help 调用；脚本内部调用 dws 时再传递合适的格式。
-- 已完成 pilot 迁移的脚本（`todo_batch_create.py`、`aitable_import_via_task.py`、`upload_attachment.py`、`doc_create_and_write.py`、`aitable_export_via_task.py`、`mail_unread_summary.py`、`contact_dept_members.py`、`report_received_today.py`、`oa_batch_approve.py`、`calendar_schedule_meeting.py`、`mail_send_with_cc.py`、`oa_pending_review.py`、`report_inbox_today.py`、`drive_tree_list.py`、`calendar_free_slot_finder.py`、`todo_overdue_check.py`、`minutes_recent_summary.py`、`minutes_extract_todos.py`、`calendar_today_agenda.py`、`attendance_team_shift.py`、`attendance_schedule_export.py`、`attendance_my_record.py`、`import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、`attendance_vacation_balance.py`、`attendance_report_record.py`、`attendance_report_daily.py`、`attendance_report_monthly.py`）可直接使用脚本级 `--format text|json|ndjson` 与 `--dry-run`；其中考勤导出、假期余额、考勤记录、每日统计和月度汇总 dry-run 会远端只读校验但不会写 Excel；其他脚本在各自 Help 明确支持前，不得假定具备这些参数。
+- `skills/mono/scripts/` 当前有 35 个 Python 文件，其中 32 个是可执行 Agent 入口、3 个是内部模块。32 个入口的 Help 当前均声明脚本级 `--format text|json|ndjson` 与 `--dry-run`；这只证明参数可发现，不等于每个入口都完成了零远端写入/零本地写入证明。调用前以该脚本的 `--help` 和 Agent 扫描台账为准；不要从文件名或源码中的 `add_contract_flags` 推断安全语义。
 - 危险操作必须先向用户确认，用户同意后才加 `--yes` 执行
-- `attendance_report_detail.py` 与 `attendance_report_checkin.py` 也已完成脚本级 `--format text|json|ndjson`、`--dry-run`；两者 dry-run 允许远端只读查询，但不下载图片、不写入 Excel。
-- `attendance_schedule_import.py` 也已完成脚本级 `--format text|json|ndjson`、`--dry-run`；机器输出包含确认失败和执行结果，dry-run 不触发排班写入。
+- 报表类脚本（包括 `attendance_report_detail.py`、`attendance_report_checkin.py`、`attendance_schedule_import.py`）的 dry-run 可能执行远端只读查询，但不得下载图片、写入 Excel 或触发业务写入；具体 `remote_reads` 语义以脚本 Help/台账为准。
 - 单次批量操作不超过 30 条记录
 - 所有命令必须**严格遵循**对应产品参考文档里面规定的参数格式（如：如果有参数值，则参数和参数值之间至少用一个空格隔开）
 - **脚本只用于明确覆盖的复合任务**：[scripts/](./scripts/) 下的脚本可封装 AI 表格批量导入导出、AI 应用创建轮询、文档创建后写内容、钉盘目录树等流程；当公开 `+` Shortcut 已提供目标唯一解析、分页/部分失败 ledger 和确认语义时，优先 Shortcut。Chat 历史导出与机器人广播已完全下沉 Runtime，不再发布兼容脚本

@@ -33,31 +33,6 @@ import sys
 from datetime import datetime, timedelta
 from typing import Any
 
-# ── 前置依赖检查（在任何 dws 调用之前就检测，避免查完数据才报错）───────
-_missing_deps: list[str] = []
-try:
-    import openpyxl as _openpyxl_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("openpyxl")
-try:
-    import requests as _requests_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("requests")
-try:
-    from PIL import Image as _pil_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("Pillow")
-
-if _missing_deps:
-    print(
-        f"[ERROR] 缺少以下依赖：{', '.join(_missing_deps)}\n"
-        f"  请先安装：pip install {' '.join(_missing_deps)}\n"
-        "安装后重新执行本脚本。\n"
-        "（签到报表需要 openpyxl 生成 Excel、requests + Pillow 下载并嵌入签到图片）",
-        file=sys.stderr,
-    )
-    sys.exit(2)
-
 import attendance_report_common as cmn
 from _runtime import add_contract_flags, emit
 
@@ -159,6 +134,36 @@ def parse_args() -> argparse.Namespace:
                         help="首次跑时打印首条记录原始结构（用于核对真实字段）")
     add_contract_flags(parser)
     return parser.parse_args()
+
+
+def require_runtime_dependencies() -> None:
+    """检查业务依赖。
+
+    必须在 ``parse_args`` 之后调用：``--help`` 是能力发现入口，即使运行环境
+    没有可选的 Excel/图片依赖，也必须能够成功展示脚本实际支持的 flags。
+    """
+    missing: list[str] = []
+    try:
+        import openpyxl as _openpyxl_check  # noqa: F401
+    except ImportError:
+        missing.append("openpyxl")
+    try:
+        import requests as _requests_check  # noqa: F401
+    except ImportError:
+        missing.append("requests")
+    try:
+        from PIL import Image as _pil_check  # noqa: F401
+    except ImportError:
+        missing.append("Pillow")
+    if missing:
+        print(
+            f"[ERROR] 缺少以下依赖：{', '.join(missing)}\n"
+            f"  请先安装：pip install {' '.join(missing)}\n"
+            "安装后重新执行本脚本。\n"
+            "（签到报表需要 openpyxl 生成 Excel、requests + Pillow 下载并嵌入签到图片）",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -342,6 +347,8 @@ def transform_records_to_rows(
 
 def main() -> int:
     args = parse_args()
+    # `--help` must remain dependency-free; business execution is not.
+    require_runtime_dependencies()
 
     raw_ids = [u.strip() for u in args.users.split(",") if u.strip()]
     if not raw_ids:

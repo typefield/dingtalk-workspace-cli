@@ -7,11 +7,21 @@
 ## 背景
 
 Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有统一运行时接口。
-当前工作树的 Agent 扫描结果：
+当前工作树的 Agent 扫描结果（口径必须区分文件、入口和 Help 可观测能力）：
 
-- 34 个可执行 Python 脚本逐个执行 `--help`；
-- 第一阶段迁移前 19 个 Help 暴露脚本级 `--dry-run`，只有 1 个 Help 暴露脚本级
-  `--format`，7 个脚本在没有业务参数时 `--help` 返回非零；
+| 口径 | 数量 | 定义 |
+|------|------|------|
+| Python 文件 | 35 | `skills/mono/scripts/*.py` 全部文件，包含内部模块 |
+| Agent 入口 | 32 | AST 中包含 `if __name__ == "__main__"` 的脚本 |
+| 内部模块 | 3 | `_runtime.py`、`attendance_report_common.py`、`minutes_list_parse.py`，不应被当作 CLI 入口 |
+| Help 暴露 `--dry-run` | 32 | 对 32 个入口逐个运行 `python <script> --help` 后扫描实际输出 |
+| Help 暴露 `--format` | 32 | 同上；类型为 `text|json|ndjson` |
+| Help 非零 | 0 | 当前版本在缺少业务参数和可选运行依赖时均可完成能力发现 |
+
+作为历史基线，迁移前曾有 19 个入口暴露 `--dry-run`、仅 1 个入口暴露脚本级
+`--format`，且存在 Help 非零脚本；这些数字不能继续作为当前状态。扫描必须记录
+四层口径，不能用文件数代替入口数，也不能用源码是否调用 `add_contract_flags`
+代替实际 Help 结果。
 - 当前已迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
   `upload_attachment.py`、`doc_create_and_write.py`、`aitable_export_via_task.py`、
   `mail_unread_summary.py`、`contact_dept_members.py`、`report_received_today.py`、
@@ -24,13 +34,14 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、
   `attendance_vacation_balance.py`、`attendance_report_record.py` 和
   `attendance_report_daily.py`、`attendance_report_monthly.py`、`attendance_report_detail.py` 和
-  `attendance_report_checkin.py`、`attendance_schedule_import.py`，实际扫描结果为 32 个 dry-run、32 个
-  format、0 个
-  help 非零脚本；
+  `attendance_report_checkin.py`、`attendance_schedule_import.py`，当前实际扫描结果为
+  32 个 dry-run、32 个 format、0 个 help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
-因此“所有脚本支持 `--dry-run/--format json`”不是当前事实。短期已删除这一
-错误宣称；长期目标仍然是让 Agent 可依赖统一接口。
+因此当前可以准确宣称“32 个 Agent 入口在 Help 层声明了
+`--dry-run/--format`”，但不能把这句话扩大为“32 个入口都已完成零副作用证明”。
+Help 可观测性、JSON 流向和 dry-run 副作用是三个独立验收维度，长期目标是让 Agent
+分别依赖每个维度的实测结果。
 
 ### 为什么不能按文件名一刀切
 
@@ -115,7 +126,8 @@ scripts/_runtime.py
 `doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
 `oa_batch_approve.py`、`todo_batch_create.py`。
 
-当前 pilot 已完成上述 32 个脚本；两个内部 helper 不纳入脚本接口统计。
+当前 pilot 已完成 32 个 Agent 入口；3 个内部模块不纳入脚本接口统计。入口数、Help
+可观测数和 dry-run 副作用验证数必须分别记录，不能把“已接入参数”直接写成“已证明安全”。
 
 `attendance_vacation_balance.py` 与排班导出一样，dry-run 会远端只读查询并构造内存中的
 Excel 计划，但不会写本地文件。
@@ -151,6 +163,16 @@ Skill 总则。
    `succeeded/failed/unknown` 不丢失；
 5. 对流式脚本检查每行独立可解析且有界/无限模式语义不同；
 6. 把扫描结果写入评测台账，禁止把生成的 JSON 结果作为仓库 fixture 保存。
+
+仓库提供 `scripts/agent/scan_mono_script_contract.py` 作为可重复的 Agent 扫描器。
+它只生成 Markdown：统计入口/内部模块、逐个运行 Help、核对实际 flags，并把未完成的
+dry-run 副作用验证明确标为 `UNVERIFIED`；它不是 CI 门禁，也不把扫描结果伪装成测试
+fixture。Agent 应在评测或发布前运行：
+
+```bash
+python3 scripts/agent/scan_mono_script_contract.py \
+  --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
+```
 
 ## 兼容与回滚
 
