@@ -175,7 +175,7 @@ python3 scripts/agent/scan_mono_script_contract.py \
   --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
 ```
 
-如需一次性复核 Mono、Multi 和 Shortcut 三类 Skill surface，可运行：
+如需一次性复核 Mono、Multi、Shortcut surface 以及隐藏 shortcut exclusion 队列，可运行：
 
 ```bash
 python3 scripts/agent/run_skill_contract_audit.py \
