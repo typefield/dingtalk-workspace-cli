@@ -34,7 +34,7 @@
 | `drive list --pattern` 失效 | **代码已修** | `drive list` 已公开 `--pattern`；测试覆盖 pattern 投影、JSON 可解析以及与 `--versions` 的冲突 | 发布后二进制用真实目录做 3 组正反例复验 |
 | `drive download --format json` 惰性、stdout 日志污染 | **代码已修** | 下载成功与 dry-run JSON 路径均有测试；Framework writer 统一 stdout/stderr 与 format 分发 | 发布后二进制执行成功/失败两条 `jq` 管道复验 |
 | `drive delete --dry-run` 与确认门禁耦合、EOF 取消仍 rc=0 | **已关闭（当前工作树）** | `drive delete` 声明 destructive/high/user_required；专项测试证明 `--dry-run` 产生请求预览且写调用为 0，关闭 stdin 且无 `--yes` 时返回 typed `confirmation_required`、写调用仍为 0 | 发布后二进制复验 dry-run/EOF/`--yes` 三条路径 |
-| `doc version revert --dry-run` 对不存在版本也放行 | **代码已修** | 针对版本 `999` 的预校验回归测试已存在；dry-run 不触发写请求 | 真实文档分别验证存在/不存在版本号 |
+| `doc version revert --dry-run` 对不存在版本也放行 | **代码已修** | 回滚现在先校验版本号为正整数，再通过版本列表预校验目标存在性；`999` 和非正版本号均在任何远端写入前返回 typed validation，dry-run 对有效目标只读不写；`TestDocVersionRevert*` 回归覆盖存在、缺失和非法版本 | 真实文档分别验证存在/不存在版本号 |
 | `todo +add-participant` 报错但已写入 | **代码已修，待真实环境复验** | 参加人写入增加幂等/结果核验路径及专项测试；写请求报错后的“部分已落库”和“未知”路径现在保留结构化 `outcome`、`verification`、`execution_started`、`retryable`、已落库/未确认 ID；即使回读暂未发现任何目标，也保留 `execution_state=unknown`、原始错误链和恢复动作，避免 Agent 盲目重试或只能解析人类错误文本 | 真实任务执行“成功、服务端报错但已写、明确失败”三态复验 |
 | `todo task remove-attachment` 取消仍 rc=0、遗漏附件 ID 校验 | **已关闭（当前工作树）** | 删除附件已改用统一 destructive/high/user_required 门禁；拒绝确认返回 validation rc=3，不再静默成功。`task-id`/`attachment-id` 均在任何远端调用前校验；dry-run 不发写请求。helpers 与 CoreCmd 的公共必填校验统一产出 typed validation rc=3 | 发布后二进制复验取消、缺参、dry-run、`--yes` 四条路径；真实删除仅使用隔离待办附件 |
 | IM 零结果却扩大成 `complete:true` | **CLI 语义已修，索引健康未解决** | 输出改为 `endpointExhausted` 与 `indexCoverageKnown:false`，不再把分页耗尽解释为业务全量完整 | 服务端需要提供索引覆盖/健康证据，CLI 不能自动推断 |
