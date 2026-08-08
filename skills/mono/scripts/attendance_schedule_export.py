@@ -44,6 +44,7 @@ from attendance_report_common import (
     warn,
     write_excel,
 )
+from _runtime import add_contract_flags, emit
 
 # schedule get 接口每批最多用户数（保守值，避免超时）
 SCHEDULE_BATCH_SIZE = 20
@@ -268,7 +269,7 @@ def print_summary(
             print(f"   ... 共 {len(rows)} 人，完整数据见 Excel")
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="考勤排班查询导出（排班表格式）",
         epilog="执行前必须阅读 attendance-schedule.md",
@@ -277,6 +278,7 @@ def main() -> None:
     parser.add_argument("--start", required=True, help="开始日期 YYYY-MM-DD（必填）")
     parser.add_argument("--end", required=True, help="结束日期 YYYY-MM-DD（必填）")
     parser.add_argument("--output", default="", help="输出文件路径（可选）")
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     # ── 解析参数 ──
@@ -306,8 +308,10 @@ def main() -> None:
     # ── 阶段 1: 查询排班记录（分批） ──
     records = fetch_all_schedules(user_ids, start_date, end_date)
     if not records:
-        print(f"⚠️ 未查询到排班记录 ({start_date} ~ {end_date})")
-        return
+        return emit(fmt=args.format, outcome="success", data={
+            "users": user_ids, "start": start_date, "end": end_date,
+            "recordCount": 0, "output": output_path,
+        }, dry_run=args.dry_run, text=f"⚠️ 未查询到排班记录 ({start_date} ~ {end_date})")
 
     # ── 阶段 2: 构建班次名称映射 ──
     class_map = build_class_name_map(records)
@@ -320,6 +324,20 @@ def main() -> None:
     headers, rows = build_schedule_table(
         records, user_ids, user_names, class_map, date_range,
     )
+
+    result_data = {
+        "users": user_ids,
+        "start": start_date,
+        "end": end_date,
+        "recordCount": len(records),
+        "rowCount": len(rows),
+        "dateCount": len(date_range),
+        "output": os.path.abspath(output_path),
+    }
+    if args.dry_run:
+        return emit(fmt=args.format, outcome="success", data={
+            **result_data, "write": False,
+        }, dry_run=True, text="[dry-run] 已完成远端只读查询和排班表预览，不写入 Excel 文件")
 
     # ── 阶段 5: 输出 Excel ──
     title = f"排班表  {start_date} 至 {end_date}"
@@ -337,8 +355,11 @@ def main() -> None:
     log(f"📄 Excel 已保存: {os.path.abspath(output_path)}")
 
     # ── 阶段 6: 输出摘要 ──
+    if args.format != "text":
+        return emit(fmt=args.format, outcome="success", data=result_data)
     print_summary(rows, date_range, output_path, len(records))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
