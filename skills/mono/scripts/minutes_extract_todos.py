@@ -21,6 +21,7 @@ if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 
 from minutes_list_parse import uuid_title_pairs_from_payload
+from _runtime import add_contract_flags, emit, failure
 
 
 def run_dws(
@@ -28,7 +29,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -96,20 +97,20 @@ def todos_from_payload(payload: Any) -> List[dict]:
     return out
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='从听记中提取待办事项'
     )
     parser.add_argument('--max', type=int, default=5)
     parser.add_argument('--id', default='', help='指定听记 UUID')
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     uuids_with_titles = []
     if args.id:
         uuids_with_titles = [(args.id, args.id)]
     else:
-        print('🎙️ 获取听记列表...')
+        print('🎙️ 获取听记列表...', file=sys.stderr)
         data = run_dws([
             'minutes', 'list', 'mine',
             '--limit', str(args.max),
@@ -120,14 +121,16 @@ def main():
                 'minutes', 'get', 'todos',
                 '--id', '<TASK_UUID>', '--format', 'json',
             ], dry_run=True)
-            return
+            return emit(fmt=args.format, outcome='success', data={
+                'limit': args.max,
+            }, dry_run=True, text='[dry-run] 将读取听记列表并提取待办')
         if not data:
-            return
+            return failure(args.format, '听记列表查询失败')
         uuids_with_titles = uuid_title_pairs_from_payload(data)
 
     all_todos = []
     for uuid, title in uuids_with_titles:
-        print(f"  提取待办: {title}")
+        print(f"  提取待办: {title}", file=sys.stderr)
         todos_data = run_dws([
             'minutes', 'get', 'todos',
             '--id', uuid, '--format', 'json',
@@ -138,6 +141,13 @@ def main():
         for t in items:
             t['_source'] = title
         all_todos.extend(items)
+
+    if args.format != 'text':
+        items = [{k: v for k, v in t.items() if k != '_raw'}
+                 for t in all_todos if isinstance(t, dict)]
+        return emit(fmt=args.format, outcome='success', data={
+            'count': len(items), 'items': items,
+        })
 
     print(f"\n📋 听记待办汇总")
     print('=' * 50)
@@ -158,7 +168,8 @@ def main():
             print(f"    来自: {source}")
 
     print(f"\n合计: {len(all_todos)} 条待办")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

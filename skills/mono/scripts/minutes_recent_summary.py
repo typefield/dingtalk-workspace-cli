@@ -21,6 +21,7 @@ if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 
 from minutes_list_parse import uuid_title_pairs_from_payload
+from _runtime import add_contract_flags, emit, failure
 
 
 def run_dws(
@@ -28,7 +29,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -44,7 +45,7 @@ def run_dws(
         return None
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='获取最近听记的 AI 摘要'
     )
@@ -54,10 +55,10 @@ def main():
     parser.add_argument(
         '--output', default='', help='输出到 Markdown 文件'
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
-    print('🎙️ 获取听记列表...')
+    print('🎙️ 获取听记列表...', file=sys.stderr)
     list_data = run_dws([
         'minutes', 'list', 'mine',
         '--limit', str(args.max),
@@ -69,20 +70,23 @@ def main():
             'minutes', 'get', 'summary',
             '--id', '<TASK_UUID>', '--format', 'json',
         ], dry_run=True)
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'limit': args.max, 'output': args.output or None,
+        }, dry_run=True, text='[dry-run] 将读取听记列表并逐条获取摘要')
 
     if not list_data:
-        print('未找到听记')
-        return
+        return failure(args.format, '听记列表查询失败')
 
     pairs = uuid_title_pairs_from_payload(list_data)
     if not pairs:
-        print('暂无听记')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'count': 0, 'items': [],
+        }) if args.format != 'text' else 0
 
     output_lines = [f"# 最近 {len(pairs)} 条听记摘要\n"]
+    records = []
     for i, (uuid, title) in enumerate(pairs, 1):
-        print(f"  [{i}/{len(pairs)}] 获取摘要: {title}")
+        print(f"  [{i}/{len(pairs)}] 获取摘要: {title}", file=sys.stderr)
 
         summary_data = run_dws([
             'minutes', 'get', 'summary',
@@ -110,16 +114,23 @@ def main():
             output_lines.append(f"{summary_text}\n")
         else:
             output_lines.append("(暂无摘要)\n")
+        records.append({'id': uuid, 'title': title, 'summary': summary_text})
 
     full_output = '\n'.join(output_lines)
+
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'count': len(records), 'items': records,
+        })
 
     if args.output:
         with open(args.output, 'w', encoding='utf-8') as f:
             f.write(full_output)
-        print(f"\n✓ 已输出到 {args.output}")
+        print(f"\n✓ 已输出到 {args.output}", file=sys.stderr)
     else:
         print('\n' + full_output)
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

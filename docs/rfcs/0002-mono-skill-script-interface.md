@@ -17,8 +17,9 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `mail_unread_summary.py`、`contact_dept_members.py`、`report_received_today.py`、
   `oa_batch_approve.py`、`calendar_schedule_meeting.py`、`mail_send_with_cc.py`、
   `oa_pending_review.py`、`report_inbox_today.py`、`drive_tree_list.py`、
-  `calendar_free_slot_finder.py` 和 `todo_overdue_check.py`，实际扫描结果为
-  23 个 dry-run、16 个 format、5 个
+  `calendar_free_slot_finder.py`、`todo_overdue_check.py`、
+  `minutes_recent_summary.py` 和 `minutes_extract_todos.py`，实际扫描结果为
+  23 个 dry-run、18 个 format、5 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
@@ -90,7 +91,7 @@ scripts/_runtime.py
 `doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
 `oa_batch_approve.py`、`todo_batch_create.py`。
 
-当前 pilot 已完成上述 16 个脚本；其余脚本继续按阶段一逐个迁移。
+当前 pilot 已完成上述 18 个脚本；其余脚本继续按阶段一逐个迁移。
 
 验收重点是 dry-run 零写入、部分失败逐项保留、失败退出码和重试安全。
 
