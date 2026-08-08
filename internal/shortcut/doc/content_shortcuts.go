@@ -88,7 +88,7 @@ var Create = shortcut.Shortcut{
 		if format == "jsonml" && content != "" {
 			if nodeID == "" {
 				return docPartialWriteError(
-					"doc.create", "doc_create_missing_node_id", "resolve_created_document",
+					"doc.create", apperrors.SubtypeDocCreateMissingNodeID, "resolve_created_document",
 					"创建文档成功但响应缺少 nodeId；JSONML 尚未写入，请先在钉钉中定位新文档，不要直接重试",
 					nil,
 					map[string]any{"nodeId": "", "docFormat": format},
@@ -98,7 +98,7 @@ var Create = shortcut.Shortcut{
 			}
 			if _, err := rt.CallMCPWriteData(productDoc, "update_document", map[string]any{"nodeId": nodeID, "format": "jsonml", "jsonml": content, "mode": "overwrite"}); err != nil {
 				return docPartialWriteError(
-					"doc.create", "doc_create_initial_content_failed", "write_jsonml",
+					"doc.create", apperrors.SubtypeDocCreateInitialContentFailed, "write_jsonml",
 					fmt.Sprintf("文档已创建但 JSONML 写入失败（nodeId=%s）；不要直接重试创建", nodeID),
 					err,
 					map[string]any{"nodeId": nodeID, "docFormat": format},
@@ -319,13 +319,13 @@ var CheckpointUpdate = shortcut.Shortcut{
 		}
 		steps = append(steps, map[string]any{"name": "checkpoint", "status": "success"})
 		if _, err := rt.CallMCPWriteData(productDoc, "update_document", map[string]any{"nodeId": rt.Str("node"), "markdown": content, "mode": rt.Str("mode")}); err != nil {
-			return checkpointPartialWriteError(rt.Str("node"), checkpoint, "update", "doc_checkpoint_update_failed", err,
+			return checkpointPartialWriteError(rt.Str("node"), checkpoint, "update", apperrors.SubtypeDocCheckpointUpdateFailed, err,
 				append(steps, map[string]any{"name": "update", "status": "failed"}, map[string]any{"name": "verify", "status": "not_started"}))
 		}
 		steps = append(steps, map[string]any{"name": "update", "status": "success"})
 		verified, err := rt.CallMCPData(productDoc, "get_document_content", map[string]any{"nodeId": rt.Str("node"), "format": "markdown"})
 		if err != nil {
-			return checkpointPartialWriteError(rt.Str("node"), checkpoint, "verify", "doc_checkpoint_verification_failed", err,
+			return checkpointPartialWriteError(rt.Str("node"), checkpoint, "verify", apperrors.SubtypeDocCheckpointVerificationFailed, err,
 				append(steps, map[string]any{"name": "verify", "status": "failed"}))
 		}
 		steps = append(steps, map[string]any{"name": "verify", "status": "success"})
@@ -707,7 +707,7 @@ func indexRunes(value, target []rune) int {
 	return -1
 }
 
-func checkpointPartialWriteError(nodeID string, checkpoint map[string]any, stage, reason string, cause error, steps []map[string]any) error {
+func checkpointPartialWriteError(nodeID string, checkpoint map[string]any, stage string, subtype apperrors.Subtype, cause error, steps []map[string]any) error {
 	data := map[string]any{"nodeId": nodeID, "checkpointSaved": true}
 	compensation := map[string]any{
 		"available": true,
@@ -720,7 +720,7 @@ func checkpointPartialWriteError(nodeID string, checkpoint map[string]any, stage
 		compensation["version"] = version
 	}
 	return docPartialWriteError(
-		"doc.checkpoint_update", reason, stage,
+		"doc.checkpoint_update", subtype, stage,
 		fmt.Sprintf("checkpoint-update 在 %s 阶段失败；恢复点已保存，nodeId=%s，请勿直接重试整个复合命令", stage, nodeID),
 		cause, data, steps, compensation,
 	)

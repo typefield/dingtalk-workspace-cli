@@ -6,10 +6,10 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**40** 个；直接 `WithSubtype(Subtype...)` 调用点：**107** 个；间接映射调用点：**10** 个。
+- 已注册 descriptor：**45** 个；直接 `WithSubtype(Subtype...)` 调用点：**107** 个；间接映射调用点：**11** 个。
 - `WithReason("…")` 的自由字面调用点：**54** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
-- 动态 `WithReason(variable)` 调用：**2** 个。
+- 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**16** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
@@ -118,7 +118,6 @@
 动态 `WithReason` 在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么按当前 Category 归入 `upstream_unclassified` / `discovery_upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。
 
 - internal/app/event_personal_attempts.go:489: `apperrors.WithReason(reason)`
-- internal/shortcut/doc/common.go:122: `apperrors.WithReason(reason)`
 
 ## 间接稳定 subtype 映射
 
@@ -126,6 +125,7 @@
 
 - internal/app/root.go:407: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/aitabletarget/resolver.go:410: `apperrors.WithSubtype(subtype)`
+- internal/shortcut/doc/common.go:124: `apperrors.WithSubtype(subtype)`
 - internal/transport/client.go:1030: `apperrors.WithSubtype(httpStatusSubtype(`
 - internal/transport/client.go:1159: `apperrors.WithSubtype(jsonRPCSubtype(`
 - internal/transport/client.go:461: `apperrors.WithSubtype(transportUpstreamSubtype(`

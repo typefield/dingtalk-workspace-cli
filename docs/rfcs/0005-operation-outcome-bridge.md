@@ -133,7 +133,7 @@ unified_active:
 ## 5. 迁移顺序与非目标
 
 ```text
-P0  个人状态机的 Category/幂等性源码审阅；登记 doc 五个既有 reason descriptor
+P0  个人状态机的 Category/幂等性源码审阅；登记 doc 五个既有 reason descriptor（后者已完成）
 P1  在 doc 三条 terminal command 建 shadow PartialData + legacy golden
 P2  按命令转 active；受控真实账号复验已应用/补偿事实
 P3  审阅个人订阅请求失败分类与 idempotency，再迁其余 failure family

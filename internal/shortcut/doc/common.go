@@ -115,11 +115,13 @@ func docEnvelope(operation string, data any, steps ...map[string]any) map[string
 	}
 }
 
-func docPartialWriteError(operation, reason, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) error {
+func docPartialWriteError(operation string, subtype apperrors.Subtype, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) error {
 	return apperrors.NewAPI(
 		message,
 		apperrors.WithOperation(operation),
-		apperrors.WithReason(reason),
+		// The legacy Reason wire remains the same string, while the registry
+		// makes this fixed partial-write family safe for Agent branching.
+		apperrors.WithSubtype(subtype),
 		apperrors.WithFailureStage(stage),
 		apperrors.WithExecutionStarted(true),
 		apperrors.WithRetryable(false),

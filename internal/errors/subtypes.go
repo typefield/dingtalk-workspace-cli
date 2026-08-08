@@ -20,46 +20,51 @@ package errors
 type Subtype string
 
 const (
-	SubtypeMissingRequiredFlags           Subtype = "missing_required_flags"
-	SubtypeInvalidFlagValue               Subtype = "invalid_flag_value"
-	SubtypeInvalidArgument                Subtype = "invalid_argument"
-	SubtypeUnknownFlag                    Subtype = "unknown_flag"
-	SubtypeConfirmationRequired           Subtype = "confirmation_required"
-	SubtypeRateLimit                      Subtype = "rate_limit"
-	SubtypePaginationInconsistent         Subtype = "pagination_inconsistent"
-	SubtypeProjectionUnknown              Subtype = "projection_unknown"
-	SubtypeInputReadFailed                Subtype = "input_read_failed"
-	SubtypeInvalidJSONInput               Subtype = "invalid_json_input"
-	SubtypeFormulaErrorsFound             Subtype = "formula_errors_found"
-	SubtypeDownloadOutputUnavailable      Subtype = "download_output_unavailable"
-	SubtypeDownloadSizeMismatch           Subtype = "download_size_mismatch"
-	SubtypeVersionNotFound                Subtype = "version_not_found"
-	SubtypeTargetTypeMismatch             Subtype = "target_type_mismatch"
-	SubtypeTargetArgumentsConflict        Subtype = "target_arguments_conflict"
-	SubtypeMissingTarget                  Subtype = "missing_target"
-	SubtypeResolutionNotFound             Subtype = "resolution_not_found"
-	SubtypeResolutionAmbiguous            Subtype = "resolution_ambiguous"
-	SubtypeResolutionIncomplete           Subtype = "resolution_incomplete"
-	SubtypeResolutionBatchFailed          Subtype = "resolution_batch_failed"
-	SubtypeInvalidAITableURL              Subtype = "invalid_aitable_url"
-	SubtypeTargetNotFound                 Subtype = "target_not_found"
-	SubtypeTargetAmbiguous                Subtype = "target_ambiguous"
-	SubtypeTargetTypeConflict             Subtype = "target_type_conflict"
-	SubtypeTargetIncomplete               Subtype = "target_incomplete"
-	SubtypeTargetInvalidResponse          Subtype = "target_invalid_response"
-	SubtypeTargetVerificationFailed       Subtype = "target_verification_failed"
-	SubtypeKeyValueConflict               Subtype = "key_value_conflict"
-	SubtypeAttachmentTokensUnavailable    Subtype = "attachment_tokens_unavailable"
-	SubtypeUpstreamUnclassified           Subtype = "upstream_unclassified"
-	SubtypeDiscoveryUpstreamUnclassified  Subtype = "discovery_upstream_unclassified"
-	SubtypeUpstreamAuthenticationRequired Subtype = "upstream_authentication_required"
-	SubtypeUpstreamAuthorizationDenied    Subtype = "upstream_authorization_denied"
-	SubtypeToolProtocolIncompatible       Subtype = "tool_protocol_incompatible"
-	SubtypeBackendDependencyUnavailable   Subtype = "backend_dependency_unavailable"
-	SubtypeUpstreamRequestRejected        Subtype = "upstream_request_rejected"
-	SubtypeBlockedFlag                    Subtype = "blocked_flag"
-	SubtypeAmbiguousFlag                  Subtype = "ambiguous_flag"
-	SubtypeSkillDownloadInfoUnavailable   Subtype = "skill_download_info_unavailable"
+	SubtypeMissingRequiredFlags               Subtype = "missing_required_flags"
+	SubtypeInvalidFlagValue                   Subtype = "invalid_flag_value"
+	SubtypeInvalidArgument                    Subtype = "invalid_argument"
+	SubtypeUnknownFlag                        Subtype = "unknown_flag"
+	SubtypeConfirmationRequired               Subtype = "confirmation_required"
+	SubtypeRateLimit                          Subtype = "rate_limit"
+	SubtypePaginationInconsistent             Subtype = "pagination_inconsistent"
+	SubtypeProjectionUnknown                  Subtype = "projection_unknown"
+	SubtypeInputReadFailed                    Subtype = "input_read_failed"
+	SubtypeInvalidJSONInput                   Subtype = "invalid_json_input"
+	SubtypeFormulaErrorsFound                 Subtype = "formula_errors_found"
+	SubtypeDownloadOutputUnavailable          Subtype = "download_output_unavailable"
+	SubtypeDownloadSizeMismatch               Subtype = "download_size_mismatch"
+	SubtypeVersionNotFound                    Subtype = "version_not_found"
+	SubtypeTargetTypeMismatch                 Subtype = "target_type_mismatch"
+	SubtypeTargetArgumentsConflict            Subtype = "target_arguments_conflict"
+	SubtypeMissingTarget                      Subtype = "missing_target"
+	SubtypeResolutionNotFound                 Subtype = "resolution_not_found"
+	SubtypeResolutionAmbiguous                Subtype = "resolution_ambiguous"
+	SubtypeResolutionIncomplete               Subtype = "resolution_incomplete"
+	SubtypeResolutionBatchFailed              Subtype = "resolution_batch_failed"
+	SubtypeInvalidAITableURL                  Subtype = "invalid_aitable_url"
+	SubtypeTargetNotFound                     Subtype = "target_not_found"
+	SubtypeTargetAmbiguous                    Subtype = "target_ambiguous"
+	SubtypeTargetTypeConflict                 Subtype = "target_type_conflict"
+	SubtypeTargetIncomplete                   Subtype = "target_incomplete"
+	SubtypeTargetInvalidResponse              Subtype = "target_invalid_response"
+	SubtypeTargetVerificationFailed           Subtype = "target_verification_failed"
+	SubtypeKeyValueConflict                   Subtype = "key_value_conflict"
+	SubtypeAttachmentTokensUnavailable        Subtype = "attachment_tokens_unavailable"
+	SubtypeUpstreamUnclassified               Subtype = "upstream_unclassified"
+	SubtypeDiscoveryUpstreamUnclassified      Subtype = "discovery_upstream_unclassified"
+	SubtypeUpstreamAuthenticationRequired     Subtype = "upstream_authentication_required"
+	SubtypeUpstreamAuthorizationDenied        Subtype = "upstream_authorization_denied"
+	SubtypeToolProtocolIncompatible           Subtype = "tool_protocol_incompatible"
+	SubtypeBackendDependencyUnavailable       Subtype = "backend_dependency_unavailable"
+	SubtypeUpstreamRequestRejected            Subtype = "upstream_request_rejected"
+	SubtypeBlockedFlag                        Subtype = "blocked_flag"
+	SubtypeAmbiguousFlag                      Subtype = "ambiguous_flag"
+	SubtypeSkillDownloadInfoUnavailable       Subtype = "skill_download_info_unavailable"
+	SubtypeDocCreateMissingNodeID             Subtype = "doc_create_missing_node_id"
+	SubtypeDocCreateInitialContentFailed      Subtype = "doc_create_initial_content_failed"
+	SubtypeDocCheckpointUpdateFailed          Subtype = "doc_checkpoint_update_failed"
+	SubtypeDocCheckpointVerificationFailed    Subtype = "doc_checkpoint_verification_failed"
+	SubtypeDocHistoryRevertVerificationFailed Subtype = "doc_history_revert_verification_failed"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -449,6 +454,51 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "技能市场未返回可用下载信息；请保留上游错误码，确认网络和登录状态后重试读取。",
 		Description:   "a read-only skill-market download-info lookup did not return a usable result",
+	},
+	SubtypeDocCreateMissingNodeID: {
+		Subtype:       SubtypeDocCreateMissingNodeID,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "文档已创建但未返回稳定 node ID；请先定位已创建文档，不要重复创建。",
+		Description:   "document creation completed but the response omitted the created node identity",
+	},
+	SubtypeDocCreateInitialContentFailed: {
+		Subtype:       SubtypeDocCreateInitialContentFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "文档已创建但初始内容写入失败；先检查已创建文档或补偿计划，不要重复创建。",
+		Description:   "a follow-up initial-content write failed after document creation completed",
+	},
+	SubtypeDocCheckpointUpdateFailed: {
+		Subtype:       SubtypeDocCheckpointUpdateFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "更新前已保存恢复点；请检查已完成步骤并按补偿信息决定是否恢复。",
+		Description:   "a checkpoint-protected document update failed after the checkpoint was saved",
+	},
+	SubtypeDocCheckpointVerificationFailed: {
+		Subtype:       SubtypeDocCheckpointVerificationFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "写入可能已完成但读回验证失败；请先检查文档或恢复点，不要盲目重试。",
+		Description:   "a checkpoint-protected document update could not be verified after writing",
+	},
+	SubtypeDocHistoryRevertVerificationFailed: {
+		Subtype:       SubtypeDocHistoryRevertVerificationFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "版本回滚可能已完成但读回验证失败；请先检查当前文档，不要重复回滚。",
+		Description:   "a document version revert could not be verified after the revert request completed",
 	},
 }
 
