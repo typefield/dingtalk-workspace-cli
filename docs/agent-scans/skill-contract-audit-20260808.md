@@ -157,27 +157,27 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-zl49nsfq/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-oo00rquw/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:12:56`
+- generated_at: `2026-08-08T15:18:32`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
 
 | surface | count |
 |---|---:|
-| runtime public | 376 |
-| committed catalog | 376 |
-| Mono Skill total | 376 |
+| runtime public | 377 |
+| committed catalog | 377 |
+| Mono Skill total | 377 |
 
 | service | catalog | Skill |
 |---|---:|---:|
 | `aitable` | 92 | 92 |
 | `attendance` | 35 | 35 |
-| `calendar` | 20 | 20 |
+| `calendar` | 21 | 21 |
 | `chat` | 98 | 98 |
 | `contact` | 14 | 14 |
 | `devapp` | 20 | 20 |
@@ -200,7 +200,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-zl49nsfq/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-oo00rquw/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -214,16 +214,15 @@ Documented Python-script flag mismatches: 0
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 376 |
-| exclusion（public=false） | 39 |
+| public=true | 377 |
+| exclusion（public=false） | 38 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 35 |
+| 未 review 的 exclusion | 34 |
 
 ## 逐条队列
 
 | service | command | risk | confirmation | reviewed | next decision |
 |---|---|---|---|:---:|---|
-| `calendar` | `+find-room` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `calendar` | `+respond-event` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `calendar` | `+room-find` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `chat` | `+conversation-mute-at-all` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |
@@ -276,7 +275,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1138 executable command paths)
+skill command integrity check: ok (1139 executable command paths)
 ```
 
 ## 解释边界
