@@ -17,6 +17,7 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"errors"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -191,6 +192,34 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 		resourceLedger, _ := details["resource_downloads"].(map[string]any)
 		if resourceLedger["failedCount"] != float64(1) {
 			t.Fatalf("resource ledger=%#v", resourceLedger)
+		}
+	})
+
+	t.Run("requested local export failure is partial rather than read success", func(t *testing.T) {
+		originalWrite := writeChatMessagesExportJSON
+		writeChatMessagesExportJSON = func(string, bool, any) (string, int, error) {
+			return "", 0, errors.New("fixture local export failure")
+		}
+		t.Cleanup(func() { writeChatMessagesExportJSON = originalWrite })
+
+		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
+			`{"result":{"hasMore":false,"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`,
+		}}, "--format", "json", "--conversation-id", "cid", "--output", "exports/messages.json")
+		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("export partial envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data, _ := envelope["data"].(map[string]any)
+		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
+			t.Fatalf("export partial details=%#v", data)
+		}
+		failure := data["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+		if failure["operation"] != "chat/message_export" || failure["origin"] != "local_file" {
+			t.Fatalf("export failure=%#v", failure)
+		}
+		details, _ := failure["details"].(map[string]any)
+		export, _ := details["export"].(map[string]any)
+		if export["local_path"] != "exports/messages.json" || export["overwrite"] != false {
+			t.Fatalf("export failure details=%#v", details)
 		}
 	})
 }

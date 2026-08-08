@@ -33,6 +33,13 @@ import (
 
 var dingTalkMessageLocation = time.FixedZone("CST", 8*60*60)
 
+// writeChatMessagesExportJSON is a narrow test seam around the final local
+// export step. The production implementation remains the workspace-confined,
+// atomic writer in the chat package; keeping the seam here lets the activated
+// result-contract probe exercise a post-read local failure without relying on
+// host filesystem permissions.
+var writeChatMessagesExportJSON = chatshortcut.WriteMessageExportJSON
+
 const (
 	chatMessagesDefaultPageLimit = 50
 	chatMessagesHardPageLimit    = 500
@@ -446,10 +453,23 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 				"overwrite": rt.Bool("overwrite"),
 			}
 		} else {
-			path, size, writeErr := chatshortcut.WriteMessageExportJSON(
+			path, size, writeErr := writeChatMessagesExportJSON(
 				rt.Str("output"), rt.Bool("overwrite"), payload)
 			if writeErr != nil {
-				return writeErr
+				failureInfo := chatMessagesExportFailureInfo(rt.Str("output"), rt.Bool("overwrite"), writeErr)
+				if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
+					return apperrors.NewInternal("记录消息导出失败状态失败", apperrors.WithCause(recordErr))
+				}
+				pageLedger.SetStopReason("message_export_failure")
+				result, resultErr = chatMessagesUnifiedResult(pageLedger, payload, rt.DryRun())
+				if resultErr != nil {
+					return apperrors.NewInternal("生成消息列表统一分页结果失败", apperrors.WithCause(resultErr))
+				}
+				// Before activation the original export error and its no-stdout
+				// behavior stay intact. The shadow result is still strictly
+				// validated; once active the same operation emits one truthful
+				// partial_failure that preserves the already-read message page.
+				return rt.OutputPartial(result, writeErr)
 			}
 			payload["export"] = map[string]any{
 				"format":    "json",
@@ -943,6 +963,64 @@ func chatMessagesResourceDownloadFailureInfo(ledger map[string]any) *output.Erro
 			"resource_downloads": ledger,
 		},
 	}
+}
+
+// chatMessagesExportFailureInfo records a local export failure after a
+// successful remote read. It deliberately retains the original local error
+// category when available: an output path that becomes invalid or occupied is
+// a validation failure, whereas an atomic-write failure is internal. Either
+// way, the enclosing result is partial because the message page is known.
+func chatMessagesExportFailureInfo(path string, overwrite bool, err error) *output.ErrorInfo {
+	started := true
+	info := &output.ErrorInfo{
+		Type:             "internal",
+		Message:          "消息导出失败",
+		Hint:             "已读取的消息仍可使用；检查 error.details.export 后修正本地路径或权限，仅重新执行导出。",
+		Operation:        "chat/message_export",
+		Origin:           "local_file",
+		Stage:            "message_export",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"export": map[string]any{
+				"local_path": strings.TrimSpace(path),
+				"overwrite":  overwrite,
+			},
+		},
+	}
+	if err != nil {
+		info.Cause = err.Error()
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed == nil {
+		return info
+	}
+	if typed.Category != apperrors.CategoryPartial {
+		info.Type = string(typed.Category)
+	}
+	if typed.StableSubtype != "" {
+		info.Subtype = typed.StableSubtype
+	} else {
+		info.Subtype = typed.Reason
+	}
+	if typed.Hint != "" {
+		info.Hint = typed.Hint
+	}
+	if typed.Operation != "" {
+		info.Operation = typed.Operation
+	}
+	if typed.Origin != "" {
+		info.Origin = typed.Origin
+	}
+	if typed.FailureStage != "" {
+		info.Stage = typed.FailureStage
+	}
+	if typed.ExecutionStarted != nil {
+		info.ExecutionStarted = typed.ExecutionStarted
+	}
+	if len(typed.Details) > 0 {
+		info.Details["local_error"] = typed.Details
+	}
+	return info
 }
 
 func chatMessagesLedgerCount(value any) int {
