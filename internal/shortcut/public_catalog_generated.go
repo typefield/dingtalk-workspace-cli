@@ -355,6 +355,7 @@ func generatedPublicShortcutCatalog() map[string]struct{} {
 		"minutes\u0000+list-all":                        {},
 		"minutes\u0000+list-mine":                       {},
 		"minutes\u0000+list-shared":                     {},
+		"minutes\u0000+minutes-search":                  {},
 		"minutes\u0000+record-start":                    {},
 		"minutes\u0000+replace-batch":                   {},
 		"oa\u0000+list-cc":                              {},

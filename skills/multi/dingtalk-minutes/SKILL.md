@@ -28,6 +28,7 @@ metadata:
 | `dws minutes +list-all` | read | 查询我有权限访问的所有听记列表 |
 | `dws minutes +list-mine` | read | 查询我创建的听记列表 |
 | `dws minutes +list-shared` | read | 查询他人共享给我的听记列表 |
+| `dws minutes +minutes-search` | read | 按关键词搜索我的妙记并投影列表 |
 | `dws minutes +record-start` | write | 发起听记（开始录音） |
 | `dws minutes +replace-batch` | write | 对一条妙记（听记）批量执行多组文字替换（原文=>替换） |
 <!-- VISIBLE_SHORTCUTS_END -->

@@ -156,21 +156,21 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-y1siazgz/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-0tpgsgx4/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T14:46:35`
+- generated_at: `2026-08-08T14:56:28`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
 
 | surface | count |
 |---|---:|
-| runtime public | 375 |
-| committed catalog | 375 |
-| Mono Skill total | 375 |
+| runtime public | 376 |
+| committed catalog | 376 |
+| Mono Skill total | 376 |
 
 | service | catalog | Skill |
 |---|---:|---:|
@@ -184,7 +184,7 @@ Documented Python-script flag mismatches: 0
 | `doc` | 45 | 45 |
 | `drive` | 7 | 7 |
 | `mail` | 10 | 10 |
-| `minutes` | 6 | 6 |
+| `minutes` | 7 | 7 |
 | `oa` | 7 | 7 |
 | `report` | 2 | 2 |
 | `sheet` | 2 | 2 |
@@ -199,7 +199,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-y1siazgz/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-0tpgsgx4/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -213,10 +213,10 @@ Documented Python-script flag mismatches: 0
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 375 |
-| exclusion（public=false） | 40 |
+| public=true | 376 |
+| exclusion（public=false） | 39 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 36 |
+| 未 review 的 exclusion | 35 |
 
 ## 逐条队列
 
@@ -246,7 +246,6 @@ Documented Python-script flag mismatches: 0
 | `drive` | `+list` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+action-items` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+latest-minutes` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+minutes-search` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-pause` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-resume` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-stop` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |

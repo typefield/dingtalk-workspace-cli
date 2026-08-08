@@ -49,6 +49,11 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # runtime. Keep the generated public catalog in sync so Skill discovery
     # does not lag behind the executable shortcut surface.
     ("devapp", "+credentials-get"): "read",
+    # Reviewed read-only smart adapter: it has an explicit Contract/Safety
+    # declaration and is already documented as the canonical keyword search
+    # for the user's own minutes. Keep it discoverable even when the current
+    # account has no matching minutes fixture.
+    ("minutes", "+minutes-search"): "read",
 }
 
 

@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T14:22:24.638407",
-  "count": 375,
+  "generated_at": "2026-08-08T14:55:38.237156",
+  "count": 376,
   "results": [
     {
       "suite": "semantic",
@@ -3149,6 +3149,13 @@
       "command": "+list-shared",
       "risk": "read",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "minutes",
+      "command": "+minutes-search",
+      "risk": "read",
+      "status": "reviewed_available"
     },
     {
       "suite": "write",

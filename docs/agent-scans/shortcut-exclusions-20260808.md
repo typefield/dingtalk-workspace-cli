@@ -9,10 +9,10 @@
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 375 |
-| exclusion（public=false） | 40 |
+| public=true | 376 |
+| exclusion（public=false） | 39 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 36 |
+| 未 review 的 exclusion | 35 |
 
 ## 逐条队列
 
@@ -42,7 +42,6 @@
 | `drive` | `+list` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+action-items` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+latest-minutes` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `minutes` | `+minutes-search` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-pause` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-resume` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+record-stop` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
