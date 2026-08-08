@@ -2058,7 +2058,7 @@ func devAppMultiProfileResult(content map[string]any) output.CommandResult {
 
 func devAppFailureResult(content map[string]any) output.CommandResult {
 	status := strings.ToUpper(devAppFirstContentString(content, "status", "taskStatus", "versionStatus", "processStatus"))
-	if success, present := content["success"].(bool); present && !success {
+	if _, present := content["success"]; present && !devAppContentBool(content, "success") {
 		return output.Failure(devAppErrorInfo(content, "dev operation failed"))
 	}
 	if status == "FAIL" || status == "FAILED" || status == "EXPIRED" {
@@ -2149,7 +2149,7 @@ func normalizeDevAppServiceResult(result executor.Result) executor.Result {
 	if !ok {
 		return result
 	}
-	if success, ok := content["success"].(bool); !ok || !success {
+	if _, present := content["success"]; !present || !devAppContentBool(content, "success") {
 		return result
 	}
 	value, ok := content["result"]

@@ -24,6 +24,37 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		}
 	})
 
+	t.Run("string false is still a failure", func(t *testing.T) {
+		result := DevAppCommandResultFromPayload("", map[string]any{
+			"success":  "false",
+			"errorMsg": "rejected",
+		}, false)
+		env, err := output.EnvelopeFromResult(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 {
+			t.Fatalf("string-false envelope=%+v rc=%d", env, result.ExitCode())
+		}
+	})
+
+	t.Run("string true service wrapper is normalized", func(t *testing.T) {
+		result := DevAppCommandResultFromPayload("", map[string]any{
+			"content": map[string]any{
+				"success": "true",
+				"result":  map[string]any{"id": "string-true"},
+			},
+		}, false)
+		env, err := output.EnvelopeFromResult(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, _ := env.Data.(map[string]any)
+		if env.Outcome != output.OutcomeSuccess || data["id"] != "string-true" {
+			t.Fatalf("string-true envelope=%+v data=%#v", env, env.Data)
+		}
+	})
+
 	t.Run("pending approval", func(t *testing.T) {
 		result := DevAppCommandResultFromPayload("", map[string]any{
 			"versionStatus": "AUDIT", "versionId": "v1", "unifiedAppId": "u1",
