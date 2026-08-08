@@ -44,7 +44,7 @@ func newSheetFormulaVerifyCmd() *cobra.Command {
 				if v <= 0 {
 					return apperrors.NewValidation(
 						"--max-locations-per-error 必须是正整数",
-						apperrors.WithReason("invalid_argument"),
+						apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 					)
 				}
 				toolArgs["maxLocationsPerError"] = v
@@ -54,7 +54,7 @@ func newSheetFormulaVerifyCmd() *cobra.Command {
 				if v <= 0 {
 					return apperrors.NewValidation(
 						"--max-cells 必须是正整数",
-						apperrors.WithReason("invalid_argument"),
+						apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 					)
 				}
 				toolArgs["maxCells"] = v
@@ -180,7 +180,7 @@ func formulaVerifyTargetsFromFlags(cmd *cobra.Command) ([]map[string]any, error)
 		if strings.TrimSpace(sheetID) != "" || strings.TrimSpace(rangeStr) != "" {
 			return nil, apperrors.NewValidation(
 				"--targets 不能与 --sheet-id 或 --range 同时使用",
-				apperrors.WithReason("invalid_argument"),
+				apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 			)
 		}
 		return parseFormulaVerifyTargets(cmd, v)
@@ -188,7 +188,7 @@ func formulaVerifyTargetsFromFlags(cmd *cobra.Command) ([]map[string]any, error)
 	if sheetID == "" && rangeStr != "" {
 		return nil, apperrors.NewValidation(
 			"--range 必须与 --sheet-id 配合使用",
-			apperrors.WithReason("invalid_argument"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 		)
 	}
 	if sheetID != "" {

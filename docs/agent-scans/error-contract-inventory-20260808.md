@@ -1,16 +1,16 @@
 # DWS 错误契约 Agent 扫描
 
-扫描日期：2026-08-08
+扫描日期：2026-08-09
 
 > 本报告由 Agent 读取当前 Go 源码生成，不是 CI 门禁；只保存 Markdown 证据，不生成或保存运行时 JSON fixture。
 
 ## 当前事实
 
-- 已注册 descriptor：**6** 个；`WithSubtype(...)` 调用点：**47** 个。
-- `WithReason("…")` 的自由字面调用点：**111** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
+- 已注册 descriptor：**8** 个；`WithSubtype(...)` 调用点：**70** 个。
+- `WithReason("…")` 的自由字面调用点：**88** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
 - 动态 `WithReason(variable)` 调用：**16** 个。
-- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**29** 个。
+- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**28** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
 已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
@@ -46,8 +46,8 @@
 | `invalid_agent_host` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_host.go:68` |
 | `invalid_agent_product` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_product.go:46` |
 | `invalid_aitable_url` | free 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
-| `invalid_argument` | free 10 | 10 | `validation` | yes | no | no | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
-| `invalid_flag_value` | free 13 | 13 | `validation` | no | no | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
+| `invalid_argument` | registered 10 | 10 | `validation` | yes | no | no | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
+| `invalid_flag_value` | registered 13 | 13 | `validation` | yes | no | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
 | `invalid_json_input` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/helpers/sheet_formula_verify.go:230` |
 | `key_value_conflict` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
 | `mcp_tool_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:855` |

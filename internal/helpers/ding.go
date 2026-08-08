@@ -35,7 +35,7 @@ func validatedDingRemindType(raw string) (string, error) {
 	if _, ok := dingRemindTypeMap[value]; !ok {
 		return "", apperrors.NewValidation(
 			fmt.Sprintf("--type must be one of app, sms, or call, got %q", raw),
-			apperrors.WithReason("invalid_argument"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 		)
 	}
 	return value, nil
@@ -59,7 +59,7 @@ func validatedDingRecipients(raw string) ([]string, error) {
 	if len(values) == 0 {
 		return nil, apperrors.NewValidation(
 			"--users must contain at least one non-empty recipient ID",
-			apperrors.WithReason("invalid_argument"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 		)
 	}
 	return values, nil

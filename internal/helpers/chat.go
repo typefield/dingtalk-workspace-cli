@@ -78,7 +78,7 @@ func validatedChatNoticeRunAt(cmd *cobra.Command) (string, error) {
 	}
 	return "", apperrors.NewValidation(
 		"--run-at must be an ISO-8601 date-time (for example 2026-07-03T09:00:00+08:00)",
-		apperrors.WithReason("invalid_flag_value"),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 	)
 }
 
@@ -87,7 +87,7 @@ func requiredPositiveChatInt64Flag(cmd *cobra.Command, name string) (int64, erro
 	if value <= 0 {
 		return 0, apperrors.NewValidation(
 			fmt.Sprintf("--%s must be a positive integer", name),
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	return value, nil
@@ -102,14 +102,14 @@ func requiredPositiveChatIDListFlag(cmd *cobra.Command, name string) ([]int64, e
 	if err != nil {
 		return nil, apperrors.NewValidation(
 			fmt.Sprintf("--%s: %v", name, err),
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	for _, value := range values {
 		if value <= 0 {
 			return nil, apperrors.NewValidation(
 				fmt.Sprintf("--%s must contain only positive integers", name),
-				apperrors.WithReason("invalid_flag_value"),
+				apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 			)
 		}
 	}
@@ -937,7 +937,7 @@ func validateChatScope(scope string) error {
 	if !strings.HasPrefix(scope, "chat.") {
 		return apperrors.NewValidation(
 			fmt.Sprintf("invalid scope %q, dws chat chmod only accepts chat.* scope", scope),
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	return nil
@@ -949,7 +949,7 @@ func buildChatGrantBaseArgs(cmd *cobra.Command, scope string) (map[string]any, e
 	if !chatValidGrantTypes[grantType] {
 		return nil, apperrors.NewValidation(
 			fmt.Sprintf("invalid --grant-type %q, must be one of: once, session, timed, permanent", grantType),
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	ttl, _ := cmd.Flags().GetString("ttl")
@@ -1013,7 +1013,7 @@ func buildChatCrossOrgDataAuthArgs(cmd *cobra.Command) (map[string]any, error) {
 	if targetOrgID != "" && all {
 		return nil, apperrors.NewValidation(
 			"--target-org-id and --all are mutually exclusive",
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	if all {
@@ -1047,7 +1047,7 @@ func appendChatChmodParams(cmd *cobra.Command, toolArgs map[string]any) error {
 	if specified > 1 {
 		return apperrors.NewValidation(
 			"--conversation-id, --open-dingtalk-id and --user are mutually exclusive",
-			apperrors.WithReason("invalid_flag_value"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 		)
 	}
 	if conversationID != "" {
@@ -1084,7 +1084,7 @@ func parseChatChmodParams(values []string) (map[string]string, error) {
 		if len(parts) != 2 || strings.TrimSpace(parts[0]) == "" {
 			return nil, apperrors.NewValidation(
 				fmt.Sprintf("--permParam must be key=value, got %q", raw),
-				apperrors.WithReason("invalid_flag_value"),
+				apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 			)
 		}
 		params[strings.TrimSpace(parts[0])] = strings.TrimSpace(parts[1])
@@ -7840,7 +7840,7 @@ status 可选值:
 			if err != nil || recordID <= 0 {
 				return apperrors.NewValidation(
 					"--record-id must be a positive integer",
-					apperrors.WithReason("invalid_flag_value"),
+					apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 				)
 			}
 			applicant, err := requiredTrimmedChatFlag(cmd, "applicant")
@@ -7858,7 +7858,7 @@ status 可选值:
 			if status != "AuditApprove" && status != "AuditDelete" {
 				return apperrors.NewValidation(
 					"--status must be one of: AuditApprove, AuditDelete",
-					apperrors.WithReason("invalid_flag_value"),
+					apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 				)
 			}
 			toolArgs := map[string]any{
@@ -9017,7 +9017,7 @@ status 可选值:
 			if target != "" && receiver != "" {
 				return apperrors.NewValidation(
 					"--target and --receiver are mutually exclusive",
-					apperrors.WithReason("invalid_flag_value"),
+					apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 				)
 			}
 			toolArgs := map[string]any{
@@ -9033,7 +9033,7 @@ status 可选值:
 				if v < 0 {
 					return apperrors.NewValidation(
 						"--expires-seconds must be zero or a positive integer",
-						apperrors.WithReason("invalid_flag_value"),
+						apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
 					)
 				}
 				toolArgs["expiresSeconds"] = v

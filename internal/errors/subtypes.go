@@ -21,6 +21,8 @@ type Subtype string
 
 const (
 	SubtypeMissingRequiredFlags   Subtype = "missing_required_flags"
+	SubtypeInvalidFlagValue       Subtype = "invalid_flag_value"
+	SubtypeInvalidArgument        Subtype = "invalid_argument"
 	SubtypeUnknownFlag            Subtype = "unknown_flag"
 	SubtypeConfirmationRequired   Subtype = "confirmation_required"
 	SubtypeRateLimit              Subtype = "rate_limit"
@@ -64,6 +66,24 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请补齐缺失的必填参数后重试；运行当前命令的 --help 查看参数说明。",
 		Description:   "required command input is missing",
+	},
+	SubtypeInvalidFlagValue: {
+		Subtype:       SubtypeInvalidFlagValue,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请根据当前命令的 --help 检查参数取值、格式和互斥关系，修正后再重试。",
+		Description:   "a command flag value is invalid or conflicts with another flag",
+	},
+	SubtypeInvalidArgument: {
+		Subtype:       SubtypeInvalidArgument,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请根据当前命令的 --help 检查输入参数和组合约束，修正后再重试。",
+		Description:   "a command argument or local input combination is invalid",
 	},
 	SubtypeUnknownFlag: {
 		Subtype:       SubtypeUnknownFlag,

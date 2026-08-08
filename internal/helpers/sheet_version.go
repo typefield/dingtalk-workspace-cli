@@ -130,7 +130,7 @@ func newSheetVersionCmd() *cobra.Command {
 			if version <= 0 {
 				return apperrors.NewValidation(
 					fmt.Sprintf("--version 必须为正整数，收到 %d", version),
-					apperrors.WithReason("invalid_argument"),
+					apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 				)
 			}
 			// A sheet version revert is destructive and historically has been

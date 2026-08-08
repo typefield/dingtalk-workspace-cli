@@ -53,7 +53,7 @@ func oaFormValues(raw string) ([]map[string]string, error) {
 func oaInvalidArgument(format string, args ...any) error {
 	return apperrors.NewValidation(
 		fmt.Sprintf(format, args...),
-		apperrors.WithReason("invalid_argument"),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
 	)
 }
 

@@ -26,8 +26,8 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / `WithSubtype(...)` 调用 | 6 / 47 | 首批稳定 subtype 已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
-| `WithReason("…")` 自由字面调用 | 111 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
+| 已注册 descriptor / `WithSubtype(...)` 调用 | 8 / 70 | 首批稳定 subtype 与本地输入校验第二批均已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| `WithReason("…")` 自由字面调用 | 88 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
 | 全部 subtype / 调用点 | 80 / 158 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 6 | 绕过 `WithReason` 的第二条入口 |
 | 动态 `WithReason(variable)` | 16 | 上游码或拼接文本可能直接变成 Agent 分支键 |
@@ -83,6 +83,8 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 | subtype | Category | 恢复语义 |
 |---|---|---|
 | `missing_required_flags` | validation | 展示 `available_flags` 或可执行的参数补齐提示；不可重试 |
+| `invalid_flag_value` | validation | 只表示本地 flag 值、格式或互斥关系不合法；按 Help 修正后再执行，不可重试 |
+| `invalid_argument` | validation | 只表示本地参数或参数组合不合法；按 Help 修正后再执行，不可重试 |
 | `unknown_flag` | validation | 显示可见 flag；不可重试 |
 | `confirmation_required` | validation | 只在尚未发起写请求时出现；给出安全的确认动作；不可自动重试 |
 | `rate_limit` | api | 仅按服务端指令/安全策略声明可重试，并透传等待时间 |
@@ -125,8 +127,8 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 
 ```text
 P0  Agent 扫描盘点（已完成）
-P1  建 registry + 首批六个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批六个已登记 subtype 的所有生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
+P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
+P2  逐命令迁移：首批八个已登记 subtype 的所有生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```
@@ -140,7 +142,7 @@ P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或
 
 1. Agent 扫描产出 Markdown 台账，记录注册、未注册、动态映射和缺恢复字段；不保存
    运行时 JSON fixture，也不将 Agent 审核替换为 CI。
-2. 对首批六个 subtype，Category、进程退出码、legacy 投影和统一返回投影一致。
+2. 对首批八个 subtype，Category、进程退出码、legacy 投影和统一返回投影一致。
 3. `confirmation_required` 在请求发起前退出；写请求的模糊网络/5xx 失败不宣称安全重试。
 4. `pagination_inconsistent` 与 `projection_unknown` 都 fail closed，不能输出完整空列表。
 5. 缺参、未知 flag、限流、写请求超时、部分成功各有至少一条命令级回归路径。

@@ -10,6 +10,8 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		action   bool
 	}{
 		{SubtypeMissingRequiredFlags, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidFlagValue, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidArgument, CategoryValidation, RetryNever, false},
 		{SubtypeUnknownFlag, CategoryValidation, RetryNever, false},
 		{SubtypeConfirmationRequired, CategoryValidation, RetryNever, true},
 		{SubtypeRateLimit, CategoryAPI, RetryServerDirective, false},
