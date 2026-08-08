@@ -60,7 +60,7 @@ func TestCrossPlatformCoverageRuntimeWriteDataRemainingBranches(t *testing.T) {
 		t.Fatal("strict empty acknowledgement was accepted")
 	} else {
 		var typed *apperrors.Error
-		if !errors.As(err, &typed) || typed.Reason != "empty_tool_response" || !typed.RetryableSet || typed.Retryable {
+		if !errors.As(err, &typed) || typed.Reason != "empty_tool_response" || !typed.RetryableSet || typed.Retryable || typed.Hint == "" {
 			t.Fatalf("strict empty acknowledgement error = %#v", err)
 		}
 	}

@@ -6,11 +6,11 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**63** 个；直接 `WithSubtype(Subtype...)` 调用点：**118** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**43** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
+- 已注册 descriptor：**71** 个；直接 `WithSubtype(Subtype...)` 调用点：**126** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**35** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
-- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**13** 个。
+- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**5** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**1** 个。
 
 已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
@@ -35,7 +35,7 @@
 | `doc_share_message_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:523` |
 | `download_output_unavailable` | registered 1 | 1 | `internal` | yes | no | no | no | yes | `internal/helpers/drive.go:708` |
 | `download_size_mismatch` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/helpers/drive.go:721` |
-| `empty_tool_response` | free 1 | 1 | `api` | no | no | yes | no | no | `internal/shortcut/runner.go:307` |
+| `empty_tool_response` | registered 1 | 1 | `api` | yes | no | yes | no | no | `internal/shortcut/runner.go:307` |
 | `endpoint_not_resolved` | free 1 | 1 | `api` | yes | yes | no | no | no | `internal/app/runner.go:493` |
 | `flag_list_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:761` |
 | `formula_errors_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:143` |
@@ -50,7 +50,7 @@
 | `invalid_flag_value` | registered 14 | 14 | `validation` | yes | yes | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
 | `invalid_json_input` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:230` |
 | `key_value_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
-| `mcp_tool_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:855` |
+| `mcp_tool_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:855` |
 | `messages_list_direct_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_message.go:648` |
 | `missing_required_flags` | registered 22 | 22 | `validation` | yes | yes | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
 | `missing_target` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
@@ -67,8 +67,8 @@
 | `pat_batch_requires_yes` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
 | `personal_subscription_guard_failed` | free 1 | 1 | `internal` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
 | `personal_subscription_invalid` | free 1 | 1 | `validation` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:558` |
-| `plugin_input_schema_invalid` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
-| `plugin_tool_not_found` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/runner.go:833` |
+| `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
+| `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
 | `raw_api_credentials_required` | free 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
 | `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
@@ -77,9 +77,9 @@
 | `resolution_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:686`<br>`internal/shortcut/targetresolver/resolver.go:710` |
 | `resolution_not_found` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:651` |
 | `skill_download_info_unavailable` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/skill_command.go:584` |
-| `stdio_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:847` |
-| `stdio_initialize_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:817` |
-| `stdio_tools_list_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:826` |
+| `stdio_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:847` |
+| `stdio_initialize_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:817` |
+| `stdio_tools_list_error` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/runner.go:826` |
 | `system_busy` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_helpers.go:89` |
 | `target_ambiguous` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:250`<br>`internal/shortcut/aitable/view_preset.go:66` |
 | `target_arguments_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:297` |
@@ -96,7 +96,7 @@
 | `unknown_shortcut` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
 | `unknown_subcommand` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |
 | `unsupported_alidoc_extension` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:105` |
-| `unsupported_format` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/root.go:616` |
+| `unsupported_format` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:616` |
 | `upstream_unclassified` | registered 2 | 2 | `api` | yes | yes | no | no | yes | `internal/app/server_failure_classifier.go:93`<br>`internal/transport/client.go:556` |
 | `version_not_found` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/helpers/doc.go:4084`<br>`internal/helpers/sheet_version.go:149` |
 

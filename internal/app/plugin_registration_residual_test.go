@@ -290,6 +290,29 @@ func TestStdioRunnerReportsToolsListFailureAndMissingTool(t *testing.T) {
 	if toolCalls != 0 {
 		t.Fatalf("tools/call attempts after tools/list failures = %d", toolCalls)
 	}
+
+	initializeFailure := errors.New("initialize failed")
+	runnerStdioEnsureInitialized = func(*transport.StdioClient, context.Context) error {
+		return initializeFailure
+	}
+	_, err = runner.executeStdioInvocationAtEndpoint(context.Background(), "stdio://plugin/server", invocation)
+	assertPluginRuntimeError(t, err, apperrors.CategoryAPI, "initialize", "stdio_initialize_error")
+	runnerStdioEnsureInitialized = func(*transport.StdioClient, context.Context) error { return nil }
+
+	runnerStdioListTools = func(*transport.StdioClient, context.Context) (transport.ToolsListResult, error) {
+		return transport.ToolsListResult{Tools: []transport.ToolDescriptor{{Name: "wanted"}}}, nil
+	}
+	runnerStdioCallTool = func(*transport.StdioClient, context.Context, string, map[string]any) (transport.ToolCallResult, error) {
+		return transport.ToolCallResult{}, errors.New("call failed")
+	}
+	_, err = runner.executeStdioInvocationAtEndpoint(context.Background(), "stdio://plugin/server", invocation)
+	assertPluginRuntimeError(t, err, apperrors.CategoryAPI, "tools/call", "stdio_error")
+
+	runnerStdioCallTool = func(*transport.StdioClient, context.Context, string, map[string]any) (transport.ToolCallResult, error) {
+		return transport.ToolCallResult{IsError: true}, nil
+	}
+	_, err = runner.executeStdioInvocationAtEndpoint(context.Background(), "stdio://plugin/server", invocation)
+	assertPluginRuntimeError(t, err, apperrors.CategoryAPI, "tools/call", "mcp_tool_error")
 }
 
 func TestStdioManifestDescriptorAndRegistrationFailClosed(t *testing.T) {
@@ -361,7 +384,7 @@ func assertPluginRuntimeError(
 	}
 	if appError.Category != wantCategory ||
 		appError.Operation != wantOperation ||
-		appError.Reason != wantReason {
+		appError.Reason != wantReason || appError.Hint == "" {
 		t.Fatalf("runtime error = %#v, want category=%q operation=%q reason=%q", appError, wantCategory, wantOperation, wantReason)
 	}
 }

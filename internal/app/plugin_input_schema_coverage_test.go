@@ -144,7 +144,7 @@ func TestNormalizePluginInputParamsReportsConversionPath(t *testing.T) {
 			var appError *apperrors.Error
 			if !errors.As(err, &appError) ||
 				appError.Category != apperrors.CategoryValidation ||
-				appError.Reason != "plugin_input_schema_invalid" {
+				appError.Reason != "plugin_input_schema_invalid" || appError.Hint == "" {
 				t.Fatalf("conversion error = %#v, want categorized plugin schema validation error", err)
 			}
 			if !strings.Contains(err.Error(), tt.wantText) {

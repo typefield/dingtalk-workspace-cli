@@ -117,7 +117,7 @@ func cliInputValidationError(err error) error {
 	}
 	return apperrors.NewValidation(
 		fmt.Sprintf("input schema normalization failed: %v", err),
-		apperrors.WithReason("plugin_input_schema_invalid"),
+		apperrors.WithSubtype(apperrors.SubtypePluginInputSchemaInvalid),
 	)
 }
 

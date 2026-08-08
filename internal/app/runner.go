@@ -814,7 +814,7 @@ func (r *runtimeRunner) executeStdioInvocationAtEndpoint(
 		return executor.Result{}, apperrors.NewAPI(
 			fmt.Sprintf("stdio initialize failed: %v", err),
 			apperrors.WithOperation("initialize"),
-			apperrors.WithReason("stdio_initialize_error"),
+			apperrors.WithSubtype(apperrors.SubtypeStdioInitializeError),
 		)
 	}
 
@@ -823,14 +823,14 @@ func (r *runtimeRunner) executeStdioInvocationAtEndpoint(
 		return executor.Result{}, apperrors.NewAPI(
 			fmt.Sprintf("stdio tools/list failed: %v", err),
 			apperrors.WithOperation("tools/list"),
-			apperrors.WithReason("stdio_tools_list_error"),
+			apperrors.WithSubtype(apperrors.SubtypeStdioToolsListError),
 		)
 	}
 	schema, ok := pluginToolInputSchema(tools, invocation.Tool)
 	if !ok {
 		return executor.Result{}, apperrors.NewValidation(
 			fmt.Sprintf("plugin tool %q is not declared by tools/list", invocation.Tool),
-			apperrors.WithReason("plugin_tool_not_found"),
+			apperrors.WithSubtype(apperrors.SubtypePluginToolNotFound),
 		)
 	}
 	normalizedParams, err := normalizePluginInputParams(invocation.Params, schema)
@@ -844,7 +844,7 @@ func (r *runtimeRunner) executeStdioInvocationAtEndpoint(
 		return executor.Result{}, apperrors.NewAPI(
 			fmt.Sprintf("stdio call failed: %v", err),
 			apperrors.WithOperation("tools/call"),
-			apperrors.WithReason("stdio_error"),
+			apperrors.WithSubtype(apperrors.SubtypeStdioError),
 		)
 	}
 
@@ -852,7 +852,7 @@ func (r *runtimeRunner) executeStdioInvocationAtEndpoint(
 		return executor.Result{}, apperrors.NewAPI(
 			extractMCPErrorMessage(callResult),
 			apperrors.WithOperation("tools/call"),
-			apperrors.WithReason("mcp_tool_error"),
+			apperrors.WithSubtype(apperrors.SubtypeMCPToolError),
 			apperrors.WithServerKey(invocation.CanonicalProduct),
 		)
 	}

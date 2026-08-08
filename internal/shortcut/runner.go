@@ -304,7 +304,7 @@ func (rt *RuntimeContext) callMCPWriteData(product, tool string, params map[stri
 			apperrors.WithOrigin("mcp"),
 			apperrors.WithFailureStage("response_validation"),
 			apperrors.WithRetryable(false),
-			apperrors.WithReason("empty_tool_response"),
+			apperrors.WithSubtype(apperrors.SubtypeEmptyToolResponse),
 		)
 	}
 	var out map[string]any

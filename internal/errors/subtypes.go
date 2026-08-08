@@ -83,6 +83,14 @@ const (
 	SubtypeBatchWriteFailed                   Subtype = "batch_write_failed"
 	SubtypeDocGrantPermissionPartialFailure   Subtype = "doc_grant_permission_partial_failure"
 	SubtypeDocShareMessageFailed              Subtype = "doc_share_message_failed"
+	SubtypeStdioInitializeError               Subtype = "stdio_initialize_error"
+	SubtypeStdioToolsListError                Subtype = "stdio_tools_list_error"
+	SubtypeStdioError                         Subtype = "stdio_error"
+	SubtypeMCPToolError                       Subtype = "mcp_tool_error"
+	SubtypeEmptyToolResponse                  Subtype = "empty_tool_response"
+	SubtypePluginToolNotFound                 Subtype = "plugin_tool_not_found"
+	SubtypePluginInputSchemaInvalid           Subtype = "plugin_input_schema_invalid"
+	SubtypeUnsupportedFormat                  Subtype = "unsupported_format"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -679,6 +687,78 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: true,
 		DefaultHint:   "部分消息可能已经送达；先检查 recipients 台账，只重试未确认送达的接收人。",
 		Description:   "document share-message delivery did not complete for every recipient",
+	},
+	SubtypeStdioInitializeError: {
+		Subtype:       SubtypeStdioInitializeError,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "本地插件 MCP 初始化失败；检查插件进程、配置和日志，恢复后再重新发现或调用工具。",
+		Description:   "a local stdio MCP server could not complete initialization",
+	},
+	SubtypeStdioToolsListError: {
+		Subtype:       SubtypeStdioToolsListError,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "本地插件 MCP 无法列出工具；检查插件进程、配置和日志，恢复后再重新发现工具。",
+		Description:   "a local stdio MCP server could not list its declared tools",
+	},
+	SubtypeStdioError: {
+		Subtype:       SubtypeStdioError,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "插件工具调用的远端终态未确认；写操作先核查目标状态，读取操作保留诊断后再决定是否重试。",
+		Description:   "a local stdio MCP tool call ended without a trustworthy terminal result",
+	},
+	SubtypeMCPToolError: {
+		Subtype:       SubtypeMCPToolError,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "MCP 工具返回错误；写操作先核查目标状态，读取操作检查参数和上游诊断后再决定是否重试。",
+		Description:   "an MCP tool returned an explicit error result",
+	},
+	SubtypeEmptyToolResponse: {
+		Subtype:       SubtypeEmptyToolResponse,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "写调用没有返回可验证业务结果；先核查目标状态，不要因空响应直接重放。",
+		Description:   "a write-capable MCP tool returned no business result",
+	},
+	SubtypePluginToolNotFound: {
+		Subtype:       SubtypePluginToolNotFound,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "插件未声明该工具；重新发现插件工具并核对当前命令、插件版本和输入 Schema。",
+		Description:   "a requested plugin tool was absent from its declared tools/list response",
+	},
+	SubtypePluginInputSchemaInvalid: {
+		Subtype:       SubtypePluginInputSchemaInvalid,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "插件输入不符合其声明的 Schema；核对字段名、类型和必填项后重新调用。",
+		Description:   "plugin input could not be normalized or validated against the declared schema",
+	},
+	SubtypeUnsupportedFormat: {
+		Subtype:       SubtypeUnsupportedFormat,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请使用当前命令支持的输出格式；运行当前命令的 --help 查看可用格式。",
+		Description:   "the requested output format is not supported by the command contract",
 	},
 }
 

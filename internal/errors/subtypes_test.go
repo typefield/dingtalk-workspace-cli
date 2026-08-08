@@ -72,6 +72,14 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeBatchWriteFailed, CategoryAPI, RetryNever, true},
 		{SubtypeDocGrantPermissionPartialFailure, CategoryAPI, RetryNever, true},
 		{SubtypeDocShareMessageFailed, CategoryAPI, RetryNever, true},
+		{SubtypeStdioInitializeError, CategoryAPI, RetryIdempotentReadOnly, false},
+		{SubtypeStdioToolsListError, CategoryAPI, RetryIdempotentReadOnly, false},
+		{SubtypeStdioError, CategoryAPI, RetryNever, false},
+		{SubtypeMCPToolError, CategoryAPI, RetryNever, false},
+		{SubtypeEmptyToolResponse, CategoryAPI, RetryNever, false},
+		{SubtypePluginToolNotFound, CategoryValidation, RetryNever, false},
+		{SubtypePluginInputSchemaInvalid, CategoryValidation, RetryNever, false},
+		{SubtypeUnsupportedFormat, CategoryValidation, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {
