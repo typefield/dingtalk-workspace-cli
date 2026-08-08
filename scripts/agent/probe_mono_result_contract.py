@@ -71,6 +71,7 @@ def run_with_fake_dws(
     fake_source: str,
     *,
     temp_dir: Path,
+    extra_env: dict[str, str] | None = None,
 ) -> subprocess.CompletedProcess[str]:
     """Execute one script against a temporary child runner, never a real tenant."""
     fake_dws = temp_dir / "dws"
@@ -78,6 +79,8 @@ def run_with_fake_dws(
     fake_dws.chmod(0o755)
     environment = os.environ.copy()
     environment["PATH"] = f"{temp_dir}{os.pathsep}{environment.get('PATH', '')}"
+    if extra_env:
+        environment.update(extra_env)
     return subprocess.run(
         command,
         cwd=ROOT,
@@ -408,6 +411,45 @@ else:
         )
         outcomes.append(("日程后续写入失败保留部分结果", *result("PASS" if calendar_child_ok else "FAIL", detail)))
 
+        import_path = temp_dir / "records.json"
+        import_path.write_text(
+            json.dumps([
+                {"cells": {"name": "confirmed"}},
+                {"cells": {"name": "ambiguous"}},
+            ]),
+            encoding="utf-8",
+        )
+        import_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "import_records.py"),
+                "base-01", "table-01", str(import_path), "1", "--format", "json",
+            ],
+            """import json, sys
+args = sys.argv[1:]
+if args[:3] != ['aitable', 'record', 'create']:
+    raise SystemExit(9)
+records = json.loads(args[args.index('--records') + 1])
+name = records[0]['cells']['name']
+if name == 'confirmed':
+    print(json.dumps({'ok': True, 'data': {'recordIds': ['record-1']}}))
+else:
+    # A legacy business failure with rc=0 must remain an unknown write state.
+    print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'batch delivery uncertain'}}))
+""",
+            temp_dir=temp_dir,
+            extra_env={"OPENCLAW_WORKSPACE": str(temp_dir)},
+        )
+        valid, payload, detail = parse_single_result(import_child)
+        import_child_ok = (
+            valid and import_child.returncode == 7 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "partial_failure"
+            and isinstance(payload.get("data"), dict)
+            and [item.get("id") for item in payload["data"].get("succeeded", [])] == ["batch:1"]
+            and [item.get("id") for item in payload["data"].get("unknown", [])] == ["batch:2"]
+            and "记录导入完成" not in import_child.stderr
+        )
+        outcomes.append(("记录导入保留成功与未知批次", *result("PASS" if import_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
@@ -427,7 +469,7 @@ else:
         "## 边界",
         "",
         "- 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。",
-        "- 子 dws 探针覆盖待办、审批和文档的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
+        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程和记录导入的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
         "- dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。",
         "",
     ])

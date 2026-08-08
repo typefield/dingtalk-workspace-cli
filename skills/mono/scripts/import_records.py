@@ -16,14 +16,22 @@
 import sys
 import csv
 import json
-import subprocess
 import os
 import re
 import argparse
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional, Tuple
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 JsonData = Union[List[Any], Dict[str, Any]]
 RecordDict = Dict[str, str]
@@ -146,127 +154,103 @@ def validate_record(
     return True, ''
 
 
-def run_dws(args: List[str], dry_run: bool = False) -> Optional[Dict[str, Any]]:
-    if not args:
-        print('错误：空命令', file=sys.stderr)
-        return None
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return {'dry_run': True}
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=120
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        try:
-            return json.loads(result.stdout)
-        except json.JSONDecodeError as e:
-            print(f"无法解析响应：{result.stdout[:200]}...", file=sys.stderr)
-            print(f"JSON 解析错误：{e}", file=sys.stderr)
-            return None
-    except subprocess.TimeoutExpired:
-        print('错误：命令执行超时（120 秒）', file=sys.stderr)
-        return None
-    except FileNotFoundError:
-        print('错误：未找到 dws 命令，请确认已安装', file=sys.stderr)
-        return None
+def run_dws(args: List[str], dry_run: bool = False) -> ChildDWSResult:
+    """Keep a child write's execution certainty instead of returning a bool."""
+    return run_child_dws(args, dry_run=dry_run, timeout=120)
 
 
 def import_from_csv(
     base_id: str, table_id: str, csv_file: str,
     batch_size: int = DEFAULT_BATCH_SIZE, dry_run: bool = False,
-) -> bool:
+) -> Optional[List[Dict[str, Any]]]:
     try:
         safe_path = resolve_safe_path(csv_file)
     except ValueError as e:
         print(f"路径验证失败：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not validate_file_extension(csv_file, ALLOWED_CSV_EXTENSIONS):
         print(f"错误：只允许 {', '.join(ALLOWED_CSV_EXTENSIONS)} 文件", file=sys.stderr)
-        return False
+        return None
     if not safe_path.exists():
         print(f"错误：文件不存在：{safe_path}", file=sys.stderr)
-        return False
+        return None
 
     try:
         rows = safe_csv_load(safe_path)
     except ValueError as e:
         print(f"错误：{e}", file=sys.stderr)
-        return False
+        return None
     except csv.Error as e:
         print(f"错误：CSV 格式无效：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not rows:
         print('错误：CSV 文件为空或没有有效数据行', file=sys.stderr)
-        return False
+        return None
 
     records = [
         normalize_record(row)
         for row in rows
         if normalize_record(row)['cells']
     ]
-    return import_records(base_id, table_id, records, batch_size, dry_run)
+    return records
 
 
 def import_from_json(
     base_id: str, table_id: str, json_file: str,
     batch_size: int = DEFAULT_BATCH_SIZE, dry_run: bool = False,
-) -> bool:
+) -> Optional[List[Dict[str, Any]]]:
     try:
         safe_path = resolve_safe_path(json_file)
     except ValueError as e:
         print(f"路径验证失败：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not validate_file_extension(json_file, ALLOWED_JSON_EXTENSIONS):
         print(f"错误：只允许 {', '.join(ALLOWED_JSON_EXTENSIONS)} 文件", file=sys.stderr)
-        return False
+        return None
     if not safe_path.exists():
         print(f"错误：文件不存在：{safe_path}", file=sys.stderr)
-        return False
+        return None
 
     try:
         records = safe_json_load(safe_path)
     except ValueError as e:
         print(f"错误：{e}", file=sys.stderr)
-        return False
+        return None
     except json.JSONDecodeError as e:
         print(f"错误：JSON 格式无效：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not isinstance(records, list) or not records:
         print('错误：JSON 文件必须是非空数组', file=sys.stderr)
-        return False
+        return None
 
     for i, record in enumerate(records):
         valid, error = validate_record(record, [])
         if not valid:
             print(f"错误：记录 #{i+1} 格式无效：{error}", file=sys.stderr)
-            return False
+            return None
 
-    return import_records(
-        base_id, table_id,
-        [normalize_record(r) for r in records], batch_size, dry_run,
-    )
+    return [normalize_record(r) for r in records]
 
 
 def import_records(
     base_id: str, table_id: str,
     records: List[Dict[str, Any]], batch_size: int, dry_run: bool = False,
-) -> bool:
+) -> Optional[dict[str, Any]]:
     if batch_size <= 0:
         print('错误：batch_size 必须大于 0', file=sys.stderr)
-        return False
+        return None
     if batch_size > MAX_RECORDS_PER_BATCH:
         batch_size = MAX_RECORDS_PER_BATCH
 
     total_batches = (len(records) + batch_size - 1) // batch_size
-    success = True
+    succeeded: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
+    unknown: list[dict[str, Any]] = []
+    child_meta: list[dict[str, Any]] = []
 
     for i in range(0, len(records), batch_size):
         batch = records[i:i + batch_size]
@@ -279,17 +263,43 @@ def import_records(
             '--records', records_json,
             '--format', 'json',
         ], dry_run=dry_run)
-        if result:
+        entry_id = f"batch:{batch_num}"
+        if result.meta:
+            child_meta.append({'id': entry_id, 'meta': result.meta})
+        if result.state == 'success':
             print(
                 f"[{batch_num}/{total_batches}] "
                 f"✓ {'计划导入' if dry_run else '已提交'} {len(batch)} 条记录",
                 file=sys.stderr,
             )
+            succeeded.append({'id': entry_id, 'record_count': len(batch)})
+        elif result.state == 'failed':
+            print(f"[{batch_num}/{total_batches}] ✗ 导入在执行前失败", file=sys.stderr)
+            failed.append({
+                'id': entry_id,
+                'record_count': len(batch),
+                'error': result.error or {'type': 'api', 'message': '导入批次失败'},
+            })
         else:
-            print(f"[{batch_num}/{total_batches}] ✗ 导入失败", file=sys.stderr)
-            success = False
+            print(f"[{batch_num}/{total_batches}] ? 导入终态未知", file=sys.stderr)
+            unknown.append({
+                'id': entry_id,
+                'record_count': len(batch),
+                'reason': '导入批次未返回可确认终态；请先核查记录，避免重复导入。',
+                'error': result.error or {'type': 'api', 'message': '导入批次未返回可确认终态'},
+            })
 
-    return success
+    return batch_data(
+        succeeded=succeeded,
+        failed=failed,
+        unknown=unknown,
+        total=total_batches,
+        baseId=base_id,
+        tableId=table_id,
+        recordCount=len(records),
+        batchSize=batch_size,
+        children=child_meta,
+    )
 
 
 def main() -> int:
@@ -312,23 +322,35 @@ def main() -> int:
         return failure(args.format, '无效的 tableId 格式')
 
     if input_file.lower().endswith('.csv'):
-        success = import_from_csv(
+        records = import_from_csv(
             base_id, table_id, input_file, batch_size, args.dry_run
         )
     elif input_file.lower().endswith('.json'):
-        success = import_from_json(
+        records = import_from_json(
             base_id, table_id, input_file, batch_size, args.dry_run
         )
     else:
         return failure(args.format, '仅支持 .csv 或 .json 文件')
 
-    if not success:
+    if records is None:
         return failure(args.format, '记录导入失败')
-    return emit(fmt=args.format, outcome='success', data={
-        'baseId': base_id, 'tableId': table_id,
-        'input': str(Path(input_file)), 'batchSize': batch_size,
-        'dryRun': args.dry_run,
-    }, dry_run=args.dry_run, text='记录导入完成')
+    data = import_records(base_id, table_id, records, batch_size, args.dry_run)
+    if data is None:
+        return failure(args.format, '记录导入失败')
+    data['input'] = str(Path(input_file))
+    outcome = batch_outcome(data)
+    top_error = None
+    if outcome == 'failure':
+        top_error = (data['failed'][0]['error'] if data['failed'] else
+                     {'type': 'api', 'message': '没有任何批次得到可确认成功；请先核查记录。'})
+    return emit(
+        fmt=args.format,
+        outcome=outcome,
+        data=data,
+        error=top_error,
+        dry_run=args.dry_run,
+        text='记录导入完成' if outcome == 'success' else '记录导入未全部确认完成',
+    )
 
 
 if __name__ == '__main__':
