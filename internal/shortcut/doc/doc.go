@@ -19,6 +19,7 @@ package doc
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -121,23 +122,28 @@ var Search = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		docs := searchDocsProject(data)
+		docs, err := searchDocsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(docs), "documents": docs})
 	},
 }
 
 // searchDocsProject reshapes the raw search_documents response into a clean
 // document list ({nodeId, name, docType, url, creatorId, modifiedTime}) —
-// clean output projection. Both the list container and per-item
-// field names are probed defensively across candidate keys so response-shape
-// drift yields an empty/partial list rather than a crash or fabricated data.
-func searchDocsProject(data map[string]any) []map[string]any {
-	raw := docResolveList(data)
+// clean output projection. Candidate aliases are accepted, while an unknown
+// container or row fails closed rather than becoming a successful empty search.
+func searchDocsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := docResolveList(data)
+	if !known {
+		return nil, docProjectionUnknown("无法识别 search_documents 返回的文档列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, docProjectionUnknown("文档搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := docFirst(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
@@ -158,19 +164,20 @@ func searchDocsProject(data map[string]any) []map[string]any {
 		if v, ok := docFirst(m, "modifiedTime", "gmtModified", "visitedTime", "updateTime", "modifyTime"); ok {
 			row["modifiedTime"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, docProjectionUnknown("文档搜索结果条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // docResolveList locates the list payload inside a doc-service response,
 // tolerating a bare top-level array or nesting under common envelope keys, and
 // optionally one level deeper inside a result/data container.
-func docResolveList(data map[string]any) []any {
+func docResolveList(data map[string]any) ([]any, bool) {
 	if data == nil {
-		return []any{}
+		return nil, false
 	}
 	for _, key := range []string{"nodes", "documents", "list", "items", "result", "data", "records"} {
 		v, ok := data[key]
@@ -178,17 +185,17 @@ func docResolveList(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"nodes", "documents", "list", "items", "records", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // docFirst returns the first present candidate key's value.
@@ -261,23 +268,28 @@ var List = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		nodes := listNodesProject(data)
+		nodes, err := listNodesProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(nodes), "nodes": nodes})
 	},
 }
 
 // listNodesProject reshapes the raw list_nodes response into a clean child-node
 // list ({nodeId, name, nodeType, url}) — clean output projection.
-// The list container and per-item field names are probed defensively via the
-// shared docResolveList/docFirst helpers, so an unknown shape yields an empty
-// list rather than a crash or fabricated data.
-func listNodesProject(data map[string]any) []map[string]any {
-	raw := docResolveList(data)
+// The list container and per-item aliases are probed defensively. Unknown
+// response shapes are surfaced as projection failures, never as an empty folder.
+func listNodesProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := docResolveList(data)
+	if !known {
+		return nil, docProjectionUnknown("无法识别 list_nodes 返回的子节点列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, docProjectionUnknown("子节点列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := docFirst(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
@@ -292,11 +304,20 @@ func listNodesProject(data map[string]any) []map[string]any {
 		if v, ok := docFirst(m, "url", "nodeUrl", "docUrl", "webUrl"); ok {
 			row["url"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, docProjectionUnknown("子节点条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
+}
+
+func docProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // ── 文档创建 / 更新 ──────────────────────────────────────────
