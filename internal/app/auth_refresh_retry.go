@@ -148,7 +148,7 @@ func (r *runtimeRunner) retryAuthRefreshRequired(
 		return executor.Result{}, apperrors.NewAuth(
 			"automatic access token refresh failed",
 			apperrors.WithOperation("auth/token/refresh"),
-			apperrors.WithReason("auth_refresh_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeAuthRefreshFailed),
 			apperrors.WithHint("本地凭证已保留；可稍后重试，若持续失败请查看认证诊断日志。"),
 			apperrors.WithCause(combined),
 		), true

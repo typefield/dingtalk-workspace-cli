@@ -20,6 +20,26 @@ type runnerCoverageFallback struct {
 	err    error
 }
 
+func TestEndpointNotResolvedAndSkillAuthUseStableRecovery(t *testing.T) {
+	err := endpointNotResolvedError("calendar", "calendar.list", "missing endpoint")
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAPI ||
+		typed.Reason != "endpoint_not_resolved" || typed.Hint == "" || len(typed.Actions) == 0 {
+		t.Fatalf("endpoint recovery = %#v", err)
+	}
+
+	previous := edition.Get()
+	t.Cleanup(func() { edition.Override(previous) })
+	for _, embedded := range []bool{false, true} {
+		edition.Override(&edition.Hooks{IsEmbedded: embedded})
+		err = skillAuthError()
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAuth ||
+			typed.Reason != "not_authenticated" || typed.Hint == "" || len(typed.Actions) == 0 {
+			t.Fatalf("embedded=%t skill auth recovery = %#v", embedded, err)
+		}
+	}
+}
+
 func (f runnerCoverageFallback) Run(context.Context, executor.Invocation) (executor.Result, error) {
 	return f.result, f.err
 }

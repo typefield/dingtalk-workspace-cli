@@ -490,7 +490,7 @@ func endpointNotResolvedError(productID, toolName, detail string) error {
 	return apperrors.NewAPI(
 		fmt.Sprintf("endpoint not resolved for product %q (tool %q): %s", productID, toolName, detail),
 		apperrors.WithOperation("discovery.resolve"),
-		apperrors.WithReason("endpoint_not_resolved"),
+		apperrors.WithSubtype(apperrors.SubtypeEndpointNotResolved),
 		apperrors.WithServerKey(productID),
 		apperrors.WithHint(hint),
 		apperrors.WithActions(actions...),
@@ -608,7 +608,7 @@ func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, 
 	if strings.TrimSpace(authToken) == "" {
 		return executor.Result{}, apperrors.NewAuth(
 			"未登录，请先执行 dws auth login",
-			apperrors.WithReason("not_authenticated"),
+			apperrors.WithSubtype(apperrors.SubtypeNotAuthenticated),
 			apperrors.WithHint("运行 'dws auth login' 完成登录后重试"),
 			apperrors.WithActions("dws auth login"),
 		)
@@ -901,7 +901,7 @@ func tokenResolutionError(err error) error {
 	if errors.Is(err, authpkg.ErrTokenDataNotFound) {
 		return apperrors.NewAuth(
 			"未登录，请先执行 dws auth login",
-			apperrors.WithReason("not_authenticated"),
+			apperrors.WithSubtype(apperrors.SubtypeNotAuthenticated),
 			apperrors.WithHint("运行 'dws auth login' 完成登录后重试"),
 			apperrors.WithActions("dws auth login"),
 			apperrors.WithCause(err),

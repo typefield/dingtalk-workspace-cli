@@ -59,7 +59,7 @@ func (r *runtimeRunner) preflightDocDownload(ctx context.Context, tc *transport.
 		return apperrors.NewAPI(
 			extractMCPErrorMessage(info),
 			apperrors.WithOperation("doc.get_document_info"),
-			apperrors.WithReason("doc_download_preflight_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeDocDownloadPreflightFailed),
 			apperrors.WithServerKey(docProductID),
 			apperrors.WithHint("doc download 必须先确认节点类型，避免对不支持下载的在线表格触发 drive:download 授权。"),
 			apperrors.WithActions("dws doc info --node <nodeId>"),
@@ -69,7 +69,7 @@ func (r *runtimeRunner) preflightDocDownload(ctx context.Context, tc *transport.
 		return apperrors.NewAPI(
 			bizErr,
 			apperrors.WithOperation("doc.get_document_info"),
-			apperrors.WithReason("doc_download_preflight_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeDocDownloadPreflightFailed),
 			apperrors.WithServerKey(docProductID),
 			apperrors.WithHint("doc download 必须先确认节点类型，避免对不支持下载的在线表格触发 drive:download 授权。"),
 			apperrors.WithActions("dws doc info --node <nodeId>"),

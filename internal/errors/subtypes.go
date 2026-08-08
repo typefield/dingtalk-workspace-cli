@@ -94,6 +94,13 @@ const (
 	SubtypeInvalidAgentCode                   Subtype = "invalid_agent_code"
 	SubtypeInvalidAgentHost                   Subtype = "invalid_agent_host"
 	SubtypeInvalidAgentProduct                Subtype = "invalid_agent_product"
+	SubtypeAuthRefreshFailed                  Subtype = "auth_refresh_failed"
+	SubtypeGatewayAuthExpired                 Subtype = "gateway_auth_expired"
+	SubtypeNotAuthenticated                   Subtype = "not_authenticated"
+	SubtypeNotConfigured                      Subtype = "not_configured"
+	SubtypeRawAPICredentialsRequired          Subtype = "raw_api_credentials_required"
+	SubtypeEndpointNotResolved                Subtype = "endpoint_not_resolved"
+	SubtypeDocDownloadPreflightFailed         Subtype = "doc_download_preflight_failed"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -789,6 +796,69 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "将 DWS_AGENT_PRODUCT 设置为 1–64 位字母、数字、下划线或连字符；不需要时请清空该环境变量。",
 		Description:   "the caller-declared Agent product failed local syntax validation",
+	},
+	SubtypeAuthRefreshFailed: {
+		Subtype:       SubtypeAuthRefreshFailed,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "本地凭证已保留；稍后重试，若持续失败请查看认证诊断日志。",
+		Description:   "automatic refresh of a rejected access token failed locally",
+	},
+	SubtypeGatewayAuthExpired: {
+		Subtype:       SubtypeGatewayAuthExpired,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "网关认证已失效；完成登录后重新执行原命令。",
+		Description:   "the DWS gateway rejected the current authentication state",
+	},
+	SubtypeNotAuthenticated: {
+		Subtype:       SubtypeNotAuthenticated,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "当前没有可用登录态；完成登录后重新执行原命令。",
+		Description:   "the command requires an authenticated DingTalk account",
+	},
+	SubtypeNotConfigured: {
+		Subtype:       SubtypeNotConfigured,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "当前登录态不可用；完成登录后重新执行原命令。",
+		Description:   "the MCP response reports that the client is not configured or logged in",
+	},
+	SubtypeRawAPICredentialsRequired: {
+		Subtype:       SubtypeRawAPICredentialsRequired,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "raw API 需要自有 AppKey/AppSecret；配置应用凭证并登录后重新执行。",
+		Description:   "a raw OpenAPI request cannot use the MCP gateway credential",
+	},
+	SubtypeEndpointNotResolved: {
+		Subtype:       SubtypeEndpointNotResolved,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "命令没有可用 endpoint；检查静态端点目录和当前版本，不要反复调整参数重试。",
+		Description:   "the command product or tool has no resolved MCP endpoint",
+	},
+	SubtypeDocDownloadPreflightFailed: {
+		Subtype:       SubtypeDocDownloadPreflightFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "下载前的文档类型预检失败；先读取文档信息并确认节点类型后再决定下载路径。",
+		Description:   "a document-download type preflight did not complete successfully",
 	},
 }
 

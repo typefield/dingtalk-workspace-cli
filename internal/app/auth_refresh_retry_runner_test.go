@@ -169,7 +169,7 @@ func TestCrossPlatformCoverageRunnerRefreshFailurePreservesBothCausesAndSafeLog(
 		t.Fatalf("error = %v, want rejection and refresh causes", err)
 	}
 	var typed *apperrors.Error
-	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAuth || typed.Reason != "auth_refresh_failed" || typed.Operation != "auth/token/refresh" {
+	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAuth || typed.Reason != "auth_refresh_failed" || typed.Operation != "auth/token/refresh" || typed.Hint == "" {
 		t.Fatalf("refresh envelope = %#v", typed)
 	}
 	var rendered bytes.Buffer

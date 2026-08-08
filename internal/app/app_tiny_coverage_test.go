@@ -41,7 +41,7 @@ func TestCrossPlatformCoverageAPIAndTimingRemainingCoverage(t *testing.T) {
 		t.Fatal("missing raw API credentials succeeded")
 	} else {
 		var typed *apperrors.Error
-		if !errors.As(err, &typed) || typed.Reason != "raw_api_credentials_required" || !typed.RetryableSet || typed.Retryable || typed.Details["mcp_default_token_usable"] != false {
+		if !errors.As(err, &typed) || typed.Reason != "raw_api_credentials_required" || typed.Hint == "" || len(typed.Actions) == 0 || !typed.RetryableSet || typed.Retryable || typed.Details["mcp_default_token_usable"] != false {
 			t.Fatalf("missing credentials recovery metadata = %#v", err)
 		}
 	}

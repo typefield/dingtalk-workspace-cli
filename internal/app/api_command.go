@@ -313,7 +313,7 @@ func resolveRawAPIToken(ctx context.Context, explicitToken string) (string, erro
 				"     export DWS_CLIENT_SECRET=<APP_SECRET>\n"+
 				"     dws auth login\n\n"+
 				"说明: 通过 MCP 默认凭证登录的加密 token 无法用于 raw API 调用。",
-			apperrors.WithReason("raw_api_credentials_required"),
+			apperrors.WithSubtype(apperrors.SubtypeRawAPICredentialsRequired),
 			apperrors.WithOrigin("client"),
 			apperrors.WithFailureStage("auth"),
 			apperrors.WithExecutionStarted(false),

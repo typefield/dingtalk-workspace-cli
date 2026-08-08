@@ -6,8 +6,8 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**74** 个；直接 `WithSubtype(Subtype...)` 调用点：**130** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**31** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
+- 已注册 descriptor：**81** 个；直接 `WithSubtype(Subtype...)` 调用点：**142** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**20** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
@@ -22,24 +22,24 @@
 | `ambiguous_command_fallback` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
 | `at_me_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
 | `attachment_tokens_unavailable` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
-| `auth_refresh_failed` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
+| `auth_refresh_failed` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/chat/batch_write.go:80` |
-| `business_error` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:293` |
+| `business_error` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:295` |
 | `chat_list_all_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:1199` |
 | `chat_list_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:1245` |
 | `chat_messages_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/chat_messages.go:770` |
 | `chat_search_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:425` |
 | `confirmation_required` | registered 7 | 7 | `validation` | yes | yes | no | no | no | `internal/app/plugin_commands.go:759`<br>`internal/corecmd/corecmd.go:1206`<br>`internal/helpers/chat/toolbar_remove_custom.go:51` … |
-| `doc_download_preflight_failed` | free 2 | 2 | `api` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:62`<br>`internal/app/doc_download_preflight.go:72` |
+| `doc_download_preflight_failed` | registered 2 | 2 | `api` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:62`<br>`internal/app/doc_download_preflight.go:72` |
 | `doc_grant_permission_partial_failure` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:448` |
 | `doc_share_message_failed` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:523` |
 | `download_output_unavailable` | registered 1 | 1 | `internal` | yes | no | no | no | yes | `internal/helpers/drive.go:708` |
 | `download_size_mismatch` | registered 1 | 1 | `api` | yes | yes | yes | no | yes | `internal/helpers/drive.go:721` |
 | `empty_tool_response` | registered 1 | 1 | `api` | yes | no | yes | no | no | `internal/shortcut/runner.go:307` |
-| `endpoint_not_resolved` | free 1 | 1 | `api` | yes | yes | no | no | no | `internal/app/runner.go:493` |
+| `endpoint_not_resolved` | registered 1 | 1 | `api` | yes | yes | no | no | no | `internal/app/runner.go:493` |
 | `flag_list_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:761` |
 | `formula_errors_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:143` |
-| `gateway_auth_expired` | free 2 | 2 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:251`<br>`internal/errors/pat.go:274` |
+| `gateway_auth_expired` | registered 2 | 2 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:251`<br>`internal/errors/pat.go:275` |
 | `id_intersection` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_sort.go:59` |
 | `input_read_failed` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:212`<br>`internal/helpers/sheet_formula_verify.go:221` |
 | `invalid_agent_code` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/pat/chmod.go:181`<br>`internal/pat/chmod.go:186` |
@@ -55,8 +55,8 @@
 | `missing_required_flags` | registered 22 | 22 | `validation` | yes | yes | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
 | `missing_target` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
 | `my_groups_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/my_groups.go:269` |
-| `not_authenticated` | free 3 | 3 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` |
-| `not_configured` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:281` |
+| `not_authenticated` | registered 4 | 4 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` … |
+| `not_configured` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:283` |
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
 | `parameter_conflict` | free 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
 | `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
@@ -70,7 +70,7 @@
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
-| `raw_api_credentials_required` | free 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
+| `raw_api_credentials_required` | registered 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
 | `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
 | `resolution_ambiguous` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
 | `resolution_batch_failed` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |

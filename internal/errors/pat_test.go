@@ -222,8 +222,8 @@ func TestClassifyToolResultContent_GatewayAuth(t *testing.T) {
 	if typed.Category != CategoryAuth {
 		t.Errorf("Category = %v, want %v", typed.Category, CategoryAuth)
 	}
-	if typed.Reason != "gateway_auth_expired" {
-		t.Errorf("Reason = %q, want gateway_auth_expired", typed.Reason)
+	if typed.Reason != "gateway_auth_expired" || typed.Hint == "" || len(typed.Actions) == 0 {
+		t.Errorf("gateway auth recovery = %#v", typed)
 	}
 }
 
@@ -351,8 +351,8 @@ func TestClassifyMCPResponseText_GatewayAuth(t *testing.T) {
 	if !stderrors.As(err, &typed) {
 		t.Fatalf("expected *Error, got %T", err)
 	}
-	if typed.Reason != "gateway_auth_expired" {
-		t.Errorf("Reason = %q, want gateway_auth_expired", typed.Reason)
+	if typed.Reason != "gateway_auth_expired" || typed.Hint == "" || len(typed.Actions) == 0 {
+		t.Errorf("gateway auth recovery = %#v", typed)
 	}
 }
 
@@ -367,8 +367,8 @@ func TestClassifyMCPResponseText_NotLoggedIn(t *testing.T) {
 	if !stderrors.As(err, &typed) {
 		t.Fatalf("expected *Error, got %T", err)
 	}
-	if typed.Reason != "not_configured" {
-		t.Errorf("Reason = %q, want not_configured", typed.Reason)
+	if typed.Reason != "not_configured" || typed.Hint == "" || len(typed.Actions) == 0 {
+		t.Errorf("not-configured recovery = %#v", typed)
 	}
 }
 

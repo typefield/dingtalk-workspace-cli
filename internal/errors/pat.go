@@ -248,8 +248,9 @@ func ClassifyToolResultContent(content map[string]any) error {
 	if _, ok := getDWSGatewayErrorCode(content); ok {
 		raw, _ := jsonutil.Marshal(content)
 		return NewAuth(string(raw),
-			WithReason("gateway_auth_expired"),
+			WithSubtype(SubtypeGatewayAuthExpired),
 			WithHint(authExpiredHint()),
+			WithActions("dws auth login"),
 		)
 	}
 	if code, ok := getPATErrorCode(content); ok {
@@ -271,14 +272,15 @@ func ClassifyMCPResponseText(text string) error {
 
 	if _, ok := getDWSGatewayErrorCode(body); ok {
 		return NewAuth(text,
-			WithReason("gateway_auth_expired"),
+			WithSubtype(SubtypeGatewayAuthExpired),
 			WithHint(authExpiredHint()),
+			WithActions("dws auth login"),
 		)
 	}
 
 	if isNotLoggedInError(body) {
 		return NewAuth("当前未登录",
-			WithReason("not_configured"),
+			WithSubtype(SubtypeNotConfigured),
 			WithHint(notLoggedInHint()),
 			WithActions("dws auth login"),
 		)

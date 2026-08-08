@@ -648,10 +648,12 @@ func loadSkillAccessToken(ctx context.Context) (string, error) {
 func skillAuthError() error {
 	if edition.Get().IsEmbedded {
 		return apperrors.NewAuth("认证信息已失效",
-			apperrors.WithReason("not_authenticated"),
-			apperrors.WithHint("请先完成钉钉账号登录后重试"))
+			apperrors.WithSubtype(apperrors.SubtypeNotAuthenticated),
+			apperrors.WithHint("请先完成钉钉账号登录后重试"),
+			apperrors.WithActions("dws auth login"))
 	}
 	return apperrors.NewAuth("not logged in or token expired. Please run 'dws auth login' first",
+		apperrors.WithSubtype(apperrors.SubtypeNotAuthenticated),
 		apperrors.WithHint("请先执行 'dws auth login' 登录"),
 		apperrors.WithActions("dws auth login"))
 }
