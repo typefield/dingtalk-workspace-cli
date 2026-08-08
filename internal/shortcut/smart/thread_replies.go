@@ -23,6 +23,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	chatshortcut "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
@@ -50,14 +51,15 @@ const (
 //
 //	dws chat +thread-replies --group <openconversationId> --thread-id <threadId>
 var ThreadReplies = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+thread-replies",
-	Product:     "chat",
-	Description: "按主消息 ID 或 thread/topic ID 分页读取话题回复，支持完整排序与有界自动翻页",
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "chat",
+	Command:       "+thread-replies",
+	Product:       "chat",
+	Description:   "按主消息 ID 或 thread/topic ID 分页读取话题回复，支持完整排序与有界自动翻页",
 	Intent: "当你已经拿到某个群里一条「话题消息」的主消息 ID 或 threadId/topicId、想快速看这条话题下的回复（谁在什么时间回复了什么），" +
 		"而不想拿到一大坨原始消息字段时使用；可直接传 --message-id 自动只读解析会话和 thread，也可传 --group 配合 --thread-id（兼容 --topic-id），" +
 		"可选 --time 指定手工续页边界、--limit/--page-size 指定每页条数；--page-all 沿下层毫秒级 nextCursor 自动续页，--page-limit 保持有界；--order/--sort 支持 desc，asc 需与 --page-all 一起使用，" +
-		"结果用 complete、hasMore、nextPage、stopReason 和 failures 明确证明是否完整，再在本地投影出每条回复的发言人、文本和回复时间。" +
+		"结果会保留明确的续页凭据、失败或未知分页边界；不能把页数截断或空回复误解为完整结果，再在本地投影出每条回复的发言人、文本和回复时间。" +
 		"默认只读且不会发送或修改任何消息；--download-resources 使用工作目录内安全路径、默认不覆盖和原子落盘，按既有安全下载约定无需交互确认。",
 	Risk: shortcut.RiskRead,
 	Safety: contract.SafetySpec{
@@ -83,7 +85,7 @@ var ThreadReplies = shortcut.Shortcut{
 			UseWhen: []string{"当你已经拿到某个群里一条「话题消息」的主消息 ID 或 threadId/topicId、想快速看这条话题下的回复（谁在什么时间回复了什么），" +
 				"而不想拿到一大坨原始消息字段时使用；可直接传 --message-id 自动只读解析会话和 thread，也可传 --group 配合 --thread-id（兼容 --topic-id），" +
 				"可选 --time 指定手工续页边界、--limit/--page-size 指定每页条数；--page-all 沿下层毫秒级 nextCursor 自动续页，--page-limit 保持有界；--order/--sort 支持 desc，asc 需与 --page-all 一起使用，" +
-				"结果用 complete、hasMore、nextPage、stopReason 和 failures 明确证明是否完整，再在本地投影出每条回复的发言人、文本和回复时间。" +
+				"结果会保留明确的续页凭据、失败或未知分页边界；不能把页数截断或空回复误解为完整结果，再在本地投影出每条回复的发言人、文本和回复时间。" +
 				"默认只读且不会发送或修改任何消息；--download-resources 使用工作目录内安全路径、默认不覆盖和原子落盘，按既有安全下载约定无需交互确认。"},
 			AvoidWhen: []string{"要回复 Thread 或发送新回复时不要使用此读取入口；当前没有经过验证的 thread writer Shortcut"},
 			Examples: []string{
@@ -179,28 +181,39 @@ func executeThreadReplies(rt *shortcut.RuntimeContext) error {
 
 	var payload map[string]any
 	var items []map[string]any
+	var pageLedger *output.PageLedger
 	err = nil
 	if rt.Bool("page-all") {
-		payload, items, err = collectAllThreadReplies(rt, params)
+		payload, items, pageLedger, err = collectAllThreadReplies(rt, params)
 	} else {
-		payload, items, err = collectOneThreadRepliesPage(rt, params)
+		payload, items, pageLedger, err = collectOneThreadRepliesPage(rt, params)
 	}
-	applyThreadRepliesResultContract(payload, items, target, threadRepliesOrder(rt))
-	if err != nil {
-		if payload != nil {
-			if outputErr := rt.Output(payload); outputErr != nil {
-				return outputErr
-			}
-		}
-		return err
-	}
-	if rt.Bool("download-resources") {
+	order := threadRepliesOrder(rt)
+	applyThreadRepliesResultContract(payload, items, target, order)
+	if err == nil && payload != nil && rt.Bool("download-resources") {
 		chatshortcut.AttachMessageResourceDownloads(
 			payload,
 			chatshortcut.DownloadMessageResources(rt, items, target.conversationID),
 		)
 	}
-	return rt.Output(payload)
+	result, resultErr := threadRepliesUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成话题回复统一分页结果失败", apperrors.WithCause(resultErr))
+	}
+	if err != nil {
+		// An activated command emits its stored unified failure/partial result;
+		// returning the legacy error afterwards would create a second outcome.
+		if output.UsesUnifiedResult(rt.Command()) {
+			return rt.OutputResult(payload, result)
+		}
+		if payload != nil {
+			if outputErr := rt.OutputResult(payload, result); outputErr != nil {
+				return outputErr
+			}
+		}
+		return err
+	}
+	return rt.OutputResult(payload, result)
 }
 
 type threadRepliesTarget struct {
@@ -308,10 +321,17 @@ func threadRepliesString(value any) string {
 	return text
 }
 
-func collectOneThreadRepliesPage(rt *shortcut.RuntimeContext, params map[string]any) (map[string]any, []map[string]any, error) {
+func collectOneThreadRepliesPage(rt *shortcut.RuntimeContext, params map[string]any) (map[string]any, []map[string]any, *output.PageLedger, error) {
+	pageLedger, err := output.NewPageLedger(1)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	data, err := rt.CallMCPData("chat", "list_topic_replies", params)
 	if err != nil {
-		return nil, nil, err
+		if recordErr := pageLedger.RecordFailure(threadRepliesInitialLedgerCursor(params), threadRepliesReadFailureInfo(err)); recordErr != nil {
+			return nil, nil, nil, recordErr
+		}
+		return nil, nil, pageLedger, err
 	}
 	items := threadReplyItems(data)
 	payload := newThreadRepliesPayload(items, !rt.Bool("no-reactions"))
@@ -323,7 +343,16 @@ func collectOneThreadRepliesPage(rt *shortcut.RuntimeContext, params map[string]
 	} else {
 		payload["stopReason"] = "single_page"
 	}
-	return payload, items, nil
+	if _, _, observeErr := observeThreadRepliesUnifiedPage(
+		pageLedger,
+		threadRepliesInitialLedgerCursor(params),
+		data,
+		!rt.Bool("no-reactions"),
+	); observeErr != nil {
+		return nil, nil, nil, observeErr
+	}
+	pageLedger.SetStopReason(fmt.Sprint(payload["stopReason"]))
+	return payload, items, pageLedger, nil
 }
 
 func applyOneThreadRepliesPagination(payload, data map[string]any) {
@@ -362,8 +391,12 @@ func applyOneThreadRepliesPagination(payload, data map[string]any) {
 	}
 }
 
-func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any) (map[string]any, []map[string]any, error) {
+func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any) (map[string]any, []map[string]any, *output.PageLedger, error) {
 	pageLimit := defaultChatPageLimit(rt.Int("page-limit"), threadRepliesDefaultPageLimit)
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return nil, nil, nil, err
+	}
 	seenIDs := map[string]bool{}
 	seenCursors := map[string]bool{}
 	allItems := make([]map[string]any, 0)
@@ -375,6 +408,8 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 	stopReason := "source_complete"
 	truncatedByPageLimit := false
 	var nextPage map[string]any
+	ledgerCursor := threadRepliesInitialLedgerCursor(params)
+	shadowInterrupted := false
 
 	for pagesFetched < pageLimit {
 		data, err := rt.CallMCPData("chat", "list_topic_replies", params)
@@ -382,6 +417,12 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 			failures = append(failures, map[string]any{
 				"page": pagesFetched + 1, "stage": "read", "error": err.Error(),
 			})
+			if !shadowInterrupted {
+				if recordErr := pageLedger.RecordFailure(ledgerCursor, threadRepliesReadFailureInfo(err)); recordErr != nil {
+					return nil, nil, nil, recordErr
+				}
+				shadowInterrupted = true
+			}
 			stopReason = "read_failure"
 			break
 		}
@@ -396,6 +437,18 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 				seenIDs[stableID] = true
 			}
 			allItems = append(allItems, item)
+		}
+		if !shadowInterrupted {
+			nextToken, terminal, observeErr := observeThreadRepliesUnifiedPage(
+				pageLedger, ledgerCursor, data, !rt.Bool("no-reactions"),
+			)
+			if observeErr != nil {
+				return nil, nil, nil, observeErr
+			}
+			if nextToken != "" {
+				ledgerCursor = nextToken
+			}
+			shadowInterrupted = terminal
 		}
 
 		page := chatmsg.Pagination(data)
@@ -450,6 +503,11 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 			"nextCursor": page["nextCursor"],
 		}
 		params["startTime"] = boundary
+		if shadowInterrupted && output.UsesUnifiedResult(rt.Command()) {
+			// The legacy path may still have a continuation. Once active, an
+			// unprojectable page or contradictory boundary is terminal.
+			break
+		}
 	}
 
 	if !complete && hasMore && len(failures) == 0 && pagesFetched >= pageLimit {
@@ -474,7 +532,8 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 		if stopReason == "read_failure" {
 			failureStage = "read"
 		}
-		return payload, allItems, apperrors.NewAPI(
+		pageLedger.SetStopReason(stopReason)
+		return payload, allItems, pageLedger, apperrors.NewAPI(
 			fmt.Sprintf("话题回复全量读取未完成：%d 页成功，%d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("chat/list_topic_replies"),
 			apperrors.WithReason("thread_replies_incomplete"),
@@ -485,7 +544,182 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 			apperrors.WithHint("请根据 failures 和 nextPage 重试"),
 		)
 	}
-	return payload, allItems, nil
+	pageLedger.SetStopReason(stopReason)
+	return payload, allItems, pageLedger, nil
+}
+
+// threadRepliesUnifiedResult is deliberately built beside the legacy payload,
+// not from it. The payload retains historical complete/hasMore/nextPage fields
+// during dual validation; the PageLedger is the sole input to the unified
+// pagination contract.
+func threadRepliesUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
+	if pageLedger == nil {
+		return nil, fmt.Errorf("missing pagination ledger")
+	}
+	data := map[string]any{}
+	if payload != nil {
+		for _, key := range []string{"replies", "count", "conversationId", "threadId", "resolvedFromMessageId", "order", "orderScope"} {
+			if value, ok := payload[key]; ok {
+				data[key] = value
+			}
+		}
+	}
+	if pageLedger.State() == output.PageStateUnknown {
+		data["pagination_known"] = false
+	}
+	options := make([]output.ResultOption, 0, 1)
+	if dryRun {
+		options = append(options, output.WithDryRun())
+	}
+	return pageLedger.Result(data, options...)
+}
+
+// observeThreadRepliesUnifiedPage converts the service-specific reply page
+// into the framework's narrow pagination evidence. It never changes legacy
+// control flow: in dual validation it only records a shadow result. The bool
+// return means the active unified command must stop because the current page
+// cannot be projected or its continuation boundary is contradictory.
+func observeThreadRepliesUnifiedPage(
+	pageLedger *output.PageLedger,
+	cursor string,
+	data map[string]any,
+	includeReactions bool,
+) (nextToken string, terminal bool, err error) {
+	items, projectionErr := threadReplyItemsStrict(data)
+	if projectionErr != nil {
+		if recordErr := pageLedger.RecordFailure(cursor, threadRepliesProjectionFailureInfo(projectionErr)); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	evidence := output.PageEvidence{
+		Cursor: cursor,
+		Items:  len(items),
+		Data:   map[string]any{"replies": projectThreadReplyItems(items, includeReactions)},
+	}
+	page := chatmsg.Pagination(data)
+	hasMore, known := page["hasMore"].(bool)
+	if !known {
+		if token, _, tokenErr := threadRepliesNextCursorBoundary(page["nextCursor"]); tokenErr == nil {
+			evidence.NextToken = token
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, threadRepliesRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			return token, false, nil
+		}
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+	if !hasMore {
+		if token, _, tokenErr := threadRepliesNextCursorBoundary(page["nextCursor"]); tokenErr == nil && token != "" {
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, threadRepliesRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			if recordErr := pageLedger.RecordBoundaryFailure(threadRepliesPaginationFailureInfo("hasMore=false，但同时携带可用 nextCursor")); recordErr != nil {
+				return "", true, recordErr
+			}
+			return "", true, nil
+		}
+		more := false
+		evidence.HasMore = &more
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+
+	token, _, tokenErr := threadRepliesNextCursorBoundary(page["nextCursor"])
+	if tokenErr != nil {
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		if recordErr := pageLedger.RecordBoundaryFailure(threadRepliesPaginationFailureInfo("hasMore=true 但 nextCursor 无效：" + tokenErr.Error())); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	more := true
+	evidence.HasMore = &more
+	evidence.NextToken = token
+	if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+		return "", true, threadRepliesRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+	}
+	return token, false, nil
+}
+
+// threadRepliesRecordUnifiedBoundary re-observes a decoded page without a
+// continuation assertion before recording the unsafe boundary. This preserves
+// the page in partial_failure rather than leaking an internal framework error
+// when a cursor is stale, repeated, or otherwise fails ledger validation.
+func threadRepliesRecordUnifiedBoundary(pageLedger *output.PageLedger, evidence output.PageEvidence, message string) error {
+	evidence.HasMore = nil
+	evidence.NextToken = ""
+	if err := pageLedger.ObservePage(evidence); err != nil {
+		return err
+	}
+	return pageLedger.RecordBoundaryFailure(threadRepliesPaginationFailureInfo(message))
+}
+
+func threadRepliesInitialLedgerCursor(params map[string]any) string {
+	if params == nil {
+		return "initial"
+	}
+	if start := strings.TrimSpace(fmt.Sprint(params["startTime"])); start != "" && start != "<nil>" {
+		return "initial:" + start
+	}
+	return "initial"
+}
+
+func threadRepliesReadFailureInfo(err error) *output.ErrorInfo {
+	message := "话题回复分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败页边界继续；不要重放已经成功的页面",
+		Operation:        "chat/list_topic_replies",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true, // idempotent read
+	}
+}
+
+func threadRepliesPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽",
+		Operation:        "chat/list_topic_replies",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func threadRepliesProjectionFailureInfo(err error) *output.ErrorInfo {
+	message := "话题回复响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          message,
+		Hint:             "保留原始响应证据并检查服务端返回结构；不要把空回复解释为确认无回复",
+		Operation:        "chat/list_topic_replies",
+		Origin:           "mcp_gateway",
+		Stage:            "projection",
+		ExecutionStarted: &started,
+	}
 }
 
 // threadRepliesNextCursorBoundary converts the authoritative millisecond
@@ -531,14 +765,10 @@ func threadRepliesNextCursorBoundary(value any) (string, string, error) {
 }
 
 func newThreadRepliesPayload(items []map[string]any, includeReactions bool) map[string]any {
-	results := make([]map[string]any, 0, len(items))
-	for _, item := range items {
-		results = append(results, projectChatMessageWithReactions(item, includeReactions))
-	}
 	return map[string]any{
 		"contractVersion": chatmsg.MessageListContractVersion,
-		"replies":         results,
-		"count":           len(results),
+		"replies":         projectThreadReplyItems(items, includeReactions),
+		"count":           len(items),
 		"pagesFetched":    0,
 		"paginationKnown": false,
 		"complete":        false,
@@ -547,6 +777,14 @@ func newThreadRepliesPayload(items []map[string]any, includeReactions bool) map[
 		"failures":        []map[string]any{},
 		"partial":         false,
 	}
+}
+
+func projectThreadReplyItems(items []map[string]any, includeReactions bool) []map[string]any {
+	results := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		results = append(results, projectChatMessageWithReactions(item, includeReactions))
+	}
+	return results
 }
 
 // threadReplyItems defensively unwraps the reply list from the response,
@@ -579,6 +817,51 @@ func threadReplyItems(data map[string]any) []map[string]any {
 		}
 	}
 	return nil
+}
+
+// threadReplyItemsStrict is the unified projection boundary. The legacy
+// projector intentionally tolerates an absent/invalid container as an empty
+// reply list for compatibility; an activated Agent-facing command must not
+// make that equivalence because it turns a response-shape failure into a false
+// empty result.
+func threadReplyItemsStrict(data map[string]any) ([]map[string]any, error) {
+	if data == nil {
+		return nil, fmt.Errorf("response is empty")
+	}
+	scopes := []map[string]any{data}
+	for _, wrap := range []string{"result", "data"} {
+		if inner, ok := data[wrap].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	for _, scope := range scopes {
+		for _, key := range []string{"replies", "list", "items", "messages", "records", "data", "result"} {
+			raw, present := scope[key]
+			if !present {
+				continue
+			}
+			if _, wrapped := raw.(map[string]any); wrapped {
+				continue
+			}
+			values, ok := raw.([]any)
+			if !ok {
+				return nil, fmt.Errorf("%s is not a reply list", key)
+			}
+			items := make([]map[string]any, 0, len(values))
+			for index, value := range values {
+				item, ok := value.(map[string]any)
+				if !ok || item == nil {
+					return nil, fmt.Errorf("%s[%d] is not an object", key, index)
+				}
+				if strings.TrimSpace(chatmsg.StableMessageID(item)) == "" {
+					return nil, fmt.Errorf("%s[%d] has no stable message ID", key, index)
+				}
+				items = append(items, item)
+			}
+			return items, nil
+		}
+	}
+	return nil, fmt.Errorf("response has no recognized reply list")
 }
 
 func init() {

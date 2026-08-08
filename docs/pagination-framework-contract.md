@@ -8,31 +8,36 @@
 
 ## 0. Lark CLI 主干对照
 
-Lark CLI 当前主干已经把分页执行抽到 `shortcuts/common`：
+以 2026-08-08 的 [`larksuite/cli` main](https://github.com/larksuite/cli/tree/main) 为准，Lark 已经把**传输循环**和**输出表达**分开，但还没有一个完整的跨产品分页状态机：
 
-- [`PageAllFlags`](https://github.com/larksuite/cli/blob/main/shortcuts/common/page_all_flags.go)
-  统一声明 `--page-all`、`--page-limit` 和 `--page-delay`；
-- [`PaginateInto[T]`](https://github.com/larksuite/cli/blob/main/shortcuts/common/paginate_into.go)
-  使用同一条路径处理单页与自动翻页，循环上界写在 `for` 条件中，逐页 typed decode，拒绝空游标与重复游标，并让产品 `PageAccumulator[T]` 决定怎样合并业务数据；
-- [`PaginationMeta`](https://github.com/larksuite/cli/blob/main/internal/output/envelope.go)
-  位于信封 `meta.pagination`，记录 `complete/pages/items/next_token`。源码明确规定
-  `complete` 只在观察到服务端耗尽时为 true，而不是业务数据完整。
+- [`internal/client/client.go`](https://github.com/larksuite/cli/blob/main/internal/client/client.go) 的
+  `paginateLoop`、`PaginateAll` 与 `StreamPages` 负责逐页请求、`page_token` 注入、页间延迟、页数上限和 JSON 聚合/流式分发；
+- [`shortcuts/common/pagination.go`](https://github.com/larksuite/cli/blob/main/shortcuts/common/pagination.go)
+  统一兼容 `page_token` / `next_page_token`，并以 `has_more` 决定是否存在下一页；
+- [`internal/output/envelope.go`](https://github.com/larksuite/cli/blob/main/internal/output/envelope.go)
+  的 `meta.pagination` 输出 `complete/pages/items/next_token`。源码注释明确：`complete:true`
+  **仅**表示观察到服务端耗尽，绝不扩大为搜索索引健康或业务数据全量；
+- [`internal/output/emitter.go`](https://github.com/larksuite/cli/blob/main/internal/output/emitter.go)
+  规定 JSON 信封携带分页元数据，table/pretty 以人读摘要表达，CSV/NDJSON 保持 stdout 只含记录并将诊断写入 stderr。
 
-DWS 对齐的是这套**语义和分层**，不是逐字复制字段：
+这就是应当借鉴的框架边界：**框架统一执行与表达，产品命令保留字段解析、业务投影、去重和数据可信度判断。**
 
-| 能力 | Lark main | DWS 分页规范 |
+但不能把 Lark 主干描述得比实际更强：当前 `paginateLoop` 不拒绝重复游标；`has_more` 缺失会按 Go 零值落为 `false`；第 2 页及以后请求失败会停止循环并返回先前聚合结果，而不是生成显式的逐页 `partial_failure`；合并结果还会丢弃可续跑 token。因此，以下 DWS 能力是有意加强，而非 Lark 已有能力：游标一致性 fail-closed、证据未知、可续翻 token、后续页失败保留成功页并非零退出。
+
+| 能力 | Lark main 的真实行为 | DWS 分页规范 |
 |---|---|---|
-| 标准分页参数 | `page-all/page-limit/page-delay` | 对齐；允许产品声明更小的硬上限 |
-| 有限执行 | 循环结构强制最大页数 | 对齐 |
-| 游标安全 | 空 token、重复 token fail closed | 对齐，并统一为 `pagination_inconsistent` |
-| 页面解析 | 泛型 typed decode + 产品 accumulator | 对齐产品 adapter 边界 |
-| 耗尽语义 | `complete` 仅表示 endpoint exhausted | 使用更明确的 `endpoint_exhausted`，不重新引入 `complete` |
-| 证据未知 | 没有独立 unknown wire；缺失 bool 容易落入零值 | DWS 增加第三态：不输出 pagination meta |
-| 后续页失败 | 返回 error；调用方通常不输出已经累积的页 | DWS 使用 `partial_failure` 保留成功页面和失败/未知页 |
-| 去重 | 由各产品 accumulator 负责 | 同样留在产品层，框架不猜业务 ID |
-| 自动重试 | 分页器不自动重放 | 对齐；错误只给恢复证据 |
+| 传输循环 | `paginateLoop` 统一请求、延迟和 `page_token` 注入 | 由产品调用；`PageLedger` 只记录并验证已观察到的事实 |
+| JSON 输出位置 | `Envelope.Meta.Pagination` | `meta.pagination`，不污染业务 `data` |
+| 耗尽语义 | `complete` 仅表示观察到 endpoint exhausted | 使用更窄、更直白的 `endpoint_exhausted`，不重新引入 `complete` |
+| 页数上限 | `PaginationOptions.PageLimit` | 同样要求有界；产品可以声明更小的硬上限 |
+| token 字段兼容 | 支持 `page_token` 和 `next_page_token` | 由产品 adapter 归一到不透明 `next_token` |
+| 流格式纪律 | CSV/NDJSON stdout 仅记录；诊断在 stderr | 对齐 |
+| 游标安全 | 当前不验证重复/停滞 token | 空 token、重复/循环 token、矛盾字段统一为 `pagination_inconsistent` |
+| 证据未知 | 缺失 `has_more` 容易收敛为 false | 不输出 pagination meta，禁止假称耗尽 |
+| 后续页失败 | 停止循环；没有统一 partial 结果 | `partial_failure` 保留成功页与失败/未知页，非零退出 |
+| 自动重试 | 分页循环不自动重放 | 对齐；只给恢复证据，不擅自重试 |
 
-因此，DWS 规范是 Lark 分页执行器的兼容性增强：正常完成和截断语义一致，同时补齐
+因此，DWS 不是复制 Lark 的字段名，而是保留 Lark 的正确分层和窄耗尽语义，并补齐
 “上游分页字段无法确认”与“第 N 页失败但前 N-1 页已经成功”的 Agent 可信表达。
 
 ## 1. 目标与边界
