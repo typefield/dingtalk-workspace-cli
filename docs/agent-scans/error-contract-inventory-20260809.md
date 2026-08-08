@@ -6,14 +6,14 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**102** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**163** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**0** 个；与已注册调用合计覆盖 **81** 个 subtype、**163** 个调用点。
+- 已注册 descriptor：**105** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**166** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**0** 个；与已注册调用合计覆盖 **84** 个 subtype、**166** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
-- 动态 `WithReason(variable)` 调用：**1** 个。
+- 动态 `WithReason(variable)` 调用：**0** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**0** 个。
 
-所有字面 `WithReason("…")` 已映射到受治理 registry；仍保留的动态 reason 必须继续由 Agent 逐项审阅，不能被计数清零误写成已经 wire-stable。
+所有字面和变量 `WithReason` 调用均已迁入受治理 registry 或兼容桥；间接 subtype 仍须由 Agent 审阅其有限映射与真实服务端终态，不能据此宣称写入已经验证。
 
 ## 源码 subtype 清单
 
@@ -66,8 +66,11 @@
 | `pat_auth_rejected` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
-| `personal_subscription_guard_failed` | registered 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
-| `personal_subscription_invalid` | registered 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
+| `personal_subscription_auth` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:561` |
+| `personal_subscription_guard_failed` | registered 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:609` |
+| `personal_subscription_invalid` | registered 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:623` |
+| `personal_subscription_rejected` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:567` |
+| `personal_subscription_unverified` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:572` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
@@ -121,7 +124,7 @@
 
 动态 `WithReason` 在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么按当前 Category 归入 `upstream_unclassified` / `discovery_upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。
 
-- internal/app/event_personal_attempts.go:500: `apperrors.WithReason(reason)`
+- 无
 
 ## 间接稳定 subtype 映射
 

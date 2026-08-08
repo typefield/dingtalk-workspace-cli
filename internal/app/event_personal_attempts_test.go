@@ -608,6 +608,109 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureErrorPreservesTriStateA
 	}
 }
 
+func TestCrossPlatformCoveragePersonalSubscriptionStableRecoverySubtypes(t *testing.T) {
+	now := time.Date(2026, 8, 9, 10, 0, 0, 0, time.UTC)
+	tests := []struct {
+		name         string
+		cause        error
+		wantCategory apperrors.Category
+		wantReason   string
+		wantSubtype  apperrors.Subtype
+		wantStarted  *bool
+	}{
+		{
+			name: "response loss remains unverified",
+			cause: &personal.APIError{
+				Code: "SYSTEM_ERROR", HTTPStatus: http.StatusBadGateway,
+			},
+			wantCategory: apperrors.CategoryAPI,
+			wantReason:   "personal_subscription_transient_http",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionUnverified,
+			wantStarted:  personalSubscriptionExecutionStarted(true),
+		},
+		{
+			name: "explicit input rejection is stable validation",
+			cause: &personal.APIError{
+				Code: "INVALID_PARAM", HTTPStatus: http.StatusBadRequest,
+			},
+			wantCategory: apperrors.CategoryValidation,
+			wantReason:   "personal_subscription_business_rejected",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionRejected,
+			wantStarted:  personalSubscriptionExecutionStarted(true),
+		},
+		{
+			name: "authorization is a stable auth branch",
+			cause: &personal.APIError{
+				Code: "NO_PERMISSION", HTTPStatus: http.StatusForbidden,
+			},
+			wantCategory: apperrors.CategoryAuth,
+			wantReason:   "personal_subscription_auth",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionAuth,
+			wantStarted:  personalSubscriptionExecutionStarted(true),
+		},
+		{
+			name: "inconsistent retryable auth response stays unverified API",
+			cause: func() error {
+				retryable := true
+				return &personal.APIError{Code: "NO_PERMISSION", HTTPStatus: http.StatusForbidden, Retryable: &retryable}
+			}(),
+			wantCategory: apperrors.CategoryAPI,
+			wantReason:   "personal_subscription_server_retryable",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionUnverified,
+			wantStarted:  personalSubscriptionExecutionStarted(true),
+		},
+		{
+			name: "malformed endpoint is rejected before dispatch",
+			cause: &url.Error{
+				Op: "parse", URL: "://malformed", Err: errors.New("missing protocol scheme"),
+			},
+			wantCategory: apperrors.CategoryValidation,
+			wantReason:   "personal_subscription_invalid",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionRejected,
+			wantStarted:  personalSubscriptionExecutionStarted(false),
+		},
+		{
+			name:         "network dispatch remains unverified",
+			cause:        &net.DNSError{Err: "resolver unavailable", Name: "mcp.example.test"},
+			wantCategory: apperrors.CategoryAPI,
+			wantReason:   "personal_subscription_network",
+			wantSubtype:  apperrors.SubtypePersonalSubscriptionUnverified,
+		},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			classification := classifyPersonalSubscriptionFailure(test.cause, now)
+			err := personalSubscriptionFailureError(test.cause, classification, personal.AttemptHold{})
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) {
+				t.Fatalf("error type = %T", err)
+			}
+			if typed.Category != test.wantCategory || typed.Reason != test.wantReason || typed.StableSubtype != string(test.wantSubtype) {
+				t.Fatalf("typed error = %#v", typed)
+			}
+			if test.wantStarted == nil {
+				if typed.ExecutionStarted != nil {
+					t.Fatalf("execution_started = %v, want absent", *typed.ExecutionStarted)
+				}
+			} else if typed.ExecutionStarted == nil || *typed.ExecutionStarted != *test.wantStarted {
+				t.Fatalf("execution_started = %v, want %v", typed.ExecutionStarted, *test.wantStarted)
+			}
+		})
+	}
+
+	blocked := personalSubscriptionBlockedError(&personal.AttemptBlockedError{
+		State:        personal.AttemptStateCooldown,
+		Retryability: personal.RetryabilityUnknown,
+		FailureCount: 2,
+	})
+	var typed *apperrors.Error
+	if !errors.As(blocked, &typed) || typed.StableSubtype != string(apperrors.SubtypePersonalSubscriptionUnverified) ||
+		typed.ExecutionStarted == nil || *typed.ExecutionStarted ||
+		typed.Details["attempt_state"] != string(personal.AttemptStateCooldown) || typed.Details["attempt_failure_count"] != 2 {
+		t.Fatalf("blocked error lost stable recovery facts: %#v", typed)
+	}
+}
+
 func TestCrossPlatformCoveragePersonalSubscriptionBatchClaimFailureMakesZeroCreateCalls(t *testing.T) {
 	restore := installPersonalManySeams(t)
 	defer restore()

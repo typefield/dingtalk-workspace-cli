@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：已实施（十四批 registry）；动态状态机审阅进行中
+- 状态：已实施（十五批 registry）；真实服务端终态审阅进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,12 +26,12 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(...)` 或兼容桥调用 / 间接映射 | 102 / 163 / 11 | 前十三批已覆盖本地校验、认证、传输、写前确认、IM 分页、Skill/插件协议与 PAT 终止态；第十四批收口个人订阅的静态 guard/validation、legacy 部分成功、显式业务失败和 `SYSTEM_BUSY` 写入不确定态。`request_build_failed` 是唯一跨 Category 的历史 reason：保留原 `reason` wire，同时以 `WithStableSubtypeAndLegacyReason` 投影 `tool_request_build_failed` 或 `discovery_request_build_failed`，使 Agent 能按 `type + subtype` 稳定分支。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值 |
-| `WithReason("…")` 自由字面调用 | 0 | 所有字面 reason 已进入 registry 或显式兼容桥；这不包含仍待审阅的动态状态机值 |
-| 全部 subtype / 调用点 | 81 / 163 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 已注册 descriptor / 直接 `WithSubtype(...)` 或兼容桥调用 / 间接映射 | 105 / 166 / 11 | 前十四批已覆盖本地校验、认证、传输、写前确认、IM 分页、Skill/插件协议、PAT 终止态与写入不确定态；第十五批将个人订阅的有限本地状态机映射为三个稳定分支：`personal_subscription_unverified`、`personal_subscription_rejected`、`personal_subscription_auth`。旧 `reason` 仍保留为诊断兼容字段，不能再成为 Agent 分支键。`request_build_failed` 同样经兼容桥保留旧 `reason`，但按 API/discovery 投影不同 stable subtype。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值 |
+| `WithReason("…")` 自由字面调用 | 0 | 字面和变量 `WithReason` 均已进入 registry 或显式兼容桥；这只证明本地分类闭合，不包含服务端终态证明 |
+| 全部 subtype / 调用点 | 84 / 166 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 9 | 绕过 `WithReason` 的第二条入口；Agent 扫描现同时识别枚举转换的赋值，event stop 的 `event_stop_unverified` 已登记 registry |
-| 动态 `WithReason(variable)` | 1 | 仅剩个人订阅状态机；其有限但未审定的 failure family 仍须连同 Category、幂等性与终态语义单独设计，不能靠字符串替换 |
-| 缺有效恢复提示的 subtype | 0 | 所有已扫描到的 stable subtype 至少有命令级 hint 或 registry 默认 hint；仍有一条动态个人订阅状态机构造待审阅，这不等于服务端终态已验证 |
+| 动态 `WithReason(variable)` | 0 | 个人订阅的有限 reason 仍作为 legacy diagnostics 保留，但现经稳定 subtype 兼容桥投影；新增上游码不得直接变为 subtype |
+| 缺有效恢复提示的 subtype | 0 | 所有已扫描到的 stable subtype 至少有命令级 hint 或 registry 默认 hint；这不等于服务端终态已验证 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
 `permission=4`、`internal=5`、`discovery=6`、`partial_failure=7`。
@@ -161,6 +161,22 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 两个 unclassified subtype 的文案只要求 Agent 收集 trace/请求上下文或提示用户，不得诱导
 盲目重试。
 
+### 4.4 个人订阅创建的有限状态机（第十五批）
+
+个人订阅创建包含历史 attempt store、HTTP 响应、网络丢响应和本地 cooldown；它们的旧
+`reason` 是本地兼容诊断，不能成为无限扩展的 Agent 控制流。框架只公开以下三个稳定分支：
+
+| 条件 | stable subtype / Category | Agent 恢复边界 |
+|---|---|---|
+| 5xx/429/timeout/network、历史 in-flight/cooldown、或其他未证明终态 | `personal_subscription_unverified` / api | 保留旧 reason、trace 和 `attempt_state`；先查询现有订阅，禁止直接重放创建 |
+| 明确参数/能力/组织拒绝，或 URL 解析在请求前失败 | `personal_subscription_rejected` / validation | 修正配置、事件能力或目标组织后再创建；请求前失败带 `execution_started:false` |
+| 明确认证/授权拒绝 | `personal_subscription_auth` / auth | 修复登录或权限后，先查询现有订阅再决定是否创建 |
+
+收到 HTTP API 错误响应时 `execution_started:true`，因为请求已到达端点；网络/超时保持
+unknown，不把本地 cooldown 当成服务器幂等性证明。对后续调用，blocked 当前 invocation
+明确带 `execution_started:false`，并在 `error.details` 输出受控的 `attempt_state` 和
+`attempt_failure_count`。这项分类不证明服务端 exactly-once 或写后终态。
+
 ## 5. 实现原则
 
 1. 新增 `WithSubtype(Subtype)` 或等价的 descriptor 构造器；新代码不再直接使用任意
@@ -181,7 +197,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output、复合写、stdio/MCP/plugin/format、Agent 身份参数、认证/发现、路由/确认、@我/线程/PAT 终止态，以及 `personal_subscription_guard_failed` / `personal_subscription_invalid` / `partial_failure` / `system_busy` / `business_error` 均已登记。`request_build_failed` 通过 `tool_request_build_failed` / `discovery_request_build_failed` 的 stable subtype 兼容桥保留 legacy reason；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output、复合写、stdio/MCP/plugin/format、Agent 身份参数、认证/发现、路由/确认、@我/线程/PAT 终止态，以及个人订阅的 `guard_failed` / `invalid` / `unverified` / `rejected` / `auth`、`partial_failure` / `system_busy` / `business_error` 均已登记。`request_build_failed` 通过 `tool_request_build_failed` / `discovery_request_build_failed` 的 stable subtype 兼容桥保留 legacy reason；变量 `WithReason` 已从 16 降至 0，后续只审阅新增状态机的有限映射和真实服务端终态；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

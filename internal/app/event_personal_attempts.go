@@ -59,12 +59,13 @@ type personalSubscriptionAttemptReservation struct {
 }
 
 type personalSubscriptionFailureClass struct {
-	retryability personal.Retryability
-	retryAfter   time.Duration
-	code         string
-	traceID      string
-	reason       string
-	auth         bool
+	retryability     personal.Retryability
+	retryAfter       time.Duration
+	code             string
+	traceID          string
+	reason           string
+	auth             bool
+	executionStarted *bool
 }
 
 func reservePersonalSubscriptionAttempts(
@@ -251,6 +252,11 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 
 	var apiErr *personal.APIError
 	if errors.As(err, &apiErr) {
+		// This classifier is only reached from CreateSubscription. Receiving an
+		// APIError means an HTTP response was observed, so the endpoint did see
+		// the request even though its business terminal state may still be
+		// unknown.
+		classification.executionStarted = personalSubscriptionExecutionStarted(true)
 		classification.code = strings.TrimSpace(apiErr.Code)
 		classification.traceID = strings.TrimSpace(apiErr.TraceID)
 		classification.retryAfter = personalAPIRetryDelay(apiErr, now)
@@ -302,6 +308,7 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 		if strings.EqualFold(strings.TrimSpace(urlErr.Op), "parse") {
 			classification.retryability = personal.RetryabilityNonRetryable
 			classification.reason = "personal_subscription_invalid"
+			classification.executionStarted = personalSubscriptionExecutionStarted(false)
 			return classification
 		}
 		classification.reason = "personal_subscription_network"
@@ -440,6 +447,8 @@ func personalSubscriptionFailureError(
 		classification.code,
 		classification.traceID,
 		classification.reason,
+		classification.auth,
+		classification.executionStarted,
 		cause,
 	)
 	message := cause.Error()
@@ -468,6 +477,8 @@ func personalSubscriptionBlockedError(blocked *personal.AttemptBlockedError) err
 	if retryability == personal.RetryabilityRetryable {
 		retryability = personal.RetryabilityUnknown
 	}
+	authFailure := retryability == personal.RetryabilityNonRetryable &&
+		personalSubscriptionAuthFailure(0, blocked.ErrorCode)
 	options := personalSubscriptionErrorOptions(
 		retryability,
 		blocked.RetryAfter,
@@ -475,10 +486,16 @@ func personalSubscriptionBlockedError(blocked *personal.AttemptBlockedError) err
 		blocked.ErrorCode,
 		blocked.TraceID,
 		reason,
+		authFailure,
+		personalSubscriptionExecutionStarted(false),
 		blocked,
 	)
+	options = append(options, apperrors.WithDetails(map[string]any{
+		"attempt_state":         personalSubscriptionAttemptStateDetail(blocked.State),
+		"attempt_failure_count": blocked.FailureCount,
+	}))
 	if retryability == personal.RetryabilityNonRetryable {
-		if personalSubscriptionAuthFailure(0, blocked.ErrorCode) {
+		if authFailure {
 			return apperrors.NewAuth(blocked.Error(), options...)
 		}
 		return apperrors.NewValidation(blocked.Error(), options...)
@@ -493,12 +510,17 @@ func personalSubscriptionErrorOptions(
 	code string,
 	traceID string,
 	reason string,
+	auth bool,
+	executionStarted *bool,
 	cause error,
 ) []apperrors.Option {
 	options := []apperrors.Option{
 		apperrors.WithOperation(personalSubscriptionAttemptOperation),
-		apperrors.WithReason(reason),
+		personalSubscriptionStableSubtypeOption(retryability, auth, reason),
 		apperrors.WithCause(cause),
+	}
+	if executionStarted != nil {
+		options = append(options, apperrors.WithExecutionStarted(*executionStarted))
 	}
 	if retryable, known := retryability.Value(); known {
 		options = append(options, apperrors.WithRetryable(retryable))
@@ -522,6 +544,51 @@ func personalSubscriptionErrorOptions(
 		}))
 	}
 	return options
+}
+
+// personalSubscriptionStableSubtypeOption intentionally has only three
+// Agent-facing branches. The legacy reason remains useful diagnostics, but it
+// is a finite local-state-machine label rather than a public control-flow key:
+// unknown attempts must be reconciled, explicit rejections must be corrected,
+// and auth failures require identity repair. This keeps a newly added server
+// code from becoming an accidental stable subtype.
+func personalSubscriptionStableSubtypeOption(
+	retryability personal.Retryability,
+	auth bool,
+	legacyReason string,
+) apperrors.Option {
+	// NewAuth is only emitted for an explicit non-retryable auth rejection.
+	// An inconsistent upstream `retryable:true` must remain API/unverified;
+	// otherwise the descriptor Category and process exit code would diverge.
+	if retryability == personal.RetryabilityNonRetryable && auth {
+		return apperrors.WithStableSubtypeAndLegacyReason(
+			apperrors.SubtypePersonalSubscriptionAuth,
+			legacyReason,
+		)
+	}
+	if retryability == personal.RetryabilityNonRetryable {
+		return apperrors.WithStableSubtypeAndLegacyReason(
+			apperrors.SubtypePersonalSubscriptionRejected,
+			legacyReason,
+		)
+	}
+	return apperrors.WithStableSubtypeAndLegacyReason(
+		apperrors.SubtypePersonalSubscriptionUnverified,
+		legacyReason,
+	)
+}
+
+func personalSubscriptionExecutionStarted(value bool) *bool {
+	return &value
+}
+
+func personalSubscriptionAttemptStateDetail(state personal.AttemptState) string {
+	switch state {
+	case personal.AttemptStateInFlight, personal.AttemptStateCooldown, personal.AttemptStateTerminalHold:
+		return string(state)
+	default:
+		return "unknown"
+	}
 }
 
 func ceilPersonalRetrySeconds(delay time.Duration) int64 {

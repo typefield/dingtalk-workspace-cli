@@ -21,7 +21,7 @@ import re
 REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s*\)")
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
 STABLE_SUBTYPE_BRIDGE = re.compile(
-    r"\b(?:(?:apperrors|errors)\.)?WithStableSubtypeAndLegacyReason\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*,\s*\"[^\"]+\"\s*\)"
+    r"\b(?:(?:apperrors|errors)\.)?WithStableSubtypeAndLegacyReason\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*,\s*(?:\"[^\"]+\"|[a-z][A-Za-z0-9_]*)\s*,?\s*\)"
 )
 # A stable mapping may be returned by a finite helper, or selected from a
 # finite local enum before it reaches WithSubtype.  Record both forms for
@@ -237,11 +237,12 @@ def main() -> int:
     registered_struct_subtypes = sorted(set(struct_subtypes) & registered_subtype_values)
     unregistered_struct_subtypes = sorted(set(struct_subtypes) - registered_subtype_values)
 
-    registry_status = (
-        "已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。"
-        if free_occurrences
-        else "所有字面 `WithReason(\"…\")` 已映射到受治理 registry；仍保留的动态 reason 必须继续由 Agent 逐项审阅，不能被计数清零误写成已经 wire-stable。"
-    )
+    if free_occurrences:
+        registry_status = "已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。"
+    elif dynamic:
+        registry_status = "所有字面 `WithReason(\"…\")` 已映射到受治理 registry；仍保留的动态 reason 必须继续由 Agent 逐项审阅，不能被计数清零误写成已经 wire-stable。"
+    else:
+        registry_status = "所有字面和变量 `WithReason` 调用均已迁入受治理 registry 或兼容桥；间接 subtype 仍须由 Agent 审阅其有限映射与真实服务端终态，不能据此宣称写入已经验证。"
     lines = [
         "# DWS 错误契约 Agent 扫描",
         "",

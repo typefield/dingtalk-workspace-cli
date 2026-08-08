@@ -117,6 +117,9 @@ const (
 	SubtypePATAuthCancelled                   Subtype = "pat_auth_cancelled"
 	SubtypePersonalSubscriptionGuardFailed    Subtype = "personal_subscription_guard_failed"
 	SubtypePersonalSubscriptionInvalid        Subtype = "personal_subscription_invalid"
+	SubtypePersonalSubscriptionUnverified     Subtype = "personal_subscription_unverified"
+	SubtypePersonalSubscriptionRejected       Subtype = "personal_subscription_rejected"
+	SubtypePersonalSubscriptionAuth           Subtype = "personal_subscription_auth"
 	SubtypePartialFailure                     Subtype = "partial_failure"
 	SubtypeSystemBusy                         Subtype = "system_busy"
 	SubtypeBusinessError                      Subtype = "business_error"
@@ -1024,6 +1027,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "核对订阅参数与本地配置后再调用；不要以重复提交修复此错误。",
 		Description:   "local personal-subscription parameters or configuration are invalid before submission",
+	},
+	SubtypePersonalSubscriptionUnverified: {
+		Subtype:       SubtypePersonalSubscriptionUnverified,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "订阅创建或历史创建尝试的终态未证实；先核查现有订阅状态，禁止直接重复创建。",
+		Description:   "a personal subscription create attempt may have reached the service but its terminal state is unverified",
+	},
+	SubtypePersonalSubscriptionRejected: {
+		Subtype:       SubtypePersonalSubscriptionRejected,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "服务端或本地状态已明确拒绝本次订阅；核对参数、事件能力和目标组织后再创建。",
+		Description:   "a personal subscription request was explicitly rejected and should not be replayed unchanged",
+	},
+	SubtypePersonalSubscriptionAuth: {
+		Subtype:       SubtypePersonalSubscriptionAuth,
+		Category:      CategoryAuth,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "订阅创建被认证或授权拒绝；重新登录或补齐权限后，先核查现有订阅状态再决定是否创建。",
+		Description:   "a personal subscription request was rejected because the current identity lacks authentication or authorization",
 	},
 	SubtypePartialFailure: {
 		Subtype:       SubtypePartialFailure,
