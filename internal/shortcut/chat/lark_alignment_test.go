@@ -77,6 +77,8 @@ func (f *larkAlignmentCaller) CallTool(_ context.Context, product, tool string, 
 		text = `{"result":{"cid":"internal-cid","openCid":"open-cid"}}`
 	case "im/list_messages_by_ids":
 		text = `{"result":[{"openMessageId":"msg","openConversationId":"cid","senderOpenDingTalkId":"D-inferred","content":"{\"mediaId\":\"@image\"}"}]}`
+	case "im/list_my_groups_pagination":
+		text = `{"result":{"groups":[],"hasMore":false}}`
 	case "im/list_conversations_by_category":
 		text = f.category
 		if text == "" {

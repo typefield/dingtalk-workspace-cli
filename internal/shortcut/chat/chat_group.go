@@ -921,6 +921,9 @@ func executeChatListAll(rt *shortcut.RuntimeContext) error {
 	}
 	if rt.Bool("page-all") {
 		payload, err := readAllChatListAll(rt, params)
+		if err != nil && payload == nil {
+			return err
+		}
 		if outputErr := rt.Output(payload); outputErr != nil {
 			return outputErr
 		}
@@ -930,7 +933,10 @@ func executeChatListAll(rt *shortcut.RuntimeContext) error {
 	if err != nil {
 		return err
 	}
-	groups := chatListAllProject(data)
+	groups, err := chatListAllProject(data)
+	if err != nil {
+		return err
+	}
 	payload := map[string]any{"count": len(groups), "groups": groups}
 	chatmsg.ApplyPagination(payload, data)
 	payload["pagesFetched"] = 1
@@ -958,6 +964,7 @@ func readAllChatListAll(rt *shortcut.RuntimeContext, baseParams map[string]any) 
 	hasMore := false
 	stopReason := "source_complete"
 	truncatedByPageLimit := false
+	projectionFailure := false
 	var nextCursor any
 
 	for pagesFetched < pageLimit {
@@ -977,7 +984,18 @@ func readAllChatListAll(rt *shortcut.RuntimeContext, baseParams map[string]any) 
 			break
 		}
 		pagesFetched++
-		pageGroups := chatListAllProject(data)
+		pageGroups, projectErr := chatListAllProject(data)
+		if projectErr != nil {
+			if pagesFetched == 1 && len(allGroups) == 0 {
+				return nil, projectErr
+			}
+			projectionFailure = true
+			failures = append(failures, map[string]any{
+				"page": pagesFetched, "stage": "response_projection", "cursor": cursorKey, "error": projectErr.Error(),
+			})
+			stopReason = "projection_error"
+			break
+		}
 		for _, group := range pageGroups {
 			id := strings.TrimSpace(fmt.Sprint(group["openConversationId"]))
 			if id == "<nil>" {
@@ -1042,15 +1060,22 @@ func readAllChatListAll(rt *shortcut.RuntimeContext, baseParams map[string]any) 
 	if len(failures) == 0 {
 		return payload, nil
 	}
-	return payload, apperrors.NewAPI(
-		fmt.Sprintf("已加入群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
+	options := []apperrors.Option{
 		apperrors.WithOperation("im/list_my_groups_pagination"),
 		apperrors.WithReason("chat_list_all_incomplete"),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),
-		apperrors.WithRetryable(true),
 		apperrors.WithHint("请根据 failures 和 nextCursor 重试"),
+	}
+	if projectionFailure {
+		options = append(options, apperrors.WithRetryable(false))
+	} else {
+		options = append(options, apperrors.WithRetryable(true))
+	}
+	return payload, apperrors.NewAPI(
+		fmt.Sprintf("已加入群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
+		options...,
 	)
 }
 
@@ -1068,15 +1093,18 @@ func chatListAllCursorString(value any) string {
 // chatListAllProject reshapes list_my_groups_pagination into a clean group list
 // ({openConversationId, name}) — clean output projection. List
 // container and per-item field names are probed defensively across candidate
-// keys so shape drift yields an empty list rather than a crash or fabricated
-// data.
-func chatListAllProject(data map[string]any) []map[string]any {
-	raw := chatGroupResolveList(data)
+// keys. Known empty results remain successful; unknown shapes do not become a
+// fabricated "no groups" result.
+func chatListAllProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := chatListAllResolveList(data)
+	if !known {
+		return nil, chatGroupProjectionUnknown("已加入群列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, chatGroupProjectionUnknown("已加入群列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := chatGroupFirst(m, "openConversationId", "openconversation_id", "conversationId", "id"); ok {
@@ -1085,11 +1113,44 @@ func chatListAllProject(data map[string]any) []map[string]any {
 		if v, ok := chatGroupFirst(m, "name", "groupName", "title"); ok {
 			row["name"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, chatGroupProjectionUnknown("已加入群列表条目缺少可识别字段")
+		}
+		out = append(out, row)
+	}
+	return out, nil
+}
+
+func chatListAllResolveList(data map[string]any) ([]any, bool) {
+	for _, key := range []string{"result", "data", "list", "items", "groups", "conversations"} {
+		value, ok := data[key]
+		if !ok {
+			continue
+		}
+		if rows, ok := value.([]any); ok {
+			return rows, true
+		}
+		inner, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, innerKey := range []string{"list", "items", "groups", "conversations", "result", "data"} {
+			if rows, ok := inner[innerKey].([]any); ok {
+				return rows, true
+			}
 		}
 	}
-	return out
+	return nil, false
+}
+
+func chatGroupProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithOperation("im/list_my_groups_pagination"),
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // chatGroupResolveList locates the list payload inside a group-list response,

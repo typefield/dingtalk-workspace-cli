@@ -10,6 +10,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 )
 
@@ -208,6 +209,37 @@ func TestCrossPlatformCoverageChatListAllAdditionalEdges(t *testing.T) {
 			if err == nil {
 				t.Fatalf("first read failure unexpectedly succeeded for %v", args)
 			}
+		}
+	})
+
+	t.Run("unknown projection is never an empty success", func(t *testing.T) {
+		for _, args := range [][]string{nil, {"--page-all"}} {
+			payload, err := run(t, &larkAlignmentCaller{responses: map[string]string{
+				"im/list_my_groups_pagination": `{"result":{"unknown":[],"hasMore":false}}`,
+			}}, args...)
+			if err == nil || payload != nil {
+				t.Fatalf("args=%v payload=%#v err=%v; want no payload and projection error", args, payload, err)
+			}
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) || typed.Reason != "projection_unknown" || typed.Retryable {
+				t.Fatalf("args=%v error=%T %#v; want non-retryable projection_unknown", args, err, err)
+			}
+		}
+	})
+
+	t.Run("later unknown projection keeps partial ledger", func(t *testing.T) {
+		payload, err := run(t, &larkAlignmentCaller{sequenceResponses: map[string][]string{
+			"im/list_my_groups_pagination": {
+				`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`,
+				`{"result":{"unknown":[],"hasMore":false}}`,
+			},
+		}}, "--page-all")
+		if err == nil || payload["stopReason"] != "projection_error" || payload["count"] != float64(1) {
+			t.Fatalf("payload=%#v err=%v; want partial projection failure", payload, err)
+		}
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Retryable {
+			t.Fatalf("error=%T %#v; want non-retryable partial projection error", err, err)
 		}
 	})
 
