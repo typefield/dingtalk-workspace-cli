@@ -1834,6 +1834,9 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 		return output.Success(data, output.WithDryRun())
 	}
 	if content, ok := data.(map[string]any); ok {
+		if paginationErr := devAppPaginationError(content); paginationErr != nil {
+			return output.Failure(paginationErr)
+		}
 		if partial := devAppMultiProfileResult(content); partial != nil {
 			return partial
 		}
@@ -1910,9 +1913,16 @@ func writeDevAppEnvelope(cmd *cobra.Command, result executor.Result) error {
 		Outcome: output.OutcomeSuccess,
 		Data:    devAppEnvelopeData(result),
 	}
+	if !result.Invocation.DryRun {
+		if data, ok := env.Data.(map[string]any); ok {
+			if paginationErr := devAppPaginationError(data); paginationErr != nil {
+				env = output.NewFailureEnvelope(paginationErr)
+			}
+		}
+	}
 	if result.Invocation.DryRun {
 		env.DryRun = true
-	} else {
+	} else if env.Outcome == output.OutcomeSuccess {
 		env.Meta = devAppPaginationMeta(env.Data)
 	}
 	return writeDevRolloutResult(cmd, devAppCommandResult(result), env, output.FormatJSON)
@@ -1968,6 +1978,50 @@ func devAppPaginationMeta(payload any) *output.Meta {
 		return nil
 	}
 	return &output.Meta{Pagination: pg}
+}
+
+// devAppPaginationError rejects pagination evidence that would otherwise be
+// silently discarded by devAppPaginationMeta. A non-final page must be
+// resumable, while an exhausted page cannot also advertise a continuation
+// token. This keeps both native dev and devapp shortcut projections honest.
+func devAppPaginationError(payload map[string]any) *output.ErrorInfo {
+	rawMore, hasMoreKey := payload["hasMore"]
+	rawCursor, hasCursorKey := payload["nextCursor"]
+	if !hasMoreKey && !hasCursorKey {
+		return nil
+	}
+	hasMore, moreOK := rawMore.(bool)
+	if hasMoreKey && !moreOK {
+		return &output.ErrorInfo{
+			Type:    "validation",
+			Subtype: "pagination_invalid",
+			Message: "devapp pagination hasMore must be a boolean",
+		}
+	}
+	cursor, cursorOK := rawCursor.(string)
+	cursor = strings.TrimSpace(cursor)
+	if hasCursorKey && (!cursorOK || (cursor == "" && hasMore)) {
+		return &output.ErrorInfo{
+			Type:    "validation",
+			Subtype: "pagination_incomplete",
+			Message: "devapp pagination continuation is missing nextCursor",
+		}
+	}
+	if hasMoreKey && !hasMore && cursor != "" {
+		return &output.ErrorInfo{
+			Type:    "validation",
+			Subtype: "pagination_conflict",
+			Message: "devapp pagination cannot be exhausted while nextCursor is present",
+		}
+	}
+	if hasMore && cursor == "" {
+		return &output.ErrorInfo{
+			Type:    "validation",
+			Subtype: "pagination_incomplete",
+			Message: "devapp pagination hasMore=true requires nextCursor",
+		}
+	}
+	return nil
 }
 
 func devAppMultiProfileResult(content map[string]any) output.CommandResult {

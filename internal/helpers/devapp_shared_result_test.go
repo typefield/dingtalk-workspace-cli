@@ -102,6 +102,32 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		}
 	})
 
+	t.Run("pagination contradiction is a failure", func(t *testing.T) {
+		result := DevAppCommandResultFromPayload("", map[string]any{
+			"items": []any{}, "hasMore": false, "nextCursor": "stale-token",
+		}, false)
+		env, err := output.EnvelopeFromResult(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil || env.Error.Subtype != "pagination_conflict" {
+			t.Fatalf("contradictory pagination envelope=%+v rc=%d", env, result.ExitCode())
+		}
+	})
+
+	t.Run("non-final page without cursor is a failure", func(t *testing.T) {
+		result := DevAppCommandResultFromPayload("", map[string]any{
+			"items": []any{}, "hasMore": true,
+		}, false)
+		env, err := output.EnvelopeFromResult(result)
+		if err != nil {
+			t.Fatal(err)
+		}
+		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil || env.Error.Subtype != "pagination_incomplete" {
+			t.Fatalf("incomplete pagination envelope=%+v rc=%d", env, result.ExitCode())
+		}
+	})
+
 	t.Run("partial", func(t *testing.T) {
 		result := DevAppCommandResultFromPayload("", map[string]any{
 			"multiProfile": true,
