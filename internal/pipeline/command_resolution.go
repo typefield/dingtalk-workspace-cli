@@ -64,7 +64,7 @@ func unknownShortcutError(parent *cobra.Command, candidate string) error {
 	action := fmt.Sprintf("Run '%s shortcut list --service %s --format json'", parent.Root().Name(), parent.Name())
 	return apperrors.NewValidation(
 		fmt.Sprintf("unknown shortcut %q for %q", candidate, parent.CommandPath()),
-		apperrors.WithReason("unknown_shortcut"),
+		apperrors.WithSubtype(apperrors.SubtypeUnknownShortcut),
 		apperrors.WithHint(commandSuggestionHint(parent, candidate, action)),
 		apperrors.WithActions(action),
 	)
@@ -74,7 +74,7 @@ func unknownSubcommandError(parent *cobra.Command, candidate string) error {
 	action := fmt.Sprintf("Run '%s --help' to see available subcommands", parent.CommandPath())
 	return apperrors.NewValidation(
 		fmt.Sprintf("unknown subcommand %q for %q", candidate, parent.CommandPath()),
-		apperrors.WithReason("unknown_subcommand"),
+		apperrors.WithSubtype(apperrors.SubtypeUnknownSubcommand),
 		apperrors.WithHint(commandSuggestionHint(parent, candidate, action)),
 		apperrors.WithActions(action),
 	)

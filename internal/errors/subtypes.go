@@ -101,6 +101,13 @@ const (
 	SubtypeRawAPICredentialsRequired          Subtype = "raw_api_credentials_required"
 	SubtypeEndpointNotResolved                Subtype = "endpoint_not_resolved"
 	SubtypeDocDownloadPreflightFailed         Subtype = "doc_download_preflight_failed"
+	SubtypeAmbiguousCommandFallback           Subtype = "ambiguous_command_fallback"
+	SubtypeIDIntersection                     Subtype = "id_intersection"
+	SubtypeParameterConflict                  Subtype = "parameter_conflict"
+	SubtypePATBatchRequiresYes                Subtype = "pat_batch_requires_yes"
+	SubtypeUnknownShortcut                    Subtype = "unknown_shortcut"
+	SubtypeUnknownSubcommand                  Subtype = "unknown_subcommand"
+	SubtypeUnsupportedAlidocExtension         Subtype = "unsupported_alidoc_extension"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -859,6 +866,69 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: true,
 		DefaultHint:   "下载前的文档类型预检失败；先读取文档信息并确认节点类型后再决定下载路径。",
 		Description:   "a document-download type preflight did not complete successfully",
+	},
+	SubtypeAmbiguousCommandFallback: {
+		Subtype:       SubtypeAmbiguousCommandFallback,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "候选命令存在歧义；根据原始意图选择一个候选命令后再执行。",
+		Description:   "a reviewed compatibility route maps to multiple possible commands",
+	},
+	SubtypeIDIntersection: {
+		Subtype:       SubtypeIDIntersection,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "修正两个 ID 列表，确保同一个 ID 只出现在一个列表中后再执行。",
+		Description:   "two mutually exclusive caller-provided ID lists overlap",
+	},
+	SubtypeParameterConflict: {
+		Subtype:       SubtypeParameterConflict,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "移除重复的别名或规范参数拼写，每个参数只传递一次。",
+		Description:   "the caller supplied conflicting duplicate parameter spellings",
+	},
+	SubtypePATBatchRequiresYes: {
+		Subtype:       SubtypePATBatchRequiresYes,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "先执行 dry-run 查看批量授权计划；用户明确确认后才追加 --yes。",
+		Description:   "a batch PAT authorization was blocked before execution pending confirmation",
+	},
+	SubtypeUnknownShortcut: {
+		Subtype:       SubtypeUnknownShortcut,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "读取当前服务的 shortcut 列表或 leaf Help，选择公开命令后再执行。",
+		Description:   "the requested shortcut is not exposed by the current command tree",
+	},
+	SubtypeUnknownSubcommand: {
+		Subtype:       SubtypeUnknownSubcommand,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "读取父命令 Help，选择当前版本公开的子命令后再执行。",
+		Description:   "the requested subcommand is not exposed by the current command tree",
+	},
+	SubtypeUnsupportedAlidocExtension: {
+		Subtype:       SubtypeUnsupportedAlidocExtension,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: true,
+		DefaultHint:   "先读取文档信息确认 extension；在线表格改用表格读取能力。",
+		Description:   "the document extension is known not to support the requested download route",
 	},
 }
 

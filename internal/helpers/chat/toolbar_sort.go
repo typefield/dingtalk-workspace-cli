@@ -56,7 +56,7 @@ func newToolbarSortCommand() *cobra.Command {
 				if hasIntersection(sortedIds, unsortedIds) {
 					return apperrors.NewValidation(
 						"--sorted-ids 与 --unsorted-ids 不能有交集",
-						apperrors.WithReason("id_intersection"),
+						apperrors.WithSubtype(apperrors.SubtypeIDIntersection),
 						apperrors.WithHint("检查两个 ID 列表，确保同一个 ID 不同时出现在两个列表中"),
 						apperrors.WithActions("修正 ID 列表后重试"),
 					)

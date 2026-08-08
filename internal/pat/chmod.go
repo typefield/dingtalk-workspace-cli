@@ -494,7 +494,7 @@ func requireBatchGrantConfirmation(cmd *cobra.Command, usesPlan bool, scopes []s
 	}
 	return apperrors.NewValidation(
 		"batch PAT authorization blocked: explicit user confirmation is required; rerun with --yes only after the user approves the batch grant",
-		apperrors.WithReason("pat_batch_requires_yes"),
+		apperrors.WithSubtype(apperrors.SubtypePATBatchRequiresYes),
 		apperrors.WithHint("先执行 dws pat chmod ... --dry-run --format json 查看 selected/skipped/pending；用户明确确认后再追加 --yes 执行批量授权。"),
 		apperrors.WithActions(
 			"dws pat chmod <scope1> <scope2> ... --grant-type once --yes",

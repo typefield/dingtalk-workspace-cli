@@ -6,8 +6,8 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**81** 个；直接 `WithSubtype(Subtype...)` 调用点：**142** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**20** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
+- 已注册 descriptor：**88** 个；直接 `WithSubtype(Subtype...)` 调用点：**149** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**13** 个；与已注册调用合计覆盖 **80** 个 subtype、**162** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
@@ -19,7 +19,7 @@
 
 | subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable | retry-after | execution-started | 例子 |
 |---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|
-| `ambiguous_command_fallback` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
+| `ambiguous_command_fallback` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
 | `at_me_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
 | `attachment_tokens_unavailable` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
 | `auth_refresh_failed` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
@@ -40,7 +40,7 @@
 | `flag_list_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:761` |
 | `formula_errors_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:143` |
 | `gateway_auth_expired` | registered 2 | 2 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:251`<br>`internal/errors/pat.go:275` |
-| `id_intersection` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_sort.go:59` |
+| `id_intersection` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_sort.go:59` |
 | `input_read_failed` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:212`<br>`internal/helpers/sheet_formula_verify.go:221` |
 | `invalid_agent_code` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/pat/chmod.go:181`<br>`internal/pat/chmod.go:186` |
 | `invalid_agent_host` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/agent_host.go:68` |
@@ -58,13 +58,13 @@
 | `not_authenticated` | registered 4 | 4 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` … |
 | `not_configured` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:283` |
 | `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
-| `parameter_conflict` | free 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
+| `parameter_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
 | `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1190` |
 | `pat_auth_cancelled` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
 | `pat_auth_expired` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:688` |
 | `pat_auth_rejected` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
-| `pat_batch_requires_yes` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
+| `pat_batch_requires_yes` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
 | `personal_subscription_guard_failed` | free 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
 | `personal_subscription_invalid` | free 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
@@ -93,9 +93,9 @@
 | `thread_replies_incomplete` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:539` |
 | `thread_root_message_not_found` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
 | `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/app/root.go:433`<br>`internal/app/root.go:447` |
-| `unknown_shortcut` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
-| `unknown_subcommand` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |
-| `unsupported_alidoc_extension` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:105` |
+| `unknown_shortcut` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
+| `unknown_subcommand` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |
+| `unsupported_alidoc_extension` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:105` |
 | `unsupported_format` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:616` |
 | `upstream_unclassified` | registered 2 | 2 | `api` | yes | yes | no | no | yes | `internal/app/server_failure_classifier.go:93`<br>`internal/transport/client.go:556` |
 | `version_not_found` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/helpers/doc.go:4084`<br>`internal/helpers/sheet_version.go:149` |

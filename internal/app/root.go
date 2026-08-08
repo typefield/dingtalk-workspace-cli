@@ -341,7 +341,7 @@ func newPreParseValidationError(err error) error {
 	}
 	return apperrors.NewValidation(
 		userErr.Error(),
-		apperrors.WithReason("parameter_conflict"),
+		apperrors.WithSubtype(apperrors.SubtypeParameterConflict),
 		apperrors.WithHint("Remove the duplicate alias/canonical spelling and pass the parameter exactly once."),
 		apperrors.WithCause(userErr),
 	)

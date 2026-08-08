@@ -102,7 +102,7 @@ func unsupportedAXLSDownloadError() error {
 	return apperrors.NewValidation(
 		"nodeId 指向的节点是钉钉表格（extension=axls），在线表格不支持直接下载。请使用 getRange 工具获取表格数据。",
 		apperrors.WithOperation("doc.download_file.preflight"),
-		apperrors.WithReason("unsupported_alidoc_extension"),
+		apperrors.WithSubtype(apperrors.SubtypeUnsupportedAlidocExtension),
 		apperrors.WithServerKey(docProductID),
 		apperrors.WithHint("在线表格应先用 doc info 确认 extension，再改用表格 MCP 的 get_all_sheets / get_range 读取数据。"),
 		apperrors.WithActions("dws doc info --node <nodeId>", "使用表格 MCP get_all_sheets / get_range"),

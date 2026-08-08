@@ -151,7 +151,7 @@ func ambiguousCommandPathFallbackError(root *cobra.Command, entry CommandPathFal
 	hint := "Inspect the reviewed candidates and choose by the original user intent: " + strings.Join(paths, ", ")
 	return apperrors.NewValidation(
 		fmt.Sprintf("command path %q is ambiguous", strings.TrimSpace(rootName+" "+entry.From)),
-		apperrors.WithReason("ambiguous_command_fallback"),
+		apperrors.WithSubtype(apperrors.SubtypeAmbiguousCommandFallback),
 		apperrors.WithHint(hint),
 		apperrors.WithActions(actions...),
 	)

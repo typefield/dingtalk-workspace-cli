@@ -90,6 +90,13 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeRawAPICredentialsRequired, CategoryAuth, RetryNever, true},
 		{SubtypeEndpointNotResolved, CategoryAPI, RetryNever, true},
 		{SubtypeDocDownloadPreflightFailed, CategoryAPI, RetryNever, true},
+		{SubtypeAmbiguousCommandFallback, CategoryValidation, RetryNever, true},
+		{SubtypeIDIntersection, CategoryValidation, RetryNever, true},
+		{SubtypeParameterConflict, CategoryValidation, RetryNever, false},
+		{SubtypePATBatchRequiresYes, CategoryValidation, RetryNever, true},
+		{SubtypeUnknownShortcut, CategoryValidation, RetryNever, true},
+		{SubtypeUnknownSubcommand, CategoryValidation, RetryNever, true},
+		{SubtypeUnsupportedAlidocExtension, CategoryValidation, RetryNever, true},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {
