@@ -4064,7 +4064,7 @@ CLI 内部自动完成全部流程:
 			if !cmd.Flags().Changed("version") {
 				return apperrors.NewValidation(
 					"flag --version is required",
-					apperrors.WithReason("missing_required_flag"),
+					apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 				)
 			}
 			version, _ := cmd.Flags().GetInt("version")
@@ -4081,7 +4081,7 @@ CLI 内部自动完成全部流程:
 			if !exists {
 				return apperrors.NewValidation(
 					fmt.Sprintf("文档版本 %d 不存在，已停止回滚", version),
-					apperrors.WithReason("version_not_found"),
+					apperrors.WithSubtype(apperrors.SubtypeVersionNotFound),
 					apperrors.WithHint(fmt.Sprintf(
 						"请先执行 dws doc version list --node %s --format json 获取可回滚版本",
 						nodeID,

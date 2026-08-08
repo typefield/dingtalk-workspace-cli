@@ -61,7 +61,7 @@ func executeWorkflowDeploy(rt *shortcut.RuntimeContext) error {
 			return preflightErr
 		}
 		if !deepContainsString(preflight, workflowID) {
-			return apperrors.NewValidation("workflow get preflight does not identify --workflow-id", apperrors.WithReason("target_not_found"), apperrors.WithExecutionStarted(false))
+			return apperrors.NewValidation("workflow get preflight does not identify --workflow-id", apperrors.WithSubtype(apperrors.SubtypeTargetNotFound), apperrors.WithExecutionStarted(false))
 		}
 	}
 	result := newCompositeResult("workflow_deploy")

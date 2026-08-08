@@ -20,19 +20,36 @@ package errors
 type Subtype string
 
 const (
-	SubtypeMissingRequiredFlags      Subtype = "missing_required_flags"
-	SubtypeInvalidFlagValue          Subtype = "invalid_flag_value"
-	SubtypeInvalidArgument           Subtype = "invalid_argument"
-	SubtypeUnknownFlag               Subtype = "unknown_flag"
-	SubtypeConfirmationRequired      Subtype = "confirmation_required"
-	SubtypeRateLimit                 Subtype = "rate_limit"
-	SubtypePaginationInconsistent    Subtype = "pagination_inconsistent"
-	SubtypeProjectionUnknown         Subtype = "projection_unknown"
-	SubtypeInputReadFailed           Subtype = "input_read_failed"
-	SubtypeInvalidJSONInput          Subtype = "invalid_json_input"
-	SubtypeFormulaErrorsFound        Subtype = "formula_errors_found"
-	SubtypeDownloadOutputUnavailable Subtype = "download_output_unavailable"
-	SubtypeDownloadSizeMismatch      Subtype = "download_size_mismatch"
+	SubtypeMissingRequiredFlags        Subtype = "missing_required_flags"
+	SubtypeInvalidFlagValue            Subtype = "invalid_flag_value"
+	SubtypeInvalidArgument             Subtype = "invalid_argument"
+	SubtypeUnknownFlag                 Subtype = "unknown_flag"
+	SubtypeConfirmationRequired        Subtype = "confirmation_required"
+	SubtypeRateLimit                   Subtype = "rate_limit"
+	SubtypePaginationInconsistent      Subtype = "pagination_inconsistent"
+	SubtypeProjectionUnknown           Subtype = "projection_unknown"
+	SubtypeInputReadFailed             Subtype = "input_read_failed"
+	SubtypeInvalidJSONInput            Subtype = "invalid_json_input"
+	SubtypeFormulaErrorsFound          Subtype = "formula_errors_found"
+	SubtypeDownloadOutputUnavailable   Subtype = "download_output_unavailable"
+	SubtypeDownloadSizeMismatch        Subtype = "download_size_mismatch"
+	SubtypeVersionNotFound             Subtype = "version_not_found"
+	SubtypeTargetTypeMismatch          Subtype = "target_type_mismatch"
+	SubtypeTargetArgumentsConflict     Subtype = "target_arguments_conflict"
+	SubtypeMissingTarget               Subtype = "missing_target"
+	SubtypeResolutionNotFound          Subtype = "resolution_not_found"
+	SubtypeResolutionAmbiguous         Subtype = "resolution_ambiguous"
+	SubtypeResolutionIncomplete        Subtype = "resolution_incomplete"
+	SubtypeResolutionBatchFailed       Subtype = "resolution_batch_failed"
+	SubtypeInvalidAITableURL           Subtype = "invalid_aitable_url"
+	SubtypeTargetNotFound              Subtype = "target_not_found"
+	SubtypeTargetAmbiguous             Subtype = "target_ambiguous"
+	SubtypeTargetTypeConflict          Subtype = "target_type_conflict"
+	SubtypeTargetIncomplete            Subtype = "target_incomplete"
+	SubtypeTargetInvalidResponse       Subtype = "target_invalid_response"
+	SubtypeTargetVerificationFailed    Subtype = "target_verification_failed"
+	SubtypeKeyValueConflict            Subtype = "key_value_conflict"
+	SubtypeAttachmentTokensUnavailable Subtype = "attachment_tokens_unavailable"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -179,6 +196,159 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请保留当前文件供核查；确认服务端元数据后以新的输出路径重新下载。",
 		Description:   "downloaded bytes do not match upstream file metadata",
+	},
+	SubtypeVersionNotFound: {
+		Subtype:       SubtypeVersionNotFound,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请先查询可用历史版本，选择存在的版本号后再执行预览或回滚。",
+		Description:   "the requested document or sheet version does not exist",
+	},
+	SubtypeTargetTypeMismatch: {
+		Subtype:       SubtypeTargetTypeMismatch,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请使用当前命令要求的目标类型或稳定 ID；运行 leaf --help 查看参数说明。",
+		Description:   "a target was supplied in a type not accepted by this command",
+	},
+	SubtypeTargetArgumentsConflict: {
+		Subtype:       SubtypeTargetArgumentsConflict,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请只保留一种目标指定方式后重试，避免稳定 ID 与自然语言目标冲突。",
+		Description:   "mutually exclusive target selectors were supplied together",
+	},
+	SubtypeMissingTarget: {
+		Subtype:       SubtypeMissingTarget,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请提供目标的稳定 ID 或命令声明的自然语言查询参数后重试。",
+		Description:   "no target selector was supplied",
+	},
+	SubtypeResolutionNotFound: {
+		Subtype:       SubtypeResolutionNotFound,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请提供更完整的名称，或直接传入稳定 ID；不要猜测目标。",
+		Description:   "deterministic target resolution found no usable candidate",
+	},
+	SubtypeResolutionAmbiguous: {
+		Subtype:       SubtypeResolutionAmbiguous,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请让用户消歧或改用稳定 ID；禁止默认选择第一个候选。",
+		Description:   "deterministic target resolution found multiple candidates",
+	},
+	SubtypeResolutionIncomplete: {
+		Subtype:       SubtypeResolutionIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "候选集未证明完整；可重试只读解析，或改用稳定 ID，禁止据此执行写入。",
+		Description:   "target-resolution pagination or source coverage was incomplete",
+	},
+	SubtypeResolutionBatchFailed: {
+		Subtype:       SubtypeResolutionBatchFailed,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请逐项修正无法唯一解析的目标，或全部改用稳定 ID 后再执行。",
+		Description:   "one or more batch target resolutions failed before execution",
+	},
+	SubtypeInvalidAITableURL: {
+		Subtype:       SubtypeInvalidAITableURL,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请提供受支持的钉钉 AI 表格 HTTPS URL，并检查 base/table/view/record 标识符。",
+		Description:   "an AI Table URL could not be parsed into stable target IDs",
+	},
+	SubtypeTargetNotFound: {
+		Subtype:       SubtypeTargetNotFound,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请先查询或核对稳定目标 ID；确认资源存在后再执行写操作。",
+		Description:   "a requested target was not identified by a local preflight",
+	},
+	SubtypeTargetAmbiguous: {
+		Subtype:       SubtypeTargetAmbiguous,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "目标不是唯一匹配；请提供稳定 ID 或更精确条件，禁止默认选第一个。",
+		Description:   "a target preflight found more than one matching resource",
+	},
+	SubtypeTargetTypeConflict: {
+		Subtype:       SubtypeTargetTypeConflict,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保持现有目标类型，或选择新目标后再执行；不要原地强制转换资源类型。",
+		Description:   "an existing target has an incompatible immutable type",
+	},
+	SubtypeTargetIncomplete: {
+		Subtype:       SubtypeTargetIncomplete,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "目标查询未证明完整；可重试只读预检，确认前不得继续写入。",
+		Description:   "an upstream target query was incomplete and cannot prove uniqueness",
+	},
+	SubtypeTargetInvalidResponse: {
+		Subtype:       SubtypeTargetInvalidResponse,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请记录脱敏响应形状并排查上游；不要把未知响应当作目标不存在。",
+		Description:   "an upstream target response could not be safely projected",
+	},
+	SubtypeTargetVerificationFailed: {
+		Subtype:       SubtypeTargetVerificationFailed,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "接口未证明目标存在；请核对稳定 ID 或稍后以只读方式重新验证。",
+		Description:   "a read-back did not verify the requested target",
+	},
+	SubtypeKeyValueConflict: {
+		Subtype:       SubtypeKeyValueConflict,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请使 cells 内的键字段值与唯一键参数一致后重试。",
+		Description:   "a record key conflicts with the value embedded in cells",
+	},
+	SubtypeAttachmentTokensUnavailable: {
+		Subtype:       SubtypeAttachmentTokensUnavailable,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "当前附件缺少安全覆盖写所需 token；请改用 replace 或先人工核查原附件。",
+		Description:   "attachment read-back omitted tokens required for a safe replacement write",
 	},
 }
 

@@ -125,7 +125,7 @@ func verifyURLTarget(rt *shortcut.RuntimeContext, target aitabletarget.Target) (
 			apperrors.WithFailureStage("target_verification"),
 			apperrors.WithExecutionStarted(false),
 			apperrors.WithRetryable(false),
-			apperrors.WithReason("target_verification_failed"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetVerificationFailed),
 			apperrors.WithHint("接口返回成功但缺少目标 ID/资源结构，不能把未知响应当作已验证"),
 			apperrors.WithDetails(map[string]any{"target": target}),
 		)

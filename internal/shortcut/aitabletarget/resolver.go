@@ -388,7 +388,7 @@ func dedupe(values []Candidate) []Candidate {
 
 func invalidURL(raw, reason string) error {
 	return apperrors.NewValidation("无法解析 AI 表格 URL",
-		apperrors.WithReason("invalid_aitable_url"),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidAITableURL),
 		apperrors.WithOrigin("client"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -398,8 +398,16 @@ func invalidURL(raw, reason string) error {
 }
 
 func resolutionError(status, entityType, query string, candidates []Candidate) error {
+	subtype := apperrors.SubtypeTargetNotFound
+	if status == "ambiguous" {
+		subtype = apperrors.SubtypeTargetAmbiguous
+	} else if status != "not_found" {
+		// This status is constructed locally. Do not concatenate an unforeseen
+		// implementation value into the Agent wire key.
+		subtype = apperrors.SubtypeInvalidArgument
+	}
 	return apperrors.NewValidation(fmt.Sprintf("%s target %s: %q", entityType, status, query),
-		apperrors.WithReason("target_"+status),
+		apperrors.WithSubtype(subtype),
 		apperrors.WithOrigin("client"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -412,7 +420,7 @@ func resolutionError(status, entityType, query string, candidates []Candidate) e
 
 func incomplete(entityType, query string, candidates []Candidate, cause string) error {
 	return apperrors.NewAPI("目标解析候选集不完整，不能安全选择",
-		apperrors.WithReason("target_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeTargetIncomplete),
 		apperrors.WithOrigin("mcp"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -427,7 +435,7 @@ func incomplete(entityType, query string, candidates []Candidate, cause string) 
 
 func invalidResponse(entityType, query, cause string) error {
 	return apperrors.NewAPI("目标解析接口返回未知结构，不能把它当作未找到",
-		apperrors.WithReason("target_invalid_response"),
+		apperrors.WithSubtype(apperrors.SubtypeTargetInvalidResponse),
 		apperrors.WithOrigin("mcp"),
 		apperrors.WithFailureStage("response_validation"),
 		apperrors.WithExecutionStarted(false),

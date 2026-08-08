@@ -120,7 +120,7 @@ func validateRequiredFlagsLocal(cmd *cobra.Command, names ...string) error {
 		if strings.TrimSpace(mustGetFlag(cmd, name)) == "" {
 			return apperrors.NewValidation(
 				fmt.Sprintf("flag --%s is required", name),
-				apperrors.WithReason("missing_required_flag"),
+				apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 				apperrors.WithHint(fmt.Sprintf("使用 --%s 指定必填参数", name)),
 			)
 		}

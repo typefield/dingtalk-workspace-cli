@@ -111,7 +111,7 @@ func executeAttachmentPut(rt *shortcut.RuntimeContext) error {
 			token := attachmentToken(item)
 			if token == "" {
 				return apperrors.NewValidation(fmt.Sprintf("现有附件[%d]读回缺少 fileToken，覆盖式写接口无法安全 append；请用 --mode replace 或保留原数据后人工处理", index),
-					apperrors.WithReason("attachment_tokens_unavailable"), apperrors.WithExecutionStarted(false))
+					apperrors.WithSubtype(apperrors.SubtypeAttachmentTokensUnavailable), apperrors.WithExecutionStarted(false))
 			}
 			desired = append(desired, map[string]any{"fileToken": token})
 		}
@@ -213,7 +213,7 @@ func executeAttachmentRemove(rt *shortcut.RuntimeContext) error {
 			token := attachmentToken(item)
 			if token == "" {
 				return apperrors.NewValidation(fmt.Sprintf("剩余附件[%d]读回缺少 fileToken，覆盖式写接口无法安全保留后删除；服务端当前不支持按附件增量删除", index),
-					apperrors.WithReason("attachment_tokens_unavailable"), apperrors.WithExecutionStarted(false))
+					apperrors.WithSubtype(apperrors.SubtypeAttachmentTokensUnavailable), apperrors.WithExecutionStarted(false))
 			}
 			desired = append(desired, map[string]any{"fileToken": token})
 		}

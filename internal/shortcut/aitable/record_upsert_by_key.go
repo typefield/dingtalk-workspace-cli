@@ -96,7 +96,7 @@ func executeRecordUpsertByKey(rt *shortcut.RuntimeContext) error {
 	keyFieldID := rt.Str("key-field-id")
 	if existing, present := cells[keyFieldID]; present && !reflect.DeepEqual(existing, keyValue) {
 		return apperrors.NewValidation("--cells 中的键字段值与 --key-value/--key-value-json 冲突",
-			apperrors.WithReason("key_value_conflict"),
+			apperrors.WithSubtype(apperrors.SubtypeKeyValueConflict),
 			apperrors.WithExecutionStarted(false),
 		)
 	}
@@ -219,7 +219,7 @@ func queryUniqueRecordByKey(rt *shortcut.RuntimeContext, baseID, tableID, fieldI
 	if !found {
 		return nil, apperrors.NewAPI("query_records response is missing the records collection",
 			apperrors.WithOperation("aitable/query_records"),
-			apperrors.WithReason("target_invalid_response"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetInvalidResponse),
 			apperrors.WithFailureStage("response_validation"),
 			apperrors.WithExecutionStarted(false),
 		)
@@ -227,7 +227,7 @@ func queryUniqueRecordByKey(rt *shortcut.RuntimeContext, baseID, tableID, fieldI
 	if responseHasMore(data) {
 		return nil, apperrors.NewAPI("unique-key query is incomplete and cannot prove uniqueness",
 			apperrors.WithOperation("aitable/query_records"),
-			apperrors.WithReason("target_incomplete"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetIncomplete),
 			apperrors.WithFailureStage("target_resolution"),
 			apperrors.WithExecutionStarted(false),
 			apperrors.WithDetails(map[string]any{"records": records}),
@@ -240,14 +240,14 @@ func queryUniqueRecordByKey(rt *shortcut.RuntimeContext, baseID, tableID, fieldI
 		if recordID(records[0]) == "" {
 			return nil, apperrors.NewAPI("query_records returned a record without recordId",
 				apperrors.WithOperation("aitable/query_records"),
-				apperrors.WithReason("target_invalid_response"),
+				apperrors.WithSubtype(apperrors.SubtypeTargetInvalidResponse),
 				apperrors.WithExecutionStarted(false),
 			)
 		}
 		return records[0], nil
 	default:
 		return nil, apperrors.NewValidation("唯一键匹配到多条记录，已在写入前停止",
-			apperrors.WithReason("target_ambiguous"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetAmbiguous),
 			apperrors.WithExecutionStarted(false),
 			apperrors.WithDetails(map[string]any{"records": records}),
 		)

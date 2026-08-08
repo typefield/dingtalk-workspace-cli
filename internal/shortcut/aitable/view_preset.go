@@ -63,7 +63,7 @@ func executeViewPresetApply(rt *shortcut.RuntimeContext) error {
 	}
 	matches := viewsByExactName(views, name)
 	if len(matches) > 1 {
-		return apperrors.NewValidation(fmt.Sprintf("精确名称 %q 匹配到 %d 个视图，拒绝选择", name, len(matches)), apperrors.WithReason("target_ambiguous"), apperrors.WithExecutionStarted(false))
+		return apperrors.NewValidation(fmt.Sprintf("精确名称 %q 匹配到 %d 个视图，拒绝选择", name, len(matches)), apperrors.WithSubtype(apperrors.SubtypeTargetAmbiguous), apperrors.WithExecutionStarted(false))
 	}
 	action, tool := "create", "create_view"
 	params := map[string]any{"baseId": baseID, "tableId": tableID, "viewName": name, "viewType": viewType, "config": config}
@@ -76,7 +76,7 @@ func executeViewPresetApply(rt *shortcut.RuntimeContext) error {
 		}
 		actualType := stringValue(matches[0], "viewType", "type")
 		if actualType != "" && actualType != viewType {
-			return apperrors.NewValidation(fmt.Sprintf("同名视图类型为 %s，不能原地改为 %s", actualType, viewType), apperrors.WithReason("target_type_conflict"), apperrors.WithExecutionStarted(false))
+			return apperrors.NewValidation(fmt.Sprintf("同名视图类型为 %s，不能原地改为 %s", actualType, viewType), apperrors.WithSubtype(apperrors.SubtypeTargetTypeConflict), apperrors.WithExecutionStarted(false))
 		}
 		params = map[string]any{"baseId": baseID, "tableId": tableID, "viewId": viewID, "newViewName": name, "config": config}
 		if presetViewMatches(matches[0], viewType, config) {

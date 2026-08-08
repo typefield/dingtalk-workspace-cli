@@ -75,7 +75,7 @@ func toolbarConversationID(cmd *cobra.Command) (string, error) {
 	if cid == "" {
 		return "", apperrors.NewValidation(
 			"flag --conversation-id is required",
-			apperrors.WithReason("missing_required_flag"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 			apperrors.WithHint("使用 --conversation-id 指定会话 openConversationId"),
 			apperrors.WithActions("通过 dws chat search 或 dws chat group list 获取会话 ID"),
 		)

@@ -6,11 +6,11 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**13** 个；`WithSubtype(...)` 调用点：**76** 个。
-- `WithReason("…")` 的自由字面调用点：**82** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
+- 已注册 descriptor：**30** 个；`WithSubtype(...)` 调用点：**104** 个。
+- `WithReason("…")` 的自由字面调用点：**54** 个；与已注册调用合计覆盖 **79** 个 subtype、**158** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
 - 动态 `WithReason(variable)` 调用：**16** 个。
-- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**23** 个。
+- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**16** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
 已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
@@ -21,7 +21,7 @@
 |---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|
 | `ambiguous_command_fallback` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
 | `at_me_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
-| `attachment_tokens_unavailable` | free 2 | 2 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
+| `attachment_tokens_unavailable` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/attachment_composite.go:114`<br>`internal/shortcut/aitable/attachment_composite.go:216` |
 | `auth_refresh_failed` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | free 1 | 1 | `api` | no | no | yes | no | yes | `internal/shortcut/chat/batch_write.go:80` |
 | `business_error` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:293` |
@@ -45,16 +45,15 @@
 | `invalid_agent_code` | free 2 | 2 | `validation` | no | no | no | no | no | `internal/pat/chmod.go:181`<br>`internal/pat/chmod.go:186` |
 | `invalid_agent_host` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_host.go:68` |
 | `invalid_agent_product` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_product.go:46` |
-| `invalid_aitable_url` | free 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
+| `invalid_aitable_url` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
 | `invalid_argument` | registered 10 | 10 | `validation` | yes | no | no | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
 | `invalid_flag_value` | registered 13 | 13 | `validation` | yes | no | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
 | `invalid_json_input` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:230` |
-| `key_value_conflict` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
+| `key_value_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
 | `mcp_tool_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:855` |
 | `messages_list_direct_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_message.go:648` |
-| `missing_required_flag` | free 4 | 4 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78`<br>`internal/helpers/doc.go:4067` … |
-| `missing_required_flags` | registered 18 | 18 | `validation` | yes | no | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat.go:41`<br>`internal/helpers/chat.go:52` … |
-| `missing_target` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
+| `missing_required_flags` | registered 22 | 22 | `validation` | yes | yes | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
+| `missing_target` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
 | `my_groups_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/my_groups.go:269` |
 | `not_authenticated` | free 3 | 3 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:646` |
 | `not_configured` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:281` |
@@ -74,22 +73,22 @@
 | `rate_limit` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/transport/client.go:1032` |
 | `raw_api_credentials_required` | free 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
 | `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
-| `resolution_ambiguous` | free 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
-| `resolution_batch_failed` | free 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |
-| `resolution_incomplete` | free 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:686`<br>`internal/shortcut/targetresolver/resolver.go:710` |
-| `resolution_not_found` | free 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:651` |
+| `resolution_ambiguous` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
+| `resolution_batch_failed` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |
+| `resolution_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:686`<br>`internal/shortcut/targetresolver/resolver.go:710` |
+| `resolution_not_found` | registered 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:651` |
 | `stdio_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:847` |
 | `stdio_initialize_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:817` |
 | `stdio_tools_list_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:826` |
 | `system_busy` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_helpers.go:89` |
-| `target_ambiguous` | free 2 | 2 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:250`<br>`internal/shortcut/aitable/view_preset.go:66` |
-| `target_arguments_conflict` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:297` |
-| `target_incomplete` | free 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:230`<br>`internal/shortcut/aitabletarget/resolver.go:415` |
-| `target_invalid_response` | free 3 | 3 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:222`<br>`internal/shortcut/aitable/record_upsert_by_key.go:243`<br>`internal/shortcut/aitabletarget/resolver.go:430` |
-| `target_not_found` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/workflow_deploy.go:64` |
-| `target_type_conflict` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/view_preset.go:79` |
-| `target_type_mismatch` | free 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:182` |
-| `target_verification_failed` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/url_resolve.go:128` |
+| `target_ambiguous` | registered 2 | 2 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:250`<br>`internal/shortcut/aitable/view_preset.go:66` |
+| `target_arguments_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:297` |
+| `target_incomplete` | registered 2 | 2 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:230`<br>`internal/shortcut/aitabletarget/resolver.go:423` |
+| `target_invalid_response` | registered 3 | 3 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:222`<br>`internal/shortcut/aitable/record_upsert_by_key.go:243`<br>`internal/shortcut/aitabletarget/resolver.go:438` |
+| `target_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/workflow_deploy.go:64` |
+| `target_type_conflict` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitable/view_preset.go:79` |
+| `target_type_mismatch` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:182` |
+| `target_verification_failed` | registered 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/url_resolve.go:128` |
 | `thread_context_missing` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:262` |
 | `thread_replies_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:539` |
 | `thread_root_message_not_found` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
@@ -98,7 +97,7 @@
 | `unknown_subcommand` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |
 | `unsupported_alidoc_extension` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:105` |
 | `unsupported_format` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/root.go:616` |
-| `version_not_found` | free 2 | 2 | `validation` | yes | yes | no | no | no | `internal/helpers/doc.go:4084`<br>`internal/helpers/sheet_version.go:149` |
+| `version_not_found` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/helpers/doc.go:4084`<br>`internal/helpers/sheet_version.go:149` |
 
 ## 直接 ErrorInfo subtype
 

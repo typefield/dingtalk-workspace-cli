@@ -179,7 +179,7 @@ func ResolveChat(rt Reader, query string) (ChatResolution, error) {
 			"群目标参数类型不匹配：%q 符合 openConversationId 格式，当前参数仅接受群名称",
 			query,
 		),
-			apperrors.WithReason("target_type_mismatch"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetTypeMismatch),
 			apperrors.WithOrigin("client"),
 			apperrors.WithFailureStage("target_resolution"),
 			apperrors.WithExecutionStarted(false),
@@ -294,7 +294,7 @@ func ResolveChatTarget(rt Reader, directValue, queryValue string) (ChatResolutio
 	if directValue != "" && queryValue != "" {
 		return ChatResolution{}, apperrors.NewValidation(
 			"稳定群目标与群名查询参数不能同时指定",
-			apperrors.WithReason("target_arguments_conflict"),
+			apperrors.WithSubtype(apperrors.SubtypeTargetArgumentsConflict),
 			apperrors.WithOrigin("client"),
 			apperrors.WithFailureStage("request_validation"),
 			apperrors.WithExecutionStarted(false),
@@ -307,7 +307,7 @@ func ResolveChatTarget(rt Reader, directValue, queryValue string) (ChatResolutio
 	if value == "" {
 		return ChatResolution{}, apperrors.NewValidation(
 			"必须指定群名或 openConversationId",
-			apperrors.WithReason("missing_target"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingTarget),
 			apperrors.WithOrigin("client"),
 			apperrors.WithFailureStage("request_validation"),
 			apperrors.WithExecutionStarted(false),
@@ -648,7 +648,7 @@ func newResolutionError(status Status, entityType, query string, candidates any)
 	if status == StatusNotFound {
 		return apperrors.NewValidation(
 			fmt.Sprintf("没有找到与 %q 唯一匹配且可用于当前操作的%s", query, entityLabel(entityType)),
-			apperrors.WithReason("resolution_not_found"),
+			apperrors.WithSubtype(apperrors.SubtypeResolutionNotFound),
 			apperrors.WithOrigin("client"),
 			apperrors.WithFailureStage("target_resolution"),
 			apperrors.WithExecutionStarted(false),
@@ -659,7 +659,7 @@ func newResolutionError(status Status, entityType, query string, candidates any)
 	}
 	return apperrors.NewValidation(
 		fmt.Sprintf("%q 匹配到多个%s：%s；请提供更精确的名称或直接传稳定 ID", query, entityLabel(entityType), candidateLabels(candidates)),
-		apperrors.WithReason("resolution_ambiguous"),
+		apperrors.WithSubtype(apperrors.SubtypeResolutionAmbiguous),
 		apperrors.WithOrigin("client"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -683,7 +683,7 @@ func newIncompleteChatResolutionError(query string, candidates []Chat, cause str
 	}
 	return apperrors.NewAPI(
 		fmt.Sprintf("群名 %q 的候选未能完整读取，已停止后续操作", query),
-		apperrors.WithReason("resolution_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeResolutionIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -707,7 +707,7 @@ func newIncompleteUserResolutionError(query string, candidates []User, cause str
 	}
 	return apperrors.NewAPI(
 		fmt.Sprintf("用户 %q 的候选未能完整读取，已停止后续操作", query),
-		apperrors.WithReason("resolution_incomplete"),
+		apperrors.WithSubtype(apperrors.SubtypeResolutionIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
@@ -720,7 +720,7 @@ func newIncompleteUserResolutionError(query string, candidates []User, cause str
 func batchResolutionError(entityType string, failures []map[string]any) error {
 	return apperrors.NewValidation(
 		fmt.Sprintf("%d 个%s目标未能唯一解析；已停止后续操作", len(failures), entityLabel(entityType)),
-		apperrors.WithReason("resolution_batch_failed"),
+		apperrors.WithSubtype(apperrors.SubtypeResolutionBatchFailed),
 		apperrors.WithOrigin("client"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),

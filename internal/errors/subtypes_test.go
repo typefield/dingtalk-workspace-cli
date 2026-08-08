@@ -22,6 +22,23 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypeFormulaErrorsFound, CategoryValidation, RetryNever, false},
 		{SubtypeDownloadOutputUnavailable, CategoryInternal, RetryNever, false},
 		{SubtypeDownloadSizeMismatch, CategoryAPI, RetryIdempotentReadOnly, false},
+		{SubtypeVersionNotFound, CategoryValidation, RetryNever, false},
+		{SubtypeTargetTypeMismatch, CategoryValidation, RetryNever, false},
+		{SubtypeTargetArgumentsConflict, CategoryValidation, RetryNever, false},
+		{SubtypeMissingTarget, CategoryValidation, RetryNever, false},
+		{SubtypeResolutionNotFound, CategoryValidation, RetryNever, false},
+		{SubtypeResolutionAmbiguous, CategoryValidation, RetryNever, false},
+		{SubtypeResolutionIncomplete, CategoryAPI, RetryIdempotentReadOnly, false},
+		{SubtypeResolutionBatchFailed, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidAITableURL, CategoryValidation, RetryNever, false},
+		{SubtypeTargetNotFound, CategoryValidation, RetryNever, false},
+		{SubtypeTargetAmbiguous, CategoryValidation, RetryNever, false},
+		{SubtypeTargetTypeConflict, CategoryValidation, RetryNever, false},
+		{SubtypeTargetIncomplete, CategoryAPI, RetryIdempotentReadOnly, false},
+		{SubtypeTargetInvalidResponse, CategoryAPI, RetryNever, false},
+		{SubtypeTargetVerificationFailed, CategoryAPI, RetryNever, false},
+		{SubtypeKeyValueConflict, CategoryValidation, RetryNever, false},
+		{SubtypeAttachmentTokensUnavailable, CategoryValidation, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {
