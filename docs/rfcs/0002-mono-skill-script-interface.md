@@ -20,7 +20,7 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `calendar_free_slot_finder.py`、`todo_overdue_check.py`、
   `minutes_recent_summary.py`、`minutes_extract_todos.py`、
   `calendar_today_agenda.py` 和 `attendance_team_shift.py`，实际扫描结果为
-  23 个 dry-run、20 个 format、5 个
+  23 个 dry-run、20 个 format、4 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
