@@ -66,11 +66,11 @@
 | `pat_auth_rejected` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | registered 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | registered 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
-| `personal_subscription_auth` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:561` |
-| `personal_subscription_guard_failed` | registered 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:609` |
-| `personal_subscription_invalid` | registered 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:623` |
-| `personal_subscription_rejected` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:567` |
-| `personal_subscription_unverified` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:572` |
+| `personal_subscription_auth` | registered 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:564` |
+| `personal_subscription_guard_failed` | registered 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:612` |
+| `personal_subscription_invalid` | registered 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:626` |
+| `personal_subscription_rejected` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:570` |
+| `personal_subscription_unverified` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/app/event_personal_attempts.go:575` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |

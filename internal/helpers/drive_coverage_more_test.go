@@ -341,7 +341,12 @@ func TestCrossPlatformCoverageDriveCommandRemainingEdges(t *testing.T) {
 
 func TestCrossPlatformCoverageDriveDownloadDirectoryCoverage(t *testing.T) {
 	oldGet := httpGetFile
-	httpGetFile = func(context.Context, string, map[string]string, string) error { return nil }
+	// A successful download must leave an observable file. The production path
+	// now verifies this before it reports success, so the transport double must
+	// model the write instead of merely returning nil.
+	httpGetFile = func(_ context.Context, _ string, _ map[string]string, destination string) error {
+		return os.WriteFile(destination, []byte("fixture"), 0o600)
+	}
 	t.Cleanup(func() { httpGetFile = oldGet })
 	dir := t.TempDir()
 	for _, payload := range []string{

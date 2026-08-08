@@ -2573,7 +2573,9 @@ func TestCrossPlatformCoverageDriveDownloadRangedFetchCredSuccess(t *testing.T) 
 	// 策略：probe 第一次 401 → fetchCred 成功返回新凭证 → probe 第二次成功 →
 	//       进入 ranged download → 完成下载
 
-	content := makeTestContent(100)
+	// The ranged path is selected from source metadata and the command verifies
+	// the final local size. Keep the served body and advertised size consistent.
+	content := makeTestContent(3_000_000)
 	origClient := driveRangeClient
 	t.Cleanup(func() { driveRangeClient = origClient })
 
@@ -2607,8 +2609,8 @@ func TestCrossPlatformCoverageDriveDownloadRangedFetchCredSuccess(t *testing.T) 
 	dest := filepath.Join(t.TempDir(), "ranged-fetchcred-ok.bin")
 	// MCP step1: download info with fileSize >= 2*partSize (2MB) to trigger ranged path
 	// MCP step2: fetchCred returns new valid info (same server URL)
-	mcpResp1 := fmt.Sprintf(`{"resourceUrl":"%s/file.bin","fileSize":3000000}`, srv.URL)
-	mcpResp2 := fmt.Sprintf(`{"resourceUrl":"%s/file.bin","fileSize":3000000}`, srv.URL)
+	mcpResp1 := fmt.Sprintf(`{"resourceUrl":"%s/file.bin","fileSize":%d}`, srv.URL, len(content))
+	mcpResp2 := fmt.Sprintf(`{"resourceUrl":"%s/file.bin","fileSize":%d}`, srv.URL, len(content))
 	caller := &scriptedToolCaller{steps: []scriptedToolStep{
 		{text: mcpResp1}, // step1: download_file
 		{text: mcpResp2}, // step2: fetchCred (refresh)
