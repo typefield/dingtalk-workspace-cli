@@ -531,6 +531,34 @@ else:
         )
         outcomes.append(("文件导入旧业务失败不误报终态", *result("PASS" if file_import_child_ok else "FAIL", detail)))
 
+        attachment_path = temp_dir / "attachment.txt"
+        attachment_path.write_text("attachment probe", encoding="utf-8")
+        attachment_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "upload_attachment.py"),
+                "base-001", str(attachment_path), "--format", "json",
+            ],
+            """import json
+# Bare ticket replies are the real prepare_attachment_upload shape: no status
+# field, but uploadUrl/fileToken prove ticket issuance.  The PUT then loses its
+# response, so file existence must remain unknown rather than be claimed.
+print(json.dumps({'ok': True, 'data': {'uploadUrl': 'http://127.0.0.1:1/upload', 'fileToken': 'file-1'}}))
+""",
+            temp_dir=temp_dir,
+        )
+        valid, payload, detail = parse_single_result(attachment_child)
+        attachment_child_ok = (
+            valid and attachment_child.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and isinstance(payload.get("data"), dict)
+            and payload["data"].get("phase") == "upload_file"
+            and payload["data"].get("execution_state") == "unknown"
+            and payload["data"].get("fileToken") == "file-1"
+            and isinstance(payload.get("error"), dict) and payload["error"].get("type") == "network"
+            and "上传完成" not in attachment_child.stderr
+        )
+        outcomes.append(("附件 PUT 未知不误报可用", *result("PASS" if attachment_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
@@ -550,7 +578,7 @@ else:
         "## 边界",
         "",
         "- 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。",
-        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入、字段创建和文件导入任务的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
+        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入、字段创建、文件导入任务和附件上传的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
         "- dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。",
         "",
     ])

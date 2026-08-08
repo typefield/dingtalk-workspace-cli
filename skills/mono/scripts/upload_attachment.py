@@ -21,16 +21,16 @@
 import sys
 import json
 import argparse
-import subprocess
 import os
 import mimetypes
 import re
+from dataclasses import dataclass
 from pathlib import Path
-from typing import Optional, Dict, Any
+from typing import Optional, Dict, Any, Mapping
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
 
 RESOURCE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{8,128}$')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
@@ -46,28 +46,27 @@ def detect_mime_type(file_path: Path) -> str:
     return mime_type or 'application/octet-stream'
 
 
-def run_dws(args: list) -> Optional[Dict[str, Any]]:
-    """调用 dws 命令并返回解析后的 JSON 结果。"""
-    cmd = ['dws'] + args
-    try:
-        result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-        if result.returncode != 0:
-            print(f"错误：dws 命令失败: {result.stderr.strip()}", file=sys.stderr)
-            return None
-        try:
-            return json.loads(result.stdout)
-        except json.JSONDecodeError:
-            print(f"错误：无法解析 dws 响应: {result.stdout[:300]}", file=sys.stderr)
-            return None
-    except subprocess.TimeoutExpired:
-        print('错误：dws 命令超时（60 秒）', file=sys.stderr)
-        return None
-    except FileNotFoundError:
-        print('错误：未找到 dws 命令，请确认已安装并在 PATH 中', file=sys.stderr)
-        return None
+def run_dws(args: list[str]) -> ChildDWSResult:
+    """Call the prepare operation without collapsing certainty into a truthy dict."""
+    return run_child_dws(args, timeout=60)
 
 
-def upload_to_oss(upload_url: str, file_path: Path, mime_type: str) -> bool:
+@dataclass(frozen=True)
+class PutResult:
+    state: str
+    error: Optional[Dict[str, Any]] = None
+
+
+@dataclass(frozen=True)
+class AttachmentResult:
+    state: str
+    phase: str
+    data: Dict[str, Any]
+    error: Optional[Dict[str, Any]] = None
+    meta: Optional[Dict[str, Any]] = None
+
+
+def upload_to_oss(upload_url: str, file_path: Path, mime_type: str) -> PutResult:
     """通过 HTTP PUT 上传文件到 OSS。"""
     file_data = file_path.read_bytes()
     req = Request(upload_url, data=file_data, method='PUT')
@@ -76,18 +75,35 @@ def upload_to_oss(upload_url: str, file_path: Path, mime_type: str) -> bool:
     try:
         with urlopen(req, timeout=120) as resp:
             if resp.status == 200:
-                return True
+                return PutResult('success')
             print(f"错误：OSS 上传失败，HTTP {resp.status}", file=sys.stderr)
-            return False
+            return PutResult('failed', {'type': 'api', 'message': f'OSS 上传返回 HTTP {resp.status}'})
     except HTTPError as e:
         print(f"错误：OSS 上传 HTTP 错误 {e.code}: {e.reason}", file=sys.stderr)
-        return False
+        return PutResult('failed', {'type': 'api', 'message': f'OSS 上传 HTTP {e.code}: {e.reason}'})
     except URLError as e:
         print(f"错误：OSS 上传网络错误: {e.reason}", file=sys.stderr)
-        return False
+        return PutResult('unknown', {'type': 'network', 'message': f'OSS 上传未收到终态响应：{e.reason}'})
+    except TimeoutError:
+        print('错误：OSS 上传超时', file=sys.stderr)
+        return PutResult('unknown', {'type': 'network', 'message': 'OSS 上传超时；文件是否已上传未知。'})
 
 
-def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False) -> Optional[Dict[str, Any]]:
+def child_data(result: ChildDWSResult) -> Optional[Dict[str, Any]]:
+    if not isinstance(result.payload, Mapping):
+        return None
+    data = result.payload.get('data')
+    return dict(data) if isinstance(data, Mapping) else None
+
+
+def child_status(result: ChildDWSResult, data: Mapping[str, Any]) -> Optional[str]:
+    if isinstance(result.payload, Mapping) and isinstance(result.payload.get('status'), str):
+        return result.payload['status']
+    status = data.get('status')
+    return status if isinstance(status, str) else None
+
+
+def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False) -> AttachmentResult:
     """
     执行完整的附件上传流程:
       1. prepare_attachment_upload → uploadUrl + fileToken
@@ -98,18 +114,18 @@ def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False
     file_path = Path(file_path_str).resolve()
     if not file_path.exists():
         print(f"错误：文件不存在: {file_path}", file=sys.stderr)
-        return None
+        return AttachmentResult('failed', 'validate_file', {}, {'type': 'validation', 'message': '文件不存在'})
     if not file_path.is_file():
         print(f"错误：不是文件: {file_path}", file=sys.stderr)
-        return None
+        return AttachmentResult('failed', 'validate_file', {}, {'type': 'validation', 'message': '目标不是文件'})
 
     file_size = file_path.stat().st_size
     if file_size <= 0:
         print("错误：文件为空", file=sys.stderr)
-        return None
+        return AttachmentResult('failed', 'validate_file', {}, {'type': 'validation', 'message': '文件为空'})
     if file_size > MAX_FILE_SIZE:
         print(f"错误：文件过大 ({file_size:,} 字节，限制 {MAX_FILE_SIZE:,} 字节)", file=sys.stderr)
-        return None
+        return AttachmentResult('failed', 'validate_file', {}, {'type': 'validation', 'message': '文件超过大小限制'})
 
     file_name = file_path.name
     mime_type = detect_mime_type(file_path)
@@ -125,47 +141,61 @@ def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False
         '--format', 'json',
     ]
     if dry_run:
-        return {
+        return AttachmentResult('success', 'dry_run', {
             "baseId": base_id,
             "fileName": file_name,
             "size": file_size,
             "mimeType": mime_type,
             "steps": ["prepare_attachment_upload", "PUT uploadUrl", "return fileToken"],
             "request": dws_args,
-        }
+        })
     result = run_dws(dws_args)
-    if not result:
-        return None
-
-    status = result.get('status', '')
-    if status != 'success':
-        error = result.get('error', {})
-        print(f"错误：准备上传失败: {error.get('message', json.dumps(error, ensure_ascii=False))}", file=sys.stderr)
-        return None
-
-    data = result.get('data', {})
+    base_data = {
+        'baseId': base_id,
+        'fileName': file_name,
+        'size': file_size,
+        'mimeType': mime_type,
+    }
+    if result.state != 'success':
+        return AttachmentResult(
+            result.state, 'prepare_attachment_upload', base_data,
+            result.error, result.meta,
+        )
+    data = child_data(result)
+    if data is None:
+        return AttachmentResult(
+            'unknown', 'prepare_attachment_upload', base_data,
+            {'type': 'api', 'message': '准备上传返回结构无法验证'}, result.meta,
+        )
+    status = child_status(result, data)
+    # Current attachment prepare replies may be a bare {uploadUrl,fileToken}
+    # object.  Presence of both fields is the operation-specific success fact;
+    # only an explicit non-success status is a negative result.
+    if status is not None and status != 'success':
+        return AttachmentResult(
+            'unknown', 'prepare_attachment_upload', base_data,
+            {'type': 'api', 'message': '准备上传未报告成功'}, result.meta,
+        )
     upload_url = data.get('uploadUrl', '')
     file_token = data.get('fileToken', '')
 
     if not upload_url or not file_token:
-        print(f"错误：返回数据缺少 uploadUrl 或 fileToken: {json.dumps(data, ensure_ascii=False)}", file=sys.stderr)
-        return None
+        return AttachmentResult(
+            'unknown', 'prepare_attachment_upload', base_data,
+            {'type': 'api', 'message': '准备上传缺少 uploadUrl 或 fileToken'}, result.meta,
+        )
+
+    attachment_data = {**base_data, 'fileToken': file_token}
 
     # 步骤 2: PUT 文件到 OSS
     print(f"步骤 2/3: 上传文件到 OSS...", file=sys.stderr)
-    if not upload_to_oss(upload_url, file_path, mime_type):
-        return None
+    put = upload_to_oss(upload_url, file_path, mime_type)
+    if put.state != 'success':
+        return AttachmentResult(put.state, 'upload_file', attachment_data, put.error, result.meta)
 
     # 步骤 3: 返回 fileToken
     print(f"步骤 3/3: 上传完成！", file=sys.stderr)
-    output = {
-        "fileToken": file_token,
-        "fileName": file_name,
-        "size": file_size,
-        "mimeType": mime_type,
-    }
-
-    return output
+    return AttachmentResult('success', 'complete', attachment_data, meta=result.meta)
 
 
 def main() -> int:
@@ -182,15 +212,25 @@ def main() -> int:
         return failure(args.format, '无效的 baseId 格式')
 
     result = upload_attachment(base_id, file_path, dry_run=args.dry_run)
-    if result is None:
-        return failure(args.format, '附件上传失败，请查看 stderr 中的步骤诊断')
+    if result.state != 'success':
+        data = {**result.data, 'phase': result.phase,
+                'execution_state': 'unknown' if result.state == 'unknown' else 'not_executed'}
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=data,
+            error=result.error or {'type': 'api', 'message': '附件上传未确认完成'},
+            meta=result.meta,
+            text='附件上传未确认完成',
+        )
 
     return emit(
         fmt=args.format,
         outcome='success',
-        data=result,
+        data=result.data,
         dry_run=args.dry_run,
-        text=json.dumps(result, ensure_ascii=False, indent=2),
+        meta=result.meta,
+        text=json.dumps(result.data, ensure_ascii=False, indent=2),
     )
 
 
