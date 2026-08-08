@@ -139,7 +139,7 @@ type Constraint struct {
 // The framework injects the global --format/--dry-run/--jq/--yes flags from the
 // root command, so shortcuts must not redeclare them.
 type Shortcut struct {
-	// OutputRollout selects the single active output contract for this exact
+	// OutputRollout selects the single active unified-result behavior for this exact
 	// command in the current release. It is internal release metadata, never a
 	// user/Agent flag.
 	OutputRollout output.RolloutState

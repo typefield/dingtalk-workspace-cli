@@ -1,12 +1,12 @@
-# scripts/policy —— 统一输出契约 CI 扫描原型（Phase I，B161~B167）
+# scripts/policy —— 统一返回 CI 扫描原型（Phase I，B161~B167）
 
 本 README 只覆盖 Phase I「CI 扫描原型」四个脚本与配套 fixture：
 
 - `check-stdout-json.sh`（B161）—— json 模式 stdout 纯 JSON 检查（AC-11）
 - `check-string-bool.sh`（B162）—— 字符串布尔违规扫描（AC-02）
 - `check-envelope-keys.sh`（B163）—— 非标准信封键名扫描（信封顶层键集合固化，G1）
-- `output-contract-lib.sh` —— 三脚本共享库（样本表、隔离 HOME、重试纪律、self-test 框架）
-- `output-contract-lib.sh` —— 在临时目录按需生成 self-test 输入（合法信封 + 各类违规样例），仓库不保存派生 JSON fixture
+- `output-contract-lib.sh` —— 三脚本共享库（样本表、隔离 HOME、重试纪律、self-test 框架）；这是内部文件名，不是 CLI 协议或用户接口。
+- `output-contract-lib.sh` —— 在临时目录按需生成 self-test 输入（合法统一返回 + 各类违规样例），仓库不保存派生 JSON fixture。
 
 ## 定位：原型，非强制门禁（B165）
 
@@ -14,7 +14,7 @@
 
 - **不接入 `make policy`**，不是 CI 强制门禁；接入方式见文末「接入 make policy 的挂点设计草案」（B167，仅设计稿）。
 - 脚本自带 `--self-test` 模式，用运行时生成的临时输入验证扫描逻辑本身（合法样例必须 pass、违规样例必须 fail），这是原型阶段的主要回归手段。
-- 契约锚点：AC-02（ok/success 类布尔恒为 JSON 布尔）、AC-11（json 模式 stdout 零日志字节、primary result 恰为一个可解析 JSON 文档）、信封顶层键集合固化（`ok/outcome/identity/dry_run/data/meta/error/_notice` snake_case；`contract_version/errcode/error_code/errorCode/success` 等非标准顶层形态违规，camelCase wire 键形态违规）。
+- 返回锚点：AC-02（ok/success 类布尔恒为 JSON 布尔）、AC-11（json 模式 stdout 零日志字节、primary result 恰为一个可解析 JSON 文档）、顶层键集合固定（`ok/outcome/identity/dry_run/data/meta/error/_notice` snake_case；`contract_version/errcode/error_code/errorCode/success` 等非标准顶层形态违规，camelCase wire 键形态违规）。没有输出协议版本字段。
 
 ## 用法
 
@@ -29,7 +29,7 @@ make build            # 先构建 ./dws（脚本消费真实二进制）
 
 ## 样本与 --scope（B166）
 
-脚本对**代表性命令的真实 stdout** 做扫描，样本表定义在 `output-contract-lib.sh`
+脚本对**代表性命令的真实 stdout** 做扫描，样本表定义在 `output-contract-lib.sh`。
 的 `output_contract_samples()`，按 scope 分两档：
 
 | scope | 样本 | 说明 |

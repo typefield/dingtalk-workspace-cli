@@ -3,7 +3,7 @@ set -eu
 
 # B162 Phase I prototype: string-boolean scan (AC-02).
 #
-# Contract anchor AC-02: booleans carried by the unified output contract are
+# Return anchor AC-02: booleans carried by the unified result are
 # always JSON booleans. This scan flags string-encoded booleans on
 # boolean-contract keys:
 #   top-level envelope keys   ok / success / dry_run / retryable / timed_out
