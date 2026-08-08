@@ -25,6 +25,8 @@
 | `calendar +book-list` | 2 条日历本 | `result` 数组投影到 `calendars[]`，稳定 ID、名称和权限字段可用 |
 | `todo +get-my-tasks --size 1` | 1 条待办 | `result.todoCards` 投影到 `todos[]`，任务 ID 与主题字段可用 |
 | `minutes +list-mine --limit 1` | 1 条听记 | `result.itemList` 投影到 `minutes[]`，`taskUuid` 和 URL 可用 |
+| `oa +list-forms --limit 1` | 1 条审批表单 | 表单投影保留稳定 `processCode` 与名称，不被 fail-closed 规则误拒绝 |
+| `chat +chat-list-all --limit 1` | 1 条群 | 单页响应正确保留 `hasMore:true`、续页游标及 `complete:false`，不扩大为完整群目录 |
 
 这证明正常非空服务端形状仍兼容本轮 fail-closed 投影改造；空结果、分页终态与
 异常形状仍按各行的后续真实复验项继续取证。为保护隐私，本台账不保留实际标题、ID、
