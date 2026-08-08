@@ -669,7 +669,8 @@ func newDriveCommand() *cobra.Command {
 
 			// Step 2: 分片下载（自动分派 + 401/403 凭证刷新重试）
 			fmt.Fprintf(cmd.ErrOrStderr(), "[2/2] 下载文件到 %s ...\n", outputPath)
-			dlOpts.knownSize = parseDownloadFileSize(text)
+			expectedSize := parseDownloadFileSize(text)
+			dlOpts.knownSize = expectedSize
 			dlOpts.nodeID = fileID
 			dlOpts.version = parseDownloadFileVersion(text)
 			fetchCred := func(fctx context.Context) (string, map[string]string, int, error) {
@@ -698,13 +699,50 @@ func newDriveCommand() *cobra.Command {
 				return err
 			}
 
+			info, statErr := os.Stat(outputPath)
+			if statErr != nil {
+				// A successful HTTP transfer without an observable local file is not
+				// a successful download from the Agent's perspective. Do not emit a
+				// payload that merely claims it was downloaded.
+				return apperrors.NewInternal("下载完成后无法读取本地文件信息",
+					apperrors.WithReason("download_output_unavailable"),
+					apperrors.WithExecutionStarted(true),
+					apperrors.WithDetails(map[string]any{"path": outputPath}),
+					apperrors.WithCause(statErr),
+				)
+			}
+			actualSize := info.Size()
+			if expectedSize > 0 && actualSize != expectedSize {
+				// fileSize is the only source-side integrity fact currently supplied
+				// by this MCP response. A mismatch is ambiguous but safe to retry
+				// because download is read-only; leave the local file in place for
+				// inspection rather than pretending it is verified or deleting it.
+				return apperrors.NewAPI("下载文件长度与服务端元数据不一致",
+					apperrors.WithReason("download_size_mismatch"),
+					apperrors.WithExecutionStarted(true),
+					apperrors.WithRetryable(true),
+					apperrors.WithDetails(map[string]any{
+						"expected_size": expectedSize,
+						"actual_size":   actualSize,
+						"path":          outputPath,
+					}),
+					apperrors.WithActions(fmt.Sprintf("重新下载：dws drive download --node %q --output %q --format json", fileID, outputPath)),
+				)
+			}
+
 			result := map[string]any{
 				"downloaded": true,
 				"file_id":    fileID,
 				"path":       outputPath,
+				"size":       actualSize,
 			}
-			if info, statErr := os.Stat(outputPath); statErr == nil {
-				result["size"] = info.Size()
+			if expectedSize > 0 {
+				// This deliberately records only a source-size match. It is not a
+				// cryptographic end-to-end checksum claim.
+				result["verification"] = map[string]any{
+					"state":  "size_verified",
+					"method": "source_file_size",
+				}
 			}
 			return writeCommandPayload(cmd, result)
 		},

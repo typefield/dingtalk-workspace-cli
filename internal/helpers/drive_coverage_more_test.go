@@ -110,11 +110,46 @@ func TestDriveDownloadJSONKeepsStdoutMachineReadable(t *testing.T) {
 	if data["size"] != float64(7) {
 		t.Fatalf("payload data size = %#v, want 7", data["size"])
 	}
+	verification, ok := data["verification"].(map[string]any)
+	if !ok || verification["state"] != "size_verified" || verification["method"] != "source_file_size" {
+		t.Fatalf("payload verification = %#v, want source-size verification", data["verification"])
+	}
 	if strings.Contains(stdout, "[1/2]") || strings.Contains(stdout, "[2/2]") || strings.Contains(stdout, "[INFO]") {
 		t.Fatalf("stdout contains diagnostic text: %q", stdout)
 	}
 	if !strings.Contains(stderr, "[1/2]") || !strings.Contains(stderr, "[2/2]") {
 		t.Fatalf("stderr = %q, want download progress", stderr)
+	}
+}
+
+func TestDriveDownloadRejectsSourceSizeMismatch(t *testing.T) {
+	oldGet := httpGetFile
+	httpGetFile = func(_ context.Context, _ string, _ map[string]string, destination string) error {
+		return os.WriteFile(destination, []byte("short"), 0o600)
+	}
+	t.Cleanup(func() { httpGetFile = oldGet })
+
+	destination := filepath.Join(t.TempDir(), "download.txt")
+	caller := &scriptedToolCaller{steps: []scriptedToolStep{{
+		text: `{"resourceUrl":"https://download.invalid/download.txt","fileName":"download.txt","fileSize":7}`,
+	}}}
+	_, _, err := executeDriveEdgeCapture(t, caller,
+		"download", "--node", "node-1", "--output", destination, "--format", "json")
+	if err == nil {
+		t.Fatal("download size mismatch unexpectedly succeeded")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) {
+		t.Fatalf("error = %T %v, want typed API error", err, err)
+	}
+	if typed.Category != apperrors.CategoryAPI || typed.Reason != "download_size_mismatch" || !typed.Retryable || typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
+		t.Fatalf("typed error = %#v, want retryable started API size mismatch", typed)
+	}
+	if typed.Details["expected_size"] != int64(7) || typed.Details["actual_size"] != int64(5) || typed.Details["path"] != destination {
+		t.Fatalf("typed details = %#v", typed.Details)
+	}
+	if got, readErr := os.ReadFile(destination); readErr != nil || string(got) != "short" {
+		t.Fatalf("mismatched download must remain inspectable: data=%q err=%v", got, readErr)
 	}
 }
 
