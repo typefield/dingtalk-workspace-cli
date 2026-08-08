@@ -14,6 +14,7 @@ import (
 	"testing"
 	"time"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/busctl"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/consume"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/personal"
@@ -333,6 +334,78 @@ func TestRunPersonalEventConsumeManyCreatesAndCleansAllSubscriptions(t *testing.
 	}
 	if len(states) != 2 || len(deleted) != 2 || len(removed) != 2 {
 		t.Fatalf("states=%#v deleted=%#v removed=%#v", states, deleted, removed)
+	}
+}
+
+func TestRunPersonalEventStopPreservesPartialRemoteCancellation(t *testing.T) {
+	restore := installPersonalManySeams(t)
+	defer restore()
+	oldStopConsumers := personalStopConsumers
+	oldLoadRunStates := personalLoadRunStates
+	oldStopBus := personalStopBus
+	t.Cleanup(func() {
+		personalStopConsumers = oldStopConsumers
+		personalLoadRunStates = oldLoadRunStates
+		personalStopBus = oldStopBus
+	})
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	wantCause := errors.New("remote cancellation failed")
+	personalResolveEventIdentity = func(context.Context, string, string) (personal.Identity, error) {
+		return personal.Identity{AccessToken: "token", ClientID: "client", SourceID: "open"}, nil
+	}
+	personalDeleteSubscription = func(_ *personal.Client, _ context.Context, id string) error {
+		if id == "sub-2" {
+			return wantCause
+		}
+		return nil
+	}
+	cmd := newPersonalCoverageCommand()
+	err := runPersonalEventStop(cmd, personalStopOptions{SubscribeID: "sub-2"})
+	if !errors.Is(err, wantCause) {
+		t.Fatalf("stop error = %v, want cause %v", err, wantCause)
+	}
+	var structured *apperrors.Error
+	if !errors.As(err, &structured) {
+		t.Fatalf("stop error type = %T, want structured error", err)
+	}
+	if structured.Reason != "partial_failure" || !structured.RetryableSet || structured.Retryable {
+		t.Fatalf("stop error metadata = reason=%q retryable=%v/%v", structured.Reason, structured.Retryable, structured.RetryableSet)
+	}
+	if got := structured.Details["failure_stage"]; got != "remote_subscription_cancel" {
+		t.Fatalf("failure stage = %#v", got)
+	}
+}
+
+func TestRunPersonalEventStopPreservesRemoteSuccessWhenLocalStopFails(t *testing.T) {
+	restore := installPersonalManySeams(t)
+	defer restore()
+	oldStopConsumers := personalStopConsumers
+	oldLoadRunStates := personalLoadRunStates
+	oldStopBus := personalStopBus
+	t.Cleanup(func() {
+		personalStopConsumers = oldStopConsumers
+		personalLoadRunStates = oldLoadRunStates
+		personalStopBus = oldStopBus
+	})
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	wantCause := errors.New("local consumer stop failed")
+	personalResolveEventIdentity = func(context.Context, string, string) (personal.Identity, error) {
+		return personal.Identity{AccessToken: "token", ClientID: "client", SourceID: "open"}, nil
+	}
+	personalDeleteSubscription = func(*personal.Client, context.Context, string) error { return nil }
+	personalStopConsumers = func(string, []string) (transport.ConsumerStopResp, error) {
+		return transport.ConsumerStopResp{}, wantCause
+	}
+	err := runPersonalEventStop(newPersonalCoverageCommand(), personalStopOptions{SubscribeID: "sub-1"})
+	if !errors.Is(err, wantCause) {
+		t.Fatalf("stop error = %v, want cause %v", err, wantCause)
+	}
+	var structured *apperrors.Error
+	if !errors.As(err, &structured) || structured.Reason != "partial_failure" {
+		t.Fatalf("stop error = %#v, want partial structured error", err)
+	}
+	if got := structured.Details["succeeded_subscribe_ids"]; !reflect.DeepEqual(got, []string{"sub-1"}) {
+		t.Fatalf("succeeded subscriptions = %#v", got)
 	}
 }
 

@@ -34,6 +34,7 @@ import (
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	dwsevent "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/bus"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/busctl"
@@ -1062,20 +1063,31 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 		return fmt.Errorf("event stop --as user: %w", err)
 	}
 	client := newPersonalEventControlClient(configDir, personalEventControlBaseURL(opts.ControlBaseURL, configDir), identity)
+	var cancelled []string
 	for _, id := range subscribeIDs {
 		if err := personalDeleteSubscription(client, ctx, id); err != nil {
-			return fmt.Errorf("event stop --as user: cancel subscription %s: %w", id, err)
+			return eventStopPartialError(
+				fmt.Sprintf("event stop --as user: cancel subscription %s", id),
+				err, cancelled, []string{id}, "remote_subscription_cancel",
+			)
 		}
+		cancelled = append(cancelled, id)
 	}
 	if err := stopPersonalConsumers(c.ErrOrStderr(), ipcEndpoint, subscribeIDs); err != nil {
 		// Keep the local run state when the consumer could not be stopped.  The
 		// state is the only durable target list available for a later retry;
 		// deleting it first would turn a local-stop failure into an unrecoverable
 		// false-success after the remote subscription has already been cancelled.
-		return fmt.Errorf("event stop --as user: stop matching local consumer: %w", err)
+		return eventStopPartialError(
+			"event stop --as user: stop matching local consumer",
+			err, cancelled, nil, "local_consumer_stop",
+		)
 	}
 	if err := personalRemoveRunStates(workDir, subscribeIDs); err != nil {
-		return fmt.Errorf("event stop --as user: update local state: %w", err)
+		return eventStopPartialError(
+			"event stop --as user: update local state",
+			err, cancelled, nil, "local_state_remove",
+		)
 	}
 
 	remaining, err := personalLoadRunStates(workDir)
@@ -1097,6 +1109,32 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 	}
 	printPersonalStopResult(c.OutOrStdout(), subscribeIDs, isSingleTarget, busState)
 	return nil
+}
+
+// eventStopPartialError preserves the concrete remote mutations when a later
+// cleanup stage fails. A plain wrapped error is unsafe for Agents: it looks
+// like nothing happened and invites a blind retry, even though one or more
+// subscriptions may already have been cancelled. Keep the original cause so
+// callers relying on errors.Is/errors.As continue to work.
+func eventStopPartialError(message string, cause error, succeeded, failed []string, stage string) error {
+	details := map[string]any{
+		"operation":               "event.stop",
+		"outcome":                 "partial_failure",
+		"execution_state":         "unknown",
+		"verification":            "not_verified",
+		"failure_stage":           stage,
+		"succeeded_subscribe_ids": append([]string(nil), succeeded...),
+		"failed_subscribe_ids":    append([]string(nil), failed...),
+		"recovery_required":       true,
+	}
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("partial_failure"),
+		apperrors.WithDetails(details),
+		apperrors.WithRetryable(false),
+		apperrors.WithHint("部分订阅已处理，先运行 event status 核对状态后再决定是否重试"),
+		apperrors.WithActions("event status", "不要盲目重复 event stop"),
+		apperrors.WithCause(cause),
+	)
 }
 
 func personalStopTargets(workDir, explicit string, all bool) ([]string, error) {
