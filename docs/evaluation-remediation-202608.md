@@ -28,6 +28,7 @@
 | `oa +list-forms --limit 1` | 1 条审批表单 | 表单投影保留稳定 `processCode` 与名称，不被 fail-closed 规则误拒绝 |
 | `chat +chat-list-all --limit 1` | 1 条群 | 单页响应正确保留 `hasMore:true`、续页游标及 `complete:false`，不扩大为完整群目录 |
 | `report +inbox-list`（当天、`--size 1`） | 0 条日报 | 真实终态哨兵 `nextCursor=0` 归一后，统一结果为 `ok:true/outcome:success` 与 `endpoint_exhausted:true`，无续页令牌 |
+| `report +outbox-list`（当天、`--size 1`） | 0 条日报 | 与收件箱一致验证真实终态零游标归一；统一结果不含续页令牌或版本字段 |
 
 这证明正常非空服务端形状仍兼容本轮 fail-closed 投影改造；空结果、分页终态与
 异常形状仍按各行的后续真实复验项继续取证。为保护隐私，本台账不保留实际标题、ID、
@@ -53,7 +54,7 @@
 | Doc 搜索/节点列表未知响应伪装为空结果 | **CLI 已 fail-closed** | `doc +search` 与 `doc +list` 现在区分已知空列表和未知响应；未知容器、非法行或缺少可识别字段返回 typed `projection_unknown`，不再把后端形状漂移扩大成“无匹配文档/空文件夹” | 发布后二进制以真实搜索无命中、空文件夹和异常响应形状分别复验 |
 | `drive list --pattern` 失效 | **代码已修** | `drive list` 已公开 `--pattern`；测试覆盖 pattern 投影、JSON 可解析以及与 `--versions` 的冲突 | 发布后二进制用真实目录做 3 组正反例复验 |
 | Drive 列表/搜索未知响应伪装为空结果 | **CLI 已 fail-closed** | `drive +list`、`+search`、`+search-docs` 现在区分已知空结果与无法投影的响应；未知容器、非法行或缺少可识别字段返回 typed `projection_unknown`，不再把后端形状漂移扩大成“无文件/无文档” | 真实目录、空目录、搜索无命中和服务端异常形状分别复验 |
-| Report 收/发件列表未知响应、分页状态被丢弃 | **CLI 已接入统一结果；收件箱终态已真实复验** | `report +inbox-list` 与 `+outbox-list` 已逐条启用统一结果；已知空列表仍成功，未知容器/非法条目返回 typed `projection_unknown`。上游 `hasMore/nextCursor` 同时投影到 `meta.pagination` 与数据字段；缺 cursor 的续页、末页携 cursor、嵌套分页矛盾均返回 `pagination_inconsistent`，不再伪装终态。真实收件箱发现终态 `nextCursor=0` 哨兵，现归一为空续页令牌并输出 `endpoint_exhausted:true` | 用真实发件箱验证首页、续页、末页和无分页信号；确认 JSON 仅有 `ok/outcome/data/meta`，不输出协议版本标记 |
+| Report 收/发件列表未知响应、分页状态被丢弃 | **CLI 已接入统一结果；收/发件箱终态已真实复验** | `report +inbox-list` 与 `+outbox-list` 已逐条启用统一结果；已知空列表仍成功，未知容器/非法条目返回 typed `projection_unknown`。上游 `hasMore/nextCursor` 同时投影到 `meta.pagination` 与数据字段；缺 cursor 的续页、末页携 cursor、嵌套分页矛盾均返回 `pagination_inconsistent`，不再伪装终态。真实收/发件箱均发现终态 `nextCursor=0` 哨兵，现归一为空续页令牌并输出 `endpoint_exhausted:true` | 用真实收/发件箱继续验证非空首页、续页与无分页信号；确认 JSON 仅有 `ok/outcome/data/meta`，不输出协议版本标记 |
 | `drive download --format json` 惰性、stdout 日志污染 | **代码已修** | 下载成功与 dry-run JSON 路径均有测试；Framework writer 统一 stdout/stderr 与 format 分发 | 发布后二进制执行成功/失败两条 `jq` 管道复验 |
 | `drive delete --dry-run` 与确认门禁耦合、EOF 取消仍 rc=0 | **已关闭（当前工作树）** | `drive delete` 声明 destructive/high/user_required；专项测试证明 `--dry-run` 产生请求预览且写调用为 0，关闭 stdin 且无 `--yes` 时返回 typed `confirmation_required`、写调用仍为 0 | 发布后二进制复验 dry-run/EOF/`--yes` 三条路径 |
 | `doc version revert --dry-run` 对不存在版本也放行 | **代码已修** | 回滚现在先校验版本号为正整数，再通过版本列表预校验目标存在性；`999` 和非正版本号均在任何远端写入前返回 typed validation，dry-run 对有效目标只读不写；`TestDocVersionRevert*` 回归覆盖存在、缺失和非法版本 | 真实文档分别验证存在/不存在版本号 |

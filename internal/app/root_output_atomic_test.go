@@ -150,7 +150,7 @@ func TestOutputSinkSyncAndCloseFailuresPreserveTarget(t *testing.T) {
 	}
 }
 
-func TestOutputSinkV2PublicationFailureFailsAndLeavesNoFinalFile(t *testing.T) {
+func TestOutputSinkUnifiedPublicationFailureFailsAndLeavesNoFinalFile(t *testing.T) {
 	testseam.Swap(t, &rootRenameFile, func(string, string) error {
 		return errors.New("rename failed")
 	})

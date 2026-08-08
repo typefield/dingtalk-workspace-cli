@@ -16,7 +16,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestPublicRootDirectExecuteFailsWhenV2SinkCannotPublish(t *testing.T) {
+func TestPublicRootDirectExecuteFailsWhenUnifiedSinkCannotPublish(t *testing.T) {
 	oldClose := rootCloseFile
 	t.Cleanup(func() { rootCloseFile = oldClose })
 	closeCalls := 0

@@ -27,7 +27,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-func TestExecuteEmitsStoredV2ResultAtSingleRootExit(t *testing.T) {
+func TestExecuteEmitsStoredUnifiedResultAtSingleRootExit(t *testing.T) {
 	oldNormalize := rootNormalizeProcessProfileArgs
 	oldExecute := rootExecuteCommand
 	oldNewRoot := rootNewRootCommandWithEngine

@@ -141,7 +141,7 @@ func TestReportListPaginationRejectsAmbiguousOrContradictoryEvidence(t *testing.
 	}
 }
 
-func TestReportListShortcutsAreV2ActiveOnlyAfterPaginationProjection(t *testing.T) {
+func TestReportListShortcutsUseUnifiedResultOnlyAfterPaginationProjection(t *testing.T) {
 	for name, declaration := range map[string]struct {
 		rollout output.RolloutState
 	}{
