@@ -19,6 +19,7 @@ package sheet
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -67,24 +68,30 @@ var ListSheets = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		sheets := listSheetsProject(data)
+		sheets, err := listSheetsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(sheets), "sheets": sheets})
 	},
 }
 
 // listSheetsProject reshapes the raw get_all_sheets response into a clean
 // worksheet list (sheetId/title/index/visibility/rowCount/columnCount) — the
-// the clean output projection applied to every list command. Both
-// the list container and the per-item field names are probed defensively across
-// candidate keys, so an empty/unknown shape yields an empty list rather than a
-// crash or fabricated data.
-func listSheetsProject(data map[string]any) []map[string]any {
-	raw := listSheetsResolveList(data)
+// the clean output projection applied to every list command. Candidate response
+// keys are tolerated, but an unrecognised container or row is a projection
+// failure rather than a successful empty list. This prevents a backend shape
+// change from being presented to an Agent as "there are no worksheets".
+func listSheetsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := listSheetsResolveList(data)
+	if !known {
+		return nil, sheetProjectionUnknown("无法识别 get_all_sheets 返回的工作表列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, sheetProjectionUnknown("工作表列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		if v, ok := listSheetsFirst(m, "sheetId", "sheet_id", "id"); ok {
@@ -105,19 +112,20 @@ func listSheetsProject(data map[string]any) []map[string]any {
 		if v, ok := listSheetsFirst(m, "columnCount", "column_count", "columns", "colCount"); ok {
 			row["columnCount"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, sheetProjectionUnknown("工作表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // listSheetsResolveList locates the worksheet array inside the response,
 // tolerating a bare top-level array container or nesting one level deeper under
 // a common envelope key.
-func listSheetsResolveList(data map[string]any) []any {
+func listSheetsResolveList(data map[string]any) ([]any, bool) {
 	if data == nil {
-		return []any{}
+		return nil, false
 	}
 	for _, key := range []string{"sheets", "result", "data", "list", "items", "worksheets"} {
 		v, ok := data[key]
@@ -125,17 +133,25 @@ func listSheetsResolveList(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"sheets", "list", "items", "worksheets", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
+}
+
+func sheetProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // listSheetsFirst returns the first present candidate key's value.
