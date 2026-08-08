@@ -43,12 +43,14 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections import defaultdict
 from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit
 
 # 默认关注字段 — 与 SKILL.md「每日统计预定义列集合」严格对齐（共 33 个）
 # 字段名必须和 `dws attendance report columns` 返回的 name 精确匹配
@@ -131,6 +133,7 @@ def parse_args() -> argparse.Namespace:
                    help="输出 xlsx 文件名；不传则按规范自动生成")
     p.add_argument("--inspect", action="store_true",
                    help="首次跑时打印首条记录原始结构（用于核对真实字段）")
+    add_contract_flags(p)
     return p.parse_args()
 
 
@@ -529,6 +532,18 @@ def main() -> int:
         f"至 {end.strftime(cmn.DATE_FMT)}"
     )
     subtitle = f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
+    result_data = {
+        "users": user_ids,
+        "rowCount": len(rows_2d),
+        "columnCount": len(headers),
+        "output": os.path.abspath(out_name),
+        "start": start.strftime(cmn.DATE_FMT),
+        "end": end.strftime(cmn.DATE_FMT),
+    }
+    if args.dry_run:
+        return emit(fmt=args.format, outcome="success", data={
+            **result_data, "write": False,
+        }, dry_run=True, text="[dry-run] 已完成远端只读查询和报表预览，不写入 Excel 文件")
     try:
         cmn.write_excel(
             out_name, headers, rows_2d,
@@ -551,6 +566,8 @@ def main() -> int:
         stats=stats,
         extra_tail="ℹ️ 同一 (用户, 日期) 下数值字段已求和、非数值字段取首个值。",
     )
+    if args.format != "text":
+        return emit(fmt=args.format, outcome="success", data=result_data)
     return 0
 
 
