@@ -866,7 +866,7 @@ dws oa approval create-instance --request '{"processCode":"PROC-xxx","deptId":-1
 | 脚本 | 场景 | 用法 |
 |------|------|------|
 | [oa_pending_review.py](../scripts/oa_pending_review.py) | 查看待审批列表+逐条显示详情 | `python oa_pending_review.py --days 7` |
-| [oa_batch_approve.py](../scripts/oa_batch_approve.py) | 批量同意/拒绝审批项 | `python oa_batch_approve.py --action approve --days 7` |
+| [oa_batch_approve.py](../scripts/oa_batch_approve.py) | 批量同意/拒绝审批项；先展示范围并获确认，使用 `--yes --format json`。仅一个可执行 taskId 才会发送动作；读取 `succeeded[]/failed[]/unknown[]`，动作受理不等于审批终态已验证 | `python oa_batch_approve.py --action approve --days 7 --yes --format json` |
 
 ---
 
@@ -897,7 +897,7 @@ dws oa approval create-instance --request '{"processCode":"PROC-xxx","deptId":-1
 | "待我处理的审批 / 7 天内待审" | `python scripts/oa_pending_review.py --days 7` |
 | "查审批详情" | `dws oa approval detail --instance-id <processInstanceId> --format json` |
 | "同意 / 拒绝审批" | 先 `dws oa approval tasks --instance-id <id> --format json` 取 `taskId`，再 `dws oa approval approve --instance-id <id> --task-id <taskId> --format json` / `reject --instance-id <id> --task-id <taskId> --format json`（需用户确认） |
-| "批量同意 / 批量拒绝" | `python scripts/oa_batch_approve.py --action approve --days 7` |
+| "批量同意 / 批量拒绝" | 先展示待审批范围并获确认，再运行 `python scripts/oa_batch_approve.py --action approve --days 7 --yes --format json`；只报告各项 request outcome，不把动作受理说成审批终态 |
 | "撤销审批" | `dws oa approval revoke --instance-id <id> --format json` |
 | "我已发起的审批" | `dws oa approval list-submitted --format json` |
 
