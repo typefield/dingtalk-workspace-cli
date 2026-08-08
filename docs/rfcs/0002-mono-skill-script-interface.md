@@ -1,6 +1,6 @@
 # RFC 0002：Mono Skill 脚本统一接口
 
-状态：提案（渐进迁移）
+状态：已实施（Help/输出层）；dry-run 副作用验证进行中
 范围：`skills/mono/scripts/*.py` 中被 Skill 正向引用的可执行脚本
 非目标：修改 `dws` 主命令契约、引入公开协议选择参数、保存生成的 JSON 文件
 
@@ -19,24 +19,10 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
 | Help 非零 | 0 | 当前版本在缺少业务参数和可选运行依赖时均可完成能力发现 |
 
 作为历史基线，迁移前曾有 19 个入口暴露 `--dry-run`、仅 1 个入口暴露脚本级
-`--format`，且存在 Help 非零脚本；这些数字不能继续作为当前状态。扫描必须记录
-四层口径，不能用文件数代替入口数，也不能用源码是否调用 `add_contract_flags`
-代替实际 Help 结果。
-- 当前已迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
-  `upload_attachment.py`、`doc_create_and_write.py`、`aitable_export_via_task.py`、
-  `mail_unread_summary.py`、`contact_dept_members.py`、`report_received_today.py`、
-  `oa_batch_approve.py`、`calendar_schedule_meeting.py`、`mail_send_with_cc.py`、
-  `oa_pending_review.py`、`report_inbox_today.py`、`drive_tree_list.py`、
-  `calendar_free_slot_finder.py`、`todo_overdue_check.py`、
-  `minutes_recent_summary.py`、`minutes_extract_todos.py`、
-  `calendar_today_agenda.py`、`attendance_team_shift.py`、
-  `attendance_schedule_export.py`、`attendance_my_record.py`、
-  `import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、
-  `attendance_vacation_balance.py`、`attendance_report_record.py` 和
-  `attendance_report_daily.py`、`attendance_report_monthly.py`、`attendance_report_detail.py` 和
-  `attendance_report_checkin.py`、`attendance_schedule_import.py`，当前实际扫描结果为
-  32 个 dry-run、32 个 format、0 个 help 非零脚本；
-- 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
+`--format`，且存在 Help 非零脚本；这些数字不能继续作为当前状态。当前 32 个入口的
+具体清单与逐项 Help 结果由 [Agent 扫描报告](../agent-scans/mono-script-contract-20260808.md)
+维护，避免在 RFC 正文复制一份会漂移的名单。扫描必须记录四层口径，不能用文件数代替
+入口数，也不能用源码是否调用 `add_contract_flags` 代替实际 Help 结果。
 
 因此当前可以准确宣称“32 个 Agent 入口在 Help 层声明了
 `--dry-run/--format`”，但不能把这句话扩大为“32 个入口都已完成零副作用证明”。
@@ -93,62 +79,43 @@ stdout。
 3. 输出完整执行计划，包括目标、参数、预计步骤和可能的删除/覆盖范围；
 4. 返回成功时明确标记 `dry_run: true`；不能把预览伪装成业务已完成。
 
-只读脚本可以选择“请求预览”或“跳过远端读取”，但必须在 Help/Skill 中说明
-`remote_reads` 语义。写脚本默认要求零远端调用；无法预览的脚本不得标称支持
+只读脚本可以选择“请求预览”或“跳过远端读取”，但必须在 Help/Skill 中说明是否会发生
+远端只读探测。`remote_reads` 不是 `_runtime.py` 的参数或公共 API。写脚本默认要求
+零远端写入；无法预览的脚本不得标称支持
 `--dry-run`。
-
-### 流式例外
-
-`event consume` 等持续流命令默认使用 `ndjson`。只有显式设置 `--max-events`
-或 `--duration`，才允许 `json`/`pretty`；无限流不能承诺单个 JSON 文档。
 
 ## 运行时实现
 
-新增共享 Python 模块（随 Skill 一起发布，不保存运行结果）：
+共享 Python 模块（随 Skill 一起发布，不保存运行结果）当前的真实公开函数为：
 
 ```text
 scripts/_runtime.py
-  add_script_flags(parser)
-  run_child_dws(args, *, dry_run, format, remote_reads)
-  emit_result(result, *, format, dry_run)
-  emit_error(error, *, format)
+  add_contract_flags(parser, *, dry_run=True)
+  emit(*, fmt, outcome, data=None, error=None, dry_run=False, text=None, items=None)
+  failure(fmt, message, *, details=None)
 ```
 
-模块只负责参数、stdout/stderr、退出码和子进程结果投影；每个脚本仍负责业务
-参数校验、步骤编排和业务数据映射。脚本不得通过 `print()` 直接写机器输出，统一
-调用 `emit_result`；诊断日志使用 `log()` 写 stderr。
+模块只负责参数、stdout/stderr、结果信封与退出码；每个脚本仍负责业务参数校验、步骤
+编排、子 `dws` 调用和业务数据映射。它**没有** `run_child_dws`、`emit_result`、
+`emit_error` 或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得
+通过 `print()` 直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
 
-## 渐进迁移
+## 实施状态与后续验证
 
-### 阶段一：高风险写脚本
+脚本接口的渐进迁移已完成于 **Help/输出层**，不再把阶段表述为未来计划：
 
-先迁移 `aitable_import_via_task.py`、`aitable_export_via_task.py`、
-`doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
-`oa_batch_approve.py`、`todo_batch_create.py`。
+| 项目 | 当前状态 | 证据与边界 |
+|---|---|---|
+| 32 个 Agent 入口的 `--format` / `--dry-run` | 已实施 | 逐入口 `--help` 为 32/32、Help 非零为 0；这只证明能力可发现 |
+| `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
+| 7 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
+| 其余 25 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
+| 真实服务端零写与部分失败/不确定结果 | UNVERIFIED | 需要隔离账号或受控后端，不得由 Help、源码字符串或假子进程推断 |
 
-当前 pilot 已完成 32 个 Agent 入口；3 个内部模块不纳入脚本接口统计。入口数、Help
-可观测数和 dry-run 副作用验证数必须分别记录，不能把“已接入参数”直接写成“已证明安全”。
-
-`attendance_vacation_balance.py` 与排班导出一样，dry-run 会远端只读查询并构造内存中的
-Excel 计划，但不会写本地文件。
-
-`attendance_schedule_export.py` 属于远端只读校验型 dry-run：会查询排班并生成内存中的
-预览，但不会写 Excel；Skill 不应把它描述成“零远端调用”。
-
-验收重点是 dry-run 零写入、部分失败逐项保留、失败退出码和重试安全。
-
-### 阶段二：复合读脚本
-
-迁移考勤报表、听记摘要、邮件摘要、日程和通讯录脚本，统一 JSON 数据结构，
-保留 text 展示为兼容模式。脚本级 `--format` 必须透传到所有子 dws 调用。
-
-### 阶段三：流式/长任务脚本
-
-迁移事件监听、轮询和导入任务脚本，明确 `ndjson`、`pending`、`next_command`
-和超时语义；不得为了统一而破坏长连接消费。
-
-每个阶段按单脚本发布，未迁移脚本继续按自身 Help 声明能力，不把未实现能力写入
-Skill 总则。
+入口数、Help 可观测数和 dry-run 副作用验证数必须分别记录，不能把“已接入参数”直接
+写成“已证明安全”。例如，允许远端只读探测的脚本必须在自己的 Help/Skill 中逐条说明；
+不允许把它宣传为“零远端调用”。后续只按单脚本补充真实副作用证据，不重新引入全局
+“所有脚本已证明安全”的总则。
 
 ## Agent 扫描验收
 
@@ -198,12 +165,12 @@ python3 scripts/agent/probe_mono_dry_run.py \
 
 ## 兼容与回滚
 
-迁移脚本保留原有业务参数和人读 `text` 输出；`json` 只在脚本明确宣布迁移后
-成为 Agent 默认。回滚通过发布版本或内部脚本清单完成，不让 Agent 追加协议选择
-参数，也不在同一脚本中同时暴露两套机器信封。
+脚本保留原有业务参数和人读 `text` 输出；当前全部 Agent 入口都已接入 `--format`，
+Agent 需要机器输出时显式传 `--format json`。回滚通过发布版本或脚本实现完成，不让
+Agent 追加协议选择参数，也不在同一脚本中同时暴露两套机器信封。
 
 ## 决策
 
-“全部支持”是目标，但实现单位是脚本而不是一次性全量改造。先统一运行时和高风险
-写脚本，证明 dry-run/部分失败/流向契约，再逐批覆盖其余脚本；在此之前，Skill
-必须准确声明每个脚本当前实际支持的参数。
+“全部入口的 Help/输出接口已实施”与“全部 dry-run 已证明安全”是两件事。后者仍以
+脚本为单位渐进取证；在真实副作用证据补齐前，Skill 必须准确声明每个脚本当前实际支持
+的参数和已验证边界。
