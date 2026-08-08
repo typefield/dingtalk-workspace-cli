@@ -18,6 +18,7 @@ package oa
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -80,7 +81,10 @@ var ListPending = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		instances := listPendingProject(data)
+		instances, err := listPendingProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
 	},
 }
@@ -88,21 +92,10 @@ var ListPending = shortcut.Shortcut{
 // listPendingProject reshapes the raw list_pending_approvals response into the
 // same clean {processInstanceId, title, status, createTime} approval list as
 // +list-executed/+list-submitted, so all approval-instance listings project
-// identically. It reuses the shared oaInstance* defensive probes, tolerating
-// response-shape and key-spelling drift.
-func listPendingProject(data map[string]any) []map[string]any {
-	raw := oaInstanceResolveList(data)
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		if row := oaInstanceProjectItem(m); len(row) > 0 {
-			out = append(out, row)
-		}
-	}
-	return out
+// identically. It reuses the shared oaInstance* defensive probes. Known empty
+// results stay successful; unknown shapes fail rather than becoming empty.
+func listPendingProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectInstanceList(data)
 }
 
 // Detail — 获取审批实例详情 (get_processInstance_detail)
@@ -158,7 +151,10 @@ var ListForms = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		forms := listFormsProject(data)
+		forms, err := listFormsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(forms), "forms": forms})
 	},
 }
@@ -166,29 +162,15 @@ var ListForms = shortcut.Shortcut{
 // listFormsProject reshapes the raw list_user_visible_process response into a
 // clean approval-form list ({processCode, name, iconUrl}) — the output-projection
 // fidelity the framework applies to every list command. The list container and
-// per-item field names are probed defensively across candidate keys so the
-// projection tolerates response-shape drift rather than crashing or fabricating.
-func listFormsProject(data map[string]any) []map[string]any {
-	raw := oaFormResolveList(data)
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		if row := oaFormProjectItem(m); len(row) > 0 {
-			out = append(out, row)
-		}
-	}
-	return out
+// per-item field names are probed defensively across candidate keys. Known
+// empty results stay successful; unknown shapes do not fabricate an empty list.
+func listFormsProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectFormList(data)
 }
 
 // oaFormResolveList locates the form list inside a response, tolerating a bare
 // top-level array or nesting one level under a common envelope key.
-func oaFormResolveList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
+func oaFormResolveList(data map[string]any) ([]any, bool) {
 	// list_user_visible_process nests the forms under result.processCodeList;
 	// probing must include that exact key (both at the top level in case the
 	// envelope is already unwrapped, and one level deeper under result/data) or
@@ -199,17 +181,17 @@ func oaFormResolveList(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "processList", "processCodeList", "forms", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // oaFormProjectItem picks the stable identity/label fields of a single approval
@@ -282,28 +264,20 @@ var SearchForms = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		forms := searchFormsProject(data)
+		forms, err := searchFormsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(forms), "forms": forms})
 	},
 }
 
 // searchFormsProject reshapes the raw search_form response into the same clean
 // {processCode, name, iconUrl} list as +list-forms, so both approval-form
-// listings project identically. It reuses the shared oaForm* defensive probes,
-// tolerating response-shape and key-spelling drift.
-func searchFormsProject(data map[string]any) []map[string]any {
-	raw := oaFormResolveList(data)
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		if row := oaFormProjectItem(m); len(row) > 0 {
-			out = append(out, row)
-		}
-	}
-	return out
+// listings project identically. It reuses the shared oaForm* defensive probes;
+// unknown shapes fail rather than becoming empty results.
+func searchFormsProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectFormList(data)
 }
 
 // DingInfo — 获取审批任务的被催办人 userId (oa_ding_user)
@@ -358,7 +332,10 @@ var ListExecuted = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		instances := listExecutedProject(data)
+		instances, err := listExecutedProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
 	},
 }
@@ -367,30 +344,16 @@ var ListExecuted = shortcut.Shortcut{
 // approval-instance list ({processInstanceId, title, status, createTime}) — the
 // the clean output projection applied to every list command. The
 // list container and per-item field names are probed defensively across
-// candidate keys so the projection tolerates response-shape drift rather than
-// crashing or fabricating data.
-func listExecutedProject(data map[string]any) []map[string]any {
-	raw := oaInstanceResolveList(data)
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		if row := oaInstanceProjectItem(m); len(row) > 0 {
-			out = append(out, row)
-		}
-	}
-	return out
+// candidate keys. Known empty results stay successful; unknown shapes do not
+// fabricate an empty list.
+func listExecutedProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectInstanceList(data)
 }
 
 // oaInstanceResolveList locates the approval-instance list inside a response,
 // tolerating a bare top-level array or nesting one level under a common
 // envelope key.
-func oaInstanceResolveList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
+func oaInstanceResolveList(data map[string]any) ([]any, bool) {
 	// The approval instance tools (list_pending_approvals, get_done_tasks,
 	// get_submitted_instances, get_noticed_instances) all nest the instance list
 	// under result.values; "values" MUST be in the probe set or every one of
@@ -402,17 +365,17 @@ func oaInstanceResolveList(data map[string]any) []any {
 			continue
 		}
 		if arr, ok := v.([]any); ok {
-			return arr
+			return arr, true
 		}
 		if inner, ok := v.(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "values", "instances", "tasks", "result", "data"} {
 				if arr, ok := inner[ik].([]any); ok {
-					return arr
+					return arr, true
 				}
 			}
 		}
 	}
-	return []any{}
+	return nil, false
 }
 
 // oaInstanceProjectItem picks the stable identity/label fields of a single
@@ -486,7 +449,10 @@ var ListSubmitted = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		instances := listSubmittedProject(data)
+		instances, err := listSubmittedProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
 	},
 }
@@ -494,21 +460,9 @@ var ListSubmitted = shortcut.Shortcut{
 // listSubmittedProject reshapes the raw get_submitted_instances response into
 // the same clean {processInstanceId, title, status, createTime} approval list
 // as +list-executed, so both instance listings project identically. It reuses
-// the shared oaInstance* defensive probes, tolerating response-shape and
-// key-spelling drift.
-func listSubmittedProject(data map[string]any) []map[string]any {
-	raw := oaInstanceResolveList(data)
-	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			continue
-		}
-		if row := oaInstanceProjectItem(m); len(row) > 0 {
-			out = append(out, row)
-		}
-	}
-	return out
+// the shared oaInstance* defensive probes; unknown shapes fail explicitly.
+func listSubmittedProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectInstanceList(data)
 }
 
 // ListCc — 获取抄送当前用户的审批单列表 (get_noticed_instances)
@@ -562,7 +516,10 @@ var ListCc = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		instances := listCcProject(data)
+		instances, err := listCcProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
 	},
 }
@@ -570,21 +527,58 @@ var ListCc = shortcut.Shortcut{
 // listCcProject reshapes the raw get_noticed_instances response into the same
 // clean {processInstanceId, title, status, createTime} approval list as the
 // other instance listings, so all approval-instance listings project
-// identically. It reuses the shared oaInstance* defensive probes, tolerating
-// response-shape and key-spelling drift.
-func listCcProject(data map[string]any) []map[string]any {
-	raw := oaInstanceResolveList(data)
+// identically. It reuses the shared oaInstance* defensive probes; unknown
+// shapes fail explicitly rather than becoming empty results.
+func listCcProject(data map[string]any) ([]map[string]any, error) {
+	return oaProjectInstanceList(data)
+}
+
+func oaProjectFormList(data map[string]any) ([]map[string]any, error) {
+	raw, known := oaFormResolveList(data)
+	if !known {
+		return nil, oaProjectionUnknown("审批表单列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, oaProjectionUnknown("审批表单列表包含无法识别的条目")
 		}
-		if row := oaInstanceProjectItem(m); len(row) > 0 {
-			out = append(out, row)
+		row := oaFormProjectItem(m)
+		if len(row) == 0 {
+			return nil, oaProjectionUnknown("审批表单列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
+}
+
+func oaProjectInstanceList(data map[string]any) ([]map[string]any, error) {
+	raw, known := oaInstanceResolveList(data)
+	if !known {
+		return nil, oaProjectionUnknown("审批实例列表响应缺少可识别的列表容器")
+	}
+	out := make([]map[string]any, 0, len(raw))
+	for _, item := range raw {
+		m, ok := item.(map[string]any)
+		if !ok {
+			return nil, oaProjectionUnknown("审批实例列表包含无法识别的条目")
+		}
+		row := oaInstanceProjectItem(m)
+		if len(row) == 0 {
+			return nil, oaProjectionUnknown("审批实例列表条目缺少可识别字段")
+		}
+		out = append(out, row)
+	}
+	return out, nil
+}
+
+func oaProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // RedirectTask — 转交审批任务给其他人 (redirect_task)

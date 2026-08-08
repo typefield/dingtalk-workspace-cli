@@ -55,6 +55,7 @@
 | `sheet +list-sheets` 未知响应可能伪装为空列表 | **CLI 已 fail-closed** | `get_all_sheets` 投影现在区分“已知空列表”和“未知响应”；未知容器或非法行返回 typed `projection_unknown`，不会向 Agent 产出成功的空工作表列表。回归覆盖空列表、嵌套容器和非法响应 | 发布后二进制用真实表格验证正常空表格与后端响应漂移两条路径 |
 | sheet `formula-verify` 0/11 | **CLI 契约已修，服务端能力未关闭** | 命令已接入 `verify_formula`，支持整表/范围/targets、dry-run 与 `--exit-on-error`；发现公式错误时现在返回 typed validation `reason=formula_errors_found`，保留 `status/totalErrors/scannedCells` details，而不是被归类成内部错误；参数冲突、非正限制、targets 文件/stdin/JSON 错误也统一为 typed validation | 服务端上线并用评测表格复跑 11 个公式校验样本；确认错误位置、错误类型和数量投影完整 |
 | approval 真实提单 | **未关闭** | Schema 与三件套能力存在，但原报告缺真实创建成功证据；简单模式 `--form-values` 现在按字段名稳定排序，避免 map 随机顺序造成请求不稳定 | 使用获授权测试审批模板完成一次真实创建并清理测试实例；嵌套表格仍用 `--request` 并做真实链路复验 |
+| OA 审批表单/实例列表未知响应伪装为空结果 | **CLI 已 fail-closed** | `oa +list-forms`、`+search-forms`、`+list-pending`、`+list-executed`、`+list-submitted`、`+list-cc` 现明确区分已知空列表和无法投影的响应；未知容器、非法行或缺少稳定字段返回 typed `projection_unknown`，不再把上游形状漂移伪装成“没有表单/审批单” | 用真实审批账号分别复验空结果、含 `result.processCodeList`/`result.values` 的正常响应、翻页和服务端异常形状；真实提单仍需获授权测试模板 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前 fail-closed，并返回 `raw_api_credentials_required`、`mcp_default_token_usable:false`、可执行认证 actions，且不标记可重试 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
 
 ## attendance 本轮验收证据

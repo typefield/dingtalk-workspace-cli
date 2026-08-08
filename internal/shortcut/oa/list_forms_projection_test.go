@@ -15,7 +15,10 @@ package oa
 
 import (
 	"encoding/json"
+	"errors"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 // TestListFormsProjectProcessCodeListShape guards against the projection-data-loss
@@ -34,7 +37,10 @@ func TestListFormsProjectProcessCodeListShape(t *testing.T) {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
 
-	forms := listFormsProject(data)
+	forms, err := listFormsProject(data)
+	if err != nil {
+		t.Fatalf("projection returned error: %v", err)
+	}
 	if len(forms) != 3 {
 		t.Fatalf("lower/upper mismatch: 3 forms in backend, projection returned %d (forms=%v)", len(forms), forms)
 	}
@@ -54,7 +60,11 @@ func TestListFormsProjectBareArrayShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &data); err != nil {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
-	if forms := listFormsProject(data); len(forms) != 1 {
+	forms, err := listFormsProject(data)
+	if err != nil {
+		t.Fatalf("bare array projection returned error: %v", err)
+	}
+	if len(forms) != 1 {
 		t.Fatalf("bare array shape: want 1 form, got %d (%v)", len(forms), forms)
 	}
 }
@@ -72,11 +82,53 @@ func TestOAInstanceResolveListValuesShape(t *testing.T) {
 	if err := json.Unmarshal([]byte(raw), &data); err != nil {
 		t.Fatalf("unmarshal fixture: %v", err)
 	}
-	if got := oaInstanceResolveList(data); len(got) != 2 {
+	got, known := oaInstanceResolveList(data)
+	if !known || len(got) != 2 {
 		t.Fatalf("lower/upper mismatch: result.values has 2 entries, resolver returned %d", len(got))
 	}
 	// End-to-end through a real projection that uses the shared resolver.
-	if instances := listSubmittedProject(data); len(instances) != 2 {
+	instances, err := listSubmittedProject(data)
+	if err != nil {
+		t.Fatalf("listSubmittedProject returned error: %v", err)
+	}
+	if len(instances) != 2 {
 		t.Fatalf("listSubmittedProject: want 2, got %d (%v)", len(instances), instances)
+	}
+}
+
+func TestOAListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
+	for name, project := range map[string]func(map[string]any) ([]map[string]any, error){
+		"forms":     listFormsProject,
+		"search":    searchFormsProject,
+		"pending":   listPendingProject,
+		"executed":  listExecutedProject,
+		"submitted": listSubmittedProject,
+		"cc":        listCcProject,
+	} {
+		t.Run(name+" known empty", func(t *testing.T) {
+			rows, err := project(map[string]any{"items": []any{}})
+			if err != nil || rows == nil || len(rows) != 0 {
+				t.Fatalf("known empty = %#v, %v; want non-nil empty list", rows, err)
+			}
+		})
+		t.Run(name+" unknown", func(t *testing.T) {
+			_, err := project(map[string]any{"unexpected": []any{}})
+			assertOAProjectionUnknown(t, err)
+		})
+		t.Run(name+" malformed row", func(t *testing.T) {
+			_, err := project(map[string]any{"items": []any{"opaque"}})
+			assertOAProjectionUnknown(t, err)
+		})
+	}
+}
+
+func assertOAProjectionUnknown(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("projection unexpectedly succeeded")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "projection_unknown" || typed.Retryable {
+		t.Fatalf("projection error = %T %#v, want non-retryable projection_unknown", err, err)
 	}
 }
