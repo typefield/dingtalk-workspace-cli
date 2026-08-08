@@ -19,6 +19,7 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/localio"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
@@ -209,6 +210,62 @@ func TestCrossPlatformCoverageDocCompositePartialWriteContracts(t *testing.T) {
 	historyVerify := &docCoverageCaller{failAt: 3, responses: map[string][]map[string]any{}}
 	err = runDocCoverage(t, VersionRevert, historyVerify, "--node", "n", "--version", "3", "--yes")
 	assertPartial(t, err, "doc_history_revert_verification_failed", "verify", "n", 3)
+}
+
+func TestDocPartialWriteResultMapsDeclaredStepsToThreeChannels(t *testing.T) {
+	result, err := docPartialWriteResult(
+		"doc.checkpoint_update",
+		apperrors.SubtypeDocCheckpointUpdateFailed,
+		"update",
+		"update failed after checkpoint",
+		errors.New("upstream unavailable"),
+		map[string]any{"nodeId": "node-1", "checkpointSaved": true},
+		[]map[string]any{
+			{"name": "checkpoint", "status": "success"},
+			{"name": "update", "status": "failed"},
+			{"name": "verify", "status": "not_started"},
+		},
+		map[string]any{"available": true, "action": "revert_to_checkpoint"},
+	)
+	if err != nil {
+		t.Fatalf("docPartialWriteResult: %v", err)
+	}
+	if result.Outcome() != output.OutcomePartialFailure || result.ExitCode() != 7 {
+		t.Fatalf("partial result outcome/exit = %q/%d", result.Outcome(), result.ExitCode())
+	}
+	env, err := output.EnvelopeFromResult(result)
+	if err != nil {
+		t.Fatalf("EnvelopeFromResult: %v", err)
+	}
+	partial, ok := env.Data.(*output.PartialData)
+	if !ok {
+		t.Fatalf("partial data = %T", env.Data)
+	}
+	if partial.Total != 3 || len(partial.Succeeded) != 1 || len(partial.Failed) != 1 || len(partial.Unknown) != 1 {
+		t.Fatalf("partial channels = %#v", partial)
+	}
+	first, ok := partial.Succeeded[0].(map[string]any)
+	if !ok || first["id"] != "step:checkpoint" || first["operation"] != "doc.checkpoint_update" {
+		t.Fatalf("succeeded step = %#v", partial.Succeeded)
+	}
+	if partial.Failed[0].ID != "step:update" || partial.Failed[0].Error == nil || partial.Failed[0].Error.Subtype != string(apperrors.SubtypeDocCheckpointUpdateFailed) || partial.Failed[0].Error.ExecutionStarted == nil || !*partial.Failed[0].Error.ExecutionStarted {
+		t.Fatalf("failed step = %#v", partial.Failed)
+	}
+	if partial.Unknown[0].ID != "step:verify" || partial.Unknown[0].Reason == "" {
+		t.Fatalf("unknown step = %#v", partial.Unknown)
+	}
+}
+
+func TestDocCompositeWritesStartInDualValidation(t *testing.T) {
+	for name, item := range map[string]shortcut.Shortcut{
+		"create":            Create,
+		"checkpoint update": CheckpointUpdate,
+		"history revert":    VersionRevert,
+	} {
+		if item.OutputRollout != output.RolloutDualValidate {
+			t.Fatalf("%s rollout = %q, want dual_validate", name, item.OutputRollout)
+		}
+	}
 }
 
 func TestCrossPlatformCoverageDocUpdateAliasReachesNestedBranches(t *testing.T) {

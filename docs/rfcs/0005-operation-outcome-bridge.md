@@ -1,6 +1,6 @@
 # RFC-0005：状态机阻断与复合写的 operation outcome 接入
 
-- 状态：提案；实现前必须完成 Agent 源码审阅与命令级 dual validation
+- 状态：实施中；doc 三条复合写已进入 dual validation，个人订阅仍待语义审阅
 - 日期：2026-08-09
 - 适用范围：个人订阅尝试状态机、`doc` 复合写 shortcut
 - 依赖：RFC-0001（统一返回渐进 rollout）、RFC-0003（稳定错误 subtype）和
@@ -140,7 +140,7 @@ unified_active:
 
 ```text
 P0  个人状态机的 Category/幂等性源码审阅；登记 doc 五个既有 reason descriptor（后者已完成）
-P1  在 doc 三条 terminal command 建 shadow PartialData + legacy golden
+P1  在 doc create / checkpoint-update / history-revert 建 shadow PartialData（已完成）；dual 下保留 legacy error 与 rc，并以单元测试锁定三通道与单次结果出口
 P2  按命令转 active；受控真实账号复验已应用/补偿事实
 P3  审阅个人订阅请求失败分类与 idempotency，再迁其余 failure family
 ```

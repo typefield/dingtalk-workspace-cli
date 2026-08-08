@@ -181,7 +181,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个已登记 subtype 的生产调用已迁入 `WithSubtype`；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接由 RFC-0005 单独推进（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个已登记 subtype 的生产调用已迁入 `WithSubtype`；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

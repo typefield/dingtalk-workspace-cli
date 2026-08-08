@@ -354,6 +354,33 @@ func (rt *RuntimeContext) OutputResult(payload any, result output.CommandResult)
 	return output.WriteCommandPayload(rt.cmd, payload, output.FormatJSON)
 }
 
+// OutputPartial bridges one composite operation's already-known partial result
+// through the command rollout without re-running the operation. Legacy and
+// dual-validate commands preserve their existing typed error path; unified
+// commands store the sole terminal partial result and return nil so Cobra can
+// reach PersistentPostRunE and emit exactly one rc=7 envelope.
+//
+// This is intentionally narrow. It does not infer succeeded/failed/unknown
+// facts from an arbitrary error: the owning shortcut must construct and pass a
+// fully validated output.Partial result from its business steps.
+func (rt *RuntimeContext) OutputPartial(result output.CommandResult, legacyErr error) error {
+	if result == nil || result.Outcome() != output.OutcomePartialFailure {
+		return fmt.Errorf("shortcut partial output requires an output.Partial result")
+	}
+	if output.UsesUnifiedResult(rt.cmd) {
+		return output.StoreResult(rt.cmd.Context(), result)
+	}
+	if output.CommandRollout(rt.cmd) == output.RolloutDualValidate {
+		if err := output.ValidateResult(result); err != nil {
+			return err
+		}
+	}
+	if legacyErr == nil {
+		return fmt.Errorf("shortcut partial output requires a legacy error before unified activation")
+	}
+	return legacyErr
+}
+
 func (rt *RuntimeContext) storePayload(tool string, params map[string]any, payload any) error {
 	return output.StoreResult(rt.cmd.Context(), rt.resultForPayload(tool, payload, params))
 }

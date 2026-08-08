@@ -20,6 +20,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -1008,6 +1009,13 @@ func init() {
 	TemplateApply.Contract = corecmd.ContractDecl{}
 	canonicalizeHistoryShortcuts()
 	canonicalizeCommentShortcuts()
+	// These three composite writes now construct a typed partial result on the
+	// same execution path. Dual validation keeps their legacy renderer and
+	// exit code unchanged while the result invariant is proven before active
+	// rollout (RFC-0005).
+	Create.OutputRollout = output.RolloutDualValidate
+	CheckpointUpdate.OutputRollout = output.RolloutDualValidate
+	VersionRevert.OutputRollout = output.RolloutDualValidate
 	shortcut.Register(
 		Search,
 		List,

@@ -13,6 +13,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -115,8 +116,8 @@ func docEnvelope(operation string, data any, steps ...map[string]any) map[string
 	}
 }
 
-func docPartialWriteError(operation string, subtype apperrors.Subtype, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) error {
-	return apperrors.NewAPI(
+func docPartialWriteError(rt *shortcut.RuntimeContext, operation string, subtype apperrors.Subtype, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) error {
+	legacy := apperrors.NewAPI(
 		message,
 		apperrors.WithOperation(operation),
 		// The legacy Reason wire remains the same string, while the registry
@@ -134,6 +135,94 @@ func docPartialWriteError(operation string, subtype apperrors.Subtype, stage, me
 		}),
 		apperrors.WithCause(cause),
 	)
+	result, err := docPartialWriteResult(operation, subtype, stage, message, cause, data, steps, compensation)
+	if err != nil {
+		return apperrors.NewInternal(
+			"build document partial-write result: "+err.Error(),
+			apperrors.WithOperation(operation),
+			apperrors.WithCause(err),
+		)
+	}
+	return rt.OutputPartial(result, legacy)
+}
+
+// docPartialWriteResult maps declared composite steps to the three partial
+// channels. It accepts only business-provided facts; unknown is used for a
+// step that did not start, never as a framework guess about the remote write.
+func docPartialWriteResult(operation string, subtype apperrors.Subtype, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) (output.CommandResult, error) {
+	hint := "inspect completed steps before retrying; use compensation details to clean up or restore the document"
+	if descriptor, ok := apperrors.LookupSubtype(subtype); ok && strings.TrimSpace(descriptor.DefaultHint) != "" {
+		hint = descriptor.DefaultHint
+	}
+	started := true
+	details := map[string]any{
+		"data":         data,
+		"steps":        steps,
+		"compensation": compensation,
+	}
+	failedInfo := &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(subtype),
+		Message:          message,
+		Hint:             hint,
+		Operation:        operation,
+		Stage:            stage,
+		ExecutionStarted: &started,
+		Details:          details,
+		Actions: []string{
+			"inspect the completed steps before retrying",
+			"use the compensation details to clean up or restore the document",
+		},
+	}
+	if cause != nil {
+		failedInfo.Cause = cause.Error()
+	}
+
+	succeeded := make([]any, 0, len(steps))
+	failed := make([]output.PartialFailedEntry, 0, 1)
+	unknown := make([]output.PartialUnknownEntry, 0, 1)
+	attachedSummary := false
+	for index, step := range steps {
+		name, _ := step["name"].(string)
+		name = strings.TrimSpace(name)
+		if name == "" {
+			return nil, fmt.Errorf("step[%d] is missing a stable name", index)
+		}
+		status, _ := step["status"].(string)
+		status = strings.TrimSpace(status)
+		id := "step:" + name
+		switch status {
+		case "success":
+			entry := map[string]any{"id": id, "name": name, "status": status}
+			// Preserve the operation-level effects and compensation exactly once
+			// with a completed step, instead of dropping them at the partial
+			// boundary or duplicating them in every entry.
+			if !attachedSummary {
+				entry["operation"] = operation
+				entry["data"] = data
+				entry["compensation"] = compensation
+				attachedSummary = true
+			}
+			succeeded = append(succeeded, entry)
+		case "failed":
+			failed = append(failed, output.PartialFailedEntry{ID: id, Error: failedInfo})
+		case "not_started":
+			unknown = append(unknown, output.PartialUnknownEntry{
+				ID:     id,
+				Reason: fmt.Sprintf("step %q was not started after failure at %q", name, stage),
+			})
+		default:
+			unknown = append(unknown, output.PartialUnknownEntry{
+				ID:     id,
+				Reason: fmt.Sprintf("step %q declared unsupported partial status %q", name, status),
+			})
+		}
+	}
+	partial, err := output.NewPartialData(len(succeeded)+len(failed)+len(unknown), succeeded, failed, unknown)
+	if err != nil {
+		return nil, err
+	}
+	return output.Partial(partial), nil
 }
 
 func nestedString(data map[string]any, keys ...string) string {

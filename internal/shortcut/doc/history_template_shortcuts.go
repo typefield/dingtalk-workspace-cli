@@ -115,7 +115,7 @@ func executeHistoryRevert(rt *shortcut.RuntimeContext) error {
 	current, err := rt.CallMCPData(productDoc, "get_document_info", map[string]any{"nodeId": nodeID})
 	if err != nil {
 		return docPartialWriteError(
-			"doc.history_revert", apperrors.SubtypeDocHistoryRevertVerificationFailed, "verify", fmt.Sprintf("版本 %d 已回滚，但读回验证失败（nodeId=%s）；不要直接重试回滚", target, nodeID), err,
+			rt, "doc.history_revert", apperrors.SubtypeDocHistoryRevertVerificationFailed, "verify", fmt.Sprintf("版本 %d 已回滚，但读回验证失败（nodeId=%s）；不要直接重试回滚", target, nodeID), err,
 			map[string]any{"nodeId": nodeID, "version": target, "reverted": true},
 			[]map[string]any{
 				{"name": "preflight", "status": "success"},
