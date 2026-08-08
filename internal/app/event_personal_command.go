@@ -1092,7 +1092,10 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 
 	remaining, err := personalLoadRunStates(workDir)
 	if err != nil {
-		return fmt.Errorf("event stop --as user: load remaining local state: %w", err)
+		return eventStopPartialError(
+			"event stop --as user: load remaining local state",
+			err, cancelled, nil, "local_state_verify",
+		)
 	}
 	if len(remaining) > 0 {
 		printPersonalStopResult(c.OutOrStdout(), subscribeIDs, isSingleTarget, "personal bus still running")
@@ -1104,7 +1107,10 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 		if errors.Is(err, busctl.ErrNotRunning) {
 			busState = "personal bus is not running"
 		} else {
-			return err
+			return eventStopPartialError(
+				"event stop --as user: stop personal bus",
+				err, cancelled, nil, "personal_bus_stop",
+			)
 		}
 	}
 	printPersonalStopResult(c.OutOrStdout(), subscribeIDs, isSingleTarget, busState)
