@@ -93,6 +93,33 @@ func TestAddTodoParticipantsPreservesPartialRecoveryDetails(t *testing.T) {
 	}
 }
 
+func TestAddTodoParticipantsPreservesUnknownWhenReadBackShowsNone(t *testing.T) {
+	caller := &scriptedToolCaller{steps: []scriptedToolStep{
+		{err: errors.New("upstream response lost")},
+		{text: `{"result":{"todoDetailModel":{"participantIds":[]}}}`},
+	}}
+	installTodoParticipantVerificationCaller(t, caller)
+
+	err := addTodoParticipantsWithVerification(context.Background(), "task-1", []string{"u1", "u2"})
+	var cliErr *CLIError
+	if !errors.As(err, &cliErr) {
+		t.Fatalf("no-applied recovery error = %T (%v), want *CLIError", err, err)
+	}
+	if cliErr.Details["outcome"] != "unknown" ||
+		cliErr.Details["verification"] != "read_after_error" ||
+		cliErr.Details["execution_state"] != "unknown" ||
+		cliErr.Details["retryable"] != false ||
+		cliErr.Details["recovery_required"] != true {
+		t.Fatalf("no-applied recovery details = %#v", cliErr.Details)
+	}
+	if cliErr.Cause == nil || !strings.Contains(cliErr.Cause.Error(), "upstream response lost") {
+		t.Fatalf("no-applied recovery cause = %v, want original write error", cliErr.Cause)
+	}
+	if caller.calls != 2 {
+		t.Fatalf("calls = %d, want one write plus one read and no replay", caller.calls)
+	}
+}
+
 func TestTodoParticipantIDsFromDetailRequiresParticipantEvidence(t *testing.T) {
 	ids, known, err := todoParticipantIDsFromDetail(`{"result":{"todoDetailModel":{"participants":[{"userId":"u1"}],"executorIds":["e1"]}}}`)
 	if err != nil || !known || !ids["u1"] || ids["e1"] {

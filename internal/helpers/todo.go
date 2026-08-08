@@ -125,7 +125,26 @@ func addTodoParticipantsWithVerification(ctx context.Context, taskID string, par
 			},
 		}
 	}
-	return writeErr
+	// A successful read-back showing none of the requested IDs is still not
+	// proof that the failed write was never accepted (the detail endpoint may
+	// be eventually consistent). Preserve that ambiguity explicitly instead of
+	// returning the raw write error and inviting an unsafe blind replay.
+	return &CLIError{
+		Code:       CodeMCPToolError,
+		Message:    fmt.Sprintf("添加参与人的请求报错，回读暂未发现目标参与人：%s", strings.Join(participantIDs, ",")),
+		Suggestion: fmt.Sprintf("请稍后执行 dws todo task get --task-id %s --format json 再确认，不要直接重试整批写入", taskID),
+		Cause:      writeErr,
+		Details: map[string]any{
+			"outcome":                 "unknown",
+			"verification":            "read_after_error",
+			"execution_state":         "unknown",
+			"retryable":               false,
+			"task_id":                 taskID,
+			"applied_participant_ids": []any{},
+			"missing_participant_ids": appliedIDsAsAny(missing),
+			"recovery_required":       true,
+		},
+	}
 }
 
 func todoParticipantOutcomeUnknown(taskID string, writeErr error, reason string) error {
