@@ -110,7 +110,7 @@
 6. 选审批人时优先原样展示 `approvalPromptText`（成品文案）；需结构化时读 `approvalOptions[].label`；只有都缺时才用原始 `approvalCandidates` 的 `name（userId: xxx）` 自己拼标签。
 
 ### 通用出参约定（跨所有命令）
-- 游标分页（list / permission list / version list / event list / `devdoc article search`）：首次不传 `--cursor`，出参带 `nextCursor`（空=到底）原样回传续翻；`hasMore == nextCursor 非空`。cursor 是上游不透明令牌，不要自己解析或构造，也不要跨命令复用。
+- 游标分页（list / permission list / version list / event list）：首次不传 `--cursor`，出参带 `nextCursor`（空=到底）原样回传续翻；`hasMore == nextCursor 非空`。cursor 是上游不透明令牌，不要自己解析或构造，也不要跨命令复用。`devdoc article search` 是独立的页码分页，使用字符串参数 `--page` / `--size`，不要套用游标规则。
 - 批量聚合：`permission remove` 出参是 `{removed, removedScopeValues, rejectedScopeValues, success, message}`，逐条看 `removedScopeValues`/`rejectedScopeValues` 判断每个权限点成败。
 - pretty：`--format pretty` 会在应用/版本状态字段旁附 `*Text` 可读标签（如 `appStatusText`）；JSON 格式不附，以原始字段为准。
 - 失败：`ServiceResult.success=false` 原样透传 `errorCode/errorMsg`，不编造解释，解读走下方文档 RAG。
