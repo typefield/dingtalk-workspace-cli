@@ -265,8 +265,9 @@ func TestCrossPlatformCoverageDocImportHTMLUploadRedirect(t *testing.T) {
 	t.Run("text dry run prints the fallback plan as key values", func(t *testing.T) {
 		caller := &scriptedToolCaller{dry: true}
 		installScriptedCaller(t, caller)
-		var stdout bytes.Buffer
+		var stdout, diagnostics bytes.Buffer
 		deps.Out.w = &stdout
+		deps.Out.errW = &diagnostics
 
 		cmd := htmlFallbackCommand(t, writeImportFixture(t, "html"))
 		if err := runImportCommand(cmd, nil, docImportFlowConfig()); err != nil {
@@ -275,8 +276,11 @@ func TestCrossPlatformCoverageDocImportHTMLUploadRedirect(t *testing.T) {
 		if caller.calls != 0 {
 			t.Fatalf("dry run must not call MCP, calls = %d", caller.calls)
 		}
-		if !strings.Contains(stdout.String(), "doc import 回退") || !strings.Contains(stdout.String(), "sales.html") {
-			t.Fatalf("text dry-run must print the fallback plan, got %q", stdout.String())
+		if stdout.Len() != 0 {
+			t.Fatalf("text dry-run must keep diagnostics off stdout, got %q", stdout.String())
+		}
+		if !strings.Contains(diagnostics.String(), "doc import 回退") || !strings.Contains(diagnostics.String(), "sales.html") {
+			t.Fatalf("text dry-run must print the fallback plan to diagnostics, got %q", diagnostics.String())
 		}
 	})
 
