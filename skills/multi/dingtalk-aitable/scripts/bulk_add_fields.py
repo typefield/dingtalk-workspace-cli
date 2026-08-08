@@ -15,6 +15,9 @@ fields.json 格式:
 兼容写法：
 - name 会自动映射为 fieldName
 - phone 会自动映射为 telephone
+
+预览：
+    python bulk_add_fields.py <baseId> <tableId> fields.json --dry-run
 """
 
 import sys
@@ -194,7 +197,7 @@ def run_dws(args: List[str]) -> Optional[Dict[str, Any]]:
 
 
 def bulk_add_fields(
-    base_id: str, table_id: str, fields_file: str
+    base_id: str, table_id: str, fields_file: str, dry_run: bool = False
 ) -> bool:
     try:
         safe_path = resolve_safe_path(fields_file)
@@ -231,6 +234,21 @@ def bulk_add_fields(
             print(f"错误：字段 #{i+1} 配置无效：{error}")
             return False
 
+    if dry_run:
+        print(json.dumps({
+            'ok': True,
+            'outcome': 'success',
+            'dry_run': True,
+            'data': {
+                'operation': 'aitable.field.create',
+                'baseId': base_id,
+                'tableId': table_id,
+                'fieldCount': len(fields),
+                'remoteWrites': ['aitable field create'],
+            },
+        }, ensure_ascii=False, indent=2))
+        return True
+
     fields_json = build_fields_json(fields)
     result = run_dws([
         'aitable', 'field', 'create',
@@ -252,15 +270,17 @@ def main():
         print(__doc__)
         print('用法示例: python bulk_add_fields.py <baseId> <tableId> <fields.json>')
         return
-    if len(sys.argv) != 4:
+    dry_run = '--dry-run' in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != '--dry-run']
+    if len(args) != 3:
         print(__doc__)
         print('用法示例:')
         print('  python bulk_add_fields.py basexxx tablexxx fields.json')
         sys.exit(1)
 
-    base_id = sys.argv[1]
-    table_id = sys.argv[2]
-    fields_file = sys.argv[3]
+    base_id = args[0]
+    table_id = args[1]
+    fields_file = args[2]
 
     if not validate_resource_id(base_id):
         print('错误：无效的 baseId 格式')
@@ -269,7 +289,7 @@ def main():
         print('错误：无效的 tableId 格式')
         sys.exit(1)
 
-    success = bulk_add_fields(base_id, table_id, fields_file)
+    success = bulk_add_fields(base_id, table_id, fields_file, dry_run=dry_run)
     sys.exit(0 if success else 1)
 
 

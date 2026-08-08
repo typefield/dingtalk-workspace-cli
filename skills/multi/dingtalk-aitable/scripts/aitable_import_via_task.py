@@ -10,6 +10,7 @@
     python scripts/aitable_import_via_task.py <baseId> <filePath>
     python scripts/aitable_import_via_task.py <baseId> <filePath> --timeout 30
     python scripts/aitable_import_via_task.py <baseId> <filePath> --dws /tmp/dws
+    python scripts/aitable_import_via_task.py <baseId> <filePath> --dry-run
 """
 
 from __future__ import annotations
@@ -79,6 +80,7 @@ def main() -> None:
     parser.add_argument("file_path", help="待导入文件路径（.csv/.xlsx/.xls）")
     parser.add_argument("--timeout", type=int, default=30, help="import_data 等待秒数，默认 30")
     parser.add_argument("--dws", default="dws", help="dws 可执行文件路径，默认 dws")
+    parser.add_argument("--dry-run", action="store_true", help="只输出导入计划，不调用远端或上传文件")
     args = parser.parse_args()
 
     base_id = args.base_id.strip()
@@ -94,6 +96,21 @@ def main() -> None:
     file_size = file_path.stat().st_size
     if file_size <= 0:
         fail("文件为空")
+
+    if args.dry_run:
+        print(json.dumps({
+            "ok": True,
+            "outcome": "success",
+            "dry_run": True,
+            "data": {
+                "operation": "aitable.import",
+                "baseId": base_id,
+                "fileName": file_path.name,
+                "fileSize": file_size,
+                "remoteWrites": ["prepare_import_upload", "PUT upload", "import_data"],
+            },
+        }, ensure_ascii=False, indent=2))
+        return
 
     print(f"[1/3] prepare import upload: {file_path.name} ({file_size} bytes)", file=sys.stderr)
     rc, out, err = run_dws(

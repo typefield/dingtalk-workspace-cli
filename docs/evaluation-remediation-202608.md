@@ -380,10 +380,10 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `skills/mono/scripts/` 32 个 Agent 入口，不适用于 Multi Skill。此前把 Mono
   迁移清单混写成全仓结论是口径错误，已由独立 Multi 扫描纠正。
 - Multi 的 Agent 扫描见 `docs/agent-scans/multi-script-contract-20260808.md`：
-  52 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本仅有 26/42
+  52 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本已有 30/42
   提及 `--dry-run`、1/42 提及脚本级 `--format`（这不是 argparse 能力证明）。这不是要求强行给所有工具增加两个参数，
-  而是要求 Skill 对固定输出、内部检查器和真正的 Agent 契约分别声明，不能笼统宣称
-  “所有脚本统一支持”。
+  （本轮为 4 个 AITable 写/上传入口补齐脚本级 dry-run），但仍不是要求 Skill 对固定输出、
+  内部检查器和真正的 Agent 契约强行统一；各类能力必须分别声明，不能笼统宣称“所有脚本统一支持”。
 - 本轮修复了 Multi 9 个入口把 `--help` 当业务参数导致的非零返回；这只证明 Help
   可观测，不证明 dry-run 没有远端副作用。深层门控型脚本仍需受控 Agent 探针或隔离
   环境逐项取证，计划型脚本才可直接宣称零写入。

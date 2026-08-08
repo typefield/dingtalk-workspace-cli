@@ -5,6 +5,7 @@
 用法:
     python import_records.py <baseId> <tableId> data.csv [batch_size]
     python import_records.py <baseId> <tableId> data.json [batch_size]
+    python import_records.py <baseId> <tableId> data.csv [batch_size] --dry-run
 
 说明：
 - CSV 表头默认视为 fieldId
@@ -176,7 +177,7 @@ def run_dws(args: List[str]) -> Optional[Dict[str, Any]]:
 
 def import_from_csv(
     base_id: str, table_id: str, csv_file: str,
-    batch_size: int = DEFAULT_BATCH_SIZE,
+    batch_size: int = DEFAULT_BATCH_SIZE, dry_run: bool = False,
 ) -> bool:
     try:
         safe_path = resolve_safe_path(csv_file)
@@ -209,12 +210,12 @@ def import_from_csv(
         for row in rows
         if normalize_record(row)['cells']
     ]
-    return import_records(base_id, table_id, records, batch_size)
+    return import_records(base_id, table_id, records, batch_size, dry_run=dry_run)
 
 
 def import_from_json(
     base_id: str, table_id: str, json_file: str,
-    batch_size: int = DEFAULT_BATCH_SIZE,
+    batch_size: int = DEFAULT_BATCH_SIZE, dry_run: bool = False,
 ) -> bool:
     try:
         safe_path = resolve_safe_path(json_file)
@@ -250,13 +251,13 @@ def import_from_json(
 
     return import_records(
         base_id, table_id,
-        [normalize_record(r) for r in records], batch_size,
+        [normalize_record(r) for r in records], batch_size, dry_run=dry_run,
     )
 
 
 def import_records(
     base_id: str, table_id: str,
-    records: List[Dict[str, Any]], batch_size: int,
+    records: List[Dict[str, Any]], batch_size: int, dry_run: bool = False,
 ) -> bool:
     if batch_size <= 0:
         print('错误：batch_size 必须大于 0')
@@ -265,6 +266,22 @@ def import_records(
         batch_size = MAX_RECORDS_PER_BATCH
 
     total_batches = (len(records) + batch_size - 1) // batch_size
+    if dry_run:
+        print(json.dumps({
+            'ok': True,
+            'outcome': 'success',
+            'dry_run': True,
+            'data': {
+                'operation': 'aitable.record.create',
+                'baseId': base_id,
+                'tableId': table_id,
+                'recordCount': len(records),
+                'batchCount': total_batches,
+                'batchSize': min(batch_size, MAX_RECORDS_PER_BATCH),
+                'remoteWrites': ['aitable record create'],
+            },
+        }, ensure_ascii=False, indent=2))
+        return True
     success = True
 
     for i in range(0, len(records), batch_size):
@@ -295,7 +312,9 @@ def main():
         print(__doc__)
         print('用法示例: python import_records.py <baseId> <tableId> <data.csv|data.json> [batch_size]')
         return
-    if len(sys.argv) < 4 or len(sys.argv) > 5:
+    dry_run = '--dry-run' in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != '--dry-run']
+    if len(args) < 3 or len(args) > 4:
         print(__doc__)
         print('用法示例:')
         print(
@@ -303,11 +322,11 @@ def main():
         )
         sys.exit(1)
 
-    base_id = sys.argv[1]
-    table_id = sys.argv[2]
-    input_file = sys.argv[3]
+    base_id = args[0]
+    table_id = args[1]
+    input_file = args[2]
     batch_size = (
-        int(sys.argv[4]) if len(sys.argv) == 5
+        int(args[3]) if len(args) == 4
         else DEFAULT_BATCH_SIZE
     )
 
@@ -320,11 +339,11 @@ def main():
 
     if input_file.lower().endswith('.csv'):
         success = import_from_csv(
-            base_id, table_id, input_file, batch_size
+            base_id, table_id, input_file, batch_size, dry_run=dry_run
         )
     elif input_file.lower().endswith('.json'):
         success = import_from_json(
-            base_id, table_id, input_file, batch_size
+            base_id, table_id, input_file, batch_size, dry_run=dry_run
         )
     else:
         print('错误：仅支持 .csv 或 .json 文件')

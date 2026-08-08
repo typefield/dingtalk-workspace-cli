@@ -9,6 +9,7 @@
 
 用法:
     python upload_attachment.py <baseId> <filePath>
+    python upload_attachment.py <baseId> <filePath> --dry-run
 
 输出 (JSON):
     { "fileToken": "ft_xxx", "fileName": "report.pdf", "size": 204800 }
@@ -84,7 +85,7 @@ def upload_to_oss(upload_url: str, file_path: Path, mime_type: str) -> bool:
         return False
 
 
-def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, Any]]:
+def upload_attachment(base_id: str, file_path_str: str, dry_run: bool = False) -> Optional[Dict[str, Any]]:
     """
     执行完整的附件上传流程:
       1. prepare_attachment_upload → uploadUrl + fileToken
@@ -110,6 +111,21 @@ def upload_attachment(base_id: str, file_path_str: str) -> Optional[Dict[str, An
 
     file_name = file_path.name
     mime_type = detect_mime_type(file_path)
+
+    if dry_run:
+        return {
+            'ok': True,
+            'outcome': 'success',
+            'dry_run': True,
+            'data': {
+                'operation': 'aitable.attachment.upload',
+                'baseId': base_id,
+                'fileName': file_name,
+                'size': file_size,
+                'mimeType': mime_type,
+                'remoteWrites': ['aitable attachment upload', 'OSS PUT'],
+            },
+        }
 
     # 步骤 1: prepare_attachment_upload
     print(f"步骤 1/3: 准备上传 {file_name} ({file_size:,} 字节, {mime_type})...", file=sys.stderr)
@@ -160,7 +176,9 @@ def main():
     if '--help' in sys.argv:
         print(__doc__)
         return
-    if len(sys.argv) != 3:
+    dry_run = '--dry-run' in sys.argv
+    args = [arg for arg in sys.argv[1:] if arg != '--dry-run']
+    if len(args) != 2:
         print(__doc__)
         print('用法:')
         print('  python upload_attachment.py <baseId> <filePath>')
@@ -173,14 +191,14 @@ def main():
         print('    --records \'[{"cells":{"fldAttachId":[{"fileToken":"ft_xxx"}]}}]\' --format json')
         sys.exit(1)
 
-    base_id = sys.argv[1]
-    file_path = sys.argv[2]
+    base_id = args[0]
+    file_path = args[1]
 
     if not validate_resource_id(base_id):
         print('错误：无效的 baseId 格式', file=sys.stderr)
         sys.exit(1)
 
-    result = upload_attachment(base_id, file_path)
+    result = upload_attachment(base_id, file_path, dry_run=dry_run)
     if result is None:
         sys.exit(1)
 
