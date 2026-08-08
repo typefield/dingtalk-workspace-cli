@@ -364,6 +364,8 @@ func TestCrossPlatformCoverageThreadRepliesNextCursorBoundaryValidation(t *testi
 		{name: "fractional", value: 1786022919361.5, wantError: true},
 		{name: "float32 nan", value: float32(math.NaN()), wantError: true},
 		{name: "float32 infinity", value: float32(math.Inf(1)), wantError: true},
+		{name: "float32 max int64 boundary", value: float32(math.MaxInt64), wantError: true},
+		{name: "float64 max int64 boundary", value: float64(math.MaxInt64), wantError: true},
 		{name: "zero", value: 0, wantError: true},
 		{name: "negative", value: -1, wantError: true},
 		{name: "opaque", value: "not-a-millisecond-cursor", wantError: true},

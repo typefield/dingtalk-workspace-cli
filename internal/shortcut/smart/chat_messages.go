@@ -1114,12 +1114,12 @@ func chatMessagesNextCursorBoundary(value any) (string, string, error) {
 		millis = typed
 	case float32:
 		asFloat := float64(typed)
-		if math.IsNaN(asFloat) || math.IsInf(asFloat, 0) || asFloat <= 0 || math.Trunc(asFloat) != asFloat || asFloat > math.MaxInt64 {
+		if math.IsNaN(asFloat) || math.IsInf(asFloat, 0) || asFloat <= 0 || math.Trunc(asFloat) != asFloat || asFloat >= float64(math.MaxInt64) {
 			return "", "", fmt.Errorf("必须是正整数毫秒时间戳")
 		}
 		millis = int64(asFloat)
 	case float64:
-		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed <= 0 || math.Trunc(typed) != typed || typed > math.MaxInt64 {
+		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed <= 0 || math.Trunc(typed) != typed || typed >= float64(math.MaxInt64) {
 			return "", "", fmt.Errorf("必须是正整数毫秒时间戳")
 		}
 		millis = int64(typed)

@@ -541,6 +541,8 @@ func TestCrossPlatformCoverageChatMessagesAdditionalValidationAndHelpers(t *test
 		{name: "string", value: "1234"},
 		{name: "float32 nan", value: float32(math.NaN()), wantError: true},
 		{name: "float32 infinity", value: float32(math.Inf(1)), wantError: true},
+		{name: "float32 max int64 boundary", value: float32(math.MaxInt64), wantError: true},
+		{name: "float64 max int64 boundary", value: float64(math.MaxInt64), wantError: true},
 		{name: "float64 fractional", value: 1.5, wantError: true},
 		{name: "bad string", value: "opaque", wantError: true},
 		{name: "missing", value: nil, wantError: true},

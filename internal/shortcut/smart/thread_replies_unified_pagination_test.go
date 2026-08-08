@@ -85,6 +85,22 @@ func TestThreadRepliesDualValidateKeepsLegacyBytes(t *testing.T) {
 
 func TestThreadRepliesUnifiedPaginationOutcomes(t *testing.T) {
 	baseArgs := []string{"--format", "json", "--group", "cid", "--thread-id", "thread", "--page-all"}
+	t.Run("terminal zero cursor is exhausted success", func(t *testing.T) {
+		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
+			`{"result":{"hasMore":false,"nextCursor":0,"messages":[]}}`,
+		}}, "--format", "json", "--group", "cid", "--thread-id", "thread")
+		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+			t.Fatalf("terminal envelope=%#v exit=%d", envelope, exitCode)
+		}
+		pagination := envelope["meta"].(map[string]any)["pagination"].(map[string]any)
+		if pagination["endpoint_exhausted"] != true {
+			t.Fatalf("terminal pagination=%#v", pagination)
+		}
+		if _, present := pagination["next_token"]; present {
+			t.Fatalf("terminal pagination unexpectedly has a continuation=%#v", pagination)
+		}
+	})
+
 	t.Run("continuation is resumable success", func(t *testing.T) {
 		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"hasMore":true,"nextCursor":1786022919361,"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`,
