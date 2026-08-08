@@ -16,13 +16,15 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -45,7 +47,7 @@ def get_week_range():
     return monday.strftime('%Y-%m-%d'), friday.strftime('%Y-%m-%d')
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='查询团队成员排班和出勤统计'
     )
@@ -55,19 +57,18 @@ def main():
     mon, fri = get_week_range()
     parser.add_argument('--from', dest='from_date', default=mon)
     parser.add_argument('--to', dest='to_date', default=fri)
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     user_count = len(args.users.split(','))
     if user_count > 50:
-        print('错误：最多查询 50 人')
-        sys.exit(1)
+        return failure(args.format, '最多查询 50 人')
 
-    print(f"📊 团队排班查询 ({args.from_date} ~ {args.to_date})")
-    print(f"   人数: {user_count}")
-    print('=' * 50)
+    print(f"📊 团队排班查询 ({args.from_date} ~ {args.to_date})", file=sys.stderr)
+    print(f"   人数: {user_count}", file=sys.stderr)
+    print('=' * 50, file=sys.stderr)
 
-    print('\n🔍 查询排班信息...')
+    print('\n🔍 查询排班信息...', file=sys.stderr)
     data = run_dws([
         'attendance', 'shift', 'list',
         '--users', args.users,
@@ -77,13 +78,20 @@ def main():
     ], dry_run=args.dry_run)
 
     if args.dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'users': args.users.split(','), 'start': args.from_date,
+            'end': args.to_date,
+        }, dry_run=True, text='[dry-run] 将查询团队排班信息')
     if not data:
-        print('未查到排班信息')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'users': args.users.split(','), 'items': [], 'count': 0,
+        }) if args.format != 'text' else 0
 
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data=data)
     print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
