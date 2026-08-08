@@ -25,25 +25,27 @@ import argparse
 from pathlib import Path
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return {'dry_run': True}
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60
         )
         if result.returncode != 0:
-            print(f"  ✗ 错误：{result.stderr.strip()}")
+            print(f"  ✗ 错误：{result.stderr.strip()}", file=sys.stderr)
             return None
         return json.loads(result.stdout)
     except (subprocess.TimeoutExpired, json.JSONDecodeError,
             FileNotFoundError) as e:
-        print(f"  ✗ 错误：{e}")
+        print(f"  ✗ 错误：{e}", file=sys.stderr)
         return None
 
 
@@ -83,19 +85,17 @@ def main():
         '--max-retries', type=int, default=3,
         help='每块写入失败时的最大重试次数 (默认 3)',
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     content = args.content
     if args.content_file:
         p = Path(args.content_file)
         if not p.exists():
-            print(f"错误：文件不存在: {p}")
-            sys.exit(1)
+            return failure(args.format, f"文件不存在: {p}")
         content = p.read_text(encoding='utf-8')
     if not content:
-        print('错误：需要 --content 或 --content-file')
-        sys.exit(1)
+        return failure(args.format, '需要 --content 或 --content-file')
     chunk_size = 30000
 
     create_args = ['doc', 'create', '--name', args.name, '--format', 'json']
@@ -104,21 +104,21 @@ def main():
     if args.workspace:
         create_args.extend(['--workspace', args.workspace])
 
-    print(f'\n📝 创建文档: {args.name}')
+    print(f'\n📝 创建文档: {args.name}', file=sys.stderr)
     create_data = run_dws(create_args, dry_run=args.dry_run)
 
     node_id = None
     if not args.dry_run:
         if not create_data:
-            sys.exit(1)
+            return failure(args.format, '创建文档失败')
         node_id = (create_data.get('nodeId')
                    or create_data.get('dentryUuid')
                    or create_data.get('id', ''))
-        print(f"  ✓ 文档已创建 (ID: {node_id})")
+        print(f"  ✓ 文档已创建 (ID: {node_id})", file=sys.stderr)
 
     if len(content) <= chunk_size:
         mode_label = '追加' if args.mode == 'append' else '覆盖'
-        print(f'\n✍️  写入内容 (模式: {mode_label}, {len(content)} 字符)...')
+        print(f'\n✍️  写入内容 (模式: {mode_label}, {len(content)} 字符)...', file=sys.stderr)
         write_data = run_dws([
             'doc', 'update',
             '--node', node_id or '<NODE_ID>',
@@ -127,7 +127,7 @@ def main():
             '--format', 'json',
         ], dry_run=args.dry_run)
         if write_data:
-            print(f"  ✓ 内容已写入 ({len(content)} 字符)")
+            print(f"  ✓ 内容已写入 ({len(content)} 字符)", file=sys.stderr)
     else:
         chunks = []
         pos = 0
@@ -141,7 +141,7 @@ def main():
             pos = end
 
         total_chunks = len(chunks)
-        print(f'\n✍️  内容较长 ({len(content)} 字符), 分 {total_chunks} 块写入...')
+        print(f'\n✍️  内容较长 ({len(content)} 字符), 分 {total_chunks} 块写入...', file=sys.stderr)
 
         success_chunks = 0
         for idx, chunk in enumerate(chunks):
@@ -158,24 +158,30 @@ def main():
                 max_retries=args.max_retries,
             )
             if write_data:
-                print(f"  ✓ 块 {idx + 1}/{total_chunks} 已写入 ({len(chunk)} 字符)")
+                print(f"  ✓ 块 {idx + 1}/{total_chunks} 已写入 ({len(chunk)} 字符)", file=sys.stderr)
                 success_chunks += 1
             elif not args.dry_run:
                 # 写入失败，报告部分写入状态
-                print(f"\n❌ 块 {idx + 1}/{total_chunks} 写入失败（已重试 {args.max_retries} 次）")
-                print(f"\n⚠️  文档处于部分写入状态:")
-                print(f"   - 文档 ID: {node_id}")
-                print(f"   - 已写入: {success_chunks}/{total_chunks} 块")
-                print(f"   - 失败位置: 第 {idx + 1} 块")
+                print(f"\n❌ 块 {idx + 1}/{total_chunks} 写入失败（已重试 {args.max_retries} 次）", file=sys.stderr)
+                print(f"\n⚠️  文档处于部分写入状态:", file=sys.stderr)
+                print(f"   - 文档 ID: {node_id}", file=sys.stderr)
+                print(f"   - 已写入: {success_chunks}/{total_chunks} 块", file=sys.stderr)
+                print(f"   - 失败位置: 第 {idx + 1} 块", file=sys.stderr)
                 if args.mode == 'overwrite':
-                    print(f"   - 模式: 覆盖模式，文档可能包含不完整内容")
-                    print(f"   - 建议: 手动检查文档内容，或删除后重新创建")
+                    print(f"   - 模式: 覆盖模式，文档可能包含不完整内容", file=sys.stderr)
+                    print(f"   - 建议: 手动检查文档内容，或删除后重新创建", file=sys.stderr)
                 else:
-                    print(f"   - 模式: 追加模式，已写入内容已保存")
-                    print(f"   - 建议: 可手动补充剩余内容，或重新运行脚本")
-                sys.exit(1)
-    print('\n✅ 完成!')
+                    print(f"   - 模式: 追加模式，已写入内容已保存", file=sys.stderr)
+                    print(f"   - 建议: 可手动补充剩余内容，或重新运行脚本", file=sys.stderr)
+                return emit(fmt=args.format, outcome="partial_failure", data={
+                    "nodeId": node_id, "succeededChunks": success_chunks,
+                    "totalChunks": total_chunks, "failedChunk": idx + 1,
+                }, text="文档已部分写入", dry_run=args.dry_run)
+    return emit(fmt=args.format, outcome="success", data={
+        "nodeId": node_id, "characters": len(content),
+        "chunks": 1 if len(content) <= chunk_size else total_chunks,
+    }, text='\n✅ 完成!', dry_run=args.dry_run)
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

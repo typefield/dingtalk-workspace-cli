@@ -26,6 +26,8 @@ from urllib.error import HTTPError, URLError
 from urllib.parse import urlparse
 from urllib.request import Request, urlopen
 
+from _runtime import add_contract_flags, emit, failure
+
 RESOURCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 ALLOWED_FORMATS = {"excel", "attachment", "excel_and_attachment", "excel_with_inline_images"}
 
@@ -74,9 +76,8 @@ def download_file(url: str, output_path: Path) -> Tuple[bool, str]:
         return False, f"URL error: {e.reason}"
 
 
-def fail(msg: str, code: int = 1) -> None:
-    print(f"错误：{msg}", file=sys.stderr)
-    sys.exit(code)
+def fail(msg: str, fmt: str) -> int:
+    return failure(fmt, msg, text=f"错误：{msg}")
 
 
 def build_start_args(args: argparse.Namespace) -> list[str]:
@@ -102,7 +103,7 @@ def build_start_args(args: argparse.Namespace) -> list[str]:
     return cmd
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(description="通过 MCP 导出任务导出 AI 表格")
     parser.add_argument("base_id", help="目标 AI 表格 baseId")
     parser.add_argument("--scope", choices=["all", "table", "view"], required=True, help="导出范围")
@@ -114,27 +115,42 @@ def main() -> None:
     parser.add_argument("--output", help="本地保存路径（不传则按 fileName 保存到当前目录）")
     parser.add_argument("--dws", default="dws", help="dws 可执行文件路径，默认 dws")
     parser.add_argument("--no-download", action="store_true", help="仅返回 downloadUrl，不下载文件")
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     if not validate_resource_id(args.base_id):
-        fail("无效的 baseId 格式")
+        return fail("无效的 baseId 格式", args.format)
     if args.scope in ("table", "view") and not args.table_id:
-        fail("scope=table/view 时必须传 --table-id")
+        return fail("scope=table/view 时必须传 --table-id", args.format)
     if args.scope == "view" and not args.view_id:
-        fail("scope=view 时必须传 --view-id")
+        return fail("scope=view 时必须传 --view-id", args.format)
+
+    if args.dry_run:
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={"plan": {
+                "baseId": args.base_id,
+                "scope": args.scope,
+                "exportFormat": args.export_format,
+                "download": not args.no_download,
+            }},
+            dry_run=True,
+            text="[dry-run] 将启动导出任务、轮询 taskId 并下载结果文件。",
+        )
 
     print("[1/2] start export task", file=sys.stderr)
     rc, out, err = run_dws(args.dws, build_start_args(args), timeout_sec=120)
     if rc != 0:
-        fail(f"export_data 启动失败: {err or out}", rc)
+        return fail(f"export_data 启动失败: {err or out}", args.format)
     obj = parse_json_output(out)
     if not obj:
-        fail(f"export_data 返回非 JSON: {out[:300]}")
+        return fail(f"export_data 返回非 JSON: {out[:300]}", args.format)
 
     data = obj.get("data", {}) or {}
     status = obj.get("status")
     if status == "error":
-        fail(f"export_data 返回失败: {json.dumps(obj, ensure_ascii=False)}")
+        return fail(f"export_data 返回失败: {json.dumps(obj, ensure_ascii=False)}", args.format)
 
     download_url = data.get("downloadUrl")
     task_id = data.get("taskId")
@@ -160,12 +176,12 @@ def main() -> None:
             timeout_sec=max(120, args.timeout_sec + 60),
         )
         if rc2 != 0:
-            fail(f"export_data 轮询失败: {err2 or out2}", rc2)
+            return fail(f"export_data 轮询失败: {err2 or out2}", args.format)
         obj2 = parse_json_output(out2)
         if not obj2:
-            fail(f"export_data 轮询返回非 JSON: {out2[:300]}")
+            return fail(f"export_data 轮询返回非 JSON: {out2[:300]}", args.format)
         if obj2.get("status") == "error":
-            fail(f"export_data 轮询返回失败: {json.dumps(obj2, ensure_ascii=False)}")
+            return fail(f"export_data 轮询返回失败: {json.dumps(obj2, ensure_ascii=False)}", args.format)
         d2 = obj2.get("data", {}) or {}
         download_url = d2.get("downloadUrl") or download_url
         file_name = d2.get("fileName") or file_name
@@ -186,26 +202,27 @@ def main() -> None:
     if not download_url:
         result["status"] = "pending"
         result["summary"] = "导出任务仍在处理中，请继续用 taskId 轮询。"
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-        sys.exit(3)
+        return emit(fmt=args.format, outcome="pending", data=result,
+                    text=json.dumps(result, ensure_ascii=False, indent=2))
 
     if args.no_download:
         result["status"] = "success"
         result["summary"] = "导出完成（未下载文件）。"
-        print(json.dumps(result, ensure_ascii=False, indent=2))
-        return
+        return emit(fmt=args.format, outcome="success", data=result,
+                    text=json.dumps(result, ensure_ascii=False, indent=2))
 
     norm_url = normalize_download_url(download_url)
     output_path = Path(args.output).expanduser().resolve() if args.output else Path.cwd() / file_name
     ok, dl_err = download_file(norm_url, output_path)
     if not ok:
-        fail(f"downloadUrl 下载失败: {dl_err}")
+        return fail(f"downloadUrl 下载失败: {dl_err}", args.format)
 
     result["status"] = "success"
     result["summary"] = "导出完成并已下载。"
     result["savedPath"] = str(output_path)
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    return emit(fmt=args.format, outcome="success", data=result,
+                text=json.dumps(result, ensure_ascii=False, indent=2))
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(main())
