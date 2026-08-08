@@ -13,6 +13,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
@@ -44,6 +45,9 @@ func (*nodeListRoutingCaller) Fields() string { return "" }
 func (*nodeListRoutingCaller) JQ() string     { return "" }
 
 func TestNodeListPublishesReviewedReadContract(t *testing.T) {
+	if NodeList.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("OutputRollout = %s, want unified_active", NodeList.OutputRollout)
+	}
 	if !shortcut.InPublicCatalog(NodeList.Service, NodeList.Command) {
 		t.Fatal("wiki +node-list remains executable but absent from the public catalog")
 	}
@@ -63,9 +67,14 @@ func TestNodeListRoutesToDocServerAndProjectsNodes(t *testing.T) {
 	cmd := corecmd.New(shortcut.FromShortcut(NodeList))
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	cmd.SetArgs([]string{"--workspace", "workspace-1", "--folder", "folder-1", "--limit", "20"})
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
+	}
+	if _, emitted, err := output.EmitStoredResult(cmd); err != nil || !emitted {
+		t.Fatalf("emit unified result: emitted=%v err=%v", emitted, err)
 	}
 	if caller.product != "doc" || caller.tool != "list_nodes" {
 		t.Fatalf("route = %s/%s, want doc/list_nodes", caller.product, caller.tool)
@@ -80,11 +89,19 @@ func TestNodeListRoutesToDocServerAndProjectsNodes(t *testing.T) {
 	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("output is not JSON: %v\n%s", err, stdout.String())
 	}
-	if payload["count"] != float64(1) {
+	if payload["ok"] != true || payload["outcome"] != "success" {
 		t.Fatalf("payload = %#v", payload)
 	}
-	if payload["paginationKnown"] != false {
-		t.Fatalf("paginationKnown = %#v, want false without server evidence", payload["paginationKnown"])
+	if _, present := payload["contract_version"]; present {
+		t.Fatalf("unified result must not carry a version marker: %#v", payload)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok || data["count"] != float64(1) || data["paginationKnown"] != false {
+		t.Fatalf("data = %#v", payload["data"])
+	}
+	meta, ok := payload["meta"].(map[string]any)
+	if !ok || meta["count"] != float64(1) {
+		t.Fatalf("meta = %#v", payload["meta"])
 	}
 }
 
@@ -122,6 +139,16 @@ func TestNodeListFailsClosedOnProjectionAndPaginationUncertainty(t *testing.T) {
 			text:       `{"result":{"nodes":[],"hasMore":false,"nextCursor":"contradiction"}}`,
 			wantReason: "pagination_inconsistent",
 		},
+		{
+			name:       "outer and nested pagination contradict",
+			text:       `{"hasMore":false,"result":{"nodes":[],"hasMore":true,"nextCursor":"page-2"}}`,
+			wantReason: "pagination_inconsistent",
+		},
+		{
+			name:          "terminal numeric cursor sentinel",
+			text:          `{"result":{"nodes":[],"hasMore":false,"nextCursor":0}}`,
+			wantExhausted: true,
+		},
 	}
 
 	for _, test := range tests {
@@ -133,6 +160,8 @@ func TestNodeListFailsClosedOnProjectionAndPaginationUncertainty(t *testing.T) {
 			cmd.SilenceErrors = true
 			var stdout bytes.Buffer
 			cmd.SetOut(&stdout)
+			ctx, _ := output.WithResultStore(context.Background())
+			cmd.SetContext(ctx)
 			cmd.SetArgs([]string{"--workspace", "workspace-1"})
 			err := cmd.Execute()
 			if caller.calls != 1 {
@@ -154,15 +183,21 @@ func TestNodeListFailsClosedOnProjectionAndPaginationUncertainty(t *testing.T) {
 			if err != nil {
 				t.Fatal(err)
 			}
+			if _, emitted, err := output.EmitStoredResult(cmd); err != nil || !emitted {
+				t.Fatalf("emit unified result: emitted=%v err=%v", emitted, err)
+			}
 			var payload map[string]any
 			if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 				t.Fatalf("decode output: %v\n%s", err, stdout.String())
 			}
-			if payload["endpointExhausted"] != test.wantExhausted || payload["paginationKnown"] != true {
-				t.Fatalf("pagination = %#v", payload)
+			data, ok := payload["data"].(map[string]any)
+			meta, metaOK := payload["meta"].(map[string]any)
+			page, pageOK := meta["pagination"].(map[string]any)
+			if !ok || !metaOK || !pageOK || data["paginationKnown"] != true || page["endpoint_exhausted"] != test.wantExhausted {
+				t.Fatalf("unified pagination = %#v", payload)
 			}
-			if test.wantCursor != "" && payload["nextCursor"] != test.wantCursor {
-				t.Fatalf("nextCursor = %#v, want %q", payload["nextCursor"], test.wantCursor)
+			if test.wantCursor != "" && (data["nextCursor"] != test.wantCursor || page["next_token"] != test.wantCursor) {
+				t.Fatalf("pagination payload=%#v meta=%#v, want cursor %q", data, page, test.wantCursor)
 			}
 		})
 	}
