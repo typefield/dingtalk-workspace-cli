@@ -36,6 +36,13 @@ func (c *guardedMutationCaller) CallTool(_ context.Context, productID, toolName 
 	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{}`}}}, nil
 }
 
+// CallReadTool lets dry-run safety tests exercise commands that perform a
+// read-only preflight (for example sheet version revert) without turning the
+// preflight into a mutation or counting it as a write call.
+func (*guardedMutationCaller) CallReadTool(context.Context, string, string, map[string]any) (*edition.ToolResult, error) {
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: `{"versions":[{"version":2}]}`}}}, nil
+}
+
 func (*guardedMutationCaller) Format() string { return "json" }
 func (c *guardedMutationCaller) DryRun() bool { return c.dryRun }
 func (*guardedMutationCaller) Fields() string { return "" }
