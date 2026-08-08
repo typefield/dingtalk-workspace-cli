@@ -40,6 +40,7 @@ from attendance_report_common import (
     warn,
     error,
 )
+from _runtime import add_contract_flags, emit
 
 DATE_FMT = "%Y-%m-%d"
 DATETIME_FMT = "%Y-%m-%d %H:%M:%S"
@@ -383,7 +384,15 @@ def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
 # 主流程
 # ─────────────────────────────────────────────────────────────────────────────
 
-def main() -> None:
+def _requested_format() -> str:
+    """读取 argparse 失败前仍可用的输出格式，供统一异常出口使用。"""
+    for idx, value in enumerate(sys.argv):
+        if value == "--format" and idx + 1 < len(sys.argv):
+            return sys.argv[idx + 1]
+    return "text"
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="考勤排班导入（含校验、回显、执行）",
         epilog="执行前必须阅读 attendance-schedule.md",
@@ -400,10 +409,7 @@ def main() -> None:
         "--confirm", action="store_true",
         help="用户已确认排班内容（必填，表示用户已在 Agent 回显中确认）",
     )
-    parser.add_argument(
-        "--dry-run", action="store_true",
-        help="仅校验和回显，不实际执行排班",
-    )
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     # ── 解析排班记录 JSON ──
@@ -452,22 +458,52 @@ def main() -> None:
     validate_class_ids(schedules, group_bound_class_ids, all_classes, group_name)
     log("✅ 班次校验通过")
 
+    plan_data = {
+        "groupId": args.group_id,
+        "groupName": group_name,
+        "schedules": schedules,
+        "userNames": user_names,
+        "scheduleCount": len(schedules),
+        "userCount": len(user_ids),
+        "write": False,
+    }
+
     # ── 阶段 4: 回显排班内容 ──
-    print_schedule_preview(group_name, args.group_id, schedules, all_classes, user_names)
+    if args.format == "text":
+        print_schedule_preview(group_name, args.group_id, schedules, all_classes, user_names)
 
     if args.dry_run:
-        print("\n[dry-run] 仅校验和回显，未实际执行排班")
-        return
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data=plan_data,
+            dry_run=True,
+            text="[dry-run] 仅校验和回显，未实际执行排班",
+        )
 
     if not args.confirm:
-        print("\n⚠️ 未传入 --confirm 参数，排班未执行")
-        print("请在 Agent 回显确认后，添加 --confirm 参数重新执行")
-        return
+        return emit(
+            fmt=args.format,
+            outcome="failure",
+            error={
+                "type": "confirmation_required",
+                "message": "未传入 --confirm 参数，排班未执行",
+                "hint": "请在 Agent 回显确认后添加 --confirm 参数重新执行",
+            },
+            text="⚠️ 未传入 --confirm 参数，排班未执行；请确认后添加 --confirm 重试",
+        )
 
     # ── 阶段 5: 执行排班 ──
     execute_schedule_import(args.group_id, schedules)
 
     # ── 阶段 6: 输出摘要 ──
+    if args.format != "text":
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={**plan_data, "write": True, "executed": True},
+        )
+
     print(f"\n✅ 排班导入成功！")
     print(f"   考勤组: {group_name}")
     print(f"   排班人数: {len(user_ids)}")
@@ -493,6 +529,20 @@ def main() -> None:
             rest_display = "否"
         print(f"{uname:<12} {wdate:<14} {class_display:<16} {rest_display:<8}")
 
+    return 0
+
 
 if __name__ == "__main__":
-    main()
+    try:
+        sys.exit(main())
+    except SystemExit as exc:
+        # 业务校验函数沿用公共模块的 SystemExit；机器模式仍必须得到一个
+        # 可解析的 failure envelope，而不是只得到 stderr 文本。
+        fmt = _requested_format()
+        if fmt == "text":
+            raise
+        sys.exit(emit(
+            fmt=fmt,
+            outcome="failure",
+            error={"type": "execution", "message": "排班校验或执行失败"},
+        ))
