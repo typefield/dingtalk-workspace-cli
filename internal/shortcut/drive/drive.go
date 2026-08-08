@@ -22,6 +22,7 @@ package drive
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -72,7 +73,10 @@ var List = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		files := listFilesProject(data)
+		files, err := listFilesProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(files), "files": files})
 	},
 }
@@ -80,47 +84,51 @@ var List = shortcut.Shortcut{
 // listFilesProject reshapes the raw list_files response into a clean,
 // stable 钉盘 file/folder list ({name,type,dentryId,fileSize}) — the
 // output-projection fidelity applied to every list shortcut. Both the list
-// container and each field are probed defensively across candidate keys, so a
-// missing container or unknown alias simply yields an empty list rather than a
-// fabricated value.
-func listFilesProject(data map[string]any) []map[string]any {
-	raw := listFilesContainer(data)
+// container and each field are probed defensively across candidate keys. An
+// unrecognised container or row is not a successful empty directory: it is a
+// projection error the caller must surface honestly.
+func listFilesProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := listFilesContainer(data)
+	if !known {
+		return nil, driveProjectionUnknown("无法识别 list_files 返回的文件列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, driveProjectionUnknown("文件列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		listFilesPick(row, m, "name", "name", "fileName", "dentryName", "title")
 		listFilesPick(row, m, "type", "type", "dentryType", "fileType", "spaceType")
 		listFilesPick(row, m, "dentryId", "dentryId", "dentryUuid", "id", "fileId", "nodeId")
 		listFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, driveProjectionUnknown("文件条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // listFilesContainer locates the file list array inside the response by trying
 // the common container keys emitted across drive backends; the payload itself
 // may also already be the array.
-func listFilesContainer(data map[string]any) []any {
+func listFilesContainer(data map[string]any) ([]any, bool) {
 	for _, k := range []string{"result", "data", "list", "items", "files", "dentries", "entries", "nodes"} {
 		if v, ok := data[k].([]any); ok {
-			return v
+			return v, true
 		}
 		// The container may be nested one level (e.g. {"data":{"list":[...]}}).
 		if inner, ok := data[k].(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "files", "dentries", "entries", "nodes", "result"} {
 				if v, ok := inner[ik].([]any); ok {
-					return v
+					return v, true
 				}
 			}
 		}
 	}
-	return nil
+	return nil, false
 }
 
 // listFilesPick copies the first matching alias from src into dst under the
@@ -296,7 +304,10 @@ var Search = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		files := searchFilesProject(data)
+		files, err := searchFilesProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(files), "files": files})
 	},
 }
@@ -304,16 +315,18 @@ var Search = shortcut.Shortcut{
 // searchFilesProject reshapes the raw search_files response into a clean,
 // stable 钉盘 file list ({name,type,dentryId,fileSize,creatorId}) — the
 // output-projection fidelity applied to every list/search shortcut. Both the
-// list container and each field are probed defensively across candidate keys,
-// so a missing container or unknown alias yields an empty list rather than a
-// fabricated value.
-func searchFilesProject(data map[string]any) []map[string]any {
-	raw := searchFilesContainer(data)
+// list container and each field are probed defensively across candidate keys.
+// A shape the CLI cannot project is not promoted to a successful empty search.
+func searchFilesProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := searchFilesContainer(data)
+	if !known {
+		return nil, driveProjectionUnknown("无法识别 search_files 返回的文件列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, driveProjectionUnknown("搜索结果包含无法识别的文件条目")
 		}
 		row := map[string]any{}
 		searchFilesPick(row, m, "name", "name", "fileName", "dentryName", "title")
@@ -321,30 +334,31 @@ func searchFilesProject(data map[string]any) []map[string]any {
 		searchFilesPick(row, m, "dentryId", "dentryId", "dentryUuid", "id", "fileId", "nodeId")
 		searchFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
 		searchFilesPick(row, m, "creatorId", "creatorId", "creatorUserId", "creator", "creatorUid")
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, driveProjectionUnknown("搜索结果文件条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // searchFilesContainer locates the file list array inside the response by
 // trying the common container keys emitted across drive backends; the payload
 // itself may also already wrap the array one level deeper.
-func searchFilesContainer(data map[string]any) []any {
+func searchFilesContainer(data map[string]any) ([]any, bool) {
 	for _, k := range []string{"result", "data", "list", "items", "files", "dentries", "entries", "nodes"} {
 		if v, ok := data[k].([]any); ok {
-			return v
+			return v, true
 		}
 		if inner, ok := data[k].(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "files", "dentries", "entries", "nodes", "result"} {
 				if v, ok := inner[ik].([]any); ok {
-					return v
+					return v, true
 				}
 			}
 		}
 	}
-	return nil
+	return nil, false
 }
 
 // searchFilesPick copies the first matching alias from src into dst under the
@@ -413,53 +427,68 @@ var SearchDocs = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		docs := searchDocsProject(data)
+		docs, err := searchDocsProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(docs), "docs": docs})
 	},
 }
 
 // searchDocsProject reshapes the raw search_documents response into a clean,
 // stable document list ({name,nodeId,type,url}) — the output-projection
-// fidelity applied to every list/search shortcut. Both the list container and
-// each field are probed defensively across candidate keys, so a missing
-// container or unknown alias yields an empty list rather than fabricated data.
-func searchDocsProject(data map[string]any) []map[string]any {
-	raw := searchDocsContainer(data)
+// fidelity applied to every list/search shortcut. Candidate aliases are
+// accepted, but unprojectable responses fail closed instead of claiming that
+// no matching documents exist.
+func searchDocsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := searchDocsContainer(data)
+	if !known {
+		return nil, driveProjectionUnknown("无法识别 search_documents 返回的文档列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, driveProjectionUnknown("文档搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
 		searchDocsPick(row, m, "name", "name", "title", "docName", "nodeName", "fileName")
 		searchDocsPick(row, m, "nodeId", "nodeId", "id", "docId", "dentryUuid", "fileId")
 		searchDocsPick(row, m, "type", "type", "docType", "nodeType", "fileType")
 		searchDocsPick(row, m, "url", "url", "docUrl", "link", "webUrl")
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, driveProjectionUnknown("文档搜索结果条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // searchDocsContainer locates the document list array inside the response by
 // trying the common container keys; the payload may also wrap the array one
 // level deeper under a common envelope.
-func searchDocsContainer(data map[string]any) []any {
+func searchDocsContainer(data map[string]any) ([]any, bool) {
 	for _, k := range []string{"result", "data", "list", "items", "documents", "docs", "nodes"} {
 		if v, ok := data[k].([]any); ok {
-			return v
+			return v, true
 		}
 		if inner, ok := data[k].(map[string]any); ok {
 			for _, ik := range []string{"list", "items", "documents", "docs", "nodes", "result"} {
 				if v, ok := inner[ik].([]any); ok {
-					return v
+					return v, true
 				}
 			}
 		}
 	}
-	return nil
+	return nil, false
+}
+
+func driveProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // searchDocsPick copies the first matching alias from src into dst under the
