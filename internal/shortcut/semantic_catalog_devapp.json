@@ -1,0 +1,56 @@
+{
+  "version": 1,
+  "service": "devapp",
+  "default_availability": "available",
+  "shortcuts": {
+    "+get": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "读取开放平台应用详情并稳定投影为 Agent 可消费的应用信息；不暴露底层 MCP 响应差异。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+credentials-get": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "按 unifiedAppId 读取应用凭证；敏感字段由 ResultSpec 标记，不写入日志或普通选型说明。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+webapp-get": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "读取应用网页配置并稳定投影为网页端配置，不要求 Agent 处理原始接口 envelope。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+robot-get": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "读取应用机器人配置并统一返回机器人状态与配置字段。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+version-get": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "按 unifiedAppId 和 versionId 读取版本详情，保持版本字段与状态信息稳定。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+version-check-approval": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "查询版本审批状态；需要用户选择审批人时返回 pending，而不是伪装成终态成功。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    },
+    "+version-status": {
+      "disposition": "semantic_adapter",
+      "semantic_delta": "查询版本发布与审批状态并保留 pending/失败语义，供 Agent 跟进异步发布流程。",
+      "risk": "read",
+      "public": true,
+      "reviewed": true
+    }
+  }
+}

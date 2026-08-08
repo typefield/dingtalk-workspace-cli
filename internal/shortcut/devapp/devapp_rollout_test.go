@@ -60,6 +60,9 @@ func TestDevAppShortcutsRollOutPerTerminalCommand(t *testing.T) {
 		if active[item.Command] && item.Contract.Identity.CanonicalPath == "" {
 			t.Errorf("active shortcut %s has no complete Contract identity", item.Command)
 		}
+		if active[item.Command] && !shortcut.InPublicCatalog(item.Service, item.Command) {
+			t.Errorf("active shortcut %s is not reachable from the public Agent catalog", item.Command)
+		}
 		if item.Command == "+credentials-get" {
 			if item.Contract.Result == nil || len(item.Contract.Result.SensitivePaths) == 0 {
 				t.Error("credentials shortcut must declare sensitive output paths")
