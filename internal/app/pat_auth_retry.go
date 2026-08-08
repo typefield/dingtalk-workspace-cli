@@ -308,7 +308,7 @@ func WaitForPatAuthorization(ctx context.Context, configDir string, output io.Wr
 					tui.StateMark("ok"), tui.Bold("授权成功!"), elapsed, remaining)
 				fmt.Fprintln(output)
 				return true, nil
-			} else if !stderrors.Is(err, authpkg.ErrTokenDataNotFound) {
+			} else if !isPATTokenMissing(err) {
 				return false, fmt.Errorf("check authorization token: %w", err)
 			}
 
@@ -826,7 +826,7 @@ func pollPatDeviceFlowWithInterval(ctx context.Context, flowID string, configDir
 				continue
 			}
 			accessToken, tokenErr := patResolveAccessToken(ctx, configDir, "")
-			if tokenErr != nil && !stderrors.Is(tokenErr, authpkg.ErrTokenDataNotFound) {
+			if tokenErr != nil && !isPATTokenMissing(tokenErr) {
 				return "", "", fmt.Errorf("resolve PAT poll access token: %w", tokenErr)
 			}
 			if accessToken != "" {
@@ -872,6 +872,16 @@ func pollPatDeviceFlowWithInterval(ctx context.Context, flowID string, configDir
 			}
 		}
 	}
+}
+
+// isPATTokenMissing treats both the repository sentinel and an absent secure
+// data file as "no bearer yet".  During the PAT device flow the user is
+// expected to have no local token; platform stores may report that absence as
+// os.ErrNotExist before the auth layer has a chance to wrap it as
+// ErrTokenDataNotFound.  Treating that normal state as fatal prevents polling
+// from ever reaching APPROVED/REJECTED and makes the CLI appear hung.
+func isPATTokenMissing(err error) bool {
+	return err != nil && (stderrors.Is(err, authpkg.ErrTokenDataNotFound) || os.IsNotExist(err))
 }
 
 func resolvePATPollInterval(seconds int) time.Duration {

@@ -169,6 +169,12 @@ func LoadSecureTokenData(configDir string) (*TokenData, error) {
 	path := filepath.Join(configDir, secureDataFile)
 	ciphertext, err := secureReadFile(path)
 	if err != nil {
+		// A missing secure file is the normal pre-login state. Preserve the
+		// repository sentinel so callers such as PAT device-flow polling can
+		// continue without a bearer token until authorization completes.
+		if os.IsNotExist(err) {
+			return nil, fmt.Errorf("%w: %v", ErrTokenDataNotFound, err)
+		}
 		return nil, fmt.Errorf("reading secure data file: %w", err)
 	}
 
