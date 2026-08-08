@@ -23,13 +23,31 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `attendance_schedule_export.py`、`attendance_my_record.py`、
   `import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、
   `attendance_vacation_balance.py`、`attendance_report_record.py` 和
-  `attendance_report_daily.py`，实际扫描结果为 29 个 dry-run、28 个
+  `attendance_report_daily.py` 和 `attendance_report_monthly.py`，实际扫描结果为 30 个 dry-run、29 个
   format、0 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
 因此“所有脚本支持 `--dry-run/--format json`”不是当前事实。短期已删除这一
 错误宣称；长期目标仍然是让 Agent 可依赖统一接口。
+
+### 为什么不能按文件名一刀切
+
+“全部支持”只适用于面向 Agent 的可执行入口，不适用于目录下所有 Python 文件，且不能
+只添加两个 argparse 参数就宣称完成：
+
+1. `attendance_report_common.py`、`minutes_list_parse.py` 是被其他脚本 import 的内部模块，
+   没有独立业务生命周期，不应成为可选 CLI 入口。
+2. `--dry-run` 必须证明零远端写入、零本地写入；报表类脚本还要明确“允许远端只读后在内存
+   中生成预览”还是“完全跳过远端读取”。没有这一定义，参数只是安全假象。
+3. `--format` 必须控制全部 stdout，包括进度、预览、异常和图片/Excel 处理结果；复杂脚本
+   若仍有直接 `print()`，加参数反而会制造不可解析 JSON。
+4. 分页、图片下载、认证探测和异步写入等脚本需要先定义 `pending`、失败、未知状态和
+   资源副作用，不能沿用简单的“成功/失败”包装。
+
+因此迁移单位是“一个 Agent 入口 + 一套可验证生命周期”，不是“所有 `.py` 文件”。
+最终目标仍是覆盖所有真正的 Agent 入口；当前未迁移项必须在 Skill 中列为未支持，而不是
+用全局承诺掩盖差异。
 
 ## 目标接口
 
@@ -96,7 +114,9 @@ scripts/_runtime.py
 `doc_create_and_write.py`、`upload_attachment.py`、`attendance_schedule_import.py`、
 `oa_batch_approve.py`、`todo_batch_create.py`。
 
-当前 pilot 已完成上述 28 个脚本；其余脚本继续按阶段一逐个迁移。
+当前 pilot 已完成上述 29 个脚本；`attendance_report_detail.py`、
+`attendance_report_checkin.py` 等复杂入口继续按阶段一逐个迁移，两个内部 helper 不纳入
+脚本接口统计。
 
 `attendance_vacation_balance.py` 与排班导出一样，dry-run 会远端只读查询并构造内存中的
 Excel 计划，但不会写本地文件。

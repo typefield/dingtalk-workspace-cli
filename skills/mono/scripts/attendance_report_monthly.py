@@ -42,12 +42,14 @@
 from __future__ import annotations
 
 import argparse
+import os
 import sys
 from collections import defaultdict
 from datetime import datetime, timedelta
 from typing import Any
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit
 
 # 默认关注字段 — 与 SKILL.md「月度汇总预定义列集合」严格对齐（共 20 个）
 # 字段名必须和 `dws attendance report columns` 返回的 name 精确匹配
@@ -126,6 +128,7 @@ def parse_args() -> argparse.Namespace:
                    help="输出 xlsx 文件名；不传则按规范自动生成")
     p.add_argument("--inspect", action="store_true",
                    help="首次跑时打印首条记录原始结构（用于核对真实字段）")
+    add_contract_flags(p)
     return p.parse_args()
 
 
@@ -729,6 +732,24 @@ def main() -> int:
         start, end,
     )
 
+    result_data = {
+        "users": user_ids,
+        "rowCount": len(rows_2d),
+        "columnCount": len(headers),
+        "calendarRowCount": len(calendar_sheet.get("rows", [])),
+        "output": os.path.abspath(out_name),
+        "start": start.strftime(cmn.DATE_FMT),
+        "end": end.strftime(cmn.DATE_FMT),
+    }
+    if args.dry_run:
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={**result_data, "write": False},
+            dry_run=True,
+            text="[dry-run] 已完成远端只读查询和月度汇总预览，不写入 Excel 文件",
+        )
+
     try:
         cmn.write_excel_multi_sheets(out_name, [summary_sheet, calendar_sheet])
     except (RuntimeError, ValueError) as e:
@@ -751,6 +772,8 @@ def main() -> int:
             "按日期横向展开，基础列（姓名/考勤组/部门）已纵向合并。"
         ),
     )
+    if args.format != "text":
+        return emit(fmt=args.format, outcome="success", data=result_data)
     return 0
 
 
