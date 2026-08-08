@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：Proposed
+- 状态：Implementing（PageLedger 已落地，IM terminal command 尚未激活）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 的可终结、只读分页命令
 - 依赖：RFC-0001（统一返回）、RFC-0003（错误 subtype 治理）

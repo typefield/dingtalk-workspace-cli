@@ -1,8 +1,39 @@
 # 分页框架契约与能力
 
-- 状态：Proposed
+- 状态：Implementing（框架 `PageLedger` 已落地，产品命令渐进接入中）
 - 日期：2026-08-08
 - 来源：从 IM 分页算法抽取；具体迁移计划见 [RFC-0004](rfcs/0004-im-pagination-and-recovery-rollout.md)
+
+框架实现：[`internal/output/pagination_ledger.go`](../internal/output/pagination_ledger.go)。
+
+## 0. Lark CLI 主干对照
+
+Lark CLI 当前主干已经把分页执行抽到 `shortcuts/common`：
+
+- [`PageAllFlags`](https://github.com/larksuite/cli/blob/main/shortcuts/common/page_all_flags.go)
+  统一声明 `--page-all`、`--page-limit` 和 `--page-delay`；
+- [`PaginateInto[T]`](https://github.com/larksuite/cli/blob/main/shortcuts/common/paginate_into.go)
+  使用同一条路径处理单页与自动翻页，循环上界写在 `for` 条件中，逐页 typed decode，拒绝空游标与重复游标，并让产品 `PageAccumulator[T]` 决定怎样合并业务数据；
+- [`PaginationMeta`](https://github.com/larksuite/cli/blob/main/internal/output/envelope.go)
+  位于信封 `meta.pagination`，记录 `complete/pages/items/next_token`。源码明确规定
+  `complete` 只在观察到服务端耗尽时为 true，而不是业务数据完整。
+
+DWS 对齐的是这套**语义和分层**，不是逐字复制字段：
+
+| 能力 | Lark main | DWS 分页规范 |
+|---|---|---|
+| 标准分页参数 | `page-all/page-limit/page-delay` | 对齐；允许产品声明更小的硬上限 |
+| 有限执行 | 循环结构强制最大页数 | 对齐 |
+| 游标安全 | 空 token、重复 token fail closed | 对齐，并统一为 `pagination_inconsistent` |
+| 页面解析 | 泛型 typed decode + 产品 accumulator | 对齐产品 adapter 边界 |
+| 耗尽语义 | `complete` 仅表示 endpoint exhausted | 使用更明确的 `endpoint_exhausted`，不重新引入 `complete` |
+| 证据未知 | 没有独立 unknown wire；缺失 bool 容易落入零值 | DWS 增加第三态：不输出 pagination meta |
+| 后续页失败 | 返回 error；调用方通常不输出已经累积的页 | DWS 使用 `partial_failure` 保留成功页面和失败/未知页 |
+| 去重 | 由各产品 accumulator 负责 | 同样留在产品层，框架不猜业务 ID |
+| 自动重试 | 分页器不自动重放 | 对齐；错误只给恢复证据 |
+
+因此，DWS 规范是 Lark 分页执行器的兼容性增强：正常完成和截断语义一致，同时补齐
+“上游分页字段无法确认”与“第 N 页失败但前 N-1 页已经成功”的 Agent 可信表达。
 
 ## 1. 目标与边界
 
