@@ -482,7 +482,7 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 | [bulk_add_fields.py](../scripts/bulk_add_fields.py) | 批量添加字段，支持 `--dry-run --format json`；字段创建未返回可确认终态时输出 `execution_state:unknown`，先查询字段避免重复创建 |
 | [import_records.py](../scripts/import_records.py) | 从 JSON/CSV 批量导入记录，支持 `--dry-run --format json`；批次不完整时输出 `succeeded[]/failed[]/unknown[]` |
 | [aitable_import_via_task.py](../scripts/aitable_import_via_task.py) | 新建表文件导入（prepare → PUT → import），支持 `--dry-run --format json` |
-| [aitable_export_via_task.py](../scripts/aitable_export_via_task.py) | 文件导出（export_data 轮询 + 下载） |
+| [aitable_export_via_task.py](../scripts/aitable_export_via_task.py) | 异步文件导出：支持 `--dry-run --format json`；未完成返回 `pending + taskId + next_command`，下载使用原子落盘且不伪造远端 checksum 校验 |
 | [upload_attachment.py](../scripts/upload_attachment.py) | 上传附件到 AI 表格记录，支持 `--dry-run --format json`；仅成功信封中的 `data.fileToken` 可写入 records |
 
 ## 相关产品

@@ -4,6 +4,30 @@
 
 `export data` 为异步任务：首次调用可能只返回 `taskId`，需要继续轮询。
 
+### Agent 推荐：受控导出脚本
+
+优先使用脚本完成“创建任务 → 有界轮询 → 可选原子落盘”。脚本自身的
+`--format json` 是**结果输出格式**；`--export-format` 才映射到下层
+`export data --format excel|attachment|...`，两者不会冲突。
+
+```bash
+# 只输出计划；不会创建导出任务或写本地文件。
+python3 scripts/aitable_export_via_task.py <BASE_ID> --scope table \
+  --table-id <TABLE_ID> --dry-run --format json
+
+# 实际导出；默认下载到服务端 fileName，已存在的本地文件不会被静默覆盖。
+python3 scripts/aitable_export_via_task.py <BASE_ID> --scope table \
+  --table-id <TABLE_ID> --export-format excel --format json
+```
+
+- `outcome=pending` / `ok:true` 表示导出任务尚未完成；保留 `data.taskId`，直接执行
+  `data.next_command` 续查，**不得**重新创建任务。
+- `outcome=success` 且 `data.downloadUrl` 存在仅说明任务已提供下载地址；传
+  `--no-download` 时不会落盘。
+- 自动下载使用临时文件和原子替换，返回 `bytes` 与本地 `sha256`；服务端未提供
+  checksum 时 `verification.source_integrity=unverified_no_remote_checksum`，不得对外声称源文件已校验。
+- 指定 `--output` 若已存在会 fail-closed；仅在用户明确接受覆盖时加 `--overwrite`。
+
 > ⚠️ **`--format` 冲突警告**：`export data` 的 `--format` 是**导出格式**（excel/attachment 等），不是全局输出格式。**此命令禁止追加全局 `--format json`**，否则会覆盖导出格式导致 `INVALID_EXPORT_FORMAT` 错误。输出默认就是 JSON，无需额外指定。
 
 ```bash

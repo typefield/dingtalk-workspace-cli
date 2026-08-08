@@ -132,7 +132,7 @@ metadata:
 | "筛选 / 排序 / 公式 / 跨表引用" | 先读 `references/aitable/aitable-filter-sort.md` / `aitable-formula-guide.md` |
 | "批量导入 JSON / CSV" | `python scripts/import_records.py <baseId> <tableId> data.csv\|data.json --format json`；`partial_failure` 时保留已成功批次，未知批次先核查 |
 | "批量加字段" | `python scripts/bulk_add_fields.py <baseId> <tableId> fields.json --format json [--dry-run]`；仅 `ok:true` 才确认字段已创建，`execution_state:unknown` 先查询字段，禁止盲目重做 |
-| "导入 / 导出表格" | 先读 `references/aitable/aitable-export-import.md`；新建表的文件导入优先 `python scripts/aitable_import_via_task.py <baseId> <file> --format json`，导出优先 `python scripts/aitable_export_via_task.py <baseId> --scope table --table-id <tableId>` |
+| "导入 / 导出表格" | 先读 `references/aitable/aitable-export-import.md`；新建表的文件导入优先 `python scripts/aitable_import_via_task.py <baseId> <file> --format json`，导出优先 `python scripts/aitable_export_via_task.py <baseId> --scope table --table-id <tableId> --format json`。`pending` 时复用 `data.next_command`，不要重复建导出任务。 |
 | "仪表盘 / 图表" | 先读 `references/aitable/aitable-dashboard-chart.md` |
 | "上传附件到记录" | 先读 `references/aitable/aitable-attachment.md`；可用 `python scripts/upload_attachment.py <baseId> <filePath> --format json [--dry-run]` |
 
