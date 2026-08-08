@@ -2,6 +2,7 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"errors"
 	"io"
 	"io/fs"
@@ -10,6 +11,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
@@ -34,6 +36,8 @@ func skillSetupCoverageCommand(t *testing.T, mode string, yes bool) *cobra.Comma
 	root.AddCommand(cmd)
 	cmd.SetOut(io.Discard)
 	cmd.SetErr(io.Discard)
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	_ = cmd.Flags().Set("mode", mode)
 	_ = cmd.Flags().Set("yes", map[bool]string{true: "true", false: "false"}[yes])
 	return cmd
@@ -45,18 +49,14 @@ func TestCrossPlatformCoverageSkillSetupHighLevelRemainingCoverage(t *testing.T)
 	oldTargets := skillSetupResolveTargets
 	oldList := skillSetupListMulti
 	oldFilter := skillSetupFilterMulti
-	oldConfirm := skillSetupConfirm
-	oldMono := skillSetupInstallMono
-	oldMulti := skillSetupInstallMulti
+	oldApply := skillSetupApply
 	t.Cleanup(func() {
 		skillSetupResolveMode = oldMode
 		skillSetupResolveSource = oldSource
 		skillSetupResolveTargets = oldTargets
 		skillSetupListMulti = oldList
 		skillSetupFilterMulti = oldFilter
-		skillSetupConfirm = oldConfirm
-		skillSetupInstallMono = oldMono
-		skillSetupInstallMulti = oldMulti
+		skillSetupApply = oldApply
 	})
 	fail := errors.New("failure")
 	skillSetupResolveMode = func(mode string, _ bool, _ io.Writer) (string, error) { return mode, nil }
@@ -86,37 +86,27 @@ func TestCrossPlatformCoverageSkillSetupHighLevelRemainingCoverage(t *testing.T)
 		t.Fatal(err)
 	}
 
-	skillSetupConfirm = func(io.Writer, string, string, []string, []string) (bool, error) { return false, fail }
-	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, false)
-	if err := cmd.RunE(cmd, nil); err == nil {
-		t.Fatal("confirmation failure should propagate")
-	}
-	skillSetupConfirm = func(io.Writer, string, string, []string, []string) (bool, error) { return false, nil }
-	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, false)
-	if err := cmd.RunE(cmd, nil); err != nil {
-		t.Fatal(err)
-	}
-
 	skillSetupResolveMode = func(string, bool, io.Writer) (string, error) { return "unknown", nil }
 	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, true)
-	if err := cmd.RunE(cmd, nil); err == nil {
-		t.Fatal("unknown resolved mode should fail")
+	if err := cmd.RunE(cmd, nil); err != nil {
+		t.Fatalf("unknown resolved mode should be represented as a stored failure: %v", err)
 	}
 	skillSetupResolveMode = func(mode string, _ bool, _ io.Writer) (string, error) { return mode, nil }
-	skillSetupInstallMono = func(string, []string, io.Writer, io.Writer) (int, int, error) { return 0, 0, fail }
-	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, true)
-	if err := cmd.RunE(cmd, nil); err == nil {
-		t.Fatal("mono install failure should propagate")
+	skillSetupApply = func(string, string, []string, []string) skillSetupApplyReport {
+		return skillSetupApplyReport{Failed: []output.PartialFailedEntry{{
+			ID: "install:test", Error: &output.ErrorInfo{Type: "internal", Message: fail.Error()},
+		}}}
 	}
-	skillSetupInstallMono = func(string, []string, io.Writer, io.Writer) (int, int, error) { return 1, 0, nil }
+	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, true)
+	if err := cmd.RunE(cmd, nil); err != nil {
+		t.Fatalf("apply failure should be represented as a stored failure: %v", err)
+	}
+	skillSetupApply = func(string, string, []string, []string) skillSetupApplyReport {
+		return skillSetupApplyReport{Succeeded: []any{skillSetupAppliedOperation{ID: "install:test", Action: "install", Path: "test"}}}
+	}
 	cmd = skillSetupCoverageCommand(t, skillSetupModeMono, true)
 	if err := cmd.RunE(cmd, nil); err != nil {
 		t.Fatal(err)
-	}
-	skillSetupInstallMulti = func(string, []string, []string, io.Writer, io.Writer) (int, int, error) { return 0, 0, fail }
-	cmd = skillSetupCoverageCommand(t, skillSetupModeMulti, true)
-	if err := cmd.RunE(cmd, nil); err == nil {
-		t.Fatal("multi install failure should propagate")
 	}
 }
 
@@ -194,23 +184,8 @@ func TestCrossPlatformCoverageSkillSetupLowLevelRemainingCoverage(t *testing.T) 
 		t.Fatal("HOME failure should propagate")
 	}
 
-	monoDest := filepath.Join(t.TempDir(), "skills", "dws")
-	multiRoot := filepath.Dir(monoDest)
-	if err := os.MkdirAll(filepath.Join(multiRoot, "dingtalk-doc"), 0o755); err != nil {
-		t.Fatal(err)
-	}
 	skillSetupReadDir, skillSetupStat = oldReadDir, oldStat
 	var out, errOut bytes.Buffer
-	skillSetupRunForm = func(*huh.Form) error { return fail }
-	if _, err := confirmSkillSetup(&out, skillSetupModeMulti, "src", []string{monoDest}, []string{"dingtalk-doc"}); err == nil {
-		t.Fatal("confirmation form failure should propagate")
-	}
-	skillSetupRunForm = func(*huh.Form) error { return nil }
-	if ok, err := confirmSkillSetup(&out, skillSetupModeMono, "src", []string{monoDest}, nil); err != nil || ok {
-		t.Fatalf("EOF confirmation = %v, %v", ok, err)
-	}
-	skillSetupRemoveAll = func(string) error { return fail }
-	cleanupMutualExclusion(monoDest, skillSetupModeMono, &out, &errOut)
 
 	skillSetupCopyDir = func(string, string) error { return fail }
 	skillSetupRemoveAll = func(string) error { return fail }

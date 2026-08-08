@@ -50,7 +50,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"profile switch",
 			"profile use",
 			"schema",
-			"skill setup",
 			"upgrade",
 		},
 	},

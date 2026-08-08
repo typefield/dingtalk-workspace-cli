@@ -18,6 +18,7 @@ import (
 	"io/fs"
 	"os"
 	"path/filepath"
+	"sort"
 	"strings"
 
 	dwsroot "github.com/DingTalk-Real-AI/dingtalk-workspace-cli"
@@ -26,6 +27,9 @@ import (
 var (
 	embeddedSkillStat = func(name string) (fs.FileInfo, error) {
 		return fs.Stat(dwsroot.EmbeddedSkills, name)
+	}
+	embeddedSkillReadDir = func(name string) ([]fs.DirEntry, error) {
+		return fs.ReadDir(dwsroot.EmbeddedSkills, name)
 	}
 	embeddedSkillMkdirTemp = os.MkdirTemp
 	embeddedSkillRemoveAll = os.RemoveAll
@@ -36,6 +40,63 @@ var (
 	embeddedSkillMkdirAll  = os.MkdirAll
 	embeddedSkillWriteFile = os.WriteFile
 )
+
+type skillSetupSourcePreview struct {
+	Label           string
+	MultiSkillNames []string
+}
+
+// inspectSkillSetupSource performs the read-only source discovery used by
+// --dry-run. The embedded fallback is inspected in embed.FS and is never
+// materialized, so preview cannot create even a temporary directory.
+func inspectSkillSetupSource(explicit, mode string) (skillSetupSourcePreview, error) {
+	explicit = strings.TrimSpace(explicit)
+	env := strings.TrimSpace(os.Getenv("DWS_SKILL_SOURCE"))
+	if explicit != "" || env != "" {
+		dir, err := resolveSkillSetupSource(explicit, mode)
+		if err != nil {
+			return skillSetupSourcePreview{}, fmt.Errorf("解析本地 skill 源失败: %w", err)
+		}
+		preview := skillSetupSourcePreview{Label: dir, MultiSkillNames: []string{}}
+		if mode == skillSetupModeMulti {
+			preview.MultiSkillNames, err = listMultiSkillNames(dir)
+			if err != nil {
+				return skillSetupSourcePreview{}, err
+			}
+		}
+		return preview, nil
+	}
+
+	sub := "skills/" + mode
+	preview := skillSetupSourcePreview{
+		Label:           "embedded://" + sub,
+		MultiSkillNames: []string{},
+	}
+	switch mode {
+	case skillSetupModeMono:
+		info, err := embeddedSkillStat(sub + "/SKILL.md")
+		if err != nil || info.IsDir() {
+			return skillSetupSourcePreview{}, fmt.Errorf("内嵌 skill 不含 %q（二进制可能未随 skills/ 重新构建）", sub+"/SKILL.md")
+		}
+	case skillSetupModeMulti:
+		entries, err := embeddedSkillReadDir(sub)
+		if err != nil {
+			return skillSetupSourcePreview{}, fmt.Errorf("无法读取内嵌 multi skill 源 %q: %w", sub, err)
+		}
+		for _, entry := range entries {
+			if !entry.IsDir() {
+				continue
+			}
+			if info, statErr := embeddedSkillStat(sub + "/" + entry.Name() + "/SKILL.md"); statErr == nil && !info.IsDir() {
+				preview.MultiSkillNames = append(preview.MultiSkillNames, entry.Name())
+			}
+		}
+		sort.Strings(preview.MultiSkillNames)
+	default:
+		return skillSetupSourcePreview{}, fmt.Errorf("未知 skill mode %q", mode)
+	}
+	return preview, nil
+}
 
 // resolveSkillSetupSourceOrEmbedded resolves the skill source for `skill
 // setup`. An explicit --source or DWS_SKILL_SOURCE is honored as a developer

@@ -11,11 +11,13 @@ import (
 	"io"
 	"net/http"
 	"net/http/httptest"
+	"os"
 	"path/filepath"
 	"strings"
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 )
 
@@ -27,6 +29,7 @@ func TestLifecycleAgentCommandsReachFinalSchema(t *testing.T) {
 		"skill.get",
 		"skill.install",
 		"skill.search",
+		"skill.setup",
 	}
 	payload := schemaContractPayloadForBoundCanonicals(t, NewRootCommand(), canonicals...)
 	if len(payload.Tools) != len(canonicals) {
@@ -40,6 +43,7 @@ func TestLifecycleAgentCommandsReachFinalSchema(t *testing.T) {
 		"skill.get":     "skill get",
 		"skill.install": "skill install",
 		"skill.search":  "skill search",
+		"skill.setup":   "skill setup",
 	}
 	for canonical, path := range wantPaths {
 		tool := payload.Tools[canonical]
@@ -60,7 +64,7 @@ func TestLifecycleAgentCommandsReachFinalSchema(t *testing.T) {
 			t.Errorf("%s interface_mode = %#v, want composite", canonical, got)
 		}
 	}
-	for _, canonical := range []string{"cli.version", "profile.list"} {
+	for _, canonical := range []string{"cli.version", "profile.list", "skill.setup"} {
 		tool := payload.Tools[canonical]
 		if got := tool["interface_mode"]; got != "local" {
 			t.Errorf("%s interface_mode = %#v, want local", canonical, got)
@@ -92,6 +96,22 @@ func TestLifecycleAgentCommandsReachFinalSchema(t *testing.T) {
 	getParams := schemaContractMap(payload.Tools["skill.get"]["parameters"])
 	if getParams["skill-id"]["required"] != true {
 		t.Errorf("skill.get --skill-id required = %#v, want true", getParams["skill-id"]["required"])
+	}
+
+	setup := payload.Tools["skill.setup"]
+	if setup["effect"] != "write" || setup["risk"] != "high" || setup["confirmation"] != "user_required" {
+		t.Errorf("skill.setup safety = effect:%v risk:%v confirmation:%v", setup["effect"], setup["risk"], setup["confirmation"])
+	}
+	setupDryRun, _ := setup["dry_run"].(map[string]any)
+	if setupDryRun["preview_kind"] != "plan" {
+		t.Errorf("skill.setup dry_run = %#v, want plan", setupDryRun)
+	}
+	if _, declared := setupDryRun["remote_reads"]; declared {
+		t.Errorf("skill.setup dry_run unexpectedly declares remote_reads: %#v", setupDryRun)
+	}
+	outcomes, _ := setup["result"].(map[string]any)["outcomes"].([]any)
+	if len(outcomes) != 3 {
+		t.Errorf("skill.setup outcomes = %#v, want success/partial_failure/failure", outcomes)
 	}
 }
 
@@ -237,5 +257,137 @@ func TestSkillInstallRequiresConfirmationBeforeNetwork(t *testing.T) {
 	}
 	if tokenCalls != 0 {
 		t.Fatalf("confirmation gate ran after credential/network work: token calls=%d", tokenCalls)
+	}
+}
+
+func TestSkillSetupDryRunReadsEmbeddedSourceWithoutAnyWrite(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", filepath.Join(t.TempDir(), "config"))
+	t.Setenv("DWS_SKILL_SOURCE", "")
+	t.Cleanup(CloseFileLogger)
+	testseam.Swap(t, &skillSetupUserHomeDir, func() (string, error) { return t.TempDir(), nil })
+
+	var materializeCalls, removeCalls, mkdirCalls, copyCalls int
+	testseam.Swap(t, &embeddedSkillMkdirTemp, func(string, string) (string, error) {
+		materializeCalls++
+		return "", errors.New("dry-run must not materialize")
+	})
+	testseam.Swap(t, &skillSetupRemoveAll, func(string) error {
+		removeCalls++
+		return errors.New("dry-run must not remove")
+	})
+	testseam.Swap(t, &skillSetupMkdirAll, func(string, os.FileMode) error {
+		mkdirCalls++
+		return errors.New("dry-run must not mkdir")
+	})
+	testseam.Swap(t, &skillSetupCopyDir, func(string, string) error {
+		copyCalls++
+		return errors.New("dry-run must not copy")
+	})
+
+	ctx, store := output.WithResultStore(context.Background())
+	root := NewRootCommand(ctx)
+	var stdout, stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetIn(strings.NewReader(""))
+	root.SetArgs([]string{"skill", "setup", "--mode", "mono", "--target", "agents", "--dry-run", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("skill setup dry-run error = %v\nstderr=%s", err, stderr.String())
+	}
+	if materializeCalls != 0 || removeCalls != 0 || mkdirCalls != 0 || copyCalls != 0 {
+		t.Fatalf("dry-run side effects: materialize=%d remove=%d mkdir=%d copy=%d", materializeCalls, removeCalls, mkdirCalls, copyCalls)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("skill setup dry-run stdout is not one JSON envelope: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != true || envelope["outcome"] != "success" || envelope["dry_run"] != true {
+		t.Fatalf("skill setup dry-run envelope = %#v", envelope)
+	}
+	data, _ := envelope["data"].(map[string]any)
+	if data["preview_kind"] != "plan" || data["source"] != "embedded://skills/mono" {
+		t.Fatalf("skill setup dry-run plan = %#v", data)
+	}
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("skill setup emitted removed contract_version: %s", stdout.String())
+	}
+	if code, attempted, emitted, _ := output.StoredEmissionState(store); code != 0 || !attempted || !emitted {
+		t.Fatalf("dry-run emission state = code:%d attempted:%v emitted:%v", code, attempted, emitted)
+	}
+}
+
+func TestSkillSetupRequiresConfirmationBeforeEmbeddedMaterialization(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", filepath.Join(t.TempDir(), "config"))
+	t.Setenv("DWS_SKILL_SOURCE", "")
+	t.Cleanup(CloseFileLogger)
+	var materializeCalls int
+	testseam.Swap(t, &embeddedSkillMkdirTemp, func(string, string) (string, error) {
+		materializeCalls++
+		return "", errors.New("must not materialize before confirmation")
+	})
+
+	root := NewRootCommand()
+	root.SetIn(strings.NewReader(""))
+	root.SetOut(io.Discard)
+	root.SetErr(io.Discard)
+	root.SetArgs([]string{"skill", "setup", "--mode", "mono", "--target", "agents", "--format", "json"})
+	err := root.Execute()
+	if err == nil {
+		t.Fatal("skill setup without --yes or --dry-run unexpectedly succeeded")
+	}
+	var appErr *apperrors.Error
+	if !errors.As(err, &appErr) || appErr.Reason != "confirmation_required" {
+		t.Fatalf("skill setup confirmation error = %T %v", err, err)
+	}
+	if materializeCalls != 0 {
+		t.Fatalf("embedded source materialized before confirmation: calls=%d", materializeCalls)
+	}
+}
+
+func TestSkillSetupPartialFailurePreservesAppliedAndUnknownPaths(t *testing.T) {
+	t.Setenv("DWS_CONFIG_DIR", filepath.Join(t.TempDir(), "config"))
+	t.Cleanup(CloseFileLogger)
+	source := t.TempDir()
+	if err := os.WriteFile(filepath.Join(source, "SKILL.md"), []byte("# setup"), 0o600); err != nil {
+		t.Fatal(err)
+	}
+	good := filepath.Join(t.TempDir(), "good", "dws")
+	bad := filepath.Join(t.TempDir(), "bad", "dws")
+	testseam.Swap(t, &skillSetupResolveTargets, func(string, string) ([]string, error) {
+		return []string{good, bad}, nil
+	})
+	realCopy := skillSetupCopyDir
+	testseam.Swap(t, &skillSetupCopyDir, func(src, dst string) error {
+		if dst == bad {
+			return errors.New("injected copy failure")
+		}
+		return realCopy(src, dst)
+	})
+
+	ctx, store := output.WithResultStore(context.Background())
+	root := NewRootCommand(ctx)
+	var stdout, stderr bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&stderr)
+	root.SetArgs([]string{"skill", "setup", "--mode", "mono", "--source", source, "--target", "agents", "--yes", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("skill setup partial execution error = %v\nstderr=%s", err, stderr.String())
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode skill setup partial envelope: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+		t.Fatalf("skill setup partial envelope = %#v", envelope)
+	}
+	data, _ := envelope["data"].(map[string]any)
+	succeeded, _ := data["succeeded"].([]any)
+	failed, _ := data["failed"].([]any)
+	unknown, _ := data["unknown"].([]any)
+	if len(succeeded) != 1 || len(failed) != 0 || len(unknown) != 1 {
+		t.Fatalf("skill setup partial channels = succeeded:%#v failed:%#v unknown:%#v", succeeded, failed, unknown)
+	}
+	if code, attempted, emitted, _ := output.StoredEmissionState(store); code != 7 || !attempted || !emitted {
+		t.Fatalf("partial emission state = code:%d attempted:%v emitted:%v", code, attempted, emitted)
 	}
 }

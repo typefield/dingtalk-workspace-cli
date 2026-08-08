@@ -79,6 +79,7 @@ func TestDeliveryCatalogLocalInterfacesAreExactAndReviewed(t *testing.T) {
 		"event.schema":       "命令读取 CLI 内置的个人事件 payload 定义，不绑定 pinned MCP RPC",
 		"pat.browser_policy": "命令仅操作本地进程或策略文件，不调用 MCP 接口",
 		"profile.list":       "命令只读取本机 profile 注册表和加密 Token 元数据，不调用远端接口",
+		"skill.setup":        "命令只读取二进制内嵌或用户显式指定的本地 Skill 源，并修改本机 Agent 技能目录，不调用远端接口",
 	}
 	loaded := mustDeliverySchemaCatalogMaps(t)
 	if !deliverySchemaCatalogAvailable() {

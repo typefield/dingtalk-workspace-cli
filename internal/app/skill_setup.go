@@ -1,6 +1,7 @@
 package app
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
@@ -9,6 +10,11 @@ import (
 	"sort"
 	"strings"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/charmbracelet/huh"
 	"github.com/spf13/cobra"
 )
@@ -47,9 +53,7 @@ var (
 	skillSetupResolveTargets = resolveSkillSetupTargets
 	skillSetupListMulti      = listMultiSkillNames
 	skillSetupFilterMulti    = filterMultiSkillNames
-	skillSetupConfirm        = confirmSkillSetup
-	skillSetupInstallMono    = installSkillToHomes
-	skillSetupInstallMulti   = installMultiSkillToHomes
+	skillSetupApply          = applySkillSetup
 	skillSetupCopyDir        = copyDir
 	skillSetupRunForm        = (*huh.Form).Run
 	skillSetupInteractive    = isInteractiveTerminal
@@ -95,103 +99,257 @@ skill 源默认取二进制内嵌的版本（升级二进制即升级 skill）�
 		RunE:              runSkillSetup,
 	}
 	cmd.Flags().String("mode", "", "skill 模式：mono | multi（不指定则交互询问）")
-	cmd.Flags().String("target", "all", "目标 Agent：all | "+supportedTargets())
+	cmd.Flags().String("target", "all", "目标 Agent：all | "+skillSetupSupportedTargets())
 	cmd.Flags().String("source", "", "skill 源目录（默认使用二进制内嵌的 skill 源，与当前版本一致）")
 	cmd.Flags().Bool("yes", false, "跳过所有确认提示")
 	cmd.Flags().StringSliceP("skill", "s", nil, "multi 模式：仅安装指定子 skill（可重复，接受短名 aitable 或全名 dingtalk-aitable）")
 	cmd.Flags().StringSliceP("exclude", "x", nil, "multi 模式：从全装中剔除指定子 skill（可重复，与 --skill 互斥）")
+	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		OutputRollout: output.RolloutV2Active,
+		Safety: contract.SafetySpec{
+			Effect: "write", Risk: "high",
+			Confirmation: "user_required", Idempotency: "unknown",
+		},
+		Validate: validateSkillSetup,
+		Contract: helpers.LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "skill",
+				Name:           "setup",
+				CanonicalPath:  "skill.setup",
+				CLIPath:        "skill setup",
+				PrimaryCLIPath: "skill setup",
+			},
+			Description: "把当前 dws 版本携带的 mono 或 multi Skill 安装到一个或多个本地 Agent 目录，并清理互斥模式残留",
+			DryRun:      &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewPlan, RemoteReads: false},
+			Result: &contract.ResultSpec{
+				Outcomes: []contract.ResultOutcome{
+					contract.ResultOutcomeSuccess,
+					contract.ResultOutcomePartialFailure,
+					contract.ResultOutcomeFailure,
+				},
+				DataSchema: json.RawMessage(`{"oneOf":[{"type":"object","properties":{"mode":{"type":"string","enum":["mono","multi"]},"source":{"type":"string"},"preview_kind":{"type":"string"},"targets":{"type":"array","items":{"type":"string"}},"skills":{"type":"array","items":{"type":"string"}},"removals":{"type":"array","items":{"type":"string"}},"installs":{"type":"array","items":{"type":"string"}},"installed":{"type":"integer","minimum":0},"removed":{"type":"integer","minimum":0},"operations":{"type":"array","items":{"type":"object"}}},"required":["mode","source","targets"],"additionalProperties":false},{"type":"object","properties":{"total":{"type":"integer","minimum":1},"succeeded":{"type":"array","minItems":1,"items":{"type":"object"}},"failed":{"type":"array","items":{"type":"object"}},"unknown":{"type":"array","items":{"type":"object"}}},"required":["total","succeeded","failed","unknown"],"additionalProperties":false}]}`),
+			},
+			Interface: &contract.InterfaceSpec{
+				Mode:         contract.InterfaceModeLocal,
+				Availability: contract.InterfaceAvailable,
+				Reason:       "命令只读取二进制内嵌或用户显式指定的本地 Skill 源，并修改本机 Agent 技能目录，不调用远端接口",
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "预览或安装当前 dws 版本携带的 Agent Skill 到本机 Agent 目录",
+				UseWhen:      []string{"用户明确要求为本机 Agent 安装或切换 dws mono/multi Skill"},
+				AvoidWhen: []string{
+					"只需要从技能市场安装单个已知 skillId 时使用 skill install",
+					"用户尚未确认将被覆盖或删除的本地 Skill 目录时不要正式执行",
+				},
+				Examples: []string{"dws skill setup --mode mono --target codex --dry-run --format json"},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "mode", Description: "安装模式：mono 或 multi"},
+				{Name: "target", Description: "目标 Agent 名称或 all"},
+				{Name: "source", Description: "可选本地 Skill 源覆盖目录"},
+				{Name: "skill", Description: "multi 模式下只安装这些子 Skill"},
+				{Name: "exclude", Description: "multi 模式下排除这些子 Skill"},
+			},
+		},
+	})
 	return cmd
+}
+
+// skillSetupSupportedTargets deliberately excludes ".": setup manages
+// registered Agent homes and may delete opposite-mode siblings. Current-dir
+// installation remains available only on the single-package `skill install`
+// command, whose footprint does not perform that mutual-exclusion cleanup.
+func skillSetupSupportedTargets() string {
+	targets := make([]string, 0, len(agentSkillPaths))
+	for target := range agentSkillPaths {
+		targets = append(targets, target)
+	}
+	sort.Strings(targets)
+	return strings.Join(targets, ", ")
+}
+
+func validateSkillSetup(cmd *cobra.Command, args []string) error {
+	if len(args) != 0 {
+		return apperrors.NewValidation("skill setup does not accept positional arguments")
+	}
+	mode, _ := cmd.Flags().GetString("mode")
+	mode = strings.ToLower(strings.TrimSpace(mode))
+	if mode != "" && mode != skillSetupModeMono && mode != skillSetupModeMulti {
+		return apperrors.NewValidation(fmt.Sprintf("不支持的 --mode 值: %s（可选 mono / multi）", mode))
+	}
+	target, _ := cmd.Flags().GetString("target")
+	target = strings.ToLower(strings.TrimSpace(target))
+	if target != "" && target != "all" {
+		if _, ok := agentSkillPaths[target]; !ok {
+			return apperrors.NewValidation(fmt.Sprintf("不支持的 --target 值: %s（可选 all, %s）", target, skillSetupSupportedTargets()))
+		}
+	}
+	include, _ := cmd.Flags().GetStringSlice("skill")
+	exclude, _ := cmd.Flags().GetStringSlice("exclude")
+	if len(include) > 0 && len(exclude) > 0 {
+		return apperrors.NewValidation("--skill 与 --exclude 不能同时使用")
+	}
+	if mode == skillSetupModeMono && (len(include) > 0 || len(exclude) > 0) {
+		return apperrors.NewValidation("--skill / --exclude 仅在 --mode multi 下有效（mono 只有一个 skill，无需挑选）")
+	}
+	if mode == "" && (len(include) > 0 || len(exclude) > 0) {
+		return apperrors.NewValidation("使用 --skill / --exclude 时必须显式指定 --mode multi")
+	}
+	return nil
 }
 
 func runSkillSetup(cmd *cobra.Command, _ []string) error {
 	mode, _ := cmd.Flags().GetString("mode")
 	target, _ := cmd.Flags().GetString("target")
 	source, _ := cmd.Flags().GetString("source")
-	autoYes, _ := cmd.Flags().GetBool("yes")
+	autoYes := corecmd.BoolFlag(cmd, "yes")
 	includeRaw, _ := cmd.Flags().GetStringSlice("skill")
 	excludeRaw, _ := cmd.Flags().GetStringSlice("exclude")
+	dryRun := corecmd.BoolFlag(cmd, "dry-run")
 
-	out := cmd.OutOrStdout()
-	errOut := cmd.ErrOrStderr()
-
-	mode, err := skillSetupResolveMode(mode, autoYes, out)
+	// Mode selection diagnostics belong on stderr. stdout is reserved for the
+	// one framework result document once this command is v2-active.
+	mode, err := skillSetupResolveMode(mode, autoYes, cmd.ErrOrStderr())
 	if err != nil {
-		return err
+		return apperrors.NewValidation(err.Error())
 	}
 
 	if mode == skillSetupModeMono && (len(includeRaw) > 0 || len(excludeRaw) > 0) {
-		return fmt.Errorf("--skill / --exclude 仅在 --mode multi 下有效（mono 只有一个 skill，无需挑选）")
+		return apperrors.NewValidation("--skill / --exclude 仅在 --mode multi 下有效（mono 只有一个 skill，无需挑选）")
+	}
+
+	dests, err := skillSetupResolveTargets(target, mode)
+	if err != nil {
+		return apperrors.NewValidation(err.Error())
+	}
+
+	// Dry-run must not materialize the embedded bundle into a temporary
+	// directory. Inspect either the explicit local source or embed.FS directly,
+	// then return the complete deletion/install plan as the sole stdout result.
+	if dryRun {
+		preview, previewErr := inspectSkillSetupSource(source, mode)
+		if previewErr != nil {
+			if strings.TrimSpace(source) != "" || strings.TrimSpace(os.Getenv("DWS_SKILL_SOURCE")) != "" {
+				return apperrors.NewValidation(previewErr.Error())
+			}
+			return apperrors.NewInternal(previewErr.Error())
+		}
+		multiNames, filterErr := selectSkillSetupMultiNames(mode, preview.MultiSkillNames, includeRaw, excludeRaw)
+		if filterErr != nil {
+			return apperrors.NewValidation(filterErr.Error())
+		}
+		return output.StoreResult(cmd.Context(), output.Success(
+			buildSkillSetupPlan(mode, preview.Label, dests, multiNames),
+			output.WithDryRun(),
+		))
 	}
 
 	skillSrc, srcCleanup, err := skillSetupResolveSource(source, mode)
 	if err != nil {
-		return err
+		if strings.TrimSpace(source) != "" || strings.TrimSpace(os.Getenv("DWS_SKILL_SOURCE")) != "" {
+			return apperrors.NewValidation(err.Error())
+		}
+		return apperrors.NewInternal(err.Error())
 	}
 	defer srcCleanup()
-
-	dests, err := skillSetupResolveTargets(target, mode)
-	if err != nil {
-		return err
+	// Keep the result contract stable and user-facing. The temporary directory
+	// used to execute an embedded bundle is an implementation detail and is
+	// removed before the command returns; never expose that ephemeral path as
+	// the installed source.
+	sourceLabel := skillSrc
+	if strings.TrimSpace(source) == "" && strings.TrimSpace(os.Getenv("DWS_SKILL_SOURCE")) == "" {
+		sourceLabel = "embedded://skills/" + mode
 	}
 
-	// multi 模式枚举 src 下的子 skill 名，供确认信息与安装步骤共用
-	var multiSkillNames []string
+	var allMultiSkillNames []string
 	if mode == skillSetupModeMulti {
-		allMultiSkillNames, listErr := skillSetupListMulti(skillSrc)
-		if listErr != nil {
-			return listErr
-		}
-		if len(allMultiSkillNames) == 0 {
-			return fmt.Errorf("multi 模式下 %s 内未发现含 SKILL.md 的子目录", skillSrc)
-		}
-		filtered, filterErr := skillSetupFilterMulti(allMultiSkillNames, includeRaw, excludeRaw)
-		if filterErr != nil {
-			return filterErr
-		}
-		// dingtalk-shared carries the global rules every product skill declares as a
-		// PREREQUISITE; it must ship even when --skill / --exclude narrows the set.
-		multiSkillNames = ensureMandatorySharedSkill(filtered, allMultiSkillNames)
-	}
-
-	// --dry-run：仅预览将安装的内容与目标目录，不写入任何文件、不弹确认。
-	if dryRun, _ := cmd.Flags().GetBool("dry-run"); dryRun {
-		fmt.Fprintf(out, "[DRY-RUN] 预览（不写入任何文件）：mode=%s，来源 %s\n", mode, skillSrc)
-		fmt.Fprintln(out, "将安装到：")
-		for _, d := range dests {
-			fmt.Fprintf(out, "  - %s\n", d)
-		}
-		if mode == skillSetupModeMulti && len(multiSkillNames) > 0 {
-			fmt.Fprintf(out, "子 skill：%s\n", strings.Join(multiSkillNames, ", "))
-		}
-		return nil
-	}
-
-	if !autoYes {
-		ok, err := skillSetupConfirm(out, mode, skillSrc, dests, multiSkillNames)
+		allMultiSkillNames, err = skillSetupListMulti(skillSrc)
 		if err != nil {
-			return err
-		}
-		if !ok {
-			fmt.Fprintln(out, "已取消。")
-			return nil
+			return apperrors.NewInternal(err.Error())
 		}
 	}
-
-	var installed, skipped int
-	switch mode {
-	case skillSetupModeMono:
-		installed, skipped, err = skillSetupInstallMono(skillSrc, dests, out, errOut)
-	case skillSetupModeMulti:
-		installed, skipped, err = skillSetupInstallMulti(skillSrc, multiSkillNames, dests, out, errOut)
-	default:
-		return fmt.Errorf("内部错误：未知 mode %q", mode)
-	}
+	multiSkillNames, err := selectSkillSetupMultiNames(mode, allMultiSkillNames, includeRaw, excludeRaw)
 	if err != nil {
-		return err
+		return apperrors.NewValidation(err.Error())
 	}
 
-	fmt.Fprintf(out, "\n✅ Skill 安装完成（mode=%s, installed=%d, skipped=%d）\n", mode, installed, skipped)
-	return nil
+	report := skillSetupApply(mode, skillSrc, multiSkillNames, dests)
+	return output.StoreResult(cmd.Context(), skillSetupResult(mode, sourceLabel, dests, multiSkillNames, report))
+}
+
+func selectSkillSetupMultiNames(mode string, all, include, exclude []string) ([]string, error) {
+	if mode != skillSetupModeMulti {
+		return []string{}, nil
+	}
+	if len(all) == 0 {
+		return nil, fmt.Errorf("multi 模式下未发现含 SKILL.md 的子目录")
+	}
+	filtered, err := skillSetupFilterMulti(all, include, exclude)
+	if err != nil {
+		return nil, err
+	}
+	// dingtalk-shared carries the global rules every product skill declares as
+	// a PREREQUISITE and must ship with every narrowed multi selection.
+	return ensureMandatorySharedSkill(filtered, all), nil
+}
+
+type skillSetupPlan struct {
+	PreviewKind string   `json:"preview_kind"`
+	Mode        string   `json:"mode"`
+	Source      string   `json:"source"`
+	Targets     []string `json:"targets"`
+	Skills      []string `json:"skills"`
+	Removals    []string `json:"removals"`
+	Installs    []string `json:"installs"`
+}
+
+func buildSkillSetupPlan(mode, source string, dests, skillNames []string) skillSetupPlan {
+	targets := append([]string(nil), dests...)
+	sort.Strings(targets)
+	skills := append([]string(nil), skillNames...)
+	if skills == nil {
+		skills = []string{}
+	}
+	plan := skillSetupPlan{
+		PreviewKind: contract.DryRunPreviewPlan,
+		Mode:        mode,
+		Source:      source,
+		Targets:     targets,
+		Skills:      skills,
+		Removals:    []string{},
+		Installs:    []string{},
+	}
+	for _, dest := range targets {
+		plan.Removals = append(plan.Removals, mutualExclusionVictims(dest, mode)...)
+		switch mode {
+		case skillSetupModeMono:
+			plan.Removals = append(plan.Removals, dest)
+			plan.Installs = append(plan.Installs, dest)
+		case skillSetupModeMulti:
+			for _, name := range skills {
+				path := filepath.Join(dest, name)
+				plan.Removals = append(plan.Removals, path)
+				plan.Installs = append(plan.Installs, path)
+			}
+		}
+	}
+	sort.Strings(plan.Removals)
+	plan.Removals = uniqueSkillSetupPaths(plan.Removals)
+	sort.Strings(plan.Installs)
+	return plan
+}
+
+func uniqueSkillSetupPaths(paths []string) []string {
+	if len(paths) == 0 {
+		return []string{}
+	}
+	out := paths[:0]
+	for _, path := range paths {
+		if len(out) == 0 || out[len(out)-1] != path {
+			out = append(out, path)
+		}
+	}
+	return out
 }
 
 // multiSkillPrefix is the canonical prefix for every per-product skill
@@ -521,46 +679,6 @@ func detectExistingAgentHomes(home, mode string) []string {
 	return out
 }
 
-func confirmSkillSetup(out io.Writer, mode, src string, dests []string, multiSkillNames []string) (bool, error) {
-	fmt.Fprintf(out, "\n📦 将安装 skill：\n  mode: %s\n  source: %s\n", mode, src)
-	if mode == skillSetupModeMulti {
-		fmt.Fprintf(out, "  将装 %d 个独立 skill（按子目录平铺到 <agent-home>/<skill-name>/）：\n", len(multiSkillNames))
-		for _, n := range multiSkillNames {
-			fmt.Fprintf(out, "    · %s\n", n)
-		}
-	}
-	fmt.Fprintln(out, "  destinations:")
-	for _, d := range dests {
-		fmt.Fprintf(out, "    - %s\n", d)
-	}
-	// 列出互斥清理：装 mode 前要把对面 mode 的残留删掉
-	fmt.Fprintln(out, "  互斥清理（确认后才执行）：")
-	for _, d := range dests {
-		for _, victim := range mutualExclusionVictims(d, mode) {
-			fmt.Fprintf(out, "    × 将删除 %s\n", victim)
-		}
-	}
-
-	if !skillSetupInteractive() {
-		return true, nil
-	}
-
-	var confirm bool
-	form := huh.NewForm(
-		huh.NewGroup(
-			huh.NewConfirm().
-				Title("确认安装？").
-				Affirmative("继续").
-				Negative("取消").
-				Value(&confirm),
-		),
-	)
-	if err := skillSetupRunForm(form); err != nil {
-		return false, fmt.Errorf("确认中止: %w", err)
-	}
-	return confirm, nil
-}
-
 // mutualExclusionVictims returns the paths that should be removed before
 // installing into dest under the given mode, to prevent leftover files from
 // the opposite mode from co-existing.
@@ -595,78 +713,261 @@ func mutualExclusionVictims(dest, mode string) []string {
 	return nil
 }
 
-// cleanupMutualExclusion best-effort removes the opposite-mode leftovers.
-// Failures emit a warning to errOut but never abort the install.
-func cleanupMutualExclusion(dest, mode string, out, errOut io.Writer) {
-	for _, victim := range mutualExclusionVictims(dest, mode) {
-		if err := skillSetupRemoveAll(victim); err != nil {
-			fmt.Fprintf(errOut, "  ⚠️  互斥清理失败（继续安装） %s: %v\n", victim, err)
+type skillSetupAppliedOperation struct {
+	ID     string `json:"id"`
+	Action string `json:"action"`
+	Path   string `json:"path"`
+	Skill  string `json:"skill,omitempty"`
+}
+
+type skillSetupApplyReport struct {
+	Succeeded []any
+	Failed    []output.PartialFailedEntry
+	Unknown   []output.PartialUnknownEntry
+}
+
+type skillSetupSuccess struct {
+	Mode       string   `json:"mode"`
+	Source     string   `json:"source"`
+	Targets    []string `json:"targets"`
+	Skills     []string `json:"skills"`
+	Installed  int      `json:"installed"`
+	Removed    int      `json:"removed"`
+	Operations []any    `json:"operations"`
+}
+
+func skillSetupResult(mode, source string, dests, skillNames []string, report skillSetupApplyReport) output.CommandResult {
+	if report.Succeeded == nil {
+		report.Succeeded = []any{}
+	}
+	if report.Failed == nil {
+		report.Failed = []output.PartialFailedEntry{}
+	}
+	if report.Unknown == nil {
+		report.Unknown = []output.PartialUnknownEntry{}
+	}
+	if len(report.Failed) == 0 && len(report.Unknown) == 0 {
+		installed, removed := 0, 0
+		for _, item := range report.Succeeded {
+			operation, ok := item.(skillSetupAppliedOperation)
+			if !ok {
+				continue
+			}
+			switch operation.Action {
+			case "install":
+				installed++
+			case "remove":
+				removed++
+			}
+		}
+		targets := append([]string(nil), dests...)
+		skills := append([]string(nil), skillNames...)
+		if skills == nil {
+			skills = []string{}
+		}
+		return output.Success(skillSetupSuccess{
+			Mode: mode, Source: source, Targets: targets, Skills: skills,
+			Installed: installed, Removed: removed, Operations: report.Succeeded,
+		})
+	}
+
+	if len(report.Succeeded) > 0 {
+		partial, err := output.NewPartialData(
+			len(report.Succeeded)+len(report.Failed)+len(report.Unknown),
+			report.Succeeded,
+			report.Failed,
+			report.Unknown,
+		)
+		if err == nil {
+			return output.Partial(partial)
+		}
+		return output.Failure(&output.ErrorInfo{
+			Type: "internal", Subtype: "skill_setup_result_invalid",
+			Message: err.Error(),
+		})
+	}
+
+	// All-failed batches cannot use partial_failure. Preserve every per-path
+	// failure/unknown fact in details so an Agent can inspect the filesystem
+	// before retrying instead of assuming no mutation occurred.
+	return output.Failure(&output.ErrorInfo{
+		Type:    "internal",
+		Subtype: "skill_setup_failed",
+		Message: "skill setup did not complete any operation",
+		Hint:    "inspect the listed paths before retrying; unknown entries may have been modified",
+		Details: map[string]any{
+			"mode": mode, "source": source,
+			"failed": report.Failed, "unknown": report.Unknown,
+		},
+	})
+}
+
+func applySkillSetup(mode, src string, skillNames, dests []string) skillSetupApplyReport {
+	report := skillSetupApplyReport{
+		Succeeded: []any{},
+		Failed:    []output.PartialFailedEntry{},
+		Unknown:   []output.PartialUnknownEntry{},
+	}
+	targets := append([]string(nil), dests...)
+	sort.Strings(targets)
+	for _, dest := range targets {
+		if !applySkillSetupMutualExclusion(&report, dest, mode) {
+			appendSkillSetupBlockedInstalls(&report, dest, mode, skillNames)
 			continue
 		}
-		fmt.Fprintf(out, "  × 已清理对面模式残留 %s\n", victim)
+		switch mode {
+		case skillSetupModeMono:
+			applySkillSetupOne(&report, src, dest, "dws")
+		case skillSetupModeMulti:
+			if err := skillSetupMkdirAll(dest, 0o755); err != nil {
+				for _, name := range skillNames {
+					path := filepath.Join(dest, name)
+					appendSkillSetupFailure(&report, "install:"+path, "create_parent", path, err)
+				}
+				continue
+			}
+			for _, name := range skillNames {
+				applySkillSetupOne(&report, filepath.Join(src, name), filepath.Join(dest, name), name)
+			}
+		default:
+			appendSkillSetupFailure(&report, "mode:"+mode, "validate", mode, fmt.Errorf("unknown mode %q", mode))
+		}
+	}
+	return report
+}
+
+func applySkillSetupMutualExclusion(report *skillSetupApplyReport, dest, mode string) bool {
+	for _, victim := range mutualExclusionVictims(dest, mode) {
+		if err := skillSetupRemoveAll(victim); err != nil {
+			appendSkillSetupUnknown(report, "remove:"+victim, fmt.Sprintf("互斥目录删除失败，目录可能已被部分修改: %v", err))
+			return false
+		}
+		report.Succeeded = append(report.Succeeded, skillSetupAppliedOperation{
+			ID: "remove:" + victim, Action: "remove", Path: victim,
+		})
+	}
+	return true
+}
+
+func appendSkillSetupBlockedInstalls(report *skillSetupApplyReport, dest, mode string, skillNames []string) {
+	paths := []struct{ path, skill string }{}
+	if mode == skillSetupModeMono {
+		paths = append(paths, struct{ path, skill string }{dest, "dws"})
+	} else {
+		for _, name := range skillNames {
+			paths = append(paths, struct{ path, skill string }{filepath.Join(dest, name), name})
+		}
+	}
+	for _, item := range paths {
+		appendSkillSetupFailure(report, "install:"+item.path, "failed_precondition", item.path,
+			fmt.Errorf("互斥模式残留未能安全清理，已阻止安装以避免 mono/multi 混合状态"))
 	}
 }
 
-func installSkillToHomes(src string, dests []string, out, errOut io.Writer) (installed, skipped int, err error) {
-	sort.Strings(dests)
-	for _, dest := range dests {
-		// 先做互斥清理：装 mono 前先把同级 dingtalk-* 子目录全部干掉
-		cleanupMutualExclusion(dest, skillSetupModeMono, out, errOut)
-
-		if err := skillSetupRemoveAll(dest); err != nil {
-			fmt.Fprintf(errOut, "  ✗ 清理失败 %s: %v\n", dest, err)
-			skipped++
-			continue
-		}
-		if err := skillSetupMkdirAll(filepath.Dir(dest), 0o755); err != nil {
-			fmt.Fprintf(errOut, "  ✗ 父目录创建失败 %s: %v\n", dest, err)
-			skipped++
-			continue
-		}
-		if err := skillSetupCopyDir(src, dest); err != nil {
-			fmt.Fprintf(errOut, "  ✗ 拷贝失败 %s: %v\n", dest, err)
-			skipped++
-			continue
-		}
-		fmt.Fprintf(out, "  ✓ %s\n", dest)
-		installed++
+func applySkillSetupOne(report *skillSetupApplyReport, src, dest, skill string) {
+	existed, err := skillSetupPathExists(dest)
+	if err != nil {
+		appendSkillSetupUnknown(report, "inspect:"+dest, fmt.Sprintf("无法确认目标目录现状: %v", err))
+		appendSkillSetupFailure(report, "install:"+dest, "failed_precondition", dest,
+			fmt.Errorf("无法确认目标目录现状，已阻止覆盖"))
+		return
 	}
-	return installed, skipped, nil
+	if err := skillSetupRemoveAll(dest); err != nil {
+		appendSkillSetupUnknown(report, "remove:"+dest, fmt.Sprintf("目标目录删除失败，目录可能已被部分修改: %v", err))
+		appendSkillSetupFailure(report, "install:"+dest, "failed_precondition", dest,
+			fmt.Errorf("目标目录未能安全清理，已阻止安装"))
+		return
+	}
+	if existed {
+		report.Succeeded = append(report.Succeeded, skillSetupAppliedOperation{
+			ID: "remove:" + dest, Action: "remove", Path: dest, Skill: skill,
+		})
+	}
+	if err := skillSetupMkdirAll(filepath.Dir(dest), 0o755); err != nil {
+		appendSkillSetupFailure(report, "install:"+dest, "create_parent", dest, err)
+		return
+	}
+	if err := skillSetupCopyDir(src, dest); err != nil {
+		appendSkillSetupUnknown(report, "install:"+dest, fmt.Sprintf("复制过程中失败，目标目录终态未知: %v", err))
+		return
+	}
+	report.Succeeded = append(report.Succeeded, skillSetupAppliedOperation{
+		ID: "install:" + dest, Action: "install", Path: dest, Skill: skill,
+	})
+}
+
+func skillSetupPathExists(path string) (bool, error) {
+	_, err := skillSetupStat(path)
+	if err == nil {
+		return true, nil
+	}
+	if errors.Is(err, os.ErrNotExist) {
+		return false, nil
+	}
+	return false, err
+}
+
+func appendSkillSetupFailure(report *skillSetupApplyReport, id, subtype, path string, err error) {
+	report.Failed = append(report.Failed, output.PartialFailedEntry{
+		ID: id,
+		Error: &output.ErrorInfo{
+			Type: "internal", Subtype: subtype,
+			Message: err.Error(), Details: map[string]any{"path": path},
+		},
+	})
+}
+
+func appendSkillSetupUnknown(report *skillSetupApplyReport, id, reason string) {
+	report.Unknown = append(report.Unknown, output.PartialUnknownEntry{ID: id, Reason: reason})
+}
+
+// installSkillToHomes and installMultiSkillToHomes are retained for the
+// installer-facing compatibility helpers. They delegate to the same strict
+// operation engine as `skill setup`; there is no second best-effort path that
+// can continue after mutual-exclusion cleanup fails.
+func installSkillToHomes(src string, dests []string, out, errOut io.Writer) (installed, skipped int, err error) {
+	return renderLegacySkillSetupReport(applySkillSetup(skillSetupModeMono, src, nil, dests), out, errOut)
 }
 
 // installMultiSkillToHomes installs each subdir of src (dingtalk-*) into
 // dest as a sibling skill directory. installed/skipped is counted per
 // (agent-home × sub-skill) pair so the user sees granular progress.
 func installMultiSkillToHomes(src string, skillNames []string, dests []string, out, errOut io.Writer) (installed, skipped int, err error) {
-	sort.Strings(dests)
-	for _, dest := range dests {
-		// 互斥清理：装 multi 前先把 dest/dws/ 整个删除（mono 残留）
-		cleanupMutualExclusion(dest, skillSetupModeMulti, out, errOut)
+	return renderLegacySkillSetupReport(applySkillSetup(skillSetupModeMulti, src, skillNames, dests), out, errOut)
+}
 
-		if err := skillSetupMkdirAll(dest, 0o755); err != nil {
-			fmt.Fprintf(errOut, "  ✗ Agent 目录创建失败 %s: %v\n", dest, err)
-			skipped += len(skillNames)
+func renderLegacySkillSetupReport(report skillSetupApplyReport, out, errOut io.Writer) (installed, skipped int, err error) {
+	skippedIDs := map[string]bool{}
+	for _, raw := range report.Succeeded {
+		operation, ok := raw.(skillSetupAppliedOperation)
+		if !ok {
 			continue
 		}
-
-		for _, name := range skillNames {
-			subSrc := filepath.Join(src, name)
-			subDest := filepath.Join(dest, name)
-			if err := skillSetupRemoveAll(subDest); err != nil {
-				fmt.Fprintf(errOut, "  ✗ 清理失败 %s: %v\n", subDest, err)
-				skipped++
-				continue
-			}
-			if err := skillSetupCopyDir(subSrc, subDest); err != nil {
-				fmt.Fprintf(errOut, "  ✗ 拷贝失败 %s: %v\n", subDest, err)
-				skipped++
-				continue
-			}
-			fmt.Fprintf(out, "  ✓ %s\n", subDest)
+		switch operation.Action {
+		case "install":
 			installed++
+			fmt.Fprintf(out, "  ✓ %s\n", operation.Path)
+		case "remove":
+			fmt.Fprintf(out, "  × 已清理对面模式残留/旧版本 %s\n", operation.Path)
 		}
 	}
-	return installed, skipped, nil
+	for _, failure := range report.Failed {
+		if strings.HasPrefix(failure.ID, "install:") {
+			skippedIDs[failure.ID] = true
+		}
+		message := "unknown failure"
+		if failure.Error != nil && failure.Error.Message != "" {
+			message = failure.Error.Message
+		}
+		fmt.Fprintf(errOut, "  ✗ %s: %s\n", failure.ID, message)
+	}
+	for _, unknown := range report.Unknown {
+		if strings.HasPrefix(unknown.ID, "install:") {
+			skippedIDs[unknown.ID] = true
+		}
+		fmt.Fprintf(errOut, "  ⚠️  %s: %s\n", unknown.ID, unknown.Reason)
+	}
+	return installed, len(skippedIDs), nil
 }
 
 func copyDir(src, dst string) error {
