@@ -65,8 +65,8 @@
 | `pat_auth_rejected` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
-| `personal_subscription_guard_failed` | free 1 | 1 | `internal` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:528` |
-| `personal_subscription_invalid` | free 1 | 1 | `validation` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:541` |
+| `personal_subscription_guard_failed` | free 1 | 1 | `internal` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
+| `personal_subscription_invalid` | free 1 | 1 | `validation` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:558` |
 | `plugin_input_schema_invalid` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
@@ -106,7 +106,7 @@
 
 | subtype | 位置 |
 |---|---|
-| `invalid_success_type` | `internal/shortcut/runner.go:383` |
+| `invalid_success_type` | `internal/shortcut/runner.go:410` |
 | `pagination_conflict` | `internal/helpers/devapp.go:2016` |
 | `pagination_incomplete` | `internal/helpers/devapp.go:2009`, `internal/helpers/devapp.go:2023` |
 | `pagination_invalid` | `internal/helpers/devapp.go:2000` |
@@ -117,7 +117,7 @@
 
 动态 `WithReason` 在注册表启用前必须人工审阅：要么映射到声明的稳定 subtype，要么按当前 Category 归入 `upstream_unclassified` / `discovery_upstream_unclassified` 并保留上游码/trace，不能把上游任意文本直接变成 Agent 分支键。
 
-- internal/app/event_personal_attempts.go:489: `apperrors.WithReason(reason)`
+- internal/app/event_personal_attempts.go:500: `apperrors.WithReason(reason)`
 
 ## 间接稳定 subtype 映射
 
@@ -125,7 +125,7 @@
 
 - internal/app/root.go:407: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/aitabletarget/resolver.go:410: `apperrors.WithSubtype(subtype)`
-- internal/shortcut/doc/common.go:124: `apperrors.WithSubtype(subtype)`
+- internal/shortcut/doc/common.go:125: `apperrors.WithSubtype(subtype)`
 - internal/transport/client.go:1030: `apperrors.WithSubtype(httpStatusSubtype(`
 - internal/transport/client.go:1159: `apperrors.WithSubtype(jsonRPCSubtype(`
 - internal/transport/client.go:461: `apperrors.WithSubtype(transportUpstreamSubtype(`

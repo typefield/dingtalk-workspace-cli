@@ -51,9 +51,17 @@ verification outcome 写后读回是否确认预期终态
 服务端证据证明该 endpoint 对该 key 做到了去重或“响应丢失后的安全重放”，所以它**不是**
 对 Agent 输出 `retryable:true` 的充分条件。
 
+当前已落实的安全边界：对一次 create 尝试之后的上游 `retryable=true`、
+408/425/429/5xx、timeout、网络中断与旧的 `cooldown` 持久化记录，CLI 保留本地
+cooldown 以阻止短周期重放，但在 wire 上省略 `retryable`、`retry_after_seconds` 与
+`next_retry_at`，并提示先核查现有订阅。该策略不把“服务暂时错误”扩大为“写入一定
+没有发生”。明确的本地 validation/auth 或服务端 non-retryable 拒绝仍保留
+`retryable:false`。
+
 ### 3.2 迁移方案
 
-第一阶段只迁移**已被本地状态机阻断**的路径，不改变订阅请求失败分类：
+下一阶段先迁移**已被本地状态机阻断**的路径为稳定 subtype，不改变订阅请求失败的
+Category：
 
 1. 按最终 Category 选择三个稳定 subtype：
    `personal_subscription_auth_blocked`、
@@ -65,7 +73,8 @@ verification outcome 写后读回是否确认预期终态
    `execution_started:false`。这并不声称**上一次**请求没有写入。
 4. `retryable:true` 只能表示“本地等待到期后可以再次尝试”；若 server 失败的幂等性和
    已执行状态不能证明，则省略 retryable，即使上一次错误文本看起来像超时。当前只证明
-   key 已发送，尚未证明服务端去重，因此不得以此例外。
+   key 已发送，尚未证明服务端去重，因此不得以此例外。该不变量已在当前失败和历史
+   cooldown 投影生效。
 
 第二阶段再审阅 `personalSubscriptionFailureClass` 的每个来源：需要同时证明订阅请求的
 idempotency key、`execution_started` 和服务端恢复语义；不能把 timeout/network/5xx 的
@@ -73,7 +82,7 @@ idempotency key、`execution_started` 和服务端恢复语义；不能把 timeo
 
 ### 3.3 验收
 
-- 三个 persisted state 均只落入稳定阻断 subtype，并保留 `attempt_state`；
+- 三个 persisted state 均只落入稳定阻断 subtype，并保留 `attempt_state`（待下一阶段）；
 - auth/validation/api 类别和既有退出码不漂移；
 - 当前阻断调用不发送第二次订阅请求；
 - 未经幂等性证明的历史 timeout/network/5xx 不输出 `retryable:true`；

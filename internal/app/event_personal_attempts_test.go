@@ -378,7 +378,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "BUSY", Retryable: &retryable,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_server_retryable",
 		},
 		{
@@ -416,7 +416,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "RATE_LIMIT", HTTPStatus: http.StatusTooManyRequests,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_transient_http",
 		},
 		{
@@ -424,7 +424,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "REQUEST_TIMEOUT", HTTPStatus: http.StatusRequestTimeout,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_transient_http",
 		},
 		{
@@ -432,7 +432,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "TOO_EARLY", HTTPStatus: http.StatusTooEarly,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_transient_http",
 		},
 		{
@@ -440,7 +440,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "EVENT_KEY_NOT_SUPPORTED", HTTPStatus: http.StatusTooManyRequests,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_transient_http",
 		},
 		{
@@ -448,7 +448,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 			err: &personal.APIError{
 				Code: "SYSTEM_ERROR", HTTPStatus: http.StatusBadGateway,
 			},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_transient_http",
 		},
 		{
@@ -510,7 +510,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 		{
 			name:       "network",
 			err:        networkErr,
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_network",
 		},
 		{
@@ -524,13 +524,13 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassification(t *testi
 		{
 			name:       "truncated response body",
 			err:        fmt.Errorf("read response: %w", io.ErrUnexpectedEOF),
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_network",
 		},
 		{
 			name:       "deadline",
 			err:        context.DeadlineExceeded,
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_timeout",
 		},
 		{
@@ -583,8 +583,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureErrorPreservesTriStateA
 		t.Fatalf("error type = %T", err)
 	}
 	if !typed.RetryableSet || typed.Retryable ||
-		typed.RetryAfterSeconds == nil || *typed.RetryAfterSeconds != 3600 ||
-		typed.NextRetryAt == nil || !typed.NextRetryAt.Equal(now.Add(time.Hour)) ||
+		typed.RetryAfterSeconds != nil || typed.NextRetryAt != nil ||
 		typed.ServerDiag.ServerErrorCode != cause.Code ||
 		typed.ServerDiag.TraceID != cause.TraceID {
 		t.Fatalf("typed error = %#v", typed)
@@ -602,7 +601,9 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureErrorPreservesTriStateA
 			NextAllowedAt: now.Add(30 * time.Second),
 		},
 	)
-	if !errors.As(unknown, &typed) || typed.RetryableSet {
+	if !errors.As(unknown, &typed) || typed.RetryableSet ||
+		typed.RetryAfterSeconds != nil || typed.NextRetryAt != nil ||
+		typed.Hint == "" || len(typed.Actions) == 0 {
 		t.Fatalf("unknown retryability was not preserved: %#v", typed)
 	}
 }
@@ -1371,7 +1372,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionFailureClassificationEdges(t *
 		{
 			name:       "direct network error",
 			err:        &net.DNSError{Err: "temporary resolver failure", Name: "mcp.example.test"},
-			want:       personal.RetryabilityRetryable,
+			want:       personal.RetryabilityUnknown,
 			wantReason: "personal_subscription_network",
 		},
 		{
@@ -1462,6 +1463,22 @@ func TestCrossPlatformCoveragePersonalSubscriptionErrorConstructionEdges(t *test
 				t.Fatalf("blocked error = %#v, %v", typed, err)
 			}
 		})
+	}
+
+	// Old state files may retain retryable from the former classifier. A later
+	// invocation is not evidence that the original create was idempotently
+	// applied, so the Agent-facing recovery contract must withhold it too.
+	blocked := personalSubscriptionBlockedError(&personal.AttemptBlockedError{
+		State:         personal.AttemptStateCooldown,
+		Retryability:  personal.RetryabilityRetryable,
+		RetryAfter:    time.Minute,
+		NextAllowedAt: time.Now().UTC().Add(time.Minute),
+	})
+	typed = nil
+	if !errors.As(blocked, &typed) || typed.RetryableSet ||
+		typed.RetryAfterSeconds != nil || typed.NextRetryAt != nil ||
+		typed.Hint == "" || len(typed.Actions) == 0 {
+		t.Fatalf("legacy retryable block leaked unsafe replay metadata: %#v", typed)
 	}
 
 	if seconds := ceilPersonalRetrySeconds(0); seconds != 0 {

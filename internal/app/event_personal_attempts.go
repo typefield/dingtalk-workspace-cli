@@ -257,7 +257,10 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 		classification.auth = personalSubscriptionAuthFailure(apiErr.HTTPStatus, apiErr.Code)
 		switch {
 		case apiErr.Retryable != nil && *apiErr.Retryable:
-			classification.retryability = personal.RetryabilityRetryable
+			// The endpoint receives an idempotency key, but this repository has
+			// no server-side evidence that a response-loss replay is deduplicated.
+			// Keep the upstream statement as diagnostics/reason, while omitting
+			// retryable:true so an Agent does not blindly recreate a subscription.
 			classification.reason = "personal_subscription_server_retryable"
 		case apiErr.Retryable != nil:
 			classification.retryability = personal.RetryabilityNonRetryable
@@ -266,7 +269,10 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 			apiErr.HTTPStatus == http.StatusTooEarly ||
 			apiErr.HTTPStatus == http.StatusTooManyRequests ||
 			apiErr.HTTPStatus >= http.StatusInternalServerError:
-			classification.retryability = personal.RetryabilityRetryable
+			// A response class can describe a transient transport/service failure,
+			// but it does not prove that the create request was not applied. The
+			// attempt store still applies a cooldown; the Agent-facing result is
+			// intentionally unknown until endpoint idempotency is evidenced.
 			classification.reason = "personal_subscription_transient_http"
 		case apiErr.HTTPStatus == http.StatusUnauthorized ||
 			apiErr.HTTPStatus == http.StatusForbidden:
@@ -288,7 +294,6 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 	}
 
 	if errors.Is(err, context.DeadlineExceeded) {
-		classification.retryability = personal.RetryabilityRetryable
 		classification.reason = "personal_subscription_timeout"
 		return classification
 	}
@@ -299,18 +304,15 @@ func classifyPersonalSubscriptionFailure(err error, now time.Time) personalSubsc
 			classification.reason = "personal_subscription_invalid"
 			return classification
 		}
-		classification.retryability = personal.RetryabilityRetryable
 		classification.reason = "personal_subscription_network"
 		return classification
 	}
 	var netErr net.Error
 	if errors.As(err, &netErr) {
-		classification.retryability = personal.RetryabilityRetryable
 		classification.reason = "personal_subscription_network"
 		return classification
 	}
 	if errors.Is(err, io.ErrUnexpectedEOF) || errors.Is(err, io.EOF) {
-		classification.retryability = personal.RetryabilityRetryable
 		classification.reason = "personal_subscription_network"
 		return classification
 	}
@@ -457,8 +459,17 @@ func personalSubscriptionBlockedError(blocked *personal.AttemptBlockedError) err
 		)
 	}
 	reason := "personal_subscription_" + string(blocked.State)
+	// A blocked invocation has not sent a new request, but its persisted state
+	// describes a *previous* create attempt. Even legacy records marked
+	// retryable cannot prove that endpoint-side idempotency makes replay safe.
+	// Preserve the hold as local pacing while withholding retryable:true from
+	// the Agent until endpoint evidence exists.
+	retryability := blocked.Retryability
+	if retryability == personal.RetryabilityRetryable {
+		retryability = personal.RetryabilityUnknown
+	}
 	options := personalSubscriptionErrorOptions(
-		blocked.Retryability,
+		retryability,
 		blocked.RetryAfter,
 		blocked.NextAllowedAt,
 		blocked.ErrorCode,
@@ -466,7 +477,7 @@ func personalSubscriptionBlockedError(blocked *personal.AttemptBlockedError) err
 		reason,
 		blocked,
 	)
-	if blocked.Retryability == personal.RetryabilityNonRetryable {
+	if retryability == personal.RetryabilityNonRetryable {
 		if personalSubscriptionAuthFailure(0, blocked.ErrorCode) {
 			return apperrors.NewAuth(blocked.Error(), options...)
 		}
@@ -492,11 +503,17 @@ func personalSubscriptionErrorOptions(
 	if retryable, known := retryability.Value(); known {
 		options = append(options, apperrors.WithRetryable(retryable))
 	}
-	if retryAfter > 0 {
+	if retryability == personal.RetryabilityRetryable && retryAfter > 0 {
 		options = append(options, apperrors.WithRetryAfterSeconds(ceilPersonalRetrySeconds(retryAfter)))
 	}
-	if !nextRetryAt.IsZero() {
+	if retryability == personal.RetryabilityRetryable && !nextRetryAt.IsZero() {
 		options = append(options, apperrors.WithNextRetryAt(nextRetryAt))
+	}
+	if retryability == personal.RetryabilityUnknown {
+		options = append(options,
+			apperrors.WithHint("订阅创建请求的终态未证明；请先核查现有订阅状态，不要直接重复创建。"),
+			apperrors.WithActions("先核查现有订阅状态，再决定是否以相同参数重试"),
+		)
 	}
 	if code != "" || traceID != "" {
 		options = append(options, apperrors.WithServerDiag(apperrors.ServerDiagnostics{
