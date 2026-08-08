@@ -22,8 +22,11 @@ import json
 import subprocess
 import os
 import re
+import argparse
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional, Tuple
+
+from _runtime import add_contract_flags, emit, failure
 
 JsonData = Union[List[Any], Dict[str, Any]]
 
@@ -166,69 +169,72 @@ def build_fields_json(fields: List[Dict[str, Any]]) -> str:
     return json.dumps(payload_fields, ensure_ascii=False)
 
 
-def run_dws(args: List[str]) -> Optional[Dict[str, Any]]:
+def run_dws(args: List[str], dry_run: bool = False) -> Optional[Dict[str, Any]]:
     if not args:
-        print('错误：空命令')
+        print('错误：空命令', file=sys.stderr)
         return None
 
     cmd = ['dws'] + args
+    if dry_run:
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
+        return {'dry_run': True}
     try:
         result = subprocess.run(
             cmd, capture_output=True, text=True, timeout=60
         )
         if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}")
+            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
             return None
         try:
             return json.loads(result.stdout)
         except json.JSONDecodeError as e:
-            print(f"无法解析响应：{result.stdout[:200]}...")
-            print(f"JSON 解析错误：{e}")
+            print(f"无法解析响应：{result.stdout[:200]}...", file=sys.stderr)
+            print(f"JSON 解析错误：{e}", file=sys.stderr)
             return None
     except subprocess.TimeoutExpired:
-        print('错误：命令执行超时（60 秒）')
+        print('错误：命令执行超时（60 秒）', file=sys.stderr)
         return None
     except FileNotFoundError:
-        print('错误：未找到 dws 命令，请确认已安装')
+        print('错误：未找到 dws 命令，请确认已安装', file=sys.stderr)
         return None
 
 
 def bulk_add_fields(
-    base_id: str, table_id: str, fields_file: str
+    base_id: str, table_id: str, fields_file: str, dry_run: bool = False
 ) -> bool:
     try:
         safe_path = resolve_safe_path(fields_file)
     except ValueError as e:
-        print(f"路径验证失败：{e}")
+        print(f"路径验证失败：{e}", file=sys.stderr)
         return False
 
     if not validate_file_extension(fields_file, ALLOWED_FILE_EXTENSIONS):
-        print(f"错误：只允许 {', '.join(ALLOWED_FILE_EXTENSIONS)} 文件")
+        print(f"错误：只允许 {', '.join(ALLOWED_FILE_EXTENSIONS)} 文件", file=sys.stderr)
         return False
     if not safe_path.exists():
-        print(f"错误：文件不存在：{safe_path}")
+        print(f"错误：文件不存在：{safe_path}", file=sys.stderr)
         return False
 
     try:
         fields = safe_json_load(safe_path)
     except ValueError as e:
-        print(f"错误：{e}")
+        print(f"错误：{e}", file=sys.stderr)
         return False
     except json.JSONDecodeError as e:
-        print(f"错误：JSON 格式无效：{e}")
+        print(f"错误：JSON 格式无效：{e}", file=sys.stderr)
         return False
 
     if not isinstance(fields, list) or not fields:
-        print('错误：fields.json 必须是非空 JSON 数组')
+        print('错误：fields.json 必须是非空 JSON 数组', file=sys.stderr)
         return False
     if len(fields) > 15:
-        print('错误：单次最多创建 15 个字段，请拆分后重试')
+        print('错误：单次最多创建 15 个字段，请拆分后重试', file=sys.stderr)
         return False
 
     for i, field in enumerate(fields):
         valid, error = validate_field_config(field)
         if not valid:
-            print(f"错误：字段 #{i+1} 配置无效：{error}")
+            print(f"错误：字段 #{i+1} 配置无效：{error}", file=sys.stderr)
             return False
 
     fields_json = build_fields_json(fields)
@@ -238,36 +244,40 @@ def bulk_add_fields(
         '--table-id', table_id,
         '--fields', fields_json,
         '--format', 'json',
-    ])
+    ], dry_run=dry_run)
 
     if not result:
         return False
 
-    print(json.dumps(result, ensure_ascii=False, indent=2))
+    print(json.dumps(result, ensure_ascii=False, indent=2), file=sys.stderr)
     return True
 
 
-def main():
-    if len(sys.argv) != 4:
-        print(__doc__)
-        print('用法示例:')
-        print('  python bulk_add_fields.py basexxx tablexxx fields.json')
-        sys.exit(1)
+def main() -> int:
+    parser = argparse.ArgumentParser(description='批量添加 AI 表格字段')
+    parser.add_argument('base_id')
+    parser.add_argument('table_id')
+    parser.add_argument('fields_file')
+    add_contract_flags(parser)
+    args = parser.parse_args()
 
-    base_id = sys.argv[1]
-    table_id = sys.argv[2]
-    fields_file = sys.argv[3]
+    base_id = args.base_id
+    table_id = args.table_id
+    fields_file = args.fields_file
 
     if not validate_resource_id(base_id):
-        print('错误：无效的 baseId 格式')
-        sys.exit(1)
+        return failure(args.format, '无效的 baseId 格式')
     if not validate_resource_id(table_id):
-        print('错误：无效的 tableId 格式')
-        sys.exit(1)
+        return failure(args.format, '无效的 tableId 格式')
 
-    success = bulk_add_fields(base_id, table_id, fields_file)
-    sys.exit(0 if success else 1)
+    success = bulk_add_fields(base_id, table_id, fields_file, args.dry_run)
+    if not success:
+        return failure(args.format, '字段创建失败')
+    return emit(fmt=args.format, outcome='success', data={
+        'baseId': base_id, 'tableId': table_id,
+        'input': str(Path(fields_file)), 'dryRun': args.dry_run,
+    }, dry_run=args.dry_run, text='字段创建完成')
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
