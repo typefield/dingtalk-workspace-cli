@@ -266,6 +266,7 @@ func generatedPublicShortcutCatalog() map[string]struct{} {
 		"contact\u0000+search-user":                     {},
 		"contact\u0000+team":                            {},
 		"devapp\u0000+create":                           {},
+		"devapp\u0000+credentials-get":                  {},
 		"devapp\u0000+delete":                           {},
 		"devapp\u0000+disable":                          {},
 		"devapp\u0000+enable":                           {},

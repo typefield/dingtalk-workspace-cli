@@ -121,7 +121,13 @@ def runtime_contract_block() -> str:
 
 
 def mono_overview(items: list[dict[str, Any]]) -> str:
-    counts = Counter(item["service"] for item in items)
+    # The overview describes the committed public catalog, not only the
+    # subset for which the comparison helper can render a full product row.
+    # Semantic reviewed entries (for example doc history/share) may be
+    # intentionally absent from that helper's legacy source inventory; using
+    # `items` alone silently under-counts the Agent surface.
+    public_catalog = load_public_catalog()
+    counts = Counter(service for service, _ in public_catalog)
     rows = []
     for service, count in sorted(counts.items()):
         path = SERVICE_TO_SKILL.get(service)
@@ -244,7 +250,11 @@ def main() -> int:
     if args.check and changed:
         print("run: python3 scripts/gen_skill_shortcut_sections.py", file=sys.stderr)
         return 1
-    print(f"visible_shortcuts={len(items)} services={len(set(item['service'] for item in items))}")
+    public_catalog = load_public_catalog()
+    print(
+        f"visible_shortcuts={len(public_catalog)} "
+        f"services={len(set(service for service, _ in public_catalog))}"
+    )
     return 0
 
 

@@ -45,6 +45,10 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     ("attendance", "+update-group-members"): "write",
     ("attendance", "+update-leave-type"): "write",
     ("wiki", "+node-list"): "read",
+    # The devapp semantic catalog exposes this reviewed sensitive-read pilot at
+    # runtime. Keep the generated public catalog in sync so Skill discovery
+    # does not lag behind the executable shortcut surface.
+    ("devapp", "+credentials-get"): "read",
 }
 
 

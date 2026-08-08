@@ -32,6 +32,7 @@
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
 | `dws devapp +create` | write | 创建开放平台企业内部应用 |
+| `dws devapp +credentials-get` | read | 读取开放平台应用凭证 |
 | `dws devapp +delete` | high-risk-write | 删除开放平台企业内部应用（不可逆） |
 | `dws devapp +disable` | high-risk-write | 停用开放平台企业内部应用 |
 | `dws devapp +enable` | write | 启用开放平台企业内部应用 |

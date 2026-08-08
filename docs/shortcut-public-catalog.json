@@ -1,6 +1,6 @@
 {
-  "generated_at": "2026-08-08T11:31:05.130721",
-  "count": 374,
+  "generated_at": "2026-08-08T14:22:24.638407",
+  "count": 375,
   "results": [
     {
       "suite": "semantic",
@@ -2391,6 +2391,13 @@
       "command": "+create",
       "risk": "write",
       "status": "real-ok"
+    },
+    {
+      "suite": "reviewed_contract",
+      "service": "devapp",
+      "command": "+credentials-get",
+      "risk": "read",
+      "status": "reviewed_available"
     },
     {
       "suite": "write",
