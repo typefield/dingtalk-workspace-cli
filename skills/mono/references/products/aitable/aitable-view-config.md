@@ -199,7 +199,7 @@ done
 ### 一次性多属性更新（仍走 legacy --config）
 
 ```bash
-dws aitable view update --view-id VIEW_ID --config '{
+dws aitable view update --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_ID --config '{
   "visibleFieldIds":["fldPrimary","fldA","fldB"],
   "filter":[{"operator":"and","operands":[]}],
   "kanbanCard":{"coverFieldId":"fldImg","coverResizeMode":"contain"}
