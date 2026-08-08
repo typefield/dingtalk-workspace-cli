@@ -367,7 +367,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
 
 - 当前 `skills/mono/scripts/` 中 34 个可执行 Python 脚本逐个执行 `python3 <script> --help`；
-  第二阶段迁移后 30 个 Help 声明脚本级 `--dry-run`，29 个声明脚本级 `--format`，0 个脚本的
+  第二阶段迁移后 32 个 Help 声明脚本级 `--dry-run`，31 个声明脚本级 `--format`，0 个脚本的
   `--help` 仍返回非零。由此确认不能在 Skill 顶层宣称“所有脚本都支持这两个参数”。
 - 本轮已先迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
   `upload_attachment.py`、`doc_create_and_write.py` 和
@@ -376,7 +376,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `calendar_schedule_meeting.py`、`mail_send_with_cc.py`、`oa_pending_review.py`、
   `report_inbox_today.py`、`drive_tree_list.py`、`calendar_free_slot_finder.py`、
   `todo_overdue_check.py`、`minutes_recent_summary.py`、`minutes_extract_todos.py`、
-  `calendar_today_agenda.py`、`attendance_team_shift.py`、`attendance_schedule_export.py`、`attendance_my_record.py`、`import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、`attendance_vacation_balance.py`、`attendance_report_record.py`、`attendance_report_daily.py`、`attendance_report_monthly.py`：二十九者均接受 `--format text|json|ndjson` 和
+  `calendar_today_agenda.py`、`attendance_team_shift.py`、`attendance_schedule_export.py`、`attendance_my_record.py`、`import_records.py`、`bulk_add_fields.py`、`todo_daily_summary.py`、`attendance_vacation_balance.py`、`attendance_report_record.py`、`attendance_report_daily.py`、`attendance_report_monthly.py`、`attendance_report_detail.py`、`attendance_report_checkin.py`：三十一者均接受 `--format text|json|ndjson` 和
   `--dry-run`；
   dry-run 只生成本地计划，JSON/NDJSON 结果统一包含 `ok/outcome/data`。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限

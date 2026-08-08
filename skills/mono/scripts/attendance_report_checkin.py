@@ -27,6 +27,7 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
@@ -58,6 +59,7 @@ if _missing_deps:
     sys.exit(2)
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 自动获取当前认证的 operator 信息
@@ -155,6 +157,7 @@ def parse_args() -> argparse.Namespace:
                         help="输出 xlsx 文件名；不传则按规范自动生成")
     parser.add_argument("--inspect", action="store_true",
                         help="首次跑时打印首条记录原始结构（用于核对真实字段）")
+    add_contract_flags(parser)
     return parser.parse_args()
 
 
@@ -429,22 +432,42 @@ def main() -> int:
         "image_size": (60, 60),
     }
 
+    result_data = {
+        "users": user_ids,
+        "rowCount": len(rows),
+        "columnCount": len(REPORT_HEADERS),
+        "output": os.path.abspath(out_name),
+        "start": start.strftime(cmn.DATE_FMT),
+        "end": end.strftime(cmn.DATE_FMT),
+    }
+    if args.dry_run:
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={**result_data, "write": False, "imageDownloads": False},
+            dry_run=True,
+            text="[dry-run] 已完成远端只读查询和签到预览，不下载图片、不写入 Excel 文件",
+        )
+
     try:
         cmn.write_excel_multi_sheets(out_name, [checkin_sheet])
     except (RuntimeError, ValueError) as exc:
         cmn.error(str(exc))
         return 1
 
-    cmn.print_summary(
-        granularity_label="签到报表",
-        out_path=out_name,
-        user_count=len(user_ids),
-        column_names=[h for h in REPORT_HEADERS],
-        start=start,
-        end=end,
-        rows_count=len(rows),
-        stats=stats,
-    )
+    if args.format == "text":
+        cmn.print_summary(
+            granularity_label="签到报表",
+            out_path=out_name,
+            user_count=len(user_ids),
+            column_names=[h for h in REPORT_HEADERS],
+            start=start,
+            end=end,
+            rows_count=len(rows),
+            stats=stats,
+        )
+    else:
+        return emit(fmt=args.format, outcome="success", data=result_data)
     return 0
 
 

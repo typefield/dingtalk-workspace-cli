@@ -47,11 +47,13 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import sys
 from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 接口限制（check result / check record）
@@ -107,6 +109,7 @@ def parse_args() -> argparse.Namespace:
                         "图片多时较慢；加此参数仅保留 URL 文本）")
     p.add_argument("--image-size", default="80x120",
                    help="嵌入图片像素尺寸 WxH，默认 80x120")
+    add_contract_flags(p)
     return p.parse_args()
 
 
@@ -778,6 +781,24 @@ def main() -> int:
     image_columns = None if args.no_images else IMAGE_COLUMN_NAMES
     image_size = _parse_image_size(args.image_size)
 
+    result_data = {
+        "users": user_ids,
+        "rowCount": len(rows_2d),
+        "columnCount": len(ALL_HEADERS),
+        "output": os.path.abspath(out_name),
+        "start": start.strftime(cmn.DATE_FMT),
+        "end": end.strftime(cmn.DATE_FMT),
+        "images": not args.no_images,
+    }
+    if args.dry_run:
+        return emit(
+            fmt=args.format,
+            outcome="success",
+            data={**result_data, "write": False, "imageDownloads": False},
+            dry_run=True,
+            text="[dry-run] 已完成远端只读查询和明细预览，不下载图片、不写入 Excel 文件",
+        )
+
     try:
         cmn.write_excel(
             out_name, ALL_HEADERS, rows_2d,
@@ -792,16 +813,19 @@ def main() -> int:
         return 1
 
     # 8. 摘要
-    cmn.print_summary(
-        granularity_label="明细（打卡流水）",
-        out_path=out_name,
-        user_count=len(user_ids),
-        column_names=CHECK_HEADERS,
-        start=start,
-        end=end,
-        rows_count=len(rows_2d),
-        stats=stats,
-    )
+    if args.format == "text":
+        cmn.print_summary(
+            granularity_label="明细（打卡流水）",
+            out_path=out_name,
+            user_count=len(user_ids),
+            column_names=CHECK_HEADERS,
+            start=start,
+            end=end,
+            rows_count=len(rows_2d),
+            stats=stats,
+        )
+    else:
+        return emit(fmt=args.format, outcome="success", data=result_data)
     return 0
 
 
