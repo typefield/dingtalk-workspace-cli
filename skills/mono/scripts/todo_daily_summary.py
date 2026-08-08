@@ -13,8 +13,11 @@
 import sys
 import json
 import subprocess
+import argparse
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
+
+from _runtime import add_contract_flags, emit, failure
 
 PRIORITY_MAP = {10: '低', 20: '普通', 30: '较高', 40: '紧急'}
 PAGE_SIZE = 50
@@ -24,7 +27,7 @@ MAX_PAGES = 10
 def run_dws(args: List[str], dry_run: bool = False) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -178,23 +181,37 @@ def print_summary(
     print(f"\n合计: {len(todos)} 条待办")
 
 
-def main():
-    dry_run = '--dry-run' in sys.argv
-    args = [a for a in sys.argv[1:] if a != '--dry-run']
-    scope = args[0] if args else 'today'
+def main() -> int:
+    parser = argparse.ArgumentParser(description='汇总日期范围内未完成待办')
+    parser.add_argument('scope', nargs='?', default='today',
+                        choices=['today', 'tomorrow', 'week'])
+    add_contract_flags(parser)
+    args = parser.parse_args()
+    dry_run = args.dry_run
+    scope = args.scope
     if scope not in ('today', 'tomorrow', 'week'):
-        print(__doc__)
-        sys.exit(1)
+        return failure(args.format, f'不支持的范围: {scope}')
     start, end = get_date_range(scope)
     todos = fetch_all_todos(dry_run=dry_run)
     if dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'scope': scope, 'start': start.isoformat(), 'end': end.isoformat(),
+        }, dry_run=True, text='[dry-run] 将查询未完成待办并按截止时间筛选')
     if todos is None:
-        print('错误：待办查询失败，无法给出汇总结论', file=sys.stderr)
-        sys.exit(2)
+        return failure(args.format, '待办查询失败，无法给出汇总结论')
     filtered = filter_by_due(todos, start, end)
+    if args.format != 'text':
+        items = [{
+            'title': t.get('subject') or t.get('title', '无标题'),
+            'priority': format_priority(t.get('priority')),
+            'due': format_due(t.get('dueTime') or t.get('due')),
+        } for t in filtered]
+        return emit(fmt=args.format, outcome='success', data={
+            'scope': scope, 'count': len(items), 'items': items,
+        })
     print_summary(filtered, scope, start, end)
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
