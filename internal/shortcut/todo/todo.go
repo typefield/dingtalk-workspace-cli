@@ -22,6 +22,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -104,7 +105,10 @@ var GetMyTasks = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		cards := getMyTasksProject(data)
+		cards, err := getMyTasksProject(data)
+		if err != nil {
+			return err
+		}
 		return rt.Output(map[string]any{"count": len(cards), "todos": cards})
 	},
 }
@@ -112,20 +116,22 @@ var GetMyTasks = shortcut.Shortcut{
 // getMyTasksProject reshapes get_user_todos_in_current_org into a clean todo
 // list (subject/taskId/dueTime/priority/done) — clean output projection.
 // The card list lives under result.todoCards; fields are probed defensively.
-func getMyTasksProject(data map[string]any) []map[string]any {
+// A known empty card list succeeds, but an unrecognized response cannot claim
+// that the user has no tasks.
+func getMyTasksProject(data map[string]any) ([]map[string]any, error) {
 	container := data
 	if r, ok := data["result"].(map[string]any); ok {
 		container = r
 	}
 	raw, ok := container["todoCards"].([]any)
 	if !ok {
-		return []map[string]any{}
+		return nil, todoProjectionUnknown("待办列表响应缺少 result.todoCards")
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, todoProjectionUnknown("待办列表包含无法识别的条目")
 		}
 		row := map[string]any{}
 		for _, k := range []string{"subject", "taskId", "dueTime", "priority", "finalStatusStage", "creatorId"} {
@@ -133,11 +139,20 @@ func getMyTasksProject(data map[string]any) []map[string]any {
 				row[k] = v
 			}
 		}
-		if len(row) > 0 {
-			out = append(out, row)
+		if len(row) == 0 {
+			return nil, todoProjectionUnknown("待办列表条目缺少可识别字段")
 		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
+}
+
+func todoProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithReason("projection_unknown"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // ListSub maps helper `list_sub_tasks`.
