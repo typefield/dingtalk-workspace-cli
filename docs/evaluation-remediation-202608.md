@@ -367,10 +367,12 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
 
 - 当前 `skills/mono/scripts/` 中 34 个可执行 Python 脚本逐个执行 `python3 <script> --help`；
-  第一阶段迁移后 22 个 Help 声明脚本级 `--dry-run`，3 个声明脚本级 `--format`，5 个脚本的
+  第二阶段迁移后 24 个 Help 声明脚本级 `--dry-run`，5 个声明脚本级 `--format`，5 个脚本的
   `--help` 仍返回非零。由此确认不能在 Skill 顶层宣称“所有脚本都支持这两个参数”。
-- 本轮已先迁移 `todo_batch_create.py`、`aitable_import_via_task.py` 和
-  `upload_attachment.py`：三者均接受 `--format text|json|ndjson` 和 `--dry-run`；
+- 本轮已先迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
+  `upload_attachment.py`、`doc_create_and_write.py` 和
+  `aitable_export_via_task.py`：五者均接受 `--format text|json|ndjson` 和
+  `--dry-run`；
   dry-run 只生成本地计划，JSON/NDJSON 结果统一包含 `ok/outcome/data`。
 - 已把 Skill 的规则改为：终结型 dws 命令按 leaf Help 使用 `--format json`；无限
   `event consume` 使用 `--format ndjson`，只有有界消费才可选择 `json/pretty`；脚本
