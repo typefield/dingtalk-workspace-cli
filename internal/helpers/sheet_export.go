@@ -10,13 +10,14 @@ import (
 	"strings"
 	"time"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
 func runSheetExport(cmd *cobra.Command, _ []string) error {
 	nodeID := mustGetFlag(cmd, "node")
 	if nodeID == "" {
-		return fmt.Errorf("flag --node is required")
+		return apperrors.NewValidation("flag --node is required", apperrors.WithReason("missing_required_flags"))
 	}
 	outputPath, _ := cmd.Flags().GetString("output")
 

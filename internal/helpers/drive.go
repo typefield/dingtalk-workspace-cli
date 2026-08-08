@@ -13,6 +13,7 @@ import (
 	"github.com/spf13/cobra"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 // ──────────────────────────────────────────────────────────
@@ -69,15 +70,15 @@ func resolveDriveRenameName(ctx context.Context, nodeID, name string) (string, e
 func runDriveUpload(cmd *cobra.Command, _ []string) error {
 	filePath := mustGetFlag(cmd, "file")
 	if filePath == "" {
-		return fmt.Errorf("flag --file is required")
+		return apperrors.NewValidation("flag --file is required", apperrors.WithReason("missing_required_flags"))
 	}
 
 	fi, err := os.Stat(filePath)
 	if err != nil {
-		return fmt.Errorf("cannot read file %s: %w", filePath, err)
+		return apperrors.NewValidation(fmt.Sprintf("cannot read file %s: %v", filePath, err))
 	}
 	if fi.IsDir() {
-		return fmt.Errorf("%s is a directory, not a file", filePath)
+		return apperrors.NewValidation(fmt.Sprintf("%s is a directory, not a file", filePath))
 	}
 
 	fileName := flagOrFallback(cmd, "file-name", "name")

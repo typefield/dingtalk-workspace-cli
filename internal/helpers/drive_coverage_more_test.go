@@ -11,6 +11,7 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
@@ -357,5 +358,10 @@ func TestCrossPlatformCoverageDriveSmallHelperEdges(t *testing.T) {
 	}
 	if err := runDriveUpload(cmd, nil); err == nil {
 		t.Fatal("directory upload returned nil")
+	} else {
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+			t.Fatalf("directory upload error = %#v, want typed validation", err)
+		}
 	}
 }

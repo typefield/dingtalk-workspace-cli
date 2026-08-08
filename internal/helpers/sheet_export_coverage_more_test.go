@@ -6,6 +6,8 @@ import (
 	"os"
 	"path/filepath"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 func executeSheetExportCoverage(t *testing.T, caller *scriptedToolCaller, args ...string) error {
@@ -27,6 +29,11 @@ func TestCrossPlatformCoverageSheetExportCommandRemainingCoverage(t *testing.T) 
 	installImmediateTiming(t)
 	if err := executeSheetExportCoverage(t, &scriptedToolCaller{}); err == nil {
 		t.Fatal("missing node returned nil")
+	} else {
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation {
+			t.Fatalf("missing node error = %#v, want typed validation", err)
+		}
 	}
 	if err := executeSheetExportCoverage(t, &scriptedToolCaller{dry: true}, "node", "node", "output", "file.xlsx"); err != nil {
 		t.Fatalf("dry run with output: %v", err)
