@@ -397,6 +397,9 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - `devdoc article search` 路由本身是有效能力，保留该入口；文档说明已弱化为“只返回
   搜索结果和官方链接，不能据此声称链接内容已被 CLI 读取或验证”，并明确 `--page`/
   `--size` 的当前类型以 Help 为准。
+- Minutes 深层 reference 也完成了一次参数对照：Agent-facing 文档统一使用当前 Help
+  的 `--limit` / `--cursor`；旧的 `--max` / `--next-token` 只保留在兼容别名说明和
+  脚本自身的 Help 示例中，避免把隐藏别名继续扩散成 canonical 指令。
 
 这项扫描发现的是 Agent 可执行语义漂移，不是 CI 路径缺失；后续每次 Skill 变更都应
 继续对 Help、参数、结果形状和安全语义做逐条 Agent 复核。
