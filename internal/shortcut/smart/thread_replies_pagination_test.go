@@ -43,7 +43,8 @@ func TestCrossPlatformCoverageThreadRepliesResolvesRootMessageIDBeforeReadingRep
 		caller.args[1]["forward"] != false {
 		t.Fatalf("resolution calls = %#v", caller.args)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	payload := threadRepliesSuccessData(t, envelope)
 	if payload["conversationId"] != "cid" || payload["threadId"] != "thread" ||
 		payload["resolvedFromMessageId"] != "root-message" || payload["order"] != "desc" ||
 		payload["orderScope"] != "complete_result" || payload["count"] != float64(1) {
@@ -103,12 +104,15 @@ func TestCrossPlatformCoverageThreadRepliesPageAllOrdersCompleteResultAscending(
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	payload := threadRepliesSuccessData(t, envelope)
+	pagination := threadRepliesPagination(t, envelope)
 	replies, _ := payload["replies"].([]any)
 	if len(replies) != 3 || replies[0].(map[string]any)["messageId"] != "m1" ||
 		replies[1].(map[string]any)["messageId"] != "m2" ||
 		replies[2].(map[string]any)["messageId"] != "m3" || payload["order"] != "asc" ||
-		payload["orderScope"] != "complete_result" || payload["complete"] != true {
+		payload["orderScope"] != "complete_result" || pagination["endpoint_exhausted"] != true ||
+		pagination["pages"] != float64(2) {
 		t.Fatalf("ascending payload = %#v", payload)
 	}
 }
@@ -161,10 +165,11 @@ func TestCrossPlatformCoverageThreadRepliesPageAllUsesMillisecondCursorAndDedupl
 		caller.args[0]["forward"] != false || caller.args[1]["startTime"] != "2026-08-06T13:28:39.361Z" {
 		t.Fatalf("pagination calls = %#v", caller.args)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if payload["complete"] != true || payload["hasMore"] != false ||
-		payload["count"] != float64(3) || payload["pagesFetched"] != float64(2) ||
-		payload["stopReason"] != "source_complete" || payload["failedCount"] != float64(0) {
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	payload := threadRepliesSuccessData(t, envelope)
+	pagination := threadRepliesPagination(t, envelope)
+	if pagination["endpoint_exhausted"] != true || pagination["items"] != float64(4) ||
+		pagination["pages"] != float64(2) || payload["count"] != float64(3) {
 		t.Fatalf("all-page payload = %#v", payload)
 	}
 	replies, _ := payload["replies"].([]any)
@@ -189,13 +194,11 @@ func TestCrossPlatformCoverageThreadRepliesSinglePagePublishesMillisecondContinu
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	next, _ := payload["nextPage"].(map[string]any)
-	if payload["complete"] != false || payload["hasMore"] != true ||
-		payload["paginationKnown"] != true || payload["failedCount"] != float64(0) ||
-		payload["stopReason"] != "single_page" || next["time"] != "2026-08-06T13:28:39.361Z" ||
-		next["nextCursor"] != float64(1786022919361) {
-		t.Fatalf("single-page payload = %#v", payload)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	pagination := threadRepliesPagination(t, envelope)
+	if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "1786022919361" ||
+		pagination["pages"] != float64(1) || pagination["items"] != float64(1) {
+		t.Fatalf("single-page envelope = %#v", envelope)
 	}
 }
 
@@ -213,11 +216,11 @@ func TestCrossPlatformCoverageThreadRepliesSinglePageFailsClosedWithoutCursor(t 
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if payload["complete"] != false || payload["hasMore"] != true ||
-		payload["paginationKnown"] != false || payload["failedCount"] != float64(1) ||
-		payload["stopReason"] != "pagination_error" || payload["nextPage"] != nil {
-		t.Fatalf("single-page missing-cursor payload = %#v", payload)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	partial := threadRepliesPartialData(t, envelope)
+	failed, _ := partial["failed"].([]any)
+	if len(failed) != 1 || failed[0].(map[string]any)["error"].(map[string]any)["subtype"] != "pagination_inconsistent" {
+		t.Fatalf("single-page missing-cursor envelope = %#v", envelope)
 	}
 }
 
@@ -237,9 +240,11 @@ func TestCrossPlatformCoverageThreadRepliesPageAllAcceptsEmptyTerminalPage(t *te
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if len(caller.args) != 2 || payload["complete"] != true || payload["hasMore"] != false ||
-		payload["count"] != float64(1) || payload["pagesFetched"] != float64(2) {
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	payload := threadRepliesSuccessData(t, envelope)
+	pagination := threadRepliesPagination(t, envelope)
+	if len(caller.args) != 2 || pagination["endpoint_exhausted"] != true ||
+		payload["count"] != float64(1) || pagination["pages"] != float64(2) {
 		t.Fatalf("empty terminal page payload = %#v calls=%#v", payload, caller.args)
 	}
 }
@@ -259,13 +264,11 @@ func TestCrossPlatformCoverageThreadRepliesPageAllPublishesBoundedContinuation(t
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	next, _ := payload["nextPage"].(map[string]any)
-	if len(caller.args) != 1 || payload["complete"] != false || payload["hasMore"] != true ||
-		payload["truncatedByPageLimit"] != true || payload["stopReason"] != "page_limit" ||
-		next["time"] != "2026-08-06T13:28:39.361Z" || next["direction"] != "older" ||
-		next["nextCursor"] != float64(1786022919361) {
-		t.Fatalf("bounded payload = %#v calls=%#v", payload, caller.args)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	pagination := threadRepliesPagination(t, envelope)
+	if len(caller.args) != 1 || pagination["endpoint_exhausted"] != false ||
+		pagination["next_token"] != "1786022919361" || pagination["pages"] != float64(1) {
+		t.Fatalf("bounded envelope = %#v calls=%#v", envelope, caller.args)
 	}
 }
 
@@ -283,18 +286,17 @@ func TestCrossPlatformCoverageThreadRepliesPageAllReturnsPartialLedgerOnLaterFai
 	root.SetArgs([]string{
 		"chat", "+thread-replies", "--group", "cid", "--thread-id", "thread", "--page-all",
 	})
-	err := root.Execute()
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.Category != apperrors.CategoryAPI ||
-		typed.Reason != "thread_replies_incomplete" || !typed.Retryable ||
-		typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
-		t.Fatalf("error = %#v", err)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active partial result returned execution error: %v", err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if len(caller.args) != 2 || payload["partial"] != true || payload["complete"] != false ||
-		payload["count"] != float64(1) || payload["pagesFetched"] != float64(1) ||
-		payload["failedCount"] != float64(1) || payload["stopReason"] != "read_failure" {
-		t.Fatalf("partial payload = %#v calls=%#v", payload, caller.args)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	partial := threadRepliesPartialData(t, envelope)
+	if len(caller.args) != 2 || len(partial["succeeded"].([]any)) != 1 || len(partial["failed"].([]any)) != 1 {
+		t.Fatalf("partial envelope = %#v calls=%#v", envelope, caller.args)
+	}
+	failure := partial["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+	if failure["operation"] != "chat/list_topic_replies" || failure["stage"] != "pagination_read" {
+		t.Fatalf("partial failure = %#v", failure)
 	}
 }
 
@@ -309,15 +311,13 @@ func TestCrossPlatformCoverageThreadRepliesPageAllFailsClosedWithoutCursor(t *te
 	root.SetArgs([]string{
 		"chat", "+thread-replies", "--group", "cid", "--thread-id", "thread", "--page-all",
 	})
-	err := root.Execute()
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.Reason != "thread_replies_incomplete" {
-		t.Fatalf("error = %#v", err)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active partial result returned execution error: %v", err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if len(caller.args) != 1 || payload["complete"] != false ||
-		payload["failedCount"] != float64(1) || payload["stopReason"] != "pagination_error" {
-		t.Fatalf("stalled payload = %#v calls=%#v", payload, caller.args)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	partial := threadRepliesPartialData(t, envelope)
+	if len(caller.args) != 1 || len(partial["succeeded"].([]any)) != 1 || len(partial["failed"].([]any)) != 1 {
+		t.Fatalf("missing cursor envelope = %#v calls=%#v", envelope, caller.args)
 	}
 }
 
@@ -333,16 +333,13 @@ func TestCrossPlatformCoverageThreadRepliesPageAllFailsClosedOnStalledCursor(t *
 	root.SetArgs([]string{
 		"chat", "+thread-replies", "--group", "cid", "--thread-id", "thread", "--page-all",
 	})
-	err := root.Execute()
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.Reason != "thread_replies_incomplete" {
-		t.Fatalf("error = %#v", err)
+	if err := root.Execute(); err != nil {
+		t.Fatalf("active partial result returned execution error: %v", err)
 	}
-	payload := decodeThreadRepliesPayload(t, output.Bytes())
-	if len(caller.args) != 2 || payload["complete"] != false ||
-		payload["count"] != float64(2) || payload["failedCount"] != float64(1) ||
-		payload["stopReason"] != "pagination_error" {
-		t.Fatalf("stalled cursor payload = %#v calls=%#v", payload, caller.args)
+	envelope := decodeThreadRepliesEnvelope(t, output.Bytes())
+	partial := threadRepliesPartialData(t, envelope)
+	if len(caller.args) != 2 || len(partial["succeeded"].([]any)) != 2 || len(partial["failed"].([]any)) != 1 {
+		t.Fatalf("stalled cursor envelope = %#v calls=%#v", envelope, caller.args)
 	}
 }
 
@@ -401,19 +398,20 @@ func TestCrossPlatformCoverageThreadRepliesAdditionalEdges(t *testing.T) {
 		if output.Len() == 0 {
 			return nil, err
 		}
-		return decodeThreadRepliesPayload(t, output.Bytes()), err
+		return decodeThreadRepliesEnvelope(t, output.Bytes()), err
 	}
 
 	t.Run("explicit time and single read failure", func(t *testing.T) {
-		payload, err := run(t, &chatMessagesPagingCaller{responses: []string{
+		envelope, err := run(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"hasMore":false,"messages":[]}}`,
 		}}, nil, "--group", "cid", "--thread-id", "thread", "--time", "2026-08-06")
-		if err != nil || payload["complete"] != true {
-			t.Fatalf("payload=%#v err=%v", payload, err)
+		if err != nil || threadRepliesPagination(t, envelope)["endpoint_exhausted"] != true {
+			t.Fatalf("envelope=%#v err=%v", envelope, err)
 		}
-		if _, err = run(t, &chatMessagesPagingCaller{failAt: 1}, nil,
-			"--group", "cid", "--thread-id", "thread"); err == nil {
-			t.Fatal("single-page read failure unexpectedly succeeded")
+		envelope, err = run(t, &chatMessagesPagingCaller{failAt: 1}, nil,
+			"--group", "cid", "--thread-id", "thread")
+		if err != nil || envelope["ok"] != false || envelope["outcome"] != "failure" {
+			t.Fatalf("single-page read failure envelope=%#v err=%v", envelope, err)
 		}
 	})
 
@@ -437,10 +435,14 @@ func TestCrossPlatformCoverageThreadRepliesAdditionalEdges(t *testing.T) {
 		{name: "empty continuation page", response: `{"result":{"hasMore":true,"nextCursor":1786022919361,"messages":[]}}`, wantStop: "pagination_error"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			payload, err := run(t, &chatMessagesPagingCaller{responses: []string{tc.response}}, nil,
+			envelope, err := run(t, &chatMessagesPagingCaller{responses: []string{tc.response}}, nil,
 				"--group", "cid", "--thread-id", "thread", "--page-all")
-			if err == nil || payload["stopReason"] != tc.wantStop {
-				t.Fatalf("payload=%#v err=%v", payload, err)
+			if err != nil || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+				t.Fatalf("envelope=%#v err=%v", envelope, err)
+			}
+			failure := threadRepliesPartialData(t, envelope)["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+			if failure["stage"] != "pagination_projection" || failure["subtype"] != "pagination_inconsistent" {
+				t.Fatalf("failure=%#v wantStop=%s", failure, tc.wantStop)
 			}
 		})
 	}
@@ -484,11 +486,48 @@ func TestCrossPlatformCoverageThreadRepliesPaginationValidationStopsBeforeRead(t
 	}
 }
 
-func decodeThreadRepliesPayload(t *testing.T, raw []byte) map[string]any {
+func decodeThreadRepliesEnvelope(t *testing.T, raw []byte) map[string]any {
 	t.Helper()
-	var payload map[string]any
-	if err := json.Unmarshal(raw, &payload); err != nil {
-		t.Fatalf("decode thread replies payload: %v\n%s", err, raw)
+	var envelope map[string]any
+	if err := json.Unmarshal(raw, &envelope); err != nil {
+		t.Fatalf("decode thread replies envelope: %v\n%s", err, raw)
 	}
-	return payload
+	return envelope
+}
+
+func threadRepliesSuccessData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("thread replies expected success envelope: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("thread replies success data = %#v", envelope["data"])
+	}
+	return data
+}
+
+func threadRepliesPagination(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("thread replies meta = %#v", envelope["meta"])
+	}
+	pagination, ok := meta["pagination"].(map[string]any)
+	if !ok {
+		t.Fatalf("thread replies pagination = %#v", meta["pagination"])
+	}
+	return pagination
+}
+
+func threadRepliesPartialData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	if envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+		t.Fatalf("thread replies expected partial envelope: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("thread replies partial data = %#v", envelope["data"])
+	}
+	return data
 }

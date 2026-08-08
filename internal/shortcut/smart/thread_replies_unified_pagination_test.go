@@ -115,19 +115,20 @@ func TestThreadRepliesUnifiedPaginationOutcomes(t *testing.T) {
 		}
 	})
 
-	t.Run("missing endpoint evidence is not exhaustion", func(t *testing.T) {
+	t.Run("page-all missing endpoint evidence is partial rather than exhaustion", func(t *testing.T) {
 		envelope, exitCode := runThreadRepliesUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`,
 		}}, baseArgs...)
-		if exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+		if exitCode != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
 			t.Fatalf("unknown envelope=%#v exit=%d", envelope, exitCode)
 		}
-		if meta, _ := envelope["meta"].(map[string]any); meta != nil && meta["pagination"] != nil {
-			t.Fatalf("unknown endpoint evidence must not emit pagination meta: %#v", envelope)
-		}
 		data, _ := envelope["data"].(map[string]any)
-		if data["pagination_known"] != false {
+		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
 			t.Fatalf("unknown endpoint evidence=%#v", envelope)
+		}
+		failure := data["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+		if failure["subtype"] != "pagination_inconsistent" {
+			t.Fatalf("unknown endpoint failure=%#v", failure)
 		}
 	})
 

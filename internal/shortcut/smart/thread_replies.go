@@ -51,7 +51,7 @@ const (
 //
 //	dws chat +thread-replies --group <openconversationId> --thread-id <threadId>
 var ThreadReplies = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+thread-replies",
 	Product:       "chat",
@@ -458,6 +458,12 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 		page := chatmsg.Pagination(data)
 		pageHasMore, hasMoreKnown := page["hasMore"].(bool)
 		if !hasMoreKnown {
+			if !shadowInterrupted {
+				if recordErr := pageLedger.RecordPostPageFailure(threadRepliesPaginationFailureInfo("下层未返回可靠的 hasMore，无法证明话题回复完整")); recordErr != nil {
+					return nil, nil, nil, recordErr
+				}
+				shadowInterrupted = true
+			}
 			paginationKnown = false
 			failures = append(failures, map[string]any{
 				"page": pagesFetched, "stage": "pagination",
@@ -475,6 +481,12 @@ func collectAllThreadReplies(rt *shortcut.RuntimeContext, params map[string]any)
 			break
 		}
 		if len(rawItems) == 0 {
+			if !shadowInterrupted {
+				if recordErr := pageLedger.RecordPostPageFailure(threadRepliesPaginationFailureInfo("hasMore=true 但当前页没有回复，无法证明分页可以安全推进")); recordErr != nil {
+					return nil, nil, nil, recordErr
+				}
+				shadowInterrupted = true
+			}
 			failures = append(failures, map[string]any{
 				"page": pagesFetched, "stage": "pagination",
 				"error": "下层返回 hasMore=true 但当前页没有回复，无法证明分页可以安全推进",

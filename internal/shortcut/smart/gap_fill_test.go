@@ -103,6 +103,9 @@ func TestCrossPlatformCoverageMessageReadShortcutsPublishResourceDownloadPlans(t
 			if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 				t.Fatalf("decode output: %v\n%s", err, output.String())
 			}
+			if tc.name == "thread replies" {
+				payload = threadRepliesSuccessData(t, payload)
+			}
 			rows, ok := payload[tc.resultKey].([]any)
 			if !ok || len(rows) != 1 {
 				t.Fatalf("payload missing %s: %#v", tc.resultKey, payload)

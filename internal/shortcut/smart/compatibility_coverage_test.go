@@ -24,6 +24,7 @@ import (
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/agentproduct"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
@@ -116,6 +117,12 @@ func newPlatformCoverageRoot() *cobra.Command {
 	root.PersistentFlags().Bool("yes", false, "")
 	root.PersistentFlags().Bool("dry-run", false, "")
 	root.PersistentFlags().String("format", "json", "")
+	ctx, _ := frameworkoutput.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		_, _, err := frameworkoutput.EmitStoredResult(cmd)
+		return err
+	}
 	root.AddCommand(shortcut.Commands()...)
 	return root
 }
