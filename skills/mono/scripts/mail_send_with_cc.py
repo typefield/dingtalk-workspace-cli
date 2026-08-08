@@ -20,6 +20,8 @@ import re
 import argparse
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 EMAIL_PATTERN = re.compile(
     r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
 )
@@ -30,7 +32,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return {'dry_run': True}
     try:
         result = subprocess.run(
@@ -50,7 +52,7 @@ def validate_emails(emails_str: str) -> bool:
     for email in emails_str.split(','):
         email = email.strip()
         if not EMAIL_PATTERN.match(email):
-            print(f"错误：无效邮箱地址 '{email}'")
+            print(f"错误：无效邮箱地址 '{email}'", file=sys.stderr)
             return False
     return True
 
@@ -94,7 +96,7 @@ def get_my_email(dry_run: bool = False) -> Optional[str]:
     return None
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='发送带抄送的邮件'
     )
@@ -102,19 +104,18 @@ def main():
     parser.add_argument('--cc', default='', help='抄送人')
     parser.add_argument('--subject', required=True, help='标题')
     parser.add_argument('--body', required=True, help='正文')
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     if not validate_emails(args.to):
-        sys.exit(1)
+        return failure(args.format, '收件人邮箱地址无效')
     if args.cc and not validate_emails(args.cc):
-        sys.exit(1)
+        return failure(args.format, '抄送邮箱地址无效')
 
-    print('📬 获取发件邮箱...')
+    print('📬 获取发件邮箱...', file=sys.stderr)
     from_email = get_my_email(dry_run=args.dry_run)
     if not from_email and not args.dry_run:
-        print('错误：无法获取发件邮箱')
-        sys.exit(1)
+        return failure(args.format, '无法获取发件邮箱')
 
     cmd_args = [
         'mail', 'message', 'send',
@@ -127,18 +128,29 @@ def main():
     if args.cc:
         cmd_args.extend(['--cc', args.cc])
 
-    print('📤 发送邮件...')
+    if args.dry_run:
+        return emit(fmt=args.format, outcome='success', data={
+            'from': from_email, 'to': args.to,
+            'cc': [x.strip() for x in args.cc.split(',') if x.strip()],
+            'subject': args.subject,
+        }, dry_run=True, text='[dry-run] 将发送邮件')
+
+    print('📤 发送邮件...', file=sys.stderr)
     result = run_dws(cmd_args, dry_run=args.dry_run)
     if result:
-        print(f"  ✓ 邮件已发送")
-        print(f"    收件人: {args.to}")
+        print(f"  ✓ 邮件已发送", file=sys.stderr)
+        print(f"    收件人: {args.to}", file=sys.stderr)
         if args.cc:
-            print(f"    抄送: {args.cc}")
-        print(f"    主题: {args.subject}")
+            print(f"    抄送: {args.cc}", file=sys.stderr)
+        print(f"    主题: {args.subject}", file=sys.stderr)
+        return emit(fmt=args.format, outcome='success', data={
+            'from': from_email, 'to': args.to,
+            'cc': [x.strip() for x in args.cc.split(',') if x.strip()],
+            'subject': args.subject,
+        })
     else:
-        print('  ✗ 发送失败')
-        sys.exit(1)
+        return failure(args.format, '发送失败')
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

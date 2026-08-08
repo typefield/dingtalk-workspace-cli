@@ -15,13 +15,15 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -41,20 +43,20 @@ def to_iso(dt: datetime) -> str:
     return dt.strftime('%Y-%m-%dT%H:%M:%S+08:00')
 
 
-def main():
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='查看待我审批列表'
     )
     parser.add_argument(
         '--days', type=int, default=7, help='查询天数 (默认 7)'
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     now = datetime.now()
     start = now - timedelta(days=args.days)
 
-    print(f"📋 查询待审批 (最近 {args.days} 天)...")
+    print(f"📋 查询待审批 (最近 {args.days} 天)...", file=sys.stderr)
     data = run_dws([
         'oa', 'approval', 'list-pending',
         '--start', to_iso(start),
@@ -68,11 +70,12 @@ def main():
             '--instance-id', '<INSTANCE_ID>',
             '--format', 'json',
         ], dry_run=True)
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'days': args.days, 'start': to_iso(start), 'end': to_iso(now),
+        }, dry_run=True, text='[dry-run] 将查询审批列表并读取详情')
 
     if not data:
-        print('未查到待审批')
-        return
+        return failure(args.format, '审批列表查询失败')
 
     if isinstance(data, list):
         instances = data
@@ -88,8 +91,11 @@ def main():
     else:
         instances = []
     if not instances:
-        print('✅ 暂无待审批事项')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'count': 0, 'items': [],
+        }) if args.format != 'text' else 0
+
+    records = []
 
     print(f"\n🔔 待审批列表 ({len(instances)} 条)")
     print('=' * 50)
@@ -108,9 +114,11 @@ def main():
                 create_time / 1000
             ).strftime('%Y-%m-%d %H:%M')
 
-        print(f"\n  [{i}] {title}")
-        print(f"      状态: {status}  创建: {create_time}")
-        print(f"      ID: {inst_id}")
+        records.append({'id': inst_id, 'title': title, 'status': status,
+                        'createTime': create_time})
+        print(f"\n  [{i}] {title}", file=sys.stderr)
+        print(f"      状态: {status}  创建: {create_time}", file=sys.stderr)
+        print(f"      ID: {inst_id}", file=sys.stderr)
 
         detail = run_dws([
             'oa', 'approval', 'detail',
@@ -120,13 +128,19 @@ def main():
         if detail and isinstance(detail, dict):
             forms = detail.get('formComponentValues', [])
             if forms:
-                print(f"      --- 表单内容 ---")
+                print(f"      --- 表单内容 ---", file=sys.stderr)
                 for f in forms[:5]:
                     name = f.get('name', '')
                     value = f.get('value', '')
                     if value:
-                        print(f"      {name}: {value[:60]}")
+                        print(f"      {name}: {value[:60]}", file=sys.stderr)
+
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'count': len(records), 'items': records,
+        })
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
