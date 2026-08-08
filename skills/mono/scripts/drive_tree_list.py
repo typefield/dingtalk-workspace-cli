@@ -21,13 +21,15 @@ import subprocess
 import argparse
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def run_dws(
     args: List[str], dry_run: bool = False,
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -103,7 +105,21 @@ def print_tree(
                 )
 
 
-def main():
+def build_tree(items: list, depth: int, max_depth: int) -> list:
+    """Build a machine-readable tree without emitting presentation text."""
+    output = []
+    for item in items:
+        node = dict(item) if isinstance(item, dict) else {'value': item}
+        item_type = node.get('type') or node.get('dentryType', '')
+        is_dir = str(item_type).lower() in ('folder', 'directory', '1')
+        folder_id = node.get('fileId', '')
+        if is_dir and folder_id and depth < max_depth:
+            node['children'] = build_tree(list_dir(folder_id), depth + 1, max_depth)
+        output.append(node)
+    return output
+
+
+def main() -> int:
     parser = argparse.ArgumentParser(
         description='递归列出钉盘目录树'
     )
@@ -115,23 +131,34 @@ def main():
         '--depth', type=int, default=1,
         help='递归深度 (默认 1, 最大 5)',
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
     args.depth = min(args.depth, 5)
 
     root_name = args.folder or '我的文件'
-    print(f"📁 {root_name}")
+    print(f"📁 {root_name}", file=sys.stderr)
 
     items = list_dir(args.folder, dry_run=args.dry_run)
     if args.dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'folder': args.folder, 'depth': args.depth,
+        }, dry_run=True, text='[dry-run] 将读取钉盘目录并递归展开')
     if not items:
-        print('  (空目录)')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'folder': args.folder, 'items': [], 'count': 0,
+        }) if args.format != 'text' else 0
+
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'folder': args.folder, 'depth': args.depth,
+            'items': build_tree(items, 0, args.depth),
+            'count': len(items),
+        })
 
     print_tree(items, 0, args.depth, '', args.dry_run)
     print(f"\n共 {len(items)} 个项目 (根目录)")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
