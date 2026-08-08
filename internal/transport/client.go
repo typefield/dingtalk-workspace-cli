@@ -709,10 +709,14 @@ func (c *Client) doWithRetry(ctx context.Context, endpoint string, body []byte, 
 	}
 	if operation == "tools/call" {
 		if lastRequestWritten.Load() || !lastRequestKnownUnsent {
+			// A request being written proves transport submission, not that the
+			// downstream business mutation started.  Leave ExecutionStarted
+			// omitted (unknown) so an Agent cannot turn an ambiguous write into a
+			// duplicate retry.
 			opts = append(opts,
-				apperrors.WithExecutionStarted(true),
 				apperrors.WithHint(ambiguousCallHint()),
 				apperrors.WithActions(ambiguousCallActions("")...),
+				apperrors.WithDetails(map[string]any{"execution_state": "unknown"}),
 			)
 			opts = appendRecoveryIdentity(opts, c.ExecutionId, "")
 		} else {
@@ -1033,7 +1037,12 @@ func httpStatusErrorWithRecovery(method, endpoint string, statusCode int, snapsh
 		}),
 	}
 	if ambiguousWrite {
-		opts = append(opts, apperrors.WithExecutionStarted(true))
+		// HTTP 408/5xx only proves that the gateway returned an error. It does
+		// not prove whether the downstream tool began mutating state.
+		opts = append(opts, apperrors.WithDetails(map[string]any{
+			"execution_state": "unknown",
+			"ambiguity":       "upstream_may_have_started",
+		}))
 		opts = appendRecoveryIdentity(opts, executionID, headerTraceID)
 	}
 	// A 5xx/408 response to tools/call is ambiguous: the mutating operation may

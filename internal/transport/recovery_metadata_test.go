@@ -137,8 +137,11 @@ func TestCallToolDoesNotReplayAmbiguousOperation(t *testing.T) {
 	if typed.RetryableSet || typed.Retryable {
 		t.Fatalf("ambiguous tools/call 503 advertised safe replay: set=%v value=%v", typed.RetryableSet, typed.Retryable)
 	}
-	if typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
-		t.Fatalf("ambiguous tools/call execution_started = %v, want true", typed.ExecutionStarted)
+	if typed.ExecutionStarted != nil {
+		t.Fatalf("ambiguous tools/call execution_started = %v, want unknown/omitted", typed.ExecutionStarted)
+	}
+	if typed.Details["execution_state"] != "unknown" {
+		t.Fatalf("ambiguous tools/call execution_state = %#v, want unknown", typed.Details)
 	}
 	if typed.Details["execution_id"] != "exec-recovery-503" {
 		t.Fatalf("recovery execution_id = %#v, want exec-recovery-503", typed.Details["execution_id"])
@@ -163,23 +166,23 @@ func TestCallToolNetworkLossCarriesAmbiguousRecoveryMetadata(t *testing.T) {
 	if !errors.As(err, &typed) {
 		t.Fatalf("CallTool() error = %T, want *errors.Error", err)
 	}
-	if typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
-		t.Fatalf("network-loss execution_started = %v, want true", typed.ExecutionStarted)
+	if typed.ExecutionStarted != nil || typed.Details["execution_state"] != "unknown" {
+		t.Fatalf("network-loss execution_started/details = %v/%#v, want unknown", typed.ExecutionStarted, typed.Details)
 	}
 	if typed.Details["execution_id"] != "exec-network-loss" {
 		t.Fatalf("recovery execution_id = %#v, want exec-network-loss", typed.Details["execution_id"])
 	}
 }
 
-func TestAmbiguousCallHTTPStatusesCarryExecutionStarted(t *testing.T) {
+func TestAmbiguousCallHTTPStatusesKeepExecutionStateUnknown(t *testing.T) {
 	for _, status := range []int{http.StatusRequestTimeout, http.StatusInternalServerError, http.StatusServiceUnavailable} {
 		err := httpStatusError("tools/call", "https://mcp.dingtalk.com/server", status, "", "trace-recovery")
 		var typed *apperrors.Error
 		if !errors.As(err, &typed) {
 			t.Fatalf("HTTP %d error = %T, want *errors.Error", status, err)
 		}
-		if typed.ExecutionStarted == nil || !*typed.ExecutionStarted {
-			t.Errorf("HTTP %d execution_started = %v, want true", status, typed.ExecutionStarted)
+		if typed.ExecutionStarted != nil || typed.Details["execution_state"] != "unknown" {
+			t.Errorf("HTTP %d execution_started/details = %v/%#v, want unknown", status, typed.ExecutionStarted, typed.Details)
 		}
 	}
 }

@@ -285,7 +285,9 @@ func WithDetails(details map[string]any) Option {
 		if len(details) == 0 {
 			return
 		}
-		err.Details = make(map[string]any, len(details))
+		if err.Details == nil {
+			err.Details = make(map[string]any, len(details))
+		}
 		for key, value := range details {
 			err.Details[key] = value
 		}
