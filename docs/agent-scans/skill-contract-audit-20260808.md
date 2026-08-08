@@ -157,12 +157,12 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-jcb0pyeh/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-zl49nsfq/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:04:24`
+- generated_at: `2026-08-08T15:12:56`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -200,7 +200,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-jcb0pyeh/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-zl49nsfq/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
