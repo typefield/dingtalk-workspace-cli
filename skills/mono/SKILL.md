@@ -17,7 +17,7 @@ cli_version: ">=1.0.15"
 - 不要猜测字段名/参数值，操作前必须先查询确认
 
 ## 严格要求 (MUST DO)
-- 终结型 CLI 命令默认使用 `--format json` 获取可解析输出；先以 leaf Help 确认该 flag。长连接 `event consume` 默认使用 `--format ndjson`，只有设置 `--max-events` 或 `--duration` 后才使用 `json/pretty`；不要把无限事件流强行改成单个 JSON 文档。Skill 脚本是独立入口，脚本本身未必有 `--format` 或 `--dry-run`，应按脚本 Help 调用；脚本内部调用 dws 时再传递合适的格式。
+- 终结型 CLI 命令默认使用 `--format json` 获取可解析输出；先以 leaf Help 确认该 flag。长连接 `event consume` 默认使用 `--format ndjson`，只有设置 `--max-events` 或 `--duration` 后才使用 `json/pretty`；不要把无限事件流强行改成单个 JSON 文档。Skill 脚本是独立入口，当前 32 个 Agent 入口均在 Help 中声明脚本级 `--format` 与 `--dry-run`；调用前仍必须以该脚本的 Help 和 Agent 扫描台账为准，脚本内部调用 dws 时再传递合适的格式。
 - `skills/mono/scripts/` 当前有 35 个 Python 文件，其中 32 个是可执行 Agent 入口、3 个是内部模块。32 个入口的 Help 当前均声明脚本级 `--format text|json|ndjson` 与 `--dry-run`；这只证明参数可发现，不等于每个入口都完成了零远端写入/零本地写入证明。调用前以该脚本的 `--help` 和 Agent 扫描台账为准；不要从文件名或源码中的 `add_contract_flags` 推断安全语义。
 - 危险操作必须先向用户确认，用户同意后才加 `--yes` 执行
 - 报表类脚本（包括 `attendance_report_detail.py`、`attendance_report_checkin.py`、`attendance_schedule_import.py`）的 dry-run 可能执行远端只读查询，但不得下载图片、写入 Excel 或触发业务写入；具体 `remote_reads` 语义以脚本 Help/台账为准。
