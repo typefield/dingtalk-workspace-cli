@@ -282,7 +282,7 @@ var ListRoles = shortcut.Shortcut{
 		roles, projectionKnown := listRolesProjectWithStatus(data)
 		if !projectionKnown {
 			return apperrors.NewAPI("通讯录角色响应结构无法识别，拒绝将未知数据投影为空列表",
-				apperrors.WithReason("projection_unknown"),
+				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
 		return rt.Output(map[string]any{"count": len(roles), "roles": roles})
@@ -448,7 +448,7 @@ var ListRoleMembers = shortcut.Shortcut{
 		members, projectionKnown := memberListProjectWithStatus(data)
 		if !projectionKnown {
 			return apperrors.NewAPI("通讯录角色成员响应结构无法识别，拒绝将未知数据投影为空列表",
-				apperrors.WithReason("projection_unknown"),
+				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
 		return rt.Output(map[string]any{"count": len(members), "members": members})
@@ -705,7 +705,7 @@ var ListDeptMembers = shortcut.Shortcut{
 		members, projectionKnown := memberListProjectWithStatus(data)
 		if !projectionKnown {
 			return apperrors.NewAPI("通讯录部门成员响应结构无法识别，拒绝将未知数据投影为空列表",
-				apperrors.WithReason("projection_unknown"),
+				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
 		return rt.Output(map[string]any{"count": len(members), "members": members})

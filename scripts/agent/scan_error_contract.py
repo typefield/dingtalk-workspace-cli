@@ -22,6 +22,10 @@ REASON = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithReason\(\s*\"([^\"]+)\"\s
 SUBTYPE = re.compile(r"\b(?:(?:apperrors|errors)\.)?WithSubtype\(\s*(?:(?:apperrors|errors)\.)?(Subtype[A-Za-z0-9_]+)\s*\)")
 SUBTYPE_CONST = re.compile(r"\b(Subtype[A-Za-z0-9_]+)\s+Subtype\s*=\s*\"([^\"]+)\"")
 DESCRIPTOR_CATEGORY = re.compile(r"\b(Subtype[A-Za-z0-9_]+):\s*\{\s*Subtype:\s*\1,\s*Category:\s*Category([A-Za-z0-9_]+)", re.MULTILINE)
+DESCRIPTOR_DEFAULT_HINT = re.compile(
+    r"\b(Subtype[A-Za-z0-9_]+):\s*\{(?:(?!\n\t\},).)*\bDefaultHint:\s*\"([^\"]+)\"",
+    re.DOTALL,
+)
 # Deliberately line-bounded: a call spread across lines needs manual Agent
 # review, but a broad `[^)]` expression accidentally sees function/test names
 # containing the word WithReason as runtime construction sites.
@@ -86,10 +90,15 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
     paths = [path for path in sorted(root.rglob("*.go")) if not path.name.endswith("_test.go") and not any(part in excluded for part in path.parts)]
     subtype_constants: dict[str, str] = {}
     descriptor_categories: dict[str, str] = {}
+    # A descriptor-level default is an effective recovery hint when a command
+    # does not need to provide a more-specific one. This remains an Agent scan
+    # fact, not a CI policy or a claim that the recovery was executed live.
+    descriptor_default_hints: dict[str, str] = {}
     for path in paths:
         text = path.read_text(encoding="utf-8")
         subtype_constants.update({match.group(1): match.group(2) for match in SUBTYPE_CONST.finditer(text)})
         descriptor_categories.update({match.group(1): match.group(2).lower() for match in DESCRIPTOR_CATEGORY.finditer(text)})
+        descriptor_default_hints.update({match.group(1): match.group(2) for match in DESCRIPTOR_DEFAULT_HINT.finditer(text)})
 
     for path in paths:
         text = path.read_text(encoding="utf-8")
@@ -106,7 +115,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             occurrence = Occurrence(
                 path=relative,
                 line=line,
-				category=nearby_category(lines, line - 1),
+                category=nearby_category(lines, line - 1),
                 hint=bool(HINT.search(context)),
                 actions=bool(ACTIONS.search(context)),
                 retryable=bool(RETRYABLE.search(context)),
@@ -129,8 +138,8 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], dict[str, list[
             occurrence = Occurrence(
                 path=relative,
                 line=line,
-				category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
-                hint=bool(HINT.search(context)),
+                category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
+                hint=bool(HINT.search(context)) or bool(descriptor_default_hints.get(constant)),
                 actions=bool(ACTIONS.search(context)),
                 retryable=bool(RETRYABLE.search(context)),
                 retry_after=bool(RETRY_AFTER.search(context)),
@@ -204,14 +213,14 @@ def main() -> int:
         f"- `WithReason(\"…\")` 的自由字面调用点：**{free_occurrences}** 个；与已注册调用合计覆盖 **{len(facts)}** 个 subtype、**{all_occurrences}** 个调用点。",
         f"- 直接构造 `ErrorInfo.Subtype`：**{len(struct_subtypes)}** 个不同值。",
         f"- 动态 `WithReason(variable)` 调用：**{len(dynamic)}** 个。",
-        f"- 至少一个调用点缺少邻近 `WithHint` 的 subtype：**{no_hint}** 个。",
+        f"- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**{no_hint}** 个。",
         f"- 无法从同一局部构造窗口解析 Category 的 subtype：**{unresolved}** 个。",
         "",
         "已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。",
         "",
         "## 源码 subtype 清单",
         "",
-        "| subtype | 治理状态 | 调用点 | 推断 Category | hint | actions | retryable | retry-after | execution-started | 例子 |",
+        "| subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable | retry-after | execution-started | 例子 |",
         "|---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|",
     ]
     for reason, item in sorted(facts.items()):

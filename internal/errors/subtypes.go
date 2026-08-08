@@ -48,7 +48,11 @@ type SubtypeDescriptor struct {
 	RetryPolicy   RetryPolicy
 	RequireHint   bool
 	RequireAction bool
-	Description   string
+	// DefaultHint is used only when a command has no more-specific recovery
+	// hint. It must be safe without inventing resource IDs, credentials, or a
+	// business-terminal result; command-local WithHint remains authoritative.
+	DefaultHint string
+	Description string
 }
 
 var subtypeRegistry = map[Subtype]SubtypeDescriptor{
@@ -58,6 +62,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryNever,
 		RequireHint:   true,
 		RequireAction: false,
+		DefaultHint:   "请补齐缺失的必填参数后重试；运行当前命令的 --help 查看参数说明。",
 		Description:   "required command input is missing",
 	},
 	SubtypeUnknownFlag: {
@@ -66,6 +71,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryNever,
 		RequireHint:   true,
 		RequireAction: false,
+		DefaultHint:   "请运行当前命令的 --help 查看可用参数，修正参数名后再重试。",
 		Description:   "an unsupported command flag was supplied",
 	},
 	SubtypeConfirmationRequired: {
@@ -74,6 +80,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryNever,
 		RequireHint:   true,
 		RequireAction: true,
+		DefaultHint:   "请先使用 --dry-run 预览；获得用户确认后以相同参数追加 --yes。",
 		Description:   "a protected write was stopped before request execution",
 	},
 	SubtypeRateLimit: {
@@ -82,6 +89,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryServerDirective,
 		RequireHint:   true,
 		RequireAction: false,
+		DefaultHint:   "请按服务端给出的等待时间退避后重试；未提供时使用指数退避。",
 		Description:   "the upstream service asked the caller to slow down",
 	},
 	SubtypePaginationInconsistent: {
@@ -90,6 +98,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryNever,
 		RequireHint:   true,
 		RequireAction: false,
+		DefaultHint:   "请检查上游的分页游标和 hasMore 证据；确认前不要把结果当作完整。",
 		Description:   "pagination evidence is incomplete or contradictory",
 	},
 	SubtypeProjectionUnknown: {
@@ -98,6 +107,7 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RetryPolicy:   RetryNever,
 		RequireHint:   true,
 		RequireAction: false,
+		DefaultHint:   "请记录脱敏响应形状并提交诊断；不要将该结果当作空集合。",
 		Description:   "an upstream response cannot be safely projected",
 	},
 }
@@ -118,7 +128,19 @@ func IsRegisteredSubtype(subtype string) bool {
 
 // WithSubtype records a registered, stable subtype. New production code must
 // prefer this over WithReason("literal"); WithReason remains solely for
-// compatibility and for values still under Agent review.
+// compatibility and for values still under Agent review. It deliberately keeps
+// the existing string-valued Reason, Category, and exit-code semantics. A
+// registered descriptor may add a safe fallback hint; that additive recovery
+// guidance is intentional, and an adjacent or later WithHint always replaces
+// it with command-specific advice.
 func WithSubtype(subtype Subtype) Option {
-	return WithReason(string(subtype))
+	return func(err *Error) {
+		err.Reason = string(subtype)
+		if err.Hint != "" {
+			return
+		}
+		if descriptor, ok := LookupSubtype(subtype); ok {
+			err.Hint = descriptor.DefaultHint
+		}
+	}
 }

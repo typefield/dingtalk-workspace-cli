@@ -1396,7 +1396,7 @@ func newOaCommand() *cobra.Command {
 				if !yes {
 					return apperrors.NewValidation(
 						"发起审批实例会创建真实业务数据；请先核对参数，然后添加 --yes 确认执行",
-						apperrors.WithReason("confirmation_required"),
+						apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 						apperrors.WithHint("先使用 --dry-run 预览，确认目标和表单字段后再添加 --yes"),
 						apperrors.WithActions("使用 --dry-run 预览审批请求", "确认后使用 --yes 执行"),
 					)

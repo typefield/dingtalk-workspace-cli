@@ -2438,7 +2438,7 @@ internetMessageId 来源：message send / draft send / message reply / message r
 			if !commandBoolFlag(cmd, "yes") {
 				return apperrors.NewValidation(
 					"分享邮件至 IM 为高风险操作；获得用户确认后加 --yes 执行",
-					apperrors.WithReason("confirmation_required"),
+					apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 					apperrors.WithHint("先确认目标用户与邮件内容；用户明确同意后以相同参数追加 --yes"),
 					apperrors.WithActions("确认目标用户与邮件", "获得用户确认后使用 --yes 执行"),
 				)

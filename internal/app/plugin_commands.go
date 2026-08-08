@@ -756,7 +756,7 @@ func pruneEmptyPluginGroups(parent *cobra.Command) {
 func pluginConfirmationRequired(commandPath string) error {
 	return apperrors.NewValidation(
 		commandPath+" is sensitive; preview with --dry-run, then obtain user confirmation and retry with --yes",
-		apperrors.WithReason("confirmation_required"),
+		apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 		apperrors.WithHint("run the same command with --dry-run first; after the user confirms, add --yes"),
 		apperrors.WithActions("preview with --dry-run", "obtain user confirmation", "execute with --yes"),
 	)

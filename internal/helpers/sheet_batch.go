@@ -328,7 +328,7 @@ func requireSheetMutationConfirmation(cmd *cobra.Command, operation, targetHint 
 	}
 	return apperrors.NewValidation(
 		fmt.Sprintf("%s可能删除工作表内容或结构；获得用户确认后加 --yes 执行", operation),
-		apperrors.WithReason("confirmation_required"),
+		apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 		apperrors.WithHint(fmt.Sprintf("先确认%s；用户明确同意后以相同参数追加 --yes", targetHint)),
 		apperrors.WithActions(fmt.Sprintf("确认%s", targetHint), "获得用户确认后使用 --yes 执行"),
 	)

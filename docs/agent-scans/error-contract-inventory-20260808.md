@@ -6,18 +6,18 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**6** 个；`WithSubtype(...)` 调用点：**10** 个。
-- `WithReason("…")` 的自由字面调用点：**148** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
+- 已注册 descriptor：**6** 个；`WithSubtype(...)` 调用点：**47** 个。
+- `WithReason("…")` 的自由字面调用点：**111** 个；与已注册调用合计覆盖 **80** 个 subtype、**158** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**6** 个不同值。
 - 动态 `WithReason(variable)` 调用：**16** 个。
-- 至少一个调用点缺少邻近 `WithHint` 的 subtype：**31** 个。
+- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**29** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**2** 个。
 
 已出现首批 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
 
 ## 源码 subtype 清单
 
-| subtype | 治理状态 | 调用点 | 推断 Category | hint | actions | retryable | retry-after | execution-started | 例子 |
+| subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable | retry-after | execution-started | 例子 |
 |---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|
 | `ambiguous_command_fallback` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_fallback.go:154` |
 | `at_me_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/at_me.go:327` |
@@ -25,11 +25,11 @@
 | `auth_refresh_failed` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | free 1 | 1 | `api` | no | no | yes | no | yes | `internal/shortcut/chat/batch_write.go:80` |
 | `business_error` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/errors/pat.go:293` |
-| `chat_list_all_incomplete` | free 1 | 1 | `unresolved` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:1065` |
-| `chat_list_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:1153` |
-| `chat_messages_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/chat_messages.go:674` |
-| `chat_search_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:323` |
-| `confirmation_required` | registered 1 / free 6 | 7 | `validation` | yes | yes | no | no | no | `internal/app/plugin_commands.go:759`<br>`internal/corecmd/corecmd.go:1206`<br>`internal/helpers/chat/toolbar_remove_custom.go:51` … |
+| `chat_list_all_incomplete` | free 1 | 1 | `unresolved` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:1199` |
+| `chat_list_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:1245` |
+| `chat_messages_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/chat_messages.go:770` |
+| `chat_search_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_group.go:425` |
+| `confirmation_required` | registered 7 | 7 | `validation` | yes | yes | no | no | no | `internal/app/plugin_commands.go:759`<br>`internal/corecmd/corecmd.go:1206`<br>`internal/helpers/chat/toolbar_remove_custom.go:51` … |
 | `doc_download_preflight_failed` | free 2 | 2 | `api` | yes | yes | no | no | no | `internal/app/doc_download_preflight.go:62`<br>`internal/app/doc_download_preflight.go:72` |
 | `doc_grant_permission_partial_failure` | free 1 | 1 | `api` | no | yes | yes | no | yes | `internal/shortcut/smart/doc_access.go:448` |
 | `doc_share_message_failed` | free 1 | 1 | `api` | no | no | yes | no | yes | `internal/shortcut/smart/doc_access.go:523` |
@@ -37,7 +37,7 @@
 | `download_size_mismatch` | free 1 | 1 | `api` | no | yes | yes | no | yes | `internal/helpers/drive.go:721` |
 | `empty_tool_response` | free 1 | 1 | `api` | no | no | yes | no | no | `internal/shortcut/runner.go:307` |
 | `endpoint_not_resolved` | free 1 | 1 | `api` | yes | yes | no | no | no | `internal/app/runner.go:493` |
-| `flag_list_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:701` |
+| `flag_list_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/lark_alignment.go:761` |
 | `formula_errors_found` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/helpers/sheet_formula_verify.go:143` |
 | `gateway_auth_expired` | free 2 | 2 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:251`<br>`internal/errors/pat.go:274` |
 | `id_intersection` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_sort.go:59` |
@@ -53,12 +53,12 @@
 | `mcp_tool_error` | free 1 | 1 | `api` | no | no | no | no | no | `internal/app/runner.go:855` |
 | `messages_list_direct_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/chat/chat_message.go:648` |
 | `missing_required_flag` | free 4 | 4 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78`<br>`internal/helpers/doc.go:4067` … |
-| `missing_required_flags` | registered 1 / free 17 | 18 | `validation` | no | no | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat.go:41`<br>`internal/helpers/chat.go:52` … |
+| `missing_required_flags` | registered 18 | 18 | `validation` | yes | no | no | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat.go:41`<br>`internal/helpers/chat.go:52` … |
 | `missing_target` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
 | `my_groups_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/my_groups.go:269` |
 | `not_authenticated` | free 3 | 3 | `auth` | yes | yes | no | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:646` |
 | `not_configured` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:281` |
-| `pagination_inconsistent` | registered 3 / free 2 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
+| `pagination_inconsistent` | registered 5 | 5 | `api` | yes | no | yes | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:592`<br>`internal/shortcut/mail/pagination.go:124` … |
 | `parameter_conflict` | free 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/root.go:344` |
 | `partial_failure` | free 1 | 1 | `api` | yes | yes | yes | no | no | `internal/app/event_personal_command.go:1137` |
 | `pat_auth_cancelled` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:696` |
@@ -70,8 +70,8 @@
 | `personal_subscription_invalid` | free 1 | 1 | `validation` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:541` |
 | `plugin_input_schema_invalid` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/runner.go:833` |
-| `projection_unknown` | registered 2 / free 12 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1149`<br>`internal/shortcut/contact/contact.go:285` … |
-| `rate_limit` | registered 1 | 1 | `api` | no | no | no | no | no | `internal/transport/client.go:1032` |
+| `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |
+| `rate_limit` | registered 1 | 1 | `api` | yes | no | no | no | no | `internal/transport/client.go:1032` |
 | `raw_api_credentials_required` | free 1 | 1 | `auth` | yes | yes | yes | no | yes | `internal/app/api_command.go:316` |
 | `request_build_failed` | free 1 | 1 | `unresolved` | yes | no | no | no | yes | `internal/transport/client.go:588` |
 | `resolution_ambiguous` | free 1 | 1 | `validation` | yes | no | yes | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
@@ -90,9 +90,9 @@
 | `target_type_conflict` | free 1 | 1 | `validation` | no | no | no | no | yes | `internal/shortcut/aitable/view_preset.go:79` |
 | `target_type_mismatch` | free 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/targetresolver/resolver.go:182` |
 | `target_verification_failed` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/aitable/url_resolve.go:128` |
-| `thread_context_missing` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:249` |
-| `thread_replies_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:480` |
-| `thread_root_message_not_found` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:238` |
+| `thread_context_missing` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:262` |
+| `thread_replies_incomplete` | free 1 | 1 | `api` | yes | no | yes | no | yes | `internal/shortcut/smart/thread_replies.go:539` |
+| `thread_root_message_not_found` | free 1 | 1 | `api` | yes | no | no | no | no | `internal/shortcut/smart/thread_replies.go:251` |
 | `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | no | no | no | `internal/app/root.go:433`<br>`internal/app/root.go:447` |
 | `unknown_shortcut` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:67` |
 | `unknown_subcommand` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pipeline/command_resolution.go:77` |

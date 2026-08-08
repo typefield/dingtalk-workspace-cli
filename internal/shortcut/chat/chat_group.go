@@ -1280,7 +1280,7 @@ func chatListAllResolveList(data map[string]any) ([]any, bool) {
 func chatGroupProjectionUnknown(message string) error {
 	return apperrors.NewAPI(message,
 		apperrors.WithOperation("im/list_my_groups_pagination"),
-		apperrors.WithReason("projection_unknown"),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),

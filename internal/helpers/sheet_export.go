@@ -17,7 +17,7 @@ import (
 func runSheetExport(cmd *cobra.Command, _ []string) error {
 	nodeID := mustGetFlag(cmd, "node")
 	if nodeID == "" {
-		return apperrors.NewValidation("flag --node is required", apperrors.WithReason("missing_required_flags"))
+		return apperrors.NewValidation("flag --node is required", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 	}
 	outputPath, _ := cmd.Flags().GetString("output")
 

@@ -38,7 +38,7 @@ func requiredTrimmedChatFlag(cmd *cobra.Command, primary string, aliases ...stri
 	if value == "" {
 		return "", apperrors.NewValidation(
 			fmt.Sprintf("--%s must contain a non-empty value", primary),
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	return value, nil
@@ -49,7 +49,7 @@ func requiredNonBlankChatFlag(cmd *cobra.Command, name string) (string, error) {
 	if strings.TrimSpace(value) == "" {
 		return "", apperrors.NewValidation(
 			fmt.Sprintf("--%s must contain a non-empty value", name),
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	// Preserve the caller's Markdown/text bytes. Trimming is only used to
@@ -959,13 +959,13 @@ func buildChatGrantBaseArgs(cmd *cobra.Command, scope string) (map[string]any, e
 	if grantType == "timed" && ttl == "" {
 		return nil, apperrors.NewValidation(
 			"--ttl is required when --grant-type is timed",
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	if grantType == "session" && sessionID == "" {
 		return nil, apperrors.NewValidation(
 			"--session-id is required when --grant-type is session",
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	agentCode, _ := cmd.Flags().GetString("agentCode")
@@ -973,7 +973,7 @@ func buildChatGrantBaseArgs(cmd *cobra.Command, scope string) (map[string]any, e
 	if agentCode == "" {
 		return nil, apperrors.NewValidation(
 			"--agentCode must contain a non-empty value",
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	toolArgs := map[string]any{
@@ -1007,7 +1007,7 @@ func buildChatCrossOrgDataAuthArgs(cmd *cobra.Command) (map[string]any, error) {
 	if targetOrgID == "" && !all {
 		return nil, apperrors.NewValidation(
 			"exactly one of --target-org-id or --all is required",
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	if targetOrgID != "" && all {
@@ -1065,7 +1065,7 @@ func appendChatChmodParams(cmd *cobra.Command, toolArgs map[string]any) error {
 	if specified == 0 && len(grantParams) == 0 {
 		return apperrors.NewValidation(
 			"at least one of --conversation-id, --open-dingtalk-id, --user or --permParam is required",
-			apperrors.WithReason("missing_required_flags"),
+			apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 		)
 	}
 	paramsJSON, _ := marshalJSONRaw(grantParams)
@@ -4431,7 +4431,7 @@ func newChatCommand() *cobra.Command {
 			if !commandDryRun(cmd) && !commandBoolFlag(cmd, "yes") {
 				return apperrors.NewValidation(
 					"删除会话分组不可逆；获得用户确认后加 --yes 执行",
-					apperrors.WithReason("confirmation_required"),
+					apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 					apperrors.WithHint("先确认目标分组及影响范围；用户明确同意后以相同参数追加 --yes"),
 					apperrors.WithActions("确认目标会话分组", "获得用户确认后使用 --yes 执行"),
 				)
@@ -9011,7 +9011,7 @@ status 可选值:
 			if target == "" && receiver == "" {
 				return apperrors.NewValidation(
 					"exactly one of --target or --receiver is required",
-					apperrors.WithReason("missing_required_flags"),
+					apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags),
 				)
 			}
 			if target != "" && receiver != "" {

@@ -71,7 +71,7 @@ func resolveDriveRenameName(ctx context.Context, nodeID, name string) (string, e
 func runDriveUpload(cmd *cobra.Command, _ []string) error {
 	filePath := mustGetFlag(cmd, "file")
 	if filePath == "" {
-		return apperrors.NewValidation("flag --file is required", apperrors.WithReason("missing_required_flags"))
+		return apperrors.NewValidation("flag --file is required", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 	}
 
 	fi, err := os.Stat(filePath)
@@ -606,11 +606,11 @@ func newDriveCommand() *cobra.Command {
 		RunE: func(cmd *cobra.Command, args []string) error {
 			fileID := flagOrFallback(cmd, "node", "file-id")
 			if fileID == "" {
-				return apperrors.NewValidation("flag --node is required", apperrors.WithReason("missing_required_flags"))
+				return apperrors.NewValidation("flag --node is required", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 			}
 			outputPath, _ := cmd.Flags().GetString("output")
 			if outputPath == "" {
-				return apperrors.NewValidation("flag --output is required", apperrors.WithReason("missing_required_flags"))
+				return apperrors.NewValidation("flag --output is required", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 			}
 
 			argsMap := map[string]any{"fileId": fileID}

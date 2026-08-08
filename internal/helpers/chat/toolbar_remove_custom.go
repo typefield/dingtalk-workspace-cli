@@ -48,7 +48,7 @@ func newToolbarRemoveCustomCommand() *cobra.Command {
 			if !commandBoolFlag(cmd, "yes") {
 				return apperrors.NewValidation(
 					"删除自定义快捷入口不可逆；获得用户确认后加 --yes 执行",
-					apperrors.WithReason("confirmation_required"),
+					apperrors.WithSubtype(apperrors.SubtypeConfirmationRequired),
 					apperrors.WithHint("先确认目标入口及影响范围；用户明确同意后以相同参数追加 --yes"),
 					apperrors.WithActions("确认目标自定义入口", "获得用户确认后使用 --yes 执行"),
 				)

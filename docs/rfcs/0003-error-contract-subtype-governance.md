@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：Proposed
+- 状态：已实施（首批 registry）；渐进迁移进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,11 +26,12 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| `WithReason("…")` 字面 subtype | 79 | 生产源码中已出现的自由字符串，不等于已稳定协议 |
-| 相应调用点 | 159 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 已注册 descriptor / `WithSubtype(...)` 调用 | 6 / 47 | 首批稳定 subtype 已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| `WithReason("…")` 自由字面调用 | 111 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
+| 全部 subtype / 调用点 | 80 / 158 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 6 | 绕过 `WithReason` 的第二条入口 |
 | 动态 `WithReason(variable)` | 16 | 上游码或拼接文本可能直接变成 Agent 分支键 |
-| 缺邻近 `WithHint` 的 subtype | 30 | 不能默认 Agent 有可靠恢复路径 |
+| 缺有效恢复提示的 subtype | 29 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
 `permission=4`、`internal=5`、`discovery=6`、`partial_failure=7`。
@@ -65,12 +66,15 @@ type Descriptor struct {
     RetryPolicy   RetryPolicy // never / idempotent_read_only / server_directive
     RequireHint   bool
     RequireAction bool
+    DefaultHint   string // 无命令级 hint 时使用的安全恢复提示
     Description   string
 }
 ```
 
-Descriptor 的字段是规范，不是自动编造恢复文案的模板：具体 `hint/actions` 仍由掌握
-命令上下文的业务层填写。Registry 只规定哪些情况下必须存在、哪些重试声明不合法。
+Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终态的模板：具体
+`hint/actions` 仍由掌握命令上下文的业务层填写。`DefaultHint` 只覆盖通用、安全的
+恢复动作（如“补齐参数后重试”）；命令级 `WithHint` 始终优先。Registry 只规定哪些
+情况下必须存在、哪些重试声明不合法。
 
 ### 4.2 首批稳定 subtype
 
@@ -121,8 +125,8 @@ Descriptor 的字段是规范，不是自动编造恢复文案的模板：具体
 
 ```text
 P0  Agent 扫描盘点（已完成）
-P1  建 registry + 首批六个 descriptor；新增构造/投影单元测试
-P2  逐命令迁移统一返回 active command；动态上游 reason 走映射器
+P1  建 registry + 首批六个 descriptor；新增构造/投影单元测试（已完成）
+P2  逐命令迁移：首批六个已登记 subtype 的所有生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

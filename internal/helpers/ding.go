@@ -110,7 +110,7 @@ func newDingCommand() *cobra.Command {
 				robotCode = os.Getenv("DINGTALK_DING_ROBOT_CODE")
 			}
 			if robotCode == "" {
-				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithReason("missing_required_flags"))
+				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 			}
 			typeStr, err := validatedDingRemindType(mustGetFlag(cmd, "type"))
 			if err != nil {
@@ -183,7 +183,7 @@ func newDingCommand() *cobra.Command {
 				robotCode = os.Getenv("DINGTALK_DING_ROBOT_CODE")
 			}
 			if robotCode == "" {
-				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithReason("missing_required_flags"))
+				return apperrors.NewValidation("flag --robot-code is required (or set DINGTALK_DING_ROBOT_CODE env var)", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 			}
 			return callMCPTool("recall_ding_message", map[string]any{
 				"robotCode":  robotCode,

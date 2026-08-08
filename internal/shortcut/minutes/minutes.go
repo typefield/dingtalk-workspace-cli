@@ -262,7 +262,7 @@ func callListResolveList(data map[string]any) ([]any, bool) {
 
 func minutesProjectionUnknown(message string) error {
 	return apperrors.NewAPI(message,
-		apperrors.WithReason("projection_unknown"),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)

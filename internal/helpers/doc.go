@@ -112,7 +112,7 @@ func docVersionHasMore(v any) (hasMore, known bool) {
 func docVersionPaginationError(nodeID, reason string) error {
 	return apperrors.NewAPI(
 		fmt.Sprintf("无法安全校验文档 %q 的目标版本：%s", nodeID, reason),
-		apperrors.WithReason("pagination_inconsistent"),
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("version_preflight"),
 		apperrors.WithExecutionStarted(false),

@@ -43,7 +43,7 @@ func mustFlagOrFallback(cmd *cobra.Command, primary string, aliases ...string) (
 	if err == nil {
 		return value, nil
 	}
-	return "", apperrors.NewValidation(err.Error(), apperrors.WithReason("missing_required_flags"))
+	return "", apperrors.NewValidation(err.Error(), apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 }
 
 func validateRequiredFlags(cmd *cobra.Command, names ...string) error {
@@ -51,7 +51,7 @@ func validateRequiredFlags(cmd *cobra.Command, names ...string) error {
 	if err == nil {
 		return nil
 	}
-	return apperrors.NewValidation(err.Error(), apperrors.WithReason("missing_required_flags"))
+	return apperrors.NewValidation(err.Error(), apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 }
 
 func validateRequiredFlagWithAliases(cmd *cobra.Command, primary string, aliases ...string) error {
@@ -59,7 +59,7 @@ func validateRequiredFlagWithAliases(cmd *cobra.Command, primary string, aliases
 	if err == nil {
 		return nil
 	}
-	return apperrors.NewValidation(err.Error(), apperrors.WithReason("missing_required_flags"))
+	return apperrors.NewValidation(err.Error(), apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 }
 
 // Deps holds shared dependencies injected from the host application.

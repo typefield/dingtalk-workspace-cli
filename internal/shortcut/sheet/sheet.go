@@ -148,7 +148,7 @@ func listSheetsResolveList(data map[string]any) ([]any, bool) {
 
 func sheetProjectionUnknown(message string) error {
 	return apperrors.NewAPI(message,
-		apperrors.WithReason("projection_unknown"),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)
