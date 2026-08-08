@@ -105,8 +105,8 @@ func TestAllTerminalDevBusinessSurfacesDeclareV2Active(t *testing.T) {
 	walk = func(cmd *cobra.Command) {
 		children := cmd.Commands()
 		if cmd.Runnable() && len(children) == 0 {
-			if got := output.CommandRollout(cmd); got != output.RolloutV2Active {
-				t.Errorf("%s rollout=%s, want %s", cmd.CommandPath(), got, output.RolloutV2Active)
+			if got := output.CommandRollout(cmd); got != output.RolloutUnifiedActive {
+				t.Errorf("%s rollout=%s, want %s", cmd.CommandPath(), got, output.RolloutUnifiedActive)
 			}
 		}
 		if cmd.CommandPath() == "dws dev connect" && output.CommandRollout(cmd) != output.RolloutLegacyOnly {

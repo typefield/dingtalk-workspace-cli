@@ -35,7 +35,7 @@ func TestPublicRootDirectExecuteFailsWhenV2SinkCannotPublish(t *testing.T) {
 			return output.StoreResult(cmd.Context(), output.Success(map[string]any{"id": "ok"}))
 		},
 	}
-	output.SetCommandRollout(leaf, output.RolloutV2Active)
+	output.SetCommandRollout(leaf, output.RolloutUnifiedActive)
 	root.AddCommand(leaf)
 	root.SetArgs([]string{"lifecycle-v2", "--output", filepath.Join(t.TempDir(), "result.json")})
 
@@ -111,7 +111,7 @@ func TestExecutePanicAfterEmissionPreservesSingleResultAndExitCode(t *testing.T)
 	var stdout, stderr bytes.Buffer
 	rootNewRootCommandWithEngine = func(ctx context.Context, _ *pipeline.Engine) *cobra.Command {
 		cmd := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
-		output.SetCommandRollout(cmd, output.RolloutV2Active)
+		output.SetCommandRollout(cmd, output.RolloutUnifiedActive)
 		cmd.SetOut(&stdout)
 		cmd.SetErr(&stderr)
 		cmd.SetContext(ctx)

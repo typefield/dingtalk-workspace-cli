@@ -105,7 +105,7 @@ skill 源默认取二进制内嵌的版本（升级二进制即升级 skill）�
 	cmd.Flags().StringSliceP("skill", "s", nil, "multi 模式：仅安装指定子 skill（可重复，接受短名 aitable 或全名 dingtalk-aitable）")
 	cmd.Flags().StringSliceP("exclude", "x", nil, "multi 模式：从全装中剔除指定子 skill（可重复，与 --skill 互斥）")
 	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
-		OutputRollout: output.RolloutV2Active,
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "high",
 			Confirmation: "user_required", Idempotency: "unknown",

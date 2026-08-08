@@ -815,7 +815,7 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 	}
 	resolveAppNames(cmd, connectResponseRunner{err: errors.New("offline")}, []connectHealthReport{{UnifiedAppID: "u-1"}})
 
-	list := prepareFrameworkV2TestCommand(newDevAppRobotConnectListCommand(runner))
+	list := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(runner))
 	var out bytes.Buffer
 	list.SetOut(&out)
 	// 统一输出试点（B114/B115）：默认 json 出完整信封；空结果必须
@@ -823,7 +823,7 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 	if err := list.Execute(); err != nil || !strings.Contains(out.String(), `"data": []`) || !strings.Contains(out.String(), `"count": 0`) {
 		t.Fatalf("empty list envelope = %q, %v", out.String(), err)
 	}
-	list = prepareFrameworkV2TestCommand(newDevAppRobotConnectListCommand(runner))
+	list = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(runner))
 	out.Reset()
 	list.SetOut(&out)
 	list.SetArgs([]string{"--json"})
@@ -835,7 +835,7 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 		Pid: os.Getpid(), ClientID: strings.Repeat("c", 80), Channel: strings.Repeat("x", 80),
 		StartUnix: time.Now().Add(-time.Minute).Unix(), ConnectedUnix: time.Now().Add(-time.Minute).Unix(),
 	})
-	list = prepareFrameworkV2TestCommand(newDevAppRobotConnectListCommand(runner))
+	list = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(runner))
 	list.SetArgs([]string{"--format", "table"})
 	out.Reset()
 	list.SetOut(&out)
@@ -846,7 +846,7 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 	connectHealthReadDir = func(string) ([]os.DirEntry, error) {
 		return nil, errors.New("read directory")
 	}
-	list = prepareFrameworkV2TestCommand(newDevAppRobotConnectListCommand(runner))
+	list = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(runner))
 	list.SetOut(&bytes.Buffer{})
 	if err := list.Execute(); err == nil {
 		t.Fatal("list with blocked directory succeeded")
@@ -861,7 +861,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	defaultFindProcess := daemonFindProcess
 
 	for _, command := range []*cobra.Command{newDevAppRobotConnectStatusCommand(), newDevAppRobotConnectStopCommand(), newDevAppRobotConnectRestartCommand()} {
-		command = prepareFrameworkV2TestCommand(command)
+		command = prepareFrameworkUnifiedTestCommand(command)
 		command.SetArgs(nil)
 		command.SetOut(&bytes.Buffer{})
 		command.SetErr(&bytes.Buffer{})
@@ -870,20 +870,20 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 		}
 	}
 
-	status := prepareFrameworkV2TestCommand(newDevAppRobotConnectStatusCommand())
+	status := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectStatusCommand())
 	status.SetArgs([]string{"--robot-client-id", "missing", "--json"})
 	status.SetOut(&bytes.Buffer{})
 	if err := status.Execute(); err != nil {
 		t.Fatalf("status command = %v", err)
 	}
-	stop := prepareFrameworkV2TestCommand(newDevAppRobotConnectStopCommand())
+	stop := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectStopCommand())
 	stop.SetArgs([]string{"--unified-app-id", "missing", "--yes"})
 	stop.SetOut(&bytes.Buffer{})
 	if err := stop.Execute(); err != nil {
 		t.Fatalf("stop command = %v", err)
 	}
 
-	restart := prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SetArgs([]string{"--robot-client-id", "missing"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
@@ -896,7 +896,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 		t.Fatal(err)
 	}
 	connectDaemonDirOverride = blocked
-	restart = prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SetArgs([]string{"--robot-client-id", "blocked"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
@@ -908,7 +908,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	if err := os.WriteFile(daemonStatePath(corruptDir), []byte("{"), 0o600); err != nil {
 		t.Fatal(err)
 	}
-	restart = prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SetArgs([]string{"--robot-client-id", "corrupt-restart"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
@@ -935,7 +935,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	}
 	daemonExecutable = func() (string, error) { return "/bin/sh", nil }
 	daemonCommand = func(string, ...string) *exec.Cmd { return exec.Command("sh", "-c", "exit 0") }
-	restart = prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SetArgs([]string{"--robot-client-id", "restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
@@ -948,7 +948,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	}
 	daemonProcessAlive = func(int) bool { return true }
 	daemonFindProcess = func(int) (*os.Process, error) { return nil, errors.New("find") }
-	restart = prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SetArgs([]string{"--robot-client-id", "restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})

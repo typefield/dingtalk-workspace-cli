@@ -24,7 +24,7 @@ func newDevAppTestRoot(runner executor.Runner) *cobra.Command {
 		SilenceErrors:     true,
 		SilenceUsage:      true,
 		PersistentPreRunE: func(cmd *cobra.Command, _ []string) error {
-			return output.ValidateV2Format(cmd)
+			return output.ValidateUnifiedFormat(cmd)
 		},
 		PersistentPostRunE: func(cmd *cobra.Command, _ []string) error {
 			_, _, err := output.EmitStoredResult(cmd)
@@ -39,7 +39,7 @@ func newDevAppTestRoot(runner executor.Runner) *cobra.Command {
 	return root
 }
 
-func prepareFrameworkV2TestCommand(cmd *cobra.Command) *cobra.Command {
+func prepareFrameworkUnifiedTestCommand(cmd *cobra.Command) *cobra.Command {
 	ctx, _ := output.WithResultStore(context.Background())
 	cmd.SetContext(ctx)
 	cmd.SilenceErrors = true
@@ -388,7 +388,7 @@ func TestDevAppRobotAndVersionWritesRequireGuard(t *testing.T) {
 
 func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 	runner := &captureRunner{}
-	root := prepareFrameworkV2TestCommand(newDevAppCommand(runner))
+	root := prepareFrameworkUnifiedTestCommand(newDevAppCommand(runner))
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
@@ -414,7 +414,7 @@ func TestDevAppListBuildsListByConditionParams(t *testing.T) {
 
 func TestCrossPlatformCoverageDevAppGetBuildsDetailParams(t *testing.T) {
 	runner := &captureRunner{}
-	root := prepareFrameworkV2TestCommand(newDevAppCommand(runner))
+	root := prepareFrameworkUnifiedTestCommand(newDevAppCommand(runner))
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
@@ -434,7 +434,7 @@ func TestCrossPlatformCoverageDevAppGetBuildsDetailParams(t *testing.T) {
 
 func TestCrossPlatformCoverageDevAppGetBuildsDetailParamsByAppKey(t *testing.T) {
 	runner := &captureRunner{}
-	root := prepareFrameworkV2TestCommand(newDevAppCommand(runner))
+	root := prepareFrameworkUnifiedTestCommand(newDevAppCommand(runner))
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)
@@ -454,7 +454,7 @@ func TestCrossPlatformCoverageDevAppGetBuildsDetailParamsByAppKey(t *testing.T) 
 
 func TestCrossPlatformCoverageDevAppGetPrefersUnifiedAppIDWhenBothPresent(t *testing.T) {
 	runner := &captureRunner{}
-	root := prepareFrameworkV2TestCommand(newDevAppCommand(runner))
+	root := prepareFrameworkUnifiedTestCommand(newDevAppCommand(runner))
 	var out bytes.Buffer
 	root.SetOut(&out)
 	root.SetErr(&out)

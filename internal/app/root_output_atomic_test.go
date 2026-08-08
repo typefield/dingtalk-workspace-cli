@@ -164,7 +164,7 @@ func TestOutputSinkV2PublicationFailureFailsAndLeavesNoFinalFile(t *testing.T) {
 			return output.StoreResult(cmd.Context(), output.Success(map[string]any{"id": "ok"}))
 		},
 	}
-	output.SetCommandRollout(leaf, output.RolloutV2Active)
+	output.SetCommandRollout(leaf, output.RolloutUnifiedActive)
 	root.AddCommand(leaf)
 	root.SetArgs([]string{"atomic-output-v2", "--output", target})
 	if _, err := root.ExecuteC(); err == nil {
@@ -195,7 +195,7 @@ func TestOutputSinkEmissionFailurePreservesTarget(t *testing.T) {
 			return cmd.OutOrStdout().(*os.File).Close()
 		},
 	}
-	output.SetCommandRollout(leaf, output.RolloutV2Active)
+	output.SetCommandRollout(leaf, output.RolloutUnifiedActive)
 	root.AddCommand(leaf)
 	root.SetArgs([]string{"atomic-emission-failure", "--output", target})
 	if _, err := root.ExecuteC(); err == nil {

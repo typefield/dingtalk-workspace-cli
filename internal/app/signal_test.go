@@ -29,7 +29,7 @@ func installSignalExecuteSeams(t *testing.T, v2 bool, stdout, stderr io.Writer) 
 	testseam.Swap(t, &rootNewRootCommandWithEngine, func(ctx context.Context, _ *pipeline.Engine) *cobra.Command {
 		cmd := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
 		if v2 {
-			output.SetCommandRollout(cmd, output.RolloutV2Active)
+			output.SetCommandRollout(cmd, output.RolloutUnifiedActive)
 		}
 		cmd.SetContext(ctx)
 		cmd.SetOut(stdout)

@@ -384,8 +384,8 @@ func EmitStoredResult(cmd *cobra.Command) (int, bool, error) {
 	if store.result == nil || store.emitAttempted {
 		return store.exitCode, store.emitted, nil
 	}
-	if !UsesV2(cmd) {
-		return 0, false, fmt.Errorf("output: legacy command %q produced a framework v2 result", cmd.CommandPath())
+	if !UsesUnifiedResult(cmd) {
+		return 0, false, fmt.Errorf("output: legacy command %q produced a framework unified result", cmd.CommandPath())
 	}
 	store.emitAttempted = true
 	store.exitCode = store.result.ExitCode()

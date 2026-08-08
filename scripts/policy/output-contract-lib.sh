@@ -90,7 +90,7 @@ output_contract_samples() {
 	fi
 }
 
-# A v2 failure or partial result intentionally exits nonzero but still owns one
+# A unified failure or partial result intentionally exits nonzero but still owns one
 # JSON envelope on stdout. Only a nonzero command with no stdout is unavailable
 # to these scanners (for example, failure before output initialization).
 output_contract_should_scan_result() {
@@ -108,7 +108,7 @@ output_contract_self_test_harness() {
 	: >"$harness_test_tmp/no-stdout"
 	output_contract_materialize_fixture envelope_legal_partial_failure "$harness_test_tmp/partial.out"
 	if ! output_contract_should_scan_result 7 "$harness_test_tmp/partial.out"; then
-		printf 'self-test MISMATCH: nonzero v2 envelope was skipped\n' >&2
+		printf 'self-test MISMATCH: nonzero unified envelope was skipped\n' >&2
 		harness_test_fail=1
 	fi
 	if output_contract_should_scan_result 1 "$harness_test_tmp/no-stdout"; then
@@ -336,7 +336,7 @@ output_contract_scan_samples() {
 				HOME="$scan_home" "$OC_BIN" $scan_argv \
 					>"$scan_out" 2>"$scan_err" </dev/null || scan_rc=$?
 			fi
-			# A nonzero v2 result is still a completed sample. Preserve its first
+			# A nonzero unified result is still a completed sample. Preserve its first
 			# envelope instead of retrying and potentially overwriting it.
 			if [ "$scan_rc" -eq 0 ] || [ -s "$scan_out" ]; then
 				break
@@ -350,7 +350,7 @@ output_contract_scan_samples() {
 			continue
 		fi
 		if [ "$scan_rc" -ne 0 ]; then
-			printf '  [scan] %s: exited rc=%s with stdout; validating expected v2 failure/partial output\n' \
+			printf '  [scan] %s: exited rc=%s with stdout; validating expected unified failure/partial output\n' \
 				"$scan_label" "$scan_rc"
 		fi
 		scan_verified=$((scan_verified + 1))

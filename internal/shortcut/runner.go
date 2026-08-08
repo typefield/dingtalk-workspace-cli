@@ -130,7 +130,7 @@ func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
 	if params == nil {
 		params = map[string]any{}
 	}
-	if output.UsesV2(rt.cmd) {
+	if output.UsesUnifiedResult(rt.cmd) {
 		if rt.DryRun() {
 			return rt.Output(map[string]any{
 				"dry_run":   true,
@@ -171,7 +171,7 @@ func (rt *RuntimeContext) CallMCP(tool string, params map[string]any) error {
 		}
 		// dual_validate changes no external bytes: it renders the once-fetched
 		// payload through the established legacy projection after validating the
-		// shadow v2 result.
+		// shadow unified result.
 		if _, unstructured := data.(string); unstructured {
 			return writeLegacyRaw(rt.cmd.OutOrStdout(), text)
 		}
@@ -319,11 +319,23 @@ func (rt *RuntimeContext) callMCPWriteData(product, tool string, params map[stri
 // composed result instead of the raw MCP response — the output-projection
 // output-formatting capability.
 func (rt *RuntimeContext) Output(payload any) error {
-	if output.UsesV2(rt.cmd) {
-		return output.StoreResult(rt.cmd.Context(), rt.resultForPayload("", payload))
+	return rt.OutputResult(payload, rt.resultForPayload("", payload))
+}
+
+// OutputResult emits payload through the command's single active contract.
+// It gives composite shortcuts a narrow escape hatch to attach framework meta
+// (for example authoritative pagination) without making the legacy renderer
+// infer business semantics. The payload remains the exact legacy rendering
+// input until that command itself is activated for unified output.
+func (rt *RuntimeContext) OutputResult(payload any, result output.CommandResult) error {
+	if result == nil {
+		return fmt.Errorf("shortcut output result must not be nil")
+	}
+	if output.UsesUnifiedResult(rt.cmd) {
+		return output.StoreResult(rt.cmd.Context(), result)
 	}
 	if output.CommandRollout(rt.cmd) == output.RolloutDualValidate {
-		if err := output.ValidateResult(rt.resultForPayload("", payload)); err != nil {
+		if err := output.ValidateResult(result); err != nil {
 			return err
 		}
 	}

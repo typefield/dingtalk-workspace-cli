@@ -34,8 +34,8 @@ func TestDevFormerExclusionsHaveFinalContractAndV2OptIn(t *testing.T) {
 		if _, ok := contractfinal.RuntimeContractFinal(cmd); !ok {
 			t.Fatalf("%s has no ContractFinal", cmd.CommandPath())
 		}
-		if got := output.CommandRollout(cmd); got != output.RolloutV2Active {
-			t.Fatalf("%s rollout=%s, want %s", cmd.CommandPath(), got, output.RolloutV2Active)
+		if got := output.CommandRollout(cmd); got != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout=%s, want %s", cmd.CommandPath(), got, output.RolloutUnifiedActive)
 		}
 	}
 }

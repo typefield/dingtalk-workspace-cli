@@ -47,7 +47,7 @@ func TestConnectDaemonFamilyMissingDaemonErrorPaths(t *testing.T) {
 	t.Cleanup(func() { connectDaemonDirOverride = "" })
 
 	// status：daemon 不存在 → ok:true 信封，data.state=not_running（非错误）。
-	status := prepareFrameworkV2TestCommand(newDevAppRobotConnectStatusCommand())
+	status := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectStatusCommand())
 	var statusOut, statusErr bytes.Buffer
 	status.SetOut(&statusOut)
 	status.SetErr(&statusErr)
@@ -65,7 +65,7 @@ func TestConnectDaemonFamilyMissingDaemonErrorPaths(t *testing.T) {
 	}
 
 	// stop：daemon 不存在 → ok:true 信封，data.status=not_running；人读行走 stderr。
-	stop := prepareFrameworkV2TestCommand(newDevAppRobotConnectStopCommand())
+	stop := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectStopCommand())
 	var stopOut, stopErr bytes.Buffer
 	stop.SetOut(&stopOut)
 	stop.SetErr(&stopErr)
@@ -88,7 +88,7 @@ func TestConnectDaemonFamilyMissingDaemonErrorPaths(t *testing.T) {
 	// restart：daemon 不存在 → validation 错误（无法安全重建），非信封。
 	// SilenceUsage 对齐生产根命令（internal/app/root.go：SilenceUsage=true），
 	// 否则单叶子 Execute() 报错时 Cobra 默认把 usage 打 stdout，污染断言。
-	restart := prepareFrameworkV2TestCommand(newDevAppRobotConnectRestartCommand())
+	restart := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
 	restart.SilenceUsage = true
 	var restartOut, restartErr bytes.Buffer
 	restart.SetOut(&restartOut)
@@ -115,7 +115,7 @@ func TestConnectDaemonFamilyRequiresLocatorIdentity(t *testing.T) {
 		func() *cobra.Command { return newDevAppRobotConnectStopCommand() },
 		func() *cobra.Command { return newDevAppRobotConnectRestartCommand() },
 	} {
-		cmd := prepareFrameworkV2TestCommand(build())
+		cmd := prepareFrameworkUnifiedTestCommand(build())
 		cmd.SilenceUsage = true
 		var out, errBuf bytes.Buffer
 		cmd.SetOut(&out)
