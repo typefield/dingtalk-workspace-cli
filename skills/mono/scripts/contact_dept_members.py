@@ -14,6 +14,8 @@ import subprocess
 import argparse
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 
 def strip_highlight(text: str) -> str:
     """去除 dept search 返回名称中的 <red>…</red> 高亮标签。"""
@@ -27,7 +29,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -50,10 +52,10 @@ def main():
     parser.add_argument(
         '--query', required=True, help='部门名称关键词'
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
-    print(f'🔍 搜索部门: {args.query}')
+    print(f'🔍 搜索部门: {args.query}', file=sys.stderr)
     dept_data = run_dws([
         'contact', 'dept', 'search',
         '--query', args.query, '--format', 'json',
@@ -64,11 +66,12 @@ def main():
             'contact', 'dept', 'list-members',
             '--depts', '<DEPT_ID>', '--format', 'json',
         ], dry_run=True)
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'query': args.query, 'plan': 'search department then list members',
+        }, dry_run=True, text='[dry-run] 将搜索部门并列出成员')
 
     if not dept_data:
-        print('未找到匹配部门')
-        sys.exit(1)
+        return failure(args.format, '未找到匹配部门')
 
     # dept search 返回顶层 deptList；兼容 result 包裹与历史 items/result 键。
     if isinstance(dept_data, list):
@@ -82,9 +85,9 @@ def main():
                  or dept_data.get('items')
                  or [])
     if not depts:
-        print('未找到匹配部门')
-        sys.exit(1)
+        return failure(args.format, '未找到匹配部门')
 
+    output = []
     for dept in depts:
         dept_id = dept.get('id') or dept.get('deptId')
         dept_name = strip_highlight(
@@ -93,15 +96,15 @@ def main():
         if not dept_id:
             continue
 
-        print(f"\n📂 {dept_name} (ID: {dept_id})")
-        print('-' * 40)
+        print(f"\n📂 {dept_name} (ID: {dept_id})", file=sys.stderr)
+        print('-' * 40, file=sys.stderr)
 
         members_data = run_dws([
             'contact', 'dept', 'list-members',
             '--depts', str(dept_id), '--format', 'json',
         ])
         if not members_data:
-            print('  无法获取成员列表')
+            print('  无法获取成员列表', file=sys.stderr)
             continue
 
         # list-members 返回 deptUserList；兼容 result 包裹与历史 userlist 键。
@@ -117,9 +120,10 @@ def main():
                        or members_data.get('userlist')
                        or [])
         if not members:
-            print('  (暂无成员)')
+            print('  (暂无成员)', file=sys.stderr)
             continue
 
+        normalized = []
         for m in members:
             # list-members 每项形如 {"userInfo": {"name":..., "userId":...}}，
             # 成员字段嵌在 userInfo 下；兼容历史扁平结构。
@@ -132,10 +136,18 @@ def main():
                 line += f" ({title})"
             if uid:
                 line += f"  [ID: {uid}]"
-            print(line)
+            print(line, file=sys.stderr)
+            normalized.append({'name': name, 'title': title, 'userId': uid})
 
-        print(f"  共 {len(members)} 人")
+        print(f"  共 {len(members)} 人", file=sys.stderr)
+        output.append({'department': dept_name, 'deptId': dept_id, 'members': normalized})
+
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'query': args.query, 'departments': output,
+        })
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())

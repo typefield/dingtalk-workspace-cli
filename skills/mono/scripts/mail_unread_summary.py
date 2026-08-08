@@ -15,6 +15,8 @@ import argparse
 from datetime import datetime, timezone, timedelta
 from typing import List, Any, Optional
 
+from _runtime import add_contract_flags, emit, failure
+
 TZ = timezone(timedelta(hours=8))
 
 
@@ -23,7 +25,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -87,19 +89,18 @@ def main():
         '--size', dest='limit', type=int, default=argparse.SUPPRESS,
         help=argparse.SUPPRESS,
     )
-    parser.add_argument('--dry-run', action='store_true')
+    add_contract_flags(parser)
     args = parser.parse_args()
 
-    print('📬 获取邮箱地址...')
+    print('📬 获取邮箱地址...', file=sys.stderr)
     email = get_my_email(dry_run=args.dry_run)
     if not email and not args.dry_run:
-        print('错误：无法获取邮箱地址')
-        sys.exit(1)
+        return failure(args.format, '无法获取邮箱地址')
 
     today = datetime.now(TZ).strftime('%Y-%m-%dT00:00:00Z')
     kql = f'isRead:false AND date>{today}'
 
-    print(f'🔍 搜索未读邮件...\n')
+    print(f'🔍 搜索未读邮件...\n', file=sys.stderr)
     data = run_dws([
         'mail', 'message', 'search',
         '--email', email or '<MY_EMAIL>',
@@ -109,14 +110,26 @@ def main():
     ], dry_run=args.dry_run)
 
     if args.dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'query': kql, 'limit': args.limit,
+        }, dry_run=True, text='[dry-run] 将查询今日未读邮件')
     if not data:
-        print('未查到邮件')
-        return
+        return failure(args.format, '邮件查询失败')
 
     data = unwrap_result(data)
     messages = (data if isinstance(data, list)
                 else data.get('items', data.get('messages', [])))
+
+    items = []
+    for m in messages:
+        sender = m.get('from', {})
+        sender_name = (sender.get('name') or sender.get('email', '未知')
+                       if isinstance(sender, dict) else str(sender))
+        items.append({'subject': m.get('subject', '(无主题)'), 'sender': sender_name})
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'query': kql, 'count': len(items), 'messages': items,
+        })
 
     print(f"📧 今日未读邮件")
     print('=' * 50)
@@ -124,16 +137,13 @@ def main():
         print('  ✅ 收件箱清空，没有未读邮件！')
         return
 
-    for m in messages:
-        subj = m.get('subject', '(无主题)')
-        sender = m.get('from', {})
-        sender_name = (sender.get('name') or sender.get('email', '未知')
-                       if isinstance(sender, dict) else str(sender))
-        print(f"  📩 {subj}")
-        print(f"     发件人: {sender_name}")
+    for item in items:
+        print(f"  📩 {item['subject']}")
+        print(f"     发件人: {item['sender']}")
 
-    print(f"\n合计: {len(messages)} 封未读邮件")
+    print(f"\n合计: {len(items)} 封未读邮件")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
