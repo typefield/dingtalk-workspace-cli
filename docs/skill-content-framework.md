@@ -26,6 +26,7 @@ Agent / 安装面选哪棵树由**行为分支**决定；本文件只规定树�
    - `scripts/` 可选；脚本须被本 skill 树内某 `.md` 引用，或进入 orphan allowlist
 3. **Frontmatter 最小集**（产品 / shared）
    - `name`：与目录名一致
+   - `version`：独立的 Skill 语义版本（SemVer）；内容/路由/安全契约变化时递增，不替代 CLI 兼容版本
    - `description`：非空，含触发意图与边界
    - `metadata.category`：`product` 或 `shared`（允许历史写法把 `cli_version` 放在 frontmatter 顶层）
    - `metadata.requires.bins`：含 `dws`

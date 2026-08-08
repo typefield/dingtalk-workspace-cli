@@ -1,5 +1,6 @@
 ---
 name: dingtalk-doc
+version: 1.0.0
 description: 钉钉文档（adoc）：创建、读取、编辑、块、评论、附件、白板卡片、导出、版本及Markdown/JSONML写入。原生 .md→dingtalk-misc；文件→dingtalk-drive；知识库→dingtalk-wiki；axls→dingtalk-misc，able→dingtalk-aitable。
 metadata:
   cli_version: ">=1.0.15"

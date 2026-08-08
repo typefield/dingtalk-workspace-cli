@@ -1,5 +1,6 @@
 ---
 name: dingtalk-aisearch
+version: 1.0.0
 description: AI搜问：人员语义搜索与跨源定位。Use when 按姓名/工号/部门/职责/上下级或手机号线索找人，跨文档/消息/邮件/听记检索，或回溯“我发过/收到过”。完整手机号反查走 dingtalk-contact；找到 userId 后由 contact 补详情。命令前缀：dws aisearch。
 metadata:
   cli_version: ">=1.0.15"

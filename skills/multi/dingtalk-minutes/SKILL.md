@@ -1,5 +1,6 @@
 ---
 name: dingtalk-minutes
+version: 1.0.0
 description: 钉钉 AI 听记。Use when 查询听记摘要、转写、关键词、待办或分享。写文档走 dingtalk-doc；日程走 dingtalk-calendar。
 metadata:
   cli_version: ">=1.0.15"
