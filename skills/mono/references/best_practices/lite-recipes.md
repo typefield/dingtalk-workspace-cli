@@ -1,7 +1,7 @@
 # Lite Recipe 完整步骤
 
 > 核心流程步骤 3 判定为 lite 后，按本文件中对应 recipe 的步骤**直接执行**。
-> 所有命令均须加 `--format json`（下文省略）。
+> 终结型 `dws` 命令默认加 `--format json`（下文省略）；脚本入口以自身 `--help` 声明为准，流式命令（如 `event consume`）按其 `ndjson`/有界消费约束执行。
 
 ## #1 消息沟通
 
