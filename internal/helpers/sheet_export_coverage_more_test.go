@@ -138,7 +138,7 @@ func TestSheetExportDryRunUsesUnifiedResult(t *testing.T) {
 		t.Fatalf("unified result must not carry a protocol version: %#v", wire)
 	}
 	data, ok := wire["data"].(map[string]any)
-	if !ok || data["executed"] != false || data["operation"] != "export_sheet_xlsx" {
+	if !ok || data["executed"] != false || data["preview_kind"] != "plan" || data["operation"] != "export_sheet_xlsx" {
 		t.Fatalf("data = %#v", wire["data"])
 	}
 	if stderr != "" {

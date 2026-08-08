@@ -23,10 +23,11 @@ func runSheetExport(cmd *cobra.Command, _ []string) error {
 
 	if deps.Caller.DryRun() {
 		return writeCommandPayload(cmd, map[string]any{
-			"executed":  false,
-			"operation": "export_sheet_xlsx",
-			"node_id":   nodeID,
-			"output":    outputPath,
+			"executed":     false,
+			"preview_kind": "plan",
+			"operation":    "export_sheet_xlsx",
+			"node_id":      nodeID,
+			"output":       outputPath,
 		})
 	}
 
