@@ -463,7 +463,7 @@ dws calendar event create --title "会议" \
   --start "2026-03-15T14:00:00+08:00" --end "2026-03-15T15:00:00+08:00" --format json
 
 # 3. 添加参与者
-dws calendar participant add --event <EVENT_ID> --users <USER_ID> --format json
+dws calendar attendee add --event <EVENT_ID> --attendees <USER_ID> --format json
 ```
 
 ### 创建待办并指派（aisearch → todo）

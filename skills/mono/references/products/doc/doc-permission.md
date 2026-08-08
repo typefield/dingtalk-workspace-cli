@@ -15,12 +15,12 @@
 Usage:
   dws doc permission add [flags]
 Example:
-  dws doc permission add --node <DOC_ID> --user uid1 --role READER
-  dws doc permission add --node <DOC_ID> --user uid1,uid2 --role EDITOR
-  dws doc permission add --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --user uid1 --role MANAGER
+  dws doc permission add --node <DOC_ID> --users uid1 --role READER
+  dws doc permission add --node <DOC_ID> --users uid1,uid2 --role EDITOR
+  dws doc permission add --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --users uid1 --role MANAGER
 Flags:
       --node string        目标文档/文件夹的 ID 或 URL (必填)
-      --user strings       被授权的用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
+      --users strings      被授权的用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
       --role string        授予的角色 (必填，大小写敏感，必须全大写): MANAGER (管理者) / EDITOR (可编辑) / DOWNLOADER (可下载) / READER (可阅读)
       --workspace string   所属知识库 ID (选填，仅用于辅助构造返回的 docUrl，业务实际依赖 nodeId)
 ```
@@ -40,11 +40,11 @@ Flags:
 Usage:
   dws doc permission update [flags]
 Example:
-  dws doc permission update --node <DOC_ID> --user uid1 --role EDITOR
-  dws doc permission update --node <DOC_ID> --user uid1,uid2 --role READER
+  dws doc permission update --node <DOC_ID> --users uid1 --role EDITOR
+  dws doc permission update --node <DOC_ID> --users uid1,uid2 --role READER
 Flags:
       --node string        目标文档/文件夹的 ID 或 URL (必填)
-      --user strings       目标用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
+      --users strings      目标用户 userId 列表，逗号分隔 (必填，单次最多 30 个)
       --role string        新角色 (必填，大小写敏感，必须全大写): MANAGER / EDITOR / DOWNLOADER / READER
       --workspace string   所属知识库 ID (选填)
 ```

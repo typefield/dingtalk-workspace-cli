@@ -18,6 +18,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/app"
 	"github.com/spf13/cobra"
+	"github.com/spf13/pflag"
 )
 
 var (
@@ -66,10 +67,25 @@ func main() {
 		fmt.Fprintln(os.Stderr, err)
 		os.Exit(2)
 	}
-	os.Exit(run(rootPath, app.NewRootCommand(), os.Stdout, os.Stderr))
+	semantic := false
+	for _, arg := range os.Args[1:] {
+		if arg == "--agent-semantic" {
+			semantic = true
+		}
+	}
+	os.Exit(runWithOptions(rootPath, app.NewRootCommand(), os.Stdout, os.Stderr, semantic))
 }
 
 func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
+	return runWithOptions(rootPath, root, stdout, stderr, false)
+}
+
+// runWithOptions keeps the normal path checker backward compatible while
+// allowing the Agent-facing audit to report a semantic distinction that path
+// integrity alone cannot see: a referenced flag may still execute only because
+// it is a hidden compatibility alias. This mode is evidence-only; it never
+// changes the normal checker result or CI gate.
+func runWithOptions(rootPath string, root *cobra.Command, stdout, stderr io.Writer, agentSemantic bool) int {
 	refs, err := extractReferences(filepath.Join(rootPath, "skills"))
 	if err != nil {
 		fmt.Fprintln(stderr, err)
@@ -78,6 +94,7 @@ func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
 
 	root.InitDefaultHelpCmd()
 	var failures []string
+	var hiddenFlagReferences []string
 	checked := map[string]bool{}
 	for _, ref := range refs {
 		path, flags, skip := parseReference(ref.Text)
@@ -99,6 +116,13 @@ func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
 			failures = append(failures, formatFailure(rootPath, ref, "command path does not exist"))
 			continue
 		case resolutionValid:
+			if agentSemantic {
+				if hidden := hiddenReferencedFlags(root, path, flags); len(hidden) > 0 {
+					hiddenFlagReferences = append(hiddenFlagReferences,
+						fmt.Sprintf("%s:%d: `%s`: hidden compatibility flag(s): %s",
+							relativePath(rootPath, ref.File), ref.Line, ref.Text, strings.Join(hidden, ", ")))
+				}
+			}
 			if issue := validateReferenceFlags(root, path, flags); issue != "" {
 				failures = append(failures, formatFailure(rootPath, ref, issue))
 				continue
@@ -115,8 +139,50 @@ func run(rootPath string, root *cobra.Command, stdout, stderr io.Writer) int {
 		}
 		return 1
 	}
+	if agentSemantic {
+		sort.Strings(hiddenFlagReferences)
+		fmt.Fprintf(stdout, "Agent semantic flag review: %d hidden compatibility references\n", len(hiddenFlagReferences))
+		for _, finding := range hiddenFlagReferences {
+			fmt.Fprintf(stdout, "  - REVIEW: %s\n", finding)
+		}
+	}
 	fmt.Fprintf(stdout, "skill command integrity check: ok (%d executable command paths)\n", len(checked))
 	return 0
+}
+
+func relativePath(root string, path string) string {
+	relative, err := filepath.Rel(root, path)
+	if err != nil {
+		return path
+	}
+	return relative
+}
+
+func hiddenReferencedFlags(root *cobra.Command, path string, flags []string) []string {
+	if len(flags) == 0 {
+		return nil
+	}
+	cmd, remaining, err := root.Find(strings.Fields(strings.TrimPrefix(path, "dws ")))
+	if err != nil || cmd == nil || len(remaining) > 0 {
+		return nil
+	}
+	var hidden []string
+	for _, name := range flags {
+		if name == "help" {
+			continue
+		}
+		var flag *pflag.Flag
+		if flag = cmd.Flags().Lookup(name); flag == nil {
+			flag = cmd.InheritedFlags().Lookup(name)
+		}
+		if flag == nil {
+			flag = cmd.PersistentFlags().Lookup(name)
+		}
+		if flag != nil && flag.Hidden {
+			hidden = append(hidden, "--"+name)
+		}
+	}
+	return uniqueSorted(hidden)
 }
 
 // schemaProjectionIssue keeps published Agent instructions on the bounded

@@ -13,6 +13,7 @@
 | Shortcut 运行时/目录/Skill 集合对账 | PASS |
 | Shortcut exclusion 逐条审阅队列 | PASS |
 | Skill CLI 路径/参数逐条对拍 | PASS |
+| Skill 隐藏兼容 flag Agent 审阅 | PASS |
 
 ## 原始 Agent 证据
 
@@ -157,12 +158,12 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-qotrnlrp/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-vvoq5zwh/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:35:37`
+- generated_at: `2026-08-08T15:40:48`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -200,7 +201,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-qotrnlrp/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-vvoq5zwh/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -271,12 +272,22 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1143 executable command paths)
+skill command integrity check: ok (1142 executable command paths)
+```
+
+### Skill 隐藏兼容 flag Agent 审阅
+
+命令：`go run ./scripts/policy/skill-command-check --agent-semantic`
+
+```text
+Agent semantic flag review: 0 hidden compatibility references
+skill command integrity check: ok (1142 executable command paths)
 ```
 
 ## 解释边界
 
 - Help 对账只证明参数可发现，不证明业务执行安全。
 - CLI 路径/参数对拍只证明当前公开 Help 接受文档中的 flags；隐藏兼容别名是否应继续教学，仍需 Agent 语义审阅。
+- 隐藏兼容 flag 审阅只把正向示例列为 REVIEW，不删除兼容 alias，也不作为 CI 阻断；应由 Agent 决定改 canonical 参数或保留历史说明。
 - dry-run 仍需由受控 child-runner、临时 HOME 和写请求计数器证明零写入。
 - 集合对账只证明 Runtime、目录和 Skill 不漂移，不证明后端数据真实存在。

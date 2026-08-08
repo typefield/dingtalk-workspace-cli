@@ -174,6 +174,25 @@ func TestValidateReferenceFlags(t *testing.T) {
 	}
 }
 
+func TestHiddenReferencedFlagsOnlyReportsHiddenAliases(t *testing.T) {
+	root := &cobra.Command{Use: "dws"}
+	leaf := &cobra.Command{Use: "search"}
+	leaf.Flags().String("query", "", "canonical query")
+	leaf.Flags().String("keyword", "", "compatibility alias")
+	if flag := leaf.Flags().Lookup("keyword"); flag != nil {
+		flag.Hidden = true
+	}
+	root.AddCommand(leaf)
+
+	if got := hiddenReferencedFlags(root, "dws search", []string{"query"}); len(got) != 0 {
+		t.Fatalf("canonical flag reported as hidden: %v", got)
+	}
+	got := hiddenReferencedFlags(root, "dws search", []string{"keyword", "query"})
+	if len(got) != 1 || got[0] != "--keyword" {
+		t.Fatalf("hidden aliases = %v, want [--keyword]", got)
+	}
+}
+
 func TestIsPlaceholder(t *testing.T) {
 	for _, token := range []string{"<cmd>", "<子命令>", "[optional]"} {
 		if !isPlaceholder(token) {
