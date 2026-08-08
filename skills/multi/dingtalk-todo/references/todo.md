@@ -510,5 +510,5 @@ dws todo tag delete --tag-codes code1,code2 --yes --format json
 | 脚本 | 场景 | 用法 |
 |------|------|------|
 | [todo_daily_summary.py](../scripts/todo_daily_summary.py) | 查看今天/明天/本周未完成待办汇总 | `python todo_daily_summary.py today` |
-| [todo_batch_create.py](../scripts/todo_batch_create.py) | 从 JSON 文件批量创建待办 | `python todo_batch_create.py todos.json` |
+| [todo_batch_create.py](../scripts/todo_batch_create.py) | 从 JSON 文件批量创建待办，支持 `--dry-run --format json`；保留 `succeeded[]/failed[]/unknown[]`，脚本会对可识别 taskId 逐项 `task get` 回读，只有 `verification.state=verified` 可报告终态成功 | `python todo_batch_create.py todos.json --format json` |
 | [todo_overdue_check.py](../scripts/todo_overdue_check.py) | 扫描逾期待办输出逾期清单 | `python todo_overdue_check.py` |

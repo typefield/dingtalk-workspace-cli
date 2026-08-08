@@ -48,7 +48,7 @@ metadata:
 | "较高 / 高优先级待办" | `dws todo task create ... --priority 30`（10低/20普通/30较高/40紧急） |
 | "紧急 / 最高优先级 / 立即处理" | `dws todo task create ... --priority 40` |
 | "循环待办（每天）" | `dws todo task create ... --due "<首次截止ISO>" --recurrence "DTSTART:<UTC>\nRRULE:FREQ=DAILY;INTERVAL=1"` |
-| "批量建待办" | 按 SOP-4 逐条创建、收集 `taskId` 并批量回读 |
+| "批量建待办" | 有 JSON 文件时用 `python scripts/todo_batch_create.py todos.json --format json`；脚本已对可识别 taskId 逐项 `task get` 回读。读取 `succeeded[]/failed[]/unknown[]`，仅 `verification.state=verified` 才可报告终态成功；未知项禁止盲目重做 |
 | "今天 / 本周未完成待办" | `python scripts/todo_daily_summary.py [today\|tomorrow\|week]` |
 | "逾期待办" | `python scripts/todo_overdue_check.py` |
 | "标记完成 / 重开" | `dws todo task done --task-id <taskId> --status true\|false` |

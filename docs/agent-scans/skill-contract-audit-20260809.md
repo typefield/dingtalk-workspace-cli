@@ -144,11 +144,11 @@
 命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_multi_script_contract.py`
 
 ```text
-multi Python files: 53
+multi Python files: 54
 Agent entries: 42
 Help nonzero: 0
 Help text mentions --dry-run: 30/42
-Help text mentions --format: 4/42
+Help text mentions --format: 5/42
 
 Nonzero help:
 
@@ -188,7 +188,6 @@ Entries without both flags (review, not automatic failures):
 - skills/multi/dingtalk-misc/scripts/yida_page_self_check.py: rc=0, dry_run=False, format=False
 - skills/multi/dingtalk-misc/scripts/yida_process_update.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/yida_report_update.py: rc=0, dry_run=True, format=False
-- skills/multi/dingtalk-todo/scripts/todo_batch_create.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-todo/scripts/todo_daily_summary.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-todo/scripts/todo_overdue_check.py: rc=0, dry_run=True, format=False
 
@@ -202,7 +201,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T05:10:34`
+- generated_at: `2026-08-09T05:19:57`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
