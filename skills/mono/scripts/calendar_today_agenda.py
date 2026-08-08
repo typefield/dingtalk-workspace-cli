@@ -13,8 +13,11 @@
 import sys
 import json
 import subprocess
+import argparse
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
+
+from _runtime import add_contract_flags, emit, failure
 
 TZ = timezone(timedelta(hours=8))
 
@@ -24,7 +27,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -73,13 +76,16 @@ def fmt_time(iso_str: str) -> str:
         return iso_str[:16]
 
 
-def main():
-    dry_run = '--dry-run' in sys.argv
-    args = [a for a in sys.argv[1:] if a != '--dry-run']
-    scope = args[0] if args else 'today'
+def main() -> int:
+    parser = argparse.ArgumentParser(description='查看日程安排')
+    parser.add_argument('scope', nargs='?', default='today',
+                        choices=['today', 'tomorrow', 'week'])
+    add_contract_flags(parser)
+    args = parser.parse_args()
+    dry_run = args.dry_run
+    scope = args.scope
     if scope not in ('today', 'tomorrow', 'week'):
-        print(__doc__)
-        sys.exit(1)
+        return failure(args.format, f'不支持的范围: {scope}')
 
     start, end = get_range(scope)
     data = run_dws([
@@ -89,7 +95,9 @@ def main():
         '--format', 'json',
     ], dry_run=dry_run)
     if dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'scope': scope, 'start': fmt_iso(start), 'end': fmt_iso(end),
+        }, dry_run=True, text='[dry-run] 将查询日程列表')
 
     # 兼容两种结构: 顶层 events / {result: {events: [...]}}
     events = []
@@ -108,34 +116,51 @@ def main():
 
     label = {'today': '今天', 'tomorrow': '明天', 'week': '本周'
              }.get(scope, scope)
+    records = []
+    for event in events:
+        title = event.get('summary') or event.get('title', '无标题')
+        start_obj = event.get('start', {})
+        end_obj = event.get('end', {})
+        records.append({
+            'title': title,
+            'start': start_obj.get('dateTime', '') if isinstance(start_obj, dict) else str(start_obj),
+            'end': end_obj.get('dateTime', '') if isinstance(end_obj, dict) else str(end_obj),
+            'location': (event.get('location', {}).get('displayName', '')
+                         if isinstance(event.get('location'), dict) else str(event.get('location', '') or '')),
+        })
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'scope': scope, 'count': len(records), 'items': records,
+            'start': fmt_iso(start), 'end': fmt_iso(end),
+        })
+
     print(f"\n📅 {label}日程 ({start.strftime('%m-%d')} ~ "
           f"{end.strftime('%m-%d')})")
     print('=' * 50)
 
     if not events:
         print('  ✅ 暂无日程，自由安排！')
-        return
+        return 0
 
-    for e in events:
-        title = e.get('summary') or e.get('title', '无标题')
-        s = e.get('start', {})
-        ed = e.get('end', {})
+    for record in records:
+        title = record['title']
+        s = record['start']
+        ed = record['end']
         start_t = fmt_time(
-            s.get('dateTime', '') if isinstance(s, dict) else str(s)
+            s
         )
         end_t = fmt_time(
-            ed.get('dateTime', '') if isinstance(ed, dict) else str(ed)
+            ed
         )
-        loc = e.get('location', {})
-        loc_str = (loc.get('displayName', '')
-                   if isinstance(loc, dict) else str(loc or ''))
+        loc_str = record['location']
         line = f"  🕐 {start_t}-{end_t}  {title}"
         if loc_str:
             line += f"  📍{loc_str}"
         print(line)
 
     print(f"\n合计: {len(events)} 场日程")
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
