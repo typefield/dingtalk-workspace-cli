@@ -121,9 +121,18 @@ func newSheetVersionCmd() *cobra.Command {
 				return err
 			}
 			if !cmd.Flags().Changed("version") {
-				return fmt.Errorf("flag --version is required")
+				return apperrors.NewValidation(
+					"flag --version is required",
+					apperrors.WithReason("missing_required_flag"),
+				)
 			}
 			version, _ := cmd.Flags().GetInt("version")
+			if version <= 0 {
+				return apperrors.NewValidation(
+					fmt.Sprintf("--version 必须为正整数，收到 %d", version),
+					apperrors.WithReason("invalid_argument"),
+				)
+			}
 			// A sheet version revert is destructive and historically has been
 			// capable of bricking the workbook when the target version was
 			// stale or invalid.  Resolve the version list through the read

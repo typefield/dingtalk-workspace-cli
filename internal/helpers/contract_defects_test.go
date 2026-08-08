@@ -231,6 +231,22 @@ func TestSheetVersionRevertRejectsMissingTargetBeforeWrite(t *testing.T) {
 	}
 }
 
+func TestSheetVersionRevertRejectsNonPositiveVersionBeforeRead(t *testing.T) {
+	caller := &contractDefectCaller{}
+	_, err := executeContractDefectCommand(t, caller, newSheetCommand,
+		"version", "revert", "--node", "sheet-1", "--version", "0", "--yes")
+	if err == nil {
+		t.Fatal("sheet version revert accepted non-positive target")
+	}
+	var appErr *apperrors.Error
+	if !errors.As(err, &appErr) || appErr.Reason != "invalid_argument" {
+		t.Fatalf("non-positive target error = %T %v, want invalid_argument", err, err)
+	}
+	if len(caller.calls) != 0 || len(caller.readCalls) != 0 {
+		t.Fatalf("non-positive target made remote calls: writes=%#v reads=%#v", caller.calls, caller.readCalls)
+	}
+}
+
 func TestSheetVersionRevertDryRunReadsButNeverWrites(t *testing.T) {
 	caller := &contractDefectCaller{
 		dryRun: true,
