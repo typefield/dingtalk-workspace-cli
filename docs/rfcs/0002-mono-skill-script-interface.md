@@ -14,7 +14,7 @@ Mono Skill 目前把脚本当作可执行 Agent 入口，但脚本自身没有�
   `--format`，7 个脚本在没有业务参数时 `--help` 返回非零；
 - 当前已迁移 `todo_batch_create.py`、`aitable_import_via_task.py`、
   `upload_attachment.py`、`doc_create_and_write.py` 和
-  `aitable_export_via_task.py`，实际扫描结果为 24 个 dry-run、5 个 format、5 个
+  `aitable_export_via_task.py`，实际扫描结果为 23 个 dry-run、5 个 format、5 个
   help 非零脚本；
 - 很多脚本虽然内部调用 `dws --format json`，但脚本外层仍输出人读文本和日志。
 
