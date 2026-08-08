@@ -20,6 +20,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/audit"
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	dwsevent "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event"
@@ -726,6 +727,7 @@ func TestCrossPlatformCoverageExecuteInvocationCoverage(t *testing.T) {
 		transport:   transport.NewClient(server.Client()),
 		globalFlags: &GlobalFlags{},
 		fallback:    &coverageRunner{},
+		auditSink:   audit.NopSink{},
 	}
 	inv := executor.Invocation{CanonicalProduct: "product", Tool: "tool", Params: map[string]any{"x": 1}}
 
