@@ -13,8 +13,11 @@ import sys
 import json
 import subprocess
 import re
+import argparse
 from datetime import datetime
 from typing import List, Any, Optional
+
+from _runtime import add_contract_flags, emit, failure
 
 DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
@@ -24,7 +27,7 @@ def run_dws(
 ) -> Optional[Any]:
     cmd = ['dws'] + args
     if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}")
+        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
         return None
     try:
         result = subprocess.run(
@@ -69,24 +72,26 @@ def get_my_user_id(dry_run: bool = False) -> Optional[str]:
     return None
 
 
-def main():
-    dry_run = '--dry-run' in sys.argv
-    args = [a for a in sys.argv[1:] if a != '--dry-run']
+def main() -> int:
+    parser = argparse.ArgumentParser(description='查看我的考勤记录')
+    parser.add_argument('date', nargs='?', default='today',
+                        help='today 或 YYYY-MM-DD')
+    add_contract_flags(parser)
+    args = parser.parse_args()
+    dry_run = args.dry_run
 
-    date_str = args[0] if args else 'today'
+    date_str = args.date
     if date_str == 'today':
         date_str = datetime.now().strftime('%Y-%m-%d')
     elif not DATE_PATTERN.match(date_str):
-        print(__doc__)
-        sys.exit(1)
+        return failure(args.format, '日期必须为 today 或 YYYY-MM-DD')
 
-    print('🔍 获取当前用户信息...')
+    print('🔍 获取当前用户信息...', file=sys.stderr)
     user_id = get_my_user_id(dry_run=dry_run)
     if not user_id and not dry_run:
-        print('错误：无法获取当前用户 ID')
-        sys.exit(1)
+        return failure(args.format, '无法获取当前用户 ID')
 
-    print(f'📊 查询 {date_str} 考勤记录...\n')
+    print(f'📊 查询 {date_str} 考勤记录...\n', file=sys.stderr)
     data = run_dws([
         'attendance', 'record', 'get',
         '--user', user_id or '<MY_USER_ID>',
@@ -95,15 +100,23 @@ def main():
     ], dry_run=dry_run)
 
     if dry_run:
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'date': date_str, 'userId': user_id,
+        }, dry_run=True, text='[dry-run] 将查询当前用户考勤记录')
     if not data:
-        print('未查到考勤记录')
-        return
+        return emit(fmt=args.format, outcome='success', data={
+            'date': date_str, 'items': [], 'count': 0,
+        }) if args.format != 'text' else 0
 
+    if args.format != 'text':
+        return emit(fmt=args.format, outcome='success', data={
+            'date': date_str, 'records': data,
+        })
     print(f"📋 考勤记录 ({date_str})")
     print('=' * 40)
     print(json.dumps(data, ensure_ascii=False, indent=2))
+    return 0
 
 
 if __name__ == '__main__':
-    main()
+    sys.exit(main())
