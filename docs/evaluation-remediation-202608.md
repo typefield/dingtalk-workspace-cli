@@ -400,6 +400,8 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - Minutes 深层 reference 也完成了一次参数对照：Agent-facing 文档统一使用当前 Help
   的 `--limit` / `--cursor`；旧的 `--max` / `--next-token` 只保留在兼容别名说明和
   脚本自身的 Help 示例中，避免把隐藏别名继续扩散成 canonical 指令。
+- 复核 multi Drive 的 `drive_tree_list.py` 时发现脚本内部仍调用隐藏的 `drive list
+  --max`；已改为当前 Help 的 canonical `--limit`，并用脚本 `--dry-run` 实测命令串。
 
 这项扫描发现的是 Agent 可执行语义漂移，不是 CI 路径缺失；后续每次 Skill 变更都应
 继续对 Help、参数、结果形状和安全语义做逐条 Agent 复核。

@@ -41,7 +41,7 @@ def list_dir(
     parent_id: str = '', dry_run: bool = False,
 ) -> list:
     cmd_args = [
-        'drive', 'list', '--max', '50', '--format', 'json',
+        'drive', 'list', '--limit', '50', '--format', 'json',
     ]
     if parent_id:
         cmd_args.extend(['--parent-id', parent_id])
