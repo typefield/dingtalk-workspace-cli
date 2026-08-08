@@ -28,6 +28,25 @@ dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 300
 
 > **无需手动解析 CSV/Excel 再逐条 record create**，效率极低且容易出错。
 
+### 新建表导入：优先用受控脚本
+
+不需要追加到既有表、也不需要自定义表头或字段映射时，优先使用脚本完成三步流程：
+
+```bash
+# 先预览；不会申请上传凭证、PUT 文件或触发导入。
+python3 scripts/aitable_import_via_task.py <BASE_ID> ./data.xlsx --dry-run --format json
+
+# 用户确认后执行。stdout 是一个结果对象，诊断信息只在 stderr。
+python3 scripts/aitable_import_via_task.py <BASE_ID> ./data.xlsx --format json
+```
+
+只有 `ok:true/outcome:success` 才表示脚本得到了导入成功响应。若返回
+`ok:false` 且 `data.execution_state:unknown`，上传或导入请求可能已到达服务端；
+必须先用 `data.importId` 核查，**禁止盲目重试**。脚本保留 `--timeout` 控制
+`import data` 的等待秒数（默认 30）。
+
+追加到既有表、指定 Sheet/表头行或字段映射时，仍按下面的原子三步流程执行。
+
 ```bash
 # 第 1 步：申请上传凭证
 dws aitable import upload --base-id <BASE_ID> \

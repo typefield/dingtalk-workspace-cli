@@ -113,6 +113,9 @@
 |---|---|---|
 | 32 个入口统一异常边界 | PASS | 32/32 使用 run_main |
 | 未捕获异常 JSON 兜底 | PASS | ok |
+| 机器 stdout 污染拒绝 | PASS | ok |
+| 机器结果与退出码一致性 | PASS | ok |
+| 子 dws 严格布尔失败识别 | PASS | ok |
 | 非零 SystemExit JSON 兜底 | PASS | ok |
 | 部分成功结果与退出码 | PASS | ok |
 | 可选 meta 承载 | PASS | ok |
@@ -120,13 +123,19 @@
 | 待办保留成功与未知写入 | PASS | ok |
 | 审批任务解析失败不发送占位写入 | PASS | ok |
 | 文档写入失败不自动重放且标记未知 | PASS | ok |
+| 邮件旧业务失败不误报已发送 | PASS | ok |
+| 日程后续写入失败保留部分结果 | PASS | ok |
+| 记录导入保留成功与未知批次 | PASS | ok |
+| 字段创建旧业务失败不误报成功 | PASS | ok |
+| 文件导入旧业务失败不误报终态 | PASS | ok |
+| 附件 PUT 未知不误报可用 | PASS | ok |
 
-结果：9/9 通过
+结果：18/18 通过
 
 ## 边界
 
 - 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。
-- 子 dws 探针覆盖待办、审批和文档的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。
+- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入、字段创建、文件导入任务和附件上传的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。
 - dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。
 ```
 
@@ -135,17 +144,16 @@
 命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_multi_script_contract.py`
 
 ```text
-multi Python files: 52
+multi Python files: 53
 Agent entries: 42
 Help nonzero: 0
 Help text mentions --dry-run: 30/42
-Help text mentions --format: 1/42
+Help text mentions --format: 2/42
 
 Nonzero help:
 
 Entries without both flags (review, not automatic failures):
 - skills/multi/dingtalk-aitable/scripts/aitable_export_via_task.py: rc=0, dry_run=False, format=False
-- skills/multi/dingtalk-aitable/scripts/aitable_import_via_task.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-aitable/scripts/bulk_add_fields.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-aitable/scripts/import_records.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-calendar/scripts/calendar_free_slot_finder.py: rc=0, dry_run=True, format=False
@@ -196,7 +204,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T03:31:04`
+- generated_at: `2026-08-09T04:58:38`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
