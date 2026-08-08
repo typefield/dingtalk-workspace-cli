@@ -15,6 +15,7 @@ package chat
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"strings"
 	"unicode/utf8"
@@ -283,7 +284,7 @@ var ConversationClearAllRedPoint = shortcut.Shortcut{
 
 // ConversationList paginates all conversations (list_all_conversations, im).
 var ConversationList = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+conversation-list",
 	Product:       "im",
@@ -439,7 +440,11 @@ var ConversationList = shortcut.Shortcut{
 				}
 				breakAfterObservation = true
 			} else if !hasMore {
-				if _, present := page["nextCursor"]; present {
+				// The DingTalk API commonly uses 0 as the terminal numeric
+				// cursor. Its presence is not a continuation. A non-zero or
+				// malformed cursor together with hasMore=false, on the other
+				// hand, is contradictory and must not be advertised as complete.
+				if _, present := page["nextCursor"]; present && (rawCursorErr != nil || rawNextCursor != 0) {
 					boundaryFailure = "会话列表返回 hasMore=false，但同时携带 nextCursor"
 				}
 				complete = true
@@ -573,14 +578,36 @@ func conversationListProjectionFailureInfo(err error) *output.ErrorInfo {
 
 func conversationPaginationCursor(value any) (int64, error) {
 	switch typed := value.(type) {
+	case nil:
+		return 0, nil
 	case int:
+		if typed < 0 {
+			return 0, fmt.Errorf("cursor must not be negative: %d", typed)
+		}
 		return int64(typed), nil
 	case int64:
+		if typed < 0 {
+			return 0, fmt.Errorf("cursor must not be negative: %d", typed)
+		}
 		return typed, nil
 	case float64:
+		if math.IsNaN(typed) || math.IsInf(typed, 0) || typed < 0 || math.Trunc(typed) != typed || typed > float64(math.MaxInt64) {
+			return 0, fmt.Errorf("cursor must be a non-negative integer: %v", typed)
+		}
 		return int64(typed), nil
 	case string:
-		return strconv.ParseInt(strings.TrimSpace(typed), 10, 64)
+		value := strings.TrimSpace(typed)
+		if value == "" {
+			return 0, nil
+		}
+		cursor, err := strconv.ParseInt(value, 10, 64)
+		if err != nil {
+			return 0, err
+		}
+		if cursor < 0 {
+			return 0, fmt.Errorf("cursor must not be negative: %d", cursor)
+		}
+		return cursor, nil
 	default:
 		return 0, fmt.Errorf("unsupported cursor type %T", value)
 	}
@@ -619,8 +646,8 @@ func conversationListProject(data map[string]any) []map[string]any {
 // conversationListProjectStrict is the unified-result projection. Unlike the
 // legacy projector it distinguishes a recognized empty list from an unknown
 // response shape and requires every row to retain a stable conversation ID.
-// dual_validate calls both projectors against the same response: legacy bytes
-// stay unchanged while the shadow result fails closed.
+// The unified command result uses this strict projection so an unrecognized
+// response shape can never be presented as an empty conversation list.
 func conversationListProjectStrict(data map[string]any) ([]map[string]any, error) {
 	raw, known := conversationListResolveListStrict(data)
 	if !known {
