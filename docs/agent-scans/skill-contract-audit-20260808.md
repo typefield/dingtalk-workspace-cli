@@ -157,21 +157,21 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-4f46_aod/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-y17gmlgi/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:24:27`
+- generated_at: `2026-08-08T15:29:56`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
 
 | surface | count |
 |---|---:|
-| runtime public | 379 |
-| committed catalog | 379 |
-| Mono Skill total | 379 |
+| runtime public | 380 |
+| committed catalog | 380 |
+| Mono Skill total | 380 |
 
 | service | catalog | Skill |
 |---|---:|---:|
@@ -190,7 +190,7 @@ Documented Python-script flag mismatches: 0
 | `report` | 2 | 2 |
 | `sheet` | 2 | 2 |
 | `todo` | 11 | 11 |
-| `wiki` | 2 | 2 |
+| `wiki` | 3 | 3 |
 
 ## Findings
 
@@ -200,7 +200,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-4f46_aod/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-y17gmlgi/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -214,19 +214,19 @@ Documented Python-script flag mismatches: 0
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 379 |
-| exclusion（public=false） | 36 |
+| public=true | 380 |
+| exclusion（public=false） | 35 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 32 |
+| 未 review 的 exclusion | 31 |
 
 ## 逐条队列
 
-| service | command | risk | confirmation | reviewed | next decision |
+| service | command | risk | confirmation | reviewed | decision / reason |
 |---|---|---|---|:---:|---|
 | `calendar` | `+respond-event` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `calendar` | `+room-find` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `chat` | `+conversation-mute-at-all` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |
-| `chat` | `+conversation-mute-red-envelope` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |
+| `chat` | `+conversation-mute-at-all` | `write` | `user_required` | yes | 保留隐藏：写操作会影响群成员提醒状态，当前 Agent 选择面暂不发布；运行时继续保留 user_required 门禁。 |
+| `chat` | `+conversation-mute-red-envelope` | `write` | `user_required` | yes | 保留隐藏：写操作会影响群成员红包提醒状态，当前 Agent 选择面暂不发布；运行时继续保留 user_required 门禁。 |
 | `contact` | `+get-roster` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `contact` | `+list-roster-fields` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `devapp` | `+event-subscribe` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
@@ -240,8 +240,8 @@ Documented Python-script flag mismatches: 0
 | `devapp` | `+version-create` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `devapp` | `+version-publish` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `ding` | `+send-by-message` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `doc` | `+comment-create-inline` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |
-| `doc` | `+template-apply` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |
+| `doc` | `+comment-create-inline` | `write` | `user_required` | yes | 保留隐藏：文档内联评论写入需要文档位置和内容的额外语义审阅，暂不作为通用 Agent 入口。 |
+| `doc` | `+template-apply` | `write` | `user_required` | yes | 保留隐藏：模板套用会对目标文档产生写入，待 dry-run/回滚和真实投影证据齐全后再决定公开。 |
 | `drive` | `+download` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `drive` | `+list` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `minutes` | `+action-items` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
@@ -257,7 +257,6 @@ Documented Python-script flag mismatches: 0
 | `wiki` | `+node-copy` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+node-move` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+resolve-space` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
-| `wiki` | `+space-list` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `wiki` | `+wiki-new-doc` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 
 ## 规则
@@ -273,7 +272,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1141 executable command paths)
+skill command integrity check: ok (1142 executable command paths)
 ```
 
 ## 解释边界

@@ -1,15 +1,15 @@
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T15:23:38`
+- generated_at: `2026-08-08T15:29:32`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
 
 | surface | count |
 |---|---:|
-| runtime public | 379 |
-| committed catalog | 379 |
-| Mono Skill total | 379 |
+| runtime public | 380 |
+| committed catalog | 380 |
+| Mono Skill total | 380 |
 
 | service | catalog | Skill |
 |---|---:|---:|
@@ -28,7 +28,7 @@
 | `report` | 2 | 2 |
 | `sheet` | 2 | 2 |
 | `todo` | 11 | 11 |
-| `wiki` | 2 | 2 |
+| `wiki` | 3 | 3 |
 
 ## Findings
 
