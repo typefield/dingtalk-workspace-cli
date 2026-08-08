@@ -47,7 +47,7 @@ cli_version: ">=1.0.15"
 |---|---:|---|
 | `aitable` | 92 | `dingtalk-aitable` |
 | `attendance` | 35 | `dingtalk-misc` |
-| `calendar` | 20 | `dingtalk-calendar` |
+| `calendar` | 21 | `dingtalk-calendar` |
 | `chat` | 98 | `dingtalk-chat` |
 | `contact` | 14 | `dingtalk-contact` |
 | `devapp` | 20 | `dingtalk-misc` |

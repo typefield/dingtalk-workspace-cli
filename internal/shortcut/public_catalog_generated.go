@@ -140,6 +140,7 @@ func generatedPublicShortcutCatalog() map[string]struct{} {
 		"calendar\u0000+book-search":                    {},
 		"calendar\u0000+cancel-event":                   {},
 		"calendar\u0000+conflicts":                      {},
+		"calendar\u0000+find-room":                      {},
 		"calendar\u0000+free":                           {},
 		"calendar\u0000+free-slots":                     {},
 		"calendar\u0000+freebusy":                       {},

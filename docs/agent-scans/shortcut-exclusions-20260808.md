@@ -9,16 +9,15 @@
 | 指标 | 数量 |
 |---|---:|
 | 运行时 shortcut 总数 | 415 |
-| public=true | 376 |
-| exclusion（public=false） | 39 |
+| public=true | 377 |
+| exclusion（public=false） | 38 |
 | 已 review 的 exclusion | 4 |
-| 未 review 的 exclusion | 35 |
+| 未 review 的 exclusion | 34 |
 
 ## 逐条队列
 
 | service | command | risk | confirmation | reviewed | next decision |
 |---|---|---|---|:---:|---|
-| `calendar` | `+find-room` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `calendar` | `+respond-event` | `write` | `user_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `calendar` | `+room-find` | `read` | `not_required` | no | 待 Agent 审阅：公开 / 删除 / 保留并写原因 |
 | `chat` | `+conversation-mute-at-all` | `write` | `user_required` | yes | 已审阅：保留隐藏，需保留原因 |

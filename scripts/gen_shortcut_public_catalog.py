@@ -54,6 +54,9 @@ REVIEWED_PUBLIC_OVERRIDES: dict[tuple[str, str], str] = {
     # for the user's own minutes. Keep it discoverable even when the current
     # account has no matching minutes fixture.
     ("minutes", "+minutes-search"): "read",
+    # Reviewed read-only calendar availability lookup with explicit
+    # Contract/Safety and stable {roomId,name,capacity} projection.
+    ("calendar", "+find-room"): "read",
 }
 
 

@@ -17,6 +17,8 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
@@ -50,6 +52,31 @@ var FindRoom = shortcut.Shortcut{
 		"这是纯只读操作，只做可用性查询，不会预订或改动任何会议室或日程；" +
 		"注意大部分会议室仅在工作时间可用，非工作时间可能查不到结果，且 start 需为未来时间。",
 	Risk: shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "calendar",
+			Name:           "shortcut_find_room",
+			CanonicalPath:  "calendar.shortcut_find_room",
+			CLIPath:        "calendar +find-room",
+			PrimaryCLIPath: "calendar +find-room",
+		},
+		Description: "查询指定时间段内所有可用的会议室",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns time validation, availability lookup and stable room projection; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "查询指定时间段内所有可用的会议室",
+			UseWhen:      []string{"当你想在某个明确的时间段内找出所有当前可预定的空闲会议室（比如临时要约线下会、先看看哪些会议室有空）时使用；内部把你给的 ISO8601 起止时间解析成毫秒时间戳，调用会议室可用性查询，只返回该时间范围内可预定的会议室，并投影出每个会议室的 roomId、名称与容量，方便你随后用来预订。这是纯只读操作，只做可用性查询，不会预订或改动任何会议室或日程；注意大部分会议室仅在工作时间可用，非工作时间可能查不到结果，且 start 需为未来时间。"},
+			AvoidWhen:    []string{"需要直接预订、修改会议室或读取原始响应时，改用对应原子命令"},
+			Examples:     []string{"dws calendar +find-room --start 2026-03-10T14:00:00+08:00 --end 2026-03-10T15:00:00+08:00"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "start", Type: shortcut.FlagString, Desc: "开始时间（ISO8601，如 2026-03-10T14:00:00+08:00，需为未来时间）", Required: true},
 		{Name: "end", Type: shortcut.FlagString, Desc: "结束时间（ISO8601，如 2026-03-10T15:00:00+08:00）", Required: true},
