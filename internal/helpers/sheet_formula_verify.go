@@ -140,7 +140,7 @@ func formulaVerifyFoundError(parsed map[string]any) error {
 	}
 	return apperrors.NewValidation(
 		"formula errors found",
-		apperrors.WithReason("formula_errors_found"),
+		apperrors.WithSubtype(apperrors.SubtypeFormulaErrorsFound),
 		apperrors.WithDetails(details),
 	)
 }
@@ -209,7 +209,7 @@ func parseFormulaVerifyTargets(cmd *cobra.Command, raw string) ([]map[string]any
 		if err != nil {
 			return nil, apperrors.NewValidation(
 				fmt.Sprintf("读取 --targets 文件失败: %v", err),
-				apperrors.WithReason("input_read_failed"),
+				apperrors.WithSubtype(apperrors.SubtypeInputReadFailed),
 			)
 		}
 		data = string(content)
@@ -218,7 +218,7 @@ func parseFormulaVerifyTargets(cmd *cobra.Command, raw string) ([]map[string]any
 		if err != nil {
 			return nil, apperrors.NewValidation(
 				fmt.Sprintf("读取 stdin 失败: %v", err),
-				apperrors.WithReason("input_read_failed"),
+				apperrors.WithSubtype(apperrors.SubtypeInputReadFailed),
 			)
 		}
 		data = string(content)
@@ -227,7 +227,7 @@ func parseFormulaVerifyTargets(cmd *cobra.Command, raw string) ([]map[string]any
 	if err := json.Unmarshal([]byte(data), &targets); err != nil {
 		return nil, apperrors.NewValidation(
 			fmt.Sprintf("--targets JSON 解析失败: %v", err),
-			apperrors.WithReason("invalid_json_input"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidJSONInput),
 		)
 	}
 	return targets, nil

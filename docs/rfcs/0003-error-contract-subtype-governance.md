@@ -21,17 +21,17 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 ## 2. 当前基线
 
-2026-08-08 的 Agent 源码扫描记录在
-[`docs/agent-scans/error-contract-inventory-20260808.md`](../agent-scans/error-contract-inventory-20260808.md)：
+2026-08-09 的 Agent 源码扫描记录在
+[`docs/agent-scans/error-contract-inventory-20260809.md`](../agent-scans/error-contract-inventory-20260809.md)：
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / `WithSubtype(...)` 调用 | 8 / 70 | 首批稳定 subtype 与本地输入校验第二批均已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
-| `WithReason("…")` 自由字面调用 | 88 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
+| 已注册 descriptor / `WithSubtype(...)` 调用 | 13 / 76 | 首批八个、输入/公式/下载完整性第二批五个稳定 subtype 已落地；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| `WithReason("…")` 自由字面调用 | 82 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
 | 全部 subtype / 调用点 | 80 / 158 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 6 | 绕过 `WithReason` 的第二条入口 |
 | 动态 `WithReason(variable)` | 16 | 上游码或拼接文本可能直接变成 Agent 分支键 |
-| 缺有效恢复提示的 subtype | 29 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
+| 缺有效恢复提示的 subtype | 23 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
 `permission=4`、`internal=5`、`discovery=6`、`partial_failure=7`。
@@ -90,6 +90,11 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 | `rate_limit` | api | 仅按服务端指令/安全策略声明可重试，并透传等待时间 |
 | `pagination_inconsistent` | api | 禁止把不完整/矛盾页结果伪装成完整；先检查上游分页证据 |
 | `projection_unknown` | api | 禁止把未知响应投影为空集合；保留最小诊断上下文 |
+| `input_read_failed` | validation | 本地文件或 stdin 无法读取；检查路径、权限和输入来源后重试 |
+| `invalid_json_input` | validation | 本地 JSON 语法或字段形状错误；修正输入后重试 |
+| `formula_errors_found` | validation | 公式扫描已完成但发现公式错误；按 details 中的位置/类型修正，不重试原参数 |
+| `download_output_unavailable` | internal | 下载完成后无法检查本地输出；先核对路径、磁盘和权限，不据此断言文件可用 |
+| `download_size_mismatch` | api | 下载字节与服务端元数据不一致；保留现有文件供核查，只能作为幂等读取重新下载 |
 
 名称、Category 或重试语义的变动按 breaking change 评审。新增 descriptor 必须说明其
 稳定性、触发边界和 Agent 恢复行为。
@@ -128,7 +133,7 @@ Descriptor 的字段是规范，不是自动编造资源 ID、凭证或业务终
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个已登记 subtype 的所有生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
+P2  逐命令迁移：首批八个与输入/公式/下载完整性五个已登记 subtype 的生产调用已迁入 `WithSubtype`；动态上游 reason 走映射器（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

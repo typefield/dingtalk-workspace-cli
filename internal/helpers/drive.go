@@ -705,7 +705,7 @@ func newDriveCommand() *cobra.Command {
 				// a successful download from the Agent's perspective. Do not emit a
 				// payload that merely claims it was downloaded.
 				return apperrors.NewInternal("下载完成后无法读取本地文件信息",
-					apperrors.WithReason("download_output_unavailable"),
+					apperrors.WithSubtype(apperrors.SubtypeDownloadOutputUnavailable),
 					apperrors.WithExecutionStarted(true),
 					apperrors.WithDetails(map[string]any{"path": outputPath}),
 					apperrors.WithCause(statErr),
@@ -718,7 +718,7 @@ func newDriveCommand() *cobra.Command {
 				// because download is read-only; leave the local file in place for
 				// inspection rather than pretending it is verified or deleting it.
 				return apperrors.NewAPI("下载文件长度与服务端元数据不一致",
-					apperrors.WithReason("download_size_mismatch"),
+					apperrors.WithSubtype(apperrors.SubtypeDownloadSizeMismatch),
 					apperrors.WithExecutionStarted(true),
 					apperrors.WithRetryable(true),
 					apperrors.WithDetails(map[string]any{

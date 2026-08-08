@@ -20,14 +20,19 @@ package errors
 type Subtype string
 
 const (
-	SubtypeMissingRequiredFlags   Subtype = "missing_required_flags"
-	SubtypeInvalidFlagValue       Subtype = "invalid_flag_value"
-	SubtypeInvalidArgument        Subtype = "invalid_argument"
-	SubtypeUnknownFlag            Subtype = "unknown_flag"
-	SubtypeConfirmationRequired   Subtype = "confirmation_required"
-	SubtypeRateLimit              Subtype = "rate_limit"
-	SubtypePaginationInconsistent Subtype = "pagination_inconsistent"
-	SubtypeProjectionUnknown      Subtype = "projection_unknown"
+	SubtypeMissingRequiredFlags      Subtype = "missing_required_flags"
+	SubtypeInvalidFlagValue          Subtype = "invalid_flag_value"
+	SubtypeInvalidArgument           Subtype = "invalid_argument"
+	SubtypeUnknownFlag               Subtype = "unknown_flag"
+	SubtypeConfirmationRequired      Subtype = "confirmation_required"
+	SubtypeRateLimit                 Subtype = "rate_limit"
+	SubtypePaginationInconsistent    Subtype = "pagination_inconsistent"
+	SubtypeProjectionUnknown         Subtype = "projection_unknown"
+	SubtypeInputReadFailed           Subtype = "input_read_failed"
+	SubtypeInvalidJSONInput          Subtype = "invalid_json_input"
+	SubtypeFormulaErrorsFound        Subtype = "formula_errors_found"
+	SubtypeDownloadOutputUnavailable Subtype = "download_output_unavailable"
+	SubtypeDownloadSizeMismatch      Subtype = "download_size_mismatch"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -129,6 +134,51 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请记录脱敏响应形状并提交诊断；不要将该结果当作空集合。",
 		Description:   "an upstream response cannot be safely projected",
+	},
+	SubtypeInputReadFailed: {
+		Subtype:       SubtypeInputReadFailed,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请检查输入文件路径、读取权限或 stdin 内容后重新执行。",
+		Description:   "a local input file or standard input stream could not be read",
+	},
+	SubtypeInvalidJSONInput: {
+		Subtype:       SubtypeInvalidJSONInput,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请修正输入 JSON 的语法和字段形状后重新执行。",
+		Description:   "a local JSON input could not be parsed",
+	},
+	SubtypeFormulaErrorsFound: {
+		Subtype:       SubtypeFormulaErrorsFound,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请根据 details 中的错误位置和类型修正公式后，再重新校验。",
+		Description:   "formula verification completed and found formula errors",
+	},
+	SubtypeDownloadOutputUnavailable: {
+		Subtype:       SubtypeDownloadOutputUnavailable,
+		Category:      CategoryInternal,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请检查本地输出路径、磁盘空间和文件权限；确认文件状态后再决定是否重试。",
+		Description:   "a completed download could not be inspected at its local output path",
+	},
+	SubtypeDownloadSizeMismatch: {
+		Subtype:       SubtypeDownloadSizeMismatch,
+		Category:      CategoryAPI,
+		RetryPolicy:   RetryIdempotentReadOnly,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "请保留当前文件供核查；确认服务端元数据后以新的输出路径重新下载。",
+		Description:   "downloaded bytes do not match upstream file metadata",
 	},
 }
 
