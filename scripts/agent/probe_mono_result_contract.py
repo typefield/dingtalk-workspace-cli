@@ -450,6 +450,35 @@ else:
         )
         outcomes.append(("记录导入保留成功与未知批次", *result("PASS" if import_child_ok else "FAIL", detail)))
 
+        fields_path = temp_dir / "fields.json"
+        fields_path.write_text(
+            json.dumps([{"fieldName": "probe", "type": "text"}]),
+            encoding="utf-8",
+        )
+        fields_child = run_with_fake_dws(
+            [
+                sys.executable, str(SCRIPT_DIR / "bulk_add_fields.py"),
+                "base-01", "table-01", str(fields_path), "--format", "json",
+            ],
+            """import json
+# The old script accepted any decoded dict as success.  This is a business
+# failure with an rc=0 transport result, so the write state is unknown.
+print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'field create uncertain'}}))
+""",
+            temp_dir=temp_dir,
+            extra_env={"OPENCLAW_WORKSPACE": str(temp_dir)},
+        )
+        valid, payload, detail = parse_single_result(fields_child)
+        fields_child_ok = (
+            valid and fields_child.returncode == 1 and payload is not None
+            and payload.get("ok") is False and payload.get("outcome") == "failure"
+            and isinstance(payload.get("data"), dict)
+            and payload["data"].get("execution_state") == "unknown"
+            and isinstance(payload.get("error"), dict) and payload["error"].get("type") == "api"
+            and "字段创建完成" not in fields_child.stderr
+        )
+        outcomes.append(("字段创建旧业务失败不误报成功", *result("PASS" if fields_child_ok else "FAIL", detail)))
+
     passed = sum(status == "PASS" for _, status, _ in outcomes)
     lines = [
         "# Mono 脚本结果契约 Agent 探针",
@@ -469,7 +498,7 @@ else:
         "## 边界",
         "",
         "- 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。",
-        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程和记录导入的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
+        "- 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入和字段创建的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。",
         "- dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。",
         "",
     ])

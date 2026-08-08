@@ -19,14 +19,13 @@ fields.json 格式:
 
 import sys
 import json
-import subprocess
 import os
 import re
 import argparse
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional, Tuple
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
 
 JsonData = Union[List[Any], Dict[str, Any]]
 
@@ -169,73 +168,48 @@ def build_fields_json(fields: List[Dict[str, Any]]) -> str:
     return json.dumps(payload_fields, ensure_ascii=False)
 
 
-def run_dws(args: List[str], dry_run: bool = False) -> Optional[Dict[str, Any]]:
-    if not args:
-        print('错误：空命令', file=sys.stderr)
-        return None
-
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return {'dry_run': True}
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        try:
-            return json.loads(result.stdout)
-        except json.JSONDecodeError as e:
-            print(f"无法解析响应：{result.stdout[:200]}...", file=sys.stderr)
-            print(f"JSON 解析错误：{e}", file=sys.stderr)
-            return None
-    except subprocess.TimeoutExpired:
-        print('错误：命令执行超时（60 秒）', file=sys.stderr)
-        return None
-    except FileNotFoundError:
-        print('错误：未找到 dws 命令，请确认已安装', file=sys.stderr)
-        return None
+def run_dws(args: List[str], dry_run: bool = False) -> ChildDWSResult:
+    """Run the field write without collapsing execution certainty into a bool."""
+    return run_child_dws(args, dry_run=dry_run, timeout=60)
 
 
 def bulk_add_fields(
     base_id: str, table_id: str, fields_file: str, dry_run: bool = False
-) -> bool:
+) -> Optional[ChildDWSResult]:
     try:
         safe_path = resolve_safe_path(fields_file)
     except ValueError as e:
         print(f"路径验证失败：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not validate_file_extension(fields_file, ALLOWED_FILE_EXTENSIONS):
         print(f"错误：只允许 {', '.join(ALLOWED_FILE_EXTENSIONS)} 文件", file=sys.stderr)
-        return False
+        return None
     if not safe_path.exists():
         print(f"错误：文件不存在：{safe_path}", file=sys.stderr)
-        return False
+        return None
 
     try:
         fields = safe_json_load(safe_path)
     except ValueError as e:
         print(f"错误：{e}", file=sys.stderr)
-        return False
+        return None
     except json.JSONDecodeError as e:
         print(f"错误：JSON 格式无效：{e}", file=sys.stderr)
-        return False
+        return None
 
     if not isinstance(fields, list) or not fields:
         print('错误：fields.json 必须是非空 JSON 数组', file=sys.stderr)
-        return False
+        return None
     if len(fields) > 15:
         print('错误：单次最多创建 15 个字段，请拆分后重试', file=sys.stderr)
-        return False
+        return None
 
     for i, field in enumerate(fields):
         valid, error = validate_field_config(field)
         if not valid:
             print(f"错误：字段 #{i+1} 配置无效：{error}", file=sys.stderr)
-            return False
+            return None
 
     fields_json = build_fields_json(fields)
     result = run_dws([
@@ -246,11 +220,13 @@ def bulk_add_fields(
         '--format', 'json',
     ], dry_run=dry_run)
 
-    if not result:
-        return False
-
-    print(json.dumps(result, ensure_ascii=False, indent=2), file=sys.stderr)
-    return True
+    if result.state == 'success':
+        print(json.dumps(result.payload, ensure_ascii=False, indent=2), file=sys.stderr)
+    elif result.state == 'failed':
+        print('字段创建在执行前失败', file=sys.stderr)
+    else:
+        print('字段创建终态未知；请先核查字段，避免重复创建', file=sys.stderr)
+    return result
 
 
 def main() -> int:
@@ -270,12 +246,30 @@ def main() -> int:
     if not validate_resource_id(table_id):
         return failure(args.format, '无效的 tableId 格式')
 
-    success = bulk_add_fields(base_id, table_id, fields_file, args.dry_run)
-    if not success:
+    result = bulk_add_fields(base_id, table_id, fields_file, args.dry_run)
+    if result is None:
         return failure(args.format, '字段创建失败')
+    if result.state != 'success':
+        error = result.error or {'type': 'api', 'message': '字段创建未返回可确认终态'}
+        data = {
+            'baseId': base_id,
+            'tableId': table_id,
+            'input': str(Path(fields_file)),
+            'execution_state': 'unknown' if result.state == 'unknown' else 'not_executed',
+        }
+        if result.meta:
+            data['child_meta'] = result.meta
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=data,
+            error=error,
+            text='字段创建未确认完成',
+        )
     return emit(fmt=args.format, outcome='success', data={
         'baseId': base_id, 'tableId': table_id,
         'input': str(Path(fields_file)), 'dryRun': args.dry_run,
+        'result': result.payload,
     }, dry_run=args.dry_run, text='字段创建完成')
 
 
