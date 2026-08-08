@@ -4062,9 +4062,18 @@ CLI 内部自动完成全部流程:
 				return err
 			}
 			if !cmd.Flags().Changed("version") {
-				return fmt.Errorf("flag --version is required")
+				return apperrors.NewValidation(
+					"flag --version is required",
+					apperrors.WithReason("missing_required_flag"),
+				)
 			}
 			version, _ := cmd.Flags().GetInt("version")
+			if version <= 0 {
+				return apperrors.NewValidation(
+					fmt.Sprintf("--version 必须为正整数，收到 %d", version),
+					apperrors.WithReason("invalid_argument"),
+				)
+			}
 			exists, err := docVersionExists(cmd.Context(), nodeID, version)
 			if err != nil {
 				return err
