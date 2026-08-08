@@ -17,7 +17,7 @@ import argparse
 from datetime import datetime, timedelta, timezone
 from typing import List, Dict, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 TZ = timezone(timedelta(hours=8))
 
@@ -163,4 +163,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

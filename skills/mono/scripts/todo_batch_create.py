@@ -32,7 +32,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import List, Dict, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 ALLOWED_PRIORITIES = {10, 20, 30, 40}
 DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
@@ -80,16 +80,23 @@ def validate_todo(item: Dict[str, Any], idx: int) -> bool:
     if not isinstance(item, dict):
         print(f"  ✗ #{idx+1} 不是有效对象", file=sys.stderr)
         return False
-    if not item.get('title', '').strip():
+    title = item.get('title')
+    if not isinstance(title, str) or not title.strip():
         print(f"  ✗ #{idx+1} 缺少 title", file=sys.stderr)
         return False
-    if not item.get('executors', '').strip():
+    executors = item.get('executors')
+    if not isinstance(executors, str) or not executors.strip():
         print(f"  ✗ #{idx+1} 缺少 executors", file=sys.stderr)
         return False
     priority = item.get('priority')
-    if priority is not None and int(priority) not in ALLOWED_PRIORITIES:
-        print(f"  ✗ #{idx+1} 无效优先级：{priority}", file=sys.stderr)
-        return False
+    if priority is not None:
+        try:
+            valid_priority = int(priority) in ALLOWED_PRIORITIES
+        except (TypeError, ValueError):
+            valid_priority = False
+        if not valid_priority:
+            print(f"  ✗ #{idx+1} 无效优先级：{priority}", file=sys.stderr)
+            return False
     recurrence = item.get('recurrence')
     if recurrence and not str(recurrence).strip():
         print(f"  ✗ #{idx+1} recurrence 不能为空字符串", file=sys.stderr)
@@ -182,4 +189,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

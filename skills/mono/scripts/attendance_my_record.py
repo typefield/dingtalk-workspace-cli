@@ -17,7 +17,7 @@ import argparse
 from datetime import datetime
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 DATE_PATTERN = re.compile(r'^\d{4}-\d{2}-\d{2}$')
 
@@ -119,4 +119,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

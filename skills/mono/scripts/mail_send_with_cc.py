@@ -20,7 +20,7 @@ import re
 import argparse
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 EMAIL_PATTERN = re.compile(
     r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
@@ -153,4 +153,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

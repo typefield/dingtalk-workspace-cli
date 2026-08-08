@@ -53,7 +53,7 @@ from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 接口限制（check result / check record）
@@ -830,4 +830,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

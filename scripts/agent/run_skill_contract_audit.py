@@ -58,6 +58,10 @@ def main() -> int:
                  "--strict-rfc", "--strict-flags"],
             ),
             (
+                "Mono 脚本结果/异常边界",
+                [sys.executable, "scripts/agent/probe_mono_result_contract.py"],
+            ),
+            (
                 "Multi 脚本 Help/Skill 参数对账",
                 [sys.executable, "scripts/agent/scan_multi_script_contract.py"],
             ),

@@ -22,7 +22,7 @@ from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 MAX_USERS_PER_BALANCE_BATCH = 20
 BASE_HEADERS = ["姓名", "部门", "入职时间", "首次工作时间"]
@@ -631,4 +631,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

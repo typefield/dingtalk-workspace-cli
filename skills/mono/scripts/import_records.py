@@ -23,7 +23,7 @@ import argparse
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional, Tuple
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 JsonData = Union[List[Any], Dict[str, Any]]
 RecordDict = Dict[str, str]
@@ -332,4 +332,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

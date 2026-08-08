@@ -30,7 +30,7 @@ from typing import Optional, Dict, Any
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 RESOURCE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{8,128}$')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
@@ -195,4 +195,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

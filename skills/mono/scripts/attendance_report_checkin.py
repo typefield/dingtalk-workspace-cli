@@ -34,7 +34,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import attendance_report_common as cmn
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 自动获取当前认证的 operator 信息
@@ -479,4 +479,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

@@ -16,7 +16,7 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 
 def run_dws(
@@ -172,4 +172,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

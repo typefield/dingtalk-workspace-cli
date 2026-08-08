@@ -66,9 +66,10 @@ Help 可观测性、JSON 流向和 dry-run 副作用是三个独立验收维度�
 - `text`：面向用户的人读输出；日志必须走 stderr，stdout 只输出正文。
 - `ndjson`：每条独立结果一行，仅用于流式或批量逐项输出。
 
-脚本内部调用 `dws` 时必须使用同一格式并保留子命令的 `ok/outcome/error/meta`。
-脚本不得把 `success` 字符串重新拼成自己的第二套信封，也不得把日志混入 JSON
-stdout。
+脚本内部调用 `dws` 时必须使用同一格式；在脚本需要映射或聚合子结果时，必须保留有意义的
+`ok/outcome/error`，并将可用的分页、异步或传输事实透传到外层 `meta`。不得为了满足字段
+形状伪造 `meta`，更不能把缺少 `meta` 扩大解释为数据完整或终态已验证。脚本不得把
+`success` 字符串重新拼成自己的第二套信封，也不得把日志混入 JSON stdout。
 
 ### dry-run
 
@@ -91,14 +92,19 @@ stdout。
 ```text
 scripts/_runtime.py
   add_contract_flags(parser, *, dry_run=True)
-  emit(*, fmt, outcome, data=None, error=None, dry_run=False, text=None, items=None)
-  failure(fmt, message, *, details=None)
+  emit(*, fmt, outcome, data=None, error=None, meta=None, dry_run=False, text=None, items=None)
+  failure(fmt, message, *, details=None, meta=None)
+  run_main(main_fn)
 ```
 
-模块只负责参数、stdout/stderr、结果信封与退出码；每个脚本仍负责业务参数校验、步骤
-编排、子 `dws` 调用和业务数据映射。它**没有** `run_child_dws`、`emit_result`、
-`emit_error` 或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得
-通过 `print()` 直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
+模块只负责参数、stdout/stderr、结果信封与退出码；每个入口以
+`sys.exit(run_main(main))` 进入统一边界。`run_main` 在 JSON/NDJSON 模式将未捕获的
+`Exception` 映射为 `failure + error.type=internal + exit 1`，并将非零 `SystemExit`
+映射为 validation failure；它不输出 traceback，也不回显原始异常消息。正常 Help 的
+`SystemExit(0)` 和 text 模式保留原命令行行为。每个脚本仍负责业务参数校验、步骤编排、
+子 `dws` 调用和业务数据映射。它**没有** `run_child_dws`、`emit_result`、`emit_error`
+或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
+直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
 
 ## 实施状态与后续验证
 
@@ -125,7 +131,8 @@ scripts/_runtime.py
 2. 对写脚本执行 `--dry-run`，使用临时 HOME 和受控 child runner，证明零写入、
    零远端写请求；
 3. 对 `--format json` 检查 stdout 是单个可解析对象、stderr 无业务数据、退出码
-   与 `ok/outcome` 一致；
+   与 `ok/outcome` 一致；还要注入一个未捕获异常，确认仍输出
+   `failure + error.type=internal` 而非 traceback；
 4. 注入一个成功、一个明确失败和一个结果不确定的步骤，确认
    `succeeded/failed/unknown` 不丢失；
 5. 对流式脚本检查每行独立可解析且有界/无限模式语义不同；
@@ -140,6 +147,15 @@ fixture。Agent 应在评测或发布前运行：
 python3 scripts/agent/scan_mono_script_contract.py \
   --strict-rfc --strict-flags \
   --output docs/agent-scans/mono-script-contract-YYYYMMDD.md
+```
+
+结果错误路径与统一边界由下列 Agent 探针检查。它只保存 Markdown 证据：共享运行时的
+未捕获异常、`SystemExit`、`partial_failure`、可选 `meta`，以及 `todo_batch_create.py`
+的错误类型输入都必须保持一个可解析的结果对象。
+
+```bash
+python3 scripts/agent/probe_mono_result_contract.py \
+  --output docs/agent-scans/mono-result-contract-YYYYMMDD.md
 ```
 
 如需一次性复核 Mono、Multi、Shortcut surface 以及隐藏 shortcut exclusion 队列，可运行：

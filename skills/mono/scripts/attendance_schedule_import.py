@@ -40,7 +40,7 @@ from attendance_report_common import (
     warn,
     error,
 )
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 DATE_FMT = "%Y-%m-%d"
 DATETIME_FMT = "%Y-%m-%d %H:%M:%S"
@@ -384,14 +384,6 @@ def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
 # 主流程
 # ─────────────────────────────────────────────────────────────────────────────
 
-def _requested_format() -> str:
-    """读取 argparse 失败前仍可用的输出格式，供统一异常出口使用。"""
-    for idx, value in enumerate(sys.argv):
-        if value == "--format" and idx + 1 < len(sys.argv):
-            return sys.argv[idx + 1]
-    return "text"
-
-
 def main() -> int:
     parser = argparse.ArgumentParser(
         description="考勤排班导入（含校验、回显、执行）",
@@ -533,17 +525,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    try:
-        exit_code = main()
-    except SystemExit as exc:
-        # 业务校验函数沿用公共模块的 SystemExit；机器模式仍必须得到一个
-        # 可解析的 failure envelope，而不是只得到 stderr 文本。
-        fmt = _requested_format()
-        if fmt == "text" or exc.code == 0:
-            raise
-        exit_code = emit(
-            fmt=fmt,
-            outcome="failure",
-            error={"type": "execution", "message": "排班校验或执行失败"},
-        )
-    sys.exit(exit_code)
+    sys.exit(run_main(main))

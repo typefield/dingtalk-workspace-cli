@@ -14,7 +14,7 @@ import subprocess
 import argparse
 from typing import List, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 
 def strip_highlight(text: str) -> str:
@@ -150,4 +150,4 @@ def main():
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

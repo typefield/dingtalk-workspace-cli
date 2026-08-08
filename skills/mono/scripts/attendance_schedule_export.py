@@ -44,7 +44,7 @@ from attendance_report_common import (
     warn,
     write_excel,
 )
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 # schedule get 接口每批最多用户数（保守值，避免超时）
 SCHEDULE_BATCH_SIZE = 20
@@ -362,4 +362,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

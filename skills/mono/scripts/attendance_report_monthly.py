@@ -49,7 +49,7 @@ from datetime import datetime, timedelta
 from typing import Any
 
 import attendance_report_common as cmn
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 # 默认关注字段 — 与 SKILL.md「月度汇总预定义列集合」严格对齐（共 20 个）
 # 字段名必须和 `dws attendance report columns` 返回的 name 精确匹配
@@ -778,4 +778,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

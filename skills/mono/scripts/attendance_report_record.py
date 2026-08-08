@@ -44,7 +44,7 @@ from attendance_report_common import (
     DwsCallError,
     DATE_FMT,
 )
-from _runtime import add_contract_flags, emit
+from _runtime import add_contract_flags, emit, run_main
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 常量
@@ -962,4 +962,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

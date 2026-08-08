@@ -17,7 +17,7 @@ import argparse
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure
+from _runtime import add_contract_flags, emit, failure, run_main
 
 PRIORITY_MAP = {10: '低', 20: '普通', 30: '较高', 40: '紧急'}
 PAGE_SIZE = 50
@@ -214,4 +214,4 @@ def main() -> int:
 
 
 if __name__ == '__main__':
-    sys.exit(main())
+    sys.exit(run_main(main))

@@ -27,6 +27,17 @@ cli_version: ">=1.0.15"
 - **脚本只用于明确覆盖的复合任务**：[scripts/](./scripts/) 下的脚本可封装 AI 表格批量导入导出、AI 应用创建轮询、文档创建后写内容、钉盘目录树等流程；当公开 `+` Shortcut 已提供目标唯一解析、分页/部分失败 ledger 和确认语义时，优先 Shortcut。Chat 历史导出与机器人广播已完全下沉 Runtime，不再发布兼容脚本
 - **实时个人消息事件例外**：用户要监听消息、订阅事件、自动回复消息或事件驱动 Agent 时，默认走 `dws event +listen-im ...`；只有明确需要多个原始 EventKey、Filter DSL、subscribe_id 或原始 envelope 时才用 `dws event consume ... --flatten`，不要写脚本轮询消息历史
 
+## Mono 脚本机器结果
+
+对 `skills/mono/scripts/` 的 Agent 入口传 `--format json` 时，stdout 只包含一个结果对象；先按 `ok` 和 `outcome` 分支，不要从人读文本、stderr 或退出码猜业务结果。稳定字段为 `ok`、`outcome`、可选 `data`、`error`、`meta` 与 `dry_run`；所有布尔值均为 JSON boolean。
+
+- `success` / `pending`：`ok: true`、退出码 `0`。`pending` 只表示已得到非终态结果，必须按 `data` 中的后续信息继续，不得当作终态成功。
+- `failure`：`ok: false`、退出码 `1`。先读取 `error.type`、`message` 和可选 `details`；`validation` 表示输入或前置校验，修正后再执行；`internal` 表示脚本未预期异常，保留诊断并停止，不要依据 traceback 盲目改参重试。
+- `partial_failure`：`ok: false`、退出码 `7`。这不是普通失败：必须保留并读取 `data` 中逐项结果，已成功项不得重做，失败项才按各自 `error` 处理。
+- `meta` 是可选补充事实（例如子 `dws` 的分页、异步或传输信息）。缺失只表示脚本没有可透传的补充事实，不能扩大为“数据完整”或“操作已验证”。
+
+脚本级 `--dry-run` 的远端只读探测边界以对应产品 Skill 和 Agent 扫描台账为准；Help 的 `--dry-run` 只承诺预览不写入，不能据此推断零远端调用。
+
 ## Shortcut 与原子命令的使用原则
 
 `shortcut` 是对常用操作的高层封装，适合优先承担用户意图；产品参考文档和本 skill 负责判断意图、风险、跨产品流程和复杂参数，CLI 帮助负责声明当前版本真正可调用的命令。
