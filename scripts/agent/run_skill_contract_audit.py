@@ -60,6 +60,10 @@ def main() -> int:
                 [sys.executable, "scripts/agent/scan_shortcut_exclusions.py",
                  "--output", str(Path(temp_dir) / "shortcut-exclusions.md")],
             ),
+            (
+                "Skill CLI 路径/参数逐条对拍",
+                ["go", "run", "./scripts/policy/skill-command-check"],
+            ),
         ]
 
         sections: list[str] = [
@@ -92,6 +96,7 @@ def main() -> int:
             "## 解释边界",
             "",
             "- Help 对账只证明参数可发现，不证明业务执行安全。",
+            "- CLI 路径/参数对拍只证明当前公开 Help 接受文档中的 flags；隐藏兼容别名是否应继续教学，仍需 Agent 语义审阅。",
             "- dry-run 仍需由受控 child-runner、临时 HOME 和写请求计数器证明零写入。",
             "- 集合对账只证明 Runtime、目录和 Skill 不漂移，不证明后端数据真实存在。",
         ]

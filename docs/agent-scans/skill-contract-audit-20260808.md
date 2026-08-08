@@ -12,6 +12,7 @@
 | Multi 脚本 Help/Skill 参数对账 | PASS |
 | Shortcut 运行时/目录/Skill 集合对账 | PASS |
 | Shortcut exclusion 逐条审阅队列 | PASS |
+| Skill CLI 路径/参数逐条对拍 | PASS |
 
 ## 原始 Agent 证据
 
@@ -156,12 +157,12 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut 运行时/目录/Skill 集合对账
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-0tpgsgx4/shortcut-surface.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_surface_alignment.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-jcb0pyeh/shortcut-surface.md`
 
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-08T14:56:28`
+- generated_at: `2026-08-08T15:04:24`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -199,7 +200,7 @@ Documented Python-script flag mismatches: 0
 
 ### Shortcut exclusion 逐条审阅队列
 
-命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-0tpgsgx4/shortcut-exclusions.md`
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_shortcut_exclusions.py --output /var/folders/fj/17qvmrfd0b141s5cxshpt6lm0000gn/T/dws-skill-audit-jcb0pyeh/shortcut-exclusions.md`
 
 ```text
 # Shortcut exclusion Agent scan
@@ -270,8 +271,17 @@ Documented Python-script flag mismatches: 0
 
 ```
 
+### Skill CLI 路径/参数逐条对拍
+
+命令：`go run ./scripts/policy/skill-command-check`
+
+```text
+skill command integrity check: ok (1138 executable command paths)
+```
+
 ## 解释边界
 
 - Help 对账只证明参数可发现，不证明业务执行安全。
+- CLI 路径/参数对拍只证明当前公开 Help 接受文档中的 flags；隐藏兼容别名是否应继续教学，仍需 Agent 语义审阅。
 - dry-run 仍需由受控 child-runner、临时 HOME 和写请求计数器证明零写入。
 - 集合对账只证明 Runtime、目录和 Skill 不漂移，不证明后端数据真实存在。

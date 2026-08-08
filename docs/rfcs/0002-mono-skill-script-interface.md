@@ -182,8 +182,9 @@ python3 scripts/agent/run_skill_contract_audit.py \
   --output docs/agent-scans/skill-contract-audit-YYYYMMDD.md
 ```
 
-编排器只汇总可读 Markdown/text 证据，不接入 CI，也不保存 JSON fixture；Help 对账、
-Skill 参数对拍、运行时目录集合和 dry-run 副作用仍须在报告中分开标注，不能把总审计
+编排器只汇总可读 Markdown/text 证据，不接入 CI，也不保存 JSON fixture；它还会逐条
+对拍 Skill 中的 `dws` 路径和显式 flags。Help 对账、CLI 参数对拍、运行时目录集合和
+dry-run 副作用仍须在报告中分开标注，不能把总审计
 通过解读成真实后端写入安全已被证明。
 
 对高风险写入口，另有 `scripts/agent/probe_mono_dry_run.py` 使用临时 HOME、临时工作区
