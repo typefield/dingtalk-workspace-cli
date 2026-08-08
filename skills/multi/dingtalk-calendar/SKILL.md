@@ -53,7 +53,7 @@ metadata:
 | 用户说 | 命令 |
 |--------|------|
 | "今天 / 明天 / 本周日程" | `python scripts/calendar_today_agenda.py [today\|tomorrow\|week]` |
-| "约会议（含参会人 + 会议室）" | `python scripts/calendar_schedule_meeting.py --title "<主题>" --start "<起>" --end "<止>" [--users <ids>] [--book-room]` |
+| "约会议（含参会人 + 会议室）" | 先让用户确认时段、参会人和会议室范围；随后 `python scripts/calendar_schedule_meeting.py --title "<主题>" --start "<起>" --end "<止>" [--users <ids>] [--book-room] --yes --format json`。仅 `verification.state=verified` 才可宣称已回读确认。 |
 | "多人共同空闲" | `python scripts/calendar_free_slot_finder.py --users <ids> --date <yyyy-MM-dd>` |
 | "查闲忙" | `dws calendar busy search --users <userIds> --start "<ISO>" --end "<ISO>"` |
 | "加参会人" / "订房" / "取消" | `dws calendar attendee add` / `room add` / `event delete` |
