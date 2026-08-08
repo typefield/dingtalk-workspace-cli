@@ -42,6 +42,13 @@ const (
 
 var keychainTimeout = 5 * time.Second
 
+// keychainProbeTimeout bounds the standalone `security default-keychain`
+// probe.  This probe runs during CLI startup (including plugin discovery), so
+// it must not be allowed to inherit a hung macOS security agent indefinitely.
+// The actual Keychain read has its own worker timeout below; this shorter
+// probe timeout only decides whether the default-keychain hint is available.
+const keychainProbeTimeout = 2 * time.Second
+
 // StorageDir returns the storage directory for a given service name on macOS.
 // Uses ~/Library/Application Support/<service> following Apple conventions.
 // When the DWS_KEYCHAIN_DIR environment variable is set (used by tests for
@@ -64,7 +71,9 @@ func safeFileName(account string) string {
 }
 
 var readDefaultKeychain = func() ([]byte, error) {
-	return exec.Command("security", "default-keychain", "-d", "user").Output()
+	ctx, cancel := context.WithTimeout(context.Background(), keychainProbeTimeout)
+	defer cancel()
+	return exec.CommandContext(ctx, "security", "default-keychain", "-d", "user").Output()
 }
 
 var (
