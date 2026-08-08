@@ -510,7 +510,7 @@ var FlagList = shortcut.Shortcut{
 	Command:       "+flag-list",
 	Product:       "im",
 	Description:   "分页查询当前用户收藏的消息，支持有界自动翻页",
-	Intent:        "当你要查看当前用户的 DingTalk message favorite 列表时使用；默认读取一页，明确要求全部收藏时加 --page-all，并用 --page-limit 保持有界。底层实际使用数字 cursor，结果按 openMessageId 去重并公开 complete、hasMore、nextCursor、stopReason 和 failures；它不把 message favorite 与 Pin、会话置顶或 Lark feed-layer thread flag 混为一谈。",
+	Intent:        "当你要查看当前用户的 DingTalk message favorite 列表时使用；默认读取一页，明确要求全部收藏时加 --page-all，并用 --page-limit 保持有界。底层实际使用数字 cursor，结果按 openMessageId 去重；只有观察到服务端分页耗尽才能称为完整，有续页 token、失败或未知边界时必须保留。它不把 message favorite 与 Pin、会话置顶或 Lark feed-layer thread flag 混为一谈。",
 	Risk:          shortcut.RiskRead,
 	Flags: []shortcut.Flag{
 		{Name: "page-size", Type: shortcut.FlagInt, Default: "20", Desc: "每页数量；下游真实上限为 30，显式页大小必须在 1-30 之间"},
@@ -744,6 +744,9 @@ func executeFlagList(rt *shortcut.RuntimeContext) error {
 		"partial":              len(failures) > 0 && len(items) > 0,
 	}
 	unifiedData := map[string]any{"count": len(items), "items": items}
+	if pageLedger.State() == output.PageStateUnknown {
+		unifiedData["pagination_known"] = false
+	}
 	result, resultErr := pageLedger.Result(unifiedData)
 	if resultErr != nil {
 		return apperrors.NewInternal("生成收藏消息统一分页结果失败", apperrors.WithCause(resultErr))

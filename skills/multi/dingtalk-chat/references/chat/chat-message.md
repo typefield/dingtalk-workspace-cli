@@ -288,7 +288,7 @@ dws chat +messages-update-card --biz-id <bizId> --content "最终内容" --flow-
 | `message set-top-msg` / `unset-top-msg` | 置顶/取消置顶会话内某条消息 | `--open-conversation-id` `--msg-id` |
 | `message add-favorite` | 收藏消息 | `--open-message-id` `--open-conversation-id` |
 | `message remove-favorite` | 取消收藏消息 | `--open-message-id` `--open-conversation-id` |
-| `+flag-list` | 查询收藏消息列表的默认 Shortcut | 默认一页；要求全部时加 `--page-all`；`--page-size/--size` 范围为 1-30，可用 `--page-token` 或兼容的 `--cursor` 续页，检查 `complete` / `failures` |
+| `+flag-list` | 查询收藏消息列表的默认 Shortcut | 默认一页；要求全部时加 `--page-all`；`--page-size/--size` 范围为 1-30，可用 `--page-token` 或兼容的 `--cursor` 续页；只有明确的 endpoint 耗尽证据才可称完整，失败/未知页必须保留 |
 | `message list-favorites` | 原始单页收藏结果 fallback | 可选 `--cursor` `--size` |
 
 `+flag-list` 查询钉钉 message favorite，底层使用数字 cursor；它与消息 Pin、消息 Top 和会话置顶属于不同对象层级。

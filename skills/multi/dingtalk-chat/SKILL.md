@@ -82,7 +82,7 @@ metadata:
 
 - `openTaskId` 是发送任务 ID，不是回复或撤回所需的消息 ID；消息 ID 必须来自真实查询结果。
 - 消息查询默认保留稳定 ID、会话/thread、发送者、文本、时间、reaction、引用、转发和 `resourceRefs`；`--no-reactions` 可关闭 reaction。
-- 查询结果必须检查 `complete`、`hasMore`、`failures` 和资源下载 ledger；partial result 不得表述为完整成功。
+- 查询结果只有在返回明确的 endpoint 耗尽证据时才可表述为完整：统一分页元信息检查 `meta.pagination.endpoint_exhausted`，尚未迁入统一返回的命令检查 `complete`。任何续页 token、`partial_failure`、`unknown` 或逐项失败都必须保留；资源下载 ledger 也必须单独检查。
 - 子消息使用自己的 `messageId`；仅缺会话 ID 时继承父消息的 `conversationId`。
 - 下载只允许工作目录内安全相对路径，默认不覆盖并原子落盘；覆盖必须由用户显式传 `--overwrite`。读取和下载不需要 `--yes`。
 - Favorite、消息 Pin、消息 Top、会话 Top 是不同对象层级，不能互换。

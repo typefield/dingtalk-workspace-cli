@@ -22,6 +22,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/targetresolver"
@@ -35,13 +36,14 @@ const (
 
 // ChatSearch searches groups by keyword (search_groups on the im server).
 var ChatSearch = shortcut.Shortcut{
+	OutputRollout:            output.RolloutDualValidate,
 	Service:                  "chat",
 	Command:                  "+chat-search",
 	Aliases:                  []string{"+chat-group-search", "+search-group"},
 	SinglePositionalAliasFor: "query",
 	Product:                  "im",
 	Description:              "按关键词分页搜索群聊，支持有界自动翻页和完整性检查",
-	Intent:                   "当你只记得群名称关键词、需要拿到群 openConversationId 以便发消息或管理该群时使用；默认读取一页，明确要求全部候选时加 --page-all，并用 --page-limit 保持有界。结果按 openConversationId 去重，并公开 complete、hasMore、nextCursor、stopReason 和 failures，避免把截断或失败结果误当完整候选集。",
+	Intent:                   "当你只记得群名称关键词、需要拿到群 openConversationId 以便发消息或管理该群时使用；默认读取一页，明确要求全部候选时加 --page-all，并用 --page-limit 保持有界。结果按 openConversationId 去重；只有观察到服务端分页耗尽才能称为完整，有续页 token、失败或未知边界时必须保留，不能把截断或空结果误当完整候选集。",
 	Risk:                     shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
@@ -63,7 +65,7 @@ var ChatSearch = shortcut.Shortcut{
 		},
 		Selection: contract.SelectionSpec{
 			AgentSummary: "按关键词分页搜索群聊，支持有界自动翻页和完整性检查",
-			UseWhen:      []string{"当你只记得群名称关键词、需要拿到群 openConversationId 以便发消息或管理该群时使用；默认读取一页，明确要求全部候选时加 --page-all，并用 --page-limit 保持有界。结果按 openConversationId 去重，并公开 complete、hasMore、nextCursor、stopReason 和 failures，避免把截断或失败结果误当完整候选集。"},
+			UseWhen:      []string{"当你只记得群名称关键词、需要拿到群 openConversationId 以便发消息或管理该群时使用；默认读取一页，明确要求全部候选时加 --page-all，并用 --page-limit 保持有界。结果按 openConversationId 去重；只有观察到服务端分页耗尽才能称为完整，有续页 token、失败或未知边界时必须保留，不能把截断或空结果误当完整候选集。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples:     []string{"dws chat +chat-search --query \"项目冲刺\""},
 		},
@@ -152,6 +154,10 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 	if rt.Bool("page-all") {
 		pageLimit = rt.Int("page-limit")
 	}
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return apperrors.NewInternal("初始化群搜索分页账本失败", apperrors.WithCause(err))
+	}
 	cursor := chatSearchStartCursor(rt)
 	if rt.DryRun() {
 		return rt.CallMCP("search_groups", chatSearchRequestParams(query, pageSize, cursor, rt.Bool("exclude-muted")))
@@ -170,8 +176,10 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 	truncatedByPageLimit := false
 	maxWindowProbeUsed := false
 	completionEvidence := ""
+	var provisionalProbe *output.PageEvidence
 
 	for pagesFetched < pageLimit {
+		pageCursor := cursor
 		params := chatSearchRequestParams(query, requestPageSize, cursor, rt.Bool("exclude-muted"))
 		data, err := rt.CallMCPData("im", "search_groups", params)
 		if err != nil {
@@ -181,11 +189,23 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 			failures = append(failures, map[string]any{
 				"page": pagesFetched + 1, "stage": "read", "cursor": cursor, "error": err.Error(),
 			})
+			if provisionalProbe != nil && pageLedger.Pages() == 0 {
+				if observeErr := pageLedger.ObservePage(*provisionalProbe); observeErr != nil {
+					return apperrors.NewInternal("记录群搜索窗口探测前置页失败", apperrors.WithCause(observeErr))
+				}
+				if recordErr := pageLedger.RecordBoundaryFailure(chatSearchReadFailureInfo(err, "max_window_probe")); recordErr != nil {
+					return apperrors.NewInternal("记录群搜索窗口探测失败状态失败", apperrors.WithCause(recordErr))
+				}
+				provisionalProbe = nil
+			} else if recordErr := pageLedger.RecordFailure(cursor, chatSearchReadFailureInfo(err, "pagination_read")); recordErr != nil {
+				return apperrors.NewInternal("记录群搜索分页读取失败状态失败", apperrors.WithCause(recordErr))
+			}
 			stopReason = "read_failure"
 			break
 		}
 		pagesFetched++
 		pageItems := chatSearchItems(data)
+		pageOutputItems := make([]map[string]any, 0, len(pageItems))
 		for _, chat := range pageItems {
 			id := strings.TrimSpace(fmt.Sprint(chat["openConversationId"]))
 			if id != "" && id != "<nil>" && seenChats[id] {
@@ -195,11 +215,15 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 				seenChats[id] = true
 			}
 			chats = append(chats, chat)
+			pageOutputItems = append(pageOutputItems, chat)
 		}
 
 		page := chatmsg.Pagination(data)
 		pageHasMore, hasMoreKnown := page["hasMore"].(bool)
 		nextCursor = chatSearchCursorString(page["nextCursor"])
+		boundaryFailure := ""
+		breakAfterObservation := false
+		unknownBoundary := false
 		if !hasMoreKnown {
 			switch {
 			case nextCursor != "":
@@ -209,20 +233,30 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 				complete = true
 				hasMore = false
 				stopReason = "legacy_short_page"
+				unknownBoundary = true
+				breakAfterObservation = true
 			default:
 				paginationKnown = false
+				boundaryFailure = "群搜索返回满页结果但缺少 hasMore/nextCursor，无法证明结果完整"
 				failures = append(failures, map[string]any{
 					"page": pagesFetched, "stage": "pagination",
-					"error": "群搜索返回满页结果但缺少 hasMore/nextCursor，无法证明结果完整",
+					"error": boundaryFailure,
 				})
 				stopReason = "pagination_error"
-			}
-			if complete || len(failures) > 0 {
-				break
+				unknownBoundary = true
+				breakAfterObservation = true
 			}
 		}
-		hasMore = pageHasMore
-		if !hasMore {
+		if !breakAfterObservation {
+			hasMore = pageHasMore
+		}
+		if !breakAfterObservation && !hasMore {
+			if nextCursor != "" {
+				// Legacy output historically discarded this contradictory cursor.
+				// The shadow result fails closed without changing those bytes.
+				boundaryFailure = "群搜索返回 hasMore=false，但同时携带 nextCursor"
+				unknownBoundary = true
+			}
 			// A full first page with hasMore=false/no cursor is the live legacy
 			// shape that can hide additional rows. Once a prior page supplied a
 			// valid continuation cursor, its terminal hasMore=false is trustworthy.
@@ -231,6 +265,12 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 			if fullPageWithoutCursor {
 				paginationKnown = false
 				if rt.Bool("page-all") && initialCursor == "0" && !maxWindowProbeUsed && requestPageSize < chatSearchMaxWindowSize && pagesFetched < pageLimit {
+					probe := output.PageEvidence{
+						Cursor: pageCursor,
+						Items:  len(pageOutputItems),
+						Data:   map[string]any{"chats": pageOutputItems},
+					}
+					provisionalProbe = &probe
 					maxWindowProbeUsed = true
 					requestPageSize = chatSearchMaxWindowSize
 					cursor = initialCursor
@@ -240,44 +280,94 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 				if !rt.Bool("page-all") {
 					complete = false
 					stopReason = "single_page_full_untrusted"
-					break
+					unknownBoundary = true
+					breakAfterObservation = true
 				}
-				if pagesFetched >= pageLimit && requestPageSize < chatSearchMaxWindowSize {
+				if !breakAfterObservation && pagesFetched >= pageLimit && requestPageSize < chatSearchMaxWindowSize {
 					truncatedByPageLimit = true
 					complete = false
 					stopReason = "page_limit"
-					break
+					unknownBoundary = true
+					breakAfterObservation = true
 				}
-				failures = append(failures, map[string]any{
-					"page": pagesFetched, "stage": "pagination",
-					"error": "群搜索在最大窗口仍返回满页且没有可用 nextCursor，无法证明结果完整",
-				})
-				complete = false
-				stopReason = "pagination_error"
-				break
+				if !breakAfterObservation {
+					boundaryFailure = "群搜索在最大窗口仍返回满页且没有可用 nextCursor，无法证明结果完整"
+					failures = append(failures, map[string]any{
+						"page": pagesFetched, "stage": "pagination",
+						"error": boundaryFailure,
+					})
+					complete = false
+					stopReason = "pagination_error"
+					unknownBoundary = true
+					breakAfterObservation = true
+				}
 			}
-			complete = true
-			nextCursor = ""
-			if maxWindowProbeUsed {
-				paginationKnown = false
-				completionEvidence = "max_window_short_page"
-				stopReason = "max_window_short_page"
-			} else {
-				completionEvidence = "backend_has_more_false_short_page"
-				stopReason = "source_complete"
+			if !breakAfterObservation {
+				complete = true
+				nextCursor = ""
+				if maxWindowProbeUsed {
+					paginationKnown = false
+					completionEvidence = "max_window_short_page"
+					stopReason = "max_window_short_page"
+					unknownBoundary = true
+				} else {
+					completionEvidence = "backend_has_more_false_short_page"
+					stopReason = "source_complete"
+				}
+				breakAfterObservation = true
 			}
-			break
 		}
-		if nextCursor == "" || seenCursors[nextCursor] {
+		if !breakAfterObservation && (nextCursor == "" || seenCursors[nextCursor]) {
+			boundaryFailure = "群搜索返回 hasMore=true，但 nextCursor 缺失或未前进"
 			failures = append(failures, map[string]any{
 				"page": pagesFetched, "stage": "pagination",
-				"error": "群搜索返回 hasMore=true，但 nextCursor 缺失或未前进",
+				"error": boundaryFailure,
 			})
 			stopReason = "pagination_error"
-			break
+			unknownBoundary = true
+			breakAfterObservation = true
 		}
-		if !rt.Bool("page-all") {
+		if !breakAfterObservation && !rt.Bool("page-all") {
 			stopReason = "single_page"
+			breakAfterObservation = true
+		}
+
+		ledgerItems := pageOutputItems
+		if provisionalProbe != nil && maxWindowProbeUsed && pageCursor == initialCursor && requestPageSize == chatSearchMaxWindowSize {
+			// The wider request supersedes the provisional page at the same
+			// cursor. Record one logical page, not two transport probes.
+			ledgerItems = pageItems
+		}
+		pageEvidence := output.PageEvidence{
+			Cursor: pageCursor,
+			Items:  len(ledgerItems),
+			Data:   map[string]any{"chats": ledgerItems},
+		}
+		switch {
+		case boundaryFailure != "" || unknownBoundary:
+			// No authoritative endpoint assertion is available.
+		case !hasMoreKnown && nextCursor != "":
+			pageEvidence.NextToken = nextCursor
+		case !hasMoreKnown:
+			// Unknown is represented by absent pagination meta.
+		case hasMore:
+			more := true
+			pageEvidence.HasMore = &more
+			pageEvidence.NextToken = nextCursor
+		default:
+			more := false
+			pageEvidence.HasMore = &more
+		}
+		if observeErr := pageLedger.ObservePage(pageEvidence); observeErr != nil {
+			return apperrors.NewInternal("群搜索分页证据不满足框架契约", apperrors.WithCause(observeErr))
+		}
+		provisionalProbe = nil
+		if boundaryFailure != "" {
+			if recordErr := pageLedger.RecordBoundaryFailure(chatSearchPaginationFailureInfo(boundaryFailure)); recordErr != nil {
+				return apperrors.NewInternal("记录群搜索分页边界失败状态失败", apperrors.WithCause(recordErr))
+			}
+		}
+		if breakAfterObservation {
 			break
 		}
 		seenCursors[nextCursor] = true
@@ -313,10 +403,22 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 	if rt.Bool("exclude-muted") {
 		payload["filter"] = map[string]any{"excludeMuted": true}
 	}
-	if err := rt.Output(payload); err != nil {
+	unifiedData := map[string]any{"query": query, "count": len(chats), "chats": chats}
+	if pageLedger.State() == output.PageStateUnknown {
+		unifiedData["pagination_known"] = false
+	}
+	if rt.Bool("exclude-muted") {
+		unifiedData["filter"] = map[string]any{"excludeMuted": true}
+	}
+	pageLedger.SetStopReason(stopReason)
+	result, resultErr := pageLedger.Result(unifiedData)
+	if resultErr != nil {
+		return apperrors.NewInternal("生成群搜索统一分页结果失败", apperrors.WithCause(resultErr))
+	}
+	if err := rt.OutputResult(payload, result); err != nil {
 		return err
 	}
-	if len(failures) > 0 {
+	if len(failures) > 0 && !output.UsesUnifiedResult(rt.Command()) {
 		return apperrors.NewAPI(
 			fmt.Sprintf("群搜索分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 			apperrors.WithOperation("im/search_groups"),
@@ -329,6 +431,38 @@ func executeChatSearch(rt *shortcut.RuntimeContext) error {
 		)
 	}
 	return nil
+}
+
+func chatSearchReadFailureInfo(err error, stage string) *output.ErrorInfo {
+	message := "群搜索分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败页 cursor 继续；不要重放已经成功的页面",
+		Operation:        "im/search_groups",
+		Origin:           "mcp_gateway",
+		Stage:            strings.TrimSpace(stage),
+		ExecutionStarted: &started,
+		Retryable:        true, // search_groups is an idempotent read.
+	}
+}
+
+func chatSearchPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽",
+		Operation:        "im/search_groups",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
 }
 
 func chatSearchItems(data map[string]any) []map[string]any {
