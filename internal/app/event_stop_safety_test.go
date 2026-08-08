@@ -87,6 +87,10 @@ func TestCrossPlatformCoverageEventStopDryRunDoesNotBypassTargetValidation(t *te
 			if err == nil || !strings.Contains(err.Error(), test.want) {
 				t.Fatalf("event stop dry-run validation error = %v, want %q", err, test.want)
 			}
+			var appErr *apperrors.Error
+			if !errors.As(err, &appErr) || appErr.Category != apperrors.CategoryValidation {
+				t.Fatalf("event stop dry-run validation error = %T %v, want typed validation", err, err)
+			}
 		})
 	}
 }

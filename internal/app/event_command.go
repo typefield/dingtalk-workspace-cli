@@ -34,6 +34,7 @@ import (
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	dwsevent "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/bus"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/busctl"
@@ -1207,24 +1208,24 @@ func newEventStopCommand() *cobra.Command {
 		Validate: func(c *cobra.Command, args []string) error {
 			as, err := eventNormalizeAs(asIdentity)
 			if err != nil {
-				return err
+				return apperrors.NewValidation(err.Error())
 			}
 			if as == "user" {
 				subscribeID := firstArg(args)
 				hasSubscribeID := strings.TrimSpace(subscribeID) != ""
 				if hasSubscribeID && opts.All {
-					return fmt.Errorf("event stop --as user: subscribe_id and --all are mutually exclusive")
+					return apperrors.NewValidation("event stop --as user: subscribe_id and --all are mutually exclusive")
 				}
 				if !hasSubscribeID && !opts.All {
-					return fmt.Errorf("event stop --as user: subscribe_id is required unless --all is set")
+					return apperrors.NewValidation("event stop --as user: subscribe_id is required unless --all is set")
 				}
 				return nil
 			}
 			if err := rejectChangedFlags(c, "user", "all", "personal-event-base-url", "stream-source-id"); err != nil {
-				return fmt.Errorf("event stop: %w", err)
+				return apperrors.NewValidation(fmt.Sprintf("event stop: %v", err))
 			}
 			if len(args) > 0 {
-				return fmt.Errorf("event stop: subscribe_id is only supported with --as user")
+				return apperrors.NewValidation("event stop: subscribe_id is only supported with --as user")
 			}
 			return nil
 		},
