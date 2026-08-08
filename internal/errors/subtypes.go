@@ -91,6 +91,9 @@ const (
 	SubtypePluginToolNotFound                 Subtype = "plugin_tool_not_found"
 	SubtypePluginInputSchemaInvalid           Subtype = "plugin_input_schema_invalid"
 	SubtypeUnsupportedFormat                  Subtype = "unsupported_format"
+	SubtypeInvalidAgentCode                   Subtype = "invalid_agent_code"
+	SubtypeInvalidAgentHost                   Subtype = "invalid_agent_host"
+	SubtypeInvalidAgentProduct                Subtype = "invalid_agent_product"
 )
 
 // RetryPolicy describes whether a descriptor can ever recommend replay. It
@@ -759,6 +762,33 @@ var subtypeRegistry = map[Subtype]SubtypeDescriptor{
 		RequireAction: false,
 		DefaultHint:   "请使用当前命令支持的输出格式；运行当前命令的 --help 查看可用格式。",
 		Description:   "the requested output format is not supported by the command contract",
+	},
+	SubtypeInvalidAgentCode: {
+		Subtype:       SubtypeInvalidAgentCode,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "将 --agentCode 或 DINGTALK_DWS_AGENTCODE 设置为 1–64 位的字母、数字、下划线或连字符后重试。",
+		Description:   "the requested PAT agent code failed local syntax validation",
+	},
+	SubtypeInvalidAgentHost: {
+		Subtype:       SubtypeInvalidAgentHost,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "将 DWS_AGENT_HOST 设置为 1–64 位小写字母、数字、下划线或连字符；不需要时请清空该环境变量。",
+		Description:   "the caller-declared Agent host failed local syntax validation",
+	},
+	SubtypeInvalidAgentProduct: {
+		Subtype:       SubtypeInvalidAgentProduct,
+		Category:      CategoryValidation,
+		RetryPolicy:   RetryNever,
+		RequireHint:   true,
+		RequireAction: false,
+		DefaultHint:   "将 DWS_AGENT_PRODUCT 设置为 1–64 位字母、数字、下划线或连字符；不需要时请清空该环境变量。",
+		Description:   "the caller-declared Agent product failed local syntax validation",
 	},
 }
 

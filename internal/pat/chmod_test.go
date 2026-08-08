@@ -1940,6 +1940,10 @@ func TestChmod_agentCode_env_invalid(t *testing.T) {
 	if !strings.Contains(err.Error(), agentCodeEnv) {
 		t.Fatalf("error = %q, want to attribute to %s env", err.Error(), agentCodeEnv)
 	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "invalid_agent_code" || typed.Hint == "" {
+		t.Fatalf("error = %#v, want typed invalid_agent_code with recovery hint", err)
+	}
 	if fake.callN != 0 {
 		t.Fatalf("CallTool was invoked %d times; validator must short-circuit before MCP", fake.callN)
 	}

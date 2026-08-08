@@ -1326,7 +1326,7 @@ func TestCrossPlatformCoveragePersonalSubscriptionAttemptGuardHelperEdges(t *tes
 			t.Fatalf("incomplete-cancellation error = %v, want joined cause %v", err, wantErr)
 		}
 		var typed *apperrors.Error
-		if !errors.As(err, &typed) || typed.Reason != "personal_subscription_guard_failed" {
+		if !errors.As(err, &typed) || typed.Reason != "personal_subscription_guard_failed" || typed.Hint == "" {
 			t.Fatalf("incomplete-cancellation guard error = %#v, %v", typed, err)
 		}
 	})
@@ -1490,9 +1490,13 @@ func TestCrossPlatformCoveragePersonalSubscriptionErrorConstructionEdges(t *test
 	}
 	if err := personalSubscriptionGuardError(nil); err == nil {
 		t.Fatal("nil guard cause did not produce an error")
+	} else if !errors.As(err, &typed) || typed.Hint == "" {
+		t.Fatalf("guard error = %#v, want recovery hint", err)
 	}
 	if err := personalSubscriptionValidationError(nil); err == nil {
 		t.Fatal("nil validation cause did not produce an error")
+	} else if !errors.As(err, &typed) || typed.Hint == "" {
+		t.Fatalf("validation error = %#v, want recovery hint", err)
 	}
 }
 

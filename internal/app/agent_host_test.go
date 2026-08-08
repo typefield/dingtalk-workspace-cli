@@ -87,7 +87,7 @@ func TestParseAgentHost(t *testing.T) {
 			if appErr.Category != apperrors.CategoryValidation {
 				t.Fatalf("category = %q, want validation", appErr.Category)
 			}
-			if appErr.Reason != "invalid_agent_host" {
+			if appErr.Reason != "invalid_agent_host" || appErr.Hint == "" {
 				t.Fatalf("reason = %q, want invalid_agent_host", appErr.Reason)
 			}
 			if tc.raw != "" && strings.Contains(err.Error(), tc.raw) {

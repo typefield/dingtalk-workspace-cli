@@ -54,7 +54,7 @@ func TestParseAgentProductReturnsStableValidationError(t *testing.T) {
 	if appErr.Category != apperrors.CategoryValidation {
 		t.Fatalf("category = %q, want validation", appErr.Category)
 	}
-	if appErr.Reason != "invalid_agent_product" {
+	if appErr.Reason != "invalid_agent_product" || appErr.Hint == "" {
 		t.Fatalf("reason = %q, want invalid_agent_product", appErr.Reason)
 	}
 	if strings.Contains(err.Error(), invalidValue) {

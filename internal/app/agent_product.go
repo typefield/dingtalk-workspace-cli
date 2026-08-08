@@ -43,7 +43,7 @@ func parseAgentProduct(raw string) (string, error) {
 func invalidAgentProductError() error {
 	return apperrors.NewValidation(
 		"DWS_AGENT_PRODUCT must be at most 64 bytes and match ^[A-Za-z0-9][A-Za-z0-9_-]*$",
-		apperrors.WithReason("invalid_agent_product"),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidAgentProduct),
 	)
 }
 

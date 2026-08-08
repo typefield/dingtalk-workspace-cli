@@ -1,6 +1,6 @@
 # RFC-0003：DWS 错误 subtype 与恢复语义渐进治理
 
-- 状态：已实施（九批 registry）；渐进迁移进行中
+- 状态：已实施（十批 registry）；渐进迁移进行中
 - 日期：2026-08-08
 - 适用仓库：`dingtalk-workspace-cli`
 - 依赖：RFC-0001 的统一返回 rollout；Agent 扫描台账
@@ -26,12 +26,12 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 71 / 126 / 11 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个、transport/服务端响应第四批七个、本地 flag/Skill 市场第五批三个、文档复合写固定五个 reason family、event stop 的 `event_stop_unverified`、IM 八条幂等只读分页不完整 family、统一输出的六条 direct `ErrorInfo` family、三条复合写部分失败 family，以及 stdio/MCP/plugin/format 的八条协议失败 family 已落地；间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
-| `WithReason("…")` 自由字面调用 | 35 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
+| 已注册 descriptor / 直接 `WithSubtype(Subtype...)` 调用 / 间接映射 | 74 / 130 / 11 | 首批八个、输入/公式/下载完整性第二批五个、目标解析/版本预检第三批十七个、transport/服务端响应第四批七个、本地 flag/Skill 市场第五批三个、文档复合写固定五个 reason family、event stop 的 `event_stop_unverified`、IM 八条幂等只读分页不完整 family、统一输出的六条 direct `ErrorInfo` family、三条复合写部分失败 family、stdio/MCP/plugin/format 的八条协议失败 family，以及 Agent code/host/product 三条本地身份参数 family 已落地；间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值；迁移保持既有 `Reason` 字符串 wire，不引入版本标记 |
+| `WithReason("…")` 自由字面调用 | 31 | 生产源码中仍存在的自由字符串，不等于已稳定协议 |
 | 全部 subtype / 调用点 | 80 / 161 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 9 | 绕过 `WithReason` 的第二条入口；Agent 扫描现同时识别枚举转换的赋值，event stop 的 `event_stop_unverified` 已登记 registry |
 | 动态 `WithReason(variable)` | 1 | 仅剩个人订阅状态机；其有限但未审定的 failure family 仍须连同 Category、幂等性与终态语义单独设计，不能靠字符串替换 |
-| 缺有效恢复提示的 subtype | 5 | 既没有命令级 hint、也没有 registry 默认 hint，不能默认 Agent 有可靠恢复路径 |
+| 缺有效恢复提示的 subtype | 0 | 仍有自由 reason 与一条动态构造，但所有已扫描到的 subtype 至少有命令级 hint 或 registry 默认 hint；这不等于服务端终态已验证 |
 
 现有分类及退出码保持不变：`api=1`、`auth=2`、`validation=3`、PAT 专属
 `permission=4`、`internal=5`、`discovery=6`、`partial_failure=7`。
@@ -181,7 +181,7 @@ subtype。`tools/call` 的 408/5xx 与网络丢响应仍保留 `execution_state=
 ```text
 P0  Agent 扫描盘点（已完成）
 P1  建 registry + 首批八个 descriptor；新增构造/投影单元测试（已完成）
-P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output 的 `pagination_invalid` / `pagination_incomplete` / `pagination_conflict` / `invalid_success_type` / `skill_setup_result_invalid` / `skill_setup_failed`、`batch_write_failed` / `doc_grant_permission_partial_failure` / `doc_share_message_failed`，以及 `stdio_initialize_error` / `stdio_tools_list_error` / `stdio_error` / `mcp_tool_error` / `empty_tool_response` / `plugin_tool_not_found` / `plugin_input_schema_invalid` / `unsupported_format` 均已登记；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
+P2  逐命令迁移：首批八个、输入/公式/下载完整性五个、目标解析/版本预检十七个、transport/服务端响应七个、本地 flag/Skill 市场三个、文档复合写固定五个、event stop 的 `event_stop_unverified`、IM 的八条 `*_incomplete` 幂等只读分页 family、unified output 的 `pagination_invalid` / `pagination_incomplete` / `pagination_conflict` / `invalid_success_type` / `skill_setup_result_invalid` / `skill_setup_failed`、`batch_write_failed` / `doc_grant_permission_partial_failure` / `doc_share_message_failed`、`stdio_initialize_error` / `stdio_tools_list_error` / `stdio_error` / `mcp_tool_error` / `empty_tool_response` / `plugin_tool_not_found` / `plugin_input_schema_invalid` / `unsupported_format`，以及 `invalid_agent_code` / `invalid_agent_host` / `invalid_agent_product` 均已登记；动态 reason 已从 16 降至 1，剩余个人订阅状态机继续逐项审阅；文档 partial 的结果桥接已在三条 doc command 进入 dual validation，active rollout 仍由 RFC-0005 单独推进（进行中）
 P3  为每个公开 subtype 补齐 hint/action/retry/execution 语义，更新相关 Skill 反模式
 P4  Agent 复扫并审阅真实 error 路径；未审定值继续留兼容层或归 unclassified
 ```

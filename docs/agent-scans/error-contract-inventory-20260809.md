@@ -6,11 +6,11 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**71** 个；直接 `WithSubtype(Subtype...)` 调用点：**126** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**35** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
+- 已注册 descriptor：**74** 个；直接 `WithSubtype(Subtype...)` 调用点：**130** 个；间接映射调用点：**11** 个。
+- `WithReason("…")` 的自由字面调用点：**31** 个；与已注册调用合计覆盖 **80** 个 subtype、**161** 个调用点。
 - 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**1** 个。
-- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**5** 个。
+- 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**1** 个。
 
 已出现受治理的 subtype registry，但未注册的 `WithReason(string)` 仍是自由字符串。这份扫描的用途是展示迁移进度，**不**把“出现过”误写成“已经 wire-stable”。
@@ -42,9 +42,9 @@
 | `gateway_auth_expired` | free 2 | 2 | `auth` | yes | yes | no | no | no | `internal/errors/pat.go:251`<br>`internal/errors/pat.go:274` |
 | `id_intersection` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/helpers/chat/toolbar_sort.go:59` |
 | `input_read_failed` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/helpers/sheet_formula_verify.go:212`<br>`internal/helpers/sheet_formula_verify.go:221` |
-| `invalid_agent_code` | free 2 | 2 | `validation` | no | no | no | no | no | `internal/pat/chmod.go:181`<br>`internal/pat/chmod.go:186` |
-| `invalid_agent_host` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_host.go:68` |
-| `invalid_agent_product` | free 1 | 1 | `validation` | no | no | no | no | no | `internal/app/agent_product.go:46` |
+| `invalid_agent_code` | registered 2 | 2 | `validation` | yes | no | no | no | no | `internal/pat/chmod.go:181`<br>`internal/pat/chmod.go:186` |
+| `invalid_agent_host` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/agent_host.go:68` |
+| `invalid_agent_product` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/agent_product.go:46` |
 | `invalid_aitable_url` | registered 1 | 1 | `validation` | yes | no | no | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
 | `invalid_argument` | registered 10 | 10 | `validation` | yes | no | no | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
 | `invalid_flag_value` | registered 14 | 14 | `validation` | yes | yes | no | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
@@ -65,8 +65,8 @@
 | `pat_auth_rejected` | free 1 | 1 | `auth` | yes | no | no | no | no | `internal/app/pat_auth_retry.go:680` |
 | `pat_auth_timeout` | free 1 | 1 | `auth` | yes | yes | no | no | no | `internal/app/pat_auth_retry.go:349` |
 | `pat_batch_requires_yes` | free 1 | 1 | `validation` | yes | yes | no | no | no | `internal/pat/chmod.go:497` |
-| `personal_subscription_guard_failed` | free 1 | 1 | `internal` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
-| `personal_subscription_invalid` | free 1 | 1 | `validation` | no | no | yes | no | no | `internal/app/event_personal_attempts.go:558` |
+| `personal_subscription_guard_failed` | free 1 | 1 | `internal` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:545` |
+| `personal_subscription_invalid` | free 1 | 1 | `validation` | yes | no | yes | no | no | `internal/app/event_personal_attempts.go:559` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | no | no | no | `internal/app/runner.go:833` |
 | `projection_unknown` | registered 14 | 14 | `api` | yes | no | yes | no | no | `internal/shortcut/calendar/calendar.go:925`<br>`internal/shortcut/chat/chat_group.go:1283`<br>`internal/shortcut/contact/contact.go:285` … |

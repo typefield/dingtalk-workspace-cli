@@ -80,6 +80,9 @@ func TestSubtypeRegistryHasStableHighFrequencyDescriptors(t *testing.T) {
 		{SubtypePluginToolNotFound, CategoryValidation, RetryNever, false},
 		{SubtypePluginInputSchemaInvalid, CategoryValidation, RetryNever, false},
 		{SubtypeUnsupportedFormat, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidAgentCode, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidAgentHost, CategoryValidation, RetryNever, false},
+		{SubtypeInvalidAgentProduct, CategoryValidation, RetryNever, false},
 	}
 	for _, tt := range tests {
 		t.Run(string(tt.subtype), func(t *testing.T) {

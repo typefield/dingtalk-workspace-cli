@@ -65,6 +65,6 @@ func invalidAgentHostError() error {
 	// untrusted caller-controlled string and may contain sensitive data.
 	return apperrors.NewValidation(
 		"DWS_AGENT_HOST must be at most 64 bytes and match ^[a-z0-9][a-z0-9_-]*$",
-		apperrors.WithReason("invalid_agent_host"),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidAgentHost),
 	)
 }

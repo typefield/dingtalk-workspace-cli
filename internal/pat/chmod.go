@@ -178,12 +178,12 @@ func resolveAgentCode(flagVal string) (string, error) {
 		if envSource != "" {
 			return "", apperrors.NewValidation(
 				fmt.Sprintf("%s env: %v", envSource, err),
-				apperrors.WithReason("invalid_agent_code"),
+				apperrors.WithSubtype(apperrors.SubtypeInvalidAgentCode),
 			)
 		}
 		return "", apperrors.NewValidation(
 			err.Error(),
-			apperrors.WithReason("invalid_agent_code"),
+			apperrors.WithSubtype(apperrors.SubtypeInvalidAgentCode),
 		)
 	}
 	return code, nil
