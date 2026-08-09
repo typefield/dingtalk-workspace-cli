@@ -29,6 +29,7 @@ import (
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
@@ -140,7 +141,11 @@ var ListApp = shortcut.Shortcut{
 			return err
 		}
 		apps := listAppProject(data)
-		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(apps), "apps": apps}))
+		page, err := projectDevAppPage(data, map[string]any{"count": len(apps), "apps": apps})
+		if err != nil {
+			return err
+		}
+		return rt.Output(page)
 	},
 }
 
@@ -222,35 +227,102 @@ func listAppFirst(m map[string]any, keys ...string) (any, bool) {
 // The upstream devapp adapters have returned page fields both at the top
 // level and under result/data across versions.  Dropping these fields while
 // reshaping items makes a non-final page indistinguishable from a complete
-// result, so preserve only the pagination facts needed by the unified output
-// mapper.  Never synthesize hasMore or a cursor.
-func projectDevAppPage(source map[string]any, projected map[string]any) map[string]any {
+// result. Keep every pagination fact long enough to validate it, then preserve
+// the coherent facts needed by the unified-output mapper. Never synthesize
+// hasMore or a cursor, and never silently discard an invalid or contradictory
+// upstream pagination field.
+func projectDevAppPage(source map[string]any, projected map[string]any) (map[string]any, error) {
 	if projected == nil {
 		projected = map[string]any{}
 	}
-	var visit func(map[string]any, int)
-	visit = func(m map[string]any, depth int) {
+	type evidence struct {
+		hasMoreSet bool
+		hasMore    bool
+		cursorSet  bool
+		cursor     string
+	}
+	var found evidence
+	var visit func(map[string]any, int) error
+	visit = func(m map[string]any, depth int) error {
 		if m == nil || depth > 3 {
-			return
+			return nil
 		}
-		if _, exists := projected["hasMore"]; !exists {
-			if value, ok := m["hasMore"].(bool); ok {
-				projected["hasMore"] = value
+		if raw, present := m["hasMore"]; present {
+			value, ok := raw.(bool)
+			if !ok {
+				return devAppPaginationProjectionError(
+					apperrors.SubtypePaginationInvalid,
+					"devapp pagination hasMore must be a boolean",
+				)
 			}
+			if found.hasMoreSet && found.hasMore != value {
+				return devAppPaginationProjectionError(
+					apperrors.SubtypePaginationConflict,
+					"devapp pagination hasMore conflicts across nested response envelopes",
+				)
+			}
+			found.hasMoreSet = true
+			found.hasMore = value
 		}
-		if _, exists := projected["nextCursor"]; !exists {
-			if value, ok := m["nextCursor"].(string); ok && strings.TrimSpace(value) != "" {
-				projected["nextCursor"] = value
+		if raw, present := m["nextCursor"]; present {
+			value, ok := raw.(string)
+			if !ok {
+				return devAppPaginationProjectionError(
+					apperrors.SubtypePaginationIncomplete,
+					"devapp pagination nextCursor must be a string",
+				)
 			}
+			value = strings.TrimSpace(value)
+			if found.cursorSet && found.cursor != "" && value != "" && found.cursor != value {
+				return devAppPaginationProjectionError(
+					apperrors.SubtypePaginationConflict,
+					"devapp pagination nextCursor conflicts across nested response envelopes",
+				)
+			}
+			if value != "" {
+				found.cursor = value
+			}
+			found.cursorSet = true
 		}
 		for _, key := range []string{"result", "data", "content", "pageInfo", "pagination"} {
 			if nested, ok := m[key].(map[string]any); ok {
-				visit(nested, depth+1)
+				if err := visit(nested, depth+1); err != nil {
+					return err
+				}
 			}
 		}
+		return nil
 	}
-	visit(source, 0)
-	return projected
+	if err := visit(source, 0); err != nil {
+		return nil, err
+	}
+	if found.hasMoreSet && found.hasMore && found.cursor == "" {
+		return nil, devAppPaginationProjectionError(
+			apperrors.SubtypePaginationIncomplete,
+			"devapp pagination hasMore=true requires nextCursor",
+		)
+	}
+	if found.hasMoreSet && !found.hasMore && found.cursor != "" {
+		return nil, devAppPaginationProjectionError(
+			apperrors.SubtypePaginationConflict,
+			"devapp pagination cannot be exhausted while nextCursor is present",
+		)
+	}
+	if found.hasMoreSet {
+		projected["hasMore"] = found.hasMore
+	}
+	if found.cursor != "" {
+		projected["nextCursor"] = found.cursor
+	}
+	return projected, nil
+}
+
+func devAppPaginationProjectionError(subtype apperrors.Subtype, message string) error {
+	return apperrors.NewValidation(message,
+		apperrors.WithSubtype(subtype),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // GetApp maps helper `get_dev_app`.
@@ -738,7 +810,11 @@ var PermissionList = shortcut.Shortcut{
 			return err
 		}
 		permissions := permissionListProject(data)
-		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(permissions), "permissions": permissions}))
+		page, err := projectDevAppPage(data, map[string]any{"count": len(permissions), "permissions": permissions})
+		if err != nil {
+			return err
+		}
+		return rt.Output(page)
 	},
 }
 
@@ -1216,7 +1292,11 @@ var EventList = shortcut.Shortcut{
 			return err
 		}
 		events := eventListProject(data)
-		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(events), "events": events}))
+		page, err := projectDevAppPage(data, map[string]any{"count": len(events), "events": events})
+		if err != nil {
+			return err
+		}
+		return rt.Output(page)
 	},
 }
 
@@ -1403,7 +1483,11 @@ var VersionList = shortcut.Shortcut{
 			return err
 		}
 		versions := versionListProject(data)
-		return rt.Output(projectDevAppPage(data, map[string]any{"count": len(versions), "versions": versions}))
+		page, err := projectDevAppPage(data, map[string]any{"count": len(versions), "versions": versions})
+		if err != nil {
+			return err
+		}
+		return rt.Output(page)
 	},
 }
 
