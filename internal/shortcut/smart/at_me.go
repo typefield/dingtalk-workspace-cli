@@ -23,6 +23,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	chatshortcut "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
@@ -56,10 +57,13 @@ const (
 //	dws chat +at-me
 //	dws chat +at-me --days 3
 var AtMe = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+at-me",
-	Product:     "chat",
-	Description: "查最近 @我 的消息（自动算时间窗，投影发送人/时间/内容/会话）",
+	// This is a high-frequency Skill route. Its active result contract owns
+	// outcome and pagination; callers only select --format json.
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "chat",
+	Command:       "+at-me",
+	Product:       "chat",
+	Description:   "查最近 @我 的消息（自动算时间窗，投影发送人/时间/内容/会话）",
 	Intent: "当你想快速看回最近谁在群里或单聊里 @了你、但不想手动把起止时间换算成毫秒、也不想记 list-mentions 的一堆参数时使用；" +
 		"内部按本地时区算出「最近 N 天」（默认 7 天，可用 --days 调整回溯天数）的时间窗，搜索这段时间内 @我 的消息，" +
 		"再在本地把每条消息投影成发送人、时间、内容、所在会话四个关键字段。" +
@@ -99,8 +103,8 @@ var AtMe = shortcut.Shortcut{
 		{Name: "group-query", Type: shortcut.FlagString, Desc: "--chat-query 的兼容别名", Hidden: true},
 		{Name: "days", Type: shortcut.FlagInt, Desc: "回溯天数（默认 7）；--days 必须在 1-3650 之间", Default: "7", Required: false},
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页返回数量（默认 50）；--limit 必须大于 0", Default: "50"},
-		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，翻页传上次的 nextCursor", Default: "0"},
-		{Name: "page-all", Type: shortcut.FlagBool, Desc: "沿 nextCursor 自动读取全部 @我 消息；--page-limit 仅与 --page-all 一起使用且范围 1-500"},
+		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，翻页传上次 meta.pagination.next_token", Default: "0"},
+		{Name: "page-all", Type: shortcut.FlagBool, Desc: "沿服务端续页游标自动读取全部 @我消息；--page-limit 仅与 --page-all 一起使用且范围 1-500"},
 		{Name: "page-limit", Type: shortcut.FlagInt, Default: "50", Desc: "--page-limit 仅与 --page-all 一起使用且范围 1-500"},
 		{Name: "no-reactions", Type: shortcut.FlagBool, Desc: "不输出消息 reaction（默认输出）"},
 	}, chatshortcut.MessageResourceDownloadFlags()...),
@@ -121,6 +125,13 @@ var AtMe = shortcut.Shortcut{
 }
 
 func executeAtMe(rt *shortcut.RuntimeContext) error {
+	if output.UsesUnifiedResult(rt.Command()) {
+		return executeAtMeUnified(rt)
+	}
+	return executeAtMeLegacy(rt)
+}
+
+func executeAtMeLegacy(rt *shortcut.RuntimeContext) error {
 	groupID := ""
 	directTarget := strings.TrimSpace(rt.Str("group"))
 	queryTarget := strings.TrimSpace(rt.StrFirst("chat-query", "group-query"))
@@ -190,6 +201,152 @@ func executeAtMe(rt *shortcut.RuntimeContext) error {
 		return err
 	}
 	return readErr
+}
+
+// executeAtMeUnified is intentionally separate from the legacy collector. The
+// active command does not translate legacy complete/hasMore/failures fields;
+// it gathers one PageLedger and lets the framework render the single result.
+func executeAtMeUnified(rt *shortcut.RuntimeContext) error {
+	groupID, params, err := atMeRequestParams(rt)
+	if err != nil {
+		return err
+	}
+	pageLimit := 1
+	if rt.Bool("page-all") {
+		pageLimit = rt.Int("page-limit")
+	}
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return apperrors.NewInternal("初始化 @我消息分页账本失败", apperrors.WithCause(err))
+	}
+	cursor := atMeCursorString(params["cursor"])
+	if cursor == "" {
+		cursor = "0"
+	}
+	seen := map[string]bool{}
+	items := make([]map[string]any, 0)
+
+	for pageLedger.Pages() < pageLimit {
+		params["cursor"] = cursor
+		data, callErr := rt.CallMCPData("chat", "search_at_me_message", params)
+		if callErr != nil {
+			if recordErr := pageLedger.RecordFailure(cursor, atMeReadFailureInfo(callErr)); recordErr != nil {
+				return apperrors.NewInternal("记录 @我消息读取失败状态失败", apperrors.WithCause(recordErr))
+			}
+			break
+		}
+
+		pageItems, projectionErr := atMeMessageItemsStrict(data)
+		if projectionErr != nil {
+			if recordErr := pageLedger.RecordFailure(cursor, atMeProjectionFailureInfo(projectionErr)); recordErr != nil {
+				return apperrors.NewInternal("记录 @我消息投影失败状态失败", apperrors.WithCause(recordErr))
+			}
+			break
+		}
+		next, terminal, observeErr := observeAtMeUnifiedPage(pageLedger, cursor, data, pageItems, !rt.Bool("no-reactions"))
+		if observeErr != nil {
+			return apperrors.NewInternal("记录 @我消息分页证据失败", apperrors.WithCause(observeErr))
+		}
+		for _, item := range pageItems {
+			id := chatmsg.StableMessageID(item)
+			if seen[id] {
+				continue
+			}
+			seen[id] = true
+			items = append(items, item)
+		}
+		if terminal || !rt.Bool("page-all") {
+			break
+		}
+		switch pageLedger.State() {
+		case output.PageStateContinuation:
+			cursor = next
+		case output.PageStateUnknown:
+			if recordErr := pageLedger.RecordBoundaryFailure(atMePaginationFailureInfo("下层未返回 hasMore 或 nextCursor，无法继续全量分页")); recordErr != nil {
+				return apperrors.NewInternal("记录 @我消息未知分页边界失败", apperrors.WithCause(recordErr))
+			}
+			terminal = true
+		default:
+			terminal = true
+		}
+		if terminal {
+			break
+		}
+	}
+
+	payload := atMeUnifiedPayload(items, !rt.Bool("no-reactions"))
+	if rt.Bool("download-resources") {
+		resourceLedger := chatshortcut.DownloadMessageResources(rt, items, groupID)
+		chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
+		if failureInfo := atMeResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+			if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
+				return apperrors.NewInternal("记录 @我消息资源下载失败状态失败", apperrors.WithCause(recordErr))
+			}
+		}
+	}
+	result, resultErr := atMeUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成 @我消息统一分页结果失败", apperrors.WithCause(resultErr))
+	}
+	return rt.OutputResult(payload, result)
+}
+
+func atMeRequestParams(rt *shortcut.RuntimeContext) (string, map[string]any, error) {
+	groupID := ""
+	directTarget := strings.TrimSpace(rt.Str("group"))
+	queryTarget := strings.TrimSpace(rt.StrFirst("chat-query", "group-query"))
+	if directTarget != "" || queryTarget != "" {
+		resolved, err := targetresolver.ResolveChatTarget(rt, directTarget, queryTarget)
+		if err != nil {
+			return "", nil, err
+		}
+		groupID = resolved.Selected.OpenConversationID
+	}
+	now := time.Now()
+	params := map[string]any{
+		"startTime": now.AddDate(0, 0, -rt.Int("days")).UnixMilli(),
+		"endTime":   now.UnixMilli(),
+		"limit":     rt.Int("limit"),
+		"cursor":    rt.Str("cursor"),
+	}
+	if groupID != "" {
+		params["openConversationId"] = groupID
+	}
+	return groupID, params, nil
+}
+
+func atMeUnifiedPayload(items []map[string]any, includeReactions bool) map[string]any {
+	messages := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		messages = append(messages, atMeProjectWithReactions(item, includeReactions))
+	}
+	return map[string]any{
+		"messages": messages,
+		"items":    atMeCompatibilityItems(messages),
+		"count":    len(messages),
+	}
+}
+
+func atMeUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
+	if pageLedger == nil {
+		return nil, fmt.Errorf("missing pagination ledger")
+	}
+	data := map[string]any{}
+	if payload != nil {
+		for _, key := range []string{"messages", "items", "count", "resourceDownloads"} {
+			if value, ok := payload[key]; ok {
+				data[key] = value
+			}
+		}
+	}
+	if pageLedger.State() == output.PageStateUnknown {
+		data["pagination_known"] = false
+	}
+	options := make([]output.ResultOption, 0, 1)
+	if dryRun {
+		options = append(options, output.WithDryRun())
+	}
+	return pageLedger.Result(data, options...)
 }
 
 func validateAtMe(rt *shortcut.RuntimeContext) error {
@@ -457,6 +614,220 @@ func atMeToMaps(arr []any) []map[string]any {
 		}
 	}
 	return out
+}
+
+func observeAtMeUnifiedPage(
+	pageLedger *output.PageLedger,
+	cursor string,
+	data map[string]any,
+	items []map[string]any,
+	includeReactions bool,
+) (nextToken string, terminal bool, err error) {
+	evidence := output.PageEvidence{
+		Cursor: cursor,
+		Items:  len(items),
+		Data:   atMeUnifiedPayload(items, includeReactions),
+	}
+	page := chatmsg.Pagination(data)
+	hasMore, known := page["hasMore"].(bool)
+	if !known {
+		if token := atMeCursorString(page["nextCursor"]); token != "" {
+			evidence.NextToken = token
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, atMeRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			return token, false, nil
+		}
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		return "", false, nil
+	}
+	if !hasMore {
+		if atMeCursorString(page["nextCursor"]) != "" {
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, atMeRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			if recordErr := pageLedger.RecordBoundaryFailure(atMePaginationFailureInfo("hasMore=false，但同时携带可用 nextCursor")); recordErr != nil {
+				return "", true, recordErr
+			}
+			return "", true, nil
+		}
+		more := false
+		evidence.HasMore = &more
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+	token := atMeCursorString(page["nextCursor"])
+	if token == "" {
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		if recordErr := pageLedger.RecordBoundaryFailure(atMePaginationFailureInfo("hasMore=true，但缺少可继续的 nextCursor")); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	more := true
+	evidence.HasMore = &more
+	evidence.NextToken = token
+	if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+		return "", true, atMeRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+	}
+	return token, false, nil
+}
+
+func atMeRecordUnifiedBoundary(pageLedger *output.PageLedger, evidence output.PageEvidence, message string) error {
+	evidence.HasMore = nil
+	evidence.NextToken = ""
+	if err := pageLedger.ObservePage(evidence); err != nil {
+		return err
+	}
+	return pageLedger.RecordBoundaryFailure(atMePaginationFailureInfo(message))
+}
+
+func atMeReadFailureInfo(err error) *output.ErrorInfo {
+	message := "@我消息分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{Type: "api", Message: message, Hint: "从失败游标继续；不要重放已成功读取的页面。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "pagination_read", ExecutionStarted: &started, Retryable: true}
+}
+
+func atMePaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{Type: "api", Subtype: string(apperrors.SubtypePaginationInconsistent), Message: strings.TrimSpace(message), Hint: "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "pagination_projection", ExecutionStarted: &started}
+}
+
+func atMeProjectionFailureInfo(err error) *output.ErrorInfo {
+	message := "@我消息响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{Type: "api", Subtype: string(apperrors.SubtypeProjectionUnknown), Message: message, Hint: "检查服务端返回结构；不要把未知响应形状解释为空消息结果。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "projection", ExecutionStarted: &started}
+}
+
+func atMeResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
+	failedCount := atMeLedgerCount(ledger["failedCount"])
+	if failedCount == 0 {
+		return nil
+	}
+	started := true
+	return &output.ErrorInfo{Type: "api", Message: fmt.Sprintf("@我消息资源下载失败：%d 个资源未完成", failedCount), Hint: "保留已读取消息和已下载文件；查看失败资源后仅处理失败项。", Operation: "chat/message_resource_download", Origin: "local_resource_download", Stage: "resource_download", ExecutionStarted: &started, Details: map[string]any{"resource_downloads": ledger}}
+}
+
+func atMeLedgerCount(value any) int {
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int32:
+		return int(typed)
+	case int64:
+		return int(typed)
+	case float32:
+		return int(typed)
+	case float64:
+		return int(typed)
+	default:
+		return 0
+	}
+}
+
+// atMeMessageItemsStrict distinguishes recognized empty arrays from unknown or
+// malformed response shapes. It copies grouped messages before adding group
+// context, so the upstream response is never mutated while constructing data.
+func atMeMessageItemsStrict(data map[string]any) ([]map[string]any, error) {
+	if data == nil {
+		return nil, fmt.Errorf("response is empty")
+	}
+	scopes := []map[string]any{data}
+	if result, ok := data["result"].(map[string]any); ok {
+		scopes = append(scopes, result)
+	}
+	for _, scope := range scopes {
+		if raw, present := scope["conversationMessagesList"]; present {
+			groups, ok := raw.([]any)
+			if !ok {
+				return nil, fmt.Errorf("conversationMessagesList is not a list")
+			}
+			return atMeFlattenGroupsStrict(groups)
+		}
+		for _, key := range []string{"list", "messages", "messageList", "items", "data", "records", "result"} {
+			raw, present := scope[key]
+			if !present {
+				continue
+			}
+			if _, wrapped := raw.(map[string]any); wrapped {
+				continue
+			}
+			values, ok := raw.([]any)
+			if !ok {
+				return nil, fmt.Errorf("%s is not a message list", key)
+			}
+			return atMeValidateItems(values, key)
+		}
+	}
+	return nil, fmt.Errorf("response has no recognized message list")
+}
+
+func atMeFlattenGroupsStrict(groups []any) ([]map[string]any, error) {
+	out := make([]map[string]any, 0)
+	for groupIndex, rawGroup := range groups {
+		group, ok := rawGroup.(map[string]any)
+		if !ok || group == nil {
+			return nil, fmt.Errorf("conversationMessagesList[%d] is not an object", groupIndex)
+		}
+		rawMessages, present := group["messages"]
+		if !present {
+			return nil, fmt.Errorf("conversationMessagesList[%d] has no messages", groupIndex)
+		}
+		messages, ok := rawMessages.([]any)
+		if !ok {
+			return nil, fmt.Errorf("conversationMessagesList[%d].messages is not a list", groupIndex)
+		}
+		title := atMeString(group["title"])
+		conversationID := atMeString(group["openConversationId"])
+		for messageIndex, rawMessage := range messages {
+			message, ok := rawMessage.(map[string]any)
+			if !ok || message == nil {
+				return nil, fmt.Errorf("conversationMessagesList[%d].messages[%d] is not an object", groupIndex, messageIndex)
+			}
+			if chatmsg.StableMessageID(message) == "" {
+				return nil, fmt.Errorf("conversationMessagesList[%d].messages[%d] has no stable message ID", groupIndex, messageIndex)
+			}
+			item := make(map[string]any, len(message)+2)
+			for key, value := range message {
+				item[key] = value
+			}
+			if _, present := item["conversationTitle"]; !present && title != "" {
+				item["conversationTitle"] = title
+			}
+			if _, present := item["openConversationId"]; !present && conversationID != "" {
+				item["openConversationId"] = conversationID
+			}
+			out = append(out, item)
+		}
+	}
+	return out, nil
+}
+
+func atMeValidateItems(values []any, label string) ([]map[string]any, error) {
+	items := make([]map[string]any, 0, len(values))
+	for index, value := range values {
+		item, ok := value.(map[string]any)
+		if !ok || item == nil {
+			return nil, fmt.Errorf("%s[%d] is not an object", label, index)
+		}
+		if chatmsg.StableMessageID(item) == "" {
+			return nil, fmt.Errorf("%s[%d] has no stable message ID", label, index)
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }
 
 // atMeProject reshapes one @me message into {sender, time, text, conversation},

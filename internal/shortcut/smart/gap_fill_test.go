@@ -35,6 +35,7 @@ func TestCrossPlatformCoverageAtMeEmptyResultKeepsMessagesAndItemsIterable(t *te
 	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 		t.Fatalf("decode output: %v\n%s", err, output.String())
 	}
+	payload = atMeSuccessData(t, payload)
 	for _, key := range []string{"messages", "items"} {
 		rows, ok := payload[key].([]any)
 		if !ok || len(rows) != 0 {
@@ -111,6 +112,9 @@ func TestCrossPlatformCoverageMessageReadShortcutsPublishResourceDownloadPlans(t
 			}
 			if tc.name == "search" {
 				payload = searchMsgSuccessData(t, payload)
+			}
+			if tc.name == "at me" {
+				payload = atMeSuccessData(t, payload)
 			}
 			rows, ok := payload[tc.resultKey].([]any)
 			if !ok || len(rows) != 1 {

@@ -163,6 +163,24 @@ func chatMessagesPartialData(t *testing.T, envelope map[string]any) map[string]a
 	return data
 }
 
+// atMe uses the same active-result shape as the other migrated message reads,
+// but keeps a dedicated helper so the old compatibility tests cannot
+// accidentally reintroduce legacy complete/nextCursor assertions.
+func atMeSuccessData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	return chatMessagesSuccessData(t, envelope)
+}
+
+func atMePartialData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	return chatMessagesPartialData(t, envelope)
+}
+
+func atMePagination(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	return chatMessagesPagination(t, envelope)
+}
+
 func (c *chatMessagesPagingCaller) CallTool(
 	_ context.Context,
 	_, _ string,

@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：已实施（PageLedger 已落地；首批六条 IM 分页命令已进入 `unified_active`，真实服务端返回仍待 Agent 取证）
+- 状态：已实施（PageLedger 已落地；首批七条 IM 分页命令已进入 `unified_active`，真实服务端返回仍待 Agent 取证）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 与 `internal/shortcut/smart` 的可终结分页命令；
   主路径为只读，部分命令可选执行本地资源下载或导出
@@ -14,7 +14,7 @@
 IM 已经实现了游标去重、页数上限、满页无游标探测、跨页去重和失败记录。这些执行层
 算法应保留。RFC 起草时，其结果仍以每个 shortcut 自定义的
 `complete/hasMore/nextCursor/failures/partial` payload 表达，且大部分 IM shortcut 尚未
-声明统一返回 rollout。首批六条已经完成 active 迁移；其他 IM 分页入口仍按命令逐条迁移。
+声明统一返回 rollout。首批七条已经完成 active 迁移；其他 IM 分页入口仍按命令逐条迁移。
 
 本 RFC 将 IM 改造为两层：
 
@@ -128,7 +128,7 @@ legacy_only
   -> unified_stable
 ```
 
-迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批六条命令已经完成
+迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批七条命令已经完成
 `dual_validate → unified_active`：
 
 1. `chat +flag-list`；
@@ -137,8 +137,9 @@ legacy_only
 4. `chat +thread-replies`。
 5. `chat +chat-messages`。
 6. `chat +search-msg`。
+7. `chat +at-me`。
 
-`+chat-messages` 与 `+thread-replies` 的 `--download-resources`、以及
+`+chat-messages`、`+thread-replies` 与 `+at-me` 的 `--download-resources`、以及
 `+chat-messages --output` 也使用该命令唯一的统一结果契约；Agent 仍只传
 `--format json`，不能按 flag 选择旧/新协议。读取成功而资源下载或本地导出失败时，
 适配器保留已读取页面并返回 `partial_failure`，不能把本地副作用失败包装为读取成功。
@@ -146,11 +147,11 @@ legacy_only
 
 每个 `dual_validate` 命令在晋级前必须：一次业务调用、legacy stdout 字节不变、shadow
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
-选择协议。这个历史阶段已经完成，当前六条命令都由其真实 `OutputRollout` 声明为
+选择协议。这个历史阶段已经完成，当前七条命令都由其真实 `OutputRollout` 声明为
 `unified_active`，不是靠测试临时覆盖声明来观察新信封。
 
 当前进度：`chat +flag-list`、`chat +chat-search`、`chat +conversation-list`、
-`chat +thread-replies`、`chat +chat-messages` 与 `chat +search-msg` 都在单次业务执行中构建
+`chat +thread-replies`、`chat +chat-messages`、`chat +search-msg` 与 `chat +at-me` 都在单次业务执行中构建
 PageLedger，并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为
 `CommandResult`。历史 dual 阶段的 legacy JSON 逐字节 golden 仍保留，用于防止未来
 回退阶段意外修改旧输出。当前 active 回归直接验证 continuation 的
@@ -188,6 +189,13 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 `--page-limit` 仅返回可续跑的 success，而不是伪造远端失败。富化和显式资源下载是在读取页
 之后发生的请求步骤，失败时保留成功页并返回 `partial_failure`。
 
+`+at-me` 是按群读取 @我消息的高频入口。激活后不再输出 legacy
+`complete/hasMore/nextCursor/failures/partial/stopReason`；只把明确的 `hasMore` 和游标
+归一进 `meta.pagination`。单页但没有端点证据时，业务 data 标记
+`pagination_known:false`；显式 `--page-all` 遇到该形状、游标矛盾或后续读取/资源下载失败时，
+保留已读页并输出 `partial_failure`。无法识别列表容器或缺少稳定消息 ID 时返回
+`projection_unknown`，不把未知响应形状伪装为空消息。
+
 ## 6. 验收
 
 1. `hasMore=true` 必须带可续 `next_token`；`endpoint_exhausted:true` 禁止带 token。
@@ -200,10 +208,10 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 
 ### 6.1 2026-08-08 Agent 声明面扫描
 
-Agent 以当前源码构建临时 CLI，并逐项读取六条命令的 leaf Help、`schema --all` 中的精确
+Agent 以当前源码构建临时 CLI，并逐项读取七条命令的 leaf Help、`schema --all` 中的精确
 tool 声明，以及 multi chat Skill 的根路由和精确 reference。结果如下：
 
-- 六条命令均只公开全局 `--format`，没有输出协议选择参数；
+- 七条命令均只公开全局 `--format`，没有输出协议选择参数；
 - canonical path、`--page-all`、`--page-limit`、page size/token 约束与运行时一致；
 - Schema 的 effect/risk/confirmation/idempotency 均为 `read/low/not_required/idempotent`；
 - Skill 路由均指向当前 canonical path，没有要求 Agent 选择 rollout 状态；

@@ -27,13 +27,14 @@ func TestCrossPlatformCoverageAtMePageAllUsesOpaqueCursorAndDeduplicates(t *test
 	if len(caller.args) != 2 || caller.args[0]["cursor"] != "0" || caller.args[1]["cursor"] != "cursor-2" {
 		t.Fatalf("calls = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+	var envelope map[string]any
+	if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if payload["count"] != float64(3) || payload["pagesFetched"] != float64(2) ||
-		payload["complete"] != true || payload["hasMore"] != false || payload["failedCount"] != float64(0) {
-		t.Fatalf("payload = %#v", payload)
+	payload := atMeSuccessData(t, envelope)
+	pagination := atMePagination(t, envelope)
+	if payload["count"] != float64(3) || pagination["pages"] != float64(2) || pagination["endpoint_exhausted"] != true {
+		t.Fatalf("envelope = %#v", envelope)
 	}
 	if len(payload["items"].([]any)) != 3 {
 		t.Fatalf("compatibility items = %#v", payload["items"])
@@ -49,15 +50,17 @@ func TestCrossPlatformCoverageAtMePageAllFailsClosedWithoutContinuation(t *testi
 	var output bytes.Buffer
 	root.SetOut(&output)
 	root.SetArgs([]string{"chat", "+at-me", "--page-all"})
-	if err := root.Execute(); err == nil {
-		t.Fatal("missing @me continuation unexpectedly succeeded")
-	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if payload["complete"] != false || payload["failedCount"] != float64(1) || payload["stopReason"] != "pagination_error" {
-		t.Fatalf("payload = %#v", payload)
+	var envelope map[string]any
+	if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
+		t.Fatal(err)
+	}
+	payload := atMePartialData(t, envelope)
+	failed := payload["failed"].([]any)
+	if len(failed) != 1 || failed[0].(map[string]any)["error"].(map[string]any)["subtype"] != "pagination_inconsistent" {
+		t.Fatalf("envelope = %#v", envelope)
 	}
 }
 
@@ -74,12 +77,14 @@ func TestCrossPlatformCoverageAtMePageAllContinuesAcrossEmptyIntermediatePage(t 
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+	var envelope map[string]any
+	if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if payload["count"] != float64(1) || payload["pagesFetched"] != float64(2) || payload["complete"] != true {
-		t.Fatalf("payload = %#v", payload)
+	payload := atMeSuccessData(t, envelope)
+	pagination := atMePagination(t, envelope)
+	if payload["count"] != float64(1) || pagination["pages"] != float64(2) || pagination["endpoint_exhausted"] != true {
+		t.Fatalf("envelope = %#v", envelope)
 	}
 }
 
@@ -238,50 +243,53 @@ func TestCrossPlatformCoverageAtMeAdditionalEdges(t *testing.T) {
 	}
 
 	t.Run("single page terminal and read failure", func(t *testing.T) {
-		payload, err := run(t, &chatMessagesPagingCaller{responses: []string{
+		envelope, err := run(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"conversationMessagesList":[],"hasMore":false}}`,
 		}})
-		if err != nil || payload["complete"] != true || payload["stopReason"] != "source_complete" {
-			t.Fatalf("payload=%#v err=%v", payload, err)
+		if err != nil || atMePagination(t, envelope)["endpoint_exhausted"] != true {
+			t.Fatalf("envelope=%#v err=%v", envelope, err)
 		}
-		_, err = run(t, &chatMessagesPagingCaller{failAt: 1})
-		if err == nil {
-			t.Fatal("single-page read failure unexpectedly succeeded")
+		envelope, err = run(t, &chatMessagesPagingCaller{failAt: 1})
+		if err != nil || envelope["outcome"] != "failure" {
+			t.Fatalf("first read failure envelope=%#v err=%v", envelope, err)
 		}
 	})
 
 	t.Run("all-page read failures", func(t *testing.T) {
-		_, err := run(t, &chatMessagesPagingCaller{failAt: 1}, "--page-all")
-		if err == nil {
-			t.Fatal("first all-page read failure unexpectedly succeeded")
+		envelope, err := run(t, &chatMessagesPagingCaller{failAt: 1}, "--page-all")
+		if err != nil || envelope["outcome"] != "failure" {
+			t.Fatalf("first all-page failure envelope=%#v err=%v", envelope, err)
 		}
-		payload, err := run(t, &chatMessagesPagingCaller{
+		envelope, err = run(t, &chatMessagesPagingCaller{
 			responses: []string{`{"result":{"conversationMessagesList":[{"messages":[{"openMessageId":"m1"}]}],"hasMore":true,"nextCursor":"next"}}`},
 			failAt:    2,
 		}, "--page-all")
-		if err == nil || payload["partial"] != true || payload["stopReason"] != "read_failure" {
-			t.Fatalf("payload=%#v err=%v", payload, err)
+		if err != nil || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("partial envelope=%#v err=%v", envelope, err)
 		}
 	})
 
 	for _, tc := range []struct {
-		name      string
-		responses []string
-		args      []string
-		wantErr   bool
-		stop      string
+		name          string
+		responses     []string
+		args          []string
+		wantOutcome   string
+		wantExhausted *bool
 	}{
-		{name: "unknown pagination", responses: []string{`{"result":{"conversationMessagesList":[]}}`}, args: []string{"--page-all"}, wantErr: true, stop: "pagination_error"},
-		{name: "page limit", responses: []string{`{"result":{"conversationMessagesList":[{"messages":[{"openMessageId":"m1"}]}],"hasMore":true,"nextCursor":"next"}}`}, args: []string{"--page-all", "--page-limit", "1"}, stop: "page_limit"},
-		{name: "empty cursor defaults", responses: []string{`{"result":{"conversationMessagesList":[],"hasMore":false}}`}, args: []string{"--cursor=", "--page-all"}, stop: "source_complete"},
+		{name: "unknown pagination", responses: []string{`{"result":{"conversationMessagesList":[]}}`}, args: []string{"--page-all"}, wantOutcome: "partial_failure"},
+		{name: "page limit", responses: []string{`{"result":{"conversationMessagesList":[{"messages":[{"openMessageId":"m1"}]}],"hasMore":true,"nextCursor":"next"}}`}, args: []string{"--page-all", "--page-limit", "1"}, wantOutcome: "success"},
+		{name: "empty cursor defaults", responses: []string{`{"result":{"conversationMessagesList":[],"hasMore":false}}`}, args: []string{"--cursor=", "--page-all"}, wantOutcome: "success"},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
-			payload, err := run(t, &chatMessagesPagingCaller{responses: tc.responses}, tc.args...)
-			if (err != nil) != tc.wantErr || payload["stopReason"] != tc.stop {
-				t.Fatalf("payload=%#v err=%v", payload, err)
+			envelope, err := run(t, &chatMessagesPagingCaller{responses: tc.responses}, tc.args...)
+			if err != nil || envelope["outcome"] != tc.wantOutcome {
+				t.Fatalf("envelope=%#v err=%v", envelope, err)
 			}
-			if tc.stop == "page_limit" && payload["nextCursor"] != "next" {
-				t.Fatalf("continuation payload=%#v", payload)
+			if tc.name == "page limit" && atMePagination(t, envelope)["next_token"] != "next" {
+				t.Fatalf("continuation envelope=%#v", envelope)
+			}
+			if tc.name == "empty cursor defaults" && atMePagination(t, envelope)["endpoint_exhausted"] != true {
+				t.Fatalf("terminal envelope=%#v", envelope)
 			}
 		})
 	}

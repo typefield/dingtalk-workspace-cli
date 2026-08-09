@@ -36,9 +36,12 @@
 - 建议发送时带 `--uuid`，失败重试复用同一个值。
 - Bot/Webhook 只支持文本/Markdown；Bot 多群使用 `+messages-send --groups/--groups-file` 的逐项
   ledger。不要把 user 文件/图片能力外推到 Bot。
-- `+at-me` 和 `+messages-list-direct` 要求全量时使用 `--page-all`，并检查 `complete`、
-  `hasMore`、`stopReason` 和 `failures`；`+messages-list-direct` 的续页时间来自下层毫秒
-  `nextCursor`，不得用只有秒精度的消息展示时间手工拼接。
+- `+at-me` 要求全量时使用 `--page-all --format json`。先判断 `outcome`；只有
+  `meta.pagination.endpoint_exhausted:true` 才表示服务端分页耗尽，`next_token` 可续页，
+  `partial_failure` 保留已读页和逐项失败，缺分页 meta 时只能视为证据未知。
+- `+messages-list-direct` 尚是 legacy 返回。要求全量时使用 `--page-all`，并检查
+  `complete`、`hasMore`、`stopReason` 和 `failures`；其续页时间来自下层毫秒 `nextCursor`，
+  不得用只有秒精度的消息展示时间手工拼接。
 
 ## 原子 fallback 命令明细
 
