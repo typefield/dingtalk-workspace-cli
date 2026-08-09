@@ -70,6 +70,10 @@ def main() -> int:
                 [sys.executable, "scripts/agent/probe_mono_write_confirmation.py"],
             ),
             (
+                "Mono 考勤排班写入委托与终态语义",
+                [sys.executable, "scripts/agent/probe_mono_attendance_schedule_contract.py"],
+            ),
+            (
                 "Multi 脚本 Help/Skill 参数对账",
                 [sys.executable, "scripts/agent/scan_multi_script_contract.py"],
             ),

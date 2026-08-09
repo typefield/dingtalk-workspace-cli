@@ -19,7 +19,7 @@
     python attendance_schedule_import.py \
         --group-id 123456 \
         --schedules '[{"userId":"u001","workDate":"2026-05-19","classId":789,"isRest":"N"}]' \
-        --confirm
+        --yes
 """
 
 from __future__ import annotations
@@ -40,7 +40,15 @@ from attendance_report_common import (
     warn,
     error,
 )
-from _runtime import add_contract_flags, emit, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    add_write_confirmation_flag,
+    emit,
+    require_write_confirmation,
+    run_child_dws,
+    run_main,
+)
 
 DATE_FMT = "%Y-%m-%d"
 DATETIME_FMT = "%Y-%m-%d %H:%M:%S"
@@ -357,27 +365,57 @@ def print_schedule_preview(
 # 执行排班
 # ─────────────────────────────────────────────────────────────────────────────
 
-def execute_schedule_import(group_id: int, schedules: list[dict]) -> None:
-    """调用 dws attendance schedule import 执行排班。"""
+def execute_schedule_import(group_id: int, schedules: list[dict]) -> ChildDWSResult:
+    """发起排班导入，但不把 API 响应扩大解释为逐条排班终态。"""
     log(f"🚀 正在执行排班导入 ({len(schedules)} 条记录) ...")
 
     schedules_json = json.dumps(schedules, ensure_ascii=False)
-
-    try:
-        result = run_dws([
-            "attendance", "schedule", "import",
-            "--groupId", str(group_id),
-            "--scheduleVOS", schedules_json,
-            "--yes",
-        ])
-    except DwsCallError as exc:
-        error(f"排班导入失败: {exc}")
-        if exc.is_permission_error:
+    result = run_child_dws([
+        "attendance", "schedule", "import",
+        "--groupId", str(group_id),
+        "--scheduleVOS", schedules_json,
+        # The script's public confirmation is --yes.  This leaf command has a
+        # distinct, documented confirmation flag; passing the script flag
+        # through would fail after all read-only preflight work had completed.
+        "--user-say-yes",
+        "--format", "json",
+    ])
+    if result.state == "success":
+        log("✅ 排班导入请求已被 API 接受；逐条排班终态尚未回读验证")
+    else:
+        error("排班导入未返回可确认终态；请先查询排班结果，避免直接重试")
+        if result.error and result.error.get("type") in {"auth", "authorization"}:
             error("提示: 当前账号可能不是考勤管理员，请确认权限")
-        raise SystemExit(1) from exc
-
-    log("✅ 排班导入完成")
     return result
+
+
+def schedule_import_error(result: ChildDWSResult) -> dict[str, Any]:
+    """Preserve pre-execution failures, but make ambiguous writes non-retriable.
+
+    A transport/API error after a write request cannot establish that no
+    schedule changed.  In particular, do not pass a child ``retryable`` hint
+    through as permission for an Agent to replay this non-idempotent request.
+    """
+    source = dict(result.error or {})
+    if result.state == "failed":
+        return source or {
+            "type": "api",
+            "message": "排班导入在执行前失败。",
+        }
+
+    upstream: dict[str, Any] = {}
+    for key in ("type", "subtype", "message", "exit_code"):
+        if key in source:
+            upstream[key] = source[key]
+    error = {
+        "type": str(source.get("type") or "api"),
+        "subtype": "schedule_import_unconfirmed",
+        "message": "排班导入未返回可确认终态；请求是否已执行未知。",
+        "hint": "请先查询目标日期的排班结果；未核查前不要重复导入相同记录。",
+    }
+    if upstream:
+        error["details"] = {"upstream": upstream}
+    return error
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -397,12 +435,17 @@ def main() -> int:
         "--schedules", required=True,
         help="排班记录 JSON 数组（必填），每条记录包含 userId/workDate/classId/isRest",
     )
-    parser.add_argument(
-        "--confirm", action="store_true",
-        help="用户已确认排班内容（必填，表示用户已在 Agent 回显中确认）",
-    )
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
+    # Retain the historical spelling for old callers without teaching a second
+    # confirmation protocol to Agents.  All current Help/Skill examples use
+    # the common --yes spelling.
+    parser.add_argument("--confirm", dest="yes", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
+
+    if args.group_id <= 0:
+        error("--group-id 必须为正整数")
+        raise SystemExit(1)
 
     # ── 解析排班记录 JSON ──
     try:
@@ -418,10 +461,41 @@ def main() -> int:
     # ── 校验必填字段 ──
     required_fields = ("userId", "workDate", "classId", "isRest")
     for idx, schedule in enumerate(schedules):
+        if not isinstance(schedule, dict):
+            error(f"schedule[{idx}] 必须是对象")
+            raise SystemExit(1)
         for field_name in required_fields:
             if field_name not in schedule:
                 error(f"schedule[{idx}] 缺少必填字段: {field_name}")
                 raise SystemExit(1)
+        if not isinstance(schedule["userId"], str):
+            error(f"schedule[{idx}].userId 必须是字符串")
+            raise SystemExit(1)
+        user_id = schedule["userId"].strip()
+        if not user_id:
+            error(f"schedule[{idx}].userId 不能为空")
+            raise SystemExit(1)
+        if not isinstance(schedule["isRest"], str):
+            error(f"schedule[{idx}].isRest 必须是字符串 Y 或 N")
+            raise SystemExit(1)
+        is_rest = schedule["isRest"].strip().upper()
+        if is_rest not in {"Y", "N"}:
+            error(f"schedule[{idx}].isRest 仅支持 Y 或 N")
+            raise SystemExit(1)
+        if isinstance(schedule["classId"], bool):
+            error(f"schedule[{idx}].classId 必须是整数")
+            raise SystemExit(1)
+        try:
+            class_id = int(schedule["classId"])
+        except (TypeError, ValueError) as exc:
+            error(f"schedule[{idx}].classId 必须是整数")
+            raise SystemExit(1) from exc
+        if class_id < 0 or (is_rest == "N" and class_id == 0):
+            error(f"schedule[{idx}].classId 与 isRest 组合无效")
+            raise SystemExit(1)
+        schedule["userId"] = user_id
+        schedule["isRest"] = is_rest
+        schedule["classId"] = class_id
 
     # ── 标准化日期格式 ──
     for idx, schedule in enumerate(schedules):
@@ -430,6 +504,25 @@ def main() -> int:
         except ValueError as exc:
             error(f"schedule[{idx}] 日期格式错误: {exc}")
             raise SystemExit(1) from exc
+
+    local_plan = {
+        "groupId": args.group_id,
+        "schedules": schedules,
+        "scheduleCount": len(schedules),
+        "userCount": len({str(schedule["userId"]) for schedule in schedules}),
+        "dateRange": {
+            "start": min(str(schedule["workDate"])[:10] for schedule in schedules),
+            "end": max(str(schedule["workDate"])[:10] for schedule in schedules),
+        },
+    }
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation="attendance_schedule_import",
+        data=local_plan,
+    ):
+        return confirmation
 
     # ── 阶段 1: 校验考勤组（必须为 TURN 排班制） ──
     group_info = validate_group_is_turn(args.group_id)
@@ -473,30 +566,45 @@ def main() -> int:
             text="[dry-run] 仅校验和回显，未实际执行排班",
         )
 
-    if not args.confirm:
+    # ── 阶段 5: 执行排班 ──
+    write_result = execute_schedule_import(args.group_id, schedules)
+    if write_result.state != "success":
+        execution_state = "not_executed" if write_result.state == "failed" else "unknown"
         return emit(
             fmt=args.format,
             outcome="failure",
-            error={
-                "type": "confirmation_required",
-                "message": "未传入 --confirm 参数，排班未执行",
-                "hint": "请在 Agent 回显确认后添加 --confirm 参数重新执行",
+            data={
+                **plan_data,
+                "write": False,
+                "execution_state": execution_state,
+                "verification": {
+                    "state": "not_verified",
+                    "reason": "导入请求没有返回可确认终态；请先查询目标排班，避免重复导入。",
+                },
             },
-            text="⚠️ 未传入 --confirm 参数，排班未执行；请确认后添加 --confirm 重试",
+            error=schedule_import_error(write_result),
+            meta=write_result.meta,
+            text="排班导入未返回可确认终态；请先查询目标排班，避免重复导入。",
         )
-
-    # ── 阶段 5: 执行排班 ──
-    execute_schedule_import(args.group_id, schedules)
 
     # ── 阶段 6: 输出摘要 ──
     if args.format != "text":
         return emit(
             fmt=args.format,
             outcome="success",
-            data={**plan_data, "write": True, "executed": True},
+            data={
+                **plan_data,
+                "write": True,
+                "execution_state": "accepted",
+                "verification": {
+                    "state": "not_verified",
+                    "reason": "API 接受导入请求不等于已逐条回读验证排班终态。",
+                },
+            },
+            meta=write_result.meta,
         )
 
-    print(f"\n✅ 排班导入成功！")
+    print("\n✅ 排班导入请求已被 API 接受（尚未逐条回读验证终态）")
     print(f"   考勤组: {group_name}")
     print(f"   排班人数: {len(user_ids)}")
     print(f"   排班记录: {len(schedules)} 条")

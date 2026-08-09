@@ -12,6 +12,7 @@
 | Mono 脚本结果/异常边界 | PASS |
 | Mono 深层 dry-run 受控探针 | PASS |
 | Mono 复合写确认门禁受控探针 | PASS |
+| Mono 考勤排班写入委托与终态语义 | PASS |
 | Multi 脚本 Help/Skill 参数对账 | PASS |
 | Shortcut 运行时/目录/Skill 集合对账 | PASS |
 | Shortcut exclusion 逐条审阅队列 | PASS |
@@ -186,6 +187,7 @@
 | `doc_create_and_write.py` | PASS | ok |
 | `mail_send_with_cc.py` | PASS | ok |
 | `calendar_schedule_meeting.py` | PASS | ok |
+| `attendance_schedule_import.py` | PASS | ok |
 | `todo_batch_create.py` | PASS | ok |
 | `bulk_add_fields.py` | PASS | ok |
 | `import_records.py` | PASS | ok |
@@ -193,12 +195,35 @@
 | `upload_attachment.py` | PASS | ok |
 | `oa_batch_approve.py` | PASS | ok |
 
-结果：9/9 通过
+结果：10/10 通过
 
 ## 边界
 
 - PASS 表示缺少确认时本地脚本返回 `policy/confirmation_required`、`execution_state=not_executed`，且 probe 未观察到子 dws 调用或新增本地文件。
 - 不证明真实租户的权限、服务端写入终态或确认后的 exactly-once；这些仍需要隔离账号或受控后端证据。
+```
+
+### Mono 考勤排班写入委托与终态语义
+
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/probe_mono_attendance_schedule_contract.py`
+
+```text
+# Mono 考勤排班导入 Agent 语义探针
+
+> 临时 child runner 只验证脚本的本地确认、参数委托与结果表达；不证明真实租户的权限、排班持久化或 exactly-once。仅保存 Markdown 证据。
+
+| 检查 | 结果 | 证据 |
+|---|---|---|
+| Help 只公开脚本确认参数 --yes | PASS | rc=0 |
+| 类型错误在任何 child 调用前返回 typed validation | PASS | rc=1; ok; child_calls=0 |
+| 缺确认在任何 child 调用前 fail-closed | PASS | rc=1; ok; child_calls=0 |
+| dry-run 可做只读校验但不会导入排班 | PASS | rc=0; ok; child_reads=3 |
+| 确认后传底层 canonical --user-say-yes，且只报告请求受理 | PASS | rc=0; ok; import_calls=1 |
+| 写请求异常保留 unknown、禁止把 retryable 透传为重放许可 | PASS | rc=1; ok |
+
+结论：**6/6 PASS**。
+
+边界：成功只表示 child API 接受请求，脚本明确标记 `verification.state=not_verified`；写请求异常只表示终态未知，Agent 必须先查询排班而不是重放导入。
 ```
 
 ### Multi 脚本 Help/Skill 参数对账
@@ -257,7 +282,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T13:02:28`
+- generated_at: `2026-08-09T13:19:58`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**

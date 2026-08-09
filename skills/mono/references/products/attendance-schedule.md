@@ -319,13 +319,17 @@ ask_question({
 python scripts/attendance_schedule_import.py \
   --group-id <groupId> \
   --schedules '<JSON数组>' \
-  --confirm
+  --yes
 ```
 
 参数说明：
 - `--group-id`（必填）：考勤组 ID
 - `--schedules`（必填）：排班记录 JSON 数组，每条记录包含 `userId`、`workDate`、`classId`、`isRest`
-- `--confirm`（必填）：表示用户已确认，脚本收到此标志才会执行排班
+- `--yes`（必填）：表示用户已确认；建议先以相同参数运行 `--dry-run --format json` 展示计划，确认后才追加此标志执行排班。
+
+`--yes` 是脚本入口的唯一公开确认参数。脚本在确认后会向底层
+`attendance schedule import` 传递其公开 Help 中的 `--user-say-yes`；不要跳过脚本直接调用
+底层写命令，也不要教学历史兼容拼写 `--confirm`。
 
 脚本内部自动处理：
 1. 二次校验考勤组类型（必须为 TURN）
@@ -334,11 +338,15 @@ python scripts/attendance_schedule_import.py \
 4. 调用 `dws attendance schedule import` 执行排班
 5. 输出执行结果摘要（含全部排班明细）
 
+机器结果中 `execution_state=accepted` 只表示导入请求被 API 接受；它会同时携带
+`verification.state=not_verified`，因为脚本没有逐条回读排班终态。若返回
+`schedule_import_unconfirmed`，请求是否已执行未知，应先查询目标日期的排班，禁止直接重放。
+
 ### 阶段 6: 返回结果给用户
 
-- 将脚本 stdout 输出的摘要信息原样转告用户
+- 将脚本 stdout 输出的摘要信息原样转告用户；`accepted/not_verified` 必须表述为“请求已受理、尚未逐条验证”，不能说“排班已全部生效”
 - 如果脚本输出 warning，原样转告用户
-- 如果执行失败，将 stderr 错误信息转告用户
+- 如果执行失败，将 stderr 错误信息转告用户；`schedule_import_unconfirmed` 时要求先查询排班，不得自动重发
 
 ## 排班记录 JSON 格式
 
@@ -459,7 +467,7 @@ dws aisearch person --keyword "张三" --dimension name --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[{"userId":"user001","workDate":"2026-05-19","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-20","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-21","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-22","classId":789,"isRest":"N"},{"userId":"user001","workDate":"2026-05-23","classId":789,"isRest":"N"}]' \
-  --confirm
+  --yes
 ```
 
 ### 示例 2: 给员工排休
@@ -479,7 +487,7 @@ dws aisearch person --keyword "李四" --dimension name --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[{"userId":"user002","workDate":"2026-05-21","classId":0,"isRest":"Y"}]' \
-  --confirm
+  --yes
 ```
 
 ### 示例 3: 部门批量排班
@@ -501,14 +509,14 @@ dws contact dept list-members --depts <deptId> --format json
 python scripts/attendance_schedule_import.py \
   --group-id 123456 \
   --schedules '[...]' \
-  --confirm
+  --yes
 ```
 
 ## 配套脚本
 
 | 脚本 | 用途 | CLI 参数 |
 |------|------|---------|
-| [attendance_schedule_import.py](../../scripts/attendance_schedule_import.py) | 排班导入（含校验、回显、执行） | `--group-id --schedules --confirm` |
+| [attendance_schedule_import.py](../../scripts/attendance_schedule_import.py) | 排班导入（含校验、回显、执行） | `--group-id --schedules --yes` |
 | [attendance_schedule_export.py](../../scripts/attendance_schedule_export.py) | 排班查询导出（分批查询、排班表 Excel） | `--users --start --end [--output]` |
 
 ---

@@ -7,6 +7,7 @@
 | `doc_create_and_write.py` | PASS | ok |
 | `mail_send_with_cc.py` | PASS | ok |
 | `calendar_schedule_meeting.py` | PASS | ok |
+| `attendance_schedule_import.py` | PASS | ok |
 | `todo_batch_create.py` | PASS | ok |
 | `bulk_add_fields.py` | PASS | ok |
 | `import_records.py` | PASS | ok |
@@ -14,7 +15,7 @@
 | `upload_attachment.py` | PASS | ok |
 | `oa_batch_approve.py` | PASS | ok |
 
-结果：9/9 通过
+结果：10/10 通过
 
 ## 边界
 

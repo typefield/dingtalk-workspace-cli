@@ -71,6 +71,11 @@ def _cases(fixtures: Path) -> list[tuple[str, list[str]]]:
             "--title", "probe", "--start", "2026-08-08T10:00",
             "--end", "2026-08-08T11:00", "--format", "json",
         ]),
+        ("attendance_schedule_import", [
+            "--group-id", "123456",
+            "--schedules", '[{"userId":"user-probe","workDate":"2026-08-08","classId":101,"isRest":"N"}]',
+            "--format", "json",
+        ]),
         ("todo_batch_create", [str(fixtures / "todos.json"), "--format", "json"]),
         ("bulk_add_fields", [
             "base-probe", "table-probe", str(fixtures / "fields.json"), "--format", "json",

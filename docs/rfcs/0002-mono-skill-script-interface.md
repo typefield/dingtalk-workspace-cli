@@ -142,7 +142,8 @@ scripts/_runtime.py
 |---|---|---|
 | 32 个 Agent 入口的 `--format` / `--dry-run` | 已实施 | 逐入口 `--help` 为 32/32、Help 非零为 0；这只证明能力可发现 |
 | `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
-| 9 个复合远端写入口的 `--yes` 门禁 | 已受控探针验证 | `probe_mono_write_confirmation.py` 以临时 HOME、工作区和 sentinel `dws` 覆盖文档、邮件、日程、待办、审批、字段/记录/文件导入与附件上传；缺确认时为 typed policy failure，未观察 child 调用或新增本地文件；不证明确认后的真实服务端终态 |
+| 10 个复合远端写入口的 `--yes` 门禁 | 已受控探针验证 | `probe_mono_write_confirmation.py` 以临时 HOME、工作区和 sentinel `dws` 覆盖考勤排班、文档、邮件、日程、待办、审批、字段/记录/文件导入与附件上传；缺确认时为 typed policy failure，未观察 child 调用或新增本地文件；不证明确认后的真实服务端终态 |
+| 考勤排班写入委托与终态表达 | 已受控 child-runner 验证 | `probe_mono_attendance_schedule_contract.py` 验证脚本对外只公开 `--yes`、确认后向 leaf 使用 canonical `--user-say-yes`、请求接受只标 `accepted/not_verified`，而异常写入保留 `unknown` 并禁止传播可重放提示；不证明真实租户排班已落库 |
 | 10 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
 | 其余 22 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
 | 三条写编排的 mixed result 映射 | 已受控 child-runner 验证 | 待办保留成功与未知写入；审批任务解析失败不会发送占位写入；文档写入失败只调用一次并标 `unknown`。假子进程只验证编排和信封，不证明真实后端终态 |
@@ -226,6 +227,14 @@ python3 scripts/agent/probe_mono_dry_run.py \
 ```bash
 python3 scripts/agent/probe_mono_write_confirmation.py \
   --output docs/agent-scans/mono-write-confirmation-YYYYMMDD.md
+```
+
+排班导入还需验证脚本的公开确认参数与底层 leaf 的 canonical 参数没有漂移，并验证
+“API 接受”不会被扩大解释为逐条排班终态：
+
+```bash
+python3 scripts/agent/probe_mono_attendance_schedule_contract.py \
+  --output docs/agent-scans/mono-attendance-schedule-contract-YYYYMMDD.md
 ```
 
 ## 兼容与回滚
