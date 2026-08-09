@@ -14,6 +14,7 @@
 package smart
 
 import (
+	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -171,9 +172,18 @@ func minutesDetailResult(taskUUID string, artifacts []minutesArtifactRead) (map[
 		), nil, nil
 	}
 	if len(succeeded) == 0 {
-		failedArtifacts := make([]string, 0, len(failed))
+		// An all-failed fan-out is a terminal failure rather than
+		// partial_failure (the latter requires at least one succeeded entry),
+		// but it must not compress the individual typed artifact failures into
+		// an unhelpful list of names.  The aggregate error remains API-shaped
+		// for legacy compatibility while details preserve each actionable error
+		// for the unified failure envelope.
+		failedArtifacts := make([]map[string]any, 0, len(failed))
 		for _, entry := range failed {
-			failedArtifacts = append(failedArtifacts, entry.ID)
+			failedArtifacts = append(failedArtifacts, map[string]any{
+				"id":    entry.ID,
+				"error": entry.Error,
+			})
 		}
 		return nil, nil, nil, apperrors.NewAPI(
 			"请求的妙记产物均未能读取",
@@ -197,7 +207,7 @@ func minutesArtifactFailureInfo(name string, err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "保留已读取产物；只重新读取失败的 artifact，不要把当前结果当作完整详情",
@@ -207,6 +217,63 @@ func minutesArtifactFailureInfo(name string, err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true,
 	}
+
+	// rt.CallMCPData already carries the repository's typed errors.  Do not
+	// erase auth/validation/projection semantics merely because this is one
+	// member of a composite read: that would make an Agent retry an
+	// unretryable failed artifact or miss the recovery action supplied by the
+	// lower layer.  A generic read error retains the conservative, safe-to-
+	// retry default above; a typed error is authoritative for its category,
+	// subtype and retry guidance.
+	var typed *apperrors.Error
+	if !stderrors.As(err, &typed) || typed == nil {
+		return info
+	}
+	if typed.Category == apperrors.CategoryPartial {
+		// A plain error cannot truthfully carry partial_failure.  Keep the
+		// framework's existing fail-closed internal category for this malformed
+		// lower-layer shape instead of leaking an invalid fifth error type.
+		info.Type = string(apperrors.CategoryInternal)
+	} else if typed.Category != "" {
+		info.Type = string(typed.Category)
+	}
+	if typed.StableSubtype != "" {
+		info.Subtype = typed.StableSubtype
+	} else {
+		info.Subtype = typed.Reason
+	}
+	if typed.Hint != "" {
+		info.Hint = typed.Hint
+	}
+	if len(typed.Actions) > 0 {
+		info.Actions = append([]string(nil), typed.Actions...)
+	}
+	if typed.RetryableSet {
+		info.Retryable = typed.Retryable
+	}
+	info.RetryAfterSeconds = typed.RetryAfterSeconds
+	if typed.ExecutionStarted != nil {
+		info.ExecutionStarted = typed.ExecutionStarted
+	}
+	if typed.Origin != "" {
+		info.Origin = typed.Origin
+	}
+	if typed.FailureStage != "" {
+		info.Stage = typed.FailureStage
+	}
+	if typed.Operation != "" {
+		info.Operation = typed.Operation
+	}
+	if typed.ServerKey != "" {
+		info.ServerKey = typed.ServerKey
+	}
+	if len(typed.Details) > 0 {
+		info.Details = make(map[string]any, len(typed.Details))
+		for key, value := range typed.Details {
+			info.Details[key] = value
+		}
+	}
+	return info
 }
 
 // minutesArtifactTools maps the user-facing artifact name to the real MCP tool

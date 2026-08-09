@@ -61,6 +61,48 @@ func TestMinutesDetailResultUsesSuccessOrFailureForTerminalCases(t *testing.T) {
 	if !errors.As(err, &typed) || typed.Category != apperrors.CategoryAPI || typed.Operation != "minutes/detail" {
 		t.Fatalf("all-failed error=%T %#v", err, err)
 	}
+	failed, _ := typed.Details["failed_artifacts"].([]map[string]any)
+	if len(failed) != 1 || failed[0]["id"] != "artifact:basic" {
+		t.Fatalf("all-failed details=%#v, want typed failed artifact", typed.Details)
+	}
+	failedInfo, _ := failed[0]["error"].(*output.ErrorInfo)
+	if failedInfo == nil || failedInfo.Type != "api" || !failedInfo.Retryable {
+		t.Fatalf("all-failed artifact error=%#v", failedInfo)
+	}
+}
+
+func TestMinutesDetailPreservesTypedArtifactFailureGuidance(t *testing.T) {
+	denied := apperrors.NewAuth("需要重新登录",
+		apperrors.WithSubtype(apperrors.SubtypeUpstreamAuthenticationRequired),
+		apperrors.WithHint("重新登录后只重试失败的 artifact。"),
+		apperrors.WithActions("dws login"),
+		apperrors.WithRetryable(false),
+		apperrors.WithOperation("minutes/get_minutes_ai_summary"),
+	)
+	_, result, legacyErr, err := minutesDetailResult("minute-1", []minutesArtifactRead{
+		{Name: "basic", Data: map[string]any{"title": "周会"}},
+		{Name: "summary", Err: denied},
+	})
+	if err != nil || legacyErr == nil || result == nil || result.Outcome() != output.OutcomePartialFailure {
+		t.Fatalf("typed partial result=%#v legacyErr=%v err=%v", result, legacyErr, err)
+	}
+	envelope := emitMinutesDetailResult(t, result)
+	data, _ := envelope["data"].(map[string]any)
+	failed, _ := data["failed"].([]any)
+	if len(failed) != 1 {
+		t.Fatalf("typed partial failed=%#v", data)
+	}
+	entry, _ := failed[0].(map[string]any)
+	info, _ := entry["error"].(map[string]any)
+	if info["type"] != "auth" || info["subtype"] != string(apperrors.SubtypeUpstreamAuthenticationRequired) {
+		t.Fatalf("typed artifact category/subtype=%#v", info)
+	}
+	if _, present := info["retryable"]; present {
+		t.Fatalf("non-retryable artifact must not serialize retryable=true: %#v", info)
+	}
+	if info["hint"] != "重新登录后只重试失败的 artifact。" || info["operation"] != "minutes/get_minutes_ai_summary" {
+		t.Fatalf("typed artifact recovery guidance=%#v", info)
+	}
 }
 
 func TestMinutesDetailIsUnifiedActive(t *testing.T) {
