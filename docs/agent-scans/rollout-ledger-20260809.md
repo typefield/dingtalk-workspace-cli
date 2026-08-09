@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T11:05:31+08:00
+扫描时间：2026-08-09T11:14:15+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1391 |
+| `legacy_only` | 1390 |
 | `dual_validate` | 24 |
-| `unified_active` | 68 |
+| `unified_active` | 69 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,7 +22,7 @@
 
 ### 状态迁移
 
-- REVIEW: `dws drive +search-docs`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +find-room`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -410,7 +410,7 @@
 | `dws calendar +book-search` | `legacy_only` | `legacy` | no |
 | `dws calendar +cancel-event` | `legacy_only` | `legacy` | no |
 | `dws calendar +conflicts` | `legacy_only` | `legacy` | no |
-| `dws calendar +find-room` | `legacy_only` | `legacy` | no |
+| `dws calendar +find-room` | `unified_active` | `unified` | no |
 | `dws calendar +free` | `legacy_only` | `legacy` | no |
 | `dws calendar +free-slots` | `legacy_only` | `legacy` | no |
 | `dws calendar +freebusy` | `legacy_only` | `legacy` | no |

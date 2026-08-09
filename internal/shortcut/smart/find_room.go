@@ -15,11 +15,13 @@ package smart
 
 import (
 	"fmt"
+	"strings"
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -35,17 +37,19 @@ import (
 //     MCP tool + parameter names used by `calendar room search` availability
 //     mode (see helpers/calendar.go callMeetingRoomSearchResult);
 //
-//  3. defensively project each returned room to {roomId, name, capacity} and
-//     print the list via rt.Output so it honours --format/--jq/--fields.
+//  3. defensively project each returned room to {roomId, name, capacity}; an
+//     unknown list shape or untargetable room fails closed instead of becoming
+//     a successful empty availability result.
 //
 // Read-only: it only queries availability, it never books or mutates anything.
 //
 //	dws calendar +find-room --start "2026-03-10T14:00:00+08:00" --end "2026-03-10T15:00:00+08:00"
 var FindRoom = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+find-room",
-	Product:     "calendar",
-	Description: "查询指定时间段内所有可用的会议室",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+find-room",
+	Product:       "calendar",
+	Description:   "查询指定时间段内所有可用的会议室",
 	Intent: "当你想在某个明确的时间段内找出所有当前可预定的空闲会议室（比如临时要约线下会、先看看哪些会议室有空）时使用；" +
 		"内部把你给的 ISO8601 起止时间解析成毫秒时间戳，调用会议室可用性查询，只返回该时间范围内可预定的会议室，" +
 		"并投影出每个会议室的 roomId、名称与容量，方便你随后用来预订。" +
@@ -112,16 +116,18 @@ var FindRoom = shortcut.Shortcut{
 		}
 
 		// Step 3 — project each returned room to {roomId, name, capacity}.
-		rooms := make([]map[string]any, 0)
-		for _, m := range findRoomExtractRooms(data) {
-			rooms = append(rooms, map[string]any{
-				"roomId":   findRoomFirstString(m, "roomId", "roomID", "id", "room_id"),
-				"name":     findRoomFirstString(m, "roomName", "name", "title", "displayName"),
-				"capacity": findRoomCapacity(m),
-			})
+		rooms, err := findRoomProject(data)
+		if err != nil {
+			return err
 		}
-
-		return rt.Output(map[string]any{"rooms": rooms})
+		payload := map[string]any{
+			"count":            len(rooms),
+			"rooms":            rooms,
+			"pagination_known": false,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(rooms))}),
+		))
 	},
 }
 
@@ -136,54 +142,89 @@ func findRoomParseMillis(flag, value string) (int64, error) {
 	return t.UnixMilli(), nil
 }
 
-// findRoomExtractRooms defensively pulls the room list out of a
-// query_available_meeting_room response, tolerating several common shapes:
-// the list may sit directly under result, or be nested under a rooms-like key
-// inside a result object, or live at the top level.
-func findRoomExtractRooms(data map[string]any) []map[string]any {
+// findRoomProject distinguishes a known empty availability response from an
+// unknown gateway shape. Every non-empty row must have a usable room ID so an
+// Agent can safely select it for a later booking command.
+func findRoomProject(data map[string]any) ([]map[string]any, error) {
+	items, known := findRoomItems(data)
+	if !known {
+		return nil, findRoomProjectionUnknown("无法识别 query_available_meeting_room 返回的会议室列表容器")
+	}
+	rooms := make([]map[string]any, 0, len(items))
+	for _, raw := range items {
+		room, ok := raw.(map[string]any)
+		if !ok {
+			return nil, findRoomProjectionUnknown("会议室列表包含无法识别的条目")
+		}
+		roomID := findRoomFirstString(room, "roomId", "roomID", "id", "room_id")
+		if roomID == "" {
+			return nil, findRoomProjectionUnknown("会议室条目缺少可用于后续预订的稳定 roomId")
+		}
+		rooms = append(rooms, map[string]any{
+			"roomId":   roomID,
+			"name":     findRoomFirstString(room, "roomName", "name", "title", "displayName"),
+			"capacity": findRoomCapacity(room),
+		})
+	}
+	return rooms, nil
+}
+
+func findRoomItems(data map[string]any) ([]any, bool) {
+	for _, container := range findRoomScopes(data) {
+		if arr, ok := container.([]any); ok {
+			return arr, true
+		}
+		object, ok := container.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, key := range []string{"rooms", "roomList", "meetingRooms", "list", "items", "records"} {
+			if arr, ok := object[key].([]any); ok {
+				return arr, true
+			}
+		}
+	}
+	return nil, false
+}
+
+func findRoomScopes(data map[string]any) []any {
 	if data == nil {
 		return nil
 	}
-	// Candidate containers to probe, in priority order.
-	containers := []any{data["result"], data["data"], data}
-	listKeys := []string{"rooms", "roomList", "meetingRooms", "list", "items", "records"}
-
-	for _, c := range containers {
-		switch v := c.(type) {
-		case []any:
-			if out := findRoomToMaps(v); len(out) > 0 {
-				return out
-			}
-		case map[string]any:
-			for _, k := range listKeys {
-				if arr, ok := v[k].([]any); ok {
-					if out := findRoomToMaps(arr); len(out) > 0 {
-						return out
-					}
+	scopes := make([]any, 0, 5)
+	for _, outerKey := range []string{"result", "data"} {
+		outer, ok := data[outerKey]
+		if !ok {
+			continue
+		}
+		if object, ok := outer.(map[string]any); ok {
+			for _, innerKey := range []string{"result", "data"} {
+				if inner, ok := object[innerKey]; ok {
+					scopes = append(scopes, inner)
 				}
 			}
 		}
+		scopes = append(scopes, outer)
 	}
-	return nil
+	return append(scopes, data)
 }
 
-// findRoomToMaps keeps only the map elements of a JSON array.
-func findRoomToMaps(arr []any) []map[string]any {
-	out := make([]map[string]any, 0, len(arr))
-	for _, e := range arr {
-		if m, ok := e.(map[string]any); ok {
-			out = append(out, m)
-		}
-	}
-	return out
+func findRoomProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // findRoomFirstString returns the first non-empty string value among the given
 // candidate keys.
 func findRoomFirstString(m map[string]any, keys ...string) string {
 	for _, k := range keys {
-		if s, ok := m[k].(string); ok && s != "" {
-			return s
+		if s, ok := m[k].(string); ok {
+			if s = strings.TrimSpace(s); s != "" {
+				return s
+			}
 		}
 	}
 	return ""
