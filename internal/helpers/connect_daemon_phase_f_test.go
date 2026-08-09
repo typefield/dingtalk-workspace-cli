@@ -61,6 +61,13 @@ func TestConnectJSONFlagIsHiddenCompatibilityAlias(t *testing.T) {
 // confirmation_required error, never silently accept an EOF as consent.
 func TestConnectDaemonControlRejectsBeforeAnySignal(t *testing.T) {
 	preserveDaemonHooks(t)
+	// The command is a local lifecycle operation and must not inherit the
+	// DryRun state of a ToolCaller left by an unrelated test fixture. A real
+	// CLI process initializes deps once, but the package test process reuses
+	// this global across many command roots.
+	oldDeps := deps
+	deps = nil
+	t.Cleanup(func() { deps = oldDeps })
 	connectDaemonDirOverride = t.TempDir()
 	const unifiedAppID = "confirmed-app"
 	const dirKey = "app-confirmed-app"

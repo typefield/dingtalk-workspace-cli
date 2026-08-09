@@ -9,10 +9,12 @@ import (
 	"context"
 	"encoding/json"
 	"io"
+	"os"
 	"reflect"
 	"strings"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
@@ -287,7 +289,9 @@ func TestCrossPlatformCoverageDriveDownloadVersionDryRun(t *testing.T) {
 }
 
 func TestCrossPlatformCoverageDriveDownloadVersionDirectoryOutput(t *testing.T) {
-	SetHTTPGetFile(func(context.Context, string, map[string]string, string) error { return nil })
+	SetHTTPGetFile(func(_ context.Context, _ string, _ map[string]string, destination string) error {
+		return os.WriteFile(destination, []byte("fixture"), 0o600)
+	})
 	t.Cleanup(func() { SetHTTPGetFile(nil) })
 
 	dir := t.TempDir()
@@ -298,6 +302,12 @@ func TestCrossPlatformCoverageDriveDownloadVersionDirectoryOutput(t *testing.T) 
 		caller := &scriptedToolCaller{steps: []scriptedToolStep{{text: resp}}}
 		installScriptedCaller(t, caller)
 		root := newDriveCommand()
+		ctx, _ := output.WithResultStore(context.Background())
+		root.SetContext(ctx)
+		root.PersistentPostRunE = func(executed *cobra.Command, _ []string) error {
+			_, _, err := output.EmitStoredResult(executed)
+			return err
+		}
 		root.PersistentFlags().Bool("dry-run", false, "")
 		root.SilenceErrors = true
 		root.SilenceUsage = true

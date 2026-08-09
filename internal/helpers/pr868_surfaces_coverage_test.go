@@ -12,6 +12,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -26,6 +27,12 @@ func executePR868Command(t *testing.T, root *cobra.Command, args ...string) erro
 	root.SilenceUsage = true
 	root.SetOut(io.Discard)
 	root.SetErr(io.Discard)
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	root.PersistentPostRunE = func(executed *cobra.Command, _ []string) error {
+		_, _, err := output.EmitStoredResult(executed)
+		return err
+	}
 	root.SetArgs(args)
 	return root.Execute()
 }

@@ -151,15 +151,30 @@ paired_files:
 # Scripts under skills/multi/*/scripts not referenced by any .md in that skill tree.
 # yida/finance/aiapp are referenced via dingtalk-misc/references/unsupported-scripts.md
 orphan_scripts_allowlist:
+  - path: dingtalk-aitable/scripts/_runtime.py
+    disposition: internal_module
+    reason: "shared Python contract imported by executable AITable scripts; not an Agent entry"
   - path: dingtalk-aitable/scripts/aitable_import_via_task.py
     disposition: defer
     reason: "helper referenced indirectly / pending doc"
+  - path: dingtalk-drive/scripts/_runtime.py
+    disposition: internal_module
+    reason: "shared Python contract imported by executable Drive scripts; not an Agent entry"
   - path: dingtalk-minutes/scripts/minutes_list_parse.py
     disposition: defer
     reason: "pending doc reference"
+  - path: dingtalk-misc/scripts/_runtime.py
+    disposition: internal_module
+    reason: "shared Python contract imported by executable Misc scripts; not an Agent entry"
   - path: dingtalk-misc/scripts/report_received_today.py
     disposition: defer
     reason: "pending report.md reference"
+  - path: dingtalk-shared/scripts/_runtime.py
+    disposition: internal_module
+    reason: "packaged shared contract module; not an executable Agent entry"
+  - path: dingtalk-todo/scripts/_runtime.py
+    disposition: internal_module
+    reason: "shared Python contract imported by executable Todo scripts; not an Agent entry"
 
 # Skills allowed to omit references/ directory.
 skills_without_references_allowlist: []

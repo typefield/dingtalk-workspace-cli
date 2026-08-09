@@ -15,6 +15,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -56,6 +57,12 @@ func executeGuardedMutationCommand(t *testing.T, caller *guardedMutationCaller, 
 	InitDeps(caller)
 	deps.Out.w = io.Discard
 	root := build()
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	root.PersistentPostRunE = func(executed *cobra.Command, _ []string) error {
+		_, _, err := output.EmitStoredResult(executed)
+		return err
+	}
 	if root.PersistentFlags().Lookup("yes") == nil {
 		root.PersistentFlags().Bool("yes", false, "confirm high-risk operation")
 	}
