@@ -804,6 +804,10 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 	if _, err := devAppNameMap(cmd, runner); err == nil || runner.calls != 1 {
 		t.Fatalf("missing cursor pagination calls=%d err=%v, want error", runner.calls, err)
 	}
+	runner = &daemonSequenceRunner{responses: []map[string]any{{"items": []any{}}}}
+	if _, err := devAppNameMap(cmd, runner); err == nil || runner.calls != 1 {
+		t.Fatalf("missing pagination status calls=%d err=%v, want error", runner.calls, err)
+	}
 
 	reports := []connectHealthReport{{UnifiedAppID: "u-1"}, {UnifiedAppID: "missing"}, {ClientID: "client"}}
 	runner = &daemonSequenceRunner{responses: []map[string]any{{

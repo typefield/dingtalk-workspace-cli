@@ -1257,8 +1257,12 @@ func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]strin
 				out[uid] = name
 			}
 		}
-		hasMore, hasMoreDeclared := payload["hasMore"].(bool)
-		if payload["hasMore"] != nil && !hasMoreDeclared {
+		rawHasMore, hasMoreDeclared := payload["hasMore"]
+		if !hasMoreDeclared {
+			return nil, fmt.Errorf("list_dev_app did not declare pagination status")
+		}
+		hasMore, hasMoreOK := rawHasMore.(bool)
+		if !hasMoreOK {
 			return nil, fmt.Errorf("list_dev_app returned a non-boolean hasMore")
 		}
 		nextCursor := devAppConnectFirst(payload, "nextCursor", "cursor")
