@@ -6,6 +6,7 @@ package smart
 import (
 	"bytes"
 	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -35,6 +36,24 @@ func (*aitableResolverCaller) DryRun() bool   { return false }
 func (*aitableResolverCaller) Fields() string { return "" }
 func (*aitableResolverCaller) JQ() string     { return "" }
 
+func reviewedBaseSearchJSON(t *testing.T, rows []any, hasMore bool, nextCursor string) string {
+	t.Helper()
+	encoded, err := json.Marshal(map[string]any{
+		"success": true,
+		"status":  "success",
+		"summary": "reviewed search page",
+		"data": map[string]any{
+			"bases": rows, "hasMore": hasMore, "nextCursor": nextCursor,
+		},
+		"error": map[string]any{},
+		"meta":  map[string]any{},
+	})
+	if err != nil {
+		t.Fatalf("marshal reviewed base page: %v", err)
+	}
+	return string(encoded)
+}
+
 func runAITableResolverCLI(t *testing.T, caller *aitableResolverCaller, args ...string) (string, error) {
 	t.Helper()
 	helpers.InitDepsForTest(t, caller)
@@ -58,7 +77,10 @@ func runAITableResolverCLI(t *testing.T, caller *aitableResolverCaller, args ...
 }
 
 func TestCrossPlatformCoverageResolveBaseCLIExactMatchE2E(t *testing.T) {
-	caller := &aitableResolverCaller{text: `{"data":{"bases":[{"baseId":"b1","baseName":"项目归档"},{"baseId":"b2","baseName":"项目"}],"hasMore":false}}`}
+	caller := &aitableResolverCaller{text: reviewedBaseSearchJSON(t, []any{
+		map[string]any{"baseId": "b1", "baseName": "项目归档"},
+		map[string]any{"baseId": "b2", "baseName": "项目"},
+	}, false, "")}
 	out, err := runAITableResolverCLI(t, caller, "aitable", "+resolve-base", "--name", "项目")
 	if err != nil {
 		t.Fatalf("resolve base CLI error = %v", err)
@@ -74,7 +96,10 @@ func TestCrossPlatformCoverageResolveBaseCLIExactMatchE2E(t *testing.T) {
 }
 
 func TestCrossPlatformCoverageResolveBaseCLIAmbiguityIsFailureE2E(t *testing.T) {
-	caller := &aitableResolverCaller{text: `{"bases":[{"baseId":"b1","baseName":"项目"},{"baseId":"b2","baseName":"项目"}]}`}
+	caller := &aitableResolverCaller{text: reviewedBaseSearchJSON(t, []any{
+		map[string]any{"baseId": "b1", "baseName": "项目"},
+		map[string]any{"baseId": "b2", "baseName": "项目"},
+	}, false, "")}
 	out, err := runAITableResolverCLI(t, caller, "aitable", "+resolve-base", "--name", "项目")
 	if err == nil || out != "" {
 		t.Fatalf("ambiguous resolver = output:%q err:%v", out, err)
@@ -113,13 +138,13 @@ func TestCrossPlatformCoverageResolveCLIUnknownResponseIsNotNotFoundE2E(t *testi
 				t.Fatalf("unknown response = output:%q err:%v", out, err)
 			}
 			var typed *apperrors.Error
-			if !errors.As(err, &typed) || typed.Reason != "target_invalid_response" {
+			if !errors.As(err, &typed) || typed.Reason != "projection_unknown" {
 				t.Fatalf("unknown response error = %#v", err)
 			}
 		})
 	}
 
-	caller := &aitableResolverCaller{text: `{"bases":[]}`}
+	caller := &aitableResolverCaller{text: reviewedBaseSearchJSON(t, []any{}, false, "")}
 	out, err := runAITableResolverCLI(t, caller, "aitable", "+resolve-base", "--name", "项目")
 	if err == nil || out != "" {
 		t.Fatalf("explicit empty candidates = output:%q err:%v", out, err)

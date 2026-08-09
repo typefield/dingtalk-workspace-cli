@@ -12,6 +12,7 @@ import (
 	"strings"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 const (
@@ -186,13 +187,26 @@ func validID(value string) bool {
 // only when allowFuzzy is true. Zero/multiple candidates and incomplete pages
 // are structured non-zero errors.
 func ResolveBaseName(reader Reader, name string, allowFuzzy bool) (Resolution, error) {
+	resolution, _, err := ResolveBaseNameWithEvidence(reader, name, allowFuzzy)
+	return resolution, err
+}
+
+// ResolveBaseNameWithEvidence resolves a Base only after every search page has
+// been validated and the search endpoint has explicitly reached its terminal
+// state. Search exhaustion is not index completeness; callers must continue to
+// publish indexCoverageKnown=false.
+func ResolveBaseNameWithEvidence(reader Reader, name string, allowFuzzy bool) (Resolution, *output.PageLedger, error) {
 	query := strings.TrimSpace(name)
 	if query == "" {
-		return Resolution{}, apperrors.NewValidation("Base 名称不能为空")
+		return Resolution{}, nil, apperrors.NewValidation("Base 名称不能为空")
+	}
+	ledger, err := output.NewPageLedger(maxResolutionPages)
+	if err != nil {
+		return Resolution{}, nil, err
 	}
 	all := make([]Candidate, 0)
+	seenIDs := make(map[string]struct{})
 	cursor := ""
-	seen := map[string]bool{}
 	for page := 1; page <= maxResolutionPages; page++ {
 		params := map[string]any{"query": query}
 		if cursor != "" {
@@ -200,38 +214,203 @@ func ResolveBaseName(reader Reader, name string, allowFuzzy bool) (Resolution, e
 		}
 		data, err := reader.CallMCPData("aitable", "search_bases", params)
 		if err != nil {
-			return Resolution{}, err
+			return Resolution{}, ledger, err
 		}
-		items, found, listErr := findObjectList(data, "bases", "items", "list", "result", "records")
-		if listErr != nil {
-			return Resolution{}, invalidResponse("base", query, listErr.Error())
+		pageData, projectErr := projectBaseSearchPage(data)
+		if projectErr != nil {
+			return Resolution{}, ledger, projectErr
 		}
-		if !found {
-			return Resolution{}, invalidResponse("base", query, "search_bases 响应缺少候选列表")
+		hasMore := pageData.hasMore
+		if observeErr := ledger.ObservePage(output.PageEvidence{
+			Cursor: cursor, NextToken: pageData.nextCursor, HasMore: &hasMore, Items: len(pageData.candidates),
+		}); observeErr != nil {
+			return Resolution{}, ledger, baseSearchPaginationError(observeErr.Error())
 		}
-		for index, item := range items {
-			id := firstString(item, "baseId", "base_id", "id")
-			candidateName := firstString(item, "baseName", "name", "title")
-			if id == "" || candidateName == "" {
-				return Resolution{}, invalidResponse("base", query,
-					fmt.Sprintf("search_bases 候选 %d 缺少 baseId 或名称", index))
+		for _, candidate := range pageData.candidates {
+			if _, duplicate := seenIDs[candidate.ID]; duplicate {
+				return Resolution{}, ledger, baseSearchProjectionError("search_bases 跨页返回重复 baseId")
 			}
-			all = append(all, Candidate{ID: id, Name: candidateName})
+			seenIDs[candidate.ID] = struct{}{}
+			all = append(all, candidate)
 		}
-		next, hasMore, hasMoreKnown := pagination(data)
-		if next == "" {
-			if hasMoreKnown && hasMore {
-				return Resolution{}, incomplete("base", query, all, "search_bases 声明有后续页但没有 cursor")
-			}
-			return selectCandidate("base", query, dedupe(all), allowFuzzy)
+		if !pageData.hasMore {
+			resolution, selectErr := selectCandidate("base", query, all, allowFuzzy)
+			return resolution, ledger, selectErr
 		}
-		if seen[next] || next == cursor {
-			return Resolution{}, incomplete("base", query, all, "search_bases cursor 停滞或成环")
-		}
-		seen[next] = true
-		cursor = next
+		cursor = pageData.nextCursor
 	}
-	return Resolution{}, incomplete("base", query, all, fmt.Sprintf("达到 %d 页安全上限", maxResolutionPages))
+	return Resolution{}, ledger, incomplete("base", query, all, fmt.Sprintf("达到 %d 页安全上限", maxResolutionPages))
+}
+
+type baseSearchPage struct {
+	candidates []Candidate
+	hasMore    bool
+	nextCursor string
+}
+
+func projectBaseSearchPage(data map[string]any) (baseSearchPage, error) {
+	if data == nil {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases 响应不是 JSON 对象")
+	}
+	if unknown := unknownKeys(data,
+		"success", "status", "summary", "data", "error", "meta",
+		"hasMore", "nextCursor", "paginationKnown", "endpointExhausted",
+		"sourceKind", "authoritativeInventory", "inventoryCoverageKnown", "indexCoverageKnown"); len(unknown) > 0 {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases 顶层包含未审阅字段: " + strings.Join(unknown, ","))
+	}
+	success, ok := data["success"].(bool)
+	if !ok || !success {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases success 缺失、类型错误或业务结果失败")
+	}
+	for _, key := range []string{"status", "summary"} {
+		if raw, present := data[key]; present {
+			if _, ok := raw.(string); !ok {
+				return baseSearchPage{}, baseSearchProjectionError("search_bases " + key + " 不是字符串")
+			}
+		}
+	}
+	for _, key := range []string{"error", "meta"} {
+		if raw, present := data[key]; present && raw != nil {
+			if _, ok := raw.(map[string]any); !ok {
+				return baseSearchPage{}, baseSearchProjectionError("search_bases " + key + " 不是对象")
+			}
+		}
+	}
+	if raw, present := data["sourceKind"]; present {
+		if source, ok := raw.(string); !ok || source != "name_search_index" {
+			return baseSearchPage{}, baseSearchProjectionError("search_bases sourceKind 不是 name_search_index")
+		}
+	}
+	for _, key := range []string{"authoritativeInventory", "inventoryCoverageKnown", "indexCoverageKnown"} {
+		if raw, present := data[key]; present {
+			if value, ok := raw.(bool); !ok || value {
+				return baseSearchPage{}, baseSearchProjectionError("search_bases " + key + " 不是 false")
+			}
+		}
+	}
+	body, ok := data["data"].(map[string]any)
+	if !ok {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases data 缺失或不是对象")
+	}
+	if unknown := unknownKeys(body, "bases", "hasMore", "nextCursor"); len(unknown) > 0 {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases data 包含未审阅字段: " + strings.Join(unknown, ","))
+	}
+	rows, ok := body["bases"].([]any)
+	if !ok {
+		return baseSearchPage{}, baseSearchProjectionError("search_bases data.bases 缺失或不是数组")
+	}
+	hasMore, nextCursor, paginationErr := strictBaseSearchPagination(data, body)
+	if paginationErr != nil {
+		return baseSearchPage{}, paginationErr
+	}
+	candidates := make([]Candidate, 0, len(rows))
+	seen := make(map[string]struct{}, len(rows))
+	for index, raw := range rows {
+		row, ok := raw.(map[string]any)
+		if !ok {
+			return baseSearchPage{}, baseSearchProjectionError(fmt.Sprintf("search_bases data.bases[%d] 不是对象", index))
+		}
+		if unknown := unknownKeys(row, "baseId", "baseName"); len(unknown) > 0 {
+			return baseSearchPage{}, baseSearchProjectionError(fmt.Sprintf("search_bases data.bases[%d] 包含未审阅字段: %s", index, strings.Join(unknown, ",")))
+		}
+		id, idOK := row["baseId"].(string)
+		id = strings.TrimSpace(id)
+		if !idOK || !validID(id) {
+			return baseSearchPage{}, baseSearchProjectionError(fmt.Sprintf("search_bases data.bases[%d] 缺少稳定 baseId", index))
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return baseSearchPage{}, baseSearchProjectionError(fmt.Sprintf("search_bases data.bases[%d] baseId 重复", index))
+		}
+		seen[id] = struct{}{}
+		name, nameOK := row["baseName"].(string)
+		name = strings.TrimSpace(name)
+		if !nameOK || name == "" {
+			return baseSearchPage{}, baseSearchProjectionError(fmt.Sprintf("search_bases data.bases[%d] 缺少可消歧 baseName", index))
+		}
+		candidates = append(candidates, Candidate{ID: id, Name: name})
+	}
+	return baseSearchPage{candidates: candidates, hasMore: hasMore, nextCursor: nextCursor}, nil
+}
+
+func strictBaseSearchPagination(outer, inner map[string]any) (bool, string, error) {
+	var hasMore bool
+	known := false
+	for _, scope := range []map[string]any{outer, inner} {
+		raw, present := scope["hasMore"]
+		if !present {
+			continue
+		}
+		value, ok := raw.(bool)
+		if !ok {
+			return false, "", baseSearchPaginationError("search_bases hasMore 不是布尔值")
+		}
+		if known && value != hasMore {
+			return false, "", baseSearchPaginationError("search_bases 外层与 data.hasMore 相互矛盾")
+		}
+		hasMore, known = value, true
+	}
+	if !known {
+		return false, "", baseSearchPaginationError("search_bases 缺少明确 hasMore，不能判断候选集完整")
+	}
+	nextCursor := ""
+	cursorKnown := false
+	for _, scope := range []map[string]any{outer, inner} {
+		raw, present := scope["nextCursor"]
+		if !present {
+			continue
+		}
+		value, ok := raw.(string)
+		if !ok {
+			return false, "", baseSearchPaginationError("search_bases nextCursor 不是字符串")
+		}
+		value = strings.TrimSpace(value)
+		if cursorKnown && value != nextCursor {
+			return false, "", baseSearchPaginationError("search_bases 外层与 data.nextCursor 相互矛盾")
+		}
+		nextCursor, cursorKnown = value, true
+	}
+	if hasMore && (!cursorKnown || nextCursor == "" || nextCursor == "0") {
+		return false, "", baseSearchPaginationError("search_bases hasMore=true 但缺少可续页 nextCursor")
+	}
+	if !hasMore && cursorKnown && nextCursor != "" && nextCursor != "0" {
+		return false, "", baseSearchPaginationError("search_bases hasMore=false 却携带可续页 nextCursor")
+	}
+	if !hasMore {
+		nextCursor = ""
+	}
+	if raw, present := outer["paginationKnown"]; present {
+		if value, ok := raw.(bool); !ok || !value {
+			return false, "", baseSearchPaginationError("search_bases paginationKnown 未明确为 true")
+		}
+	}
+	if raw, present := outer["endpointExhausted"]; present {
+		if value, ok := raw.(bool); !ok || value == hasMore {
+			return false, "", baseSearchPaginationError("search_bases endpointExhausted 与 hasMore 不一致")
+		}
+	}
+	return hasMore, nextCursor, nil
+}
+
+func baseSearchProjectionError(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithOperation("aitable/search_bases"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+		apperrors.WithHint("不要把未知搜索响应、非法候选或缺少稳定 baseId/baseName 的条目压成未找到；保留脱敏结构后修复投影。"),
+	)
+}
+
+func baseSearchPaginationError(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
+		apperrors.WithOperation("aitable/search_bases"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("pagination_projection"),
+		apperrors.WithRetryable(false),
+		apperrors.WithHint("不要把未耗尽或游标停滞的 Base 搜索结果当成完整候选集；先修复 search_bases 分页再继续消歧。"),
+	)
 }
 
 // ListTables reads the reviewed get_tables response and returns the complete
@@ -418,84 +597,6 @@ func selectCandidate(entityType, query string, candidates []Candidate, allowFuzz
 	}, nil
 }
 
-func findObjectList(data map[string]any, keys ...string) ([]map[string]any, bool, error) {
-	if data == nil {
-		return nil, false, nil
-	}
-	invalid := make([]string, 0)
-	for _, key := range keys {
-		value, exists := data[key]
-		if !exists {
-			continue
-		}
-		if list, ok := value.([]any); ok {
-			out := make([]map[string]any, 0, len(list))
-			for index, row := range list {
-				object, ok := row.(map[string]any)
-				if !ok {
-					return nil, false, fmt.Errorf("候选列表 %s[%d] 必须是对象，got %T", key, index, row)
-				}
-				out = append(out, object)
-			}
-			return out, true, nil
-		}
-		if object, ok := value.(map[string]any); ok {
-			if list, found, err := findObjectList(object, keys...); found || err != nil {
-				return list, found, err
-			}
-			continue
-		}
-		invalid = append(invalid, fmt.Sprintf("%s=%T", key, value))
-	}
-	for _, envelope := range []string{"data", "result", "response"} {
-		if object, ok := data[envelope].(map[string]any); ok {
-			if list, found, err := findObjectList(object, keys...); found || err != nil {
-				return list, found, err
-			}
-		}
-	}
-	if len(invalid) > 0 {
-		return nil, false, fmt.Errorf("候选列表字段类型无效: %v", invalid)
-	}
-	return nil, false, nil
-}
-
-func firstString(values map[string]any, keys ...string) string {
-	for _, key := range keys {
-		if value, ok := values[key].(string); ok && strings.TrimSpace(value) != "" {
-			return strings.TrimSpace(value)
-		}
-	}
-	return ""
-}
-
-func pagination(data map[string]any) (cursor string, hasMore bool, hasMoreKnown bool) {
-	if data == nil {
-		return "", false, false
-	}
-	for _, key := range []string{"nextCursor", "cursor"} {
-		if value, ok := data[key].(string); ok && strings.TrimSpace(value) != "" {
-			cursor = strings.TrimSpace(value)
-			break
-		}
-	}
-	if value, ok := data["hasMore"].(bool); ok {
-		hasMore, hasMoreKnown = value, true
-	}
-	for _, key := range []string{"data", "result", "page", "pagination", "meta"} {
-		if nested, ok := data[key].(map[string]any); ok {
-			next, more, known := pagination(nested)
-			if cursor == "" {
-				cursor = next
-			}
-			if !hasMoreKnown && known {
-				hasMore, hasMoreKnown = more, true
-			}
-		}
-	}
-	return cursor, hasMore, hasMoreKnown
-}
-
 func dedupe(values []Candidate) []Candidate {
 	seen := map[string]bool{}
 	out := make([]Candidate, 0, len(values))
@@ -529,16 +630,23 @@ func resolutionError(status, entityType, query string, candidates []Candidate) e
 		// implementation value into the Agent wire key.
 		subtype = apperrors.SubtypeInvalidArgument
 	}
-	return apperrors.NewValidation(fmt.Sprintf("%s target %s: %q", entityType, status, query),
+	details := map[string]any{
+		"status": status, "entityType": entityType, "query": query,
+		"candidates": candidates,
+	}
+	opts := []apperrors.Option{
 		apperrors.WithSubtype(subtype),
 		apperrors.WithOrigin("client"),
 		apperrors.WithFailureStage("target_resolution"),
 		apperrors.WithExecutionStarted(false),
-		apperrors.WithDetails(map[string]any{
-			"status": status, "entityType": entityType, "query": query,
-			"candidates": candidates,
-		}),
-	)
+		apperrors.WithDetails(details),
+	}
+	if entityType == "base" && status == "not_found" {
+		details["coverage_scope"] = "name_search_index"
+		details["index_coverage_known"] = false
+		opts = append(opts, apperrors.WithHint("搜索端点已耗尽，但索引覆盖未知；这只表示当前名称索引没有候选，不证明业务上不存在该 Base。请改用 URL/baseId 或核对名称。"))
+	}
+	return apperrors.NewValidation(fmt.Sprintf("%s target %s: %q", entityType, status, query), opts...)
 }
 
 func incomplete(entityType, query string, candidates []Candidate, cause string) error {

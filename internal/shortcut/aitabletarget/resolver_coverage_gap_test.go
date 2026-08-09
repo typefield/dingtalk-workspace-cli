@@ -49,16 +49,16 @@ func TestCrossPlatformCoverageResolveBaseRemainingFailures(t *testing.T) {
 		t.Fatal("search error was swallowed")
 	}
 	reader = &resolverReader{steps: []resolverStep{
-		{data: map[string]any{"bases": []any{}, "nextCursor": "same"}},
-		{data: map[string]any{"bases": []any{}, "nextCursor": "same"}},
+		{data: reviewedBaseSearchPage([]any{}, true, "same")},
+		{data: reviewedBaseSearchPage([]any{}, true, "same")},
 	}}
-	if _, err := ResolveBaseName(reader, "name", false); errorReason(err) != "target_incomplete" {
+	if _, err := ResolveBaseName(reader, "name", false); errorReason(err) != "pagination_inconsistent" {
 		t.Fatalf("cursor cycle = %v", err)
 	}
 
 	steps := make([]resolverStep, maxResolutionPages)
 	for index := range steps {
-		steps[index] = resolverStep{data: map[string]any{"bases": []any{}, "nextCursor": fmt.Sprintf("cursor-%d", index)}}
+		steps[index] = resolverStep{data: reviewedBaseSearchPage([]any{}, true, fmt.Sprintf("cursor-%d", index))}
 	}
 	reader = &resolverReader{steps: steps}
 	if _, err := ResolveBaseName(reader, "name", false); errorReason(err) != "target_incomplete" || len(reader.calls) != maxResolutionPages {
@@ -86,24 +86,7 @@ func TestCrossPlatformCoverageResolveTableRemainingFailures(t *testing.T) {
 	}
 }
 
-func TestCrossPlatformCoverageResolverPureShapeHelpers(t *testing.T) {
-	if list, found, err := findObjectList(nil, "items"); err != nil || found || list != nil {
-		t.Fatalf("nil list = %#v, %v, %v", list, found, err)
-	}
-	if _, _, err := findObjectList(map[string]any{"items": "bad"}, "items"); err == nil {
-		t.Fatal("invalid list field succeeded")
-	}
-	if list, found, err := findObjectList(map[string]any{"items": map[string]any{"items": []any{}}}, "items"); err != nil || !found || len(list) != 0 {
-		t.Fatalf("nested keyed list = %#v, %v, %v", list, found, err)
-	}
-	cursor, more, known := pagination(nil)
-	if cursor != "" || more || known {
-		t.Fatalf("nil pagination = %q, %v, %v", cursor, more, known)
-	}
-	cursor, more, known = pagination(map[string]any{"cursor": "outer", "data": map[string]any{"nextCursor": "inner", "hasMore": true}})
-	if cursor != "outer" || !more || !known {
-		t.Fatalf("nested pagination = %q, %v, %v", cursor, more, known)
-	}
+func TestCrossPlatformCoverageResolverDedupeForIncompleteEvidence(t *testing.T) {
 	got := dedupe([]Candidate{{}, {ID: "one", Name: "first"}, {ID: "one", Name: "duplicate"}, {ID: "two", Name: "second"}})
 	if len(got) != 2 || strings.Join([]string{got[0].ID, got[1].ID}, ",") != "one,two" {
 		t.Fatalf("dedupe = %#v", got)
