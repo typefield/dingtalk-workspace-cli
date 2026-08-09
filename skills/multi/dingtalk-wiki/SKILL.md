@@ -26,7 +26,7 @@ metadata:
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
 | `dws wiki +node-list` | read | 列出知识库节点 |
-| `dws wiki +resolve-space` | read | 按名称搜索知识空间并解析出唯一 spaceId（只读） |
+| `dws wiki +resolve-space` | read | 按名称从完整组织知识库目录解析出唯一 spaceId（只读） |
 | `dws wiki +space-list` | read | 列出组织 / 个人知识库 |
 | `dws wiki +space-search` | read | 搜索知识库 |
 <!-- VISIBLE_SHORTCUTS_END -->
@@ -53,8 +53,8 @@ metadata:
 
 **触发**：找知识库/列表空间/某知识库在哪。
 
-1. **执行（必须）**：`dws wiki space list --format json`（列所有知识库/钉盘空间）；按名称找 `dws wiki space search --type orgWikiSpace --query "<名称>" --format json`。
-2. **解析（必须）**：取真实 `workspaceId`；多候选让用户确认，**禁止**默认取第一个。`hasMore=true` 用 `nextPageToken` 翻页。
+1. **执行（必须）**：只知道组织知识库名称时用 `dws wiki +resolve-space --name "<名称>" --format json`；需要浏览目录时才用 `dws wiki space list --type orgWikiSpace --format json`。
+2. **解析（必须）**：从 `+resolve-space` 的 `data.candidates[]` 读取真实 `spaceId`；多候选让用户确认，**禁止**默认取第一个。该 resolver 只有耗尽当前身份可访问的组织知识库分页后才会返回成功；目录浏览则按 `hasMore/nextPageToken` 继续翻页。
 
 **禁止**：编造 workspaceId、把空间名当 ID。
 
@@ -89,7 +89,7 @@ metadata:
 
 ## 高频硬约束
 
-- `space search` 用 `--query`，不要用 `--keyword`；组织知识库显式加 `--type orgWikiSpace`。
+- 默认按名称定位组织知识库用 `+resolve-space --name`，不要从 `space search` 的单页命中推断全局唯一；明确需要原始搜索结果时，`space search` 用 `--query`，不要用 `--keyword`，并显式加 `--type orgWikiSpace`。
 - 用户说"我的文档/个人空间/my workspace"时必须用 `dws wiki space search --type myWikiSpace --format json`；该模式不需要 keyword。
 - 用户给空关键词时，不要构造空 `--query ""`；若语义是我的文档则用 `--type myWikiSpace`，否则请用户补关键词。
 - 搜到空间后复用返回的 `workspaceId/id`；空间内节点创建/列表/搜索用 `wiki node`，具体文档内容读写切到 `dingtalk-doc`，复制/移动切到 `dingtalk-drive`。

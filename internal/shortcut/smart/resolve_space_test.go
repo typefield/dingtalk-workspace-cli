@@ -163,12 +163,11 @@ func (c *resolveSpaceProjectionCaller) Fields() string { return "" }
 func (c *resolveSpaceProjectionCaller) JQ() string     { return "" }
 
 func TestResolveSpaceDualValidationExhaustsPagesAndPreservesLegacyShape(t *testing.T) {
-	if ResolveSpace.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("rollout=%q", ResolveSpace.OutputRollout)
-	}
+	declaration := ResolveSpace
+	declaration.OutputRollout = output.RolloutDualValidate
 	caller := &resolveSpaceProjectionCaller{}
 	helpers.InitDepsForTest(t, caller)
-	cmd := corecmd.New(shortcut.FromShortcut(ResolveSpace))
+	cmd := corecmd.New(shortcut.FromShortcut(declaration))
 	cmd.PersistentFlags().String("format", "json", "")
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
@@ -189,6 +188,52 @@ func TestResolveSpaceDualValidationExhaustsPagesAndPreservesLegacyShape(t *testi
 	want := "{\n  \"candidates\": [\n    {\n      \"name\": \"Product Handbook\",\n      \"spaceId\": \"workspace-2\"\n    },\n    {\n      \"name\": \"Product Archive\",\n      \"spaceId\": \"workspace-3\"\n    }\n  ],\n  \"count\": 2,\n  \"resolved\": false\n}\n"
 	if stdout.String() != want {
 		t.Fatalf("legacy bytes changed:\n%s", stdout.String())
+	}
+}
+
+func TestResolveSpaceUnifiedResultUsesExhaustedDirectory(t *testing.T) {
+	if ResolveSpace.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("rollout=%q", ResolveSpace.OutputRollout)
+	}
+	caller := &resolveSpaceProjectionCaller{}
+	helpers.InitDepsForTest(t, caller)
+	cmd := corecmd.New(shortcut.FromShortcut(ResolveSpace))
+	cmd.PersistentFlags().String("format", "json", "")
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout, stderr bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&stderr)
+	cmd.SetArgs([]string{"--name", "Product", "--format", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatal(err)
+	}
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 || caller.calls != 2 || stderr.Len() != 0 {
+		t.Fatalf("code=%d emitted=%v calls=%d stderr=%q err=%v", code, emitted, caller.calls, stderr.String(), err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil || envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope=%#v err=%v output=%q", envelope, err, stdout.String())
+	}
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("removed version marker leaked: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["resolved"] != false || data["count"] != float64(2) {
+		t.Fatalf("data=%#v", envelope["data"])
+	}
+	candidates, ok := data["candidates"].([]any)
+	if !ok || len(candidates) != 2 || candidates[0].(map[string]any)["spaceId"] != "workspace-2" {
+		t.Fatalf("candidates=%#v", data["candidates"])
+	}
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok || meta["count"] != float64(2) {
+		t.Fatalf("meta=%#v", envelope["meta"])
+	}
+	pagination, ok := meta["pagination"].(map[string]any)
+	if !ok || pagination["endpoint_exhausted"] != true || pagination["pages"] != float64(2) || pagination["items"] != float64(2) {
+		t.Fatalf("pagination=%#v", meta["pagination"])
 	}
 }
 

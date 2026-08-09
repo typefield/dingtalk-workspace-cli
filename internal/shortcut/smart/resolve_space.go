@@ -39,7 +39,7 @@ const (
 //
 //	dws wiki +resolve-space --name 产品文档
 var ResolveSpace = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "wiki",
 	Command:       "+resolve-space",
 	Product:       "wiki",
@@ -81,7 +81,7 @@ var ResolveSpace = shortcut.Shortcut{
 		Selection: contract.SelectionSpec{
 			AgentSummary: "按名称从完整组织知识库目录解析出唯一 spaceId（只读）",
 			UseWhen: []string{
-				"只知道组织知识库名称或关键词，需要在当前身份可访问的完整组织知识库目录中取得稳定 spaceId 时",
+				"当你只知道某个组织知识空间的名称（或名称里的关键词）、想把它解析成可直接用于后续工具的 spaceId 时使用；CLI 会逐页读取当前身份可访问的组织知识库，只有观察到目录 endpoint 耗尽后才在本地按名称筛选。如果完整目录中只命中一个知识空间就返回它的 spaceId；多个候选会全部列出让你消歧，绝不替你猜；一个都没有则提示未找到。这是纯只读操作，不修改任何知识空间，也不把搜索索引的一页结果扩大为全局唯一。",
 			},
 			AvoidWhen: []string{
 				"已经知道 spaceId 时直接使用它；需要个人知识库时使用 wiki +space-list --type myWikiSpace；需要原始服务端搜索响应时使用 wiki space search",
