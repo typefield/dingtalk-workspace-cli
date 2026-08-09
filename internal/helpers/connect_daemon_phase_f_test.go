@@ -40,6 +40,21 @@ func TestConnectStopAndRestartRequireConfirmation(t *testing.T) {
 	}
 }
 
+// The active unified commands keep --json only as a non-discoverable argv
+// compatibility alias. Agent-facing Help/Schema must expose --format json as
+// the single output selector, while existing cron/launchd callers keep working.
+func TestConnectJSONFlagIsHiddenCompatibilityAlias(t *testing.T) {
+	for _, cmd := range []*cobra.Command{
+		newDevAppRobotConnectStatusCommand(),
+		newDevAppRobotConnectListCommand(&captureRunner{}),
+	} {
+		flag := cmd.Flags().Lookup("json")
+		if flag == nil || !flag.Hidden {
+			t.Fatalf("%s --json = %#v, want hidden compatibility flag", cmd.Name(), flag)
+		}
+	}
+}
+
 // TestConnectDaemonControlRejectsBeforeAnySignal proves that the high-risk
 // local lifecycle commands are gated before their RunE can reach daemonStop.
 // A closed stdin is the Agent/noninteractive path: it must yield the typed

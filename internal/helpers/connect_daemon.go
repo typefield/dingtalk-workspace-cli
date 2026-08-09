@@ -799,7 +799,7 @@ func daemonStop(w io.Writer, dirKey string) (*connectStopResult, error) {
 func newDevAppRobotConnectStatusCommand() *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "status",
-		Short:             "查看连接器健康状态（healthy/degraded/down，pid、收发活动、日志路径；--json 供外部托管消费）",
+		Short:             "查看连接器健康状态（healthy/degraded/down，pid、收发活动、日志路径）",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -821,7 +821,11 @@ func newDevAppRobotConnectStatusCommand() *cobra.Command {
 	preferLegacyLeaf(cmd)
 	cmd.Flags().String("robot-client-id", "", "机器人 clientId（定位守护进程）")
 	cmd.Flags().String("unified-app-id", "", "统一应用 ID（当未用 clientId 起守护进程时定位）")
-	cmd.Flags().Bool("json", false, "以 JSON 输出健康报告（供 launchd/systemd/pm2/cron 判断是否重启）")
+	// `--json` predates the global output contract. Keep existing automation
+	// runnable for one compatibility window, but do not expose a second output
+	// selector to new Agents: use `--format json` in Help/Schema/Skill instead.
+	cmd.Flags().Bool("json", false, "legacy JSON output alias")
+	_ = cmd.Flags().MarkHidden("json")
 	DeclareLeafMetadata(cmd, LeafSpec{
 		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
@@ -1116,11 +1120,11 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 // newDevAppRobotConnectListCommand implements `dws dev connect list`: enumerate
 // every connector on this machine and its health, so a developer running
 // several robots sees at a glance which are alive/degraded/down without
-// querying each clientId. `--json` emits the array for scripts.
+// querying each clientId.
 func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 	cmd := &cobra.Command{
 		Use:               "list",
-		Short:             "列出本机所有连接器及健康状态（healthy/degraded/down）；--json 供脚本消费",
+		Short:             "列出本机所有连接器及健康状态（healthy/degraded/down）",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -1160,7 +1164,10 @@ func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 		},
 	}
 	preferLegacyLeaf(cmd)
-	cmd.Flags().Bool("json", false, "以 JSON 数组输出（供脚本消费）")
+	// Preserve the former spelling for existing shell automation only. Unified
+	// commands document and advertise the sole output selector: `--format`.
+	cmd.Flags().Bool("json", false, "legacy JSON output alias")
+	_ = cmd.Flags().MarkHidden("json")
 	DeclareLeafMetadata(cmd, LeafSpec{
 		OutputRollout: output.RolloutUnifiedActive,
 		Safety:        contract.SafetySpec{Effect: "read", Risk: "low", Confirmation: "not_required", Idempotency: "idempotent"},

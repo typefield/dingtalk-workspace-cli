@@ -184,7 +184,7 @@ dws devapp +list --format json
 任何输出协议版本、兼容模式或 legacy 选择参数
 ```
 
-Framework 2.0 也不新增 `--json` 别名。历史命令自带的局部 `--json` 只作为 legacy 兼容事实存在，不进入新的 Agent 示例；迁移后的标准写法始终是 `--format json`。
+Framework 2.0 也不新增 `--json` 别名。历史命令自带的局部 `--json` 只作为隐藏的 legacy argv 兼容事实存在，不进入 Help、Schema 或新的 Agent 示例；迁移后的标准写法始终是 `--format json`。
 
 ### 6.2 内部状态机
 
