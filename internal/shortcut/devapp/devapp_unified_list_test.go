@@ -136,15 +136,20 @@ func TestDevAppPaginatedShortcutsEmitUnifiedResumableResults(t *testing.T) {
 				t.Fatalf("removed version marker leaked into result: %#v", envelope)
 			}
 			data, ok := envelope["data"].(map[string]any)
-			if !ok || data["count"] != float64(1) {
+			if !ok {
 				t.Fatalf("data = %#v", envelope["data"])
+			}
+			for _, legacyKey := range []string{"count", "hasMore", "nextCursor"} {
+				if _, leaked := data[legacyKey]; leaked {
+					t.Fatalf("legacy pagination key %q leaked into data: %#v", legacyKey, data)
+				}
 			}
 			items, ok := data[tt.itemKey].([]any)
 			if !ok || len(items) != 1 {
 				t.Fatalf("projected %s = %#v", tt.itemKey, data[tt.itemKey])
 			}
 			meta, ok := envelope["meta"].(map[string]any)
-			if !ok {
+			if !ok || meta["count"] != float64(1) {
 				t.Fatalf("meta = %#v", envelope["meta"])
 			}
 			pagination, ok := meta["pagination"].(map[string]any)
@@ -273,8 +278,14 @@ func TestDevAppListDoesNotPublishTerminalPositionCursor(t *testing.T) {
 	if _, leaked := data["nextCursor"]; leaked {
 		t.Fatalf("terminal position cursor leaked into active data: %#v", data)
 	}
+	if _, leaked := data["hasMore"]; leaked {
+		t.Fatalf("terminal pagination flag leaked into active data: %#v", data)
+	}
+	if _, leaked := data["count"]; leaked {
+		t.Fatalf("list count leaked into active data: %#v", data)
+	}
 	meta, ok := envelope["meta"].(map[string]any)
-	if !ok {
+	if !ok || meta["count"] != float64(1) {
 		t.Fatalf("meta = %#v", envelope["meta"])
 	}
 	pagination, ok := meta["pagination"].(map[string]any)

@@ -78,6 +78,11 @@ DevApp 适配层将该形状归一为 `endpoint_exhausted:true` 且不输出 `ne
 的应用列表为统一 success，随后成员读取也为 success，返回 1 条带稳定成员 ID 的记录；
 整个探针不保存或打印应用、人员、cursor 和原始 JSON。当前结果不证明企业应用权限覆盖、
 空成员或权限受限场景。
+
+同一账号继续完成权限 5 页/249 条、事件 3 页/255 条和版本 1 页/0 条的全量 endpoint
+续翻，所有 token 均可推进并最终耗尽。四条列表的 active `data` 现只保留资源数组，
+`meta.count/meta.pagination` 是唯一 count/分页事实；不再重复发布
+`data.count/hasMore/nextCursor`。
 脱敏证据见 [DevApp member-list Agent review](agent-scans/devapp-member-list-rollout-20260809.md)。
 
 ## 2026-08-09 Sheet Skill 路由复核
@@ -129,7 +134,7 @@ Agent 矩阵测试和源码关系证据见
 | 个人订阅 timeout/network/5xx 被标为安全可重试 | **代码已收口，服务端幂等性仍待取证** | 创建请求会带确定性 idempotency key，但无服务端去重证据。当前和历史 `cooldown` 路径对上游 `retryable=true`、408/425/429/5xx、timeout、网络中断一律保留本地退避、向 Agent 省略 `retryable`/`retry_after_seconds`/`next_retry_at`，并提示先核查订阅；明确 auth/validation/non-retryable 拒绝仍为 `retryable:false`。有限本地状态机已映射到 stable `personal_subscription_unverified` / `rejected` / `auth`；HTTP 响应带 `execution_started:true`，当前 blocked 调用带 `false`，网络/超时保持未知。针对分类与旧持久化记录的单元回归已覆盖 | 以受控账号证明服务端对 idempotency key 的去重与响应丢失恢复语义；之后才可为确实安全的 create 重放恢复 `retryable:true` |
 | `doc style` 本地输入错误被误归类为 internal | **代码已修，CLI 实跑验证** | `mustFlagOrFallback` 在 helper 边界将“主 flag 与所有兼容别名均为空”统一转为 typed validation；`cover set` 的 image/file 互斥、缺来源、位置越界，以及 `background set` 的缺色/非法色也在发起 MCP 调用前返回 validation。实跑 `cover set --node … --dry-run --format json` 与缺 node 的 `background set` 均为 `type=validation`、rc=3 | 继续将旧 RunE 的本地参数检查收敛到 typed validation；文件读取、上传和远端错误维持原始错误分类 |
 | `sheet export` / `drive upload` / `drive download` 缺参被归类为 internal | **代码已修，CLI 实跑验证** | `sheet export` 缺 `--node`、`drive upload` 缺 `--file`、`drive download` 缺 `--node` 或 `--output` 均在任何导出任务、文件读取、上传、下载或远端调用前返回 `validation`、`reason=missing_required_flags`、rc=3；本地路径不存在/目录也以 validation 拒绝，避免 Agent 将修正参数误判为 CLI 内部故障。`sheet export` 与 `drive download --format json` 的成功和 dry-run 现均经统一返回：stdout 仅含顶层 `ok/outcome/dry_run/data`，进度/人读信息不污染 JSON | 继续对旧 RunE 的本地路径、互斥参数和值域校验逐命令收口；不把 MCP/网络/写后不确定错误误归为 validation |
-| devapp shortcut 列表投影/分页丢失 | **CLI 已收口；应用终页与成员正向已真实复验** | `+list`、`+permission-list`、`+event-list`、`+version-list` 只把明确空数组投影为成功空列表；缺容器、非法行或缺稳定 ID 均 fail-closed 为 `projection_unknown`。字段类型错误、`hasMore=true` 缺游标、跨层 `hasMore`/cursor 冲突仍为不可重试的 `pagination_invalid/incomplete/conflict`。真实 DevApp 终页会在 `hasMore=false` 时保留位置 cursor；脱敏续读证明该 cursor 返回 0 项且保持同值，不是 continuation，因此 DevApp 适配层输出 `endpoint_exhausted:true` 但不发布 `next_token`。修复后二进制真实返回 11 条稳定应用并成功读取 1 条稳定成员，顶层均为统一结果、无版本标记。证据：`agent-scans/devapp-pagination-projection-20260809.md`、`agent-scans/devapp-member-list-rollout-20260809.md` | 继续验证非终页续翻、已知空、权限受限和其他列表接口；当前读取不证明企业应用目录权限覆盖或业务完整性 |
+| devapp shortcut 列表投影/分页丢失 | **CLI 已收口；四列表分页与成员正向已真实复验** | `+list`、`+permission-list`、`+event-list`、`+version-list` 只把明确空数组投影为成功空列表；缺容器、非法行或缺稳定 ID 均 fail-closed 为 `projection_unknown`。字段类型错误、`hasMore=true` 缺游标、跨层 `hasMore`/cursor 冲突仍为不可重试的 `pagination_invalid/incomplete/conflict`。真实 DevApp 终页会在 `hasMore=false` 时保留位置 cursor；脱敏续读证明该 cursor 返回 0 项且保持同值，不是 continuation，因此 DevApp 适配层输出 `endpoint_exhausted:true` 但不发布 `next_token`。真实分页对拍完成应用 1 页/11 条、权限 5 页/249 条、事件 3 页/255 条、版本 1 页/0 条，均无 token 缺失或循环；业务 `data` 只保留资源数组，count/分页只在 `meta`。成员读取另返回 1 条稳定记录，全部为统一结果、无版本标记。证据：`agent-scans/devapp-pagination-projection-20260809.md`、`agent-scans/devapp-member-list-rollout-20260809.md` | 继续验证权限受限、其他账号、响应异常及 `dev` 原子入口对拍；当前读取不证明企业应用目录权限覆盖或业务完整性 |
 | devapp credentials shortcut 缺少敏感输出声明 | **代码已修，已纳入 Agent 公开目录** | `devapp +credentials-get` 已补齐 Identity、Safety、ResultSpec 和 `SensitivePaths`，与 `dev app credentials get` 的敏感字段声明对齐；新增 devapp 语义目录后，7 个统一结果试点（含 credentials）均可从 `shortcut list --service devapp` 公开发现，dual-validate 叶子仍按原有渐进状态保留；共享 mapper 现在保留 shortcut 调用参数，`+version-check-approval` 的 `precheckOnly=true` 不会误判为异步发布 | 发布后二进制确认 Schema 不把 secret 写入示例、日志或普通选型说明 |
 | mail `success` 字段 string/bool 分裂 | **已关闭（JSON 输出路径）** | Mail JSON 输出会递归把键名严格等于 `success` 的 `"true"`/`"false"` 归一为 Go bool；不转换其他键或普通文本。端到端 helper 输出测试覆盖顶层、嵌套和数组；shortcut 统一结果 mapper 也拒绝非布尔 `success`，避免后续统一迁移重新引入类型漂移 | 发布后二进制抽取报告同组 14 个样本，确认后端新增响应形状仍经过该 JSON 出口 |
 | mail `--size` 等隐藏别名在 Skill 中被当作公开契约 | **已关闭（当前工作树）** | Help/Schema/Skill 按命令统一：消息列表公开 `--folder-id`，文件夹列表公开 `--folder`，相关命令公开 `--limit`/`--content`/`--from`；`--size`/`--page-size`/`--body`/`--sender` 及反向 folder 别名仅作隐藏兼容。mono/multi 脚本对子进程传 canonical flag，且可解包历史或统一结果容器 | 发布前用 Agent 语义扫描继续检查其他 Mail 兼容 flag，不将隐参数重新暴露给 Agent |
@@ -726,7 +731,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 
 1. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
 2. 在隔离数据上完成 sheet 二次回滚官方自证。
-3. 继续复验 DevApp 非终页续翻、已知空、权限受限与其他列表接口；终页位置 cursor 不得
-   输出为 `next_token`，当前 11 项读取也不得扩大成企业应用目录完整。
+3. 继续复验 DevApp 权限受限、其他账号、异常响应及 `dev` 原子入口；终页位置 cursor
+   不得输出为 `next_token`，当前结构计数不得扩大成企业应用目录或权限覆盖完整。
 4. 对保留的 CLI 生命周期与 Agoal 产品边界 exclusion 做发布级复核，确保没有新的业务
    leaf 被误归入边界组；新增待审业务命令必须在同一变更中完成 Contract/Safety 审阅。

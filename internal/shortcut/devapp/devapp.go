@@ -149,7 +149,7 @@ var ListApp = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(page)
+		return outputDevAppPage(rt, page)
 	},
 }
 
@@ -345,6 +345,38 @@ func projectDevAppPage(source map[string]any, projected map[string]any) (map[str
 		delete(projected, "nextCursor")
 	}
 	return projected, nil
+}
+
+// outputDevAppPage moves list count and continuation facts into the unified
+// meta layer. The projection helper keeps the upstream facts in-band long
+// enough to validate them; the public active result must not duplicate legacy
+// hasMore/nextCursor/count keys inside business data.
+func outputDevAppPage(rt *shortcut.RuntimeContext, page map[string]any) error {
+	data := make(map[string]any, len(page))
+	for key, value := range page {
+		switch key {
+		case "count", "hasMore", "nextCursor":
+			continue
+		default:
+			data[key] = value
+		}
+	}
+	meta := &output.Meta{}
+	if count, ok := page["count"].(int); ok {
+		meta.Count = output.NewCount(count)
+	}
+	hasMore, hasMoreSet := page["hasMore"].(bool)
+	cursor, _ := page["nextCursor"].(string)
+	cursor = strings.TrimSpace(cursor)
+	switch {
+	case hasMoreSet && hasMore:
+		meta.Pagination = &output.Pagination{EndpointExhausted: false, NextToken: cursor}
+	case hasMoreSet && !hasMore:
+		meta.Pagination = &output.Pagination{EndpointExhausted: true}
+	case cursor != "":
+		meta.Pagination = &output.Pagination{EndpointExhausted: false, NextToken: cursor}
+	}
+	return rt.OutputWithMeta(data, meta)
 }
 
 func devAppPaginationProjectionError(subtype apperrors.Subtype, message string) error {
@@ -847,7 +879,7 @@ var PermissionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(page)
+		return outputDevAppPage(rt, page)
 	},
 }
 
@@ -1309,7 +1341,7 @@ var EventList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(page)
+		return outputDevAppPage(rt, page)
 	},
 }
 
@@ -1479,7 +1511,7 @@ var VersionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(page)
+		return outputDevAppPage(rt, page)
 	},
 }
 

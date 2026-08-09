@@ -23,6 +23,7 @@
 7. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
 8. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
 9. 末页必须输出 `endpoint_exhausted:true`，即使原始响应携带位置 cursor，也不能诱导 Agent 继续请求。
+10. 业务 `data` 只保留资源数组；`count/hasMore/nextCursor` 不得与 `meta.count/meta.pagination` 重复发布。
 
 ## Source coverage
 
@@ -31,10 +32,19 @@
 
 ## Live pagination evidence
 
-真实只读、脱敏探针确认：首屏 11 项，`hasMore=false` 且位置 cursor 非空；使用该 cursor
-再次读取得到 0 项、同一 cursor、仍为 `hasMore=false`。修复后 `devapp +list` 输出
-`success`、`endpoint_exhausted:true`，没有 `next_token` 或协议版本标记。探针不保存原始
-JSON，也不打印应用或 cursor 值。
+真实只读、脱敏探针确认：应用首屏 11 项，`hasMore=false` 且位置 cursor 非空；使用该
+cursor 再次读取得到 0 项、同一 cursor、仍为 `hasMore=false`。修复后四条 active 列表
+均只在 `meta` 发布 count/分页，业务 `data` 不含 legacy 分页键：
+
+| 命令 | 页数 | 结构计数合计 | 终态 |
+|---|---:|---:|---|
+| `devapp +list` | 1 | 11 | exhausted，无 next_token |
+| `devapp +permission-list` | 5 | 249 | exhausted，无 token 缺失/循环 |
+| `devapp +event-list` | 3 | 255 | exhausted，无 token 缺失/循环 |
+| `devapp +version-list` | 1 | 0 | exhausted，已知空 |
+
+探针不保存原始 JSON，也不打印应用、权限、事件、版本或 cursor 值。计数只证明当前账号
+本次 endpoint 响应，不能扩大成企业权限覆盖或服务端业务完整性。
 
 
 ## Focused test transcript
