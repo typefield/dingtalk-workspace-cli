@@ -185,13 +185,27 @@ def _valid_machine_stdout(value: str, status: int) -> bool:
         result = json.loads(lines[0])
     except json.JSONDecodeError:
         return False
-    if not isinstance(result, Mapping) or not isinstance(result.get("ok"), bool) or not isinstance(result.get("outcome"), str):
+    if (
+        not isinstance(result, Mapping)
+        or not isinstance(result.get("ok"), bool)
+        or not isinstance(result.get("outcome"), str)
+        or ("meta" in result and not isinstance(result["meta"], Mapping))
+        or ("dry_run" in result and not isinstance(result["dry_run"], bool))
+    ):
         return False
     if result["outcome"] in {"success", "pending"}:
         return result["ok"] is True and status == 0
     if result["outcome"] == "partial_failure":
         return result["ok"] is False and status == PARTIAL_EXIT
-    return result["ok"] is False and result["outcome"] == "failure" and status == FAILURE_EXIT
+    error = result.get("error")
+    return (
+        result["ok"] is False
+        and result["outcome"] == "failure"
+        and status == FAILURE_EXIT
+        and isinstance(error, Mapping)
+        and isinstance(error.get("type"), str)
+        and bool(error["type"])
+    )
 
 
 def run_main(main_fn: Callable[[], Optional[int]], *, default_format: str = "text") -> int:
@@ -206,7 +220,7 @@ def run_main(main_fn: Callable[[], Optional[int]], *, default_format: str = "tex
         status = 0 if result is None else int(result)
         if not _valid_machine_stdout(captured.getvalue(), status):
             print("✗ 脚本输出不符合机器结果契约；已拒绝污染 stdout。", file=sys.stderr)
-            return emit(fmt=fmt, outcome="failure", error={"type": "internal", "message": "脚本产生了非契约机器输出；请修复脚本后重试。"})
+            return emit(fmt=fmt, outcome="failure", error={"type": "internal", "message": "脚本产生了非契约机器输出；请修复脚本后重试。", "details": {"violation": "machine_stdout_contract"}})
         sys.stdout.write(captured.getvalue())
         return status
     except KeyboardInterrupt:

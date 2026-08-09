@@ -71,6 +71,11 @@ Help 可观测性、JSON 流向和 dry-run 副作用是三个独立验收维度�
 形状伪造 `meta`，更不能把缺少 `meta` 扩大解释为数据完整或终态已验证。脚本不得把
 `success` 字符串重新拼成自己的第二套信封，也不得把日志混入 JSON stdout。
 
+机器 JSON 的 `failure` 必须携带非空字符串 `error.type`；否则统一出口拒绝原始 stdout，改发
+typed internal failure。若出现，`meta` 必须是对象、`dry_run` 必须是 boolean；类型错误同样
+不能绕过统一出口。`partial_failure` 的顶层 `error` 可以省略，但其业务数据必须按对应脚本的
+三通道约定保留逐项事实。
+
 ### dry-run
 
 `--dry-run` 的最低保证是：
@@ -149,7 +154,7 @@ scripts/_runtime.py
    零远端写请求；
 3. 对 `--format json` 检查 stdout 是单个可解析对象、stderr 无业务数据、退出码
    与 `ok/outcome` 一致；还要注入一个未捕获异常，确认仍输出
-   `failure + error.type=internal` 而非 traceback，并确认子 `pending` 结果保留任务 meta、不会被投影为终态成功；
+   `failure + error.type=internal` 而非 traceback，并确认 failure 缺 typed error、非法 `meta/dry_run` 都会被拒绝；同时确认子 `pending` 结果保留任务 meta、不会被投影为终态成功；
 4. 注入一个成功、一个明确失败和一个结果不确定的步骤，确认
    `succeeded/failed/unknown` 不丢失；
 5. 对流式脚本检查每行独立可解析且有界/无限模式语义不同；

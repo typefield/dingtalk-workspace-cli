@@ -425,6 +425,8 @@ def _machine_stdout_is_contract(fmt: str, captured: str, status: int) -> bool:
             not isinstance(payload, Mapping)
             or not isinstance(payload.get("ok"), bool)
             or not isinstance(payload.get("outcome"), str)
+            or ("meta" in payload and not isinstance(payload["meta"], Mapping))
+            or ("dry_run" in payload and not isinstance(payload["dry_run"], bool))
         ):
             return False
         outcome = payload["outcome"]
@@ -433,7 +435,14 @@ def _machine_stdout_is_contract(fmt: str, captured: str, status: int) -> bool:
         if outcome == "partial_failure":
             return payload["ok"] is False and status == PARTIAL_EXIT
         if outcome == "failure":
-            return payload["ok"] is False and status == FAILURE_EXIT
+            error = payload.get("error")
+            return (
+                payload["ok"] is False
+                and status == FAILURE_EXIT
+                and isinstance(error, Mapping)
+                and isinstance(error.get("type"), str)
+                and bool(error["type"])
+            )
         return False
     if fmt == "ndjson":
         for line in lines:

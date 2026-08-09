@@ -279,6 +279,34 @@ print(json.dumps({'ok': True, 'outcome': 'pending', 'data': {'task_id': 'task-1'
     )
     outcomes.append(("子 dws pending 不伪装终态成功且保留任务 meta", *result("PASS" if pending_child_ok else "FAIL", detail)))
 
+    untyped_failure = runtime_probe(
+        "import json, sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print(json.dumps({'ok':False,'outcome':'failure'})), 1)[1], argv=['--format','json']))"
+    )
+    valid, payload, detail = parse_single_result(untyped_failure)
+    untyped_failure_ok = (
+        valid
+        and untyped_failure.returncode == 1
+        and payload.get("ok") is False
+        and payload.get("outcome") == "failure"
+        and payload.get("error", {}).get("type") == "internal"
+        and payload.get("error", {}).get("details", {}).get("violation") == "machine_stdout_contract"
+    )
+    outcomes.append(("failure 缺 typed error 会被统一出口拒绝", *result("PASS" if untyped_failure_ok else "FAIL", detail)))
+
+    malformed_metadata = runtime_probe(
+        "import json, sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print(json.dumps({'ok':True,'outcome':'success','meta':[],'dry_run':'true'})), 0)[1], argv=['--format','json']))"
+    )
+    valid, payload, detail = parse_single_result(malformed_metadata)
+    malformed_metadata_ok = (
+        valid
+        and malformed_metadata.returncode == 1
+        and payload.get("error", {}).get("type") == "internal"
+        and payload.get("error", {}).get("details", {}).get("violation") == "machine_stdout_contract"
+    )
+    outcomes.append(("meta/dry_run 非法类型会被统一出口拒绝", *result("PASS" if malformed_metadata_ok else "FAIL", detail)))
+
     system_exit = runtime_probe(
         "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
         "raise SystemExit(_runtime.run_main(lambda: (_ for _ in ()).throw(SystemExit(2)), argv=['--format','json']))"

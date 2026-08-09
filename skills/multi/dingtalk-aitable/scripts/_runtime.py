@@ -293,8 +293,18 @@ def _machine_stdout_is_contract(fmt: str, captured: str, status: int) -> bool:
             payload = json.loads(lines[0])
         except json.JSONDecodeError:
             return False
-        if not isinstance(payload, Mapping) or not isinstance(payload.get("ok"), bool) or not isinstance(payload.get("outcome"), str):
+        if (
+            not isinstance(payload, Mapping)
+            or not isinstance(payload.get("ok"), bool)
+            or not isinstance(payload.get("outcome"), str)
+            or ("meta" in payload and not isinstance(payload["meta"], Mapping))
+            or ("dry_run" in payload and not isinstance(payload["dry_run"], bool))
+        ):
             return False
+        if payload["outcome"] == "failure":
+            error = payload.get("error")
+            if not isinstance(error, Mapping) or not isinstance(error.get("type"), str) or not error["type"]:
+                return False
         return (
             (payload["outcome"] in {"success", "pending"} and payload["ok"] is True and status == 0)
             or (payload["outcome"] == "partial_failure" and payload["ok"] is False and status == PARTIAL_EXIT)

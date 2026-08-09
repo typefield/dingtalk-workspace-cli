@@ -137,6 +137,38 @@ def main() -> int:
         }
         checks.append((f"{name}: pending 不伪装终态成功且保留任务 meta", "PASS" if pending_ok else "FAIL", f"rc={pending.returncode}; payload={pending_payload}"))
 
+        untyped_failure = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "sys.argv = ['probe', '--format', 'json']",
+            "raise SystemExit(_runtime.run_main(lambda: (print(json.dumps({'ok': False, 'outcome': 'failure'})), 1)[1]))",
+        ]))
+        untyped_failure_payload = exactly_one_envelope(untyped_failure.stdout)
+        untyped_failure_ok = (
+            untyped_failure.returncode == 1
+            and untyped_failure_payload is not None
+            and untyped_failure_payload.get("error", {}).get("type") == "internal"
+            and untyped_failure_payload.get("error", {}).get("details", {}).get("violation") == "machine_stdout_contract"
+        )
+        checks.append((f"{name}: failure 缺 typed error 会被统一出口拒绝", "PASS" if untyped_failure_ok else "FAIL", f"rc={untyped_failure.returncode}; payload={untyped_failure_payload}"))
+
+        malformed_metadata = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "sys.argv = ['probe', '--format', 'json']",
+            "raise SystemExit(_runtime.run_main(lambda: (print(json.dumps({'ok': True, 'outcome': 'success', 'meta': [], 'dry_run': 'true'})), 0)[1]))",
+        ]))
+        malformed_metadata_payload = exactly_one_envelope(malformed_metadata.stdout)
+        malformed_metadata_ok = (
+            malformed_metadata.returncode == 1
+            and malformed_metadata_payload is not None
+            and malformed_metadata_payload.get("error", {}).get("type") == "internal"
+            and malformed_metadata_payload.get("error", {}).get("details", {}).get("violation") == "machine_stdout_contract"
+        )
+        checks.append((f"{name}: meta/dry_run 非法类型会被统一出口拒绝", "PASS" if malformed_metadata_ok else "FAIL", f"rc={malformed_metadata.returncode}; payload={malformed_metadata_payload}"))
+
         partial_lines = [
             f"import sys; sys.path.insert(0, {str(directory)!r})",
             "import _runtime",
