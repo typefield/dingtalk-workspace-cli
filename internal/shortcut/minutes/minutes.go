@@ -16,9 +16,12 @@
 package minutes
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -30,12 +33,13 @@ const listeningNoteCmdTool = "执行听记指令-发起AI听记录音"
 // ── list ────────────────────────────────────────────────────────────────────
 
 var ListMine = shortcut.Shortcut{
-	Service:     "minutes",
-	Command:     "+list-mine",
-	Product:     "minutes",
-	Description: "查询我创建的听记列表",
-	Intent:      "当你想找回自己发起或录制的某次听记（会议纪要），却只记得大概的标题关键字时使用；可按关键字筛选并分页，返回自己创建的听记列表及其 taskUuid，便于后续查看摘要、转写或待办。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "minutes",
+	Command:       "+list-mine",
+	Product:       "minutes",
+	Description:   "查询我创建的听记列表",
+	Intent:        "当你想找回自己发起或录制的某次听记（会议纪要），却只记得大概的标题关键字时使用；可按关键字筛选并分页，返回自己创建的听记列表及其 taskUuid，便于后续查看摘要、转写或待办。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -73,12 +77,13 @@ var ListMine = shortcut.Shortcut{
 }
 
 var ListShared = shortcut.Shortcut{
-	Service:     "minutes",
-	Command:     "+list-shared",
-	Product:     "minutes",
-	Description: "查询他人共享给我的听记列表",
-	Intent:      "当你要找同事分享给你的会议听记、想快速定位别人共享过来的纪要时使用；可按关键字筛选并分页，返回他人共享给你的听记列表及 taskUuid。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "minutes",
+	Command:       "+list-shared",
+	Product:       "minutes",
+	Description:   "查询他人共享给我的听记列表",
+	Intent:        "当你要找同事分享给你的会议听记、想快速定位别人共享过来的纪要时使用；可按关键字筛选并分页，返回他人共享给你的听记列表及 taskUuid。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -116,12 +121,13 @@ var ListShared = shortcut.Shortcut{
 }
 
 var ListAll = shortcut.Shortcut{
-	Service:     "minutes",
-	Command:     "+list-all",
-	Product:     "minutes",
-	Description: "查询我有权限访问的所有听记列表",
-	Intent:      "当你不确定某条听记是自己创建还是别人共享、想在所有可访问的听记中一次性检索时使用；合并「我创建的」和「共享给我的」，按关键字筛选并分页返回全部有权限的听记及 taskUuid。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "minutes",
+	Command:       "+list-all",
+	Product:       "minutes",
+	Description:   "查询我有权限访问的所有听记列表",
+	Intent:        "当你不确定某条听记是自己创建还是别人共享、想在所有可访问的听记中一次性检索时使用；合并「我创建的」和「共享给我的」，按关键字筛选并分页返回全部有权限的听记及 taskUuid。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -178,7 +184,14 @@ func callList(rt *shortcut.RuntimeContext, belonging string) error {
 	if err != nil {
 		return err
 	}
-	return rt.Output(map[string]any{"count": len(minutes), "minutes": minutes})
+	payload := map[string]any{
+		"count":            len(minutes),
+		"minutes":          minutes,
+		"pagination_known": false,
+	}
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(len(minutes))}),
+	))
 }
 
 // callListProject reshapes the raw list_by_keyword_and_time_range response into a
@@ -205,8 +218,11 @@ func callListProject(data map[string]any) ([]map[string]any, error) {
 		// document id, a different identifier) must not be substituted here or
 		// record control would fail with a wrong id. The backend list already
 		// returns taskUuid.
-		if v, ok := callListFirst(m, "taskUuid", "task_uuid", "uuid"); ok {
+		if v, ok := minutesTaskUUID(m); ok {
 			row["taskUuid"] = v
+		}
+		if _, ok := row["taskUuid"]; !ok {
+			return nil, minutesProjectionUnknown("听记列表条目缺少可用于读取或录音控制的稳定 taskUuid")
 		}
 		if v, ok := callListFirst(m, "title", "name"); ok {
 			row["title"] = v
@@ -232,6 +248,20 @@ func callListProject(data map[string]any) ([]map[string]any, error) {
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func minutesTaskUUID(m map[string]any) (string, bool) {
+	for _, key := range []string{"taskUuid", "task_uuid", "uuid"} {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		taskUUID, ok := value.(string)
+		if ok && strings.TrimSpace(taskUUID) != "" {
+			return taskUUID, true
+		}
+	}
+	return "", false
 }
 
 // callListResolveList locates the list payload inside the response, tolerating a

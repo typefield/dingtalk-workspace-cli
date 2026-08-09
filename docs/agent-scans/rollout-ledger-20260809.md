@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T11:52:45+08:00
+扫描时间：2026-08-09T11:56:21+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1374 |
+| `legacy_only` | 1371 |
 | `dual_validate` | 24 |
-| `unified_active` | 85 |
+| `unified_active` | 88 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,12 +22,9 @@
 
 ### 状态迁移
 
-- REVIEW: `dws calendar +agenda`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +attendee-list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +book-list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +book-search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +room-groups`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +room-search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws minutes +list-all`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws minutes +list-mine`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws minutes +list-shared`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -1180,9 +1177,9 @@
 | `dws minutes +action-items` | `legacy_only` | `legacy` | yes |
 | `dws minutes +detail` | `unified_active` | `unified` | no |
 | `dws minutes +latest-minutes` | `legacy_only` | `legacy` | yes |
-| `dws minutes +list-all` | `legacy_only` | `legacy` | no |
-| `dws minutes +list-mine` | `legacy_only` | `legacy` | no |
-| `dws minutes +list-shared` | `legacy_only` | `legacy` | no |
+| `dws minutes +list-all` | `unified_active` | `unified` | no |
+| `dws minutes +list-mine` | `unified_active` | `unified` | no |
+| `dws minutes +list-shared` | `unified_active` | `unified` | no |
 | `dws minutes +minutes-search` | `unified_active` | `unified` | no |
 | `dws minutes +record-pause` | `legacy_only` | `legacy` | yes |
 | `dws minutes +record-resume` | `legacy_only` | `legacy` | yes |

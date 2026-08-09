@@ -19,6 +19,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 // TestCallListProjectItemListShape guards against projection-data-loss end to
@@ -62,6 +63,23 @@ func TestCallListProjectSeparatesKnownEmptyFromUnknown(t *testing.T) {
 			_, err := callListProject(data)
 			assertMinutesProjectionUnknown(t, err)
 		})
+	}
+}
+
+func TestCallListProjectRejectsDisplayOnlyMinute(t *testing.T) {
+	_, err := callListProject(map[string]any{"items": []any{map[string]any{"title": "仅展示"}}})
+	assertMinutesProjectionUnknown(t, err)
+}
+
+func TestMinutesListShortcutsAreUnifiedActive(t *testing.T) {
+	for name, rollout := range map[string]output.RolloutState{
+		"mine":   ListMine.OutputRollout,
+		"shared": ListShared.OutputRollout,
+		"all":    ListAll.OutputRollout,
+	} {
+		if rollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout=%q, want unified_active", name, rollout)
+		}
 	}
 }
 
