@@ -6,7 +6,7 @@
 
 ### list-today-meetings
 
-**优先**：`python scripts/calendar_today_agenda.py [today|tomorrow|week]`
+**优先**：`python scripts/calendar_today_agenda.py [today|tomorrow|week] --format json`
 备选：`dws calendar event list --start "<今日起始ISO>" --end "<今日结束ISO>"`（须加 `--format json`）
 
 ### check-users-busy
@@ -22,4 +22,3 @@
 ### start-conference
 
 > 当前 CLI 不提供视频会议（conference）发起/入会/会中控制能力。触发「发起会议」「开个会」「创建会议」且**没有给出具体时间**时，不要构造 `conference` 命令；直接告知用户请在钉钉客户端操作。
-

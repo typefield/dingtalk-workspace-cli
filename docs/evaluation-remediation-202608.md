@@ -215,6 +215,26 @@ Mono/Multi 的 `mail_unread_summary.py` 已从手写 subprocess 迁入共享 chi
 搜索 typed failure、两类投影漂移、dry-run 和参数校验，为 **16/16 PASS**。临时探针不
 证明真实邮箱权限、索引完整性或服务端终态。
 
+## Calendar 只读脚本本轮验收证据
+
+Mono/Multi 的 `calendar_today_agenda.py` 与 `calendar_free_slot_finder.py` 已从宽松
+`None/[]` 投影迁入共享 child-result 边界：
+
+1. 日程列表只有识别到已知 `events[]` 才能返回空/非空成功；child failure、未知容器、
+   非对象事件和不可识别时间均返回 typed failure，不再显示“暂无日程”。
+2. 忙闲查询必须证明所有显式参与人的覆盖；缺任一 `userId` 返回
+   `coverage_unknown`，不会把缺失用户当全天空闲。
+3. 每个非 FREE 时间段必须有可解析且 `end > start` 的时间；非法/未知形状返回
+   `projection_unknown`，不会生成推荐 slots。
+4. 参数校验（用户、日期、时长、工作时间）在 child 调用前完成；dry-run 为零 child
+   进程；成功路径输出 `coverage.complete:true` 和 child meta。
+5. Multi Calendar 的正向脚本路线统一显式使用 `--format json`，Skill 明确只有覆盖完整
+   才能向用户推荐空闲时段。
+
+`docs/agent-scans/calendar-read-contract-20260809.md` 对四入口验证已知空、typed failure、
+投影漂移、参与人覆盖、忙时段、参数校验、meta 和 dry-run，为 **26/26 PASS**。临时探针
+不证明真实日历权限、数据覆盖或服务端终态。
+
 ## attendance 本轮验收证据
 
 ```text

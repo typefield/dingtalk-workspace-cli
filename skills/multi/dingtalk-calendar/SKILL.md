@@ -52,9 +52,9 @@ metadata:
 
 | 用户说 | 命令 |
 |--------|------|
-| "今天 / 明天 / 本周日程" | `python scripts/calendar_today_agenda.py [today\|tomorrow\|week]` |
+| "今天 / 明天 / 本周日程" | `python scripts/calendar_today_agenda.py [today\|tomorrow\|week] --format json` |
 | "约会议（含参会人 + 会议室）" | 先让用户确认时段、参会人和会议室范围；随后 `python scripts/calendar_schedule_meeting.py --title "<主题>" --start "<起>" --end "<止>" [--users <ids>] [--book-room] --yes --format json`。仅 `verification.state=verified` 才可宣称已回读确认。 |
-| "多人共同空闲" | `python scripts/calendar_free_slot_finder.py --users <ids> --date <yyyy-MM-dd>` |
+| "多人共同空闲" | `python scripts/calendar_free_slot_finder.py --users <ids> --date <yyyy-MM-dd> --format json` |
 | "查闲忙" | `dws calendar busy search --users <userIds> --start "<ISO>" --end "<ISO>"` |
 | "加参会人" / "订房" / "取消" | `dws calendar attendee add` / `room add` / `event delete` |
 
@@ -66,7 +66,7 @@ metadata:
 
 **触发**：今天/明天/本周日程/我有什么会/某时段日程。
 
-1. **首选脚本（必须）**：`python scripts/calendar_today_agenda.py today|tomorrow|week`（聚合今日议程）。
+1. **首选脚本（必须）**：`python scripts/calendar_today_agenda.py today|tomorrow|week --format json`（聚合今日议程）。
 2. **降级 CLI（必须）**：脚本不可用时 `dws calendar event list --start "<起始ISO>" --end "<结束ISO>" --format json`；不传 `--start/--end` 默认查今天（00:00:00~23:59:59）。`hasMore=true` 用 `--limit`/翻页。
 3. **解析（必须）**：取真实 `eventId`、`attendees[]`、`start/end`；按需抽取，**禁止**把整段 JSON 原样贴出。
 
@@ -89,7 +89,7 @@ metadata:
 1. **解析对象（必须）**：姓名 → `dws aisearch person --keyword "<姓名>" --dimension name --format json` 取 `userId`；会议室用 `roomId`。
 2. **收敛时段（必须）**：`--start`/`--end` **必须**由用户给出或明确收敛；时段不明确**必须先追问**，**禁止**默认全天窗口。
 3. **执行（必须）**：`dws calendar busy search --users <userId1,userId2> --start "<ISO>" --end "<ISO>" --format json`（查会议室换 `--rooms <roomId...>`，可同时传）。**禁止**用 `event list` 扫日程替代闲忙查询。
-4. **空闲时段（必须）**：找共同空闲用 `python scripts/calendar_free_slot_finder.py`。
+4. **空闲时段（必须）**：找共同空闲用 `python scripts/calendar_free_slot_finder.py ... --format json`；只有 `data.coverage.complete=true` 才能把返回 slots 当共同空闲，`coverage_unknown/projection_unknown` 必须停止推荐。
 
 **禁止**：用 `event list` 冒充 `busy search`、未确认时段就默认全天查询。
 
