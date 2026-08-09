@@ -494,12 +494,13 @@ var BaseSearch = shortcut.Shortcut{
 
 // BaseGet 获取 AI 表格信息（get_base）。
 var BaseGet = shortcut.Shortcut{
-	Service:     "aitable",
-	Command:     "+base-get",
-	Product:     serverMain,
-	Description: "获取指定 Base 的目录信息（tables / dashboards summary）",
-	Intent:      "当你已有 baseId、需要了解这个表格里有哪些数据表和仪表盘（拿到 tableId/dashboardId）以便进一步操作时使用；返回 Base 的目录结构概要。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "aitable",
+	Command:       "+base-get",
+	Product:       serverMain,
+	Description:   "获取指定 Base 的目录信息（tables / dashboards summary）",
+	Intent:        "当你已有 baseId、需要了解这个表格里有哪些数据表和仪表盘（拿到 tableId/dashboardId）以便进一步操作时使用；返回 Base 的目录结构概要。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -530,7 +531,20 @@ var BaseGet = shortcut.Shortcut{
 	},
 	Tips: []string{`dws aitable +base-get --base-id BASE_ID`},
 	Execute: func(rt *shortcut.RuntimeContext) error {
-		return rt.CallMCP("get_base", map[string]any{"baseId": rt.Str("base-id")})
+		baseID := rt.Str("base-id")
+		data, err := rt.CallMCPData(serverMain, "get_base", map[string]any{"baseId": baseID})
+		if err != nil {
+			return err
+		}
+		payload, meta, err := baseGetProjection(data, baseID)
+		if err != nil {
+			return err
+		}
+		// During dual validation the first argument remains the exact legacy
+		// business payload. The second argument is the shadow unified result;
+		// activation can therefore switch renderers without executing get_base
+		// twice or changing the legacy wire during evidence collection.
+		return rt.OutputResult(data, output.Success(payload, output.WithMeta(meta)))
 	},
 }
 
