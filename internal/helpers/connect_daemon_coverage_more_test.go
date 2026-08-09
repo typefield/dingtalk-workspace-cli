@@ -884,7 +884,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	}
 
 	restart := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
-	restart.SetArgs([]string{"--robot-client-id", "missing"})
+	restart.SetArgs([]string{"--robot-client-id", "missing", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {
@@ -897,7 +897,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	}
 	connectDaemonDirOverride = blocked
 	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
-	restart.SetArgs([]string{"--robot-client-id", "blocked"})
+	restart.SetArgs([]string{"--robot-client-id", "blocked", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {
@@ -909,7 +909,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 		t.Fatal(err)
 	}
 	restart = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectRestartCommand())
-	restart.SetArgs([]string{"--robot-client-id", "corrupt-restart"})
+	restart.SetArgs([]string{"--robot-client-id", "corrupt-restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {
@@ -921,7 +921,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 		t.Fatal(err)
 	}
 	restart = newDevAppRobotConnectRestartCommand()
-	restart.SetArgs([]string{"--robot-client-id", "no-unified"})
+	restart.SetArgs([]string{"--robot-client-id", "no-unified", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {
@@ -986,7 +986,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 	}
 	daemonExecutable = func() (string, error) { return "", errors.New("missing") }
 	restart = newDevAppRobotConnectRestartCommand()
-	restart.SetArgs([]string{"--robot-client-id", "restart"})
+	restart.SetArgs([]string{"--robot-client-id", "restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {
@@ -999,7 +999,7 @@ func TestCrossPlatformCoverageDaemonControlCommandEdges(t *testing.T) {
 		t.Fatal(err)
 	}
 	restart = newDevAppRobotConnectRestartCommand()
-	restart.SetArgs([]string{"--robot-client-id", "restart"})
+	restart.SetArgs([]string{"--robot-client-id", "restart", "--yes"})
 	restart.SetOut(&bytes.Buffer{})
 	restart.SetErr(&bytes.Buffer{})
 	if err := restart.Execute(); err == nil {

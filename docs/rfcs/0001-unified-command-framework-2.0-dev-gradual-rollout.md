@@ -451,7 +451,7 @@ dws devapp +list ...
 | `dev connect` foreground stream | legacy | 长连接事件流，等待 stream contract |
 | `devapp +...` shortcuts | 逐命令原位迁入统一结果 | 需要 Shortcut adapter 支持 per-command rollout/result |
 
-兼容裁决：`dev connect stop/restart` 保持旧版无需确认即可执行的 argv 与运行时行为。两条命令的 `confirmation` 均声明为 `not_required`，调用不需要 `--yes`；`--dry-run` 仍必须无副作用。输出迁移不得借安全元数据改变这一既有行为。
+安全裁决：`dev connect stop/restart` 都会终止本地守护进程，必须声明 `effect=destructive`、`risk=high`、`confirmation=user_required`。获得用户确认后调用方显式传 `--yes`；`--dry-run` 只返回计划，且必须在任何信号发送前短路。输出迁移与安全元数据必须从同一命令声明派生。
 
 仓库当前 `schema_command_exclusions.go` 的 `devapp-legacy-shortcuts` 组会把若干 `devapp +...` 排除在 Agent Schema 外，这与“保留当前 Agent 使用的 shortcut 并原位迁移”目标不一致。新 Agent 发布前，所引用 shortcut 必须：
 
@@ -551,7 +551,7 @@ python3 scripts/agent/scan_unified_result_surface.py \
 - 未迁移命令：legacy byte golden 不变。
 - 迁移命令：release notes 明确该 command path 从 legacy 切换到统一结果。
 - 命令名、前缀、参数和安全语义不因输出迁移而改变。
-- `dev connect stop/restart` 保持无需 `--yes` 或交互确认的旧行为。
+- `dev connect stop/restart` 在任何终止或重启前要求用户确认；执行调用显式携带 `--yes`，而 `--dry-run` 不发送信号。
 - `devapp +...` 不因存在 `dev ...` 而被移除、隐藏或 redirect。
 - consumer 只使用 `--format json`；命令在当前 release 的唯一 active contract 由命令声明决定，不通过响应字段协商。
 - `unified_only` 只删除该命令内部 legacy renderer，不删除命令入口。

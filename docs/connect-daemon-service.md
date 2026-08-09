@@ -19,10 +19,10 @@ dws dev connect --daemon \
   --channel claudecode \
   --unified-app-id <unifiedAppId>
 
-# Inspect / stop / restart it (locate the daemon by unifiedAppId).
+# Inspect it; only after explicit user confirmation, stop or restart it.
 dws dev connect status  --unified-app-id <unifiedAppId>
-dws dev connect stop    --unified-app-id <unifiedAppId>
-dws dev connect restart --unified-app-id <unifiedAppId>
+dws dev connect stop    --unified-app-id <unifiedAppId> --yes
+dws dev connect restart --unified-app-id <unifiedAppId> --yes
 ```
 
 - The parent prints the daemon pid and the log path, then exits.

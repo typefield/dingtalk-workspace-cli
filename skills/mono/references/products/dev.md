@@ -149,9 +149,9 @@ dws dev connect --channel opencode \
 dws dev connect --daemon \
   --robot-client-id <clientId> --robot-client-secret <clientSecret>
 
-# 查看/停止后台连接器
+# 查看/停止后台连接器（停止前须获得用户确认）
 dws dev connect status --format json
-dws dev connect stop
+dws dev connect stop --yes
 ```
 
 常用 flag：

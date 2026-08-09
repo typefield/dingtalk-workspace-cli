@@ -449,7 +449,7 @@ func writeConnectDaemonStarted(w io.Writer, pid int, logPath, clientID, dirKey s
 	fmt.Fprintf(w, "connect daemon started (pid %d)\n", pid)
 	fmt.Fprintf(w, "  logs:   %s\n", logPath)
 	fmt.Fprintf(w, "  status: dws dev connect status%s\n", statusHintArgs(clientID, dirKey))
-	fmt.Fprintf(w, "  stop:   dws dev connect stop%s\n", statusHintArgs(clientID, dirKey))
+	fmt.Fprintf(w, "  stop:   dws dev connect stop%s --yes  # after explicit confirmation\n", statusHintArgs(clientID, dirKey))
 	fmt.Fprint(w, connectLocalDebugNotice())
 }
 
@@ -896,7 +896,7 @@ func newDevAppRobotConnectStopCommand() *cobra.Command {
 		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "destructive", Risk: "high",
-			Confirmation: "not_required", Idempotency: "idempotent",
+			Confirmation: "user_required", Idempotency: "idempotent",
 		},
 		Validate: func(c *cobra.Command, _ []string) error {
 			_, err := connectDaemonDirKeyFromFlags(c)
@@ -1100,7 +1100,7 @@ func newDevAppRobotConnectRestartCommand() *cobra.Command {
 	cmd.Flags().String("unified-app-id", "", "统一应用 ID（当未用 clientId 起守护进程时定位）")
 	DeclareLeafMetadata(cmd, LeafSpec{
 		OutputRollout: output.RolloutUnifiedActive,
-		Safety:        contract.SafetySpec{Effect: "destructive", Risk: "high", Confirmation: "not_required", Idempotency: "unknown"},
+		Safety:        contract.SafetySpec{Effect: "destructive", Risk: "high", Confirmation: "user_required", Idempotency: "unknown"},
 		Validate:      func(c *cobra.Command, _ []string) error { return validateConnectRestart(c) },
 		Contract: LeafContract{
 			Identity:    contract.ToolIdentitySpec{ProductID: "dev", Name: "connect_restart", CanonicalPath: "dev.connect_restart", CLIPath: "dev connect restart", PrimaryCLIPath: "dev connect restart"},

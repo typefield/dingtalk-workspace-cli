@@ -1,6 +1,6 @@
 # 端到端链路（recipes）
 
-dev 的端到端任务都是「定位应用，改容器某节点，按审批需要走版本生效，最后回读验证」。每步先 `--dry-run` 确认再 `--yes`，参数用对应命令的 `--help` 查询，��细节进对应 reference。
+dev 的端到端任务都是「定位应用，改容器某节点，按审批需要走版本生效，最后回读验证」。每步先 `--dry-run` 确认再 `--yes`，参数用对应命令的 `--help` 查询，细节进对应 reference。
 
 ## 建一个钉钉里打开的网页应用
 
@@ -32,7 +32,7 @@ dev 的端到端任务都是「定位应用，改容器某节点，按审批需�
 守护进程被 stop / kill / 崩溃后，通过持久化的 `unifiedAppId` 重新拉取密钥并重启，无需本地保存 AppSecret。
 
 1. `dev connect --daemon --unified-app-id <id> --channel <channel>` 首次启动（`unifiedAppId` 和 `channel` 会写入 `~/.dws/connect/<key>/daemon.pid`）
-2. `dev connect restart --unified-app-id <id>` 重启：自动 stop 旧进程 → 从 dev 平台拉取 AppKey/Secret → 重新建联
+2. 获得用户确认后，`dev connect restart --unified-app-id <id> --yes` 重启：自动 stop 旧进程 → 从 dev 平台拉取 AppKey/Secret → 重新建联
 3. `dev connect status --unified-app-id <id>` 确认恢复 `healthy`
 4. 若 daemon.pid 未持久化 `unifiedAppId`（如用 `--robot-client-id` 直接启动的），restart 会提示改用 `--unified-app-id` 启动
 

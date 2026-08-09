@@ -114,7 +114,7 @@ func TestDevConnectRestartMissingRecordStructuredValidation(t *testing.T) {
 	t.Cleanup(func() { connectDaemonDirOverride = "" })
 
 	out, _, err := runDevDomainErrorCase(t, &captureRunner{},
-		"dev", "connect", "restart", "--robot-client-id", "ghost")
+		"dev", "connect", "restart", "--robot-client-id", "ghost", "--yes")
 	requireDevValidationError(t, err, "未找到连接器记录")
 	if out.Len() != 0 {
 		t.Fatalf("error path must keep stdout empty, got %q", out.String())
@@ -255,7 +255,7 @@ func TestDevDomainErrorPathsKeepStdoutEmpty(t *testing.T) {
 		{"version publish missing params", []string{"dev", "app", "version", "publish", "--yes"}, nil},
 		{"connect unknown channel", []string{"dev", "connect", "--channel", "bogus"}, nil},
 		{"connect status missing locator", []string{"dev", "connect", "status"}, nil},
-		{"connect restart missing record", []string{"dev", "connect", "restart", "--robot-client-id", "ghost"}, daemonDirSetup},
+		{"connect restart missing record", []string{"dev", "connect", "restart", "--robot-client-id", "ghost", "--yes"}, daemonDirSetup},
 	}
 
 	for _, tc := range cases {

@@ -15,14 +15,17 @@ package helpers
 
 import (
 	"bytes"
+	"errors"
+	"os"
 	"strings"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contractfinal"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/spf13/cobra"
 )
 
-func TestConnectStopAndRestartDoNotRequireConfirmation(t *testing.T) {
+func TestConnectStopAndRestartRequireConfirmation(t *testing.T) {
 	for _, cmd := range []*cobra.Command{
 		newDevAppRobotConnectStopCommand(),
 		newDevAppRobotConnectRestartCommand(),
@@ -31,9 +34,61 @@ func TestConnectStopAndRestartDoNotRequireConfirmation(t *testing.T) {
 		if !ok || final.Safety == nil {
 			t.Fatalf("%s missing final safety declaration", cmd.Name())
 		}
-		if got := final.Safety.Confirmation; got != "not_required" {
-			t.Fatalf("%s confirmation = %q, want not_required", cmd.Name(), got)
+		if got := final.Safety.Confirmation; got != "user_required" {
+			t.Fatalf("%s confirmation = %q, want user_required", cmd.Name(), got)
 		}
+	}
+}
+
+// TestConnectDaemonControlRejectsBeforeAnySignal proves that the high-risk
+// local lifecycle commands are gated before their RunE can reach daemonStop.
+// A closed stdin is the Agent/noninteractive path: it must yield the typed
+// confirmation_required error, never silently accept an EOF as consent.
+func TestConnectDaemonControlRejectsBeforeAnySignal(t *testing.T) {
+	preserveDaemonHooks(t)
+	connectDaemonDirOverride = t.TempDir()
+	const unifiedAppID = "confirmed-app"
+	const dirKey = "app-confirmed-app"
+	dir, err := connectDaemonDir(dirKey)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonState(dir, daemonState{
+		Pid:          os.Getpid(),
+		DirKey:       dirKey,
+		UnifiedAppID: unifiedAppID,
+	}); err != nil {
+		t.Fatal(err)
+	}
+
+	called := 0
+	daemonProcessAlive = func(pid int) bool { return pid == os.Getpid() }
+	daemonFindProcess = func(pid int) (*os.Process, error) { return os.FindProcess(pid) }
+	daemonSignalProcess = func(*os.Process, os.Signal) error {
+		called++
+		return nil
+	}
+
+	for _, build := range []func() *cobra.Command{
+		newDevAppRobotConnectStopCommand,
+		newDevAppRobotConnectRestartCommand,
+	} {
+		cmd := prepareFrameworkUnifiedTestCommand(build())
+		cmd.SetIn(strings.NewReader(""))
+		cmd.SetArgs([]string{"--unified-app-id", unifiedAppID})
+		var stdout bytes.Buffer
+		cmd.SetOut(&stdout)
+		err := cmd.Execute()
+		var typed *apperrors.Error
+		if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason != "confirmation_required" {
+			t.Fatalf("%s error = %#v, want validation/confirmation_required", cmd.Name(), err)
+		}
+		if stdout.Len() != 0 {
+			t.Fatalf("%s wrote stdout before confirmation: %q", cmd.Name(), stdout.String())
+		}
+	}
+	if called != 0 {
+		t.Fatalf("daemon signal count = %d, want 0 before confirmation", called)
 	}
 }
 
@@ -69,7 +124,7 @@ func TestConnectDaemonFamilyMissingDaemonErrorPaths(t *testing.T) {
 	var stopOut, stopErr bytes.Buffer
 	stop.SetOut(&stopOut)
 	stop.SetErr(&stopErr)
-	stop.SetArgs([]string{"--unified-app-id", "ghost"})
+	stop.SetArgs([]string{"--unified-app-id", "ghost", "--yes"})
 	if err := stop.Execute(); err != nil {
 		t.Fatalf("stop on missing daemon must not error, got %v\nstderr:\n%s", err, stopErr.String())
 	}
@@ -93,7 +148,7 @@ func TestConnectDaemonFamilyMissingDaemonErrorPaths(t *testing.T) {
 	var restartOut, restartErr bytes.Buffer
 	restart.SetOut(&restartOut)
 	restart.SetErr(&restartErr)
-	restart.SetArgs([]string{"--robot-client-id", "ghost"})
+	restart.SetArgs([]string{"--robot-client-id", "ghost", "--yes"})
 	err := restart.Execute()
 	if err == nil || !strings.Contains(err.Error(), "未找到连接器记录") {
 		t.Fatalf("restart on missing daemon error = %v, want 未找到连接器记录", err)
@@ -120,7 +175,7 @@ func TestConnectDaemonFamilyRequiresLocatorIdentity(t *testing.T) {
 		var out, errBuf bytes.Buffer
 		cmd.SetOut(&out)
 		cmd.SetErr(&errBuf)
-		cmd.SetArgs(nil)
+		cmd.SetArgs([]string{"--yes"})
 		err := cmd.Execute()
 		if err == nil || !strings.Contains(err.Error(), "需要 --robot-client-id 或 --unified-app-id") {
 			t.Fatalf("%s without locator error = %v, want 定位守护进程 validation", cmd.Name(), err)
