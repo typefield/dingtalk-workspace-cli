@@ -250,16 +250,15 @@
 命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_multi_script_contract.py`
 
 ```text
-multi Python files: 56
+multi Python files: 57
 Agent entries: 42
 Help nonzero: 0
 Help text mentions --dry-run: 31/42
-Help text mentions --format: 20/42
+Help text mentions --format: 22/42
 
 Nonzero help:
 
 Entries without both flags (review, not automatic failures):
-- skills/multi/dingtalk-drive/scripts/drive_tree_list.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/aiapp_create_and_poll.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/attendance_my_record.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/attendance_report_checkin.py: rc=0, dry_run=False, format=False
@@ -272,7 +271,6 @@ Entries without both flags (review, not automatic failures):
 - skills/multi/dingtalk-misc/scripts/attendance_vacation_balance.py: rc=0, dry_run=False, format=False
 - skills/multi/dingtalk-misc/scripts/finance_daily_cashflow.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/finance_expense_flow.py: rc=0, dry_run=True, format=False
-- skills/multi/dingtalk-misc/scripts/oa_pending_review.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/yida_custom_page_update.py: rc=0, dry_run=True, format=False
 - skills/multi/dingtalk-misc/scripts/yida_form_inspector.py: rc=0, dry_run=False, format=False
 - skills/multi/dingtalk-misc/scripts/yida_form_update.py: rc=0, dry_run=True, format=False
@@ -292,7 +290,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T18:45:42`
+- generated_at: `2026-08-09T18:58:13`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**

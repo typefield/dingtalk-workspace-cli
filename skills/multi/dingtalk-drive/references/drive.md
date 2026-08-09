@@ -809,7 +809,9 @@ dws drive copy --node <源文件dentryUuid> --folder <目标文件夹fileId> --f
 
 | 脚本                                                     | 场景          | 用法                                    |
 | ------------------------------------------------------ | ----------- | ------------------------------------- |
-| [drive_tree_list.py](../scripts/drive_tree_list.py) | 递归列出钉盘目录树结构 | `python drive_tree_list.py --depth 2` |
+| [drive_tree_list.py](../scripts/drive_tree_list.py) | 逐目录分页递归；部分失败保留已读树 | `python drive_tree_list.py --folder <dentryUuid> --depth 2 --format json` |
+
+目录树脚本的 `success` 只有在 `meta.pagination.endpoint_exhausted:true` 时表示请求深度内的目录均已读取完；`partial_failure`（退出码 7）必须继续使用 `data.items` 中的已读树，同时检查 `failed[]` 和 `unknown[]`，不得把它解释为完整目录。历史 Multi 脚本的 `--parent-id` 仅作兼容，Agent 一律使用公开的 `--folder`。
 
 ## 相关产品
 

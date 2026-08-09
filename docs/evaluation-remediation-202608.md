@@ -614,8 +614,8 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `skills/mono/scripts/` 32 个 Agent 入口，不适用于 Multi Skill。此前把 Mono
   迁移清单混写成全仓结论是口径错误，已由独立 Multi 扫描纠正。
 - Multi 的 Agent 扫描见 `docs/agent-scans/skill-contract-audit-20260809.md`：
-  56 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本已有 30/42
-  提及 `--dry-run`、11/42 提及脚本级 `--format`（这不是 argparse 能力证明）。这不是要求强行给所有工具增加两个参数，
+  57 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本已有 31/42
+  提及 `--dry-run`、22/42 提及脚本级 `--format`（这不是副作用安全证明）。这不是要求强行给所有工具增加两个参数，
   （本轮为 5 个 AITable 写/上传/导出入口补齐脚本级 dry-run，其中 export 同时接入格式与任务结果边界），但仍不是要求 Skill 对固定输出、
   内部检查器和真正的 Agent 契约强行统一；各类能力必须分别声明，不能笼统宣称“所有脚本统一支持”。
 - 本轮修复了 Multi 9 个入口把 `--help` 当业务参数导致的非零返回；这只证明 Help
@@ -646,8 +646,15 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - Minutes 深层 reference 也完成了一次参数对照：Agent-facing 文档统一使用当前 Help
   的 `--limit` / `--cursor`；旧的 `--max` / `--next-token` 只保留在兼容别名说明和
   脚本自身的 Help 示例中，避免把隐藏别名继续扩散成 canonical 指令。
-- 复核 multi Drive 的 `drive_tree_list.py` 时发现脚本内部仍调用隐藏的 `drive list
-  --max`；已改为当前 Help 的 canonical `--limit`，并用脚本 `--dry-run` 实测命令串。
+- 复核 Drive 的 `drive_tree_list.py` 时发现 Mono/Multi 都只读取每个目录第一页，
+  且把调用失败、未知响应和真实空目录统一压成 `[]`；Mono 机器模式还会重新执行一次
+  递归，Multi 则教 Agent 使用隐藏的 `--parent-id`。现两入口共享同一只读遍历边界：
+  使用 canonical `drive list --folder/--limit/--cursor`，逐目录耗尽分页，机器/文本只执行
+  一次遍历；第一页失败为 typed failure，后续页、子目录、游标循环和 `hasMore=true`
+  缺 token 均保留已读树并返回 `partial_failure`/rc=7。只有
+  `meta.pagination.endpoint_exhausted:true` 才表示请求深度内读取完成，历史
+  `--parent-id` 仅保留为隐藏兼容别名。`drive-tree-contract-20260809.md` 以临时 child
+  runner 对拍 Mono/Multi，26/26 PASS；不证明真实账号目录可见范围或服务端终态。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。
