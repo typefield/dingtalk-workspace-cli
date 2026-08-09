@@ -4,9 +4,20 @@
 `check-multi-im-skill-chain.sh` 对照 Go typed descriptor 逐字校验；修改能力时先改 Runtime、
 测试与 descriptor，再同步本页。命令参数仍以精确 leaf Schema 为准。
 
-## 消息结果 `im.message-list.v1`
+## 已迁入统一返回的消息读取
 
-`+chat-messages`、`+search-msg`、`+messages-mget` 及相关消息读取使用同一兼容版本。
+`+chat-messages`、`+search-msg`、`+thread-replies` 与 `+at-me` 使用框架统一结果。Agent 只传
+`--format json`，并先按顶层 `ok` / `outcome` 判断请求与操作结果；只有
+`meta.pagination.endpoint_exhausted:true` 才表示服务端分页耗尽，`next_token` 是续页凭据。
+`partial_failure` 的 `data.succeeded[]` / `data.failed[]` / `data.unknown[]` 保留逐页或逐项事实，
+不能压缩为普通成功。没有 `meta.pagination` 时，不得把空数组或本地预算当作 endpoint exhausted。
+
+这不承诺搜索索引覆盖或服务端业务数据完整性：例如 `+search-msg` 仍会在业务 data 中保留
+`indexCoverageKnown:false`。
+
+## Legacy 消息结果 `im.message-list.v1`
+
+`+messages-mget`、`+messages-list-direct` 及其他尚未迁入统一返回的消息读取使用该兼容版本。
 字段可能为空，但不能换名猜测；全量任务必须结合完整性 ledger 判断。
 
 <!-- DWS_MESSAGE_RESULT_CONTRACT_START -->

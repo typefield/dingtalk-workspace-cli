@@ -101,14 +101,14 @@ dws chat message send --group <openConversationId> --msg-type profile --contact-
 `--group`，会校验它与消息解析出的会话一致；解析失败只会报错，不会错误转去查询通讯录。
 
 默认只读一页；完整读取必须显式加 `--page-all`。可用
-`--limit/--page-size` 控制每页条数、用 `--page-limit` 限制最大页数；自动续页使用下层返回的
-毫秒级 `nextCursor` 无损生成下一次 `startTime`，不能使用只有秒级精度的回复 `createTime`。
+`--limit/--page-size` 控制每页条数、用 `--page-limit` 限制最大页数；Runtime 在内部使用下层
+毫秒级游标续页，不能使用只有秒级精度的回复 `createTime` 手工构造边界。
 输出默认 `--order desc`（兼容 `--sort`）。由于下层的 `newer/older` 表示读取方向而不是结果排序，
 `asc` 只允许与 `--page-all` 一起使用：完整拉取后对整体结果升序排列，避免把单个“最新页”的本地反转
-伪装为全局升序。结果中的 `orderScope=complete_result` 表示完整结果排序；读取被页数上限或错误截断时为
-`fetched_pages`，并仍须结合完整性 ledger 判断。
-必须检查 `complete`、`hasMore`、`stopReason` 和
-`failures`，`complete=false` 时不得声称已经拿到全部回复。
+伪装为全局升序。`data.orderScope=complete_result` 只说明排序覆盖已取得的完整结果；
+`fetched_pages` 表示读取被页数预算或错误截断。先检查 `outcome`，只有
+`meta.pagination.endpoint_exhausted:true` 才能表述服务端分页耗尽；`next_token` 可续页，
+`partial_failure` 保留已读页和失败详情，缺分页 meta 时端点证据未知。
 
 ```bash
 dws chat +thread-replies --message-id <rootOpenMessageId> --page-all --order asc
@@ -135,14 +135,14 @@ dws chat +chat-messages --group "项目群" --start "2026-08-01T00:00:00+08:00" 
 
 当会话已经确定、任务只需要完整读取结果中可由消息字段判断的子集时，不新增按条件专用的
 Shortcut 参数。在同一次 `+chat-messages` 调用中使用全局 `--jq`，让 Runtime 完成读取后、
-在 stdout 前筛选；表达式必须保留根信封、用筛选结果覆盖 `messages` 并同步重算 `count`，
-不得丢失 `complete`、`hasMore`、`failures` 等完整性 ledger。不要先输出全量 JSON，再由
+在 stdout 前筛选；表达式必须保留根信封、用筛选结果覆盖 `data.messages` 并同步重算
+`data.count`，不得丢失 `outcome`、`meta.pagination` 和 partial 的逐项结果。不要先输出全量 JSON，再由
 Agent 或另一条命令二次处理。
 
 ```bash
 # 例：读取完整会话后，只返回存在 reaction 的消息
 dws chat +chat-messages --group "项目群" --page-all --format json \
-  --jq '. as $root | [.messages[] | select((.reactions // []) | length > 0)] as $matched | $root | .messages = $matched | .count = ($matched | length)'
+  --jq '. as $root | [.data.messages[] | select((.reactions // []) | length > 0)] as $matched | $root | .data.messages = $matched | .data.count = ($matched | length)'
 ```
 
 发送者姓名不是普通结果字段条件：仍用 `--sender-query <姓名>` 先解析稳定身份，再按

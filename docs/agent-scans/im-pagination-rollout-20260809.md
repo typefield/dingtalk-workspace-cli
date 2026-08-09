@@ -27,4 +27,13 @@
 
 `+at-me` 的扫描确认：它此前要求 Agent 读取 `complete/hasMore/nextCursor/failures`；当前 active data 不再暴露这些 legacy 终态字段。单页无 endpoint 证据仅标 `pagination_known:false`，而显式全量读取缺失证据、游标矛盾或后续读取失败均为 `partial_failure`。Skill 已改为只按 `outcome` 和 `meta.pagination` 判断终态。
 
+### 定向指令复核
+
+Agent 逐段检查了根 Skill 和两个消息 reference 中涉及七条 active 命令的分页指令。发现
+`01-messaging.md` 曾把 `+chat-messages` 的 `--format json` 示例后接为
+`complete/hasMore/nextPage/stopReason/failures` 判断，`chat-message.md` 也把相同规则用于
+已 active 的 `+thread-replies`。两处已改为统一的 `outcome` / `meta.pagination` 语义；
+`+messages-list-direct` 保留 legacy 字段说明，因为它当前没有进入 active。此次复核不依赖
+policy/CI，也不把文档替换误写成真实 IM 服务端分页取证。
+
 这些是 Agent 的源码与受控执行审阅，不是 CI/policy gate，也不证明真实 IM 索引完整、真实分页字段稳定或资源下载字节完整。真实账号复验应至少覆盖：正常多页、空结果、服务端 `hasMore` 与游标冲突、第二页网络失败，以及资源下载/本地导出失败后的实际文件状态。

@@ -40,7 +40,9 @@ dws chat +chat-messages --group <openConversationId> \
   --order asc --page-all --format json
 ```
 
-必须检查 `complete/hasMore/nextPage/stopReason/failures`；达到页数或结果上限不是来源完整。
+先检查统一 `outcome`。只有 `meta.pagination.endpoint_exhausted:true` 才表示服务端分页耗尽；
+`meta.pagination.next_token` 表示可续页，`partial_failure` 保留已读页与逐项失败，缺
+`meta.pagination` 时只能把端点证据视为未知。达到页数或结果上限不是来源完整。
 
 只有群名时，读取历史直接用 `+chat-messages --group <群名>`，普通文本发送直接用 `+send-to-group`。其它尚不接受群名的高级动作才先用 `+chat-search --query <群名>`；只有唯一候选才把 `openConversationId` 传给下一步。查询结果需要资源时在读取命令上加 `--download-resources`，不要让 Agent 手工遍历资源引用。按姓名读取单聊时先解析唯一用户 ID，再传给 `+chat-messages --user`。
 
@@ -93,11 +95,13 @@ dws chat +chat-messages --group <openConversationId> \
 | `+messages-send` | `openTaskId` / 投递结果 | 查询投递状态；不是回复/撤回消息 ID |
 | `+chat-messages` / `+search-msg` / `+messages-mget` | `messageId`、conversation/thread、`resourceRefs` | 回复、转发、撤回、资源下载 |
 | `+chat-create` | `openConversationId` | 新群后续消息与群管理 |
-| 分页查询 | `hasMore` / `nextCursor` / `complete` | 继续翻页和完整性判断 |
+| 已迁入统一返回的分页查询 | `outcome` / `meta.pagination.next_token` / `meta.pagination.endpoint_exhausted` | 续页和端点耗尽判断 |
+| legacy 分页查询 | 该命令 Help/Schema 声明的游标与完整性字段 | 不把 legacy `complete` 外推给已迁移命令 |
 
 ## 完成判断
 
 - 写操作检查任务级结果或可查询状态，不只看退出码。
-- 读取检查 `complete`、`hasMore` 和 `failures`。
+- 已迁入统一返回的读取检查 `outcome` 与 `meta.pagination`；legacy 读取才按其 Help/Schema
+  声明的完整性字段检查。两者都不能把本地页数预算、空数组或缺失分页证据表述成全量终态。
 - 下载检查每项 ledger；单项失败不抹掉已取得消息。
 - 投递状态未知时报告 unknown 并保留幂等键，不自动换目标重发。
