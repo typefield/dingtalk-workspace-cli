@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-10T03:32:53+08:00
+扫描时间：2026-08-10T04:52:52+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1333 |
+| `legacy_only` | 1331 |
 | `dual_validate` | 19 |
-| `unified_active` | 131 |
+| `unified_active` | 133 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,11 +18,11 @@
 
 ## Transition review
 
-基线：`dws-rollout-base-get-dual.md`（1483 条 runnable command node）。
+基线：`agoal-report-statistics-dual-ledger.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws aitable +base-get`: `dual_validate` → `unified_active`
+- PASS: `dws agoal report list-statistics`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -46,7 +46,7 @@
 | `dws agoal obj-template create-or-update` | `legacy_only` | `legacy` | no |
 | `dws agoal obj-template list` | `legacy_only` | `legacy` | no |
 | `dws agoal report` | `legacy_only` | `legacy` | no |
-| `dws agoal report list-statistics` | `legacy_only` | `legacy` | no |
+| `dws agoal report list-statistics` | `unified_active` | `unified` | no |
 | `dws agoal report submit-detail` | `legacy_only` | `legacy` | no |
 | `dws agoal scorecard` | `legacy_only` | `legacy` | no |
 | `dws agoal scorecard detail` | `legacy_only` | `legacy` | no |
@@ -58,7 +58,7 @@
 | `dws agoal strategy update` | `legacy_only` | `legacy` | no |
 | `dws agoal user` | `legacy_only` | `legacy` | no |
 | `dws agoal user objectives` | `legacy_only` | `legacy` | no |
-| `dws agoal user rules` | `legacy_only` | `legacy` | no |
+| `dws agoal user rules` | `unified_active` | `unified` | no |
 | `dws aisearch` | `legacy_only` | `legacy` | no |
 | `dws aisearch behavior` | `legacy_only` | `legacy` | no |
 | `dws aisearch enterprise` | `legacy_only` | `legacy` | no |

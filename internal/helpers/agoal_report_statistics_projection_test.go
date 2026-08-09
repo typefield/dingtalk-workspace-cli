@@ -229,6 +229,8 @@ func TestAgoalReportStatisticsRoutesExpectedArgumentsExactlyOnce(t *testing.T) {
 	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: string(raw)}}}
 	installScriptedCaller(t, caller)
 	root := newAgoalCommand()
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
 	if err := executeFilterCoverage(t, root, "report", "list-statistics", "--keyword", "weekly", "--request-id", "request-2"); err != nil {
 		t.Fatalf("execute: %v", err)
 	}

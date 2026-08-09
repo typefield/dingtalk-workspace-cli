@@ -133,6 +133,13 @@ dws agoal user objectives --user-id USER_ID --rule-id RULE_ID --period-ids "peri
 # 周月报提交统计与详情
 dws agoal report list-statistics --format json
 dws agoal report list-statistics --keyword "周报规则" --format json
+
+`report list-statistics` 直接返回统一 `ok/outcome/data/meta`。从
+`data.reports[].templateId` 取得规则模板 ID，并读取 `onTime/late/notSubmitted/remindSize`
+统计；`meta.count` 只表示本次安全投影的规则数。`data.reportCoverageKnown:false`
+表示服务端没有给出权威目录或分页终态，空数组不能扩大为“当前组织没有周月报规则”。
+正文 HTML、修改人标识和未审阅的配置不会进入 Agent 输出。
+
 dws agoal report submit-detail --template-id TPL_ID --submit-state ON_TIME --format json
 dws agoal report submit-detail --template-id TPL_ID --submit-state LATE --query-date "2026-06-18T00:00:00+08:00" --page 1 --page-size 20 --format json
 
@@ -153,7 +160,7 @@ dws agoal obj-template create-or-update --template-id TPL_ID --title "业绩模�
 | `contract detail` | 完整维度数据 | `contract update` 的 `--dimensions`（基于此修改） |
 | `scorecard detail` | `scId`、`entityId` | `scorecard entity-detail` / `scorecard update` 的 `--id` |
 | `user rules` | `ruleId`、`periodIds` | `user objectives` 的 `--rule-id` `--period-ids` |
-| `report list-statistics` | `templateId` | `report submit-detail` 的 `--template-id` |
+| `report list-statistics` | `data.reports[].templateId` | `report submit-detail` 的 `--template-id` |
 | `obj-template list` | `templateId` | `obj-template create-or-update` 的 `--template-id`（更新时） |
 
 ## 注意事项

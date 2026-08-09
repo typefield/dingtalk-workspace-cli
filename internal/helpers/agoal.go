@@ -493,7 +493,7 @@ scopeType 支持:
 	reportListStatisticsCmd.Flags().String("request-id", "", "requestId (可选)")
 	reportListStatisticsCmd.Flags().String("keyword", "", "搜索规则名称 (可选)")
 	DeclareLeafMetadata(reportListStatisticsCmd, LeafSpec{
-		OutputRollout: output.RolloutDualValidate,
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
