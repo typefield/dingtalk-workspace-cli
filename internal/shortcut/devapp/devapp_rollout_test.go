@@ -100,6 +100,64 @@ func TestDevAppProjectedListsRejectInvalidPaginationEvidence(t *testing.T) {
 	}
 }
 
+func TestDevAppListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
+	tests := []struct {
+		name    string
+		project func(map[string]any) ([]map[string]any, error)
+		stable  map[string]any
+	}{
+		{
+			name:    "apps",
+			project: listAppProject,
+			stable:  map[string]any{"unifiedAppId": "app-1", "name": "Example"},
+		},
+		{
+			name:    "permissions",
+			project: permissionListProject,
+			stable:  map[string]any{"scopeValue": "contact:user.base:read", "scopeName": "Read users"},
+		},
+		{
+			name:    "events",
+			project: eventListProject,
+			stable:  map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"},
+		},
+		{
+			name:    "versions",
+			project: versionListProject,
+			stable:  map[string]any{"versionId": "version-1", "version": "1.0.0"},
+		},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			knownEmpty, err := tt.project(map[string]any{"result": map[string]any{"items": []any{}}})
+			if err != nil || knownEmpty == nil || len(knownEmpty) != 0 {
+				t.Fatalf("known empty = %#v, %v; want non-nil empty projection", knownEmpty, err)
+			}
+			valid, err := tt.project(map[string]any{"result": map[string]any{"items": []any{tt.stable}}})
+			if err != nil || len(valid) != 1 {
+				t.Fatalf("valid projection = %#v, %v", valid, err)
+			}
+			for name, payload := range map[string]map[string]any{
+				"unknown container": {"result": map[string]any{"status": "ok"}},
+				"not an array":      {"result": map[string]any{"items": "not-an-array"}},
+				"malformed row":     {"result": map[string]any{"items": []any{"opaque"}}},
+				"display only row":  {"result": map[string]any{"items": []any{map[string]any{"name": "display only"}}}},
+			} {
+				t.Run(name, func(t *testing.T) {
+					_, err := tt.project(payload)
+					var typed *apperrors.Error
+					if !stderrors.As(err, &typed) {
+						t.Fatalf("projection error = %T %v, want typed projection error", err, err)
+					}
+					if typed.Category != apperrors.CategoryAPI || typed.StableSubtype != string(apperrors.SubtypeProjectionUnknown) || typed.FailureStage != "response_projection" || !typed.RetryableSet || typed.Retryable {
+						t.Fatalf("projection error = %#v", typed)
+					}
+				})
+			}
+		})
+	}
+}
+
 func TestDevAppShortcutsRollOutPerTerminalCommand(t *testing.T) {
 	active := map[string]bool{
 		"+list": true, "+get": true, "+credentials-get": true, "+webapp-get": true,

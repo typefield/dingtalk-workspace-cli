@@ -26,6 +26,7 @@ package devapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -140,7 +141,10 @@ var ListApp = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		apps := listAppProject(data)
+		apps, err := listAppProject(data)
+		if err != nil {
+			return err
+		}
 		page, err := projectDevAppPage(data, map[string]any{"count": len(apps), "apps": apps})
 		if err != nil {
 			return err
@@ -152,20 +156,25 @@ var ListApp = shortcut.Shortcut{
 // listAppProject reshapes list_dev_app into a clean app list
 // ({unifiedAppId, name, appKey, agentId, status, gmtModified}) — output-projection
 // clean output projection. The list container and per-item field names are probed
-// defensively across candidate keys, so an unknown/empty shape yields an empty
-// list rather than a crash or fabricated data.
-func listAppProject(data map[string]any) []map[string]any {
-	raw := listAppFindList(data)
+// defensively across candidate keys. An explicit empty array is a successful
+// empty result; an unknown container, malformed row, or missing stable ID is
+// a projection failure, never a fabricated empty list.
+func listAppProject(data map[string]any) ([]map[string]any, error) {
+	raw, err := devAppFindList(data, []string{"list", "items", "apps", "appList", "result", "data"}, "list_dev_app")
+	if err != nil {
+		return nil, err
+	}
 	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
+	for index, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, devAppProjectionUnknown("list_dev_app", "devapp app list contains a non-object item")
 		}
-		row := map[string]any{}
-		if v, ok := listAppFirst(m, "unifiedAppId", "unified_app_id"); ok {
-			row["unifiedAppId"] = v
+		id, ok := devAppStableString(m, "unifiedAppId", "unified_app_id")
+		if !ok {
+			return nil, devAppProjectionUnknown("list_dev_app", fmt.Sprintf("devapp app list item %d has no stable unifiedAppId", index+1))
 		}
+		row := map[string]any{"unifiedAppId": id}
 		if v, ok := listAppFirst(m, "name", "appName", "app_name"); ok {
 			row["name"] = v
 		}
@@ -181,36 +190,9 @@ func listAppProject(data map[string]any) []map[string]any {
 		if v, ok := listAppFirst(m, "gmtModified", "gmt_modified", "modifyTime", "modified_time"); ok {
 			row["gmtModified"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// listAppFindList locates the app list payload, tolerating a bare top-level
-// array or nesting one level under a common envelope key.
-func listAppFindList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
-	for _, k := range []string{"list", "items", "apps", "appList", "result", "data"} {
-		v, ok := data[k]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "apps", "appList", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+	return out, nil
 }
 
 // listAppFirst returns the first present candidate key's value.
@@ -221,6 +203,57 @@ func listAppFirst(m map[string]any, keys ...string) (any, bool) {
 		}
 	}
 	return nil, false
+}
+
+// devAppFindList recognizes an explicit list container at the top level or
+// under one ServiceResult envelope. It intentionally distinguishes a known
+// empty array from an unrecognized response: the latter is not evidence that
+// there are no resources.
+func devAppFindList(data map[string]any, keys []string, tool string) ([]any, error) {
+	if data == nil {
+		return nil, devAppProjectionUnknown(tool, "devapp list response is empty or not an object")
+	}
+	for _, key := range keys {
+		value, present := data[key]
+		if !present {
+			continue
+		}
+		if list, ok := value.([]any); ok {
+			return list, nil
+		}
+		inner, ok := value.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, nestedKey := range keys {
+			if list, ok := inner[nestedKey].([]any); ok {
+				return list, nil
+			}
+		}
+	}
+	return nil, devAppProjectionUnknown(tool, "devapp list response does not contain a recognized list container")
+}
+
+// devAppStableString returns an Agent-usable stable identifier. Display-only
+// fields are deliberately insufficient because a later mutation or detail read
+// needs a deterministic key.
+func devAppStableString(data map[string]any, keys ...string) (string, bool) {
+	value, ok := listAppFirst(data, keys...)
+	if !ok {
+		return "", false
+	}
+	id, ok := value.(string)
+	id = strings.TrimSpace(id)
+	return id, ok && id != ""
+}
+
+func devAppProjectionUnknown(tool, message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithOperation(productDevApp+"/"+tool),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // projectDevAppPage keeps pagination evidence alongside a projected list.
@@ -809,7 +842,10 @@ var PermissionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		permissions := permissionListProject(data)
+		permissions, err := permissionListProject(data)
+		if err != nil {
+			return err
+		}
 		page, err := projectDevAppPage(data, map[string]any{"count": len(permissions), "permissions": permissions})
 		if err != nil {
 			return err
@@ -821,20 +857,24 @@ var PermissionList = shortcut.Shortcut{
 // permissionListProject reshapes list_dev_app_permissions into a clean
 // permission-point list ({scopeValue, scopeName, apiName, authStatus, scopeType})
 // — clean output projection. The list container and per-item field
-// names are probed defensively across candidate keys, so an unknown/empty shape
-// yields an empty list rather than a crash or fabricated data.
-func permissionListProject(data map[string]any) []map[string]any {
-	raw := permissionListFindList(data)
+// names are probed defensively across candidate keys. An explicit empty array
+// is valid; a shape that cannot supply stable scope values is fail-closed.
+func permissionListProject(data map[string]any) ([]map[string]any, error) {
+	raw, err := devAppFindList(data, []string{"list", "items", "permissions", "permissionList", "scopes", "result", "data"}, "list_dev_app_permissions")
+	if err != nil {
+		return nil, err
+	}
 	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
+	for index, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, devAppProjectionUnknown("list_dev_app_permissions", "devapp permission list contains a non-object item")
 		}
-		row := map[string]any{}
-		if v, ok := permissionListFirst(m, "scopeValue", "scope_value", "permissionCode", "code"); ok {
-			row["scopeValue"] = v
+		scope, ok := devAppStableString(m, "scopeValue", "scope_value", "permissionCode", "code")
+		if !ok {
+			return nil, devAppProjectionUnknown("list_dev_app_permissions", fmt.Sprintf("devapp permission list item %d has no stable scopeValue", index+1))
 		}
+		row := map[string]any{"scopeValue": scope}
 		if v, ok := permissionListFirst(m, "scopeName", "scope_name", "permissionName", "name"); ok {
 			row["scopeName"] = v
 		}
@@ -847,36 +887,9 @@ func permissionListProject(data map[string]any) []map[string]any {
 		if v, ok := permissionListFirst(m, "scopeType", "scope_type"); ok {
 			row["scopeType"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// permissionListFindList locates the permission list payload, tolerating a bare
-// top-level array or nesting one level under a common envelope key.
-func permissionListFindList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
-	for _, k := range []string{"list", "items", "permissions", "permissionList", "scopes", "result", "data"} {
-		v, ok := data[k]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "permissions", "permissionList", "scopes", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+	return out, nil
 }
 
 // permissionListFirst returns the first present candidate key's value.
@@ -1291,7 +1304,10 @@ var EventList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		events := eventListProject(data)
+		events, err := eventListProject(data)
+		if err != nil {
+			return err
+		}
 		page, err := projectDevAppPage(data, map[string]any{"count": len(events), "events": events})
 		if err != nil {
 			return err
@@ -1302,21 +1318,24 @@ var EventList = shortcut.Shortcut{
 
 // eventListProject reshapes list_dev_app_events into a clean subscribed-event
 // list ({eventCode, eventName, status, gmtModified}) — output-projection
-// clean output projection. The list container and per-item field names are probed
-// defensively across candidate keys, so an unknown/empty shape yields an empty
-// list rather than a crash or fabricated data.
-func eventListProject(data map[string]any) []map[string]any {
-	raw := eventListFindList(data)
+// clean output projection. An explicitly empty list is preserved, but unknown
+// containers, malformed rows and missing stable event codes are rejected.
+func eventListProject(data map[string]any) ([]map[string]any, error) {
+	raw, err := devAppFindList(data, []string{"list", "items", "events", "eventList", "result", "data"}, "list_dev_app_events")
+	if err != nil {
+		return nil, err
+	}
 	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
+	for index, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, devAppProjectionUnknown("list_dev_app_events", "devapp event list contains a non-object item")
 		}
-		row := map[string]any{}
-		if v, ok := eventListFirst(m, "eventCode", "event_code", "code"); ok {
-			row["eventCode"] = v
+		code, ok := devAppStableString(m, "eventCode", "event_code", "code")
+		if !ok {
+			return nil, devAppProjectionUnknown("list_dev_app_events", fmt.Sprintf("devapp event list item %d has no stable eventCode", index+1))
 		}
+		row := map[string]any{"eventCode": code}
 		if v, ok := eventListFirst(m, "eventName", "event_name", "name"); ok {
 			row["eventName"] = v
 		}
@@ -1326,36 +1345,9 @@ func eventListProject(data map[string]any) []map[string]any {
 		if v, ok := eventListFirst(m, "gmtModified", "gmt_modified", "modifyTime", "modified_time"); ok {
 			row["gmtModified"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// eventListFindList locates the event list payload, tolerating a bare top-level
-// array or nesting one level under a common envelope key.
-func eventListFindList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
-	for _, k := range []string{"list", "items", "events", "eventList", "result", "data"} {
-		v, ok := data[k]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "events", "eventList", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+	return out, nil
 }
 
 // eventListFirst returns the first present candidate key's value.
@@ -1482,7 +1474,10 @@ var VersionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		versions := versionListProject(data)
+		versions, err := versionListProject(data)
+		if err != nil {
+			return err
+		}
 		page, err := projectDevAppPage(data, map[string]any{"count": len(versions), "versions": versions})
 		if err != nil {
 			return err
@@ -1493,21 +1488,24 @@ var VersionList = shortcut.Shortcut{
 
 // versionListProject reshapes list_dev_app_versions into a clean version list
 // ({versionId, version, status, desc, gmtCreate}) — output-projection fidelity
-// for clean output. The list container and per-item field names are probed defensively
-// across candidate keys, so an unknown/empty shape yields an empty list rather
-// than a crash or fabricated data.
-func versionListProject(data map[string]any) []map[string]any {
-	raw := versionListFindList(data)
+// for clean output. A known empty list is allowed; unknown containers,
+// malformed rows, and rows without a usable version ID are not.
+func versionListProject(data map[string]any) ([]map[string]any, error) {
+	raw, err := devAppFindList(data, []string{"list", "items", "versions", "versionList", "result", "data"}, "list_dev_app_versions")
+	if err != nil {
+		return nil, err
+	}
 	out := make([]map[string]any, 0, len(raw))
-	for _, item := range raw {
+	for index, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, devAppProjectionUnknown("list_dev_app_versions", "devapp version list contains a non-object item")
 		}
-		row := map[string]any{}
-		if v, ok := versionListFirst(m, "versionId", "version_id", "id"); ok {
-			row["versionId"] = v
+		id, ok := devAppStableString(m, "versionId", "version_id", "id")
+		if !ok {
+			return nil, devAppProjectionUnknown("list_dev_app_versions", fmt.Sprintf("devapp version list item %d has no stable versionId", index+1))
 		}
+		row := map[string]any{"versionId": id}
 		if v, ok := versionListFirst(m, "version", "versionName", "version_name"); ok {
 			row["version"] = v
 		}
@@ -1520,36 +1518,9 @@ func versionListProject(data map[string]any) []map[string]any {
 		if v, ok := versionListFirst(m, "gmtCreate", "gmt_create", "createTime", "create_time"); ok {
 			row["gmtCreate"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// versionListFindList locates the version list payload, tolerating a bare
-// top-level array or nesting one level under a common envelope key.
-func versionListFindList(data map[string]any) []any {
-	if data == nil {
-		return []any{}
-	}
-	for _, k := range []string{"list", "items", "versions", "versionList", "result", "data"} {
-		v, ok := data[k]
-		if !ok {
-			continue
-		}
-		if arr, ok := v.([]any); ok {
-			return arr
-		}
-		if inner, ok := v.(map[string]any); ok {
-			for _, ik := range []string{"list", "items", "versions", "versionList", "result", "data"} {
-				if arr, ok := inner[ik].([]any); ok {
-					return arr
-				}
-			}
-		}
-	}
-	return []any{}
+	return out, nil
 }
 
 // versionListFirst returns the first present candidate key's value.

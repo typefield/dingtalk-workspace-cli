@@ -20,7 +20,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "internal/shortcut/devapp/devapp.go"
-TEST_PATTERN = r"TestDevApp(ProjectedLists(PreservePaginationEvidence|RejectInvalidPaginationEvidence)|PaginatedShortcutsEmitUnifiedResumableResults)"
+TEST_PATTERN = r"TestDevApp(ProjectedLists(PreservePaginationEvidence|RejectInvalidPaginationEvidence)|ListProjectionSeparatesKnownEmptyFromUnknown|PaginatedShortcutsEmitUnifiedResumableResults)"
 EXPECTED_CALLERS = (
     "ListApp",
     "PermissionList",
@@ -70,7 +70,7 @@ def run() -> int:
     timestamp = dt.datetime.now().astimezone().isoformat(timespec="seconds")
     test_excerpt = (result.stdout + result.stderr).strip()
     if len(test_excerpt) > 3000:
-        test_excerpt = test_excerpt[-3000:]
+        test_excerpt = test_excerpt[:1450] + "\n... (middle transcript elided) ...\n" + test_excerpt[-1450:]
 
     report = f"""# devapp shortcut pagination projection — Agent review
 
@@ -92,8 +92,9 @@ def run() -> int:
 3. `nextCursor` 非字符串、`hasMore=true` 无游标必须返回 `validation/pagination_incomplete`。
 4. 多层 `hasMore` 或非空 `nextCursor` 互相冲突、末页仍带游标必须返回 `validation/pagination_conflict`。
 5. 上述失败均为 `response_projection`、不可安全重试；不得输出成功列表。
-6. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
-7. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
+6. 只有显式的空数组才可投影为成功空列表；缺容器、非数组、非法行或仅展示字段的行必须为 `api/projection_unknown`。
+7. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
+8. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
 
 ## Source coverage
 
