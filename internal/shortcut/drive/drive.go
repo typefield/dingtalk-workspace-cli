@@ -414,12 +414,13 @@ func searchFilesPick(dst, src map[string]any, canonical string, aliases ...strin
 // ListDocs → list_nodes (doc)
 // SearchDocs → search_documents (doc)
 var SearchDocs = shortcut.Shortcut{
-	Service:     "drive",
-	Command:     "+search-docs",
-	Product:     "doc",
-	Description: "搜索文档空间文档",
-	Intent:      "当你只记得文档标题或关键词、想在文档空间/知识库中检索在线文档（区别于 +search 检索钉盘文件）时使用；输入 query 关键词，返回匹配的文档及其节点信息。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "drive",
+	Command:       "+search-docs",
+	Product:       "doc",
+	Description:   "搜索文档空间文档",
+	Intent:        "当你只记得文档标题或关键词、想在文档空间/知识库中检索在线文档（区别于 +search 检索钉盘文件）时使用；输入 query 关键词，返回匹配的文档及其节点信息。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -463,7 +464,15 @@ var SearchDocs = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(docs), "docs": docs})
+		payload := map[string]any{
+			"count":                len(docs),
+			"docs":                 docs,
+			"index_coverage_known": false,
+			"pagination_known":     false,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(docs))}),
+		))
 	},
 }
 
@@ -488,8 +497,8 @@ func searchDocsProject(data map[string]any) ([]map[string]any, error) {
 		searchDocsPick(row, m, "nodeId", "nodeId", "id", "docId", "dentryUuid", "fileId")
 		searchDocsPick(row, m, "type", "type", "docType", "nodeType", "fileType")
 		searchDocsPick(row, m, "url", "url", "docUrl", "link", "webUrl")
-		if len(row) == 0 {
-			return nil, driveProjectionUnknown("文档搜索结果条目缺少可识别字段")
+		if len(row) == 0 || row["nodeId"] == nil {
+			return nil, driveProjectionUnknown("文档搜索结果条目缺少可用于后续操作的稳定 nodeId")
 		}
 		out = append(out, row)
 	}

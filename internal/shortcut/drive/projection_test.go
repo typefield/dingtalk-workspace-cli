@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 func TestDriveListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
@@ -54,6 +55,19 @@ func TestDriveSearchProjectionAcceptsNestedKnownContainers(t *testing.T) {
 	}
 	if len(docs) != 1 || docs[0]["nodeId"] != "d1" || docs[0]["name"] != "Design" {
 		t.Fatalf("nested document projection = %#v", docs)
+	}
+}
+
+func TestDriveSearchDocsRejectsUntargetableRow(t *testing.T) {
+	_, err := searchDocsProject(map[string]any{
+		"docs": []any{map[string]any{"title": "display-only document"}},
+	})
+	assertDriveProjectionUnknown(t, err)
+}
+
+func TestDriveSearchDocsRolloutIsUnifiedActive(t *testing.T) {
+	if SearchDocs.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("search-docs rollout=%q, want unified_active", SearchDocs.OutputRollout)
 	}
 }
 
