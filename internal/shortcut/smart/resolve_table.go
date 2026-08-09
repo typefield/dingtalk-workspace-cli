@@ -14,12 +14,12 @@
 package smart
 
 import (
-	"strconv"
-	"strings"
+	"encoding/json"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/aitabletarget"
 )
@@ -43,10 +43,11 @@ import (
 //
 //	dws aitable +resolve-table --base B --name 任务
 var ResolveTable = shortcut.Shortcut{
-	Service:     "aitable",
-	Command:     "+resolve-table",
-	Product:     "aitable",
-	Description: "在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读）",
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "aitable",
+	Command:       "+resolve-table",
+	Product:       "aitable",
+	Description:   "在某个多维表 Base 的完整表目录内按名称解析唯一 tableId（只读）",
 	Intent: "当你已经知道某个多维表 Base 的 baseId、又只记得里面某张数据表(table)的名称、" +
 		"想把它解析成可直接用于后续工具的 tableId 时使用；" +
 		"内部先列出全部数据表并优先做大小写不敏感的精确名称匹配，只有显式 --fuzzy 才允许包含匹配。" +
@@ -65,11 +66,22 @@ var ResolveTable = shortcut.Shortcut{
 			CLIPath:        "aitable +resolve-table",
 			PrimaryCLIPath: "aitable +resolve-table",
 		},
-		Description: "在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读）",
+		Description: "在某个多维表 Base 的完整表目录内按名称解析唯一 tableId（只读）",
+		Result: &contract.ResultSpec{
+			Outcomes: []contract.ResultOutcome{
+				contract.ResultOutcomeSuccess,
+				contract.ResultOutcomeFailure,
+			},
+			DataSchema: json.RawMessage(`{"type":"object","properties":{"resolved":{"type":"boolean","const":true},"count":{"type":"integer","const":1},"candidates":{"type":"array","minItems":1,"maxItems":1,"items":{"type":"object","properties":{"tableId":{"type":"string","minLength":1},"tableName":{"type":"string","minLength":1}},"required":["tableId","tableName"],"additionalProperties":false}}},"required":["resolved","count","candidates"],"additionalProperties":false}`),
+			NDJSON: &contract.ResultNDJSONSpec{
+				RecordPath:   "candidates",
+				RecordSchema: json.RawMessage(`{"type":"object","properties":{"tableId":{"type":"string","minLength":1},"tableName":{"type":"string","minLength":1}},"required":["tableId","tableName"],"additionalProperties":false}`),
+			},
+		},
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
-			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
+			Reason:       "Reviewed read-only resolver: the CLI strictly validates the complete non-paginated get_tables directory, then performs explicit exact/fuzzy matching without guessing among candidates.",
 		},
 		Selection: contract.SelectionSpec{
 			AgentSummary: "在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读）",
@@ -91,82 +103,27 @@ var ResolveTable = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{
+		legacy := map[string]any{
 			"resolved":  true,
 			"status":    resolution.Status,
 			"matchType": resolution.MatchType,
 			"tableId":   resolution.Selected.ID,
 			"name":      resolution.Selected.Name,
 			"base":      rt.Str("base"),
-		})
+		}
+		candidate := map[string]any{
+			"tableId":   resolution.Selected.ID,
+			"tableName": resolution.Selected.Name,
+		}
+		data := map[string]any{
+			"resolved":   true,
+			"count":      1,
+			"candidates": []map[string]any{candidate},
+		}
+		return rt.OutputResult(legacy, output.Success(data, output.WithMeta(&output.Meta{
+			Count: output.NewCount(1),
+		})))
 	},
-}
-
-// resolveTableItems defensively unwraps the list of tables from a get_tables
-// response, tolerating the common container keys the gateway may use.
-func resolveTableItems(data map[string]any) []map[string]any {
-	if data == nil {
-		return nil
-	}
-	for _, key := range []string{"result", "data", "list", "items", "tables", "records"} {
-		raw, ok := data[key]
-		if !ok {
-			continue
-		}
-		if list, ok := raw.([]any); ok {
-			out := make([]map[string]any, 0, len(list))
-			for _, e := range list {
-				if m, ok := e.(map[string]any); ok {
-					out = append(out, m)
-				}
-			}
-			return out
-		}
-		// Nested container, e.g. {"data":{"list":[...]}}.
-		if nested, ok := raw.(map[string]any); ok {
-			if inner := resolveTableItems(nested); len(inner) > 0 {
-				return inner
-			}
-		}
-	}
-	return nil
-}
-
-// resolveTableID reads a table's identifier, tolerating the common id keys.
-func resolveTableID(t map[string]any) string {
-	for _, key := range []string{"tableId", "table_id", "id"} {
-		if s := resolveTableString(t[key]); s != "" {
-			return s
-		}
-	}
-	return ""
-}
-
-// resolveTableName reads a table's display name, tolerating the common name keys.
-func resolveTableName(t map[string]any) string {
-	for _, key := range []string{"name", "tableName", "table_name", "title"} {
-		if s := resolveTableString(t[key]); s != "" {
-			return s
-		}
-	}
-	return ""
-}
-
-// resolveTableString coerces a scalar JSON value to a trimmed string, returning
-// "" for nil / non-scalar / empty values.
-func resolveTableString(v any) string {
-	switch typed := v.(type) {
-	case string:
-		return strings.TrimSpace(typed)
-	case float64:
-		return strconv.FormatFloat(typed, 'f', -1, 64)
-	case int:
-		return strconv.Itoa(typed)
-	case int64:
-		return strconv.FormatInt(typed, 10)
-	default:
-		return ""
-	}
 }
 
 func init() {
