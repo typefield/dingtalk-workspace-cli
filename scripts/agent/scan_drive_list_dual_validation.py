@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent-only review of the Drive directory-list shortcut during dual validation.
+"""Agent-only review of the active Drive directory-list shortcut.
 
 The review inspects the Skill corpus, current CLI Help, and focused projection
 tests. It writes Markdown evidence only; it is not a CI or policy gate and
@@ -42,8 +42,8 @@ def main() -> int:
                 if not SHORTCUT_ROUTE.search(line):
                     continue
                 location = f"{path.relative_to(ROOT)}:{line_no}"
-                # Tables may inventory a command, but only executable prose or
-                # scripts would teach an Agent to use this still-dual shortcut.
+                # Tables may inventory a command, while executable prose or
+                # scripts prove that the active route is actually taught.
                 (catalog_mentions if line.lstrip().startswith("|") else workflow_routes).append(location)
 
     environment = os.environ.copy()
@@ -56,13 +56,13 @@ def main() -> int:
         and "--cursor string" in help_result.stdout
         and "--limit int" in help_result.stdout
     )
-    passed = not workflow_routes and tests.returncode == 0 and help_ok
+    passed = bool(workflow_routes or catalog_mentions) and tests.returncode == 0 and help_ok
 
     transcript = (tests.stdout + tests.stderr).strip()
     if len(transcript) > 3000:
         transcript = transcript[-3000:]
     hits = lambda values: "无" if not values else "<br>".join(f"`{value}`" for value in values[:30])
-    report = f"""# Drive `+list` dual-validate — Agent review
+    report = f"""# Drive `+list` unified-active — Agent review
 
 扫描时间：{dt.datetime.now().astimezone().isoformat(timespec="seconds")}
 
@@ -70,22 +70,22 @@ def main() -> int:
 
 ## Result: {"PASS" if passed else "REVIEW"}
 
-- 过早教学 shortcut 路由 `dws drive +list`：**{len(workflow_routes)}** 处
-- catalog-only 提及：**{len(catalog_mentions)}** 处
+- 正向教学 shortcut 路由 `dws drive +list`：**{len(workflow_routes)}** 处
+- 路由表教学：**{len(catalog_mentions)}** 处
 - Drive 焦点测试退出码：`{tests.returncode}`
 - `+list --help` 声明 `--folder/--cursor/--limit`：`{str(help_ok).lower()}`
 
 ## 当前路由与边界
 
-本轮 `drive +list` 仅进入 **dual_validate**：外部仍是既有 legacy payload，框架在内部严格验证下一版候选结果。Skill 不应将该 shortcut 教成新的默认 Agent 路由。
+`drive +list` 已进入 **unified_active**：普通 `--format json` 直接返回 `ok/outcome/data/meta`。Skill 可以把它作为指定位置目录浏览的默认 Agent 路由；不公开协议选择参数，也不输出版本标记。
 
-候选结果的边界是：它只列出**请求的 space/folder 的一页**。当服务端给出一致的 `hasMore + nextCursor` 时，可继续翻页；没有分页证据时必须标记为未知。无论哪种情况，都不能把结果扩大为“全部可访问钉盘文件”。跨目录按名称定位文件应使用公开的 `dws drive search --query "<关键词>" --format json`。
+结果边界是：它只列出**请求的 space/folder 的一页**。一致的 `hasMore + nextCursor` 或非空 token-only continuation 都可安全续页；token 缺失而没有显式终态布尔时必须标记为未知。无论哪种情况，都不能把结果扩大为“全部可访问钉盘文件”。跨目录按名称定位文件应使用 `dws drive +search --query "<关键词>" --format json`。
 
-## Premature shortcut route hits
+## Active shortcut route hits
 
 {hits(workflow_routes)}
 
-## Catalog-only mentions
+## Route-table mentions
 
 {hits(catalog_mentions)}
 
@@ -97,7 +97,7 @@ def main() -> int:
 
 ## Boundary
 
-本审证明的是本地 CLI projection、Help 与 Skill 路由一致性；不证明真实租户中的目录召回率、死条目治理、权限可见性或服务端分页正确性。后者需要独立的脱敏 live evidence 才可晋级 active。
+本审证明的是本地 CLI projection、Help 与 Skill 路由一致性；真实租户中的 token-only 续页形状由独立脱敏 live probe 记录。两者都不证明目录召回率、死条目治理、权限可见性或租户级目录完整。
 """
     args.output.parent.mkdir(parents=True, exist_ok=True)
     args.output.write_text(report, encoding="utf-8")

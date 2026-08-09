@@ -43,9 +43,16 @@ func TestSearchFilesResultPaginationContract(t *testing.T) {
 			exhaust: false,
 		},
 		{
-			name:    "cursor without has more fails closed",
+			name:    "token only continuation is resumable",
 			data:    map[string]any{"nextCursor": "c2"},
-			wantErr: true,
+			known:   true,
+			exhaust: false,
+			token:   "c2",
+		},
+		{
+			name:  "empty token without terminal evidence remains unknown",
+			data:  map[string]any{"nextCursor": ""},
+			known: false,
 		},
 		{
 			name:    "continuation without cursor fails closed",
@@ -123,9 +130,16 @@ func TestListFilesResultPaginationAndScopeContract(t *testing.T) {
 			known: false,
 		},
 		{
-			name:    "cursor without has more fails closed",
+			name:    "token only continuation is resumable",
 			data:    map[string]any{"nextCursor": "c2"},
-			wantErr: true,
+			known:   true,
+			exhaust: false,
+			token:   "c2",
+		},
+		{
+			name:  "empty token without terminal evidence remains unknown",
+			data:  map[string]any{"nextCursor": ""},
+			known: false,
 		},
 		{
 			name:    "continuation without cursor fails closed",
@@ -220,8 +234,8 @@ func TestSearchRolloutIsUnifiedActive(t *testing.T) {
 	}
 }
 
-func TestListRolloutIsDualValidate(t *testing.T) {
-	if List.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("list rollout=%q, want dual_validate", List.OutputRollout)
+func TestListRolloutIsUnifiedActive(t *testing.T) {
+	if List.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("list rollout=%q, want unified_active", List.OutputRollout)
 	}
 }

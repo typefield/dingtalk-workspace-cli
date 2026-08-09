@@ -117,9 +117,11 @@ func TestRecentListResultPaginationContract(t *testing.T) {
 			token:   "42",
 		},
 		{
-			name:    "cursor without has more fails closed",
+			name:    "token only continuation is resumable",
 			data:    map[string]any{"recentItems": []any{}, "nextCursor": "next"},
-			wantErr: true,
+			known:   true,
+			exhaust: false,
+			token:   "next",
 		},
 		{
 			name:    "continuation without cursor fails closed",

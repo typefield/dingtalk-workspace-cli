@@ -38,7 +38,7 @@ metadata:
 
 | 用户说 | 命令 |
 |--------|------|
-| "看钉盘文件 / 文件夹列表" | `dws drive list [--folder <dentryUuid>]` |
+| "看钉盘文件 / 文件夹列表" | `dws drive +list [--folder <dentryUuid>] --format json` |
 | "钉盘目录树" | `python scripts/drive_tree_list.py --depth 2 --format json` |
 | "查文件元数据" | `dws drive info --node <dentryUuid>` |
 | "搜文件 / 找文件" | `dws drive +search --query "<关键词>" --format json` |
@@ -58,10 +58,10 @@ metadata:
 
 1. **选源（必须）**：最近访问 → `dws drive +recent --limit <n> --format json`。只在 `meta.pagination.endpoint_exhausted:false` 时，以 `meta.pagination.next_token` 继续传 `--cursor`；缺少 pagination meta 不代表目录完整。仅当确实需要原子命令独有的 `--file-types` 或 `--org-ids` 筛选时，才退回 `dws drive recent`，并在调用前按其 leaf Help 解析旧响应。按内容/名称全局搜 → `dws drive +search --query "<关键词>" --format json`；只在必须保持原子命令兼容行为时才使用 `dws drive search` 并按 leaf Help 解析其旧响应。
 2. **解析（必须）**：`+search` 的文件结果取 `data.files[].dentryId`，空间结果取 `data.files[].spaceId`；`+recent` 取 `data.items[].nodeId`。多候选让用户确认，**禁止**默认取第一个或编造 ID。
-3. **下钻（必须）**：根目录没命中时，进入最相关文件夹继续 `drive list --folder`，必要时 `python scripts/drive_tree_list.py --folder <dentryUuid> --depth 2 --format json` 递归。脚本会逐目录处理分页；只有 `meta.pagination.endpoint_exhausted:true` 才表示请求深度内全部目录已耗尽。`partial_failure`/rc=7 时保留 `data.items` 已读树并检查 `failed[]/unknown[]`，**禁止**把它当完整目录或只看根目录就放弃。
+3. **下钻（必须）**：根目录没命中时，进入最相关文件夹继续 `drive +list --folder <dentryUuid> --format json`，必要时 `python scripts/drive_tree_list.py --folder <dentryUuid> --depth 2 --format json` 递归。`+list` 只声明 `inventory_scope=requested_location`；`meta.pagination.endpoint_exhausted:false` 时把 `next_token` 传给 `--cursor`，缺少 pagination meta 或 `data.pagination_known:false` 时不得声称目录已耗尽。递归脚本只有在请求深度内每个目录都得到明确终态时才算完整；`partial_failure`/rc=7 时保留 `data.items` 已读树并检查 `failed[]/unknown[]`。
 4. **回读元数据（必须）**：命中后 `dws drive info --node <dentryUuid> --format json`，按 `extension` 确认类型。
 
-**禁止**：编造 dentryUuid、只看根目录放弃、用 `drive list` 替代 `drive search` 做全局查找。
+**禁止**：编造 dentryUuid、只看根目录放弃、用 `drive +list` 替代 `drive +search` 做全局查找。
 
 ### SOP-2 上传 / 下载（upload-download）
 
@@ -78,7 +78,7 @@ metadata:
 **触发**：建文件夹/复制/移动/重命名。
 
 1. **执行（必须）**：建钉盘文件夹 `dws drive mkdir --name "<名称>" [--folder <id>]`；复制 `drive copy --node <dentryUuid> --folder <目标>`；移动 `drive move --node <dentryUuid> --folder <目标>`；重命名 `drive rename --node <dentryUuid> --name "<新名>"`。全部加 `--format json`。
-2. **验证（必须）**：操作后 `drive info --node <新dentryUuid>` 或 `drive list --folder <目标>` 回读。
+2. **验证（必须）**：操作后 `drive info --node <新dentryUuid>` 或 `drive +list --folder <目标> --format json` 回读。
 
 **禁止**：未确认就移动/覆盖他人文件、跳过回读。
 
@@ -102,9 +102,9 @@ metadata:
 
 ## 高频硬约束
 
-- 查找文件不要只看根目录后放弃；根目录没命中时，进入最相关的目标文件夹继续 `drive list --folder <dentryUuid>`，必要时用 `python scripts/drive_tree_list.py --folder <dentryUuid> --depth <1..5> --format json` 递归到合理深度。目录树只有 `endpoint_exhausted:true` 才可视为请求深度内读取完整。
-- `drive list` 默认 `--limit 20`，自动化场景里保守使用 `--limit 50` 以内并处理 `nextToken` 翻页；不要因为参数边界报错反复重试。
-- 全局找文件优先 `drive +search --query --format json`；仅当 `meta.pagination.endpoint_exhausted:false` 时继续传 `meta.pagination.next_token` 给 `--cursor`。`data.pagination_known:false` 或缺少 pagination meta 只表示服务端没有给足分页证据，不能把当前页当完整搜索结果。指定目录浏览用 `drive list`，命中后必须 `drive info --node <dentryUuid> --format json` 回读元数据。
+- 查找文件不要只看根目录后放弃；根目录没命中时，进入最相关的目标文件夹继续 `drive +list --folder <dentryUuid> --format json`，必要时用 `python scripts/drive_tree_list.py --folder <dentryUuid> --depth <1..5> --format json` 递归到合理深度。`+list` 返回的 `dentryId` 是后续 `--node/--folder` 使用的稳定 opaque handle；不要混用原子 `drive list` 的展示字段说明。
+- `drive +list` 默认 `--limit 20`，自动化场景保守使用 `--limit 50` 以内；仅当 `meta.pagination.endpoint_exhausted:false` 且存在 `next_token` 时继续传给 `--cursor`。token 缺失而没有显式终态证据时会保留 `data.pagination_known:false`，不得自行宣布目录完整。
+- 全局找文件优先 `drive +search --query --format json`；仅当 `meta.pagination.endpoint_exhausted:false` 时继续传 `meta.pagination.next_token` 给 `--cursor`。`data.pagination_known:false` 或缺少 pagination meta 只表示服务端没有给足分页证据，不能把当前页当完整搜索结果。指定目录浏览用 `drive +list`，命中后必须 `drive info --node <dentryUuid> --format json` 回读元数据。
 - 删除、覆盖、移动等破坏性操作必须确认；上传、创建文件夹、下载后要读回或列目录验证。
 - 所有 `dws drive` 命令加 `--format json`。
 

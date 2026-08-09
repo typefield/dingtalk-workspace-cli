@@ -35,11 +35,11 @@ import (
 
 // List → list_files
 var List = shortcut.Shortcut{
-	// Keep the externally observable legacy payload while the candidate result
-	// is validated on every invocation. A directory page is not evidence of a
-	// complete Drive inventory, so this shortcut must earn unified-active only
-	// after live evidence confirms its pagination and scope semantics.
-	OutputRollout: output.RolloutDualValidate,
+	// Publish the scoped directory result directly. Live reads show that
+	// list_files may use token-only pagination: a non-empty token proves a
+	// continuation, while an absent/empty token does not by itself prove endpoint
+	// exhaustion. The result therefore remains narrower than a Drive inventory.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "drive",
 	Command:       "+list",
 	Product:       "drive",
@@ -927,7 +927,19 @@ func drivePaginationFromScope(scope map[string]any, subject string) (*output.Pag
 		return nil, false, nil
 	}
 	if !hasMore {
-		return nil, false, drivePaginationError(subject, "响应返回 continuation cursor，但没有 hasMore")
+		// list_files in production uses a token-only protocol. A non-empty token
+		// is sufficient evidence that another page is available, but an empty or
+		// absent token is not widened into an endpoint-exhausted claim without an
+		// explicit terminal boolean. This keeps continuation actionable while the
+		// terminal boundary remains conservative.
+		cursor, err := drivePaginationToken(rawCursor, hasCursor, subject)
+		if err != nil {
+			return nil, false, err
+		}
+		if cursor == "" {
+			return nil, false, nil
+		}
+		return &output.Pagination{EndpointExhausted: false, NextToken: cursor}, true, nil
 	}
 	more, ok := rawMore.(bool)
 	if !ok {
