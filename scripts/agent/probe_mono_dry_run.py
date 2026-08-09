@@ -75,6 +75,13 @@ def _cases(root: Path) -> list[tuple[str, list[str]]]:
             "base-probe", "table-probe", str(fixtures / "records.csv"),
             "--format", "json", "--dry-run",
         ]),
+        ("aitable_import_via_task", [
+            "base-probe", str(fixtures / "records.csv"),
+            "--format", "json", "--dry-run",
+        ]),
+        ("aitable_export_via_task", [
+            "base-probe", "--scope", "all", "--format", "json", "--dry-run",
+        ]),
         ("calendar_schedule_meeting", [
             "--title", "probe", "--start", "2026-08-08T10:00",
             "--end", "2026-08-08T11:00", "--format", "json", "--dry-run",

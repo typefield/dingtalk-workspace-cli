@@ -9,8 +9,10 @@
 | `todo_batch_create.py` | PASS | ok |
 | `bulk_add_fields.py` | PASS | ok |
 | `import_records.py` | PASS | ok |
+| `aitable_import_via_task.py` | PASS | ok |
+| `aitable_export_via_task.py` | PASS | ok |
 | `calendar_schedule_meeting.py` | PASS | ok |
 | `upload_attachment.py` | PASS | ok |
 | `mail_send_with_cc.py` | PASS | ok |
 
-结果：8/8 通过
+结果：10/10 通过
