@@ -188,6 +188,7 @@ def query_one_batch(
     inspect: bool = False,
     inspected_flag: list[bool] = None,
 ) -> list[dict]:
+    step_id = f"query-data:{','.join(user_batch)}:{date_slice.label}"
     cmn.log(
         f"[query] users={len(user_batch)} cols={len(column_ids)} "
         f"slice={date_slice.label}"
@@ -200,20 +201,13 @@ def query_one_batch(
             "--start", date_slice.start_str,
             "--end", date_slice.end_str,
         ])
+        records = cmn.extract_records_strict(payload, source="attendance report query-data")
         stats.total_dws_calls += 1
+        stats.record_success(step_id, item_count=len(records))
     except cmn.DwsCallError as e:
         stats.total_dws_calls += 1
-        stats.failed_calls += 1
-        if e.is_permission_error:
-            cmn.error(
-                "权限错误：当前账号无管理员权限，无法导出考勤报表。"
-                "请联系考勤管理员或换号重试。"
-            )
-            raise SystemExit(2) from e
-        stats.add_warning(f"[query failed] {date_slice.label}: {e}")
+        stats.record_failure(step_id, e)
         return []
-
-    records = cmn.extract_records(payload)
     # 展平 report query-data 返回的嵌套 values 结构
     records = cmn.flatten_query_data_records(records, column_id_to_name)
     if inspect and records and inspected_flag is not None and not inspected_flag[0]:
@@ -541,9 +535,21 @@ def main() -> int:
         "end": end.strftime(cmn.DATE_FMT),
     }
     if args.dry_run:
-        return emit(fmt=args.format, outcome="success", data={
-            **result_data, "write": False,
-        }, dry_run=True, text="[dry-run] 已完成远端只读查询和报表预览，不写入 Excel 文件")
+        preview = {**result_data, "write": False}
+        outcome, output_data, output_error = cmn.report_result(stats, preview)
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=True,
+            text=("[dry-run] 已完成远端只读查询和报表预览，不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 报表只读查询不完整；未写入 Excel 文件"),
+        )
+    outcome, output_data, output_error = cmn.report_result(stats, result_data)
+    if outcome == "failure":
+        return emit(
+            fmt=args.format, outcome=outcome,
+            data={**output_data, "report": {**result_data, "write": False}},
+            error=output_error, text="所有报表批次均失败；未写入 Excel 文件",
+        )
     try:
         cmn.write_excel(
             out_name, headers, rows_2d,
@@ -567,7 +573,12 @@ def main() -> int:
         extra_tail="ℹ️ 同一 (用户, 日期) 下数值字段已求和、非数值字段取首个值。",
     )
     if args.format != "text":
-        return emit(fmt=args.format, outcome="success", data=result_data)
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
+    if outcome == "partial_failure":
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data,
+            text="[警告] 部分报表批次失败；已写入仅含成功批次的 Excel。",
+        )
     return 0
 
 

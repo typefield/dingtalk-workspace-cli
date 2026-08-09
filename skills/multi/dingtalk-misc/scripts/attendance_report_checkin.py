@@ -27,37 +27,14 @@ from __future__ import annotations
 
 import argparse
 import json
+import os
 import subprocess
 import sys
 from datetime import datetime, timedelta
 from typing import Any
 
-# ── 前置依赖检查（在任何 dws 调用之前就检测，避免查完数据才报错）───────
-_missing_deps: list[str] = []
-try:
-    import openpyxl as _openpyxl_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("openpyxl")
-try:
-    import requests as _requests_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("requests")
-try:
-    from PIL import Image as _pil_check  # noqa: F401
-except ImportError:
-    _missing_deps.append("Pillow")
-
-if _missing_deps:
-    print(
-        f"[ERROR] 缺少以下依赖：{', '.join(_missing_deps)}\n"
-        f"  请先安装：pip install {' '.join(_missing_deps)}\n"
-        "安装后重新执行本脚本。\n"
-        "（签到报表需要 openpyxl 生成 Excel、requests + Pillow 下载并嵌入签到图片）",
-        file=sys.stderr,
-    )
-    sys.exit(2)
-
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit, run_main
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 自动获取当前认证的 operator 信息
@@ -155,7 +132,38 @@ def parse_args() -> argparse.Namespace:
                         help="输出 xlsx 文件名；不传则按规范自动生成")
     parser.add_argument("--inspect", action="store_true",
                         help="首次跑时打印首条记录原始结构（用于核对真实字段）")
+    add_contract_flags(parser)
     return parser.parse_args()
+
+
+def require_runtime_dependencies() -> None:
+    """检查业务依赖。
+
+    必须在 ``parse_args`` 之后调用：``--help`` 是能力发现入口，即使运行环境
+    没有可选的 Excel/图片依赖，也必须能够成功展示脚本实际支持的 flags。
+    """
+    missing: list[str] = []
+    try:
+        import openpyxl as _openpyxl_check  # noqa: F401
+    except ImportError:
+        missing.append("openpyxl")
+    try:
+        import requests as _requests_check  # noqa: F401
+    except ImportError:
+        missing.append("requests")
+    try:
+        from PIL import Image as _pil_check  # noqa: F401
+    except ImportError:
+        missing.append("Pillow")
+    if missing:
+        print(
+            f"[ERROR] 缺少以下依赖：{', '.join(missing)}\n"
+            f"  请先安装：pip install {' '.join(missing)}\n"
+            "安装后重新执行本脚本。\n"
+            "（签到报表需要 openpyxl 生成 Excel、requests + Pillow 下载并嵌入签到图片）",
+            file=sys.stderr,
+        )
+        raise SystemExit(2)
 
 
 # ─────────────────────────────────────────────────────────────────────────────
@@ -205,6 +213,7 @@ def query_checkin_batch(
     inspected_flag: list[bool] | None = None,
 ) -> list[dict]:
     """查询一批用户在一个时间片内的签到记录。"""
+    step_id = f"checkin:{','.join(user_batch)}:{date_slice.label}"
     cmn.log(
         f"[checkin] users={len(user_batch)} "
         f"slice={date_slice.label}"
@@ -218,29 +227,13 @@ def query_checkin_batch(
             "--start", date_slice.start_str,
             "--end", date_slice.end_str,
         ])
+        records = cmn.extract_records_strict(payload, source="attendance checkin records")
         stats.total_dws_calls += 1
+        stats.record_success(step_id, item_count=len(records))
     except cmn.DwsCallError as exc:
         stats.total_dws_calls += 1
-        stats.failed_calls += 1
-        if exc.is_permission_error:
-            cmn.error(
-                "权限错误：当前账号无管理员权限，无法导出签到报表。\n"
-                "请联系考勤管理员或换号重试。"
-            )
-            raise SystemExit(2) from exc
-        err_msg = str(exc)
-        if "missing required flag" in err_msg.lower():
-            cmn.error(
-                "签到接口调用失败：缺少必需参数。\n"
-                "请确保已执行 dws auth login 完成登录，以便自动获取 operator 参数。\n"
-                f"当前 operator: corp_id={operator_corp_id}, staff_id={operator_staff_id}\n"
-                f"原始错误：{err_msg}"
-            )
-            raise SystemExit(2) from exc
-        stats.add_warning(f"[checkin failed] {date_slice.label}: {exc}")
+        stats.record_failure(step_id, exc)
         return []
-
-    records = cmn.extract_records(payload)
     if inspect and records and inspected_flag is not None and not inspected_flag[0]:
         cmn.dump_first_record_for_inspection(records, "checkin-records")
         inspected_flag[0] = True
@@ -339,6 +332,8 @@ def transform_records_to_rows(
 
 def main() -> int:
     args = parse_args()
+    # `--help` must remain dependency-free; business execution is not.
+    require_runtime_dependencies()
 
     raw_ids = [u.strip() for u in args.users.split(",") if u.strip()]
     if not raw_ids:
@@ -429,24 +424,58 @@ def main() -> int:
         "image_size": (60, 60),
     }
 
+    result_data = {
+        "users": user_ids,
+        "rowCount": len(rows),
+        "columnCount": len(REPORT_HEADERS),
+        "output": os.path.abspath(out_name),
+        "start": start.strftime(cmn.DATE_FMT),
+        "end": end.strftime(cmn.DATE_FMT),
+    }
+    if args.dry_run:
+        preview = {**result_data, "write": False, "imageDownloads": False}
+        outcome, output_data, output_error = cmn.report_result(stats, preview)
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=True,
+            text=("[dry-run] 已完成远端只读查询和签到预览，不下载图片、不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 签到查询不完整；不下载图片、不写入 Excel 文件"),
+        )
+
+    outcome, output_data, output_error = cmn.report_result(stats, result_data)
+    if outcome == "failure":
+        return emit(
+            fmt=args.format, outcome=outcome,
+            data={**output_data, "report": {**result_data, "write": False, "imageDownloads": False}},
+            error=output_error, text="所有签到批次均失败；未写入 Excel 文件",
+        )
+
     try:
         cmn.write_excel_multi_sheets(out_name, [checkin_sheet])
     except (RuntimeError, ValueError) as exc:
         cmn.error(str(exc))
         return 1
 
-    cmn.print_summary(
-        granularity_label="签到报表",
-        out_path=out_name,
-        user_count=len(user_ids),
-        column_names=[h for h in REPORT_HEADERS],
-        start=start,
-        end=end,
-        rows_count=len(rows),
-        stats=stats,
-    )
+    if args.format == "text":
+        cmn.print_summary(
+            granularity_label="签到报表",
+            out_path=out_name,
+            user_count=len(user_ids),
+            column_names=[h for h in REPORT_HEADERS],
+            start=start,
+            end=end,
+            rows_count=len(rows),
+            stats=stats,
+        )
+        if outcome == "partial_failure":
+            return emit(
+                fmt=args.format, outcome=outcome, data=output_data,
+                text="[警告] 部分签到批次失败；已写入仅含成功批次的 Excel。",
+            )
+    else:
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

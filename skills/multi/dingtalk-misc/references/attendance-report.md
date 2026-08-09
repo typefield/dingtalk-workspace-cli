@@ -247,11 +247,12 @@ python scripts/attendance_report_checkin.py \
 - 脚本依赖 `openpyxl`，若未安装需先 `pip install openpyxl`
 - 脚本摘要输出到 stdout，进度日志输出到 stderr
 - 首次调试可加 `--inspect` 参数查看首条记录原始结构
-- 脚本执行失败（exit ≠ 0）时，stderr 中有具体错误信息
+- 使用 `--format json` 时按 `ok/outcome` 读取结果：`failure`/rc 1 表示没有可交付报表，脚本不会写 Excel；`partial_failure`/rc 7 表示只完成了部分查询批次，`data.report` 是基于成功批次生成的文件摘要，必须同时保留 `data.succeeded[]`、`data.failed[]`、`data.unknown[]`，不得把该文件描述成完整报表或重做已成功批次
+- 只有 `success`/rc 0 才能说明所有计划查询批次均已完成；它仍不证明后端组织可见范围或索引覆盖完整
 
 ### 阶段 4: 返回结果给用户
 
-- 将脚本 stdout 输出的摘要信息原样转告用户
+- 将脚本 stdout 输出的摘要信息原样转告用户；若为 `partial_failure`，必须明确说明报表只包含成功批次并列出失败/未知批次
 - 如果脚本输出 warning，原样转告用户
 - 如果走的是默认月度汇总，追加："已按月度汇总输出，如需明细/每日统计请告知"
 - **不要把 Excel 内容贴在对话里**，只给路径和摘要

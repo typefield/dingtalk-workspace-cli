@@ -669,8 +669,14 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   旧和 bare JSON：`ok/outcome` 必须类型与语义一致，success 只向上返回 `data`，
   pending/partial/failure 均保留 typed error 并停止报表投影，字符串布尔值和
   “非零退出+成功信封”按协议矛盾拒绝。`attendance-report-child-contract-20260809.md`
-  以注入式 subprocess 对拍为 22/22 PASS；它只关闭 child 信封兼容问题，各报表逐批
-  失败仍需继续收敛为 partial ledger。
+  以注入式 subprocess 对拍为 22/22 PASS。随后明细、签到、每日和月度四类报表的
+  Mono/Multi 八个入口进一步共用逐批 ledger：只有已知记录容器才算成功，未知字段名、
+  非法行或读取错误不会再降成空批次；混合结果保留成功批次并以
+  `partial_failure`/rc 7 输出 `succeeded[]/failed[]/unknown[]` 和不完整的报表摘要，
+  权限拒绝继续保持 `authorization/permission_denied` 而不是被顶层异常边界降成普通
+  validation；全批失败则在本地 Excel 写入前返回 typed failure。产品 Skill 明确禁止把部分文件描述
+  为完整报表或重做已成功批次。`attendance-report-partial-contract-20260809.md` 受控对拍
+  为 44/44 PASS；它不创建 Excel，也不证明真实考勤权限、图片下载或后端覆盖。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。

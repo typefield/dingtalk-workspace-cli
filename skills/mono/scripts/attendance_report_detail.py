@@ -156,6 +156,7 @@ def query_check_results(
     offset = 0
 
     while True:
+        step_id = f"check-result:{','.join(user_batch)}:{date_slice.label}:offset:{offset}"
         cmn.log(
             f"[check-result] users={len(user_batch)} "
             f"slice={date_slice.label} offset={offset}"
@@ -169,20 +170,13 @@ def query_check_results(
                 "--offset", str(offset),
                 "--limit", str(CHECK_RESULT_PAGE_SIZE),
             ])
+            records = cmn.extract_records_strict(payload, source="attendance check result")
             stats.total_dws_calls += 1
+            stats.record_success(step_id, item_count=len(records))
         except cmn.DwsCallError as exc:
             stats.total_dws_calls += 1
-            stats.failed_calls += 1
-            if exc.is_permission_error:
-                cmn.error(
-                    "权限错误：当前账号无管理员权限，无法查询打卡结果。"
-                    "请联系考勤管理员或换号重试。"
-                )
-                raise SystemExit(2) from exc
-            stats.add_warning(f"[check-result failed] {date_slice.label} offset={offset}: {exc}")
+            stats.record_failure(step_id, exc)
             break
-
-        records = cmn.extract_records(payload)
 
         if inspect and records and inspected_flag is not None and not inspected_flag[0]:
             cmn.dump_first_record_for_inspection(records, "check-result")
@@ -213,6 +207,7 @@ def query_check_records(
     """对一批 users × 一个时间片调用 `dws attendance check record`。"""
     from_date = date_slice.start.strftime(cmn.DATE_FMT)
     to_date = date_slice.end.strftime(cmn.DATE_FMT)
+    step_id = f"check-record:{','.join(user_batch)}:{date_slice.label}"
 
     cmn.log(
         f"[check-record] users={len(user_batch)} slice={date_slice.label}"
@@ -224,20 +219,13 @@ def query_check_records(
             "--start", from_date,
             "--end", to_date,
         ])
+        records = cmn.extract_records_strict(payload, source="attendance check record")
         stats.total_dws_calls += 1
+        stats.record_success(step_id, item_count=len(records))
     except cmn.DwsCallError as exc:
         stats.total_dws_calls += 1
-        stats.failed_calls += 1
-        if exc.is_permission_error:
-            cmn.error(
-                "权限错误：当前账号无管理员权限，无法查询打卡流水。"
-                "请联系考勤管理员或换号重试。"
-            )
-            raise SystemExit(2) from exc
-        stats.add_warning(f"[check-record failed] {date_slice.label}: {exc}")
+        stats.record_failure(step_id, exc)
         return []
-
-    records = cmn.extract_records(payload)
 
     if inspect and records and inspected_flag is not None and not inspected_flag[0]:
         cmn.dump_first_record_for_inspection(records, "check-record")
@@ -791,12 +779,21 @@ def main() -> int:
         "images": not args.no_images,
     }
     if args.dry_run:
+        preview = {**result_data, "write": False, "imageDownloads": False}
+        outcome, output_data, output_error = cmn.report_result(stats, preview)
         return emit(
-            fmt=args.format,
-            outcome="success",
-            data={**result_data, "write": False, "imageDownloads": False},
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
             dry_run=True,
-            text="[dry-run] 已完成远端只读查询和明细预览，不下载图片、不写入 Excel 文件",
+            text=("[dry-run] 已完成远端只读查询和明细预览，不下载图片、不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 明细查询不完整；不下载图片、不写入 Excel 文件"),
+        )
+
+    outcome, output_data, output_error = cmn.report_result(stats, result_data)
+    if outcome == "failure":
+        return emit(
+            fmt=args.format, outcome=outcome,
+            data={**output_data, "report": {**result_data, "write": False, "imageDownloads": False}},
+            error=output_error, text="所有明细批次均失败；未写入 Excel 文件",
         )
 
     try:
@@ -824,8 +821,13 @@ def main() -> int:
             rows_count=len(rows_2d),
             stats=stats,
         )
+        if outcome == "partial_failure":
+            return emit(
+                fmt=args.format, outcome=outcome, data=output_data,
+                text="[警告] 部分明细批次失败；已写入仅含成功批次的 Excel。",
+            )
     else:
-        return emit(fmt=args.format, outcome="success", data=result_data)
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
     return 0
 
 

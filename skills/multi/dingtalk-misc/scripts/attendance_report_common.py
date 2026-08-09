@@ -262,6 +262,47 @@ def extract_records(payload: Any) -> list[dict]:
     return []
 
 
+def extract_records_strict(payload: Any, *, source: str) -> list[dict]:
+    """Extract a known record array without collapsing projection drift to empty.
+
+    ``None`` and an explicit empty list are the only empty-success forms.  A
+    response with an unknown container or a malformed row is a failed read,
+    not evidence that the business dataset is empty.
+    """
+    if payload is None:
+        return []
+    rows: Any = None
+    if isinstance(payload, list):
+        rows = payload
+    elif isinstance(payload, dict):
+        for key in ("data", "records", "list", "items", "result"):
+            if key in payload and isinstance(payload[key], list):
+                rows = payload[key]
+                break
+    if not isinstance(rows, list):
+        raise DwsCallError(
+            f"{source} 响应缺少已知记录数组，拒绝投影为空结果。",
+            error_info={
+                "type": "api",
+                "subtype": "projection_unknown",
+                "message": f"{source} 响应缺少已知记录数组。",
+            },
+        )
+    records: list[dict] = []
+    for index, row in enumerate(rows):
+        if not isinstance(row, dict):
+            raise DwsCallError(
+                f"{source} 第 {index + 1} 条记录不是对象。",
+                error_info={
+                    "type": "api",
+                    "subtype": "projection_unknown",
+                    "message": f"{source} 第 {index + 1} 条记录不是对象。",
+                },
+            )
+        records.append(row)
+    return records
+
+
 def flatten_query_data_records(
     records: list[dict],
     column_id_to_name: dict[str, str] | None = None,
@@ -1395,6 +1436,7 @@ def query_leave_data(
 
     for bi, batch in enumerate(user_batches, start=1):
         for si, dslice in enumerate(date_slices, start=1):
+            step_id = f"query-leave:batch:{bi}:slice:{si}"
             log(
                 f"[leave] [batch {bi}/{len(user_batches)}] "
                 f"[slice {si}/{len(date_slices)}] users={len(batch)} "
@@ -1408,22 +1450,18 @@ def query_leave_data(
                     "--start", dslice.start_str,
                     "--end", dslice.end_str,
                 ])
+                records = extract_records_strict(payload, source="attendance report query-leave")
                 if stats is not None:
                     stats.total_dws_calls += 1
+                    stats.record_success(step_id, item_count=len(records))
             except DwsCallError as e:
                 if stats is not None:
                     stats.total_dws_calls += 1
-                    stats.failed_calls += 1
-                if e.is_permission_error:
-                    error("权限错误：当前账号无管理员权限，无法查询请假数据。")
-                    raise SystemExit(2) from e
                 if stats is not None:
-                    stats.add_warning(f"[leave query failed] {dslice.label}: {e}")
+                    stats.record_failure(step_id, e)
                 else:
                     warn(f"[leave query failed] {dslice.label}: {e}")
                 continue
-
-            records = extract_records(payload)
             for record in records:
                 uid = _first_nonempty(record, ("userId", "userid", "user_id"))
                 if uid is None:
@@ -1482,10 +1520,61 @@ class CallStats:
     total_dws_calls: int = 0
     failed_calls: int = 0
     warnings: list[str] = field(default_factory=list)
+    succeeded: list[dict[str, Any]] = field(default_factory=list)
+    failed: list[dict[str, Any]] = field(default_factory=list)
+    unknown: list[dict[str, Any]] = field(default_factory=list)
 
     def add_warning(self, msg: str) -> None:
         self.warnings.append(msg)
         warn(msg)
+
+    def record_success(self, step_id: str, *, item_count: int) -> None:
+        self.succeeded.append({"id": step_id, "item_count": item_count})
+
+    def record_failure(self, step_id: str, exc: DwsCallError) -> None:
+        self.failed_calls += 1
+        candidate = dict(exc.error_info or {})
+        if exc.is_permission_error:
+            candidate.setdefault("type", "authorization")
+            candidate.setdefault("subtype", "permission_denied")
+            candidate.setdefault("hint", "请使用具备对应考勤数据权限的账号重试。")
+        if "missing required flag" in str(exc).lower():
+            candidate.setdefault("type", "validation")
+            candidate.setdefault("subtype", "missing_required_flags")
+        error_info: dict[str, Any] = {
+            "type": str(candidate.get("type") or "api"),
+            "message": str(candidate.get("message") or str(exc)),
+        }
+        for key in ("subtype", "hint", "retryable", "retry_after_seconds"):
+            if key in candidate:
+                error_info[key] = candidate[key]
+        self.failed.append({"id": step_id, "error": error_info})
+        self.add_warning(f"[{step_id}] {exc}")
+
+
+def report_result(
+    stats: CallStats,
+    report: dict[str, Any],
+) -> tuple[str, dict[str, Any], dict[str, Any] | None]:
+    """Build the terminal report outcome without changing success wire shape."""
+    if not stats.failed and not stats.unknown:
+        return "success", report, None
+    data = {
+        "total": len(stats.succeeded) + len(stats.failed) + len(stats.unknown),
+        "succeeded": list(stats.succeeded),
+        "failed": list(stats.failed),
+        "unknown": list(stats.unknown),
+        "report": report,
+        "coverage": {"scope": "requested_report_batches", "complete": False},
+    }
+    if stats.succeeded:
+        return "partial_failure", data, None
+    error_info = stats.failed[0]["error"] if stats.failed else {
+        "type": "api",
+        "subtype": "report_coverage_unknown",
+        "message": "所有报表批次状态未知。",
+    }
+    return "failure", data, error_info
 
 
 def print_summary(

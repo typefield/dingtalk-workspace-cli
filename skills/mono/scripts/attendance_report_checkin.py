@@ -213,6 +213,7 @@ def query_checkin_batch(
     inspected_flag: list[bool] | None = None,
 ) -> list[dict]:
     """查询一批用户在一个时间片内的签到记录。"""
+    step_id = f"checkin:{','.join(user_batch)}:{date_slice.label}"
     cmn.log(
         f"[checkin] users={len(user_batch)} "
         f"slice={date_slice.label}"
@@ -226,29 +227,13 @@ def query_checkin_batch(
             "--start", date_slice.start_str,
             "--end", date_slice.end_str,
         ])
+        records = cmn.extract_records_strict(payload, source="attendance checkin records")
         stats.total_dws_calls += 1
+        stats.record_success(step_id, item_count=len(records))
     except cmn.DwsCallError as exc:
         stats.total_dws_calls += 1
-        stats.failed_calls += 1
-        if exc.is_permission_error:
-            cmn.error(
-                "权限错误：当前账号无管理员权限，无法导出签到报表。\n"
-                "请联系考勤管理员或换号重试。"
-            )
-            raise SystemExit(2) from exc
-        err_msg = str(exc)
-        if "missing required flag" in err_msg.lower():
-            cmn.error(
-                "签到接口调用失败：缺少必需参数。\n"
-                "请确保已执行 dws auth login 完成登录，以便自动获取 operator 参数。\n"
-                f"当前 operator: corp_id={operator_corp_id}, staff_id={operator_staff_id}\n"
-                f"原始错误：{err_msg}"
-            )
-            raise SystemExit(2) from exc
-        stats.add_warning(f"[checkin failed] {date_slice.label}: {exc}")
+        stats.record_failure(step_id, exc)
         return []
-
-    records = cmn.extract_records(payload)
     if inspect and records and inspected_flag is not None and not inspected_flag[0]:
         cmn.dump_first_record_for_inspection(records, "checkin-records")
         inspected_flag[0] = True
@@ -448,12 +433,21 @@ def main() -> int:
         "end": end.strftime(cmn.DATE_FMT),
     }
     if args.dry_run:
+        preview = {**result_data, "write": False, "imageDownloads": False}
+        outcome, output_data, output_error = cmn.report_result(stats, preview)
         return emit(
-            fmt=args.format,
-            outcome="success",
-            data={**result_data, "write": False, "imageDownloads": False},
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
             dry_run=True,
-            text="[dry-run] 已完成远端只读查询和签到预览，不下载图片、不写入 Excel 文件",
+            text=("[dry-run] 已完成远端只读查询和签到预览，不下载图片、不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 签到查询不完整；不下载图片、不写入 Excel 文件"),
+        )
+
+    outcome, output_data, output_error = cmn.report_result(stats, result_data)
+    if outcome == "failure":
+        return emit(
+            fmt=args.format, outcome=outcome,
+            data={**output_data, "report": {**result_data, "write": False, "imageDownloads": False}},
+            error=output_error, text="所有签到批次均失败；未写入 Excel 文件",
         )
 
     try:
@@ -473,8 +467,13 @@ def main() -> int:
             rows_count=len(rows),
             stats=stats,
         )
+        if outcome == "partial_failure":
+            return emit(
+                fmt=args.format, outcome=outcome, data=output_data,
+                text="[警告] 部分签到批次失败；已写入仅含成功批次的 Excel。",
+            )
     else:
-        return emit(fmt=args.format, outcome="success", data=result_data)
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
     return 0
 
 
