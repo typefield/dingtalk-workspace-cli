@@ -19,7 +19,7 @@ func TestLatestMinutesTaskUUIDHandlesResultItemListAndKnownEmpty(t *testing.T) {
 	uuid, err := latestMinutesTaskUUID(map[string]any{
 		"result": map[string]any{"itemList": []any{
 			map[string]any{"taskUuid": "older", "createTime": float64(10)},
-			map[string]any{"taskUuid": "newer", "createTime": float64(20)},
+			map[string]any{"taskUuid": "newer", "createTime": "20"},
 		}},
 	})
 	if err != nil || uuid != "newer" {
@@ -40,6 +40,13 @@ func TestLatestMinutesTaskUUIDRejectsUnknownOrUntargetableResponse(t *testing.T)
 		"malformed row":     {"result": map[string]any{"itemList": []any{"invalid"}}},
 		"missing task uuid": {"result": map[string]any{"itemList": []any{map[string]any{"title": "display-only"}}}},
 		"generic id only":   {"result": map[string]any{"itemList": []any{map[string]any{"id": "minutes-document-id"}}}},
+		"partial time coverage": {"result": map[string]any{"itemList": []any{
+			map[string]any{"taskUuid": "timed", "createTime": float64(20)},
+			map[string]any{"taskUuid": "untimed"},
+		}}},
+		"invalid time": {"result": map[string]any{"itemList": []any{
+			map[string]any{"taskUuid": "bad-time", "createTime": "later"},
+		}}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := latestMinutesTaskUUID(data)

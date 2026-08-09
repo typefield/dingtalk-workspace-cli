@@ -39,8 +39,10 @@
 `+latest-minutes`、`+action-items` 和 `+transcript` 在从列表选择后续详情目标时，只接受
 `taskUuid`、`taskUUID` 或 `uuid`。可能代表听记文档而非异步任务的通用 `id` 不再被当作
 task UUID；只有该字段的条目返回不可重试的 `projection_unknown`，不会在错误资源上继续读取。
-三条入口继续保持隐藏，未扩大 Agent 公开命令面。Agent 内存测试证据见
-`agent-scans/minutes-latest-target-projection-20260809.md`；真实服务端形状、排序和详情终态仍待隔离账号复验。
+时间证据也已收紧：全部条目有合法时间才按时间取最大值，全部无时间才采用服务端顺序；部分有时间
+或时间值非法时 fail-closed，不再猜测“最新”。三条入口继续保持隐藏，未扩大 Agent 公开命令面；
+当前查询仍只覆盖首批 20 条且无 endpoint 覆盖证明。Agent 内存测试证据见
+`agent-scans/minutes-latest-target-projection-20260809.md`；真实服务端形状、排序、分页和详情终态仍待隔离账号复验。
 
 ## 2026-08-09 Report latest 投影复核
 

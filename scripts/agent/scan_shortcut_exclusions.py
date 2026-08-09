@@ -40,7 +40,7 @@ REVIEWED_HIDDEN_REASONS = {
 	("drive", "+download"): "保留隐藏：旧下载入口与统一 file-transfer 路径重叠，输出格式、文件落盘和大文件副作用边界尚未形成稳定 Agent Contract。",
 	("drive", "+list"): "保留隐藏：旧目录入口存在死条目/分页召回风险，当前不对 Agent 承诺权威全量目录；使用已审阅的确定性查询入口。",
 	("minutes", "+action-items"): "保留隐藏：待办抽取结果依赖听记处理状态，可能是 pending/部分结果；当前缺少稳定分页和逐项结果契约。",
-	("minutes", "+latest-minutes"): "保留隐藏：最近听记是时间排序聚合入口，召回范围和分页边界不稳定；避免 Agent 把空结果当作全量不存在。",
+	("minutes", "+latest-minutes"): "保留隐藏：本地目标选择已对稳定 taskUuid、非法/部分时间证据 fail-closed，但当前只读取首批 20 条且无 endpoint 覆盖证明；避免把首批最新扩大为全量最新。",
 	("minutes", "+record-pause"): "保留隐藏：会暂停正在进行的听记录音，属于有状态写操作；需补恢复/回读和用户确认语义。",
 	("minutes", "+record-resume"): "保留隐藏：会恢复正在进行的听记录音，需验证实际录音状态和重复调用幂等，当前不公开。",
 	("minutes", "+record-stop"): "保留隐藏：会终止听记录音且可能不可恢复；需补确认、终态回读和失败后状态核验。",

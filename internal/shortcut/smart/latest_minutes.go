@@ -14,6 +14,11 @@
 package smart
 
 import (
+	"fmt"
+	"math"
+	"strconv"
+	"strings"
+
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
@@ -93,8 +98,9 @@ func latestMinutesTaskUUID(data map[string]any) (string, error) {
 	}
 
 	best := ""
-	var bestTime float64
+	var bestTime int64
 	haveTime := false
+	timedCount := 0
 	firstUUID := ""
 
 	for _, item := range raw {
@@ -109,13 +115,21 @@ func latestMinutesTaskUUID(data map[string]any) (string, error) {
 		if firstUUID == "" {
 			firstUUID = uuid
 		}
-		if t, ok := latestMinutesCreateTime(m); ok {
+		t, hasTime, timeErr := latestMinutesCreateTime(m)
+		if timeErr != nil {
+			return "", minutesProjectionUnknown(timeErr.Error())
+		}
+		if hasTime {
+			timedCount++
 			if !haveTime || t > bestTime {
 				haveTime = true
 				bestTime = t
 				best = uuid
 			}
 		}
+	}
+	if timedCount > 0 && timedCount != len(raw) {
+		return "", minutesProjectionUnknown("妙记列表只有部分条目带可比较时间，无法可靠选择最新听记")
 	}
 
 	if haveTime && best != "" {
@@ -137,13 +151,34 @@ func latestMinutesUUID(m map[string]any) string {
 	return ""
 }
 
-func latestMinutesCreateTime(m map[string]any) (float64, bool) {
+func latestMinutesCreateTime(m map[string]any) (int64, bool, error) {
 	for _, key := range []string{"createTime", "gmtCreate", "startTime", "createTimeStart"} {
-		if v, ok := m[key].(float64); ok {
-			return v, true
+		value, present := m[key]
+		if !present {
+			continue
 		}
+		switch typed := value.(type) {
+		case int:
+			if typed > 0 {
+				return int64(typed), true, nil
+			}
+		case int64:
+			if typed > 0 {
+				return typed, true, nil
+			}
+		case float64:
+			if typed > 0 && !math.IsInf(typed, 0) && !math.IsNaN(typed) && math.Trunc(typed) == typed && typed < float64(math.MaxInt64) {
+				return int64(typed), true, nil
+			}
+		case string:
+			parsed, err := strconv.ParseInt(strings.TrimSpace(typed), 10, 64)
+			if err == nil && parsed > 0 {
+				return parsed, true, nil
+			}
+		}
+		return 0, false, fmt.Errorf("妙记条目的 %s 不是有效正整数时间戳", key)
 	}
-	return 0, false
+	return 0, false, nil
 }
 
 func init() {
