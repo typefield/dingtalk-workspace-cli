@@ -494,7 +494,7 @@ var BaseSearch = shortcut.Shortcut{
 
 // BaseGet 获取 AI 表格信息（get_base）。
 var BaseGet = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+base-get",
 	Product:       serverMain,

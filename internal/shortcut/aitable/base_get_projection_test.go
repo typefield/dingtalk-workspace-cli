@@ -49,8 +49,8 @@ func TestBaseGetProjectionPublishesOnlyStableDirectoryFields(t *testing.T) {
 	if meta == nil || meta.Count == nil || *meta.Count != 2 || meta.Pagination != nil {
 		t.Fatalf("meta = %#v", meta)
 	}
-	if BaseGet.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("rollout = %q, want dual_validate", BaseGet.OutputRollout)
+	if BaseGet.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("rollout = %q, want unified_active", BaseGet.OutputRollout)
 	}
 }
 

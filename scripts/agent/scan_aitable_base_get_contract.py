@@ -115,13 +115,18 @@ def main() -> int:
         "|---|---|---|",
     ]
     lines.extend(f"| {label} | {'PASS' if ok else 'REVIEW'} | `{summary}` |" for label, ok, summary in checks)
+    rollout_conclusion = (
+        "dual 阶段只影子构建统一结果，外部仍是旧业务 JSON；Agent 不传协议选择参数。"
+        if args.expected == "dual"
+        else "active 阶段由普通 `--format json` 直接返回统一结果；没有协议选择参数或版本字段。"
+    )
     lines += [
         "",
         "## 结论",
         "",
         "- Base 目录只发布已取证的稳定资源 ID/名称；请求 ID 不一致、重复 ID、字段漂移与未取证的非空 documents 均失败关闭。",
         "- `inventoryCoverageKnown:false` 明确表示这份响应不能扩大为用户所有 Base 或所有业务资源的权威清单。",
-        "- dual 阶段只影子构建统一结果，外部仍是旧业务 JSON；Agent 不传协议选择参数。",
+        f"- {rollout_conclusion}",
     ]
     if findings:
         lines += ["", "## Findings", ""] + [f"- {finding}" for finding in findings]
