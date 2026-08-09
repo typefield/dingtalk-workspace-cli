@@ -24,13 +24,13 @@ CALLERS = {
     "chat +thread-replies": (ROOT / "internal/shortcut/smart/thread_replies.go", 1),
     "chat +my-groups candidate": (ROOT / "internal/shortcut/smart/my_groups.go", 1),
     "chat +at-me": (ROOT / "internal/shortcut/smart/at_me.go", 1),
-    "chat +search-msg": (ROOT / "internal/shortcut/smart/search_msg.go", 1),
+    "chat +search-msg read/enrichment": (ROOT / "internal/shortcut/smart/search_msg.go", 2),
     "todo aggregate reads": (ROOT / "internal/shortcut/smart/todo_shared.go", 1),
     "chat +chat-search / +chat-list-all": (ROOT / "internal/shortcut/chat/chat_group.go", 2),
     "chat +conversation-list": (ROOT / "internal/shortcut/chat/chat_conversation.go", 1),
     "chat +flag-list": (ROOT / "internal/shortcut/chat/lark_alignment.go", 1),
 }
-TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes|TestCompositeReadFailuresPreserveTypedRecoveryFacts|TestChatCompositeReadFailuresPreserveTypedRecoveryFacts"
+TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes|TestSearchMsgUnifiedPaginationOutcomes|TestCompositeReadFailuresPreserveTypedRecoveryFacts|TestChatCompositeReadFailuresPreserveTypedRecoveryFacts"
 
 
 def main() -> int:
@@ -101,7 +101,8 @@ def main() -> int:
 1. 复合读取可以添加命令自己的失败页、artifact 或恢复上下文，但不得把下游 `auth`、`validation`、`projection` 等 typed error 改写为笼统的 `api + retryable:true`。
 2. 明确的 `retryable:false` 必须保留；仅没有分类的幂等读取错误才能采用读路径的默认重试建议。
 3. 聚合层与下游错误的 details 若同名，两个事实必须同时保留，不能静默覆盖。
-4. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。
+4. 富化等批量后处理必须按失败批次保留独立 typed error，不能把多个不同原因压成一个自由字符串。
+5. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。
 
 ## Focused test transcript
 

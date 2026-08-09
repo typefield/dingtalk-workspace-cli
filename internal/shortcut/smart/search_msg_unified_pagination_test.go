@@ -11,6 +11,7 @@ import (
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
@@ -119,6 +120,55 @@ func TestSearchMsgUnifiedPaginationOutcomes(t *testing.T) {
 		data := envelope["data"].(map[string]any)
 		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
 			t.Fatalf("later failure details=%#v", data)
+		}
+	})
+
+	t.Run("typed enrichment failure remains a typed partial item", func(t *testing.T) {
+		denied := apperrors.NewAuth("需要重新登录",
+			apperrors.WithSubtype(apperrors.SubtypeUpstreamAuthenticationRequired),
+			apperrors.WithHint("重新登录后只重试消息详情富化。"),
+			apperrors.WithActions("dws login"),
+			apperrors.WithRetryable(false),
+		)
+		envelope, exitCode := runSearchMsgUnifiedResult(t, &searchMsgExecutionCaller{
+			firstResponse: `{"result":{"messages":[{"openMessageId":"m1","content":"hit"}],"hasMore":false,"nextCursor":0}}`,
+			enrichmentErr: denied,
+		}, "--format", "json", "--query", "x")
+		if exitCode != 7 || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("typed enrichment envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data := envelope["data"].(map[string]any)
+		failed := data["failed"].([]any)
+		if len(failed) != 1 {
+			t.Fatalf("typed enrichment failures=%#v", failed)
+		}
+		info := failed[0].(map[string]any)["error"].(map[string]any)
+		if info["type"] != "auth" || info["subtype"] != string(apperrors.SubtypeUpstreamAuthenticationRequired) {
+			t.Fatalf("typed enrichment error=%#v", info)
+		}
+		if _, present := info["retryable"]; present {
+			t.Fatalf("retryable=false must not become retryable=true: %#v", info)
+		}
+		if info["hint"] != "重新登录后只重试消息详情富化。" {
+			t.Fatalf("typed enrichment recovery=%#v", info)
+		}
+	})
+
+	t.Run("missing enrichment rows are projection partial items", func(t *testing.T) {
+		envelope, exitCode := runSearchMsgUnifiedResult(t, &searchMsgExecutionCaller{
+			firstResponse: `{"result":{"messages":[{"openMessageId":"m1"},{"openMessageId":"m2"}],"hasMore":false,"nextCursor":0}}`,
+			omitMgetItem:  true,
+		}, "--format", "json", "--query", "x")
+		if exitCode != 7 || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("missing enrichment envelope=%#v exit=%d", envelope, exitCode)
+		}
+		failed := envelope["data"].(map[string]any)["failed"].([]any)
+		if len(failed) != 1 {
+			t.Fatalf("missing enrichment failures=%#v", failed)
+		}
+		info := failed[0].(map[string]any)["error"].(map[string]any)
+		if info["subtype"] != string(apperrors.SubtypeProjectionUnknown) || info["stage"] != "message_enrichment_projection" {
+			t.Fatalf("missing enrichment projection=%#v", info)
 		}
 	})
 

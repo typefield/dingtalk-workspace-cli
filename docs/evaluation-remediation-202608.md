@@ -70,7 +70,8 @@ operation 与 stage 上下文的同时，以已分类下游错误为恢复事实
 
 该规则已覆盖 `minutes +detail`，Chat 的 `+chat-messages`、`+thread-replies`、`+at-me`、`+search-msg`、
 `+chat-search`、`+conversation-list`、`+flag-list`，以及 `+my-groups`、`+chat-list-all` 和 Todo 聚合读取候选，
-共 **11** 个错误投影点。
+均已接入该规则。消息搜索的详情富化还会按失败批次生成独立 typed failed item，不再把多个原因压成一个字符串；合计覆盖
+**12** 个错误投影点。
 Agent 矩阵测试和源码关系证据见
 `agent-scans/composite-typed-error-propagation-20260809.md`。这证明本地错误投影，不证明真实账号权限、
 服务端可用性或页面终态。

@@ -24,6 +24,7 @@ type searchMsgExecutionCaller struct {
 	calls          []platformCoverageCall
 	failSecondPage bool
 	failEnrichment bool
+	enrichmentErr  error
 	omitPagination bool
 	omitMgetItem   bool
 	firstResponse  string
@@ -51,6 +52,9 @@ func (f *searchMsgExecutionCaller) CallTool(_ context.Context, product, tool str
 		}
 		return searchMsgToolResult(`{"result":{"messages":[{"openMessageId":"m1","content":"sparse-1"}],"hasMore":true,"nextCursor":"c2"}}`), nil
 	case "list_messages_by_ids":
+		if f.enrichmentErr != nil {
+			return nil, f.enrichmentErr
+		}
 		if f.failEnrichment {
 			return nil, errors.New("mget unavailable")
 		}

@@ -295,13 +295,19 @@ var SearchMsg = shortcut.Shortcut{
 		enrichedCount := 0
 		if !rt.Bool("no-enrich") && len(messages) > 0 {
 			var enrichFailures []map[string]any
-			messages, enrichedCount, enrichFailures = enrichSearchMessages(rt, messages)
+			var enrichFailureInfos []*output.ErrorInfo
+			messages, enrichedCount, enrichFailures, enrichFailureInfos = enrichSearchMessages(rt, messages)
 			failures = append(failures, enrichFailures...)
 			if len(enrichFailures) > 0 {
 				resultPartial = true
 				if shadowsUnified {
-					if recordErr := pageLedger.RecordPostPageFailure(searchMsgEnrichmentFailureInfo(enrichFailures)); recordErr != nil {
-						return apperrors.NewInternal("记录消息搜索富化失败状态失败", apperrors.WithCause(recordErr))
+					if len(enrichFailureInfos) != len(enrichFailures) {
+						return apperrors.NewInternal("消息搜索富化失败明细与类型化结果数量不一致")
+					}
+					for _, failureInfo := range enrichFailureInfos {
+						if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
+							return apperrors.NewInternal("记录消息搜索富化失败状态失败", apperrors.WithCause(recordErr))
+						}
 					}
 				}
 			}
@@ -459,18 +465,41 @@ func searchMsgProjectionFailureInfo(err error) *output.ErrorInfo {
 	}
 }
 
-func searchMsgEnrichmentFailureInfo(failures []map[string]any) *output.ErrorInfo {
+func searchMsgEnrichmentReadFailureInfo(messageIDs []string, err error) *output.ErrorInfo {
+	message := "消息搜索富化读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
-		Message:          fmt.Sprintf("消息搜索富化未完成：%d 个批次失败", len(failures)),
-		Hint:             "保留搜索命中；查看失败项后只重新读取缺失消息详情。",
+		Message:          message,
+		Hint:             "保留搜索命中；只重新读取该失败批次的消息详情。",
 		Operation:        "im/list_messages_by_ids",
 		Origin:           "mcp_gateway",
 		Stage:            "message_enrichment",
 		ExecutionStarted: &started,
+		Retryable:        true, // idempotent read
 		Details: map[string]any{
-			"failures": failures,
+			"message_ids": append([]string(nil), messageIDs...),
+		},
+	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
+}
+
+func searchMsgEnrichmentProjectionFailureInfo(messageIDs []string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          "消息详情批量读取未返回全部请求消息",
+		Hint:             "保留已富化消息；只核查并重新读取缺失的消息 ID。",
+		Operation:        "im/list_messages_by_ids",
+		Origin:           "mcp_gateway",
+		Stage:            "message_enrichment_projection",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"missing_message_ids": append([]string(nil), messageIDs...),
 		},
 	}
 }
@@ -769,9 +798,10 @@ func uniqueSearchStrings(values []string) []string {
 	return out
 }
 
-func enrichSearchMessages(rt *shortcut.RuntimeContext, messages []map[string]any) ([]map[string]any, int, []map[string]any) {
+func enrichSearchMessages(rt *shortcut.RuntimeContext, messages []map[string]any) ([]map[string]any, int, []map[string]any, []*output.ErrorInfo) {
 	detailsByID := map[string]map[string]any{}
 	failures := make([]map[string]any, 0)
+	failureInfos := make([]*output.ErrorInfo, 0)
 	ids := make([]string, 0, len(messages))
 	for _, message := range messages {
 		if id := strings.TrimSpace(fmt.Sprint(searchMsgMessageID(message))); id != "" && id != "<nil>" {
@@ -792,6 +822,7 @@ func enrichSearchMessages(rt *shortcut.RuntimeContext, messages []map[string]any
 				"messageIds": chunk,
 				"error":      err.Error(),
 			})
+			failureInfos = append(failureInfos, searchMsgEnrichmentReadFailureInfo(chunk, err))
 			continue
 		}
 		foundInChunk := map[string]bool{}
@@ -813,6 +844,7 @@ func enrichSearchMessages(rt *shortcut.RuntimeContext, messages []map[string]any
 				"missingMessageIds": missing,
 				"error":             "mget 未返回全部请求消息",
 			})
+			failureInfos = append(failureInfos, searchMsgEnrichmentProjectionFailureInfo(missing))
 		}
 	}
 
@@ -835,7 +867,7 @@ func enrichSearchMessages(rt *shortcut.RuntimeContext, messages []map[string]any
 		out = append(out, merged)
 		enriched++
 	}
-	return out, enriched, failures
+	return out, enriched, failures, failureInfos
 }
 
 // searchMsgItems locates the message list inside a search_messages_by_keyword
