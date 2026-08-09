@@ -499,10 +499,14 @@ scopeType 支持:
 			if err := validateRequiredFlags(cmd, "user-id", "rule-id", "period-ids"); err != nil {
 				return err
 			}
+			periodIDs, err := parseRequiredAgoalPeriodIDs(mustGetFlag(cmd, "period-ids"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
 				"dingUserId":      mustGetFlag(cmd, "user-id"),
 				"objectiveRuleId": mustGetFlag(cmd, "rule-id"),
-				"periodIds":       parseCSVValues(mustGetFlag(cmd, "period-ids")),
+				"periodIds":       periodIDs,
 			}
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
@@ -598,9 +602,13 @@ scopeType 支持:
 			if err := validateRequiredFlags(cmd, "template-id", "submit-state"); err != nil {
 				return err
 			}
+			submitState, err := normalizeAgoalSubmitState(mustGetFlag(cmd, "submit-state"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
 				"templateId":  mustGetFlag(cmd, "template-id"),
-				"submitState": mustGetFlag(cmd, "submit-state"),
+				"submitState": submitState,
 			}
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
@@ -608,14 +616,22 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("query-date"); v != "" {
 				queryDateMs, err := parseISO8601ToMillis(v)
 				if err != nil {
-					return fmt.Errorf("--query-date: %w", err)
+					return apperrors.NewValidation(
+						fmt.Sprintf("--query-date: %v", err),
+						apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
+						apperrors.WithHint("Use an ISO-8601 timestamp such as 2026-06-18T00:00:00+08:00."),
+					)
 				}
 				toolArgs["queryDate"] = time.UnixMilli(queryDateMs).In(shanghaiLocation()).Format("2006-01-02")
 			}
-			if v, _ := cmd.Flags().GetInt("page"); v != 0 {
+			if v, changed, err := positiveAgoalIntFlag(cmd, "page"); err != nil {
+				return err
+			} else if changed {
 				toolArgs["page"] = v
 			}
-			if v, _ := cmd.Flags().GetInt("page-size"); v != 0 {
+			if v, changed, err := positiveAgoalIntFlag(cmd, "page-size"); err != nil {
+				return err
+			} else if changed {
 				toolArgs["pageSize"] = v
 			}
 			if v, _ := cmd.Flags().GetString("keyword"); v != "" {

@@ -65,3 +65,106 @@ func TestAgoalListScopeTypeFailsBeforeRemoteCall(t *testing.T) {
 		}
 	}
 }
+
+func TestAgoalUserObjectivesValidatesPeriodIDsBeforeRemoteCall(t *testing.T) {
+	caller := &scriptedToolCaller{format: "json"}
+	installScriptedCaller(t, caller)
+	err := executeFilterCoverage(t, newAgoalCommand(),
+		"user", "objectives",
+		"--user-id", "user-1",
+		"--rule-id", "rule-1",
+		"--period-ids", ", ,",
+	)
+	assertAgoalInvalidFlagError(t, err)
+	if caller.calls != 0 {
+		t.Fatalf("issued %d remote calls for an empty period ID list", caller.calls)
+	}
+}
+
+func TestAgoalUserObjectivesProjectsTrimmedPeriodIDsExactlyOnce(t *testing.T) {
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: `{"success":true,"content":[]}`}}}
+	installScriptedCaller(t, caller)
+	if err := executeFilterCoverage(t, newAgoalCommand(),
+		"user", "objectives",
+		"--user-id", "user-1",
+		"--rule-id", "rule-1",
+		"--period-ids", " period-1, period-2 ",
+		"--request-id", "request-1",
+	); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	want := map[string]any{
+		"dingUserId":      "user-1",
+		"objectiveRuleId": "rule-1",
+		"periodIds":       []string{"period-1", "period-2"},
+		"requestId":       "request-1",
+	}
+	if caller.calls != 1 || caller.tool != "list_user_objectives" || !reflect.DeepEqual(caller.args, want) {
+		t.Fatalf("calls/tool/args = %d/%q/%#v, want 1/list_user_objectives/%#v", caller.calls, caller.tool, caller.args, want)
+	}
+}
+
+func TestAgoalSubmitDetailValidatesEnumsDatesAndPagesBeforeRemoteCall(t *testing.T) {
+	tests := [][]string{
+		{"--submit-state", "submitted"},
+		{"--submit-state", "ON_TIME", "--query-date", "not-a-date"},
+		{"--submit-state", "ON_TIME", "--page", "0"},
+		{"--submit-state", "ON_TIME", "--page", "-1"},
+		{"--submit-state", "ON_TIME", "--page-size", "0"},
+		{"--submit-state", "ON_TIME", "--page-size", "-1"},
+	}
+	for _, extra := range tests {
+		caller := &scriptedToolCaller{format: "json"}
+		installScriptedCaller(t, caller)
+		args := []string{"report", "submit-detail", "--template-id", "template-1"}
+		args = append(args, extra...)
+		err := executeFilterCoverage(t, newAgoalCommand(), args...)
+		assertAgoalInvalidFlagError(t, err)
+		if caller.calls != 0 {
+			t.Fatalf("args %v issued %d remote calls", extra, caller.calls)
+		}
+	}
+}
+
+func TestAgoalSubmitDetailNormalizesStateAndMapsPagingExactlyOnce(t *testing.T) {
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: `{"success":true,"content":{"page":1,"pageSize":20,"result":[],"totalCount":0}}`}}}
+	installScriptedCaller(t, caller)
+	if err := executeFilterCoverage(t, newAgoalCommand(),
+		"report", "submit-detail",
+		"--template-id", "template-1",
+		"--submit-state", " late ",
+		"--query-date", "2026-06-18T00:00:00+08:00",
+		"--page", "1",
+		"--page-size", "20",
+		"--keyword", "reviewer",
+		"--request-id", "request-1",
+	); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	want := map[string]any{
+		"templateId":  "template-1",
+		"submitState": "LATE",
+		"queryDate":   "2026-06-18",
+		"page":        1,
+		"pageSize":    20,
+		"keyword":     "reviewer",
+		"requestId":   "request-1",
+	}
+	if caller.calls != 1 || caller.tool != "get_submit_detail" || !reflect.DeepEqual(caller.args, want) {
+		t.Fatalf("calls/tool/args = %d/%q/%#v, want 1/get_submit_detail/%#v", caller.calls, caller.tool, caller.args, want)
+	}
+}
+
+func assertAgoalInvalidFlagError(t *testing.T, err error) {
+	t.Helper()
+	if err == nil {
+		t.Fatal("invalid input unexpectedly succeeded")
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) {
+		t.Fatalf("error = %T, want typed validation", err)
+	}
+	if typed.Category != apperrors.CategoryValidation || typed.StableSubtype != string(apperrors.SubtypeInvalidFlagValue) || typed.ExitCode() != 3 {
+		t.Fatalf("typed error = %#v", typed)
+	}
+}
