@@ -255,6 +255,25 @@ child-result 边界，并统一使用公开 canonical `--depts`：
 逐部门 partial、投影漂移、已知空、meta、dry-run 和参数校验，为 **22/22 PASS**。临时
 探针不证明真实通讯录权限、索引覆盖或跨层级完整性。
 
+## OA 待审聚合脚本本轮验收证据
+
+Mono/Multi 的 `oa_pending_review.py` 已从“列表失败/详情失败都继续输出”迁入共享
+child-result 边界：
+
+1. 待审列表 child failure 原样返回 typed error；未知容器、非法行、缺稳定
+   `processInstanceId` 返回 `projection_unknown`，不会伪装为暂无待审或跳项。
+2. 每个实例独立读取详情；单详情失败/投影漂移保留成功实例并返回
+   `partial_failure` / rc 7，全详情失败返回 failure。
+3. JSON 与 text 使用相同业务执行，JSON 现在实际包含成功读取的
+   `formComponentValues[]`；不再只在 stderr 打印详情后丢失。
+4. list/detail child meta 按步骤 ID 透传；dry-run 为零 child 进程；非法 days 调用前
+   validation；输出明确列表覆盖未验证为完整。
+5. Mono/Multi 正向 OA 脚本示例统一显式 `--format json`。
+
+`docs/agent-scans/oa-pending-contract-20260809.md` 对两入口验证列表、稳定实例 ID、逐详情
+partial、投影漂移、已知空、meta、dry-run 与参数校验，为 **20/20 PASS**。临时探针不
+证明真实审批权限、可见范围或服务端终态。
+
 ## attendance 本轮验收证据
 
 ```text
