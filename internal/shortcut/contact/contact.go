@@ -249,12 +249,13 @@ var SearchMobile = shortcut.Shortcut{
 // GetUser 批量获取用户详情（组织管理信息：部门、主管、管理员权限）。
 // ListRoles 获取企业所有角色（标签）列表。
 var ListRoles = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+list-roles",
-	Product:     "contact",
-	Description: "获取企业所有角色（标签）列表",
-	Intent:      "当你想总览企业里都有哪些角色/员工标签（如「管理员」「财务」「销售」）及其角色 ID 时使用；无需输入，返回全量角色列表，常用于按角色圈定人群前先摸清有哪些角色可选。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+list-roles",
+	Product:       "contact",
+	Description:   "获取企业所有角色（标签）列表",
+	Intent:        "当你想总览企业里都有哪些角色/员工标签（如「管理员」「财务」「销售」）及其角色 ID 时使用；无需输入，返回全量角色列表，常用于按角色圈定人群前先摸清有哪些角色可选。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -294,7 +295,7 @@ var ListRoles = shortcut.Shortcut{
 				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
-		return rt.Output(map[string]any{"count": len(roles), "roles": roles})
+		return contactListOutput(rt, "roles", roles)
 	},
 }
 
@@ -318,8 +319,11 @@ func listRolesProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 			continue
 		}
 		row := map[string]any{}
-		if v, ok := listRolesFirst(m, "labelId", "label_id", "id"); ok {
+		if v, ok := contactStableIdentifier(m, "labelId", "label_id", "id"); ok {
 			row["labelId"] = v
+		} else {
+			complete = false
+			continue
 		}
 		if v, ok := listRolesFirst(m, "labelName", "label_name", "name"); ok {
 			row["labelName"] = v
@@ -410,12 +414,13 @@ func listRolesFirst(m map[string]any, keys ...string) (any, bool) {
 // SearchRole 根据角色名称精确匹配查询角色（角色ID、名称）。
 // ListRoleMembers 根据角色 ID 查询该角色下的成员列表。
 var ListRoleMembers = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+list-role-members",
-	Product:     "contact",
-	Description: "查询角色下的成员列表",
-	Intent:      "当你已知某个角色 ID、想列出该角色（标签）下的全部成员以便群发通知或统计人群时使用；输入角色 ID（--id），返回该角色下的用户列表，通常先用 +search-role 拿到角色 ID 再调用。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+list-role-members",
+	Product:       "contact",
+	Description:   "查询角色下的成员列表",
+	Intent:        "当你已知某个角色 ID、想列出该角色（标签）下的全部成员以便群发通知或统计人群时使用；输入角色 ID（--id），返回该角色下的用户列表，通常先用 +search-role 拿到角色 ID 再调用。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -460,7 +465,7 @@ var ListRoleMembers = shortcut.Shortcut{
 				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
-		return rt.Output(map[string]any{"count": len(members), "members": members})
+		return contactListOutput(rt, "members", members)
 	},
 }
 
@@ -505,8 +510,11 @@ func memberListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 			m = ui
 		}
 		row := map[string]any{}
-		if v := memberListFirst(m, "userId", "user_id", "userid", "id"); v != nil {
-			row["userId"] = v
+		if userID, ok := contactStableUserID(m); ok {
+			row["userId"] = userID
+		} else {
+			complete = false
+			continue
 		}
 		if v := memberListFirst(m, "name", "userName", "user_name", "flowerName"); v != nil {
 			row["name"] = v
@@ -688,6 +696,12 @@ func contactHasStablePersonID(m map[string]any) bool {
 // well as string forms. A numeric dept ID is a valid downstream --dept value;
 // unlike a display name it must not be discarded simply for not being a string.
 func contactStableDeptID(m map[string]any, keys ...string) (any, bool) {
+	return contactStableIdentifier(m, keys...)
+}
+
+// contactStableIdentifier accepts the stable integer or string IDs used by
+// departments and labels. A display name is deliberately not accepted.
+func contactStableIdentifier(m map[string]any, keys ...string) (any, bool) {
 	for _, key := range keys {
 		value, ok := m[key]
 		if !ok || value == nil {
@@ -703,6 +717,20 @@ func contactStableDeptID(m map[string]any, keys ...string) (any, bool) {
 		}
 	}
 	return nil, false
+}
+
+func contactStableUserID(m map[string]any) (string, bool) {
+	for _, key := range []string{"userId", "user_id", "userid", "id"} {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 func contactListOutput(rt *shortcut.RuntimeContext, key string, rows []map[string]any) error {
@@ -723,12 +751,13 @@ func contactProjectionUnknown(message string) error {
 // GetDept 获取部门详情（部门 ID、名称、人数）。
 // ListDeptMembers 查看部门成员（仅本部门，不含下级）。
 var ListDeptMembers = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+list-dept-members",
-	Product:     "contact",
-	Description: "查看部门成员（仅本部门，不含下级）",
-	Intent:      "当你想列出一个或多个部门本级的员工（不含下级子部门）以便群发通知、统计或指派任务时使用；输入部门 ID 列表（--depts，逗号分隔），返回这些部门下的成员，如需含下级需自行遍历子部门。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+list-dept-members",
+	Product:       "contact",
+	Description:   "查看部门成员（仅本部门，不含下级）",
+	Intent:        "当你想列出一个或多个部门本级的员工（不含下级子部门）以便群发通知、统计或指派任务时使用；输入部门 ID 列表（--depts，逗号分隔），返回这些部门下的成员，如需含下级需自行遍历子部门。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -773,7 +802,7 @@ var ListDeptMembers = shortcut.Shortcut{
 				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
 				apperrors.WithHint("请使用 --verbose 或 DWS_DUMP_RAW=1 记录脱敏前的上下层数量并提交响应形状"))
 		}
-		return rt.Output(map[string]any{"count": len(members), "members": members})
+		return contactListOutput(rt, "members", members)
 	},
 }
 

@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:17:59+08:00
+扫描时间：2026-08-09T12:21:54+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1355 |
+| `legacy_only` | 1352 |
 | `dual_validate` | 24 |
-| `unified_active` | 104 |
+| `unified_active` | 107 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,10 +22,9 @@
 
 ### 状态迁移
 
-- REVIEW: `dws contact +list-followings`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws contact +list-sub-depts`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws contact +search-mobile`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws contact +search-user`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +list-dept-members`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +list-role-members`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +list-roles`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -723,10 +722,10 @@
 | `dws contact +by-mobile` | `legacy_only` | `legacy` | no |
 | `dws contact +dept-members` | `legacy_only` | `legacy` | no |
 | `dws contact +get-roster` | `legacy_only` | `legacy` | yes |
-| `dws contact +list-dept-members` | `legacy_only` | `legacy` | no |
+| `dws contact +list-dept-members` | `unified_active` | `unified` | no |
 | `dws contact +list-followings` | `unified_active` | `unified` | no |
-| `dws contact +list-role-members` | `legacy_only` | `legacy` | no |
-| `dws contact +list-roles` | `legacy_only` | `legacy` | no |
+| `dws contact +list-role-members` | `unified_active` | `unified` | no |
+| `dws contact +list-roles` | `unified_active` | `unified` | no |
 | `dws contact +list-roster-fields` | `legacy_only` | `legacy` | yes |
 | `dws contact +list-sub-depts` | `unified_active` | `unified` | no |
 | `dws contact +lookup` | `legacy_only` | `legacy` | no |

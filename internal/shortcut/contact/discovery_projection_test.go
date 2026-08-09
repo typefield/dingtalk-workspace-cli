@@ -96,14 +96,30 @@ func TestContactDiscoveryProjectionsSeparateKnownEmptyFromUnknown(t *testing.T) 
 
 func TestContactDiscoveryUsesUnifiedOutput(t *testing.T) {
 	for name, declaration := range map[string]shortcut.Shortcut{
-		"list-followings": ListFollowings,
-		"search-user":     SearchUser,
-		"search-mobile":   SearchMobile,
-		"list-sub-depts":  ListSubDepts,
+		"list-followings":   ListFollowings,
+		"search-user":       SearchUser,
+		"search-mobile":     SearchMobile,
+		"list-sub-depts":    ListSubDepts,
+		"list-roles":        ListRoles,
+		"list-role-members": ListRoleMembers,
+		"list-dept-members": ListDeptMembers,
 	} {
 		if declaration.OutputRollout != output.RolloutUnifiedActive {
 			t.Fatalf("%s rollout = %q, want unified active", name, declaration.OutputRollout)
 		}
+	}
+}
+
+func TestContactReportProjectionRejectsDisplayOnlyRows(t *testing.T) {
+	if roles, known := listRolesProjectWithStatus(map[string]any{
+		"result": []any{map[string]any{"name": "Only label name"}},
+	}); known || len(roles) != 0 {
+		t.Fatalf("display-only roles = %#v, known=%v; want fail closed", roles, known)
+	}
+	if members, known := memberListProjectWithStatus(map[string]any{
+		"members": []any{map[string]any{"name": "Only user name"}},
+	}); known || len(members) != 0 {
+		t.Fatalf("display-only members = %#v, known=%v; want fail closed", members, known)
 	}
 }
 
@@ -146,6 +162,29 @@ func TestContactDiscoveryUnifiedOutputHasOneMachineEnvelope(t *testing.T) {
 			text:    `{"result":{"depts":[{"deptId":2,"deptName":"Engineering"}]}}`,
 			itemKey: "depts",
 			args:    []string{"--dept", "1"},
+		},
+		{
+			name:    "roles",
+			decl:    ListRoles,
+			tool:    "get_org_labels",
+			text:    `{"result":[{"groupName":"default","labels":[{"labelId":1,"name":"Admin"}]}]}`,
+			itemKey: "roles",
+		},
+		{
+			name:    "role members",
+			decl:    ListRoleMembers,
+			tool:    "get_label_members_by_labelId",
+			text:    `{"labelUserList":[{"userInfo":{"userId":"user-1","name":"Alice"}}]}`,
+			itemKey: "members",
+			args:    []string{"--id", "1"},
+		},
+		{
+			name:    "department members",
+			decl:    ListDeptMembers,
+			tool:    "get_dept_members_by_deptId",
+			text:    `{"deptUserList":[{"userInfo":{"userId":"user-1","name":"Alice"}}]}`,
+			itemKey: "members",
+			args:    []string{"--depts", "1"},
 		},
 	}
 	for _, tc := range tests {
