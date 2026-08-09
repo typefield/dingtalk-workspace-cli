@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T16:01:15+08:00
+扫描时间：2026-08-09T16:08:55+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,8 +8,8 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1348 |
-| `dual_validate` | 22 |
+| `legacy_only` | 1347 |
+| `dual_validate` | 23 |
 | `unified_active` | 113 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
@@ -18,12 +18,11 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-aitable-base-dual.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-before-drive-list-dual.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws aitable +base-list`: `legacy_only` → `dual_validate`
-- PASS: `dws aitable +base-search`: `legacy_only` → `dual_validate`
+- PASS: `dws drive +list`: `legacy_only` → `dual_validate`
 
 ### 新增可执行命令节点
 
@@ -1001,7 +1000,7 @@
 | `dws drive +download` | `legacy_only` | `legacy` | yes |
 | `dws drive +find-file` | `unified_active` | `unified` | no |
 | `dws drive +info` | `legacy_only` | `legacy` | no |
-| `dws drive +list` | `legacy_only` | `legacy` | yes |
+| `dws drive +list` | `dual_validate` | `legacy` | yes |
 | `dws drive +move` | `legacy_only` | `legacy` | no |
 | `dws drive +recent` | `unified_active` | `unified` | no |
 | `dws drive +search` | `unified_active` | `unified` | no |

@@ -35,12 +35,45 @@ import (
 
 // List → list_files
 var List = shortcut.Shortcut{
-	Service:     "drive",
-	Command:     "+list",
-	Product:     "drive",
-	Description: "列出钉盘文件/文件夹",
-	Intent:      "当你想浏览钉盘某个空间或文件夹下有哪些文件和子文件夹、需要拿到文件的 dentryUuid 以便后续下载/移动/删除时使用；可指定 space-id、folder 逐层进入，支持分页和按创建/修改时间、名称排序，返回文件列表（含 ID、名称、类型等）。",
-	Risk:        shortcut.RiskRead,
+	// Keep the externally observable legacy payload while the candidate result
+	// is validated on every invocation. A directory page is not evidence of a
+	// complete Drive inventory, so this shortcut must earn unified-active only
+	// after live evidence confirms its pagination and scope semantics.
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "drive",
+	Command:       "+list",
+	Product:       "drive",
+	Description:   "列出钉盘文件/文件夹",
+	Intent:        "当你想浏览钉盘某个空间或文件夹下有哪些文件和子文件夹、需要拿到文件的 dentryUuid 以便后续下载/移动/删除时使用；可指定 space-id、folder 逐层进入，支持分页和按创建/修改时间、名称排序，返回文件列表（含 ID、名称、类型等）。",
+	Risk:          shortcut.RiskRead,
+	Safety: contract.SafetySpec{
+		Effect: "read", Risk: "low",
+		Confirmation: "not_required", Idempotency: "idempotent",
+	},
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "drive",
+			Name:           "shortcut_list",
+			CanonicalPath:  "drive.shortcut_list",
+			CLIPath:        "drive +list",
+			PrimaryCLIPath: "drive +list",
+		},
+		Description: "列出钉盘中指定空间或文件夹的一页文件/文件夹；不是全量目录承诺",
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "列出钉盘指定空间或文件夹的一页文件；结果仅覆盖请求的位置，不能推断为全部可访问钉盘文件。",
+			UseWhen:      []string{"当你已知 space-id 或 folder、需要浏览该位置下一页文件或子文件夹，并取得稳定 dentryUuid 以便后续操作时使用。"},
+			AvoidWhen:    []string{"需要按名称或关键词跨目录寻找文件时，使用 +search；需要可信全量目录时不要把本命令的一页结果当作目录结论。"},
+			Examples: []string{
+				"dws drive +list --limit 20",
+				"dws drive +list --folder <dentryUuid> --cursor <next-token>",
+			},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "space-id", Type: shortcut.FlagString, Desc: "钉盘空间 ID (纯数字)，不传则使用「我的文件」"},
 		{Name: "folder", Type: shortcut.FlagString, Desc: "父节点 ID (dentryUuid)，不传则列出空间根目录"},
@@ -82,8 +115,35 @@ var List = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(files), "files": files})
+		legacy := map[string]any{"count": len(files), "files": files}
+		_, result, err := listFilesResult(data, files)
+		if err != nil {
+			return err
+		}
+		return rt.OutputResult(legacy, result)
 	},
+}
+
+// listFilesResult retains the evidence needed to make a directory page
+// machine-actionable without widening it into a claim about the user's whole
+// Drive. When the backend supplies coherent pagination facts, they live in
+// meta.pagination; when it does not, pagination_known:false is explicit.
+func listFilesResult(data map[string]any, files []map[string]any) (map[string]any, output.CommandResult, error) {
+	page, paginationKnown, err := drivePagination(data, "钉盘目录")
+	if err != nil {
+		return nil, nil, err
+	}
+	business := map[string]any{
+		"count":            len(files),
+		"files":            files,
+		"pagination_known": paginationKnown,
+		"inventory_scope":  "requested_location",
+	}
+	meta := &output.Meta{Count: output.NewCount(len(files))}
+	if paginationKnown {
+		meta.Pagination = page
+	}
+	return business, output.Success(business, output.WithMeta(meta)), nil
 }
 
 // listFilesProject reshapes the raw list_files response into a clean,
