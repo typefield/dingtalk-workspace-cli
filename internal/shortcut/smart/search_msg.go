@@ -345,10 +345,10 @@ var SearchMsg = shortcut.Shortcut{
 			payload["nextCursor"] = nextCursor
 		}
 		if rt.Bool("download-resources") {
-			resourceLedger := chatshortcut.DownloadMessageResources(rt, messages, "")
+			resourceLedger, resourceFailures := chatshortcut.DownloadMessageResourcesWithFailureInfo(rt, messages, "")
 			chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
 			if shadowsUnified {
-				if failureInfo := searchMsgResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+				for _, failureInfo := range resourceFailures {
 					if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
 						return apperrors.NewInternal("记录消息搜索资源下载失败状态失败", apperrors.WithCause(recordErr))
 					}
@@ -501,43 +501,6 @@ func searchMsgEnrichmentProjectionFailureInfo(messageIDs []string) *output.Error
 		Details: map[string]any{
 			"missing_message_ids": append([]string(nil), messageIDs...),
 		},
-	}
-}
-
-func searchMsgResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
-	failedCount := searchMsgLedgerCount(ledger["failedCount"])
-	if failedCount == 0 {
-		return nil
-	}
-	started := true
-	return &output.ErrorInfo{
-		Type:             "api",
-		Message:          fmt.Sprintf("消息搜索资源下载失败：%d 个资源未完成", failedCount),
-		Hint:             "保留已读取消息和已下载文件；查看失败资源后仅处理失败项。",
-		Operation:        "chat/message_resource_download",
-		Origin:           "local_resource_download",
-		Stage:            "resource_download",
-		ExecutionStarted: &started,
-		Details: map[string]any{
-			"resource_downloads": ledger,
-		},
-	}
-}
-
-func searchMsgLedgerCount(value any) int {
-	switch typed := value.(type) {
-	case int:
-		return typed
-	case int32:
-		return int(typed)
-	case int64:
-		return int(typed)
-	case float32:
-		return int(typed)
-	case float64:
-		return int(typed)
-	default:
-		return 0
 	}
 }
 

@@ -239,10 +239,13 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 			t.Fatalf("resource partial details=%#v", data)
 		}
 		failure := data["failed"].([]any)[0].(map[string]any)["error"].(map[string]any)
+		if failure["subtype"] != string(apperrors.SubtypeProjectionUnknown) {
+			t.Fatalf("resource failure=%#v", failure)
+		}
 		details, _ := failure["details"].(map[string]any)
-		resourceLedger, _ := details["resource_downloads"].(map[string]any)
-		if resourceLedger["failedCount"] != float64(1) {
-			t.Fatalf("resource ledger=%#v", resourceLedger)
+		resource, _ := details["resource"].(map[string]any)
+		if resource["resource_id"] != "media-1" || resource["message_id"] != "m1" {
+			t.Fatalf("resource context=%#v", resource)
 		}
 	})
 

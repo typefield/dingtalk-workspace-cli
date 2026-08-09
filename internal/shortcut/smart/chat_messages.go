@@ -447,12 +447,14 @@ func executeChatMessages(rt *shortcut.RuntimeContext) error {
 		return err
 	}
 	if rt.Bool("download-resources") {
-		resourceLedger := chatshortcut.DownloadMessageResources(rt, rawItems, request.fallbackConversationID)
+		resourceLedger, resourceFailures := chatshortcut.DownloadMessageResourcesWithFailureInfo(rt, rawItems, request.fallbackConversationID)
 		chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
-		if failureInfo := chatMessagesResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+		for _, failureInfo := range resourceFailures {
 			if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
 				return apperrors.NewInternal("记录消息资源下载失败状态失败", apperrors.WithCause(recordErr))
 			}
+		}
+		if len(resourceFailures) > 0 {
 			pageLedger.SetStopReason("resource_download_failure")
 		}
 	}
@@ -985,30 +987,6 @@ func chatMessagesCursorProvided(value any) bool {
 	return text != "" && text != "<nil>" && text != "0"
 }
 
-// chatMessagesResourceDownloadFailureInfo keeps explicitly requested local
-// resource copies in the same truthful partial-result channel as pagination
-// failures. A successful message read is not a successful combined operation
-// when one of the requested files was not downloaded.
-func chatMessagesResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
-	failedCount := chatMessagesLedgerCount(ledger["failedCount"])
-	if failedCount == 0 {
-		return nil
-	}
-	started := true
-	return &output.ErrorInfo{
-		Type:             "api",
-		Message:          fmt.Sprintf("消息资源下载失败：%d 个资源未完成", failedCount),
-		Hint:             "保留已读取消息和已下载文件；查看失败项 error.details.resource_downloads.failures 后仅处理失败资源。",
-		Operation:        "chat/message_resource_download",
-		Origin:           "local_resource_download",
-		Stage:            "resource_download",
-		ExecutionStarted: &started,
-		Details: map[string]any{
-			"resource_downloads": ledger,
-		},
-	}
-}
-
 // chatMessagesExportFailureInfo records a local export failure after a
 // successful remote read. It deliberately retains the original local error
 // category when available: an output path that becomes invalid or occupied is
@@ -1129,23 +1107,6 @@ func filterQueries(failure map[string]any) []string {
 	}
 	values, _ := failure["queries"].([]string)
 	return values
-}
-
-func chatMessagesLedgerCount(value any) int {
-	switch typed := value.(type) {
-	case int:
-		return typed
-	case int32:
-		return int(typed)
-	case int64:
-		return int(typed)
-	case float32:
-		return int(typed)
-	case float64:
-		return int(typed)
-	default:
-		return 0
-	}
 }
 
 func chatMessagesReadFailureInfo(request chatMessagesRequest, err error) *output.ErrorInfo {

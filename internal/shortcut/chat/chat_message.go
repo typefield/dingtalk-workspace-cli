@@ -26,6 +26,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 )
@@ -952,6 +953,20 @@ func DownloadMessageResources(
 	messages []map[string]any,
 	fallbackConversationID string,
 ) map[string]any {
+	ledger, _ := DownloadMessageResourcesWithFailureInfo(rt, messages, fallbackConversationID)
+	return ledger
+}
+
+// DownloadMessageResourcesWithFailureInfo preserves the historical ledger for
+// legacy renderers and separately returns one typed framework error per failed
+// resource. Unified callers can therefore report truthful partial results
+// without changing the legacy data shape or flattening lower auth, validation,
+// projection and transport facts into free-form strings.
+func DownloadMessageResourcesWithFailureInfo(
+	rt *shortcut.RuntimeContext,
+	messages []map[string]any,
+	fallbackConversationID string,
+) (map[string]any, []*output.ErrorInfo) {
 	resources := make([]map[string]any, 0)
 	for _, message := range messages {
 		resources = append(resources, chatmsg.ResourcesDeep(message)...)
@@ -992,7 +1007,7 @@ func DownloadMessageResources(
 			"requestedCount":    len(resources),
 			"deduplicatedCount": discoveredCount - len(resources),
 			"resources":         resources,
-		}
+		}, nil
 	}
 	if len(resources) == 0 {
 		return map[string]any{
@@ -1005,12 +1020,12 @@ func DownloadMessageResources(
 			"failedCount":       0,
 			"downloads":         []map[string]any{},
 			"failures":          []map[string]any{},
-		}
+		}, nil
 	}
 
 	cwd, err := resourceGetwd()
 	if err != nil {
-		return map[string]any{
+		ledger := map[string]any{
 			"ok":                false,
 			"partial":           false,
 			"discoveredCount":   discoveredCount,
@@ -1025,10 +1040,15 @@ func DownloadMessageResources(
 				"error":         fmt.Sprintf("读取工作目录失败: %v", err),
 			}},
 		}
+		return ledger, []*output.ErrorInfo{messageResourceDownloadFailureInfo(
+			"", "", "", "output-directory",
+			apperrors.NewInternal("读取工作目录失败", apperrors.WithCause(err)),
+		)}
 	}
 	outputDir := strings.TrimRight(rt.Str("output-dir"), `/\`)
 	downloads := make([]map[string]any, 0, len(resources))
 	failures := make([]map[string]any, 0)
+	failureInfos := make([]*output.ErrorInfo, 0)
 	downloadedNames := map[string]bool{}
 	for _, resource := range resources {
 		resourceType := strings.TrimSpace(fmt.Sprint(resource["type"]))
@@ -1050,12 +1070,18 @@ func DownloadMessageResources(
 			(messageID == "" || messageID == "<nil>" ||
 				conversationID == "" || conversationID == "<nil>")
 		if resourceID == "" || resourceID == "<nil>" || missingMediaContext {
+			failureErr := apperrors.NewAPI(
+				"资源引用缺少 resource-id，或 mediaId 缺少 message-id/open-conversation-id",
+				apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+			)
 			failures = append(failures, map[string]any{
 				"resourceType": resourceType,
 				"resourceId":   resourceID,
 				"messageId":    messageID,
 				"error":        "资源引用缺少 resource-id，或 mediaId 缺少 message-id/open-conversation-id",
 			})
+			failureInfos = append(failureInfos, messageResourceDownloadFailureInfo(
+				resourceType, resourceID, messageID, "resource-context", failureErr))
 			continue
 		}
 
@@ -1068,6 +1094,8 @@ func DownloadMessageResources(
 				"messageId":    messageID,
 				"error":        callErr.Error(),
 			})
+			failureInfos = append(failureInfos, messageResourceDownloadFailureInfo(
+				resourceType, resourceID, messageID, "resolve-download", callErr))
 			continue
 		}
 		resourceURL, headers, infoErr := resourceDownloadInfo(data)
@@ -1078,6 +1106,8 @@ func DownloadMessageResources(
 				"messageId":    messageID,
 				"error":        infoErr.Error(),
 			})
+			failureInfos = append(failureInfos, messageResourceDownloadFailureInfo(
+				resourceType, resourceID, messageID, "project-download-url", infoErr))
 			continue
 		}
 		preferredName := resourceDownloadPreferredName(data)
@@ -1098,6 +1128,8 @@ func DownloadMessageResources(
 				"messageId":    messageID,
 				"error":        pathErr.Error(),
 			})
+			failureInfos = append(failureInfos, messageResourceDownloadFailureInfo(
+				resourceType, resourceID, messageID, "output-path", pathErr))
 			continue
 		}
 		size, downloadErr := resourceDownload(
@@ -1109,6 +1141,8 @@ func DownloadMessageResources(
 				"messageId":    messageID,
 				"error":        downloadErr.Error(),
 			})
+			failureInfos = append(failureInfos, messageResourceDownloadFailureInfo(
+				resourceType, resourceID, messageID, "transfer", downloadErr))
 			continue
 		}
 		downloadedNames[strings.ToLower(filepath.Base(relativePath))] = true
@@ -1130,7 +1164,46 @@ func DownloadMessageResources(
 		"failedCount":       len(failures),
 		"downloads":         downloads,
 		"failures":          failures,
+	}, failureInfos
+}
+
+func messageResourceDownloadFailureInfo(
+	resourceType, resourceID, messageID, stage string,
+	err error,
+) *output.ErrorInfo {
+	started := true
+	fallback := &output.ErrorInfo{
+		Type:             "internal",
+		Message:          "消息资源下载未完成",
+		Hint:             "保留已读取消息和已下载文件；只核查并重新处理该失败资源。",
+		Operation:        "chat/message_resource_download",
+		Origin:           "local_resource_download",
+		Stage:            stage,
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"resource": map[string]any{
+				"type":        strings.TrimSpace(resourceType),
+				"resource_id": strings.TrimSpace(resourceID),
+				"message_id":  strings.TrimSpace(messageID),
+			},
+		},
 	}
+	switch stage {
+	case "resource-context", "project-download-url":
+		fallback.Type = "api"
+		fallback.Subtype = string(apperrors.SubtypeProjectionUnknown)
+		fallback.Origin = "mcp_gateway"
+	case "resolve-download":
+		fallback.Type = "api"
+		fallback.Retryable = true
+		fallback.Origin = "mcp_gateway"
+	case "output-path":
+		fallback.Type = "validation"
+	case "transfer":
+		fallback.Type = "network"
+		fallback.Retryable = true
+	}
+	return shortcut.PreserveTypedErrorInfo(fallback, err)
 }
 
 // AttachMessageResourceDownloads publishes the download ledger and folds any

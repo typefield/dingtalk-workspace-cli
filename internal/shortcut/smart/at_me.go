@@ -276,9 +276,9 @@ func executeAtMeUnified(rt *shortcut.RuntimeContext) error {
 
 	payload := atMeUnifiedPayload(items, !rt.Bool("no-reactions"))
 	if rt.Bool("download-resources") {
-		resourceLedger := chatshortcut.DownloadMessageResources(rt, items, groupID)
+		resourceLedger, resourceFailures := chatshortcut.DownloadMessageResourcesWithFailureInfo(rt, items, groupID)
 		chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
-		if failureInfo := atMeResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+		for _, failureInfo := range resourceFailures {
 			if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
 				return apperrors.NewInternal("记录 @我消息资源下载失败状态失败", apperrors.WithCause(recordErr))
 			}
@@ -710,32 +710,6 @@ func atMeProjectionFailureInfo(err error) *output.ErrorInfo {
 	}
 	started := true
 	return &output.ErrorInfo{Type: "api", Subtype: string(apperrors.SubtypeProjectionUnknown), Message: message, Hint: "检查服务端返回结构；不要把未知响应形状解释为空消息结果。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "projection", ExecutionStarted: &started}
-}
-
-func atMeResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
-	failedCount := atMeLedgerCount(ledger["failedCount"])
-	if failedCount == 0 {
-		return nil
-	}
-	started := true
-	return &output.ErrorInfo{Type: "api", Message: fmt.Sprintf("@我消息资源下载失败：%d 个资源未完成", failedCount), Hint: "保留已读取消息和已下载文件；查看失败资源后仅处理失败项。", Operation: "chat/message_resource_download", Origin: "local_resource_download", Stage: "resource_download", ExecutionStarted: &started, Details: map[string]any{"resource_downloads": ledger}}
-}
-
-func atMeLedgerCount(value any) int {
-	switch typed := value.(type) {
-	case int:
-		return typed
-	case int32:
-		return int(typed)
-	case int64:
-		return int(typed)
-	case float32:
-		return int(typed)
-	case float64:
-		return int(typed)
-	default:
-		return 0
-	}
 }
 
 // atMeMessageItemsStrict distinguishes recognized empty arrays from unknown or

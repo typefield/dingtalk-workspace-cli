@@ -73,6 +73,9 @@ operation 与 stage 上下文的同时，以已分类下游错误为恢复事实
 `+chat-search`、`+conversation-list`、`+flag-list`，以及 `+my-groups`、`+chat-list-all` 和 Todo 聚合读取候选，
 均已接入该规则。消息搜索的详情富化还会按失败批次生成独立 typed failed item，不再把多个原因压成一个字符串；合计覆盖
 **12** 个错误投影点。
+四条 IM 复合读取的资源下载也改为双通道：legacy `resourceDownloads.failures[].error` 保持字符串形状，
+统一结果则为每个失败资源分别保留下游 `auth` / `validation` / `projection` / `network` 事实及资源 ID，
+不再把所有失败资源压成一个通用 API 错误。
 Agent 矩阵测试和源码关系证据见
 `agent-scans/composite-typed-error-propagation-20260809.md`。这证明本地错误投影，不证明真实账号权限、
 服务端可用性或页面终态。

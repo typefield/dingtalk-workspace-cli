@@ -27,6 +27,7 @@ type larkAlignmentCaller struct {
 	dryRun            bool
 	failTarget        string
 	failProductTool   string
+	failError         error
 	failProductToolAt map[string]int
 	callCounts        map[string]int
 	category          string
@@ -45,6 +46,9 @@ func (f *larkAlignmentCaller) CallTool(_ context.Context, product, tool string, 
 	}
 	f.callCounts[key]++
 	if f.failProductTool == key {
+		if f.failError != nil {
+			return nil, f.failError
+		}
 		return nil, errors.New("fixture lower call failed")
 	}
 	if f.failProductToolAt[key] == f.callCounts[key] {

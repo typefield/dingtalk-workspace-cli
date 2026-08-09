@@ -30,7 +30,13 @@ CALLERS = {
     "chat +conversation-list": (ROOT / "internal/shortcut/chat/chat_conversation.go", 1),
     "chat +flag-list": (ROOT / "internal/shortcut/chat/lark_alignment.go", 1),
 }
-TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes|TestSearchMsgUnifiedPaginationOutcomes|TestCompositeReadFailuresPreserveTypedRecoveryFacts|TestChatCompositeReadFailuresPreserveTypedRecoveryFacts"
+RESOURCE_CALLERS = {
+    "chat +chat-messages resource download": ROOT / "internal/shortcut/smart/chat_messages.go",
+    "chat +thread-replies resource download": ROOT / "internal/shortcut/smart/thread_replies.go",
+    "chat +at-me resource download": ROOT / "internal/shortcut/smart/at_me.go",
+    "chat +search-msg resource download": ROOT / "internal/shortcut/smart/search_msg.go",
+}
+TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes|TestSearchMsgUnifiedPaginationOutcomes|TestCompositeReadFailuresPreserveTypedRecoveryFacts|TestChatCompositeReadFailuresPreserveTypedRecoveryFacts|TestCrossPlatformCoverageMessageResourceFailuresPreserveTypedRecoveryFacts"
 
 
 def main() -> int:
@@ -55,6 +61,10 @@ def main() -> int:
         label: path.read_text(encoding="utf-8").count("shortcut.PreserveTypedErrorInfo(info, err)") >= expected
         for label, (path, expected) in CALLERS.items()
     }
+    resource_callers = {
+        label: "DownloadMessageResourcesWithFailureInfo" in path.read_text(encoding="utf-8")
+        for label, path in RESOURCE_CALLERS.items()
+    }
 
     environment = os.environ.copy()
     environment.setdefault("DWS_PACKAGE_VERSION", "0.0.0-agent-review")
@@ -75,13 +85,17 @@ def main() -> int:
         text=True,
         capture_output=True,
     )
-    passed = helper_keeps_facts and all(callers.values()) and result.returncode == 0
+    passed = helper_keeps_facts and all(callers.values()) and all(resource_callers.values()) and result.returncode == 0
     transcript = (result.stdout + result.stderr).strip()
     if len(transcript) > 8000:
         transcript = transcript[-8000:]
     caller_lines = "\n".join(
         f"- `{label}` uses the shared typed-error projection: **{'yes' if active else 'no'}**"
         for label, active in callers.items()
+    )
+    resource_caller_lines = "\n".join(
+        f"- `{label}` records per-resource typed failures: **{'yes' if active else 'no'}**"
+        for label, active in resource_callers.items()
     )
 
     report = f"""# 复合读取类型化错误保真 — Agent review
@@ -94,6 +108,7 @@ def main() -> int:
 
 - 共享投影器保留 category / subtype / hint / actions / retry safety 并合并上下文：**{'yes' if helper_keeps_facts else 'no'}**
 {caller_lines}
+{resource_caller_lines}
 - 焦点测试：`{TEST_PATTERN}`
 - 测试退出码：`{result.returncode}`
 
@@ -104,7 +119,8 @@ def main() -> int:
    已登记 subtype 必须服从 registry 的 retry policy；`RetryNever` 不得继承外层读取的 `retryable:true`。
 3. 聚合层与下游错误的 details 若同名，两个事实必须同时保留，不能静默覆盖。
 4. 富化等批量后处理必须按失败批次保留独立 typed error，不能把多个不同原因压成一个自由字符串。
-5. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。
+5. 资源下载必须保持 legacy `failures[].error` 字符串 wire，同时给统一结果按失败资源提供独立 typed error；权限、参数、投影和传输错误不得合并成一个通用 API 失败。
+6. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。
 
 ## Focused test transcript
 

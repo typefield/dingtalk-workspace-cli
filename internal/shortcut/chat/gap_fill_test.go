@@ -8,6 +8,7 @@ import (
 	"context"
 	"encoding/json"
 	"errors"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -19,6 +20,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -1101,6 +1103,66 @@ func TestCrossPlatformCoverageFailedResourceDownloadDoesNotConsumeFilename(t *te
 	}
 	if ledger["downloadedCount"] != 1 || ledger["failedCount"] != 1 {
 		t.Fatalf("download ledger = %#v", ledger)
+	}
+}
+
+func TestCrossPlatformCoverageMessageResourceFailuresPreserveTypedRecoveryFacts(t *testing.T) {
+	resetResourceDownloadHooks(t)
+	t.Chdir(t.TempDir())
+	typed := apperrors.NewAuth(
+		"fixture login required",
+		apperrors.WithSubtype(apperrors.SubtypeUpstreamAuthenticationRequired),
+		apperrors.WithHint("重新登录后只重试失败资源。"),
+	)
+	helpers.InitDeps(&larkAlignmentCaller{
+		failProductTool: "drive/download_file",
+		failError:       typed,
+	})
+
+	var ledger map[string]any
+	var failureInfos []*output.ErrorInfo
+	shortcut.Register(shortcut.Shortcut{
+		Service: "chat",
+		Command: "+gap-typed-resource-failures",
+		Flags:   MessageResourceDownloadFlags(),
+		Execute: func(rt *shortcut.RuntimeContext) error {
+			ledger, failureInfos = DownloadMessageResourcesWithFailureInfo(rt, []map[string]any{
+				{"fileId": "file-a"},
+				{"fileId": "file-b"},
+			}, "")
+			return nil
+		},
+	})
+	root := newPlatformCoverageRoot()
+	root.SetArgs([]string{"chat", "+gap-typed-resource-failures", "--output-dir", "./downloads"})
+	if err := root.Execute(); err != nil {
+		t.Fatal(err)
+	}
+
+	legacyFailures, _ := ledger["failures"].([]map[string]any)
+	if len(legacyFailures) != 2 {
+		t.Fatalf("legacy resource ledger=%#v", ledger)
+	}
+	for _, failure := range legacyFailures {
+		if _, ok := failure["error"].(string); !ok {
+			t.Fatalf("legacy failure shape changed: %#v", failure)
+		}
+	}
+	if len(failureInfos) != 2 {
+		t.Fatalf("typed failures=%#v", failureInfos)
+	}
+	for index, info := range failureInfos {
+		if info.Type != "auth" || info.Subtype != string(apperrors.SubtypeUpstreamAuthenticationRequired) || info.Retryable {
+			t.Fatalf("typed failure[%d]=%#v", index, info)
+		}
+		if info.Hint != "重新登录后只重试失败资源。" {
+			t.Fatalf("typed hint[%d]=%q", index, info.Hint)
+		}
+		resource, _ := info.Details["resource"].(map[string]any)
+		wantID := fmt.Sprintf("file-%c", 'a'+rune(index))
+		if resource["resource_id"] != wantID || resource["type"] != "fileId" {
+			t.Fatalf("typed resource[%d]=%#v", index, resource)
+		}
 	}
 }
 
