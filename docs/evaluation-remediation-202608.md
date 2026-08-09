@@ -198,6 +198,23 @@ Mono 的 `report_inbox_today.py` 与兼容入口 `report_received_today.py` 已�
 后续页失败、分页矛盾、JSON detail partial 与 dry-run，为 **18/18 PASS**。该探针使用
 临时假 `dws`，不保存 JSON fixture，也不证明真实账号的日志可见性或服务端终态。
 
+## 未读邮件聚合脚本本轮验收证据
+
+Mono/Multi 的 `mail_unread_summary.py` 已从手写 subprocess 迁入共享 child-result 边界：
+
+1. 邮箱发现失败保留 child typed error，并在第一步终止；不会继续用猜测邮箱搜索。
+2. 邮箱列表只接受已知 `emailAccounts[]`/邮箱对象，并优先选择 `type=ORG`；未知形状
+   返回 `projection_unknown`，真实空账号返回 `mailbox_not_found`。
+3. 消息搜索失败不再显示“收件箱清空”；只有已知 `items[]/messages[]` 为空才返回
+   `success + count:0`。
+4. 邮箱发现和消息搜索的 child meta 均按步骤 ID 透传；`--limit <= 0` 在任何 child
+   调用前返回 validation；dry-run 为零 child 进程。
+5. Multi Mail 的正向 Skill 路由显式追加 `--format json`。
+
+`docs/agent-scans/mail-unread-contract-20260809.md` 对两个入口验证成功、已知空、邮箱/
+搜索 typed failure、两类投影漂移、dry-run 和参数校验，为 **16/16 PASS**。临时探针不
+证明真实邮箱权限、索引完整性或服务端终态。
+
 ## attendance 本轮验收证据
 
 ```text

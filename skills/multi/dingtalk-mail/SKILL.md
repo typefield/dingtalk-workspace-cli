@@ -43,7 +43,7 @@ metadata:
 |--------|------|
 | "发邮件给 a@b.com" | `dws mail mailbox list --format json` → `dws mail message send --from <邮箱> --to a@b.com --subject "<标题>" --content "<正文>" --format json` |
 | "回复 / 全部回复 / 转发" | `dws mail message reply` / `reply-all` / `forward` |
-| "今天未读邮件" | `python scripts/mail_unread_summary.py` |
+| "今天未读邮件" | `python scripts/mail_unread_summary.py --format json` |
 | "带抄送发送" | 收件人与正文经用户确认后：`python scripts/mail_send_with_cc.py --to a@b.com --cc c@d.com --subject "<标题>" --body "<正文>" --yes --format json`；只有 `outcome=success` 且 `data.verification.state=verified` 才能答复投递已确认 |
 
 ## 标准 SOP（必遵流程）
