@@ -22,6 +22,7 @@ import (
 	"strings"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
@@ -156,6 +157,20 @@ func TestCreatedTodosBackendError(t *testing.T) {
 	fake := &stubMailboxCaller{byTool: map[string]string{}, errTool: "get_user_todos_in_current_org"}
 	if err := runShortcutErr(t, fake, "todo", "+created-todos", "--format", "json"); err == nil {
 		t.Fatal("want backend error propagated, got nil")
+	}
+}
+
+func TestCreatedTodosRejectsUnknownTodoProjection(t *testing.T) {
+	fake := &stubMailboxCaller{byTool: map[string]string{
+		"get_user_todos_in_current_org": `{"result":{}}`,
+	}}
+	err := runShortcutErr(t, fake, "todo", "+created-todos", "--format", "json")
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) {
+		t.Fatalf("error = %T %v, want *errors.Error", err, err)
+	}
+	if typed.StableSubtype != string(apperrors.SubtypeProjectionUnknown) || typed.FailureStage != "response_projection" {
+		t.Fatalf("typed error = %#v, want projection_unknown/response_projection", typed)
 	}
 }
 

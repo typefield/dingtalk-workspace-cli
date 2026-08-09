@@ -51,7 +51,10 @@ func shortcutListAllTodoCards(rt *shortcut.RuntimeContext, base map[string]any) 
 		if err != nil {
 			return nil, err
 		}
-		cards := shortcutTodoCards(data)
+		cards, err := shortcutTodoCards(data)
+		if err != nil {
+			return nil, err
+		}
 		all = append(all, cards...)
 		if len(cards) < todoPageSize {
 			break

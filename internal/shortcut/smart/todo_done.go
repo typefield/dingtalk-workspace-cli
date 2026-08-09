@@ -141,42 +141,59 @@ func shortcutTodoMatch(cards []map[string]any, keyword string) []shortcutTodoCar
 	return out
 }
 
-// shortcutTodoCards pulls the todoCards list out of the response, probing
-// wrapper layers defensively.  Real MCP responses may arrive as either
-// {"result":{"todoCards":[...]}} or {"result":{"result":{"todoCards":[...]}}}
-// depending on the call path, so do not assume a single fixed wrapper.
-func shortcutTodoCards(data map[string]any) []map[string]any {
-	if arr := shortcutTodoFindCards(data, 0); arr != nil {
-		return shortcutTodoToMaps(arr)
+// shortcutTodoCards pulls an addressable todoCards list out of the response,
+// probing known wrapper layers defensively. Real MCP responses may arrive as
+// either {"result":{"todoCards":[...]}} or
+// {"result":{"result":{"todoCards":[...]}}}. An unknown container, malformed
+// row, or row without a stable task ID is not an empty list: callers may make
+// follow-up decisions from this result, so returning a successful empty slice
+// would be a fail-open projection.
+func shortcutTodoCards(data map[string]any) ([]map[string]any, error) {
+	arr, found, valid := shortcutTodoFindCards(data, 0)
+	if !found {
+		return nil, shortcutTodoProjectionUnknown("待办聚合响应缺少可识别的 todoCards 列表容器")
 	}
-	return nil
+	if !valid {
+		return nil, shortcutTodoProjectionUnknown("待办聚合响应的 todoCards 必须是数组")
+	}
+	out := make([]map[string]any, 0, len(arr))
+	for _, item := range arr {
+		row, ok := item.(map[string]any)
+		if !ok {
+			return nil, shortcutTodoProjectionUnknown("待办聚合列表包含无法识别的条目")
+		}
+		if strings.TrimSpace(shortcutTodoTaskID(row)) == "" {
+			return nil, shortcutTodoProjectionUnknown("待办聚合列表条目缺少可用于后续操作的稳定 taskId")
+		}
+		out = append(out, row)
+	}
+	return out, nil
 }
 
-func shortcutTodoFindCards(m map[string]any, depth int) []any {
+func shortcutTodoFindCards(m map[string]any, depth int) (cards []any, found, valid bool) {
 	if depth > 4 {
-		return nil
+		return nil, false, false
 	}
-	if arr, ok := m["todoCards"].([]any); ok {
-		return arr
+	if raw, exists := m["todoCards"]; exists {
+		cards, valid := raw.([]any)
+		return cards, true, valid
 	}
 	for _, k := range []string{"result", "data"} {
 		if child, ok := m[k].(map[string]any); ok {
-			if arr := shortcutTodoFindCards(child, depth+1); arr != nil {
-				return arr
+			if cards, found, valid := shortcutTodoFindCards(child, depth+1); found {
+				return cards, found, valid
 			}
 		}
 	}
-	return nil
+	return nil, false, false
 }
 
-func shortcutTodoToMaps(arr []any) []map[string]any {
-	out := make([]map[string]any, 0, len(arr))
-	for _, it := range arr {
-		if m, ok := it.(map[string]any); ok {
-			out = append(out, m)
-		}
-	}
-	return out
+func shortcutTodoProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // shortcutTodoTaskID reads a card's taskId, tolerating both string and numeric
