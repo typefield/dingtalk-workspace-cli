@@ -22,6 +22,7 @@ from datetime import datetime
 from typing import Any
 
 import attendance_report_common as cmn
+from _runtime import add_contract_flags, emit, run_main
 
 MAX_USERS_PER_BALANCE_BATCH = 20
 BASE_HEADERS = ["姓名", "部门", "入职时间", "首次工作时间"]
@@ -93,6 +94,7 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--leave-keywords", default="", help="按假期名称关键词筛选列，逗号分隔；默认导出全部")
     parser.add_argument("--out", default="", help="输出 xlsx 文件名；不传则自动生成")
     parser.add_argument("--inspect", action="store_true", help="打印首条假期类型和余额原始结构到 stderr")
+    add_contract_flags(parser)
     return parser.parse_args()
 
 
@@ -269,12 +271,46 @@ def normalize_balance_records(payload: Any) -> list[dict[str, Any]]:
     return [record for record in raw_records if first_nonempty(record, USER_ID_KEYS) or first_nonempty(record, LEAVE_CODE_KEYS) or first_nonempty(record, LEAVE_NAME_KEYS)]
 
 
-def query_leave_types(inspect: bool) -> list[dict[str, str]]:
-    payload = cmn.run_dws(["attendance", "vacation", "types"])
+def has_known_collection(payload: Any) -> bool:
+    """Return whether the response explicitly contains a recognized list boundary."""
+    if isinstance(payload, list):
+        return True
+    if not isinstance(payload, dict):
+        return False
+    for key in ("data", "result", "records", "list", "items", "values", "leaveTypes", "vacationTypes"):
+        if key not in payload:
+            continue
+        value = payload[key]
+        if isinstance(value, list) or (isinstance(value, dict) and has_known_collection(value)):
+            return True
+    return False
+
+
+def projection_error(source: str) -> cmn.DwsCallError:
+    return cmn.DwsCallError(
+        f"{source} 响应缺少已知业务记录或列表边界。",
+        error_info={
+            "type": "api",
+            "subtype": "projection_unknown",
+            "message": f"{source} 响应缺少已知业务记录或列表边界。",
+        },
+    )
+
+
+def query_leave_types(inspect: bool, stats: cmn.CallStats) -> list[dict[str, str]]:
+    try:
+        payload = cmn.run_dws(["attendance", "vacation", "types"])
+    except cmn.DwsCallError as exc:
+        stats.record_failure("vacation-types", exc)
+        return []
     if inspect:
         records = recursively_collect_dicts(payload)
         cmn.log("[inspect] vacation types first record:\n" + json.dumps(records[:1], ensure_ascii=False, indent=2))
     leave_types = normalize_leave_types(payload)
+    if not leave_types and not has_known_collection(payload):
+        stats.record_failure("vacation-types", projection_error("attendance vacation types"))
+        return []
+    stats.record_success("vacation-types", item_count=len(leave_types))
     cmn.log(f"[types] 获取到 {len(leave_types)} 个假期规则")
     return leave_types
 
@@ -346,7 +382,12 @@ def normalize_query_records(
     ]
     if records:
         return records
-    return build_message_balance_records(batch, leave_type, extract_message(payload))
+    message_records = build_message_balance_records(batch, leave_type, extract_message(payload))
+    if message_records:
+        return message_records
+    if has_known_collection(payload):
+        return []
+    raise projection_error("attendance vacation balance")
 
 
 def query_single_user_after_batch_error(
@@ -377,12 +418,14 @@ def query_balance_records(
     user_ids: list[str],
     leave_types: list[dict[str, str]],
     inspect: bool,
+    stats: cmn.CallStats,
 ) -> list[dict[str, Any]]:
     all_records: list[dict[str, Any]] = []
     for leave_index, leave_type in enumerate(leave_types, start=1):
         leave_code = leave_type["code"]
         cmn.log(f"[balance] 查询假期规则 {leave_index}/{len(leave_types)}：{leave_type['name']}({leave_code})")
         for batch_index, batch in enumerate(cmn.chunk_users(user_ids, MAX_USERS_PER_BALANCE_BATCH), start=1):
+            step_id = f"vacation-balance:{leave_code}:batch:{batch_index}"
             cmn.log(f"[balance] 查询第 {batch_index} 批，{len(batch)} 人")
             try:
                 payload = query_balance_payload(batch, leave_code)
@@ -398,6 +441,7 @@ def query_balance_records(
                         EXTERNAL_BALANCE_UNAVAILABLE_MESSAGE,
                     )
                     all_records.extend(records)
+                    stats.record_success(step_id, item_count=len(records))
                     continue
                 if is_no_balance_message(error):
                     cmn.warn(
@@ -406,18 +450,36 @@ def query_balance_records(
                     )
                     records = build_message_balance_records(batch, leave_type, str(error))
                     all_records.extend(records)
+                    stats.record_success(step_id, item_count=len(records))
                     continue
                 if is_not_applicable_message(error):
                     cmn.warn(
                         f"[balance] 假期规则 {leave_type['name']}({leave_code}) 依赖员工时间字段，"
                         "改为逐个员工查询并将缺失配置的员工标为不适用"
                     )
+                    fallback_records: list[dict[str, Any]] = []
+                    fallback_failed = False
                     for user_id in batch:
-                        all_records.extend(query_single_user_after_batch_error(user_id, leave_type, error))
+                        try:
+                            fallback_records.extend(query_single_user_after_batch_error(user_id, leave_type, error))
+                        except cmn.DwsCallError as fallback_error:
+                            fallback_failed = True
+                            stats.record_failure(f"{step_id}:user:{user_id}", fallback_error)
+                    all_records.extend(fallback_records)
+                    if fallback_records:
+                        stats.record_success(step_id, item_count=len(fallback_records))
+                    elif not fallback_failed:
+                        stats.record_success(step_id, item_count=0)
                     continue
-                raise
+                stats.record_failure(step_id, error)
+                continue
 
-            records = normalize_query_records(payload, batch, leave_type)
+            try:
+                records = normalize_query_records(payload, batch, leave_type)
+            except cmn.DwsCallError as error:
+                stats.record_failure(step_id, error)
+                continue
+            stats.record_success(step_id, item_count=len(records))
             if inspect and leave_index == 1 and batch_index == 1:
                 cmn.log("[inspect] vacation balance first record:\n" + json.dumps(records[:1], ensure_ascii=False, indent=2))
             all_records.extend(records)
@@ -565,20 +627,41 @@ def main() -> int:
     cmn.log(f"[users] 最终用户列表：{len(user_ids)} 人")
 
     keywords = [keyword.strip() for keyword in args.leave_keywords.split(",") if keyword.strip()]
-    try:
-        leave_types = query_leave_types(args.inspect)
-        balance_records = query_balance_records(user_ids, leave_types, args.inspect)
-    except cmn.DwsCallError as error:
-        if error.is_permission_error:
-            cmn.error("权限错误：当前账号无权查询目标员工假期余额，请确认管理员或管理范围权限。")
-            return 2
-        cmn.error(f"查询假期余额失败：{error}")
-        return 1
+    stats = cmn.CallStats()
+    leave_types = query_leave_types(args.inspect, stats)
+    if not leave_types:
+        report = {
+            "users": user_ids,
+            "employeeCount": len(user_ids),
+            "leaveColumnCount": 0,
+            "rowCount": 0,
+            "output": None,
+            "keywords": keywords,
+        }
+        outcome, output_data, output_error = cmn.report_result(stats, report)
+        if outcome == "partial_failure":
+            outcome = "failure"
+            output_error = stats.failed[0]["error"]
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=args.dry_run,
+            text=("没有可导出的假期规则；未生成文件" if outcome == "success"
+                  else "假期规则查询失败；未生成文件"),
+        )
+    balance_records = query_balance_records(user_ids, leave_types, args.inspect, stats)
 
     leave_columns = build_leave_columns(leave_types, balance_records, keywords)
     if not leave_columns:
-        cmn.error("未匹配到任何假期规则列，请检查假期规则或 --leave-keywords 参数。")
-        return 1
+        return emit(
+            fmt=args.format,
+            outcome="failure",
+            error={
+                "type": "validation",
+                "subtype": "leave_columns_not_found",
+                "message": "未匹配到任何假期规则列，请检查假期规则或 --leave-keywords 参数。",
+            },
+            text="未匹配到任何假期规则列，请检查假期规则或 --leave-keywords 参数。",
+        )
 
     user_info_map = cmn.resolve_user_info(user_ids)
     balance_index = build_balance_index(user_ids, balance_records)
@@ -589,6 +672,50 @@ def main() -> int:
     out_name = args.out or f"attendance_vacation_balance_{datetime.now().strftime('%Y%m%d_%H%M%S')}.xlsx"
     title = "假期余额列表"
     subtitle = f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}；员工数：{len(user_ids)}；假期规则数：{len(leave_columns)}"
+
+    result_data = {
+        "users": user_ids,
+        "employeeCount": len(user_ids),
+        "leaveColumnCount": len(leave_columns),
+        "rowCount": len(rows),
+        "output": os.path.abspath(out_name),
+        "keywords": keywords,
+    }
+    outcome, output_data, output_error = cmn.report_result(stats, result_data)
+    balance_succeeded = any(
+        str(item.get("id", "")).startswith("vacation-balance:")
+        for item in stats.succeeded
+    )
+    balance_failed = any(
+        str(item.get("id", "")).startswith("vacation-balance:")
+        for item in stats.failed
+    )
+    if balance_failed and not balance_succeeded:
+        outcome = "failure"
+        output_error = next(
+            item["error"] for item in stats.failed
+            if str(item.get("id", "")).startswith("vacation-balance:")
+        )
+    if args.dry_run:
+        preview = {**result_data, "write": False}
+        if isinstance(output_data, dict) and "report" in output_data:
+            output_data = {**output_data, "report": preview}
+        else:
+            output_data = preview
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=True,
+            text=("[dry-run] 已完成远端只读查询和报表预览，不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 假期余额查询不完整；未写入 Excel 文件"),
+        )
+
+    if outcome == "failure":
+        if isinstance(output_data, dict) and "report" in output_data:
+            output_data = {**output_data, "report": {**result_data, "write": False}}
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            text="假期余额批次全部失败；未写入 Excel 文件",
+        )
 
     try:
         cmn.write_excel(
@@ -603,6 +730,13 @@ def main() -> int:
         cmn.error(str(error))
         return 1
 
+    if args.format != "text":
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
+    if outcome == "partial_failure":
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data,
+            text=f"[警告] 假期余额表仅包含成功批次：{os.path.abspath(out_name)}",
+        )
     print("✅ 假期余额 Excel 导出完成")
     print(f"- 输出文件：{os.path.abspath(out_name)}")
     print(f"- 员工数量：{len(user_ids)}")
@@ -614,4 +748,4 @@ def main() -> int:
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    sys.exit(run_main(main))

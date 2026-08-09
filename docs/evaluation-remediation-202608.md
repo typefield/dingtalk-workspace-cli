@@ -684,6 +684,14 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   交付只含成功记录的文件但返回 `partial_failure`/rc 7，全批失败或零可交付行且存在失败
   时在 Excel 写入前返回 typed failure。`attendance-record-contract-20260809.md` 受控对拍
   为 16/16 PASS；它不创建 Excel，也不证明真实审批内容、考勤组覆盖或后端终态。
+- 正式路由中的 `attendance_schedule_export.py` 与 `attendance_vacation_balance.py` 在
+  Multi 侧此前没有机器格式或 dry-run，Mono 侧又会把排班批次失败压成“未查询到记录”、
+  把余额失败落成默认“不适用”单元格后继续 success。现两入口在 Mono/Multi 共用统一
+  结果边界：已知空与未知投影分离；排班按用户批次、假期余额按规则+用户批次记账；
+  明确的“不限制余额/不适用/外部规则暂无余额”仍是已识别业务结果，其他失败进入 typed
+  ledger。混合结果生成仅含成功批次的 Excel 并返回 `partial_failure`/rc 7，全部业务批次
+  失败则在本地写入前返回 failure。`attendance-read-exports-20260809.md` 为 24/24 PASS；
+  受控探针不创建 Excel，也不证明真实组织覆盖或服务端数据正确性。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。

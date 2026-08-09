@@ -33,17 +33,20 @@ from typing import Any
 from attendance_report_common import (
     DATE_FMT,
     DATETIME_FMT,
+    CallStats,
     DwsCallError,
     chunk_users,
     error,
-    extract_records,
+    extract_records_strict,
     log,
     parse_datetime_arg,
     resolve_user_names,
+    report_result,
     run_dws,
     warn,
     write_excel,
 )
+from _runtime import add_contract_flags, emit, run_main
 
 # schedule get 接口每批最多用户数（保守值，避免超时）
 SCHEDULE_BATCH_SIZE = 20
@@ -59,6 +62,8 @@ def fetch_schedule_batch(
     user_ids: list[str],
     start_date: str,
     end_date: str,
+    stats: CallStats,
+    step_id: str,
 ) -> list[dict]:
     """调用 dws attendance schedule get 查询一批用户的排班记录。"""
     users_str = ",".join(user_ids)
@@ -69,16 +74,19 @@ def fetch_schedule_batch(
             "--start", start_date,
             "--end", end_date,
         ])
+        records = extract_records_strict(result, source="attendance schedule get")
+        stats.record_success(step_id, item_count=len(records))
+        return records
     except DwsCallError as exc:
-        error(f"查询排班失败 (users={len(user_ids)}, {start_date}~{end_date}): {exc}")
+        stats.record_failure(step_id, exc)
         return []
-    return extract_records(result) if result else []
 
 
 def fetch_all_schedules(
     user_ids: list[str],
     start_date: str,
     end_date: str,
+    stats: CallStats,
 ) -> list[dict]:
     """分批查询所有用户的排班记录，自动处理用户数超限。"""
     all_records: list[dict] = []
@@ -90,7 +98,9 @@ def fetch_all_schedules(
     for idx, batch in enumerate(batches, start=1):
         if total > 1:
             log(f"   批次 {idx}/{total}: {len(batch)} 人")
-        records = fetch_schedule_batch(batch, start_date, end_date)
+        records = fetch_schedule_batch(
+            batch, start_date, end_date, stats, f"schedule-batch:{idx}",
+        )
         all_records.extend(records)
 
     log(f"✅ 查询完成，共 {len(all_records)} 条排班记录")
@@ -101,7 +111,7 @@ def fetch_all_schedules(
 # 班次名称映射
 # ─────────────────────────────────────────────────────────────────────────────
 
-def build_class_name_map(records: list[dict]) -> dict[int, str]:
+def build_class_name_map(records: list[dict], stats: CallStats) -> dict[int, str]:
     """从排班记录中提取 classId → className 映射。
 
     优先使用记录自带的 className；缺失时回退 class search 补全。
@@ -124,13 +134,15 @@ def build_class_name_map(records: list[dict]) -> dict[int, str]:
         log(f"🔍 {len(missing_ids)} 个班次缺名称，从 class search 补全 ...")
         try:
             result = run_dws(["attendance", "class", "search", "--limit", "200"])
-            for cls in (extract_records(result) if result else []):
+            classes = extract_records_strict(result, source="attendance class search")
+            stats.record_success("class-search", item_count=len(classes))
+            for cls in classes:
                 cid_raw = cls.get("id") or cls.get("classId")
                 cname = cls.get("name") or cls.get("className")
                 if cid_raw is not None and cname:
                     class_map[int(cid_raw)] = str(cname).strip()
         except DwsCallError as exc:
-            warn(f"class search 失败，部分班次将显示为 ID: {exc}")
+            stats.record_failure("class-search", exc)
 
     return class_map
 
@@ -268,7 +280,7 @@ def print_summary(
             print(f"   ... 共 {len(rows)} 人，完整数据见 Excel")
 
 
-def main() -> None:
+def main() -> int:
     parser = argparse.ArgumentParser(
         description="考勤排班查询导出（排班表格式）",
         epilog="执行前必须阅读 attendance-schedule.md",
@@ -277,6 +289,7 @@ def main() -> None:
     parser.add_argument("--start", required=True, help="开始日期 YYYY-MM-DD（必填）")
     parser.add_argument("--end", required=True, help="结束日期 YYYY-MM-DD（必填）")
     parser.add_argument("--output", default="", help="输出文件路径（可选）")
+    add_contract_flags(parser)
     args = parser.parse_args()
 
     # ── 解析参数 ──
@@ -300,17 +313,32 @@ def main() -> None:
         raise SystemExit(1)
 
     output_path = args.output or f"attendance_schedule_{start_date}_{end_date}.xlsx"
+    stats = CallStats(
+        user_batches=(len(user_ids) + SCHEDULE_BATCH_SIZE - 1) // SCHEDULE_BATCH_SIZE,
+    )
 
     log(f"🗓️ 排班查询: {len(user_ids)} 人, {start_date} ~ {end_date}")
 
     # ── 阶段 1: 查询排班记录（分批） ──
-    records = fetch_all_schedules(user_ids, start_date, end_date)
+    records = fetch_all_schedules(user_ids, start_date, end_date, stats)
     if not records:
-        print(f"⚠️ 未查询到排班记录 ({start_date} ~ {end_date})")
-        return
+        report = {
+            "users": user_ids, "start": start_date, "end": end_date,
+            "recordCount": 0, "output": output_path,
+        }
+        outcome, output_data, output_error = report_result(stats, report)
+        if outcome == "partial_failure":
+            outcome = "failure"
+            output_error = stats.failed[0]["error"]
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=args.dry_run,
+            text=(f"⚠️ 未查询到排班记录 ({start_date} ~ {end_date})"
+                  if outcome == "success" else "排班查询失败；未生成文件"),
+        )
 
     # ── 阶段 2: 构建班次名称映射 ──
-    class_map = build_class_name_map(records)
+    class_map = build_class_name_map(records, stats)
 
     # ── 阶段 3: 解析员工姓名 ──
     user_names = resolve_user_names(user_ids)
@@ -320,6 +348,26 @@ def main() -> None:
     headers, rows = build_schedule_table(
         records, user_ids, user_names, class_map, date_range,
     )
+
+    result_data = {
+        "users": user_ids,
+        "start": start_date,
+        "end": end_date,
+        "recordCount": len(records),
+        "rowCount": len(rows),
+        "dateCount": len(date_range),
+        "output": os.path.abspath(output_path),
+    }
+    outcome, output_data, output_error = report_result(stats, result_data)
+    if args.dry_run:
+        preview = {**result_data, "write": False}
+        outcome, output_data, output_error = report_result(stats, preview)
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=True,
+            text=("[dry-run] 已完成远端只读查询和排班表预览，不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 排班查询不完整；未写入 Excel 文件"),
+        )
 
     # ── 阶段 5: 输出 Excel ──
     title = f"排班表  {start_date} 至 {end_date}"
@@ -337,8 +385,16 @@ def main() -> None:
     log(f"📄 Excel 已保存: {os.path.abspath(output_path)}")
 
     # ── 阶段 6: 输出摘要 ──
+    if args.format != "text":
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
+    if outcome == "partial_failure":
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data,
+            text=f"[警告] 排班表仅包含成功批次：{os.path.abspath(output_path)}",
+        )
     print_summary(rows, date_range, output_path, len(records))
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(run_main(main))

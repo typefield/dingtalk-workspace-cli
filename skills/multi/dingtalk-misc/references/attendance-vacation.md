@@ -119,6 +119,8 @@ python scripts/attendance_vacation_balance.py \
 
 不要粘贴 Excel 全量内容。
 
+使用 `--format json` 时必须按 `outcome` 分支：`success`/rc 0 才表示请求的假期规则与余额批次均完成；`partial_failure`/rc 7 的 Excel 只含成功批次，必须保留并展示 `succeeded[]/failed[]/unknown[]`；所有余额批次失败时为 `failure`/rc 1 且不写文件。明确的“不限制余额”“不适用”和外部规则提示属于已识别业务结果，不等同于未知调用失败。
+
 ## 错误处理
 
 | 错误 | 处理方式 |

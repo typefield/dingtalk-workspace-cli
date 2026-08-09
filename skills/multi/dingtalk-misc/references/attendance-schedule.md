@@ -567,9 +567,10 @@ python scripts/attendance_schedule_export.py \
 
 ### 查询导出 — 阶段 3: 返回结果给用户
 
-- 将脚本 stdout 输出的摘要信息（人数、日期、记录数、预览表格）原样转告用户
-- 提醒用户完整排班表已导出到 Excel 文件
-- 如果执行失败，将 stderr 错误信息转告用户
+- 使用 `--format json`，按 `ok/outcome` 判断结果；只有 `success`/rc 0 才能称请求的用户批次均已读取完成
+- `partial_failure`/rc 7 表示 Excel 只包含成功批次；必须保留 `data.succeeded[]/failed[]/unknown[]`，明确告知覆盖不完整，不得重查已成功批次
+- `failure`/rc 1 时脚本不会写 Excel；读取 `error.type/subtype` 处理，不要把失败说成“没有排班”
+- 成功结果仍只证明请求批次完成，不证明账号可见范围覆盖整个组织
 
 ### 查询导出示例
 
