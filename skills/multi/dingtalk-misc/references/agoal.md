@@ -220,6 +220,10 @@ dws agoal scorecard detail --selected-time "2025-01-01T00:00:00+08:00" --dept-id
 # 9. 查看计分卡实体详情
 dws agoal scorecard entity-detail --sc-id SC_ID --entity-id ENTITY_ID
 
+`scorecard detail` 若服务端返回 JSON `null`，CLI 会返回不可重试的 typed
+`projection_unknown`，不会再以退出码 0 输出 `null`。这表示当前范围的计分卡状态无法确定，
+不能当成空计分卡；先核对部门与周期，仍失败则保留诊断并停止。
+
 # 10. 更新计分卡
 dws agoal scorecard update --dept-id DEPT_ID --selected-time "2025-01-01T00:00:00+08:00" --id SC_ID --tracking-period-type MONTHLY --content '[{"id":"dim1","title":"业绩","items":[{"id":"item1","title":"收入","target":"100"}]}]'
 

@@ -121,6 +121,10 @@ dws agoal contract update --contract-id CONTRACT_ID \
 dws agoal scorecard detail --selected-time "2026-01-01T00:00:00+08:00" --dept-id DEPT_ID --format json
 dws agoal scorecard entity-detail --sc-id SC_ID --entity-id ENTITY_ID --format json
 
+`scorecard detail` 若服务端返回 JSON `null`，CLI 会返回不可重试的 typed
+`projection_unknown`，不会再以退出码 0 输出 `null`。这表示当前范围的计分卡状态无法确定，
+不能当成空计分卡；先核对部门与周期，仍失败则保留诊断并停止。
+
 # 更新计分卡
 dws agoal scorecard update --dept-id DEPT_ID --selected-time "2026-01-01T00:00:00+08:00" \
   --id SC_ID --tracking-period-type MONTHLY \

@@ -337,7 +337,7 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
 			}
-			return callMCPTool("get_score_card_detail", toolArgs)
+			return runAgoalScorecardDetail(cmd, toolArgs)
 		},
 	}
 	scorecardDetailCmd.Flags().String("selected-time", "", "ISO-8601 时间字符串，如 \"2026-01-01T00:00:00+08:00\" (必填)")
