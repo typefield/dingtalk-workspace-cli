@@ -222,12 +222,13 @@ var Download = shortcut.Shortcut{
 // ListSpaces → list_spaces
 // Search → search_files
 var Search = shortcut.Shortcut{
-	Service:     "drive",
-	Command:     "+search",
-	Product:     "drive",
-	Description: "搜索钉盘文件",
-	Intent:      "当你只记得文件名或内容关键词、不知道它在哪个目录时用它全局检索钉盘文件；输入 query，可按文件类型、扩展名、创建者、创建/修改时间范围过滤，返回匹配文件及其 ID，便于再做下载或整理。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "drive",
+	Command:       "+search",
+	Product:       "drive",
+	Description:   "搜索钉盘文件",
+	Intent:        "当你只记得文件名或内容关键词、不知道它在哪个目录时用它全局检索钉盘文件；输入 query，可按文件类型、扩展名、创建者、创建/修改时间范围过滤，返回匹配文件及其 ID，便于再做下载或整理。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -267,7 +268,7 @@ var Search = shortcut.Shortcut{
 		{Name: "modified-from", Type: shortcut.FlagInt, Desc: "修改时间起始 (毫秒时间戳，含)"},
 		{Name: "modified-to", Type: shortcut.FlagInt, Desc: "修改时间截止 (毫秒时间戳，含)"},
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页返回数量 (默认 10，最大 30)"},
-		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，从上次返回的 nextCursor 获取"},
+		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标（从上次 meta.pagination.next_token 获取）"},
 	},
 	Tips: []string{
 		`dws drive +search --query "季度汇报"`,
@@ -313,8 +314,33 @@ var Search = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(files), "files": files})
+		payload, result, err := searchFilesResult(data, files)
+		if err != nil {
+			return err
+		}
+		return rt.OutputResult(payload, result)
 	},
+}
+
+// searchFilesResult makes a search page explicitly resumable only when the
+// backend supplied a coherent continuation signal. Search may legitimately
+// return one page without pagination facts; that is not evidence that the
+// index is exhaustive, so the unified result exposes pagination_known:false.
+func searchFilesResult(data map[string]any, files []map[string]any) (map[string]any, output.CommandResult, error) {
+	page, paginationKnown, err := drivePagination(data, "钉盘搜索")
+	if err != nil {
+		return nil, nil, err
+	}
+	payload := map[string]any{
+		"count":            len(files),
+		"files":            files,
+		"pagination_known": paginationKnown,
+	}
+	meta := &output.Meta{Count: output.NewCount(len(files))}
+	if paginationKnown {
+		meta.Pagination = page
+	}
+	return payload, output.Success(payload, output.WithMeta(meta)), nil
 }
 
 // searchFilesProject reshapes the raw search_files response into a clean,
@@ -337,10 +363,11 @@ func searchFilesProject(data map[string]any) ([]map[string]any, error) {
 		searchFilesPick(row, m, "name", "name", "fileName", "dentryName", "title")
 		searchFilesPick(row, m, "type", "type", "dentryType", "fileType", "spaceType")
 		searchFilesPick(row, m, "dentryId", "dentryId", "dentryUuid", "id", "fileId", "nodeId")
+		searchFilesPick(row, m, "spaceId", "spaceId", "space_id", "workspaceId", "workspace_id")
 		searchFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
 		searchFilesPick(row, m, "creatorId", "creatorId", "creatorUserId", "creator", "creatorUid")
-		if len(row) == 0 {
-			return nil, driveProjectionUnknown("搜索结果文件条目缺少可识别字段")
+		if len(row) == 0 || (row["dentryId"] == nil && row["spaceId"] == nil) {
+			return nil, driveProjectionUnknown("搜索结果文件条目缺少可用于后续操作的稳定 ID")
 		}
 		out = append(out, row)
 	}
@@ -704,7 +731,7 @@ func recentListResult(data map[string]any) (map[string]any, output.CommandResult
 	if err != nil {
 		return nil, nil, err
 	}
-	page, paginationKnown, err := recentListPagination(data)
+	page, paginationKnown, err := drivePagination(data, "最近文档")
 	if err != nil {
 		return nil, nil, err
 	}
@@ -774,14 +801,14 @@ func recentListPayload(data map[string]any) (map[string]any, bool) {
 	return nil, false
 }
 
-// recentListPagination accepts only an authoritative, internally consistent
+// drivePagination accepts only an authoritative, internally consistent
 // continuation signal. No pagination fields means the service did not provide
 // evidence either way: the response remains a successful one-page read, but
 // deliberately has no meta.pagination claim.
-func recentListPagination(data map[string]any) (*output.Pagination, bool, error) {
+func drivePagination(data map[string]any, subject string) (*output.Pagination, bool, error) {
 	var selected *output.Pagination
-	for _, scope := range recentListPaginationScopes(data) {
-		page, present, err := recentListPaginationFromScope(scope)
+	for _, scope := range drivePaginationScopes(data) {
+		page, present, err := drivePaginationFromScope(scope, subject)
 		if err != nil {
 			return nil, false, err
 		}
@@ -789,7 +816,7 @@ func recentListPagination(data map[string]any) (*output.Pagination, bool, error)
 			continue
 		}
 		if selected != nil && (selected.EndpointExhausted != page.EndpointExhausted || selected.NextToken != page.NextToken) {
-			return nil, false, drivePaginationError("最近文档响应的分页字段在嵌套容器间互相矛盾")
+			return nil, false, drivePaginationError(subject, "响应的分页字段在嵌套容器间互相矛盾")
 		}
 		selected = page
 	}
@@ -799,7 +826,7 @@ func recentListPagination(data map[string]any) (*output.Pagination, bool, error)
 	return selected, true, nil
 }
 
-func recentListPaginationScopes(data map[string]any) []map[string]any {
+func drivePaginationScopes(data map[string]any) []map[string]any {
 	if data == nil {
 		return nil
 	}
@@ -812,39 +839,39 @@ func recentListPaginationScopes(data map[string]any) []map[string]any {
 	return scopes
 }
 
-func recentListPaginationFromScope(scope map[string]any) (*output.Pagination, bool, error) {
+func drivePaginationFromScope(scope map[string]any, subject string) (*output.Pagination, bool, error) {
 	if scope == nil {
 		return nil, false, nil
 	}
 	rawMore, hasMore := scope["hasMore"]
-	rawCursor, hasCursor := recentListCursorField(scope)
+	rawCursor, hasCursor := driveCursorField(scope)
 	if !hasMore && !hasCursor {
 		return nil, false, nil
 	}
 	if !hasMore {
-		return nil, false, drivePaginationError("最近文档响应返回 continuation cursor，但没有 hasMore")
+		return nil, false, drivePaginationError(subject, "响应返回 continuation cursor，但没有 hasMore")
 	}
 	more, ok := rawMore.(bool)
 	if !ok {
-		return nil, false, drivePaginationError("最近文档响应的 hasMore 必须是布尔值")
+		return nil, false, drivePaginationError(subject, "响应的 hasMore 必须是布尔值")
 	}
-	cursor, err := recentListPaginationToken(rawCursor, hasCursor)
+	cursor, err := drivePaginationToken(rawCursor, hasCursor, subject)
 	if err != nil {
 		return nil, false, err
 	}
 	if more {
 		if cursor == "" {
-			return nil, false, drivePaginationError("最近文档响应 hasMore=true 但没有可续用的 nextCursor")
+			return nil, false, drivePaginationError(subject, "响应 hasMore=true 但没有可续用的 nextCursor")
 		}
 		return &output.Pagination{EndpointExhausted: false, NextToken: cursor}, true, nil
 	}
 	if cursor != "" {
-		return nil, false, drivePaginationError("最近文档响应 hasMore=false 却携带 continuation cursor")
+		return nil, false, drivePaginationError(subject, "响应 hasMore=false 却携带 continuation cursor")
 	}
 	return &output.Pagination{EndpointExhausted: true}, true, nil
 }
 
-func recentListCursorField(scope map[string]any) (any, bool) {
+func driveCursorField(scope map[string]any) (any, bool) {
 	for _, key := range []string{"nextCursor", "nextToken", "next_cursor", "next_token"} {
 		if value, ok := scope[key]; ok {
 			return value, true
@@ -853,7 +880,7 @@ func recentListCursorField(scope map[string]any) (any, bool) {
 	return nil, false
 }
 
-func recentListPaginationToken(raw any, present bool) (string, error) {
+func drivePaginationToken(raw any, present bool, subject string) (string, error) {
 	if !present || raw == nil {
 		return "", nil
 	}
@@ -883,16 +910,16 @@ func recentListPaginationToken(raw any, present bool) (string, error) {
 		token = fmt.Sprint(value)
 	case float32:
 		if math.Trunc(float64(value)) != float64(value) {
-			return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+			return "", drivePaginationError(subject, "响应的 nextCursor 必须是整数或字符串")
 		}
 		token = fmt.Sprint(int64(value))
 	case float64:
 		if math.Trunc(value) != value {
-			return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+			return "", drivePaginationError(subject, "响应的 nextCursor 必须是整数或字符串")
 		}
 		token = fmt.Sprint(int64(value))
 	default:
-		return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+		return "", drivePaginationError(subject, "响应的 nextCursor 必须是整数或字符串")
 	}
 	if token == "0" {
 		return "", nil
@@ -900,8 +927,8 @@ func recentListPaginationToken(raw any, present bool) (string, error) {
 	return token, nil
 }
 
-func drivePaginationError(message string) error {
-	return apperrors.NewAPI(message,
+func drivePaginationError(subject, message string) error {
+	return apperrors.NewAPI(subject+message,
 		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),

@@ -41,7 +41,7 @@ metadata:
 | "看钉盘文件 / 文件夹列表" | `dws drive list [--folder <dentryUuid>]` |
 | "钉盘目录树" | `python scripts/drive_tree_list.py --depth 2` |
 | "查文件元数据" | `dws drive info --node <dentryUuid>` |
-| "搜文件 / 找文件" | `dws drive search --query "<关键词>"` |
+| "搜文件 / 找文件" | `dws drive +search --query "<关键词>" --format json` |
 | "下载文件" | `dws drive download --node <dentryUuid> --output <path>` |
 | "上传文件" | `dws drive upload --file <path> [--folder <id>]` |
 | "建钉盘文件夹" | `dws drive mkdir --name "<名称>" [--folder <id>]` |
@@ -56,8 +56,8 @@ metadata:
 
 **触发**：找文件/搜文件/我的文件/最近文件/某文档在哪。
 
-1. **选源（必须）**：最近访问 → `dws drive +recent --limit <n> --format json`。只在 `meta.pagination.endpoint_exhausted:false` 时，以 `meta.pagination.next_token` 继续传 `--cursor`；缺少 pagination meta 不代表目录完整。仅当确实需要原子命令独有的 `--file-types` 或 `--org-ids` 筛选时，才退回 `dws drive recent`，并在调用前按其 leaf Help 解析旧响应。按内容/名称全局搜 → `dws drive search --query "<关键词>" --format json`；浏览某目录 → `dws drive list --folder <dentryUuid> --format json`。
-2. **解析（必须）**：取真实 `dentryUuid`（= `id`/`nodeId`）；多候选让用户确认，**禁止**默认取第一个。
+1. **选源（必须）**：最近访问 → `dws drive +recent --limit <n> --format json`。只在 `meta.pagination.endpoint_exhausted:false` 时，以 `meta.pagination.next_token` 继续传 `--cursor`；缺少 pagination meta 不代表目录完整。仅当确实需要原子命令独有的 `--file-types` 或 `--org-ids` 筛选时，才退回 `dws drive recent`，并在调用前按其 leaf Help 解析旧响应。按内容/名称全局搜 → `dws drive +search --query "<关键词>" --format json`；只在必须保持原子命令兼容行为时才使用 `dws drive search` 并按 leaf Help 解析其旧响应。
+2. **解析（必须）**：`+search` 的文件结果取 `data.files[].dentryId`，空间结果取 `data.files[].spaceId`；`+recent` 取 `data.items[].nodeId`。多候选让用户确认，**禁止**默认取第一个或编造 ID。
 3. **下钻（必须）**：根目录没命中时，进入最相关文件夹继续 `drive list --folder`，必要时 `python scripts/drive_tree_list.py --depth 2` 递归，**禁止**只看根目录就放弃。
 4. **回读元数据（必须）**：命中后 `dws drive info --node <dentryUuid> --format json`，按 `extension` 确认类型。
 
@@ -104,7 +104,7 @@ metadata:
 
 - 查找文件不要只看根目录后放弃；根目录没命中时，进入最相关的目标文件夹继续 `drive list --folder <dentryUuid>`，必要时用目录树脚本递归到合理深度。
 - `drive list` 默认 `--limit 20`，自动化场景里保守使用 `--limit 50` 以内并处理 `nextToken` 翻页；不要因为参数边界报错反复重试。
-- 全局找文件优先 `drive search --query`；指定目录浏览用 `drive list`，命中后必须 `drive info --node <dentryUuid> --format json` 回读元数据。
+- 全局找文件优先 `drive +search --query --format json`；仅当 `meta.pagination.endpoint_exhausted:false` 时继续传 `meta.pagination.next_token` 给 `--cursor`。`data.pagination_known:false` 或缺少 pagination meta 只表示服务端没有给足分页证据，不能把当前页当完整搜索结果。指定目录浏览用 `drive list`，命中后必须 `drive info --node <dentryUuid> --format json` 回读元数据。
 - 删除、覆盖、移动等破坏性操作必须确认；上传、创建文件夹、下载后要读回或列目录验证。
 - 所有 `dws drive` 命令加 `--format json`。
 

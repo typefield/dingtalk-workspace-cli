@@ -10,7 +10,7 @@ dws drive --help
 
 # 查看具体命令的完整参数说明
 dws drive list --help
-dws drive search --help
+dws drive +search --help
 dws drive upload --help
 dws drive download --help
 ```
@@ -66,7 +66,21 @@ spaceType 筛选规则：
 - `spaceType` — 空间类型（如 `orgSpace`）
 - `nextToken` — 若不为空，表示还有更多空间可查询（仅企业空间）
 
-### 搜索文件/文件夹/空间
+### Agent 默认入口：`drive +search`
+
+按名称或内容关键词全局检索时，Agent 使用已迁入统一返回的 Shortcut：
+
+```bash
+dws drive +search --query "季度汇报" --format json
+```
+
+从 `ok` / `outcome` 开始解析。文件/文件夹结果使用 `data.files[].dentryId`，空间结果使用 `data.files[].spaceId`；确认候选后再将相应 ID 传给下游命令。
+
+- `meta.pagination.endpoint_exhausted: false` 时，原样把 `meta.pagination.next_token` 传给下一次 `+search --cursor`；
+- `endpoint_exhausted: true` 仅表示本次服务端分页耗尽，不说明搜索索引覆盖完整，也不说明空结果等于业务不存在；
+- `data.pagination_known: false` 且没有 `meta.pagination` 时，服务端没有给出足以判断分页终态的证据；不要伪造“已搜索完毕”，可让用户缩小关键词或改用目录浏览。
+
+### 原子命令兼容入口：`drive search`
 
 按关键词搜索文件、文件夹或团队空间。不同于 `list`（需要明确的 spaceId/parentId 逐层遍历），`search` 用于不知道具体位置、只记得名称/关键词的场景。
 
@@ -762,9 +776,12 @@ dws drive copy --node <源文件dentryUuid> --folder <目标文件夹fileId> --f
 | `list`        | `spaceId`                    | info / download / mkdir / commit 的 --space-id            |
 | `list-spaces` | `rootFolderId`               | `drive copy/move` 的 --folder（复制/移动到钉盘 space 根目录时） |
 | `list-spaces` | `spaceId`                    | list / info / download / mkdir / upload 的 --space-id     |
-| `search`      | **`fileId`**（文件/文件夹结果） | info / download / delete 的 --node；list 的 --folder         |
-| `search`      | `spaceId` / `rootFolderId`（空间结果） | list 的 --space-id；`drive copy/move` 的 --folder        |
-| `search`      | `nextCursor`                 | search 的 --cursor（翻页）                                  |
+| `+search`     | `data.files[].dentryId`（文件/文件夹结果） | info / download / delete 的 --node；list 的 --folder |
+| `+search`     | `data.files[].spaceId`（空间结果） | list 的 --space-id |
+| `+search`     | `meta.pagination.next_token` | `+search --cursor`（仅 `endpoint_exhausted:false` 时续页） |
+| `search`（原子兼容入口） | **`fileId`**（文件/文件夹结果） | info / download / delete 的 --node；list 的 --folder |
+| `search`（原子兼容入口） | `spaceId` / `rootFolderId`（空间结果） | list 的 --space-id；`drive copy/move` 的 --folder |
+| `search`（原子兼容入口） | `nextCursor` | search 的 --cursor（翻页，以 leaf Help 为准） |
 | `mkdir`       | `fileId`（UUID 格式）            | list 的 --folder                                          |
 | `recycle list` | `id`（回收项 ID）               | recycle restore 的 --id                                    |
 | `recycle list` | `name`（原始文件名）             | 供用户确认还原目标                                          |
