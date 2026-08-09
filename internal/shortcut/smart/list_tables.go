@@ -72,10 +72,12 @@ var ListTables = shortcut.Shortcut{
 			Reason:       "Reviewed read-only directory adapter: get_tables without tableIds returns the Base table directory; the CLI validates the live response envelope and every stable tableId/tableName before emitting it.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "列出某个 Base 的完整稳定数据表目录",
-			UseWhen:      []string{"已经知道 baseId，需要完整列出该 Base 中可供后续命令使用的稳定 tableId 和 tableName 时"},
-			AvoidWhen:    []string{"已经知道 tableId 时直接使用它；需要字段或视图详情时使用 aitable table get"},
-			Examples:     []string{"dws aitable +list-tables --base B --format json"},
+			AgentSummary: "列出某个多维表(base)里的完整数据表目录（只读，严格投影 tableId/tableName）",
+			UseWhen: []string{
+				"当你已经知道某个多维表(base)的 baseId、想一步看清这个 base 下都有哪些数据表(table)、拿到它们的稳定 tableId 和 tableName 以便后续查记录或改结构时使用；内部调用 get_tables 且不传 tableIds，严格校验完整目录响应和每一条稳定身份。未知结构、非法条目或重复 ID 会失败，不会被压成空列表或原始成功结果。这是纯只读操作，只做列举与本地投影，不会创建、修改或删除任何表。",
+			},
+			AvoidWhen: []string{"已经知道 tableId 时直接使用它；需要字段或视图详情时使用 aitable table get"},
+			Examples:  []string{"dws aitable +list-tables --base B --format json"},
 		},
 	},
 	Flags: []shortcut.Flag{

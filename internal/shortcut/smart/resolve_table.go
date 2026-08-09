@@ -84,7 +84,7 @@ var ResolveTable = shortcut.Shortcut{
 			Reason:       "Reviewed read-only resolver: the CLI strictly validates the complete non-paginated get_tables directory, then performs explicit exact/fuzzy matching without guessing among candidates.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读）",
+			AgentSummary: "在某个多维表 Base 的完整表目录内按名称解析唯一 tableId（只读）",
 			UseWhen:      []string{"当你已经知道某个多维表 Base 的 baseId、又只记得里面某张数据表(table)的名称、想把它解析成可直接用于后续工具的 tableId 时使用；内部先列出全部数据表并优先做大小写不敏感的精确名称匹配，只有显式 --fuzzy 才允许包含匹配。0 个或多个候选都会以结构化错误失败并返回候选，绝不替你猜选。这是纯只读操作，只做列举、本地匹配与投影，不会创建、修改或删除任何数据表。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples:     []string{"dws aitable +resolve-table --base B --name 任务"},

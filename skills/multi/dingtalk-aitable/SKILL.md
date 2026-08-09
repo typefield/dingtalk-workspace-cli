@@ -67,7 +67,7 @@ metadata:
 | `dws aitable +form-update` | write | 更新表单标题 / 描述 |
 | `dws aitable +import-data` | write | 将已上传文件导入 AI 表格（新建表或追加到已有表） |
 | `dws aitable +import-upload` | write | 为导入任务申请 OSS 直传地址（uploadUrl / importId） |
-| `dws aitable +list-tables` | read | 列出某个多维表(base)里的所有数据表（只读，投影 tableId/tableName） |
+| `dws aitable +list-tables` | read | 列出某个多维表(base)里的完整数据表目录（只读，严格投影 tableId/tableName） |
 | `dws aitable +record-bulk-patch` | high-risk-write | 完整查询目标记录后批量合并同一组 cells，自动分片并逐条读回验证 |
 | `dws aitable +record-delete` | high-risk-write | 批量删除记录（不可逆），自动按 100 条分片并逐批确认记录已不存在 |
 | `dws aitable +record-history-list` | read | 按 recordId 查询单条记录的变更历史 |
@@ -81,7 +81,7 @@ metadata:
 | `dws aitable +record-upsert` | write | 按 recordId 自动拆分 create/update，按 100 条分片并读回验证 |
 | `dws aitable +record-upsert-by-key` | write | 按唯一字段值有则更新、无则创建记录，并读回验证 |
 | `dws aitable +resolve-base` | read | 按名称搜索多维表 Base 并解析出唯一 baseId（只读） |
-| `dws aitable +resolve-table` | read | 在某个多维表 Base 内按名称解析出唯一的数据表 tableId（只读） |
+| `dws aitable +resolve-table` | read | 在某个多维表 Base 的完整表目录内按名称解析唯一 tableId（只读） |
 | `dws aitable +role-create` | write | 在指定 Base 下创建自定义角色 |
 | `dws aitable +role-delete` | high-risk-write | 删除 Base 下指定的自定义角色（不可逆） |
 | `dws aitable +role-get` | read | 获取单个角色的完整配置 |
