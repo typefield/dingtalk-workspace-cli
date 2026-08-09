@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T11:39:51+08:00
+扫描时间：2026-08-09T11:52:45+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1380 |
+| `legacy_only` | 1374 |
 | `dual_validate` | 24 |
-| `unified_active` | 79 |
+| `unified_active` | 85 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,7 +22,12 @@
 
 ### 状态迁移
 
-- REVIEW: `dws minutes +detail`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +agenda`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +attendee-list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +book-list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +book-search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +room-groups`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws calendar +room-search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -403,11 +408,11 @@
 | `dws cache refresh` | `legacy_only` | `legacy` | no |
 | `dws cache status` | `legacy_only` | `legacy` | no |
 | `dws calendar` | `legacy_only` | `legacy` | no |
-| `dws calendar +agenda` | `legacy_only` | `legacy` | no |
-| `dws calendar +attendee-list` | `legacy_only` | `legacy` | no |
+| `dws calendar +agenda` | `unified_active` | `unified` | no |
+| `dws calendar +attendee-list` | `unified_active` | `unified` | no |
 | `dws calendar +book` | `legacy_only` | `legacy` | no |
-| `dws calendar +book-list` | `legacy_only` | `legacy` | no |
-| `dws calendar +book-search` | `legacy_only` | `legacy` | no |
+| `dws calendar +book-list` | `unified_active` | `unified` | no |
+| `dws calendar +book-search` | `unified_active` | `unified` | no |
 | `dws calendar +cancel-event` | `legacy_only` | `legacy` | no |
 | `dws calendar +conflicts` | `unified_active` | `unified` | no |
 | `dws calendar +find-room` | `unified_active` | `unified` | no |
@@ -420,8 +425,8 @@
 | `dws calendar +reschedule` | `legacy_only` | `legacy` | no |
 | `dws calendar +respond-event` | `legacy_only` | `legacy` | yes |
 | `dws calendar +room-find` | `legacy_only` | `legacy` | yes |
-| `dws calendar +room-groups` | `legacy_only` | `legacy` | no |
-| `dws calendar +room-search` | `legacy_only` | `legacy` | no |
+| `dws calendar +room-groups` | `unified_active` | `unified` | no |
+| `dws calendar +room-search` | `unified_active` | `unified` | no |
 | `dws calendar +suggest-time` | `legacy_only` | `legacy` | no |
 | `dws calendar +today` | `unified_active` | `unified` | no |
 | `dws calendar +tomorrow` | `unified_active` | `unified` | no |

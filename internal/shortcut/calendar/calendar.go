@@ -26,6 +26,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -44,12 +45,13 @@ func parseMillis(field, v string) (int64, error) {
 
 // EventList → list_calendar_events
 var EventList = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+agenda",
-	Product:     "calendar",
-	Description: "查询日程列表（不传时间默认查询今天）",
-	Intent:      "当你想了解某人（默认自己）在某段时间内的日程安排、看看今天/本周有哪些会时使用；可传 --start/--end 圈定时间范围、--calendar-id 指定日历，返回该区间内的日程列表（含日程 ID，可配合 +get 看详情）。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+agenda",
+	Product:       "calendar",
+	Description:   "查询日程列表（不传时间默认查询今天）",
+	Intent:        "当你想了解某人（默认自己）在某段时间内的日程安排、看看今天/本周有哪些会时使用；可传 --start/--end 圈定时间范围、--calendar-id 指定日历，返回该区间内的日程列表（含日程 ID，可配合 +get 看详情）。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -127,7 +129,12 @@ var EventList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(events), "events": events})
+		payload := map[string]any{
+			"count":            len(events),
+			"events":           events,
+			"pagination_known": false,
+		}
+		return calendarListOutput(rt, payload, len(events))
 	},
 }
 
@@ -221,12 +228,13 @@ func eventListFirst(m map[string]any, keys ...string) (any, bool) {
 
 // AttendeeList → get_calendar_participants
 var AttendeeList = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+attendee-list",
-	Product:     "calendar",
-	Description: "查看日程参会人",
-	Intent:      "当你想知道某个日程都有谁参加、各人的出席响应状态时使用；输入 --event 日程 ID，返回参会人列表（userId 及其接受/拒绝等状态）。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+attendee-list",
+	Product:       "calendar",
+	Description:   "查看日程参会人",
+	Intent:        "当你想知道某个日程都有谁参加、各人的出席响应状态时使用；输入 --event 日程 ID，返回参会人列表（userId 及其接受/拒绝等状态）。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -270,7 +278,8 @@ var AttendeeList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(attendees), "attendees": attendees})
+		payload := map[string]any{"count": len(attendees), "attendees": attendees}
+		return calendarListOutput(rt, payload, len(attendees))
 	},
 }
 
@@ -351,12 +360,13 @@ func attendeeFirst(m map[string]any, keys ...string) (any, bool) {
 
 // RoomSearch → search_rooms (按名称模糊搜索，不检查可用性)
 var RoomSearch = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+room-search",
-	Product:     "calendar",
-	Description: "按名称模糊搜索会议室（不检查可用性）",
-	Intent:      "当你只知道会议室名字、想拿到它的 roomId 以便后续预定时使用；输入 --room-name 名称关键词（建议只填核心专名，去掉“会议室”等后缀），返回名称匹配的会议室列表。它只按名字找、不判断该时段是否空闲，查可用性请用 +room-find。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+room-search",
+	Product:       "calendar",
+	Description:   "按名称模糊搜索会议室（不检查可用性）",
+	Intent:        "当你只知道会议室名字、想拿到它的 roomId 以便后续预定时使用；输入 --room-name 名称关键词（建议只填核心专名，去掉“会议室”等后缀），返回名称匹配的会议室列表。它只按名字找、不判断该时段是否空闲，查可用性请用 +room-find。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -396,7 +406,8 @@ var RoomSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(rooms), "rooms": rooms})
+		payload := map[string]any{"count": len(rooms), "rooms": rooms}
+		return calendarListOutput(rt, payload, len(rooms))
 	},
 }
 
@@ -539,12 +550,13 @@ var RoomFind = shortcut.Shortcut{
 // RoomRemove → delete_meeting_room
 // RoomGroups → list_meeting_room_groups
 var RoomGroups = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+room-groups",
-	Product:     "calendar",
-	Description: "会议室分组列表",
-	Intent:      "当你想按楼层/园区等分组浏览会议室、或需要拿到 groupId 以便在 +room-find 里按分组过滤时使用；返回会议室分组列表，支持 --limit/--page 分页。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+room-groups",
+	Product:       "calendar",
+	Description:   "会议室分组列表",
+	Intent:        "当你想按楼层/园区等分组浏览会议室、或需要拿到 groupId 以便在 +room-find 里按分组过滤时使用；返回会议室分组列表，支持 --limit/--page 分页。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -591,7 +603,12 @@ var RoomGroups = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(groups), "groups": groups})
+		payload := map[string]any{
+			"count":            len(groups),
+			"groups":           groups,
+			"pagination_known": false,
+		}
+		return calendarListOutput(rt, payload, len(groups))
 	},
 }
 
@@ -748,12 +765,13 @@ var BusySearch = shortcut.Shortcut{
 
 // BookList → list_calendars
 var BookList = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+book-list",
-	Product:     "calendar",
-	Description: "查询用户的日历本列表",
-	Intent:      "当你想知道自己有哪些日历本（主日历、项目日历、订阅日历等）、或需要拿到某个日历的 calendarId 以便在 +agenda/+create 中指定时使用；无需参数，返回全部日历本列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+book-list",
+	Product:       "calendar",
+	Description:   "查询用户的日历本列表",
+	Intent:        "当你想知道自己有哪些日历本（主日历、项目日历、订阅日历等）、或需要拿到某个日历的 calendarId 以便在 +agenda/+create 中指定时使用；无需参数，返回全部日历本列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -789,7 +807,8 @@ var BookList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(books), "calendars": books})
+		payload := map[string]any{"count": len(books), "calendars": books}
+		return calendarListOutput(rt, payload, len(books))
 	},
 }
 
@@ -830,12 +849,13 @@ func bookListProject(data map[string]any) ([]map[string]any, error) {
 // BookGet → get_calendar
 // BookSearch → search_calendar
 var BookSearch = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+book-search",
-	Product:     "calendar",
-	Description: "按名称模糊搜索日历本",
-	Intent:      "当你只记得日历本名字的一部分、想据此找到对应的 calendarId 时使用；输入 --query 名称关键词，返回名称匹配的日历本列表，便于后续在其它命令里指定 --calendar-id。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+book-search",
+	Product:       "calendar",
+	Description:   "按名称模糊搜索日历本",
+	Intent:        "当你只记得日历本名字的一部分、想据此找到对应的 calendarId 时使用；输入 --query 名称关键词，返回名称匹配的日历本列表，便于后续在其它命令里指定 --calendar-id。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -874,7 +894,8 @@ var BookSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(calendars), "calendars": calendars})
+		payload := map[string]any{"count": len(calendars), "calendars": calendars}
+		return calendarListOutput(rt, payload, len(calendars))
 	},
 }
 
@@ -947,6 +968,12 @@ func calendarProjectionUnknown(message string) error {
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)
+}
+
+func calendarListOutput(rt *shortcut.RuntimeContext, payload map[string]any, count int) error {
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(count)}),
+	))
 }
 
 // calendarStableID accepts only a non-empty string identifier. A display name,

@@ -5,6 +5,7 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 type calendarListProject func(map[string]any) ([]map[string]any, error)
@@ -48,6 +49,21 @@ func TestCalendarProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 		_, err := bookListProject(map[string]any{"items": []any{}})
 		assertCalendarProjectionUnknown(t, err)
 	})
+}
+
+func TestCalendarProjectedReadShortcutsAreUnifiedActive(t *testing.T) {
+	for name, rollout := range map[string]output.RolloutState{
+		"agenda":        EventList.OutputRollout,
+		"attendee list": AttendeeList.OutputRollout,
+		"room search":   RoomSearch.OutputRollout,
+		"room groups":   RoomGroups.OutputRollout,
+		"book list":     BookList.OutputRollout,
+		"book search":   BookSearch.OutputRollout,
+	} {
+		if rollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout=%q, want unified_active", name, rollout)
+		}
+	}
 }
 
 func TestCalendarProjectionAcceptsKnownNestedContainers(t *testing.T) {
