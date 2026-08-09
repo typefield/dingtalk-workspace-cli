@@ -72,6 +72,29 @@ func TestCalendarProjectionAcceptsKnownNestedContainers(t *testing.T) {
 	}
 }
 
+func TestCalendarProjectionRejectsDisplayOnlyRows(t *testing.T) {
+	tests := []struct {
+		name    string
+		project calendarListProject
+		data    map[string]any
+	}{
+		{"events", eventListProject, map[string]any{"items": []any{map[string]any{"summary": "展示名"}}}},
+		{"attendees", attendeeListProject, map[string]any{"items": []any{map[string]any{"displayName": "展示名"}}}},
+		{"rooms", roomSearchProject, map[string]any{"items": []any{map[string]any{"roomName": "展示名"}}}},
+		{"room groups", roomGroupsProject, map[string]any{"items": []any{map[string]any{"groupName": "展示名"}}}},
+		{"book search", bookSearchProject, map[string]any{"items": []any{map[string]any{"summary": "展示名"}}}},
+	}
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			_, err := test.project(test.data)
+			assertCalendarProjectionUnknown(t, err)
+		})
+	}
+
+	_, err := bookListProject(map[string]any{"result": []any{map[string]any{"summary": "展示名"}}})
+	assertCalendarProjectionUnknown(t, err)
+}
+
 func assertCalendarProjectionUnknown(t *testing.T, err error) {
 	t.Helper()
 	if err == nil {

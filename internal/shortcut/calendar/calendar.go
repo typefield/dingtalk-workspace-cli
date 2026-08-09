@@ -149,8 +149,11 @@ func eventListProject(data map[string]any) ([]map[string]any, error) {
 			return nil, calendarProjectionUnknown("日程列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := eventListFirst(m, "eventId", "event_id", "id"); ok {
+		if v, ok := calendarStableID(m, "eventId", "event_id", "id"); ok {
 			row["eventId"] = v
+		}
+		if _, ok := row["eventId"]; !ok {
+			return nil, calendarProjectionUnknown("日程列表条目缺少可用于后续操作的稳定 eventId")
 		}
 		if v, ok := eventListFirst(m, "summary", "title", "name"); ok {
 			row["summary"] = v
@@ -292,8 +295,11 @@ func attendeeListProject(data map[string]any) ([]map[string]any, error) {
 		if v, ok := attendeeFirst(m, "displayName", "display_name", "name", "userName", "user_name", "nick", "nickName"); ok {
 			row["displayName"] = v
 		}
-		if v, ok := attendeeFirst(m, "userId", "user_id", "id", "staffId", "staff_id", "unionId", "union_id"); ok {
+		if v, ok := calendarStableID(m, "userId", "user_id", "id", "staffId", "staff_id", "unionId", "union_id"); ok {
 			row["userId"] = v
+		}
+		if _, ok := row["userId"]; !ok {
+			return nil, calendarProjectionUnknown("日程参会人条目缺少可用于后续操作的稳定 userId")
 		}
 		if v, ok := attendeeFirst(m, "responseStatus", "response_status", "status", "attendeeStatus", "attendee_status", "responseType", "response"); ok {
 			row["responseStatus"] = v
@@ -412,8 +418,11 @@ func roomSearchProject(data map[string]any) ([]map[string]any, error) {
 			return nil, calendarProjectionUnknown("会议室搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := roomSearchFirst(m, "roomId", "room_id", "id"); ok {
+		if v, ok := calendarStableID(m, "roomId", "room_id", "id"); ok {
 			row["roomId"] = v
+		}
+		if _, ok := row["roomId"]; !ok {
+			return nil, calendarProjectionUnknown("会议室搜索条目缺少可用于后续预订的稳定 roomId")
 		}
 		if v, ok := roomSearchFirst(m, "roomName", "room_name", "name", "summary"); ok {
 			row["roomName"] = v
@@ -604,8 +613,11 @@ func roomGroupsProject(data map[string]any) ([]map[string]any, error) {
 			return nil, calendarProjectionUnknown("会议室分组列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := roomGroupsFirst(m, "groupId", "group_id", "id"); ok {
+		if v, ok := calendarStableID(m, "groupId", "group_id", "id"); ok {
 			row["groupId"] = v
+		}
+		if _, ok := row["groupId"]; !ok {
+			return nil, calendarProjectionUnknown("会议室分组条目缺少可用于后续筛选的稳定 groupId")
 		}
 		if v, ok := roomGroupsFirst(m, "groupName", "group_name", "name", "summary"); ok {
 			row["groupName"] = v
@@ -796,7 +808,13 @@ func bookListProject(data map[string]any) ([]map[string]any, error) {
 			return nil, calendarProjectionUnknown("日历本列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		for _, k := range []string{"calendarId", "summary", "privilege", "type", "description"} {
+		if calendarID, ok := calendarStableID(m, "calendarId", "calendar_id", "id"); ok {
+			row["calendarId"] = calendarID
+		}
+		if _, ok := row["calendarId"]; !ok {
+			return nil, calendarProjectionUnknown("日历本列表条目缺少可用于后续操作的稳定 calendarId")
+		}
+		for _, k := range []string{"summary", "privilege", "type", "description"} {
 			if v, ok := m[k]; ok {
 				row[k] = v
 			}
@@ -877,8 +895,11 @@ func bookSearchProject(data map[string]any) ([]map[string]any, error) {
 			return nil, calendarProjectionUnknown("日历本搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := bookSearchFirst(m, "calendarId", "calendar_id", "id"); ok {
+		if v, ok := calendarStableID(m, "calendarId", "calendar_id", "id"); ok {
 			row["calendarId"] = v
+		}
+		if _, ok := row["calendarId"]; !ok {
+			return nil, calendarProjectionUnknown("日历本搜索条目缺少可用于后续操作的稳定 calendarId")
 		}
 		if v, ok := bookSearchFirst(m, "summary", "name", "title"); ok {
 			row["summary"] = v
@@ -926,6 +947,25 @@ func calendarProjectionUnknown(message string) error {
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)
+}
+
+// calendarStableID accepts only a non-empty string identifier. A display name,
+// null, number, or blank string is not sufficient: every projection below is
+// selected because the Agent may feed its identifier to a subsequent calendar
+// command. Passing an untargetable row through as a successful result would
+// turn response-shape drift into a later, much harder-to-debug write/read error.
+func calendarStableID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // bookSearchFirst returns the first present, non-nil value among candidate keys.
