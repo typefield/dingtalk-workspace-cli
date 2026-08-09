@@ -6,10 +6,8 @@ package smart
 import (
 	"bytes"
 	"encoding/json"
-	stderrors "errors"
 	"testing"
 
-	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 )
 
@@ -106,13 +104,17 @@ func TestCrossPlatformCoverageMyGroupsPageAllUsesNumericCursorAndFiltersAfterMer
 	if len(caller.args) != 2 || caller.args[1]["cursor"] != float64(88) {
 		t.Fatalf("calls = %#v", caller.args)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
+	var envelope map[string]any
+	if err := json.Unmarshal(output.Bytes(), &envelope); err != nil {
 		t.Fatal(err)
 	}
-	if payload["count"] != float64(1) || payload["pagesFetched"] != float64(2) ||
-		payload["complete"] != true || payload["failedCount"] != float64(0) {
-		t.Fatalf("payload = %#v", payload)
+	data, _ := envelope["data"].(map[string]any)
+	meta, _ := envelope["meta"].(map[string]any)
+	pagination, _ := meta["pagination"].(map[string]any)
+	if envelope["ok"] != true || envelope["outcome"] != "success" ||
+		data["count"] != float64(1) || len(data["groups"].([]any)) != 1 ||
+		pagination["pages"] != float64(2) || pagination["endpoint_exhausted"] != true {
+		t.Fatalf("envelope = %#v", envelope)
 	}
 }
 
@@ -192,14 +194,9 @@ func TestMyGroupsLaterProjectionFailureKeepsPriorPageAndDisablesReplay(t *testin
 		}
 		return payload, err
 	}()
-	if err == nil {
-		t.Fatal("later projection failure unexpectedly succeeded")
-	}
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed.StableSubtype != string(apperrors.SubtypeMyGroupsIncomplete) || !typed.RetryableSet || typed.Retryable {
-		t.Fatalf("projection failure must remain a non-retryable typed partial error, got %#v", err)
-	}
-	if payload["partial"] != true || payload["stopReason"] != "projection_error" || payload["count"] != float64(1) {
+	data, _ := payload["data"].(map[string]any)
+	if err != nil || payload["ok"] != false || payload["outcome"] != "partial_failure" ||
+		len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
 		t.Fatalf("payload = %#v", payload)
 	}
 }
@@ -227,29 +224,38 @@ func TestCrossPlatformCoverageMyGroupsAdditionalEdges(t *testing.T) {
 		payload, err := run(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"groups":[],"hasMore":false}}`,
 		}}, "--cursor", "cursor-1")
-		if err != nil || payload["complete"] != true || payload["stopReason"] != "source_complete" {
+		meta, _ := payload["meta"].(map[string]any)
+		pagination, _ := meta["pagination"].(map[string]any)
+		if err != nil || payload["ok"] != true || payload["outcome"] != "success" || pagination["endpoint_exhausted"] != true {
 			t.Fatalf("payload=%#v err=%v", payload, err)
 		}
 		payload, err = run(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`,
 		}})
-		if err != nil || payload["complete"] != false || payload["stopReason"] != "single_page" {
+		meta, _ = payload["meta"].(map[string]any)
+		pagination, _ = meta["pagination"].(map[string]any)
+		if err != nil || payload["ok"] != true || payload["outcome"] != "success" ||
+			pagination["endpoint_exhausted"] != false || pagination["next_token"] != "2" {
 			t.Fatalf("payload=%#v err=%v", payload, err)
 		}
-		if _, err = run(t, &chatMessagesPagingCaller{failAt: 1}); err == nil {
-			t.Fatal("single-page read failure unexpectedly succeeded")
+		payload, err = run(t, &chatMessagesPagingCaller{failAt: 1})
+		if err != nil || payload["ok"] != false || payload["outcome"] != "failure" {
+			t.Fatalf("single-page failure payload=%#v err=%v", payload, err)
 		}
 	})
 
 	t.Run("all-page failures", func(t *testing.T) {
-		if _, err := run(t, &chatMessagesPagingCaller{failAt: 1}, "--page-all"); err == nil {
-			t.Fatal("first-page failure unexpectedly succeeded")
+		payload, err := run(t, &chatMessagesPagingCaller{failAt: 1}, "--page-all")
+		if err != nil || payload["ok"] != false || payload["outcome"] != "failure" {
+			t.Fatalf("first-page failure payload=%#v err=%v", payload, err)
 		}
-		payload, err := run(t, &chatMessagesPagingCaller{
+		payload, err = run(t, &chatMessagesPagingCaller{
 			responses: []string{`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`},
 			failAt:    2,
 		}, "--page-all")
-		if err == nil || payload["partial"] != true || payload["stopReason"] != "read_failure" {
+		data, _ := payload["data"].(map[string]any)
+		if err != nil || payload["ok"] != false || payload["outcome"] != "partial_failure" ||
+			len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
 			t.Fatalf("payload=%#v err=%v", payload, err)
 		}
 	})
@@ -258,21 +264,28 @@ func TestCrossPlatformCoverageMyGroupsAdditionalEdges(t *testing.T) {
 		name      string
 		responses []string
 		args      []string
-		stop      string
-		wantErr   bool
+		outcome   string
+		checkPage bool
 	}{
-		{name: "unknown pagination", responses: []string{`{"result":{"groups":[]}}`}, args: []string{"--page-all"}, stop: "pagination_error", wantErr: true},
-		{name: "missing continuation", responses: []string{`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true}}`}, args: []string{"--page-all"}, stop: "pagination_error", wantErr: true},
+		{name: "unknown pagination", responses: []string{`{"result":{"groups":[]}}`}, args: []string{"--page-all"}, outcome: "partial_failure"},
+		{name: "missing continuation", responses: []string{`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true}}`}, args: []string{"--page-all"}, outcome: "partial_failure"},
 		{name: "stalled continuation", responses: []string{
 			`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`,
 			`{"result":{"groups":[{"openConversationId":"g2"}],"hasMore":true,"nextCursor":2}}`,
-		}, args: []string{"--page-all"}, stop: "pagination_error", wantErr: true},
-		{name: "page limit", responses: []string{`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`}, args: []string{"--page-all", "--page-limit", "1"}, stop: "page_limit"},
+		}, args: []string{"--page-all"}, outcome: "partial_failure"},
+		{name: "page limit", responses: []string{`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`}, args: []string{"--page-all", "--page-limit", "1"}, outcome: "success", checkPage: true},
 	} {
 		t.Run(tc.name, func(t *testing.T) {
 			payload, err := run(t, &chatMessagesPagingCaller{responses: tc.responses}, tc.args...)
-			if (err != nil) != tc.wantErr || payload["stopReason"] != tc.stop {
+			if err != nil || payload["outcome"] != tc.outcome {
 				t.Fatalf("payload=%#v err=%v", payload, err)
+			}
+			if tc.checkPage {
+				meta, _ := payload["meta"].(map[string]any)
+				pagination, _ := meta["pagination"].(map[string]any)
+				if pagination["endpoint_exhausted"] != false || pagination["next_token"] != "2" {
+					t.Fatalf("page-limit pagination=%#v", pagination)
+				}
 			}
 		})
 	}

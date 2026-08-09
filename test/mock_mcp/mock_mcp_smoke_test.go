@@ -392,8 +392,13 @@ func TestMultiIME2E_NaturalTargetsCompletenessAndWriteBoundaries(t *testing.T) {
 		if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 			t.Fatalf("resource output is not JSON: %v\n%s", err, stdout)
 		}
-		ledger, _ := payload["resourceDownloads"].(map[string]any)
-		if payload["complete"] != true || ledger["downloadedCount"] != float64(1) || ledger["failedCount"] != float64(0) {
+		data, _ := payload["data"].(map[string]any)
+		ledger, _ := data["resourceDownloads"].(map[string]any)
+		meta, _ := payload["meta"].(map[string]any)
+		pagination, _ := meta["pagination"].(map[string]any)
+		if payload["ok"] != true || payload["outcome"] != "success" ||
+			pagination["endpoint_exhausted"] != true ||
+			ledger["downloadedCount"] != float64(1) || ledger["failedCount"] != float64(0) {
 			t.Fatalf("resource completion = %#v", payload)
 		}
 	})
@@ -405,8 +410,9 @@ func TestMultiIME2E_NaturalTargetsCompletenessAndWriteBoundaries(t *testing.T) {
 			"chat", "+search-msg", "--query", "分页失败",
 			"--page-all", "--no-enrich",
 		)
-		if err != nil {
-			t.Fatalf("partial search failed as a command: %v\nstdout=%s\nstderr=%s", err, stdout, stderr)
+		exitErr, isExitError := err.(*exec.ExitError)
+		if !isExitError || exitErr.ExitCode() != 7 {
+			t.Fatalf("partial search exit = %v, want 7\nstdout=%s\nstderr=%s", err, stdout, stderr)
 		}
 		calls := snapshot()
 		if got := recordedToolNames(calls); !reflect.DeepEqual(got, []string{"search_messages", "search_messages"}) {
@@ -419,15 +425,20 @@ func TestMultiIME2E_NaturalTargetsCompletenessAndWriteBoundaries(t *testing.T) {
 		if _, hasBroadComplete := payload["complete"]; hasBroadComplete {
 			t.Fatalf("partial search must not publish the semantically broad complete field: %#v", payload)
 		}
-		if payload["endpointExhausted"] != false || payload["indexCoverageKnown"] != false ||
-			payload["hasMore"] != true || payload["nextCursor"] != "c2" ||
-			payload["count"] != float64(1) || payload["pagesFetched"] != float64(1) ||
-			payload["failedCount"] != float64(1) {
+		if payload["ok"] != false || payload["outcome"] != "partial_failure" {
 			t.Fatalf("partial search contract = %#v", payload)
 		}
-		failures, _ := payload["failures"].([]any)
-		if len(failures) != 1 || failures[0].(map[string]any)["stage"] != "search-page" {
-			t.Fatalf("partial search failures = %#v", failures)
+		data, _ := payload["data"].(map[string]any)
+		succeeded, _ := data["succeeded"].([]any)
+		failures, _ := data["failed"].([]any)
+		if len(succeeded) != 1 || len(failures) != 1 {
+			t.Fatalf("partial search channels = %#v", data)
+		}
+		pageData, _ := succeeded[0].(map[string]any)["data"].(map[string]any)
+		messages, _ := pageData["messages"].([]any)
+		failureError, _ := failures[0].(map[string]any)["error"].(map[string]any)
+		if len(messages) != 1 || failureError["stage"] != "pagination_read" {
+			t.Fatalf("partial search facts = %#v", data)
 		}
 	})
 
@@ -470,12 +481,16 @@ func TestMultiIME2E_NaturalTargetsCompletenessAndWriteBoundaries(t *testing.T) {
 		if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
 			t.Fatalf("read output is not JSON: %v\n%s", err, stdout)
 		}
-		if payload["contractVersion"] != "im.message-list.v1" || payload["complete"] != true || payload["failedCount"] != float64(0) {
+		data, _ := payload["data"].(map[string]any)
+		meta, _ := payload["meta"].(map[string]any)
+		pagination, _ := meta["pagination"].(map[string]any)
+		if payload["ok"] != true || payload["outcome"] != "success" ||
+			pagination["endpoint_exhausted"] != true {
 			t.Fatalf("message contract = %#v", payload)
 		}
-		messages, _ := payload["messages"].([]any)
+		messages, _ := data["messages"].([]any)
 		if len(messages) != 1 {
-			t.Fatalf("messages = %#v", payload["messages"])
+			t.Fatalf("messages = %#v", data["messages"])
 		}
 		message, _ := messages[0].(map[string]any)
 		if message["messageId"] != "msg-1" || message["senderId"] != "D-sender" || message["senderType"] != "user" {

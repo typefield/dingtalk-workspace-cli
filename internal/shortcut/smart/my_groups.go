@@ -49,11 +49,11 @@ const (
 //	dws chat +my-groups
 //	dws chat +my-groups --type group
 var MyGroups = shortcut.Shortcut{
-	// The existing payload remains the external result while the exact same
-	// read is projected into the PageLedger candidate. A real single-page
-	// observation exists, but empty/continuation/partial paths still need more
-	// tenant evidence before this public shortcut may become unified_active.
-	OutputRollout: output.RolloutDualValidate,
+	// The command now publishes the PageLedger-backed result directly. Real
+	// read-only evidence confirms the continuation shape; fixture-backed tests
+	// keep empty, terminal, contradictory-cursor and later-page failures
+	// fail-closed. Endpoint exhaustion never claims tenant-wide visibility.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+my-groups",
 	Product:       "chat",
@@ -443,7 +443,7 @@ func myGroupsObserveFailure(pageLedger *output.PageLedger, cursor string, observ
 	return observeErr
 }
 
-// myGroupsUnifiedResult is the candidate output contract. It excludes legacy
+// myGroupsUnifiedResult is the active output contract. It excludes legacy
 // fields such as complete/hasMore/nextCursor/failures: the framework owns
 // outcome and endpoint pagination. PageLedger preserves each completed page
 // when a later page fails, so the candidate can report partial_failure without
@@ -474,7 +474,7 @@ func myGroupsUnifiedResult(pageLedger *output.PageLedger, payload map[string]any
 }
 
 // myGroupsUnifiedGroups keeps the compatibility payload untouched while
-// exposing the IM-wide canonical group handle in a future unified result.
+// exposing the IM-wide canonical group handle in the unified result.
 // Other chat readers use openConversationId as the value accepted by follow-up
 // commands; a bare display-oriented conversationId would keep two competing
 // machine contracts alive after promotion.

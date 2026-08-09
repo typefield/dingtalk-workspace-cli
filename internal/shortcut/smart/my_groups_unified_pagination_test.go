@@ -26,9 +26,9 @@ import (
 	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
-func TestMyGroupsRolloutIsDualValidate(t *testing.T) {
-	if MyGroups.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("my-groups rollout=%q, want dual_validate", MyGroups.OutputRollout)
+func TestMyGroupsRolloutIsUnifiedActive(t *testing.T) {
+	if MyGroups.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("my-groups rollout=%q, want unified_active", MyGroups.OutputRollout)
 	}
 }
 
@@ -68,15 +68,16 @@ func TestMyGroupsDualValidatePreservesLegacyPayload(t *testing.T) {
 	if len(helper.args) != 1 {
 		t.Fatalf("calls=%d, want one execution", len(helper.args))
 	}
-	var legacy map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &legacy); err != nil {
-		t.Fatalf("decode legacy payload: %v", err)
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode active payload: %v", err)
 	}
-	if _, exists := legacy["ok"]; exists {
-		t.Fatalf("dual validation leaked unified envelope: %#v", legacy)
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("active command did not emit unified success: %#v", envelope)
 	}
-	if legacy["count"] != float64(1) || legacy["complete"] != true || legacy["stopReason"] != "source_complete" {
-		t.Fatalf("legacy payload changed: %#v", legacy)
+	data, _ := envelope["data"].(map[string]any)
+	if len(data["groups"].([]any)) != 1 {
+		t.Fatalf("active group payload changed: %#v", envelope)
 	}
 }
 
@@ -126,7 +127,7 @@ func runMyGroupsUnifiedResult(t *testing.T, fake *chatMessagesPagingCaller, args
 	return envelope, exitCode
 }
 
-func TestMyGroupsPromotableUnifiedPaginationOutcomes(t *testing.T) {
+func TestMyGroupsUnifiedPaginationOutcomes(t *testing.T) {
 	t.Run("terminal page uses framework pagination", func(t *testing.T) {
 		envelope, exitCode := runMyGroupsUnifiedResult(t, &chatMessagesPagingCaller{responses: []string{
 			`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":false,"nextCursor":0}}`,

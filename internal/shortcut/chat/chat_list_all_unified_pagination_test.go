@@ -18,9 +18,9 @@ import (
 	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
-func TestChatListAllRolloutIsDualValidate(t *testing.T) {
-	if ChatListAll.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("chat-list-all rollout=%q, want dual_validate", ChatListAll.OutputRollout)
+func TestChatListAllRolloutIsUnifiedActive(t *testing.T) {
+	if ChatListAll.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("chat-list-all rollout=%q, want unified_active", ChatListAll.OutputRollout)
 	}
 }
 
@@ -93,7 +93,7 @@ func runChatListAllUnifiedResult(t *testing.T, fake *larkAlignmentCaller, args .
 	return envelope, exitCode
 }
 
-func TestChatListAllPromotableUnifiedPaginationOutcomes(t *testing.T) {
+func TestChatListAllUnifiedPaginationOutcomes(t *testing.T) {
 	t.Run("terminal page uses framework pagination", func(t *testing.T) {
 		envelope, exitCode := runChatListAllUnifiedResult(t, &larkAlignmentCaller{responses: map[string]string{
 			"im/list_my_groups_pagination": `{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":false,"nextCursor":0}}`,

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent review for chat +chat-list-all's legacy-preserving pagination migration.
+"""Agent review for chat +chat-list-all's active unified pagination contract.
 
 This evidence collector reads declarations and runs fixture-backed local tests.
 It writes Markdown only; it never calls a DingTalk tenant or persists runtime
@@ -32,9 +32,9 @@ def source_checks() -> list[tuple[str, str, str]]:
     body = match.group("body") if match else ""
     return [
         (
-            "单命令进入 dual_validate，Agent 不选择协议",
-            "PASS" if "OutputRollout: output.RolloutDualValidate" in body else "FAIL",
-            "公开调用仍只使用 `--format json`；外部输出维持 legacy，由发布评审决定后续晋级。",
+            "单命令进入 unified_active，Agent 不选择协议",
+            "PASS" if "OutputRollout: output.RolloutUnifiedActive" in body else "FAIL",
+            "公开调用只使用 `--format json`；每次调用只有一个 active 结果契约。",
         ),
         (
             "同一次读取映射至 PageLedger 候选结果",
@@ -52,14 +52,14 @@ def source_checks() -> list[tuple[str, str, str]]:
             "已读页保留为 succeeded；游标矛盾不冒充 endpoint 耗尽。",
         ),
         (
-            "双验证锁定 legacy 字节兼容",
+            "迁移测试锁定 legacy/dual 字节兼容",
             "PASS" if "TestChatListAllDualValidatePreservesLegacyPayload" in test else "FAIL",
             "单页和 --page-all 均不要求既有消费者更改 argv 或解析器。",
         ),
         (
-            "未来 active 结果不泄漏版本或 legacy 分页字段",
-            "PASS" if "TestChatListAllPromotableUnifiedPaginationOutcomes" in test and 'envelope["contract_version"]' in test else "FAIL",
-            "promotion probe 只使用 `--format json`，检查 endpoint 终态与 partial_failure/rc=7。",
+            "active 结果不泄漏版本或 legacy 分页字段",
+            "PASS" if "TestChatListAllUnifiedPaginationOutcomes" in test and 'envelope["contract_version"]' in test else "FAIL",
+            "active probe 只使用 `--format json`，检查 endpoint 终态与 partial_failure/rc=7。",
         ),
     ]
 
@@ -73,7 +73,7 @@ def run_probe() -> tuple[str, str]:
         "-count=1",
         "./internal/shortcut/chat",
         "-run",
-        r"Test(ChatListAll(RolloutIsDualValidate|DualValidatePreservesLegacyPayload|PromotableUnifiedPaginationOutcomes|FailsClosedWithoutStableConversationID)|CrossPlatformCoverageChatListAll.*)$",
+        r"Test(ChatListAll(RolloutIsUnifiedActive|DualValidatePreservesLegacyPayload|UnifiedPaginationOutcomes|FailsClosedWithoutStableConversationID)|CrossPlatformCoverageChatListAll.*)$",
     ]
     completed = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=180)
     detail = f"rc={completed.returncode}"
@@ -92,7 +92,7 @@ def main() -> int:
     passed = sum(status == "PASS" for _, status, _ in checks)
 
     lines = [
-        "# Chat `+chat-list-all` dual-validate 分页 Agent 审阅",
+        "# Chat `+chat-list-all` 统一分页 Agent 审阅",
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
@@ -105,9 +105,9 @@ def main() -> int:
         lines.append(f"| {name} | {check_status} | {detail.replace('|', ' / ')} |")
     lines += [
         "",
-        f"结论：**{passed}/{len(checks)} PASS**。`chat +chat-list-all` 现从 legacy 进入 dual_validate：历史 JSON 仍原样输出；内部候选由 PageLedger 表达端点耗尽、可续页、未知边界和后续页 `partial_failure`。Agent 仍只传 `--format json`，不传协议版本或 rollout 参数。",
+        f"结论：**{passed}/{len(checks)} PASS**。`chat +chat-list-all` 已进入 unified_active：普通 `--format json` 直接由 PageLedger 表达 endpoint 耗尽、可续页、未知边界和后续页 `partial_failure`。Agent 不传协议版本或 rollout 参数。",
         "",
-        "未验证：真实账号的空群、多页、游标冲突、可见范围和网关异常形状。已存在正常单页只读证据不能替代这些边界；完成脱敏 live evidence 后才可按单命令评审进入 active。",
+        "边界：真实账号已观察到可续页形状，但空群、完整多页、游标冲突、可见范围和网关异常形状仍由 fixture 或后续隔离账号复验覆盖；active 的 endpoint exhaustion 不代表租户目录完整。",
         "",
     ]
     report = "\n".join(lines)

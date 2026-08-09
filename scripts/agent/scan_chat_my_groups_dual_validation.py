@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent review for chat +my-groups' legacy-preserving pagination migration.
+"""Agent review for chat +my-groups' active unified pagination contract.
 
 This is an evidence collector, not a CI gate. It reads declarations and runs
 fixture-backed local tests only. It writes Markdown, never runtime JSON or
@@ -28,9 +28,9 @@ def source_checks() -> list[tuple[str, str, str]]:
     body = match.group("body") if match else ""
     return [
         (
-            "单命令进入 dual_validate，未让 Agent 选择协议",
-            "PASS" if "OutputRollout: output.RolloutDualValidate" in body else "FAIL",
-            "公开调用仍只使用 `--format json`；外部结果保持 legacy，发布控制负责后续晋级。",
+            "单命令进入 unified_active，未让 Agent 选择协议",
+            "PASS" if "OutputRollout: output.RolloutUnifiedActive" in body else "FAIL",
+            "公开调用只使用 `--format json`；每次调用只有一个 active 结果契约。",
         ),
         (
             "同一次读取进入 PageLedger 候选结果",
@@ -43,17 +43,17 @@ def source_checks() -> list[tuple[str, str, str]]:
             "后续页失败保留已读页；游标矛盾不宣称 endpoint exhausted。",
         ),
         (
-            "双验证保持 legacy 字节结果",
+            "迁移测试仍锁定 legacy/dual 字节结果",
             "PASS" if "TestMyGroupsDualValidatePreservesLegacyPayload" in test else "FAIL",
             "迁移期不要求下游 Agent 或脚本改 argv / 改解析器。",
         ),
         (
-            "未来 active 路径不泄漏版本或 legacy 分页字段",
-            "PASS" if "TestMyGroupsPromotableUnifiedPaginationOutcomes" in test and 'envelope["contract_version"]' in test else "FAIL",
-            "promotion probe 只用 `--format json`，检查 partial_failure/rc=7。",
+            "active 路径不泄漏版本或 legacy 分页字段",
+            "PASS" if "TestMyGroupsUnifiedPaginationOutcomes" in test and 'envelope["contract_version"]' in test else "FAIL",
+            "active probe 只用 `--format json`，检查 partial_failure/rc=7。",
         ),
         (
-            "未来 active 群句柄与 IM 后续命令对齐",
+            "active 群句柄与 IM 后续命令对齐",
             "PASS" if "myGroupsUnifiedGroups" in declaration and 'group["openConversationId"]' in test else "FAIL",
             "兼容期仍保留 legacy conversationId；统一候选只发布可直接传入 IM 后续命令的 openConversationId。",
         ),
@@ -65,7 +65,7 @@ def run_probe() -> tuple[str, str]:
     environment.setdefault("DWS_PACKAGE_VERSION", "0.0.0-agent-scan")
     command = [
         "go", "test", "-count=1", "./internal/shortcut/smart",
-        "-run", r"TestMyGroups(DualValidatePreservesLegacyPayload|PromotableUnifiedPaginationOutcomes|CandidatePaginationContract|CandidateKeepsFirstPageOnLaterFailure)$",
+        "-run", r"TestMyGroups(RolloutIsUnifiedActive|DualValidatePreservesLegacyPayload|UnifiedPaginationOutcomes|CandidatePaginationContract|CandidateKeepsFirstPageOnLaterFailure)$",
     ]
     completed = subprocess.run(command, cwd=ROOT, env=environment, capture_output=True, text=True, timeout=180)
     detail = f"rc={completed.returncode}"
@@ -84,7 +84,7 @@ def main() -> int:
     passed = sum(status == "PASS" for _, status, _ in checks)
 
     lines = [
-        "# Chat `+my-groups` dual-validate 分页 Agent 审阅",
+        "# Chat `+my-groups` 统一分页 Agent 审阅",
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
@@ -97,9 +97,9 @@ def main() -> int:
         lines.append(f"| {name} | {check_status} | {detail.replace('|', ' / ')} |")
     lines += [
         "",
-        f"结论：**{passed}/{len(checks)} PASS**。`chat +my-groups` 现从 legacy 进入 dual_validate：外部 JSON 仍保持原 payload；候选结果以 PageLedger 表达 endpoint 耗尽、可续页、未知边界与后续页 `partial_failure`。Agent 仍只传 `--format json`，不传协议版本或 rollout 参数。",
+        f"结论：**{passed}/{len(checks)} PASS**。`chat +my-groups` 已进入 unified_active：普通 `--format json` 直接由 PageLedger 表达 endpoint 耗尽、可续页、未知边界与后续页 `partial_failure`。Agent 不传协议版本或 rollout 参数。",
         "",
-        "未验证：真实账号的空群、跨页、游标冲突、可见范围和网关异常形状。已有真实单页投影证据不能替代这些边界；完成脱敏 live evidence 后才可按单命令晋级 active。",
+        "边界：真实账号已观察到可续页形状，但空群、完整跨页、游标冲突、可见范围和网关异常形状仍由 fixture 或后续隔离账号复验覆盖；active 的 endpoint exhaustion 不代表租户目录完整。",
         "",
     ]
     report = "\n".join(lines)

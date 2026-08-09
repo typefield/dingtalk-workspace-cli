@@ -983,16 +983,16 @@ func chatListMineProject(data map[string]any) []map[string]any {
 
 // ChatListAll paginates all groups the caller joined (list_my_groups_pagination, im).
 var ChatListAll = shortcut.Shortcut{
-	// Preserve the established payload while PageLedger validates the exact
-	// same read internally. The report has a real one-page observation, but
-	// empty, continuation and partial paths need additional tenant evidence
-	// before this public directory command is allowed to become active.
-	OutputRollout: output.RolloutDualValidate,
+	// Publish the PageLedger-backed result directly. Real read-only evidence
+	// confirms the continuation shape; fixture-backed tests keep terminal,
+	// unknown, contradictory-cursor and later-page failures truthful. Endpoint
+	// exhaustion remains narrower than tenant-wide directory completeness.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "chat",
 	Command:       "+chat-list-all",
 	Product:       "im",
-	Description:   "分页拉取我加入的所有群列表",
-	Intent:        "当你想遍历当前用户加入的所有群做统计或批量操作时使用；只读分页返回全部已加入的群列表。",
+	Description:   "分页拉取当前接口可见的已加入群列表",
+	Intent:        "当你想遍历当前接口可见的已加入群做统计或批量操作时使用；只读分页只承诺接口分页耗尽，不扩大为租户群目录完整。",
 	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
@@ -1006,15 +1006,15 @@ var ChatListAll = shortcut.Shortcut{
 			CLIPath:        "chat +chat-list-all",
 			PrimaryCLIPath: "chat +chat-list-all",
 		},
-		Description: "分页拉取我加入的所有群列表",
+		Description: "分页拉取当前接口可见的已加入群列表",
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
 			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "分页拉取我加入的所有群列表",
-			UseWhen:      []string{"当你想遍历当前用户加入的所有群做统计或批量操作时使用；只读分页返回全部已加入的群列表。"},
+			AgentSummary: "分页拉取当前接口可见的已加入群列表",
+			UseWhen:      []string{"当你想遍历当前接口可见的已加入群做统计或批量操作时使用；只读分页只承诺接口分页耗尽，不扩大为租户群目录完整。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples:     []string{"dws chat +chat-list-all --limit 50"},
 		},
@@ -1354,9 +1354,9 @@ func chatListAllObserveFailure(pageLedger *output.PageLedger, observeErr error) 
 	return observeErr
 }
 
-// chatListAllUnifiedResult is the internal candidate contract. Legacy fields
-// such as complete/hasMore/nextCursor/failures remain external compatibility
-// payload only until this command is explicitly promoted.
+// chatListAllUnifiedResult is the active contract. Legacy fields such as
+// complete/hasMore/nextCursor/failures remain available only in the explicit
+// legacy/dual test seam and are not published by the active command.
 func chatListAllUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
 	if pageLedger == nil {
 		return nil, fmt.Errorf("missing pagination ledger")

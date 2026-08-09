@@ -37,8 +37,8 @@ dws chat conversation-info --open-dingtalk-id <openDingTalkId> --format json
 |------|------|------|
 | `+conversation-list` | 获取当前用户会话 | 要求“全部”时加 `--page-all`；只有明确的 endpoint 耗尽证据才可称完整，续页/失败/未知页必须保留 |
 | `+chat-list` | 列出当前用户会话（默认群聊，可选单聊） | 默认只返回群聊；`--types group,p2p` 可包含单聊；要求全部时加 `--page-all`，合并去重后再过滤类型 |
-| `+chat-list-all` | 获取当前用户加入的全部群 | 要求全部时加 `--page-all`；沿数字 `nextCursor` 去重聚合 |
-| `+my-groups` | 获取并投影当前用户加入的群 | 要求全部时加 `--page-all`；读完后再应用 `--type` 本地过滤 |
+| `+chat-list-all` | 分页读取当前接口可见的已加入群 | 需要耗尽当前 endpoint 时加 `--page-all`；按 `meta.pagination` 判断续页，不能扩大为租户目录完整 |
+| `+my-groups` | 读取并投影当前接口可见的已加入群 | 需要耗尽当前 endpoint 时加 `--page-all`；读完后再应用 `--type` 本地过滤，不能扩大为租户目录完整 |
 | `+conversation-list-top` | 获取置顶会话列表 | 可选 `--limit` `--cursor` `--exclude-muted`；使用稳定 `conversations[]` |
 | `message list-unread-conversations` | 获取未读会话列表 | 可选 `--count` `--exclude-muted` |
 | `clear-red-point` | 清除指定会话红点 | `--conversation-id` |

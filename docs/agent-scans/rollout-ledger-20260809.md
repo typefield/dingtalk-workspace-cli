@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T19:46:24+08:00
+扫描时间：2026-08-09T20:06:20+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1343 |
-| `dual_validate` | 25 |
-| `unified_active` | 115 |
+| `dual_validate` | 23 |
+| `unified_active` | 117 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,12 +18,12 @@
 
 ## Transition review
 
-基线：`rollout-ledger-20260809.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-before-chat-active.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws todo +due-today`: `dual_validate` → `unified_active`
-- PASS: `dws todo +related-tasks`: `dual_validate` → `unified_active`
+- PASS: `dws chat +chat-list-all`: `dual_validate` → `unified_active`
+- PASS: `dws chat +my-groups`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -490,7 +490,7 @@
 | `dws chat +chat-get-by-id` | `legacy_only` | `legacy` | no |
 | `dws chat +chat-invite-url` | `legacy_only` | `legacy` | no |
 | `dws chat +chat-list` | `legacy_only` | `legacy` | no |
-| `dws chat +chat-list-all` | `dual_validate` | `legacy` | no |
+| `dws chat +chat-list-all` | `unified_active` | `unified` | no |
 | `dws chat +chat-list-join-requests` | `legacy_only` | `legacy` | no |
 | `dws chat +chat-list-mine` | `legacy_only` | `legacy` | no |
 | `dws chat +chat-members-get` | `legacy_only` | `legacy` | no |
@@ -566,7 +566,7 @@
 | `dws chat +messages-unset-pin` | `legacy_only` | `legacy` | no |
 | `dws chat +messages-unset-top` | `legacy_only` | `legacy` | no |
 | `dws chat +messages-update-card` | `legacy_only` | `legacy` | no |
-| `dws chat +my-groups` | `dual_validate` | `legacy` | no |
+| `dws chat +my-groups` | `unified_active` | `unified` | no |
 | `dws chat +search-msg` | `unified_active` | `unified` | no |
 | `dws chat +send-to-group` | `legacy_only` | `legacy` | no |
 | `dws chat +thread-replies` | `unified_active` | `unified` | no |
