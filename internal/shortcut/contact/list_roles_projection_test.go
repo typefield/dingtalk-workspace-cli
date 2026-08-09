@@ -83,6 +83,45 @@ func TestListRolesProjectFlatShape(t *testing.T) {
 	}
 }
 
+func TestListRolesProjectSkipsPairedEmptyLivePlaceholder(t *testing.T) {
+	// The live service may insert a paired-null label slot inside a real group.
+	// It is a transport placeholder, not a role. Dropping only this exact form
+	// preserves all usable roles without weakening the fail-closed rule for
+	// partial real rows.
+	const raw = `{"result":[{"groupName":"default","labels":[
+		{"labelId":null,"name":null},
+		{"labelId":101,"name":"roleA"}
+	]}]}`
+	var data map[string]any
+	if err := json.Unmarshal([]byte(raw), &data); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+	roles, known := listRolesProjectWithStatus(data)
+	if !known || len(roles) != 1 {
+		t.Fatalf("paired-null placeholder roles=%#v known=%v, want one known role", roles, known)
+	}
+	if got := roles[0]["labelId"]; got != float64(101) {
+		t.Fatalf("labelId=%#v, want 101", got)
+	}
+}
+
+func TestListRolesProjectKeepsHalfBlankRowsFailClosed(t *testing.T) {
+	// A name without a stable label ID can be a real but unprojectable role.
+	// It must not be treated as the harmless paired-empty service sentinel.
+	const raw = `{"result":[{"groupName":"default","labels":[
+		{"labelId":null,"name":"role without id"},
+		{"labelId":101,"name":"roleA"}
+	]}]}`
+	var data map[string]any
+	if err := json.Unmarshal([]byte(raw), &data); err != nil {
+		t.Fatalf("unmarshal fixture: %v", err)
+	}
+	roles, known := listRolesProjectWithStatus(data)
+	if known || len(roles) != 1 {
+		t.Fatalf("half-blank row roles=%#v known=%v, want fail-closed partial projection", roles, known)
+	}
+}
+
 func TestListRolesProjectionDistinguishesKnownEmptyFromUnknownShape(t *testing.T) {
 	if roles, known := listRolesProjectWithStatus(map[string]any{"result": []any{}}); !known || len(roles) != 0 {
 		t.Fatalf("known empty roles = %#v, known=%v", roles, known)

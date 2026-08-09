@@ -369,12 +369,11 @@ func listRolesResolveList(data map[string]any) ([]any, bool) {
 // flat list of label objects. get_org_labels returns result[] as label GROUPS
 // ({groupName, labels[]}), nesting the actual roles one level under each group's
 // labels[]. A naive top-level scan would hand back the group wrappers — which
-// carry no labelId/name — so every row would silently project to empty. When
-// the array is already a flat label list (no per-group labels[]), it is returned
-// unchanged so the projection tolerates both response shapes.
+// carry no labelId/name — so every row would silently project to empty. A flat
+// list remains flat; in either shape only the explicit paired-empty service
+// placeholder is removed before the strict row projection runs.
 func listRolesFlattenGroups(arr []any) []any {
 	flattened := make([]any, 0, len(arr))
-	sawGroup := false
 	for _, item := range arr {
 		m, ok := item.(map[string]any)
 		if !ok {
@@ -389,16 +388,59 @@ func listRolesFlattenGroups(arr []any) []any {
 			}
 		}
 		if nested != nil {
-			sawGroup = true
-			flattened = append(flattened, nested...)
+			for _, label := range nested {
+				// Some live get_org_labels responses contain an explicit blank
+				// label slot ({labelId:null,name:null}) inside an otherwise
+				// populated group. It is not a role that an Agent can act on;
+				// retaining it makes the whole response fail closed despite every
+				// actual role being present. Only discard the paired-empty
+				// sentinel. A half-populated or differently-shaped row remains in
+				// the stream and will therefore keep the projection fail-closed.
+				if listRolesEmptyPlaceholder(label) {
+					continue
+				}
+				flattened = append(flattened, label)
+			}
+			continue
+		}
+		if listRolesEmptyPlaceholder(item) {
 			continue
 		}
 		flattened = append(flattened, item)
 	}
-	if sawGroup {
-		return flattened
+	return flattened
+}
+
+// listRolesEmptyPlaceholder recognises only the service's paired-empty label
+// sentinel. It must stay narrower than a generic "unprojectable row" check:
+// a row that has a name without an ID, an ID without a name, or any other
+// usable value is still evidence of projection drift and must fail closed.
+func listRolesEmptyPlaceholder(item any) bool {
+	m, ok := item.(map[string]any)
+	if !ok {
+		return false
 	}
-	return arr
+	idBlank, hasID := listRolesFieldsBlank(m, "labelId", "label_id", "id")
+	nameBlank, hasName := listRolesFieldsBlank(m, "labelName", "label_name", "name")
+	return hasID && hasName && idBlank && nameBlank
+}
+
+func listRolesFieldsBlank(m map[string]any, keys ...string) (blank bool, present bool) {
+	for _, key := range keys {
+		value, found := m[key]
+		if !found {
+			continue
+		}
+		present = true
+		if value == nil {
+			continue
+		}
+		if text, ok := value.(string); ok && strings.TrimSpace(text) == "" {
+			continue
+		}
+		return false, true
+	}
+	return true, present
 }
 
 // listRolesFirst returns the first present candidate key's value.
