@@ -85,7 +85,7 @@ one invocation emits exactly one primary result
 - 原子命令与 shortcut 共用同一个 dingtalk-dev payload-to-CommandResult 分类器，避免相同上游结果在两入口被判成不同 outcome。
 - 带分页投影的 `+list/+permission-list/+event-list/+version-list` 在保留 `hasMore/nextCursor` 并完成对拍前不得晋级 `unified_active`。
 - `dws dev connect` 同时承载前台 stream 与 `--daemon`，整条命令暂留 legacy；`status/stop/restart/list` 独立迁移。daemon start 如需统一结果，应先拆独立 terminal command。
-- `connect stop/restart` 保持旧版直接执行行为，不要求 `--yes` 或交互确认；两者仍声明为高风险本地副作用，dry-run 必须无副作用。
+- `connect stop/restart` 是 destructive/high/user_required 的本地副作用；无 `--yes` 必须在发送信号前拒绝，`--dry-run` 必须无副作用。
 - `report +inbox-list`、`report +outbox-list` 是首批非 dev 的统一结果只读命令：必须先保留 `hasMore/nextCursor`，并将其严格映射为 `meta.pagination`；没有分页信号只能标记未知，不得伪造 endpoint 已耗尽。
 
 ## 7. 对齐原则
@@ -105,6 +105,6 @@ one invocation emits exactly one primary result
 5. `--format json` 输出单个合法统一结果文档，stdout 无日志污染。
 6. typed error、进程 rc 与信封 `error.exit_code` 一致。
 7. 安全声明、确认门禁与 dry-run 运行时行为同源。
-8. rollout ledger 和 CI 禁止跳级；发布回滚无需修改 Agent argv。
+8. rollout ledger 由 Agent 发布审阅复核合法迁移，禁止跳级；发布回滚无需修改 Agent argv，且不得把该审阅接入 CI。
 
 完整实施计划、风险表和验收矩阵见 [RFC-0001](./rfcs/0001-unified-command-framework-2.0-dev-gradual-rollout.md)。

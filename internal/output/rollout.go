@@ -47,8 +47,9 @@ func ParseRolloutState(raw string) (RolloutState, error) {
 	}
 }
 
-// ValidateRolloutTransition protects the release order. It is consumed by CI
-// against the checked-in migration ledger; it is not an end-user capability.
+// ValidateRolloutTransition protects the release order. Agent release review
+// compares it with the Markdown migration ledger; it is not an end-user
+// capability or a CI gate.
 func ValidateRolloutTransition(from, to RolloutState, rollback bool) error {
 	if _, err := ParseRolloutState(string(from)); err != nil {
 		return err
