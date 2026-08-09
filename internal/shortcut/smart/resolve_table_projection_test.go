@@ -10,8 +10,8 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
-func TestResolveTableDualValidatePreservesLegacyProjection(t *testing.T) {
-	if ResolveTable.OutputRollout != output.RolloutDualValidate {
+func TestResolveTableUnifiedActiveEmitsReviewedProjection(t *testing.T) {
+	if ResolveTable.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout = %q", ResolveTable.OutputRollout)
 	}
 	if ResolveTable.Contract.Result == nil || len(ResolveTable.Contract.Result.DataSchema) == 0 {
@@ -25,12 +25,12 @@ func TestResolveTableDualValidatePreservesLegacyProjection(t *testing.T) {
 	if caller.calls != 1 || caller.tool != "get_tables" {
 		t.Fatalf("calls=%d tool=%q", caller.calls, caller.tool)
 	}
-	for _, want := range []string{`"resolved": true`, `"status": "resolved"`, `"matchType": "exact"`, `"tableId": "t1"`, `"name": "任务"`} {
+	for _, want := range []string{`"ok": true`, `"outcome": "success"`, `"resolved": true`, `"matchType": "exact"`, `"count": 1`, `"candidates"`, `"tableId": "t1"`, `"tableName": "任务"`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
-			t.Fatalf("legacy output missing %s: %s", want, out)
+			t.Fatalf("unified output missing %s: %s", want, out)
 		}
 	}
-	if bytes.Contains([]byte(out), []byte(`"ok"`)) || bytes.Contains([]byte(out), []byte(`"outcome"`)) {
-		t.Fatalf("dual validation changed legacy wire: %s", out)
+	if bytes.Contains([]byte(out), []byte(`"contract_version"`)) || bytes.Contains([]byte(out), []byte(`"status"`)) {
+		t.Fatalf("active output leaked protocol or legacy-only fields: %s", out)
 	}
 }

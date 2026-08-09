@@ -13,7 +13,7 @@ import tempfile
 
 
 ROOT = Path(__file__).resolve().parents[2]
-RESULT_KEYS = {"resolved", "count", "candidates"}
+RESULT_KEYS = {"resolved", "matchType", "count", "candidates"}
 
 
 def run(command: list[str], env: dict[str, str], timeout: int = 300) -> subprocess.CompletedProcess[str]:
@@ -102,6 +102,7 @@ def main() -> int:
                             and "contract_version" not in payload
                             and set(data) == RESULT_KEYS
                             and data.get("resolved") is True
+                            and data.get("matchType") == "exact"
                             and data.get("count") == 1
                             and meta.get("count") == 1
                         )

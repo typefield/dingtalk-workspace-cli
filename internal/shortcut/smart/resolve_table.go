@@ -43,7 +43,7 @@ import (
 //
 //	dws aitable +resolve-table --base B --name 任务
 var ResolveTable = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+resolve-table",
 	Product:       "aitable",
@@ -72,7 +72,7 @@ var ResolveTable = shortcut.Shortcut{
 				contract.ResultOutcomeSuccess,
 				contract.ResultOutcomeFailure,
 			},
-			DataSchema: json.RawMessage(`{"type":"object","properties":{"resolved":{"type":"boolean","const":true},"count":{"type":"integer","const":1},"candidates":{"type":"array","minItems":1,"maxItems":1,"items":{"type":"object","properties":{"tableId":{"type":"string","minLength":1},"tableName":{"type":"string","minLength":1}},"required":["tableId","tableName"],"additionalProperties":false}}},"required":["resolved","count","candidates"],"additionalProperties":false}`),
+			DataSchema: json.RawMessage(`{"type":"object","properties":{"resolved":{"type":"boolean","const":true},"matchType":{"type":"string","enum":["exact","fuzzy"]},"count":{"type":"integer","const":1},"candidates":{"type":"array","minItems":1,"maxItems":1,"items":{"type":"object","properties":{"tableId":{"type":"string","minLength":1},"tableName":{"type":"string","minLength":1}},"required":["tableId","tableName"],"additionalProperties":false}}},"required":["resolved","matchType","count","candidates"],"additionalProperties":false}`),
 			NDJSON: &contract.ResultNDJSONSpec{
 				RecordPath:   "candidates",
 				RecordSchema: json.RawMessage(`{"type":"object","properties":{"tableId":{"type":"string","minLength":1},"tableName":{"type":"string","minLength":1}},"required":["tableId","tableName"],"additionalProperties":false}`),
@@ -117,6 +117,7 @@ var ResolveTable = shortcut.Shortcut{
 		}
 		data := map[string]any{
 			"resolved":   true,
+			"matchType":  resolution.MatchType,
 			"count":      1,
 			"candidates": []map[string]any{candidate},
 		}
