@@ -1179,19 +1179,18 @@ func newEventStopCommand() *cobra.Command {
 			workDir := eventWorkDir(configDir, editionName, dwsevent.SourceKindAppStream, clientIDHash)
 			if err := eventStopBus(busctl.StopConfig{WorkDir: workDir}); err != nil {
 				if errors.Is(err, busctl.ErrNotRunning) {
-					fmt.Fprintln(c.OutOrStdout(), "bus is not running")
-					return nil
+					return writeEventStopSuccess(c, as, nil, "bus is not running")
 				}
 				return err
 			}
-			fmt.Fprintln(c.OutOrStdout(), "bus stopped")
-			return nil
+			return writeEventStopSuccess(c, as, nil, "bus stopped")
 		},
 	}
-	// The terminal outcome bridge is intentionally shadow-only for now.  The
-	// existing human/legacy output stays byte-compatible while we validate that
-	// every partial stop can be represented without losing completed actions.
-	output.SetCommandRollout(cmd, output.RolloutDualValidate)
+	// Stop is a high-risk write, so this promotion follows a complete outcome
+	// lifecycle: dry-run, terminal success and partial/unknown cleanup failures
+	// all produce exactly one framework result.  No command-line option selects
+	// a contract; the rollout remains release-owned metadata.
+	output.SetCommandRollout(cmd, output.RolloutUnifiedActive)
 	cmd.Flags().StringVar(&asIdentity, "as", "user", "事件身份: user")
 	cmd.Flags().StringVar(&opts.ControlBaseURL, "personal-event-base-url", "", "个人事件控制面 base URL；默认由 MCP base 派生 /dws")
 	cmd.Flags().StringVar(&opts.StreamSourceID, "stream-source-id", strings.TrimSpace(os.Getenv("DWS_STREAM_SOURCE_ID")),
@@ -1244,6 +1243,14 @@ func newEventStopCommand() *cobra.Command {
 			},
 			Description: "取消个人事件订阅并停止对应本地消费",
 			DryRun:      &contract.DryRunSpec{PreviewKind: "request", RemoteReads: false},
+			Result: &contract.ResultSpec{
+				Outcomes: []contract.ResultOutcome{
+					contract.ResultOutcomeSuccess,
+					contract.ResultOutcomePartialFailure,
+					contract.ResultOutcomeFailure,
+				},
+				DataSchema: json.RawMessage(`{"type":"object","properties":{"action":{"type":"string","const":"event.stop"},"identity":{"type":"string","enum":["user"]},"subscribe_ids":{"type":"array","items":{"type":"string"}},"cancelled_count":{"type":"integer","minimum":0},"bus_state":{"type":"string"}},"required":["action","identity","subscribe_ids","cancelled_count","bus_state"],"additionalProperties":true}`),
+			},
 			Interface: &contract.InterfaceSpec{
 				Mode:         "composite",
 				Availability: "available",
@@ -1269,6 +1276,20 @@ func eventStopDryRun(cmd *cobra.Command) bool {
 }
 
 func writeEventStopDryRun(cmd *cobra.Command, identity string, opts personalStopOptions) error {
+	payload := eventStopDryRunPayload(identity, opts)
+	if output.UsesUnifiedResult(cmd) {
+		return output.StoreResult(cmd.Context(), output.Success(
+			payload,
+			output.WithIdentity(strings.TrimSpace(identity)),
+			output.WithDryRun(),
+		))
+	}
+	encoder := json.NewEncoder(cmd.OutOrStdout())
+	encoder.SetIndent("", "  ")
+	return encoder.Encode(payload)
+}
+
+func eventStopDryRunPayload(identity string, opts personalStopOptions) map[string]any {
 	payload := map[string]any{
 		"dry_run":  true,
 		"action":   "event.stop",
@@ -1278,9 +1299,40 @@ func writeEventStopDryRun(cmd *cobra.Command, identity string, opts personalStop
 	if subscribeID := strings.TrimSpace(opts.SubscribeID); subscribeID != "" {
 		payload["subscribe_id"] = subscribeID
 	}
-	encoder := json.NewEncoder(cmd.OutOrStdout())
-	encoder.SetIndent("", "  ")
-	return encoder.Encode(payload)
+	return payload
+}
+
+// writeEventStopSuccess is the single success seam for both personal and
+// retained internal app paths.  Legacy commands retain their historic text
+// only while they are not promoted; unified-active commands defer rendering to
+// the root lifecycle so stdout cannot contain a second hand-written result.
+func writeEventStopSuccess(cmd *cobra.Command, identity string, subscribeIDs []string, busState string) error {
+	if output.UsesUnifiedResult(cmd) {
+		return output.StoreResult(cmd.Context(), output.Success(
+			eventStopSuccessPayload(identity, subscribeIDs, busState),
+			output.WithIdentity(strings.TrimSpace(identity)),
+		))
+	}
+	if strings.TrimSpace(identity) == "user" {
+		printPersonalStopResult(cmd.OutOrStdout(), subscribeIDs, len(subscribeIDs) == 1, busState)
+		return nil
+	}
+	fmt.Fprintln(cmd.OutOrStdout(), busState)
+	return nil
+}
+
+func eventStopSuccessPayload(identity string, subscribeIDs []string, busState string) map[string]any {
+	ids := append([]string(nil), subscribeIDs...)
+	if ids == nil {
+		ids = []string{}
+	}
+	return map[string]any{
+		"action":          "event.stop",
+		"identity":        strings.TrimSpace(identity),
+		"subscribe_ids":   ids,
+		"cancelled_count": len(ids),
+		"bus_state":       strings.TrimSpace(busState),
+	}
 }
 
 // ─────────────────────────────────────────────────────────────────────

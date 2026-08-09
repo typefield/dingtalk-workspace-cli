@@ -14,6 +14,9 @@
 package app
 
 import (
+	"bytes"
+	"context"
+	"encoding/json"
 	"errors"
 	"testing"
 
@@ -83,25 +86,66 @@ func TestEventStopOutcomeResultWithoutConfirmedSuccessIsFailure(t *testing.T) {
 	}
 }
 
-func TestEventStopDualValidatePreservesLegacyError(t *testing.T) {
+func TestEventStopUnifiedActiveStoresPartialResult(t *testing.T) {
 	cause := errors.New("control-plane response lost")
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd := newEventStopCommand()
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
 	err := eventStopPartialError(
-		newEventStopCommand(),
+		cmd,
 		"event stop --as user: stop matching local consumer",
 		cause,
 		[]string{"sub-1"}, nil, "local_consumer_stop",
 	)
-	if !errors.Is(err, cause) {
-		t.Fatalf("error = %v, want original cause", err)
+	if err != nil {
+		t.Fatalf("eventStopPartialError = %v, want stored result", err)
 	}
-	var apiErr *apperrors.Error
-	if !errors.As(err, &apiErr) || apiErr.Reason != "partial_failure" {
-		t.Fatalf("error = %T %#v, want legacy partial API error", err, apiErr)
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 7 {
+		t.Fatalf("EmitStoredResult = code:%d emitted:%t err:%v, want 7/true/nil", code, emitted, err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode partial result: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+		t.Fatalf("partial envelope = %#v", envelope)
 	}
 }
 
-func TestEventStopStartsInDualValidation(t *testing.T) {
-	if got := output.CommandRollout(newEventStopCommand()); got != output.RolloutDualValidate {
-		t.Fatalf("event stop rollout = %q, want %q", got, output.RolloutDualValidate)
+func TestEventStopUnifiedActiveStoresTerminalSuccess(t *testing.T) {
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd := newEventStopCommand()
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	if err := writeEventStopSuccess(cmd, "user", []string{"sub-1"}, "personal bus stopped"); err != nil {
+		t.Fatalf("writeEventStopSuccess = %v", err)
+	}
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 {
+		t.Fatalf("EmitStoredResult = code:%d emitted:%t err:%v, want 0/true/nil", code, emitted, err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode success result: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("success envelope = %#v", envelope)
+	}
+	if _, found := envelope["contract_version"]; found {
+		t.Fatalf("success envelope leaked protocol version: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["cancelled_count"] != float64(1) || data["bus_state"] != "personal bus stopped" {
+		t.Fatalf("success data = %#v", envelope["data"])
+	}
+}
+
+func TestEventStopStartsUnifiedActive(t *testing.T) {
+	if got := output.CommandRollout(newEventStopCommand()); got != output.RolloutUnifiedActive {
+		t.Fatalf("event stop rollout = %q, want %q", got, output.RolloutUnifiedActive)
 	}
 }

@@ -11,6 +11,7 @@ import (
 	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/consume"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
+	outputpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/transport"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/mcptypes"
 	"github.com/spf13/cobra"
@@ -21,13 +22,19 @@ func TestCrossPlatformCoverageEventStopPreviewConfirmationAndStdinCoverage(t *te
 	t.Cleanup(func() { eventNormalizeAs = originalNormalize })
 	eventNormalizeAs = func(string) (string, error) { return "app", nil }
 	newStopRoot := func(dryRun, yes bool) (*cobra.Command, *bytes.Buffer) {
+		ctx, _ := outputpkg.WithResultStore(context.Background())
 		root := &cobra.Command{Use: "dws"}
+		root.SetContext(ctx)
 		root.PersistentFlags().Bool("dry-run", dryRun, "")
 		root.PersistentFlags().Bool("yes", yes, "")
 		root.AddCommand(newEventStopCommand())
 		var output bytes.Buffer
 		root.SetOut(&output)
 		root.SetErr(&output)
+		root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+			_, _, err := outputpkg.EmitStoredResult(cmd)
+			return err
+		}
 		return root, &output
 	}
 	root, output := newStopRoot(true, false)

@@ -1099,8 +1099,7 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 		)
 	}
 	if len(remaining) > 0 {
-		printPersonalStopResult(c.OutOrStdout(), subscribeIDs, isSingleTarget, "personal bus still running")
-		return nil
+		return writePersonalEventStopSuccess(c, subscribeIDs, isSingleTarget, "personal bus still running")
 	}
 
 	busState := "personal bus stopped"
@@ -1114,7 +1113,14 @@ func runPersonalEventStop(c *cobra.Command, opts personalStopOptions) error {
 			)
 		}
 	}
-	printPersonalStopResult(c.OutOrStdout(), subscribeIDs, isSingleTarget, busState)
+	return writePersonalEventStopSuccess(c, subscribeIDs, isSingleTarget, busState)
+}
+
+func writePersonalEventStopSuccess(c *cobra.Command, subscribeIDs []string, single bool, busState string) error {
+	if output.UsesUnifiedResult(c) {
+		return writeEventStopSuccess(c, "user", subscribeIDs, busState)
+	}
+	printPersonalStopResult(c.OutOrStdout(), subscribeIDs, single, busState)
 	return nil
 }
 
@@ -1206,6 +1212,20 @@ func eventStopPartialError(c *cobra.Command, message string, cause error, succee
 				apperrors.WithCause(err),
 			)
 		}
+	}
+	if output.UsesUnifiedResult(c) {
+		result, err := eventStopOutcomeResult(message, succeeded, failed, stage)
+		if err != nil {
+			return apperrors.NewInternal("event stop: cannot construct a truthful outcome result",
+				apperrors.WithCause(err),
+			)
+		}
+		if err := output.StoreResult(c.Context(), result); err != nil {
+			return apperrors.NewInternal("event stop: cannot store truthful outcome result",
+				apperrors.WithCause(err),
+			)
+		}
+		return nil
 	}
 	return legacy
 }

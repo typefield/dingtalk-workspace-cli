@@ -5,12 +5,14 @@ package app
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"strings"
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -54,12 +56,16 @@ func TestEventStopDryRunPrecedesConfirmationAndReturnsPreview(t *testing.T) {
 			if err := root.Execute(); err != nil {
 				t.Fatalf("event stop dry-run error = %v", err)
 			}
-			var preview map[string]any
-			if err := json.Unmarshal(stdout.Bytes(), &preview); err != nil {
+			var envelope map[string]any
+			if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
 				t.Fatalf("decode event stop dry-run preview: %v\n%s", err, stdout.String())
 			}
-			if preview["dry_run"] != true || preview["action"] != "event.stop" || preview["identity"] != "user" {
-				t.Fatalf("event stop dry-run preview = %#v", preview)
+			if envelope["ok"] != true || envelope["outcome"] != "success" || envelope["dry_run"] != true {
+				t.Fatalf("event stop dry-run envelope = %#v", envelope)
+			}
+			preview, ok := envelope["data"].(map[string]any)
+			if !ok || preview["action"] != "event.stop" || preview["identity"] != "user" {
+				t.Fatalf("event stop dry-run data = %#v", envelope["data"])
 			}
 			if got, _ := preview["all"].(bool); got != test.wantAll {
 				t.Fatalf("event stop dry-run all = %v, want %v", got, test.wantAll)
@@ -97,13 +103,19 @@ func TestCrossPlatformCoverageEventStopDryRunDoesNotBypassTargetValidation(t *te
 
 func newEventStopSafetyRoot() (*cobra.Command, *bytes.Buffer) {
 	stdout := &bytes.Buffer{}
+	ctx, _ := output.WithResultStore(context.Background())
 	root := &cobra.Command{
 		Use:           "dws",
 		SilenceErrors: true,
 		SilenceUsage:  true,
 	}
+	root.SetContext(ctx)
 	root.SetOut(stdout)
 	root.SetErr(&bytes.Buffer{})
+	root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		_, _, err := output.EmitStoredResult(cmd)
+		return err
+	}
 	root.PersistentFlags().Bool("dry-run", false, "preview without executing")
 	root.PersistentFlags().Bool("yes", false, "confirm execution")
 	event := &cobra.Command{Use: "event"}
