@@ -81,8 +81,8 @@ func (c *whoamiProjectionCaller) DryRun() bool   { return false }
 func (c *whoamiProjectionCaller) Fields() string { return "" }
 func (c *whoamiProjectionCaller) JQ() string     { return "" }
 
-func TestWhoamiDualValidatePreservesLegacyResultAndDeclaration(t *testing.T) {
-	if Whoami.OutputRollout != output.RolloutDualValidate {
+func TestWhoamiUnifiedResultAndDeclaration(t *testing.T) {
+	if Whoami.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout = %q", Whoami.OutputRollout)
 	}
 	result := Whoami.Contract.Result
@@ -109,7 +109,8 @@ func TestWhoamiDualValidatePreservesLegacyResultAndDeclaration(t *testing.T) {
 	helpers.InitDepsForTest(t, caller)
 	cmd := corecmd.New(shortcut.FromShortcut(Whoami))
 	cmd.PersistentFlags().String("format", "json", "")
-	cmd.SetContext(context.Background())
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
@@ -117,18 +118,22 @@ func TestWhoamiDualValidatePreservesLegacyResultAndDeclaration(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if caller.calls != 1 || stderr.Len() != 0 {
-		t.Fatalf("calls=%d stderr=%q", caller.calls, stderr.String())
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 || caller.calls != 1 || stderr.Len() != 0 {
+		t.Fatalf("emit code=%d emitted=%v calls=%d stderr=%q err=%v", code, emitted, caller.calls, stderr.String(), err)
 	}
-	const want = "{\n  \"name\": \"Example\",\n  \"userId\": \"user-1\"\n}\n"
-	if stdout.String() != want {
-		t.Fatalf("legacy bytes changed:\n got: %q\nwant: %q", stdout.String(), want)
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode envelope: %v\n%s", err, stdout.String())
 	}
-	var legacy map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &legacy); err != nil || legacy["userId"] != "user-1" || legacy["name"] != "Example" {
-		t.Fatalf("legacy result=%#v err=%v", legacy, err)
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", envelope)
 	}
-	if _, exists := legacy["ok"]; exists {
-		t.Fatalf("dual validation leaked unified envelope: %#v", legacy)
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("removed version marker leaked: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["userId"] != "user-1" || data["name"] != "Example" || len(data) != 2 {
+		t.Fatalf("data = %#v", envelope["data"])
 	}
 }

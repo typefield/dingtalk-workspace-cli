@@ -33,7 +33,7 @@ import (
 //
 //	dws contact +me
 var Whoami = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "contact",
 	Command:       "+me",
 	Product:       "contact",
