@@ -264,6 +264,15 @@ ok, outcome, identity, dry_run, data, meta, error, _notice
 
 空列表是成功，但不能伪装数据覆盖范围。`endpoint_exhausted` 只表示服务端分页端点已耗尽，不表示索引健康或全库无数据。
 
+### 7.3.1 可选补全提示
+
+`_notice` 只用于限定一个仍然真实的终结结果，不能代替 `failure` 或
+`partial_failure`。例如 `dev connect list` 的本地连接器状态不依赖远端应用名称：
+名称补全不可用时仍返回本地列表 `success`，并以
+`_notice.app_name_enrichment={state:"unavailable",reason:"remote_lookup_failed"}`
+说明该可选字段未补全。Agent 不得将这个提示解释为本地连接器状态失败，也不得把
+缺少 `appName` 解释为远端应用确实没有名称。
+
 ### 7.4 pending
 
 ```json

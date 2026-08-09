@@ -63,6 +63,20 @@ func TestCommandResultDetachesMutableFrameworkPayload(t *testing.T) {
 	}
 }
 
+func TestCommandResultDetachesMutableNotice(t *testing.T) {
+	notice := map[string]any{"enrichment": map[string]any{"state": "before"}}
+	result := Success(map[string]any{"id": "a"}, WithNotice(notice))
+	notice["enrichment"].(map[string]any)["state"] = "after"
+	env, err := EnvelopeFromResult(result)
+	if err != nil {
+		t.Fatal(err)
+	}
+	got := env.Notice.(map[string]any)["enrichment"].(map[string]any)["state"]
+	if got != "before" {
+		t.Fatalf("detached notice state=%v, want before", got)
+	}
+}
+
 func TestFailureExitCodeIsFrameworkDerived(t *testing.T) {
 	result := Failure(&ErrorInfo{Type: "validation", ExitCode: 99, Message: "bad input"})
 	if result.ExitCode() != 3 {

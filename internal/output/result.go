@@ -50,6 +50,32 @@ func WithMeta(meta *Meta) ResultOption {
 	return ResultOption{apply: func(env *Envelope) { env.Meta = cloneMeta(meta) }}
 }
 
+// WithNotice attaches an optional, non-terminal machine-readable notice. It
+// qualifies an otherwise truthful result (for example, optional enrichment
+// could not be completed) without changing the command outcome.
+func WithNotice(notice any) ResultOption {
+	return ResultOption{apply: func(env *Envelope) {
+		if isNilResultValue(notice) {
+			env.Notice = nil
+			return
+		}
+		env.Notice = cloneResultData(notice)
+	}}
+}
+
+func isNilResultValue(value any) bool {
+	if value == nil {
+		return true
+	}
+	v := reflect.ValueOf(value)
+	switch v.Kind() {
+	case reflect.Chan, reflect.Func, reflect.Interface, reflect.Map, reflect.Pointer, reflect.Slice:
+		return v.IsNil()
+	default:
+		return false
+	}
+}
+
 // Success constructs an immutable success result.
 func Success(data any, opts ...ResultOption) CommandResult {
 	return newCommandResult(OutcomeSuccess, data, nil, opts...)

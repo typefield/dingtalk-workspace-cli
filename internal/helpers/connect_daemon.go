@@ -1132,7 +1132,7 @@ func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 			if err != nil {
 				return apperrors.NewInternal(err.Error())
 			}
-			resolveAppNames(cmd, runner, reports)
+			notice := resolveAppNames(cmd, runner, reports)
 			// 统一输出 dev 域试点（队列 B114/B115）：JSON 契约路径输出完整
 			// 信封——数组入 data、条数入 meta.count；空结果 data:[] + count:0
 			// （AC-06：不暗示"无连接器=异常"，禁止输出 null）。
@@ -1144,11 +1144,12 @@ func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 				Outcome: output.OutcomeSuccess,
 				Data:    reports,
 				Meta:    &output.Meta{Count: output.NewCount(len(reports))},
+				Notice:  notice,
 			}
 			jsonOut, _ := cmd.Flags().GetBool("json")
 			format := output.ResolveFormat(cmd, output.FormatJSON)
 			if output.UsesUnifiedResult(cmd) {
-				return output.StoreResult(cmd.Context(), output.Success(reports, output.WithMeta(env.Meta)))
+				return output.StoreResult(cmd.Context(), output.Success(reports, output.WithMeta(env.Meta), output.WithNotice(notice)))
 			}
 			if jsonOut || format == output.FormatJSON {
 				return output.WriteEnvelope(cmd, env, output.FormatJSON)
@@ -1186,9 +1187,10 @@ func newDevAppRobotConnectListCommand(runner executor.Runner) *cobra.Command {
 }
 
 // resolveAppNames calls list_dev_app once to build a unifiedAppId→name map,
-// then fills in AppName on each report. Failures are silent (name stays empty)
-// so the list still works offline or when the API is unreachable.
-func resolveAppNames(cmd *cobra.Command, runner executor.Runner, reports []connectHealthReport) {
+// then fills in AppName on each report. A remote lookup failure never makes
+// the local connector list false; it is returned as an explicit notice so an
+// Agent can distinguish an absent name from unavailable enrichment.
+func resolveAppNames(cmd *cobra.Command, runner executor.Runner, reports []connectHealthReport) map[string]any {
 	need := false
 	for i := range reports {
 		if reports[i].UnifiedAppID != "" {
@@ -1197,11 +1199,11 @@ func resolveAppNames(cmd *cobra.Command, runner executor.Runner, reports []conne
 		}
 	}
 	if !need {
-		return
+		return nil
 	}
 	nameMap, err := devAppNameMap(cmd, runner)
 	if err != nil || nameMap == nil {
-		return
+		return connectAppNameEnrichmentNotice()
 	}
 	for i := range reports {
 		if reports[i].UnifiedAppID == "" {
@@ -1211,13 +1213,28 @@ func resolveAppNames(cmd *cobra.Command, runner executor.Runner, reports []conne
 			reports[i].AppName = name
 		}
 	}
+	return nil
+}
+
+func connectAppNameEnrichmentNotice() map[string]any {
+	return map[string]any{
+		"app_name_enrichment": map[string]any{
+			"state":   "unavailable",
+			"reason":  "remote_lookup_failed",
+			"message": "远端应用名称未能补全；本地连接器状态仍然可用。",
+		},
+	}
 }
 
 // devAppNameMap calls list_dev_app with pagination to build a full
-// unifiedAppId→appName map. It is best-effort: any error returns an empty map.
+// unifiedAppId→appName map. The caller treats any malformed or incomplete
+// pagination response as unavailable enrichment rather than silently claiming
+// that the resulting partial map is complete.
 func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]string, error) {
 	out := make(map[string]string)
 	cursor := ""
+	seenCursors := make(map[string]struct{})
+	completed := false
 	for page := 0; page < 20; page++ {
 		params := map[string]any{"pageSize": 100}
 		if cursor != "" {
@@ -1229,7 +1246,10 @@ func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]strin
 			return out, err
 		}
 		payload := devAppConnectUnwrap(res.Response)
-		items := devAppConnectList(payload)
+		items, known := devAppConnectListKnown(payload)
+		if !known {
+			return nil, fmt.Errorf("list_dev_app returned an unrecognised item container")
+		}
 		for _, item := range items {
 			uid := devAppConnectFirst(item, "unifiedAppId", "id")
 			name := devAppConnectFirst(item, "name", "appName")
@@ -1237,17 +1257,29 @@ func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]strin
 				out[uid] = name
 			}
 		}
-		hasMore := false
-		if v, ok := payload["hasMore"].(bool); ok {
-			hasMore = v
+		hasMore, hasMoreDeclared := payload["hasMore"].(bool)
+		if payload["hasMore"] != nil && !hasMoreDeclared {
+			return nil, fmt.Errorf("list_dev_app returned a non-boolean hasMore")
 		}
+		nextCursor := devAppConnectFirst(payload, "nextCursor", "cursor")
 		if !hasMore {
+			if nextCursor != "" {
+				return nil, fmt.Errorf("list_dev_app returned a continuation cursor after pagination ended")
+			}
+			completed = true
 			break
 		}
-		cursor = devAppConnectFirst(payload, "nextCursor", "cursor")
-		if cursor == "" {
-			break
+		if nextCursor == "" {
+			return nil, fmt.Errorf("list_dev_app declared more pages without a continuation cursor")
 		}
+		if _, duplicate := seenCursors[nextCursor]; duplicate {
+			return nil, fmt.Errorf("list_dev_app repeated a continuation cursor")
+		}
+		seenCursors[nextCursor] = struct{}{}
+		cursor = nextCursor
+	}
+	if !completed {
+		return nil, fmt.Errorf("list_dev_app exceeded the 20-page enrichment limit")
 	}
 	return out, nil
 }
@@ -1255,21 +1287,30 @@ func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]strin
 // devAppConnectList extracts the array of app items from a list_dev_app payload,
 // tolerating various wrapper shapes.
 func devAppConnectList(payload map[string]any) []map[string]any {
+	items, _ := devAppConnectListKnown(payload)
+	return items
+}
+
+// devAppConnectListKnown distinguishes an explicitly empty response from an
+// unknown response shape. The latter must not be projected as an empty list.
+func devAppConnectListKnown(payload map[string]any) ([]map[string]any, bool) {
 	if payload == nil {
-		return nil
+		return nil, false
 	}
 	for _, key := range []string{"items", "list", "data"} {
 		if arr, ok := payload[key].([]any); ok {
 			out := make([]map[string]any, 0, len(arr))
 			for _, e := range arr {
-				if m, ok := e.(map[string]any); ok {
-					out = append(out, m)
+				m, ok := e.(map[string]any)
+				if !ok {
+					return nil, false
 				}
+				out = append(out, m)
 			}
-			return out
+			return out, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 // connectDaemonDirKeyFromFlags resolves the daemon directory key from the

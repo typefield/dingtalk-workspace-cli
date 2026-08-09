@@ -800,20 +800,26 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 		t.Fatalf("paginated names = %#v calls=%d err=%v", names, runner.calls, err)
 	}
 
-	runner = &daemonSequenceRunner{responses: []map[string]any{{"hasMore": true}}}
-	if _, err := devAppNameMap(cmd, runner); err != nil || runner.calls != 1 {
-		t.Fatalf("empty cursor pagination calls=%d err=%v", runner.calls, err)
+	runner = &daemonSequenceRunner{responses: []map[string]any{{"items": []any{}, "hasMore": true}}}
+	if _, err := devAppNameMap(cmd, runner); err == nil || runner.calls != 1 {
+		t.Fatalf("missing cursor pagination calls=%d err=%v, want error", runner.calls, err)
 	}
 
 	reports := []connectHealthReport{{UnifiedAppID: "u-1"}, {UnifiedAppID: "missing"}, {ClientID: "client"}}
 	runner = &daemonSequenceRunner{responses: []map[string]any{{
 		"items": []any{map[string]any{"unifiedAppId": "u-1", "name": "Resolved"}}, "hasMore": false,
 	}}}
-	resolveAppNames(cmd, runner, reports)
+	if notice := resolveAppNames(cmd, runner, reports); notice != nil {
+		t.Fatalf("successful enrichment returned notice=%#v", notice)
+	}
 	if reports[0].AppName != "Resolved" || reports[1].AppName != "" {
 		t.Fatalf("resolved reports = %#v", reports)
 	}
-	resolveAppNames(cmd, connectResponseRunner{err: errors.New("offline")}, []connectHealthReport{{UnifiedAppID: "u-1"}})
+	notice := resolveAppNames(cmd, connectResponseRunner{err: errors.New("offline")}, []connectHealthReport{{UnifiedAppID: "u-1"}})
+	enrichment, ok := notice["app_name_enrichment"].(map[string]any)
+	if !ok || enrichment["state"] != "unavailable" || enrichment["reason"] != "remote_lookup_failed" {
+		t.Fatalf("offline enrichment notice=%#v", notice)
+	}
 
 	list := prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(runner))
 	var out bytes.Buffer
@@ -829,6 +835,23 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 	list.SetArgs([]string{"--json"})
 	if err := list.Execute(); err != nil || strings.Contains(out.String(), "null") || !strings.Contains(out.String(), `"data": []`) {
 		t.Fatalf("json list envelope = %q, %v", out.String(), err)
+	}
+
+	// A remote app-name lookup is optional. Its failure must never turn a
+	// truthful local connector list into failure, but it must be visible to an
+	// Agent instead of looking like an absent app name.
+	dir, err := connectDaemonDir("app-u-1")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := writeDaemonState(dir, daemonState{Pid: os.Getpid(), DirKey: "app-u-1", UnifiedAppID: "u-1"}); err != nil {
+		t.Fatal(err)
+	}
+	list = prepareFrameworkUnifiedTestCommand(newDevAppRobotConnectListCommand(connectResponseRunner{err: errors.New("offline")}))
+	out.Reset()
+	list.SetOut(&out)
+	if err := list.Execute(); err != nil || !strings.Contains(out.String(), `"outcome": "success"`) || !strings.Contains(out.String(), `"unifiedAppId": "u-1"`) || !strings.Contains(out.String(), `"app_name_enrichment"`) || !strings.Contains(out.String(), `"remote_lookup_failed"`) {
+		t.Fatalf("offline enrichment list envelope = %q, %v", out.String(), err)
 	}
 
 	seedHeartbeat(t, "listed", connectHeartbeat{

@@ -202,8 +202,8 @@ func TestCrossPlatformCoverageConnectDaemonAndApprovalPureCoverage(t *testing.T)
 
 	runner := connectResponseRunner{response: map[string]any{"items": []any{map[string]any{"unifiedAppId": "app", "name": "Name"}, "bad"}, "hasMore": false}}
 	reports := []connectHealthReport{{UnifiedAppID: "app"}, {ClientID: "client"}}
-	resolveAppNames(cmd, runner, reports)
-	resolveAppNames(cmd, runner, []connectHealthReport{{ClientID: "client"}})
+	_ = resolveAppNames(cmd, runner, reports)
+	_ = resolveAppNames(cmd, runner, []connectHealthReport{{ClientID: "client"}})
 	_, _ = devAppNameMap(cmd, connectResponseRunner{err: errors.New("failed")})
 	_ = devAppConnectList(nil)
 	_ = devAppConnectList(map[string]any{"items": "bad"})
