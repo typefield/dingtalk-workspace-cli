@@ -11,43 +11,41 @@
 """
 
 import sys
-import json
-import subprocess
 import argparse
 from datetime import datetime, timedelta
 from typing import List, Dict, Any, Optional
 
-from _runtime import add_contract_flags, emit, failure, run_main
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 PRIORITY_MAP = {10: '低', 20: '普通', 30: '较高', 40: '紧急'}
 PAGE_SIZE = 50
 MAX_PAGES = 10
 
 
-def run_dws(args: List[str], dry_run: bool = False) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return None
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except subprocess.TimeoutExpired:
-        print('错误：命令执行超时', file=sys.stderr)
-        return None
-    except json.JSONDecodeError:
-        # 输出非 JSON 多为底层错误 (如 TOKEN 失效), 透出原文
-        print(f"错误：dws 返回非 JSON 输出: "
-              f"{result.stdout.strip()[:300]}", file=sys.stderr)
-        return None
-    except FileNotFoundError as e:
-        print(f"错误：{e}", file=sys.stderr)
-        return None
+def run_dws(args: List[str], dry_run: bool = False) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
+
+
+def child_data(result: ChildDWSResult) -> Any:
+    """Unwrap unified child data while preserving legacy bare payloads."""
+    payload = result.payload
+    if (
+        isinstance(payload, dict)
+        and isinstance(payload.get('ok'), bool)
+        and isinstance(payload.get('outcome'), str)
+        and 'data' in payload
+    ):
+        return payload['data']
+    return payload
 
 
 def get_date_range(scope: str):
@@ -86,13 +84,15 @@ def extract_todo_cards(data: Any) -> Optional[List[Dict[str, Any]]]:
     return items if isinstance(items, list) else None
 
 
-def fetch_all_todos(
-    dry_run: bool = False,
-) -> Optional[List[Dict[str, Any]]]:
-    """返回 None 表示查询失败 (与"确实没有待办"区分开)"""
+def fetch_all_todos(dry_run: bool = False) -> Dict[str, Any]:
+    """Fetch pages without turning an interrupted traversal into completeness."""
     all_todos: List[Dict[str, Any]] = []
+    succeeded: List[Dict[str, Any]] = []
+    failed: List[Dict[str, Any]] = []
+    unknown: List[Dict[str, Any]] = []
+    child_meta: List[Dict[str, Any]] = []
     for page in range(1, MAX_PAGES + 1):
-        data = run_dws([
+        result = run_dws([
             'todo', 'task', 'list',
             '--page', str(page),
             '--size', str(PAGE_SIZE),
@@ -100,18 +100,57 @@ def fetch_all_todos(
             '--format', 'json',
         ], dry_run=dry_run)
         if dry_run:
-            return []
-        if data is None:
-            return None if page == 1 else all_todos
+            return {
+                'items': [], 'succeeded': [], 'failed': [], 'unknown': [],
+                'meta': [],
+            }
+        page_id = f'page:{page}'
+        if result.meta:
+            child_meta.append({'id': page_id, 'meta': result.meta})
+        if result.state != 'success':
+            error = result.error or {
+                'type': 'api',
+                'message': '待办分页读取未返回终态成功。',
+            }
+            if result.state == 'failed':
+                failed.append({'id': page_id, 'error': error})
+            else:
+                unknown.append({
+                    'id': page_id,
+                    'reason': '待办分页读取结果未知；不得把已读页面当作完整集合。',
+                    'error': error,
+                })
+            break
+        data = child_data(result)
         items = extract_todo_cards(data)
         if items is None:
-            return None if page == 1 else all_todos
+            failed.append({
+                'id': page_id,
+                'error': {
+                    'type': 'api',
+                    'subtype': 'projection_unknown',
+                    'message': '待办分页响应缺少可识别的 todoCards 列表。',
+                },
+            })
+            break
+        succeeded.append({'id': page_id, 'count': len(items), 'items': items})
         if not items:
             break
         all_todos.extend(items)
         if len(items) < PAGE_SIZE:
             break
-    return all_todos
+        if page == MAX_PAGES:
+            unknown.append({
+                'id': f'page:{page + 1}',
+                'reason': f'已达到 {MAX_PAGES} 页安全上限，端点是否耗尽未知。',
+            })
+    return {
+        'items': all_todos,
+        'succeeded': succeeded,
+        'failed': failed,
+        'unknown': unknown,
+        'meta': child_meta,
+    }
 
 
 def format_priority(p) -> str:
@@ -192,23 +231,59 @@ def main() -> int:
     if scope not in ('today', 'tomorrow', 'week'):
         return failure(args.format, f'不支持的范围: {scope}')
     start, end = get_date_range(scope)
-    todos = fetch_all_todos(dry_run=dry_run)
+    fetched = fetch_all_todos(dry_run=dry_run)
     if dry_run:
         return emit(fmt=args.format, outcome='success', data={
             'scope': scope, 'start': start.isoformat(), 'end': end.isoformat(),
         }, dry_run=True, text='[dry-run] 将查询未完成待办并按截止时间筛选')
-    if todos is None:
-        return failure(args.format, '待办查询失败，无法给出汇总结论')
+    todos = fetched['items']
+    result_data = batch_data(
+        succeeded=fetched['succeeded'],
+        failed=fetched['failed'],
+        unknown=fetched['unknown'],
+    )
+    outcome = batch_outcome(result_data)
+    if outcome == 'failure':
+        first = (fetched['failed'] or fetched['unknown'])[0]
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=result_data,
+            error=first.get('error') or {
+                'type': 'api',
+                'message': first.get('reason', '待办查询失败，无法给出汇总结论。'),
+            },
+            meta={'children': fetched['meta']} if fetched['meta'] else None,
+            text='待办查询失败，无法给出汇总结论',
+        )
     filtered = filter_by_due(todos, start, end)
-    if args.format != 'text':
-        items = [{
-            'title': t.get('subject') or t.get('title', '无标题'),
-            'priority': format_priority(t.get('priority')),
-            'due': format_due(t.get('dueTime') or t.get('due')),
-        } for t in filtered]
-        return emit(fmt=args.format, outcome='success', data={
-            'scope': scope, 'count': len(items), 'items': items,
+    items = [{
+        'title': t.get('subject') or t.get('title', '无标题'),
+        'priority': format_priority(t.get('priority')),
+        'due': format_due(t.get('dueTime') or t.get('due')),
+    } for t in filtered]
+    if outcome == 'partial_failure':
+        result_data.update({
+            'scope': scope,
+            'count': len(items),
+            'items': items,
         })
+        if args.format == 'text':
+            print_summary(filtered, scope, start, end)
+        return emit(
+            fmt=args.format,
+            outcome=outcome,
+            data=result_data,
+            meta={'children': fetched['meta']} if fetched['meta'] else None,
+            text='警告：仅完成部分待办分页读取；请按失败或未知页面继续核查。',
+        )
+    if args.format != 'text':
+        return emit(
+            fmt=args.format,
+            outcome='success',
+            data={'scope': scope, 'count': len(items), 'items': items},
+            meta={'children': fetched['meta']} if fetched['meta'] else None,
+        )
     print_summary(filtered, scope, start, end)
     return 0
 
