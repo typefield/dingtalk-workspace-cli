@@ -17,6 +17,8 @@
 package doc
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
@@ -32,12 +34,13 @@ const (
 // ── 文档浏览 / 读取 ──────────────────────────────────────────
 
 var Search = shortcut.Shortcut{
-	Service:     "doc",
-	Command:     "+search",
-	Product:     productDoc,
-	Description: "按关键词搜索有权限的文档 (不传则返回最近访问)",
-	Intent:      "当你只记得文档的标题或主题词、需要先定位到某篇钉钉文档拿到它的 nodeId/URL 以便后续阅读或编辑时使用；可按关键词、扩展名、创建/访问时间、创建者等条件过滤，不传关键词则返回最近访问的文档，返回匹配的文档列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "doc",
+	Command:       "+search",
+	Product:       productDoc,
+	Description:   "按关键词搜索有权限的文档 (不传则返回最近访问)",
+	Intent:        "当你只记得文档的标题或主题词、需要先定位到某篇钉钉文档拿到它的 nodeId/URL 以便后续阅读或编辑时使用；可按关键词、扩展名、创建/访问时间、创建者等条件过滤，不传关键词则返回最近访问的文档，返回匹配的文档列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -127,7 +130,12 @@ var Search = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(docs), "documents": docs})
+		payload := map[string]any{
+			"count":            len(docs),
+			"documents":        docs,
+			"pagination_known": false,
+		}
+		return docListOutput(rt, payload, len(docs))
 	},
 }
 
@@ -147,8 +155,11 @@ func searchDocsProject(data map[string]any) ([]map[string]any, error) {
 			return nil, docProjectionUnknown("文档搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := docFirst(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
+		if v, ok := docStableNodeID(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
 			row["nodeId"] = v
+		}
+		if _, ok := row["nodeId"]; !ok {
+			return nil, docProjectionUnknown("文档搜索结果条目缺少可用于后续操作的稳定 nodeId")
 		}
 		if v, ok := docFirst(m, "name", "title", "docName", "fileName"); ok {
 			row["name"] = v
@@ -210,12 +221,13 @@ func docFirst(m map[string]any, keys ...string) (any, bool) {
 }
 
 var List = shortcut.Shortcut{
-	Service:     "doc",
-	Command:     "+list",
-	Product:     productDoc,
-	Description: "列出文件夹或知识库下的直接子节点",
-	Intent:      "当你已知某个文档文件夹或知识库的 ID、想浏览它下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；输入 folder 或 workspace，返回该层级的子节点列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "doc",
+	Command:       "+list",
+	Product:       productDoc,
+	Description:   "列出文件夹或知识库下的直接子节点",
+	Intent:        "当你已知某个文档文件夹或知识库的 ID、想浏览它下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；输入 folder 或 workspace，返回该层级的子节点列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -273,7 +285,12 @@ var List = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(nodes), "nodes": nodes})
+		payload := map[string]any{
+			"count":            len(nodes),
+			"nodes":            nodes,
+			"pagination_known": false,
+		}
+		return docListOutput(rt, payload, len(nodes))
 	},
 }
 
@@ -293,8 +310,11 @@ func listNodesProject(data map[string]any) ([]map[string]any, error) {
 			return nil, docProjectionUnknown("子节点列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := docFirst(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
+		if v, ok := docStableNodeID(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
 			row["nodeId"] = v
+		}
+		if _, ok := row["nodeId"]; !ok {
+			return nil, docProjectionUnknown("子节点条目缺少可用于后续操作的稳定 nodeId")
 		}
 		if v, ok := docFirst(m, "name", "title", "nodeName", "fileName"); ok {
 			row["name"] = v
@@ -319,6 +339,34 @@ func docProjectionUnknown(message string) error {
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)
+}
+
+// docListOutput emits the one active result contract for the two document
+// discovery commands. The service exposes a cursor input but this projection
+// has no verified continuation facts yet, so the payload says that fact is
+// unknown instead of fabricating endpoint exhaustion or a next token.
+func docListOutput(rt *shortcut.RuntimeContext, payload map[string]any, count int) error {
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(count)}),
+	))
+}
+
+// docStableNodeID accepts only a non-blank string node identifier. Search and
+// list are discovery commands whose primary value is handing their result to a
+// later document operation; a display-only row cannot safely be called a
+// usable discovery result.
+func docStableNodeID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // ── 文档创建 / 更新 ──────────────────────────────────────────

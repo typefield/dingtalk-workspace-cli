@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T11:56:21+08:00
+扫描时间：2026-08-09T12:00:44+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1371 |
+| `legacy_only` | 1368 |
 | `dual_validate` | 24 |
-| `unified_active` | 88 |
+| `unified_active` | 91 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,9 +22,9 @@
 
 ### 状态迁移
 
-- REVIEW: `dws minutes +list-all`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws minutes +list-mine`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws minutes +list-shared`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws doc +list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws doc +search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws todo +get-my-tasks`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -916,7 +916,7 @@
 | `dws doc +history-save` | `legacy_only` | `legacy` | no |
 | `dws doc +import` | `legacy_only` | `legacy` | no |
 | `dws doc +inspect` | `legacy_only` | `legacy` | no |
-| `dws doc +list` | `legacy_only` | `legacy` | no |
+| `dws doc +list` | `unified_active` | `unified` | no |
 | `dws doc +media-download` | `legacy_only` | `legacy` | no |
 | `dws doc +media-insert` | `legacy_only` | `legacy` | no |
 | `dws doc +media-list` | `legacy_only` | `legacy` | no |
@@ -926,7 +926,7 @@
 | `dws doc +resource-download` | `legacy_only` | `legacy` | no |
 | `dws doc +resource-update` | `legacy_only` | `legacy` | no |
 | `dws doc +review` | `legacy_only` | `legacy` | no |
-| `dws doc +search` | `legacy_only` | `legacy` | no |
+| `dws doc +search` | `unified_active` | `unified` | no |
 | `dws doc +share` | `legacy_only` | `legacy` | no |
 | `dws doc +share-doc` | `legacy_only` | `legacy` | no |
 | `dws doc +template-apply` | `legacy_only` | `legacy` | yes |
@@ -1436,7 +1436,7 @@
 | `dws todo +created-todos` | `legacy_only` | `legacy` | no |
 | `dws todo +due-today` | `legacy_only` | `legacy` | no |
 | `dws todo +get` | `legacy_only` | `legacy` | no |
-| `dws todo +get-my-tasks` | `legacy_only` | `legacy` | no |
+| `dws todo +get-my-tasks` | `unified_active` | `unified` | no |
 | `dws todo +list-attachment` | `legacy_only` | `legacy` | no |
 | `dws todo +list-comment` | `legacy_only` | `legacy` | no |
 | `dws todo +list-sub` | `legacy_only` | `legacy` | no |

@@ -18,11 +18,13 @@ package todo
 
 import (
 	"strconv"
+	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -30,12 +32,13 @@ import (
 // CreateSub maps helper `create_personal_sub_todo`.
 // GetMyTasks maps helper `get_user_todos_in_current_org`.
 var GetMyTasks = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+get-my-tasks",
-	Product:     "todo",
-	Description: "查询当前组织下我的待办列表",
-	Intent:      "当你想查看自己在当前组织下的待办清单、盘点未完成事项或按条件筛选任务时使用；可按完成状态、优先级、角色（创建者/执行者/参与者）和截止时间范围过滤并分页，返回匹配的待办列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "todo",
+	Command:       "+get-my-tasks",
+	Product:       "todo",
+	Description:   "查询当前组织下我的待办列表",
+	Intent:        "当你想查看自己在当前组织下的待办清单、盘点未完成事项或按条件筛选任务时使用；可按完成状态、优先级、角色（创建者/执行者/参与者）和截止时间范围过滤并分页，返回匹配的待办列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -109,7 +112,14 @@ var GetMyTasks = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(cards), "todos": cards})
+		payload := map[string]any{
+			"count":            len(cards),
+			"todos":            cards,
+			"pagination_known": false,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(cards))}),
+		))
 	},
 }
 
@@ -134,7 +144,12 @@ func getMyTasksProject(data map[string]any) ([]map[string]any, error) {
 			return nil, todoProjectionUnknown("待办列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		for _, k := range []string{"subject", "taskId", "dueTime", "priority", "finalStatusStage", "creatorId"} {
+		if taskID, ok := todoStableTaskID(m, "taskId", "task_id", "id"); ok {
+			row["taskId"] = taskID
+		} else {
+			return nil, todoProjectionUnknown("待办列表条目缺少可用于后续操作的稳定 taskId")
+		}
+		for _, k := range []string{"subject", "dueTime", "priority", "finalStatusStage", "creatorId"} {
 			if v, ok := m[k]; ok {
 				row[k] = v
 			}
@@ -145,6 +160,20 @@ func getMyTasksProject(data map[string]any) ([]map[string]any, error) {
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+func todoStableTaskID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 func todoProjectionUnknown(message string) error {
