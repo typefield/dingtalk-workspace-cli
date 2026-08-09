@@ -9,92 +9,36 @@
     python minutes_extract_todos.py --dry-run
 """
 
+from __future__ import annotations
+
 import sys
-import json
-import subprocess
 import argparse
 from pathlib import Path
-from typing import List, Any, Optional
+from typing import Any
 
 _scripts_dir = Path(__file__).resolve().parent
 if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 
-from minutes_list_parse import uuid_title_pairs_from_payload
-from _runtime import add_contract_flags, emit, failure, run_main
+from minutes_list_parse import project_todo_items, project_uuid_title_pairs, unwrap_child_data
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 
-def run_dws(
-    args: List[str], dry_run: bool = False,
-) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return None
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError,
-            FileNotFoundError) as e:
-        print(f"错误：{e}", file=sys.stderr)
-        return None
+def run_dws(args: list[str], dry_run: bool = False) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
 
 
-def todos_from_payload(payload: Any) -> List[dict]:
-    """解析 `minutes get todos` 返回为待办列表。
-
-    返回结构: result.dingtalkTodoList(对象数组, 含 title 等)与
-    result.actions(JSON 字符串数组, 每条形如
-    {"mark":[],"value":"..."}). 二者无 todos 键。
-    优先取 dingtalkTodoList; 为空时回退解析 actions。
-    """
-    if isinstance(payload, dict):
-        inner = payload.get('result', payload)
-    else:
-        inner = payload
-    out: List[dict] = []
-    if isinstance(inner, dict):
-        ding_list = inner.get('dingtalkTodoList')
-        if isinstance(ding_list, list) and ding_list:
-            for t in ding_list:
-                if isinstance(t, dict):
-                    content = t.get('title') or t.get('content') or ''
-                    if content:
-                        out.append({'content': str(content), '_raw': t})
-            if out:
-                return out
-        actions = inner.get('actions')
-        if isinstance(actions, list):
-            for a in actions:
-                content = ''
-                if isinstance(a, str):
-                    text = a.strip()
-                    if text.startswith('{'):
-                        try:
-                            parsed = json.loads(text)
-                            content = parsed.get('value') or ''
-                        except json.JSONDecodeError:
-                            content = text
-                    else:
-                        content = text
-                elif isinstance(a, dict):
-                    content = (a.get('value') or a.get('content')
-                               or a.get('title') or '')
-                if content:
-                    out.append({'content': str(content)})
-    elif isinstance(inner, list):
-        for t in inner:
-            if isinstance(t, dict):
-                content = (t.get('content') or t.get('text')
-                           or t.get('title') or t.get('value') or '')
-                if content:
-                    out.append({'content': str(content), '_raw': t})
-    return out
+def child_meta_entry(identifier: str, result: ChildDWSResult) -> dict[str, Any] | None:
+    return {'id': identifier, 'meta': result.meta} if result.meta else None
 
 
 def main() -> int:
@@ -105,13 +49,28 @@ def main() -> int:
     parser.add_argument('--id', default='', help='指定听记 UUID')
     add_contract_flags(parser)
     args = parser.parse_args()
+    if args.max <= 0:
+        return failure(args.format, '--max 必须大于 0')
 
     uuids_with_titles = []
+    child_meta: list[dict[str, Any]] = []
     if args.id:
         uuids_with_titles = [(args.id, args.id)]
+        if args.dry_run:
+            run_dws([
+                'minutes', 'get', 'todos',
+                '--id', args.id, '--format', 'json',
+            ], dry_run=True)
+            return emit(
+                fmt=args.format,
+                outcome='success',
+                data={'ids': [args.id]},
+                dry_run=True,
+                text='[dry-run] 将读取指定听记并提取待办',
+            )
     else:
         print('🎙️ 获取听记列表...', file=sys.stderr)
-        data = run_dws([
+        list_result = run_dws([
             'minutes', 'list', 'mine',
             '--limit', str(args.max),
             '--format', 'json',
@@ -124,30 +83,87 @@ def main() -> int:
             return emit(fmt=args.format, outcome='success', data={
                 'limit': args.max,
             }, dry_run=True, text='[dry-run] 将读取听记列表并提取待办')
-        if not data:
-            return failure(args.format, '听记列表查询失败')
-        uuids_with_titles = uuid_title_pairs_from_payload(data)
+        list_meta = child_meta_entry('minutes:list', list_result)
+        if list_meta:
+            child_meta.append(list_meta)
+        if list_result.state != 'success':
+            return emit(
+                fmt=args.format,
+                outcome='failure',
+                error=list_result.error or {'type': 'api', 'message': '听记列表查询失败。'},
+                meta={'children': child_meta} if child_meta else None,
+                text='听记列表查询失败',
+            )
+        uuids_with_titles, projection_error = project_uuid_title_pairs(
+            unwrap_child_data(list_result.payload),
+        )
+        if projection_error:
+            return emit(
+                fmt=args.format,
+                outcome='failure',
+                error=projection_error,
+                meta={'children': child_meta} if child_meta else None,
+                text='听记列表响应无法可靠解析',
+            )
 
-    all_todos = []
+    all_todos: list[dict[str, str]] = []
+    succeeded: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
     for uuid, title in uuids_with_titles:
         print(f"  提取待办: {title}", file=sys.stderr)
-        todos_data = run_dws([
+        todos_result = run_dws([
             'minutes', 'get', 'todos',
             '--id', uuid, '--format', 'json',
         ])
-        if not todos_data:
+        todos_meta = child_meta_entry(f'todos:{uuid}', todos_result)
+        if todos_meta:
+            child_meta.append(todos_meta)
+        if todos_result.state != 'success':
+            failed.append({
+                'id': uuid,
+                'error': todos_result.error or {
+                    'type': 'api', 'message': '听记待办读取失败。',
+                },
+            })
             continue
-        items = todos_from_payload(todos_data)
+        items, todos_error = project_todo_items(todos_result.payload)
+        if todos_error:
+            failed.append({'id': uuid, 'error': todos_error})
+            continue
         for t in items:
             t['_source'] = title
         all_todos.extend(items)
+        succeeded.append({'id': uuid, 'title': title, 'items': items})
+
+    result_data = batch_data(succeeded=succeeded, failed=failed)
+    outcome = batch_outcome(result_data)
+    records = [{k: v for k, v in t.items() if k != '_raw'} for t in all_todos]
+    if outcome != 'success':
+        result_data.update({'count': len(records), 'items': records})
+    if outcome == 'failure':
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=result_data,
+            error=failed[0]['error'],
+            meta={'children': child_meta} if child_meta else None,
+            text='所有听记待办均读取失败',
+        )
+    if outcome == 'partial_failure' and args.format != 'text':
+        return emit(
+            fmt=args.format,
+            outcome='partial_failure',
+            data=result_data,
+            meta={'children': child_meta} if child_meta else None,
+        )
 
     if args.format != 'text':
-        items = [{k: v for k, v in t.items() if k != '_raw'}
-                 for t in all_todos if isinstance(t, dict)]
-        return emit(fmt=args.format, outcome='success', data={
-            'count': len(items), 'items': items,
-        })
+        return emit(
+            fmt=args.format,
+            outcome='success',
+            data={'count': len(records), 'items': records},
+            meta={'children': child_meta} if child_meta else None,
+        )
 
     print(f"\n📋 听记待办汇总")
     print('=' * 50)
@@ -168,6 +184,14 @@ def main() -> int:
             print(f"    来自: {source}")
 
     print(f"\n合计: {len(all_todos)} 条待办")
+    if outcome == 'partial_failure':
+        return emit(
+            fmt=args.format,
+            outcome='partial_failure',
+            data=result_data,
+            meta={'children': child_meta} if child_meta else None,
+            text='警告：部分听记待办读取失败；已保留成功项。',
+        )
     return 0
 
 

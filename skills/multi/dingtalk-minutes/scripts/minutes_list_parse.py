@@ -3,63 +3,154 @@
 from __future__ import annotations
 
 import json
-from typing import Any, List, Tuple
+from typing import Any, List, Optional, Tuple
 
 
-def _unwrap_rows(payload: Any) -> List[Any]:
+def _unwrap_rows(payload: Any) -> Tuple[bool, List[Any]]:
     if isinstance(payload, list):
-        return payload
+        return True, payload
     if not isinstance(payload, dict):
-        return []
+        return False, []
+    for key in ('itemList', 'items', 'list', 'records', 'minutes'):
+        value = payload.get(key)
+        if isinstance(value, list):
+            return True, value
     for key in ('result', 'data', 'list'):
         value = payload.get(key)
         if isinstance(value, list):
-            return value
+            return True, value
         if isinstance(value, dict):
             for inner_key in (
-                'items', 'list', 'records', 'minutes',
+                'itemList', 'items', 'list', 'records', 'minutes',
             ):
                 inner = value.get(inner_key)
                 if isinstance(inner, list):
-                    return inner
-    return []
+                    return True, inner
+    return False, []
 
 
-def uuid_title_pairs_from_payload(payload: Any) -> List[Tuple[str, str]]:
-    """列表项可为对象、JSON 字符串、或纯 taskUuid 字符串。"""
+def project_uuid_title_pairs(
+    payload: Any,
+) -> Tuple[List[Tuple[str, str]], Optional[dict[str, Any]]]:
+    """Project a known list without dropping malformed or unstable rows."""
+    known, rows = _unwrap_rows(payload)
+    if not known:
+        return [], {
+            'type': 'api',
+            'subtype': 'projection_unknown',
+            'message': '听记列表响应缺少可识别的列表容器。',
+        }
     out: List[Tuple[str, str]] = []
-    for item in _unwrap_rows(payload):
+    for index, item in enumerate(rows):
         if isinstance(item, dict):
-            uuid = item.get('taskUuid') or item.get('id') or item.get('task_uuid')
-            if not uuid:
-                continue
+            uuid = (
+                item.get('taskUuid') or item.get('taskUUID')
+                or item.get('uuid') or item.get('task_uuid')
+            )
             title = item.get('title') or item.get('name') or '无标题'
-            # 确保值是基本类型再转换
-            if not isinstance(uuid, (str, int, float, bool)):
-                continue
+            if not isinstance(uuid, str) or not uuid.strip():
+                return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项缺少稳定 taskUuid。'}
             if not isinstance(title, (str, int, float, bool)):
-                title = str(title) if isinstance(title, dict) else '无标题'
-            out.append((str(uuid), str(title)))
+                return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项标题类型不可识别。'}
+            out.append((uuid.strip(), str(title)))
         elif isinstance(item, str):
             text = item.strip()
             if not text:
-                continue
+                return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项为空字符串。'}
             if text.startswith('{'):
                 try:
                     parsed = json.loads(text)
                 except json.JSONDecodeError:
-                    continue
+                    return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项不是有效 JSON 对象。'}
                 if not isinstance(parsed, dict):
-                    continue
+                    return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项不是对象。'}
                 uuid = (
                     parsed.get('taskUuid')
-                    or parsed.get('id')
+                    or parsed.get('taskUUID')
+                    or parsed.get('uuid')
                     or parsed.get('task_uuid')
                 )
-                if not uuid:
-                    continue
                 title = parsed.get('title') or parsed.get('name') or '无标题'
-                out.append((str(uuid), str(title)))
+                if not isinstance(uuid, str) or not uuid.strip():
+                    return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项缺少稳定 taskUuid。'}
+                if not isinstance(title, (str, int, float, bool)):
+                    return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项标题类型不可识别。'}
+                out.append((uuid.strip(), str(title)))
             else:
                 out.append((text, text))
-    return out
+        else:
+            return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记列表第 {index + 1} 项类型不可识别。'}
+    return out, None
+
+
+def unwrap_child_data(payload: Any) -> Any:
+    """Unwrap a coherent unified child envelope, preserving legacy payloads."""
+    if (
+        isinstance(payload, dict)
+        and isinstance(payload.get('ok'), bool)
+        and isinstance(payload.get('outcome'), str)
+        and 'data' in payload
+    ):
+        return payload['data']
+    return payload
+
+
+def project_summary_text(
+    payload: Any,
+) -> Tuple[str, Optional[dict[str, Any]]]:
+    value = unwrap_child_data(payload)
+    if isinstance(value, str):
+        return value, None
+    if not isinstance(value, dict):
+        return '', {'type': 'api', 'subtype': 'projection_unknown', 'message': '听记摘要响应不是可识别的字符串或对象。'}
+    inner = value.get('result', value)
+    if isinstance(inner, str):
+        return inner, None
+    if not isinstance(inner, dict):
+        return '', {'type': 'api', 'subtype': 'projection_unknown', 'message': '听记摘要 result 不是可识别的字符串或对象。'}
+    for key in ('fullSummary', 'summary', 'content'):
+        if key in inner:
+            if isinstance(inner[key], str):
+                return inner[key], None
+            return '', {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记摘要字段 {key} 不是字符串。'}
+    return '', {'type': 'api', 'subtype': 'projection_unknown', 'message': '听记摘要响应缺少 fullSummary/summary/content。'}
+
+
+def project_todo_items(
+    payload: Any,
+) -> Tuple[List[dict[str, str]], Optional[dict[str, Any]]]:
+    value = unwrap_child_data(payload)
+    inner = value.get('result', value) if isinstance(value, dict) else value
+    if isinstance(inner, list):
+        raw_items = inner
+        mode = 'items'
+    elif isinstance(inner, dict) and isinstance(inner.get('dingtalkTodoList'), list):
+        raw_items = inner['dingtalkTodoList']
+        mode = 'items'
+        if not raw_items and isinstance(inner.get('actions'), list):
+            raw_items = inner['actions']
+            mode = 'actions'
+    elif isinstance(inner, dict) and isinstance(inner.get('actions'), list):
+        raw_items = inner['actions']
+        mode = 'actions'
+    else:
+        return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': '听记待办响应缺少 dingtalkTodoList/actions 列表。'}
+    projected: List[dict[str, str]] = []
+    for index, item in enumerate(raw_items):
+        content: Any = None
+        if isinstance(item, dict):
+            content = item.get('title') or item.get('content') or item.get('text') or item.get('value')
+        elif isinstance(item, str):
+            text = item.strip()
+            if mode == 'actions' and text.startswith('{'):
+                try:
+                    decoded = json.loads(text)
+                except json.JSONDecodeError:
+                    decoded = None
+                content = (decoded.get('value') or decoded.get('content') or decoded.get('title')) if isinstance(decoded, dict) else text
+            else:
+                content = text
+        if not isinstance(content, str) or not content.strip():
+            return [], {'type': 'api', 'subtype': 'projection_unknown', 'message': f'听记待办第 {index + 1} 项缺少可识别内容。'}
+        projected.append({'content': content.strip()})
+    return projected, None

@@ -9,40 +9,47 @@
     python minutes_recent_summary.py --dry-run
 """
 
+from __future__ import annotations
+
 import sys
-import json
-import subprocess
 import argparse
 from pathlib import Path
-from typing import List, Any, Optional
+from typing import Any
 
 _scripts_dir = Path(__file__).resolve().parent
 if str(_scripts_dir) not in sys.path:
     sys.path.insert(0, str(_scripts_dir))
 
-from minutes_list_parse import uuid_title_pairs_from_payload
-from _runtime import add_contract_flags, emit, failure, run_main
+from minutes_list_parse import project_summary_text, project_uuid_title_pairs, unwrap_child_data
+from _runtime import (
+    ChildDWSResult,
+    add_contract_flags,
+    batch_data,
+    batch_outcome,
+    emit,
+    failure,
+    run_child_dws,
+    run_main,
+)
 
 
-def run_dws(
-    args: List[str], dry_run: bool = False,
-) -> Optional[Any]:
-    cmd = ['dws'] + args
-    if dry_run:
-        print(f"[dry-run] {' '.join(cmd)}", file=sys.stderr)
-        return None
-    try:
-        result = subprocess.run(
-            cmd, capture_output=True, text=True, timeout=60
-        )
-        if result.returncode != 0:
-            print(f"错误：{result.stderr.strip()}", file=sys.stderr)
-            return None
-        return json.loads(result.stdout)
-    except (subprocess.TimeoutExpired, json.JSONDecodeError,
-            FileNotFoundError) as e:
-        print(f"错误：{e}", file=sys.stderr)
-        return None
+def run_dws(args: list[str], dry_run: bool = False) -> ChildDWSResult:
+    return run_child_dws(args, dry_run=dry_run)
+
+
+def child_meta_entry(identifier: str, result: ChildDWSResult) -> dict[str, Any] | None:
+    return {'id': identifier, 'meta': result.meta} if result.meta else None
+
+
+def render_markdown(records: list[dict[str, str]], failed_ids: set[str]) -> str:
+    lines = [f"# 最近 {len(records) + len(failed_ids)} 条听记摘要\n"]
+    for index, record in enumerate(records, 1):
+        lines.append(f"## {index}. {record['title']}\n")
+        lines.append(f"{record['summary'] or '(暂无摘要)'}\n")
+    if failed_ids:
+        lines.append("## 未完成\n")
+        lines.extend(f"- `{identifier}`：摘要读取失败\n" for identifier in sorted(failed_ids))
+    return '\n'.join(lines)
 
 
 def main() -> int:
@@ -57,9 +64,11 @@ def main() -> int:
     )
     add_contract_flags(parser)
     args = parser.parse_args()
+    if args.max <= 0:
+        return failure(args.format, '--max 必须大于 0')
 
     print('🎙️ 获取听记列表...', file=sys.stderr)
-    list_data = run_dws([
+    list_result = run_dws([
         'minutes', 'list', 'mine',
         '--limit', str(args.max),
         '--format', 'json',
@@ -74,58 +83,106 @@ def main() -> int:
             'limit': args.max, 'output': args.output or None,
         }, dry_run=True, text='[dry-run] 将读取听记列表并逐条获取摘要')
 
-    if not list_data:
-        return failure(args.format, '听记列表查询失败')
+    child_meta: list[dict[str, Any]] = []
+    list_meta = child_meta_entry('minutes:list', list_result)
+    if list_meta:
+        child_meta.append(list_meta)
+    if list_result.state != 'success':
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            error=list_result.error or {'type': 'api', 'message': '听记列表查询失败。'},
+            meta={'children': child_meta} if child_meta else None,
+            text='听记列表查询失败',
+        )
 
-    pairs = uuid_title_pairs_from_payload(list_data)
+    pairs, projection_error = project_uuid_title_pairs(unwrap_child_data(list_result.payload))
+    if projection_error:
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            error=projection_error,
+            meta={'children': child_meta} if child_meta else None,
+            text='听记列表响应无法可靠解析',
+        )
     if not pairs:
-        return emit(fmt=args.format, outcome='success', data={
-            'count': 0, 'items': [],
-        }) if args.format != 'text' else 0
+        return emit(
+            fmt=args.format,
+            outcome='success',
+            data={'count': 0, 'items': []},
+            meta={'children': child_meta} if child_meta else None,
+            text='暂无听记',
+        )
 
-    output_lines = [f"# 最近 {len(pairs)} 条听记摘要\n"]
-    records = []
+    records: list[dict[str, str]] = []
+    succeeded: list[dict[str, Any]] = []
+    failed: list[dict[str, Any]] = []
     for i, (uuid, title) in enumerate(pairs, 1):
         print(f"  [{i}/{len(pairs)}] 获取摘要: {title}", file=sys.stderr)
 
-        summary_data = run_dws([
+        summary_result = run_dws([
             'minutes', 'get', 'summary',
             '--id', uuid, '--format', 'json',
         ])
-        summary_text = ''
-        if summary_data:
-            if isinstance(summary_data, str):
-                summary_text = summary_data
-            elif isinstance(summary_data, dict):
-                # 兼容 {result: {fullSummary}} 包裹结构
-                inner = summary_data.get('result')
-                container = (inner if isinstance(inner, dict)
-                             else summary_data)
-                summary_text = (container.get('fullSummary')
-                                or container.get('summary')
-                                or container.get('content')
-                                or (inner if isinstance(inner, str)
-                                    else '')
-                                or json.dumps(container,
-                                              ensure_ascii=False))
+        summary_meta = child_meta_entry(f'summary:{uuid}', summary_result)
+        if summary_meta:
+            child_meta.append(summary_meta)
+        if summary_result.state != 'success':
+            failed.append({
+                'id': uuid,
+                'error': summary_result.error or {
+                    'type': 'api', 'message': '听记摘要读取失败。',
+                },
+            })
+            continue
+        summary_text, summary_error = project_summary_text(summary_result.payload)
+        if summary_error:
+            failed.append({'id': uuid, 'error': summary_error})
+            continue
+        record = {'id': uuid, 'title': title, 'summary': summary_text}
+        records.append(record)
+        succeeded.append(record)
 
-        output_lines.append(f"## {i}. {title}\n")
-        if summary_text:
-            output_lines.append(f"{summary_text}\n")
-        else:
-            output_lines.append("(暂无摘要)\n")
-        records.append({'id': uuid, 'title': title, 'summary': summary_text})
+    result_data = batch_data(succeeded=succeeded, failed=failed)
+    outcome = batch_outcome(result_data)
+    if outcome != 'success':
+        result_data.update({'count': len(records), 'items': records})
+    if outcome == 'failure':
+        return emit(
+            fmt=args.format,
+            outcome='failure',
+            data=result_data,
+            error=failed[0]['error'],
+            meta={'children': child_meta} if child_meta else None,
+            text='所有听记摘要均读取失败',
+        )
 
-    full_output = '\n'.join(output_lines)
+    full_output = render_markdown(records, {entry['id'] for entry in failed})
+    if outcome == 'partial_failure':
+        if args.format == 'text':
+            if args.output:
+                Path(args.output).write_text(full_output, encoding='utf-8')
+                print(f"\n✓ 已输出部分结果到 {args.output}", file=sys.stderr)
+            else:
+                print('\n' + full_output)
+        return emit(
+            fmt=args.format,
+            outcome='partial_failure',
+            data=result_data,
+            meta={'children': child_meta} if child_meta else None,
+            text='警告：部分听记摘要读取失败；已保留成功项。',
+        )
 
     if args.format != 'text':
-        return emit(fmt=args.format, outcome='success', data={
-            'count': len(records), 'items': records,
-        })
+        return emit(
+            fmt=args.format,
+            outcome='success',
+            data={'count': len(records), 'items': records},
+            meta={'children': child_meta} if child_meta else None,
+        )
 
     if args.output:
-        with open(args.output, 'w', encoding='utf-8') as f:
-            f.write(full_output)
+        Path(args.output).write_text(full_output, encoding='utf-8')
         print(f"\n✓ 已输出到 {args.output}", file=sys.stderr)
     else:
         print('\n' + full_output)

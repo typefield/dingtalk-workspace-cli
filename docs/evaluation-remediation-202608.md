@@ -160,6 +160,24 @@ Agent 矩阵测试和源码关系证据见
 | OA 审批表单/实例列表未知响应伪装为空结果 | **CLI 已 fail-closed，六条发现命令 unified active** | `oa +list-forms`、`+search-forms`、`+list-pending`、`+list-executed`、`+list-submitted`、`+list-cc` 现明确区分已知空列表和无法投影的响应；未知容器、非法行、仅展示字段或无稳定 `processCode`/`processInstanceId` 返回 typed `projection_unknown`，不再把上游形状漂移伪装成“没有表单/审批单”，也不把无法继续查询或处理的行交给 Agent。普通 `--format json` 直接输出统一结果；当前上游分页事实未安全投影，显式标 `data.pagination_known:false` 而不伪造审批目录终态。当前身份用源码构建二进制做的只读实测返回统一 `ok:true/outcome:success`，`meta.count` 与投影条数一致，且在服务端 `totalCount=-1` 时保持 `pagination_known:false`、不输出虚构 pagination，见 `agent-scans/oa-list-forms-live-projection-20260809.md` | 用真实审批账号分别复验空结果、含 `result.processCodeList`/`result.values` 的正常响应、翻页和服务端异常形状；真实提单仍需获授权测试模板 |
 | `dws api` 默认 MCP 登录态不可用 | **未关闭（需要后端能力）** | 默认登录保存的是只能由 MCP 网关解密/代理的 token，不是可直接发给 `api.dingtalk.com` 的 access token；CLI 当前 fail-closed，并返回 `raw_api_credentials_required`、`mcp_default_token_usable:false`、可执行认证 actions，且不标记可重试 | 后端提供受限 raw-API proxy/capability 才能让默认身份使用；在此之前仍要求自有 AppKey/AppSecret，禁止 CLI 伪造或转发不适用的密文 token |
 
+## Minutes 聚合脚本本轮验收证据
+
+Mono 与 Multi 的 `minutes_recent_summary.py`、`minutes_extract_todos.py` 已从手写
+`subprocess.run + None` 迁入共享 child-result 边界：
+
+1. 列表只接受已知容器与稳定 `taskUuid/taskUUID/uuid`；通用展示 `id`、未知容器、
+   非法行不再被压成空列表，而是 `api/projection_unknown`。
+2. 单条摘要/待办失败不会被替换为“暂无摘要”或静默跳过；成功项进入
+   `succeeded[]`，失败项保留 typed error，混合结果为 `partial_failure` / rc 7。
+3. 子 `dws` 的 list/detail meta 按稳定步骤 ID 透传；text 与 JSON 使用同一 outcome。
+4. `minutes_extract_todos.py --id ... --dry-run` 不再实际调用 `minutes get todos`。
+5. Multi Skill 的正向脚本路线现显式使用 `--format json`；需要摘要文件时使用
+   `--format text --output <path>`，不把机器模式与本地文件交付混在一起。
+
+`docs/agent-scans/minutes-aggregate-contract-20260809.md` 使用临时 child runner 对拍
+Mono/Multi 四入口的成功、逐项失败、投影漂移、display-only ID、text rc、meta 和指定
+ID dry-run，为 **22/22 PASS**。该证据不证明听记索引覆盖、服务端分页耗尽或真实内容。
+
 ## attendance 本轮验收证据
 
 ```text

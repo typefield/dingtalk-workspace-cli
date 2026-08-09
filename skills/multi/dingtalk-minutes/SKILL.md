@@ -43,9 +43,13 @@ metadata:
 | "看一篇听记摘要" | `dws minutes get summary --id <taskUuid>` |
 | "看转写 / 原文" | `dws minutes get transcription --id <taskUuid>` |
 | "下载/导出最近一周听记原文/逐字稿" | `dws minutes list all --start "<ISO>" --end "<ISO>"` → 逐条 `dws minutes get transcription --id <taskUuid>` |
-| "近期听记摘要合并" | `python scripts/minutes_recent_summary.py --max 5` |
-| "提取会议待办" | `python scripts/minutes_extract_todos.py --id <taskUuid>` |
+| "近期听记摘要合并" | `python scripts/minutes_recent_summary.py --max 5 --format json` |
+| "提取会议待办" | `python scripts/minutes_extract_todos.py --id <taskUuid> --format json` |
 | "改听记标题" | `dws minutes update title --id <taskUuid> --title "<新标题>"` |
+
+两条聚合脚本都可能返回 `partial_failure` / rc 7：必须保留 `data.succeeded[]`，只对
+`data.failed[]` 的目标按 typed error 处理；不得因部分听记读取失败而重跑已经成功的目标。
+如果需要 Markdown 文件，摘要脚本改用 `--format text --output <path>`；机器 JSON 模式不写文件。
 
 ## 标准 SOP（必遵流程）
 
