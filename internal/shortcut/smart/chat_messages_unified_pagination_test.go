@@ -277,3 +277,47 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 		}
 	})
 }
+
+func TestChatMessagesPostProcessingFailuresPreserveTypedRecoveryFacts(t *testing.T) {
+	typed := apperrors.NewAuth(
+		"fixture login required",
+		apperrors.WithSubtype(apperrors.SubtypeUpstreamAuthenticationRequired),
+		apperrors.WithHint("重新登录后只重试失败的后处理步骤。"),
+		apperrors.WithActions("dws auth login"),
+		apperrors.WithRetryable(false),
+		apperrors.WithDetails(map[string]any{"scope": "chat.read"}),
+	)
+
+	t.Run("local export", func(t *testing.T) {
+		info := chatMessagesExportFailureInfo("exports/messages.json", false, typed)
+		assertChatMessagesTypedPostProcessingInfo(t, info)
+		export, _ := info.Details["export"].(map[string]any)
+		if export["local_path"] != "exports/messages.json" {
+			t.Fatalf("export context=%#v", export)
+		}
+	})
+
+	t.Run("sender resolution", func(t *testing.T) {
+		info := chatMessagesSenderResolutionFailureInfo(chatMessagesSenderFilter{
+			failure: map[string]any{"queries": []string{"测试用户"}},
+			err:     typed,
+		})
+		assertChatMessagesTypedPostProcessingInfo(t, info)
+		if queries, _ := info.Details["queries"].([]string); len(queries) != 1 || queries[0] != "测试用户" {
+			t.Fatalf("resolution context=%#v", info.Details)
+		}
+	})
+}
+
+func assertChatMessagesTypedPostProcessingInfo(t *testing.T, info *frameworkoutput.ErrorInfo) {
+	t.Helper()
+	if info.Type != "auth" || info.Subtype != string(apperrors.SubtypeUpstreamAuthenticationRequired) {
+		t.Fatalf("typed info=%#v", info)
+	}
+	if info.Retryable || info.Hint != "重新登录后只重试失败的后处理步骤。" {
+		t.Fatalf("recovery info=%#v", info)
+	}
+	if len(info.Actions) != 1 || info.Actions[0] != "dws auth login" || info.Details["scope"] != "chat.read" {
+		t.Fatalf("actions/details=%#v", info)
+	}
+}

@@ -76,6 +76,8 @@ operation 与 stage 上下文的同时，以已分类下游错误为恢复事实
 四条 IM 复合读取的资源下载也改为双通道：legacy `resourceDownloads.failures[].error` 保持字符串形状，
 统一结果则为每个失败资源分别保留下游 `auth` / `validation` / `projection` / `network` 事实及资源 ID，
 不再把所有失败资源压成一个通用 API 错误。
+`+chat-messages` 的发送者解析与本地导出失败也改用同一投影器，补齐此前手写字段拷贝遗漏的
+actions、retry policy、retry-after 与下游 details。
 Agent 矩阵测试和源码关系证据见
 `agent-scans/composite-typed-error-propagation-20260809.md`。这证明本地错误投影，不证明真实账号权限、
 服务端可用性或页面终态。

@@ -1012,37 +1012,7 @@ func chatMessagesExportFailureInfo(path string, overwrite bool, err error) *outp
 	if err != nil {
 		info.Cause = err.Error()
 	}
-	var typed *apperrors.Error
-	if !errors.As(err, &typed) || typed == nil {
-		return info
-	}
-	if typed.Category != apperrors.CategoryPartial {
-		info.Type = string(typed.Category)
-	}
-	if typed.StableSubtype != "" {
-		info.Subtype = typed.StableSubtype
-	} else {
-		info.Subtype = typed.Reason
-	}
-	if typed.Hint != "" {
-		info.Hint = typed.Hint
-	}
-	if typed.Operation != "" {
-		info.Operation = typed.Operation
-	}
-	if typed.Origin != "" {
-		info.Origin = typed.Origin
-	}
-	if typed.FailureStage != "" {
-		info.Stage = typed.FailureStage
-	}
-	if typed.ExecutionStarted != nil {
-		info.ExecutionStarted = typed.ExecutionStarted
-	}
-	if len(typed.Details) > 0 {
-		info.Details["local_error"] = typed.Details
-	}
-	return info
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 // chatMessagesSenderResolutionFailureInfo keeps a requested-but-unapplied
@@ -1065,40 +1035,7 @@ func chatMessagesSenderResolutionFailureInfo(filter chatMessagesSenderFilter) *o
 			"resolution": filter.failure,
 		},
 	}
-	var typed *apperrors.Error
-	if !errors.As(filter.err, &typed) || typed == nil {
-		return info
-	}
-	if typed.Category != apperrors.CategoryPartial {
-		info.Type = string(typed.Category)
-	}
-	if typed.StableSubtype != "" {
-		info.Subtype = typed.StableSubtype
-	} else if typed.Reason != "" {
-		info.Subtype = typed.Reason
-	}
-	if typed.Message != "" {
-		info.Message = typed.Message
-	}
-	if typed.Hint != "" {
-		info.Hint = typed.Hint
-	}
-	if typed.Operation != "" {
-		info.Operation = typed.Operation
-	}
-	if typed.Origin != "" {
-		info.Origin = typed.Origin
-	}
-	if typed.FailureStage != "" {
-		info.Stage = typed.FailureStage
-	}
-	if typed.ExecutionStarted != nil {
-		info.ExecutionStarted = typed.ExecutionStarted
-	}
-	if len(typed.Details) > 0 {
-		info.Details["local_error"] = typed.Details
-	}
-	return info
+	return shortcut.PreserveTypedErrorInfo(info, filter.err)
 }
 
 func filterQueries(failure map[string]any) []string {
