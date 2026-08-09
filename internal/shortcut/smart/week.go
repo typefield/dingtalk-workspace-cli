@@ -19,6 +19,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -38,10 +39,11 @@ import (
 //
 //	dws calendar +week
 var Week = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+week",
-	Product:     "calendar",
-	Description: "列出我本周的日程（自动按周一为周首计算本周起止时间，无需手动填时间范围）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+week",
+	Product:       "calendar",
+	Description:   "列出我本周的日程（自动按周一为周首计算本周起止时间，无需手动填时间范围）",
 	Intent: "当你想快速看看『我本周有哪些日程/会议安排』时使用；" +
 		"内部用本地时区、以周一为一周开始，自动把时间范围算成本周一 00:00 到下周一 00:00，转成毫秒时间戳，" +
 		"查询主日历（primary）下本周的全部日程，并投影出标题、开始时间、结束时间、eventId。只读，不会创建或修改任何日程。",
@@ -104,7 +106,18 @@ var Week = shortcut.Shortcut{
 		}
 
 		// Same {title,start,end,location,eventId} projection as +today/+tomorrow.
-		return rt.Output(map[string]any{"events": calendarProjectEvents(data)})
+		events, err := calendarProjectEvents(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"count":                len(events),
+			"events":               events,
+			"event_coverage_known": false,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(events))}),
+		))
 	},
 }
 

@@ -20,6 +20,8 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -35,10 +37,11 @@ import (
 //
 //	dws calendar +next-event
 var NextEvent = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+next-event",
-	Product:     "calendar",
-	Description: "查看接下来最近的一个日程（默认扫描未来 7 天）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+next-event",
+	Product:       "calendar",
+	Description:   "查看接下来最近的一个日程（默认扫描未来 7 天）",
 	Intent: "当你只想知道『我下一个日程是什么、什么时候开始』、而不想翻一整份日程列表时使用；" +
 		"内部以当前时间为起点、往后 7 天为范围，拉取主日历下的日程，" +
 		"按开始时间升序挑出最近的那一个并打印摘要（标题、开始/结束时间、地点）。" +
@@ -87,15 +90,29 @@ var NextEvent = shortcut.Shortcut{
 			return err
 		}
 
-		event := shortcutNextEventPick(data, now)
+		events, err := calendarEventListProject(data)
+		if err != nil {
+			return err
+		}
+		event, err := shortcutNextEventPick(events, now)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"found":                event != nil,
+			"event_coverage_known": false,
+		}
 		if event == nil {
-			return rt.Output(map[string]any{"event": nil, "message": "近 7 天无日程"})
+			payload["event"] = nil
+			return rt.OutputResult(payload, output.Success(payload,
+				output.WithMeta(&output.Meta{Count: output.NewCount(0)}),
+			))
 		}
 
-		// Emit a structured event via rt.Output so it honours
-		// --format/--jq/--fields (previously it printed a fixed text line and
-		// ignored the output flags, unlike +today/+week).
-		return rt.Output(map[string]any{"event": shortcutNextEventProject(event)})
+		payload["event"] = shortcutNextEventProject(event)
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(1)}),
+		))
 	},
 }
 
@@ -103,17 +120,17 @@ var NextEvent = shortcut.Shortcut{
 // events (must carry an id) whose start time is at or after `now`, and returns
 // the one that starts soonest. Field access is fully defensive because the
 // response envelope and per-event shape are not guaranteed.
-func shortcutNextEventPick(data map[string]any, now time.Time) map[string]any {
+func shortcutNextEventPick(events []map[string]any, now time.Time) (map[string]any, error) {
 	var best map[string]any
 	var bestStart time.Time
-	for _, e := range shortcutNextEventList(data) {
+	for _, e := range events {
 		id, _ := e["id"].(string)
 		if strings.TrimSpace(id) == "" {
-			continue
+			return nil, calendarEventProjectionUnknown("日程条目缺少可用于后续操作的稳定 id")
 		}
 		start, ok := shortcutNextEventStart(e)
 		if !ok {
-			continue
+			return nil, calendarEventProjectionUnknown("日程条目的开始时间无法识别")
 		}
 		if start.Before(now) {
 			continue
@@ -123,34 +140,75 @@ func shortcutNextEventPick(data map[string]any, now time.Time) map[string]any {
 			bestStart = start
 		}
 	}
-	return best
+	return best, nil
 }
 
-// shortcutNextEventList flattens the events slice out of the common response
-// shapes ({result:{events:[...]}}, {events:[...]}, or a bare [...] under
-// result/data).
-func shortcutNextEventList(data map[string]any) []map[string]any {
-	if data == nil {
-		return nil
+// calendarEventListProject accepts only an explicit event array. A missing or
+// malformed list must not be converted into an empty calendar: every consumer
+// below derives scheduling advice from this response, so an unknown shape is a
+// typed projection failure rather than proof of an empty schedule.
+func calendarEventListProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := calendarEventItems(data)
+	if !known {
+		return nil, calendarEventProjectionUnknown("无法识别 list_calendar_events 返回的日程列表容器")
 	}
-	var raw []any
-	if result, ok := data["result"].(map[string]any); ok {
-		if ev, ok := result["events"].([]any); ok {
-			raw = ev
-		}
-	}
-	if raw == nil {
-		if ev, ok := data["events"].([]any); ok {
-			raw = ev
-		}
-	}
-	out := make([]map[string]any, 0, len(raw))
+	events := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
-		if m, ok := item.(map[string]any); ok {
-			out = append(out, m)
+		event, ok := item.(map[string]any)
+		if !ok {
+			return nil, calendarEventProjectionUnknown("日程列表包含无法识别的条目")
+		}
+		events = append(events, event)
+	}
+	return events, nil
+}
+
+func calendarEventItems(data map[string]any) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	for _, scope := range calendarEventScopes(data) {
+		if events, ok := scope.([]any); ok {
+			return events, true
+		}
+		object, ok := scope.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, key := range []string{"events", "eventList", "items", "list", "records"} {
+			if events, ok := object[key].([]any); ok {
+				return events, true
+			}
 		}
 	}
-	return out
+	return nil, false
+}
+
+func calendarEventScopes(data map[string]any) []any {
+	scopes := make([]any, 0, 5)
+	for _, outerKey := range []string{"result", "data"} {
+		outer, ok := data[outerKey]
+		if !ok {
+			continue
+		}
+		if object, ok := outer.(map[string]any); ok {
+			for _, innerKey := range []string{"result", "data"} {
+				if inner, ok := object[innerKey]; ok {
+					scopes = append(scopes, inner)
+				}
+			}
+		}
+		scopes = append(scopes, outer)
+	}
+	return append(scopes, data)
+}
+
+func calendarEventProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // shortcutNextEventStart pulls an event's start time as a time.Time, tolerating

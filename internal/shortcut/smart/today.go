@@ -16,6 +16,7 @@ package smart
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -33,10 +34,11 @@ import (
 //
 //	dws calendar +today
 var Today = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+today",
-	Product:     "calendar",
-	Description: "列出我今天的日程（自动计算今天的起止时间，无需手动填时间范围）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+today",
+	Product:       "calendar",
+	Description:   "列出我今天的日程（自动计算今天的起止时间，无需手动填时间范围）",
 	Intent: "当你想快速看看『我今天有哪些日程/会议安排』时使用；" +
 		"内部用本地时区自动把时间范围算成今天 00:00 到次日 00:00，转成毫秒时间戳，" +
 		"查询主日历（primary）下今天的全部日程。只读，不会创建或修改任何日程。",
@@ -88,7 +90,18 @@ var Today = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"events": calendarProjectEvents(data)})
+		events, err := calendarProjectEvents(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"count":                len(events),
+			"events":               events,
+			"event_coverage_known": false,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(events))}),
+		))
 	},
 }
 

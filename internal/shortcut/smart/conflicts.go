@@ -21,6 +21,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -35,10 +36,11 @@ import (
 //	dws calendar +conflicts
 //	dws calendar +conflicts --in-days 1
 var Conflicts = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+conflicts",
-	Product:     "calendar",
-	Description: "检测我某天日程的时间冲突（重叠/双重预订，默认今天）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+conflicts",
+	Product:       "calendar",
+	Description:   "检测我某天日程的时间冲突（重叠/双重预订，默认今天）",
 	Intent: "当你想快速知道『我今天（或某天）的日程有没有时间冲突、撞车的会议』时使用；" +
 		"内部自动算出目标日期的时间范围（默认今天，可用 --in-days 指定几天后），列出当天全部日程，" +
 		"再在本地两两比对开始/结束时间，找出所有时间段重叠的日程对并报告。" +
@@ -92,22 +94,28 @@ var Conflicts = shortcut.Shortcut{
 			return err
 		}
 
+		events, err := calendarEventListProject(data)
+		if err != nil {
+			return err
+		}
+
 		// Collect events that carry both a start and an end, keeping the parsed
-		// times for overlap comparison.
+		// times for overlap comparison. Missing interval data is not discarded:
+		// a silent omission could make this command claim there is no conflict.
 		type ev struct {
 			title string
 			start time.Time
 			end   time.Time
 		}
 		var evs []ev
-		for _, e := range shortcutNextEventList(data) {
+		for _, e := range events {
 			start, ok := shortcutNextEventStart(e)
 			if !ok {
-				continue
+				return calendarEventProjectionUnknown("日程条目的开始时间无法识别")
 			}
 			end, ok := conflictsEndTime(e)
 			if !ok {
-				continue
+				return calendarEventProjectionUnknown("日程条目的结束时间无法识别")
 			}
 			title, _ := e["summary"].(string)
 			if strings.TrimSpace(title) == "" {
@@ -133,13 +141,18 @@ var Conflicts = shortcut.Shortcut{
 			}
 		}
 
-		return rt.Output(map[string]any{
-			"date":          dayStart.Format("2006-01-02"),
-			"eventCount":    len(evs),
-			"conflictCount": len(conflicts),
-			"hasConflict":   len(conflicts) > 0,
-			"conflicts":     conflicts,
-		})
+		payload := map[string]any{
+			"date":                 dayStart.Format("2006-01-02"),
+			"source_event_count":   len(events),
+			"event_coverage_known": false,
+			"event_count":          len(evs),
+			"conflict_count":       len(conflicts),
+			"has_conflict":         len(conflicts) > 0,
+			"conflicts":            conflicts,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(conflicts))}),
+		))
 	},
 }
 

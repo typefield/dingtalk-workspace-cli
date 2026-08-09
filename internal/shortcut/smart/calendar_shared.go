@@ -28,16 +28,20 @@ func calendarDayRange(offsetDays int) (time.Time, time.Time) {
 }
 
 // calendarProjectEvents lists and projects the events in a list_calendar_events
-// response into clean {title,start,end,location,eventId} items, skipping events
-// that carry no id. Shared by +today / +tomorrow / +week so the projection lives
-// in exactly one place (reuses shortcutNextEventProject).
-func calendarProjectEvents(data map[string]any) []map[string]any {
-	events := make([]map[string]any, 0)
-	for _, e := range shortcutNextEventList(data) {
+// response into clean {title,start,end,location,eventId} items. A malformed
+// event is an error, not a row to silently drop: otherwise an Agent can mistake
+// a partial projection for a complete schedule.
+func calendarProjectEvents(data map[string]any) ([]map[string]any, error) {
+	raw, err := calendarEventListProject(data)
+	if err != nil {
+		return nil, err
+	}
+	events := make([]map[string]any, 0, len(raw))
+	for _, e := range raw {
 		if id, _ := e["id"].(string); strings.TrimSpace(id) == "" {
-			continue
+			return nil, calendarEventProjectionUnknown("日程条目缺少可用于后续操作的稳定 id")
 		}
 		events = append(events, shortcutNextEventProject(e))
 	}
-	return events
+	return events, nil
 }

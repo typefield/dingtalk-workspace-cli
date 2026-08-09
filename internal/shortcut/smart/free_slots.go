@@ -22,6 +22,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -36,10 +37,11 @@ import (
 //	dws calendar +free-slots
 //	dws calendar +free-slots --in-days 1 --from 9 --to 20
 var FreeSlots = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+free-slots",
-	Product:     "calendar",
-	Description: "找我某天工作时段内的空闲时间段（默认今天 09:00-18:00）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+free-slots",
+	Product:       "calendar",
+	Description:   "找我某天工作时段内的空闲时间段（默认今天 09:00-18:00）",
 	Intent: "当你想知道『我今天（或某天）还有哪些时间是空的、可以安排会议/事情』时使用；" +
 		"内部列出目标日期（默认今天，--in-days 指定几天后）的全部日程，合并忙碌时段，" +
 		"再在工作时间范围内（默认 09:00-18:00，可用 --from/--to 指定起止小时）算出所有空闲窗口并给出每段的起止与时长。" +
@@ -111,17 +113,24 @@ var FreeSlots = shortcut.Shortcut{
 			return err
 		}
 
-		// Collect and clip busy intervals to the work window.
+		events, err := calendarEventListProject(data)
+		if err != nil {
+			return err
+		}
+
+		// Collect and clip busy intervals to the work window. A malformed event
+		// cannot be silently ignored: doing so could turn an occupied interval
+		// into unsafe scheduling advice.
 		type interval struct{ start, end time.Time }
 		var busy []interval
-		for _, e := range shortcutNextEventList(data) {
+		for _, e := range events {
 			s, ok := shortcutNextEventStart(e)
 			if !ok {
-				continue
+				return calendarEventProjectionUnknown("日程条目的开始时间无法识别")
 			}
 			en, ok := conflictsEndTime(e)
 			if !ok {
-				continue
+				return calendarEventProjectionUnknown("日程条目的结束时间无法识别")
 			}
 			if en.After(workStart) && s.Before(workEnd) {
 				if s.Before(workStart) {
@@ -150,13 +159,18 @@ var FreeSlots = shortcut.Shortcut{
 			free = append(free, freeSlotEntry(cursor, workEnd))
 		}
 
-		return rt.Output(map[string]any{
-			"date":      day.Format("2006-01-02"),
-			"window":    fmt.Sprintf("%02d:00-%02d:00", fromHour, toHour),
-			"slotCount": len(free),
-			"freeSlots": free,
-			"allBusy":   len(free) == 0,
-		})
+		payload := map[string]any{
+			"date":                 day.Format("2006-01-02"),
+			"window":               fmt.Sprintf("%02d:00-%02d:00", fromHour, toHour),
+			"source_event_count":   len(events),
+			"event_coverage_known": false,
+			"slot_count":           len(free),
+			"free_slots":           free,
+			"all_busy":             len(free) == 0,
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(free))}),
+		))
 	},
 }
 
