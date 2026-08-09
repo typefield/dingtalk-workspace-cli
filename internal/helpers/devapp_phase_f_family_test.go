@@ -53,32 +53,42 @@ func devAppFamilyContentRunner(content map[string]any) *devAppResponseRunner {
 // 的读叶子双格式验证（AC-28/M1.7）：默认 json 出完整信封（ok/outcome/data），
 // -f table 只渲染 data（不含信封包装键）。业务载荷形状不变。
 func TestDevAppFamilyReadLeavesDualFormat(t *testing.T) {
-	content := map[string]any{
+	defaultContent := map[string]any{
 		"unifiedAppId": "u-1",
 		"name":         "DemoApp",
 		"appStatus":    "ENABLED",
 	}
 
 	cases := []struct {
-		name string
-		args []string
+		name    string
+		args    []string
+		content map[string]any
+		want    string
 	}{
-		{"event list", []string{"dev", "app", "event", "list", "--unified-app-id", "u-1"}},
-		{"app list", []string{"dev", "app", "list", "--name", "DemoApp"}},
-		{"app get", []string{"dev", "app", "get", "--unified-app-id", "u-1"}},
-		{"credentials get", []string{"dev", "app", "credentials", "get", "--unified-app-id", "u-1"}},
-		{"webapp get", []string{"dev", "app", "webapp", "get", "--unified-app-id", "u-1"}},
-		{"permission list", []string{"dev", "app", "permission", "list", "--unified-app-id", "u-1"}},
-		{"member list", []string{"dev", "app", "member", "list", "--unified-app-id", "u-1"}},
-		{"robot config get", []string{"dev", "app", "robot", "get", "--unified-app-id", "u-1"}},
-		{"robot result", []string{"dev", "app", "robot", "result", "--task-id", "t-1"}},
-		{"version list", []string{"dev", "app", "version", "list", "--unified-app-id", "u-1"}},
-		{"version get", []string{"dev", "app", "version", "get", "--unified-app-id", "u-1", "--version-id", "v-1"}},
-		{"version check-approval", []string{"dev", "app", "version", "check-approval", "--unified-app-id", "u-1", "--version-id", "v-1"}},
-		{"version status", []string{"dev", "app", "version", "status", "--unified-app-id", "u-1", "--version-id", "v-1"}},
+		{name: "event list", args: []string{"dev", "app", "event", "list", "--unified-app-id", "u-1"}, content: map[string]any{"items": []any{map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"}}, "hasMore": false}, want: "Member added"},
+		{name: "app list", args: []string{"dev", "app", "list", "--name", "DemoApp"}, content: map[string]any{"items": []any{map[string]any{"unifiedAppId": "u-1", "name": "DemoApp"}}, "hasMore": false}, want: "DemoApp"},
+		{name: "app get", args: []string{"dev", "app", "get", "--unified-app-id", "u-1"}},
+		{name: "credentials get", args: []string{"dev", "app", "credentials", "get", "--unified-app-id", "u-1"}},
+		{name: "webapp get", args: []string{"dev", "app", "webapp", "get", "--unified-app-id", "u-1"}},
+		{name: "permission list", args: []string{"dev", "app", "permission", "list", "--unified-app-id", "u-1"}, content: map[string]any{"items": []any{map[string]any{"scopeValue": "contact:user.base:read", "scopeName": "Read users"}}, "hasMore": false}, want: "Read users"},
+		{name: "member list", args: []string{"dev", "app", "member", "list", "--unified-app-id", "u-1"}},
+		{name: "robot config get", args: []string{"dev", "app", "robot", "get", "--unified-app-id", "u-1"}},
+		{name: "robot result", args: []string{"dev", "app", "robot", "result", "--task-id", "t-1"}},
+		{name: "version list", args: []string{"dev", "app", "version", "list", "--unified-app-id", "u-1"}, content: map[string]any{"items": []any{map[string]any{"versionId": "v-1", "version": "1.0.0"}}, "hasMore": false}, want: "1.0.0"},
+		{name: "version get", args: []string{"dev", "app", "version", "get", "--unified-app-id", "u-1", "--version-id", "v-1"}},
+		{name: "version check-approval", args: []string{"dev", "app", "version", "check-approval", "--unified-app-id", "u-1", "--version-id", "v-1"}},
+		{name: "version status", args: []string{"dev", "app", "version", "status", "--unified-app-id", "u-1", "--version-id", "v-1"}},
 	}
 
 	for _, tc := range cases {
+		content := tc.content
+		if content == nil {
+			content = defaultContent
+		}
+		want := tc.want
+		if want == "" {
+			want = "DemoApp"
+		}
 		t.Run(tc.name+"/json", func(t *testing.T) {
 			out, errBuf, err := runDevAppFamily(t, devAppFamilyContentRunner(content), tc.args...)
 			if err != nil {
@@ -108,7 +118,7 @@ func TestDevAppFamilyReadLeavesDualFormat(t *testing.T) {
 			if strings.Contains(s, `"outcome"`) || strings.Contains(s, `"ok"`) {
 				t.Fatalf("-f table must render data only, envelope leaked: %s", s)
 			}
-			if !strings.Contains(s, "DemoApp") {
+			if !strings.Contains(s, want) {
 				t.Fatalf("-f table output missing data payload value: %s", s)
 			}
 		})
@@ -173,6 +183,7 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 		name      string
 		args      []string
 		content   map[string]any
+		dataKey   string
 		wantNext  string
 		wantExh   bool
 		wantHasPg bool
@@ -181,6 +192,7 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 			name:      "app list has more with cursor",
 			args:      []string{"dev", "app", "list", "--name", "DemoApp"},
 			content:   map[string]any{"items": []any{}, "hasMore": true, "nextCursor": "tok-9"},
+			dataKey:   "apps",
 			wantNext:  "tok-9",
 			wantExh:   false,
 			wantHasPg: true,
@@ -189,6 +201,7 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 			name:      "app list exhausted",
 			args:      []string{"dev", "app", "list", "--name", "DemoApp"},
 			content:   map[string]any{"items": []any{}, "hasMore": false},
+			dataKey:   "apps",
 			wantExh:   true,
 			wantHasPg: true,
 		},
@@ -196,12 +209,30 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 			name:      "app list no pagination fields",
 			args:      []string{"dev", "app", "list", "--name", "DemoApp"},
 			content:   map[string]any{"items": []any{}},
+			dataKey:   "apps",
 			wantHasPg: false,
+		},
+		{
+			name:      "permission list has more with cursor",
+			args:      []string{"dev", "app", "permission", "list", "--unified-app-id", "u-1"},
+			content:   map[string]any{"items": []any{}, "hasMore": true, "nextCursor": "p-tok-2"},
+			dataKey:   "permissions",
+			wantNext:  "p-tok-2",
+			wantHasPg: true,
+		},
+		{
+			name:      "event list exhausted",
+			args:      []string{"dev", "app", "event", "list", "--unified-app-id", "u-1"},
+			content:   map[string]any{"items": []any{}, "hasMore": false, "nextCursor": "terminal-position"},
+			dataKey:   "events",
+			wantExh:   true,
+			wantHasPg: true,
 		},
 		{
 			name:      "version list has more with cursor",
 			args:      []string{"dev", "app", "version", "list", "--unified-app-id", "u-1"},
 			content:   map[string]any{"items": []any{}, "hasMore": true, "nextCursor": "v-tok-3"},
+			dataKey:   "versions",
 			wantNext:  "v-tok-3",
 			wantExh:   false,
 			wantHasPg: true,
@@ -215,9 +246,11 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 				t.Fatalf("Execute() error = %v\nstderr:\n%s", err, errBuf.String())
 			}
 			var env struct {
-				OK      bool   `json:"ok"`
-				Outcome string `json:"outcome"`
+				OK      bool           `json:"ok"`
+				Outcome string         `json:"outcome"`
+				Data    map[string]any `json:"data"`
 				Meta    struct {
+					Count      *int `json:"count"`
 					Pagination *struct {
 						EndpointExhausted bool   `json:"endpoint_exhausted"`
 						NextToken         string `json:"next_token"`
@@ -226,6 +259,17 @@ func TestDevAppListPaginationProjectsMeta(t *testing.T) {
 			}
 			if err := json.Unmarshal(out.Bytes(), &env); err != nil {
 				t.Fatalf("stdout is not a JSON envelope: %v\n%s", err, out.String())
+			}
+			if _, ok := env.Data[tc.dataKey]; !ok {
+				t.Fatalf("projected business key %q missing: %s", tc.dataKey, out.String())
+			}
+			for _, legacyKey := range []string{"items", "count", "hasMore", "nextCursor"} {
+				if _, leaked := env.Data[legacyKey]; leaked {
+					t.Fatalf("legacy pagination key %q leaked into data: %s", legacyKey, out.String())
+				}
+			}
+			if env.Meta.Count == nil || *env.Meta.Count != 0 {
+				t.Fatalf("meta.count = %#v, want 0: %s", env.Meta.Count, out.String())
 			}
 			if !tc.wantHasPg {
 				if env.Meta.Pagination != nil {

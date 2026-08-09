@@ -1851,6 +1851,12 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 				return pending
 			}
 		}
+		if page, problem, handled := ProjectDevAppListPage(result.Invocation.Tool, content); handled {
+			if problem != nil {
+				return output.Failure(problem)
+			}
+			return output.Success(page.Data, output.WithMeta(page.Meta))
+		}
 	}
 	if meta := devAppPaginationMeta(data); meta != nil {
 		return output.Success(data, output.WithMeta(meta))
@@ -1873,6 +1879,7 @@ func DevAppCommandResultFromPayload(tool string, payload any, dryRun bool, param
 		Invocation: executor.Invocation{
 			Implemented: true,
 			Kind:        "helper_invocation",
+			Tool:        strings.TrimSpace(tool),
 			DryRun:      dryRun,
 		},
 		Response: response,

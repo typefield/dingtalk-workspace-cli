@@ -97,6 +97,25 @@ func devAppEnvelopeRegressionChecklist() []struct {
 	}
 }
 
+func devAppEnvelopeRegressionContent(path string) map[string]any {
+	switch path {
+	case "list":
+		return map[string]any{"items": []any{map[string]any{"unifiedAppId": "u-1", "name": "DemoApp"}}, "hasMore": false}
+	case "permission list":
+		return map[string]any{"items": []any{map[string]any{"scopeValue": "Contact.User.read", "scopeName": "Read users"}}, "hasMore": false}
+	case "event list":
+		return map[string]any{"items": []any{map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"}}, "hasMore": false}
+	case "version list":
+		return map[string]any{"items": []any{map[string]any{"versionId": "v-1", "version": "1.0.0"}}, "hasMore": false}
+	default:
+		return map[string]any{
+			"unifiedAppId": "u-1",
+			"name":         "DemoApp",
+			"appStatus":    "ENABLED",
+		}
+	}
+}
+
 // TestDevAppEnvelopeRegressionLeafInventory 是核销清单的清单 ⇆ 命令树双向
 // 绑定：dev app 树叶子集合必须与清单完全一致。新增叶子未补信封断言、或
 // 清单残留已删除叶子，都会在此失败。
@@ -138,11 +157,7 @@ func TestDevAppEnvelopeRegressionUnifiedExit(t *testing.T) {
 	for _, entry := range devAppEnvelopeRegressionChecklist() {
 		t.Run(entry.path, func(t *testing.T) {
 			out, errBuf, err := runDevAppFamily(t,
-				devAppFamilyContentRunner(map[string]any{
-					"unifiedAppId": "u-1",
-					"name":         "DemoApp",
-					"appStatus":    "ENABLED",
-				}),
+				devAppFamilyContentRunner(devAppEnvelopeRegressionContent(entry.path)),
 				entry.args...)
 			if err != nil {
 				t.Fatalf("Execute() error = %v\nstdout:\n%s\nstderr:\n%s", err, out.String(), errBuf.String())

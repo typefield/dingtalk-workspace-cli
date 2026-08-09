@@ -178,3 +178,55 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		}
 	})
 }
+
+func TestDevAppNativeAndShortcutListToolsShareProjectedResult(t *testing.T) {
+	tests := []struct {
+		name    string
+		tool    string
+		dataKey string
+		item    map[string]any
+	}{
+		{name: "apps", tool: devAppListTool, dataKey: "apps", item: map[string]any{"unifiedAppId": "app-1", "name": "Example"}},
+		{name: "permissions", tool: devAppPermissionListTool, dataKey: "permissions", item: map[string]any{"scopeValue": "contact:user.base:read", "scopeName": "Read users"}},
+		{name: "events", tool: devAppEventListTool, dataKey: "events", item: map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"}},
+		{name: "versions", tool: devAppVersionListTool, dataKey: "versions", item: map[string]any{"versionId": "version-1", "version": "1.0.0"}},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			payload := map[string]any{
+				"success": true,
+				"result": map[string]any{
+					"items":      []any{tt.item},
+					"hasMore":    true,
+					"nextCursor": "cursor-next",
+				},
+			}
+			result := DevAppCommandResultFromPayload(tt.tool, payload, false)
+			env, err := output.EnvelopeFromResult(result)
+			if err != nil {
+				t.Fatal(err)
+			}
+			if env.Outcome != output.OutcomeSuccess || result.ExitCode() != 0 {
+				t.Fatalf("envelope=%+v rc=%d", env, result.ExitCode())
+			}
+			data, ok := env.Data.(map[string]any)
+			if !ok {
+				t.Fatalf("data=%#v", env.Data)
+			}
+			for _, legacyKey := range []string{"count", "hasMore", "nextCursor", "items"} {
+				if _, leaked := data[legacyKey]; leaked {
+					t.Fatalf("legacy key %q leaked into active data: %#v", legacyKey, data)
+				}
+			}
+			items, ok := data[tt.dataKey].([]map[string]any)
+			if !ok || len(items) != 1 {
+				t.Fatalf("%s=%#v", tt.dataKey, data[tt.dataKey])
+			}
+			if env.Meta == nil || env.Meta.Count == nil || *env.Meta.Count != 1 ||
+				env.Meta.Pagination == nil || env.Meta.Pagination.EndpointExhausted ||
+				env.Meta.Pagination.NextToken != "cursor-next" {
+				t.Fatalf("meta=%+v", env.Meta)
+			}
+		})
+	}
+}

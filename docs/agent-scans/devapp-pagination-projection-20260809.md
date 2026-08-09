@@ -1,4 +1,4 @@
-# devapp shortcut pagination projection — Agent review
+# DevApp native / shortcut shared pagination projection — Agent review
 
 扫描时间：2026-08-09T15:19:09+08:00
 
@@ -6,9 +6,13 @@
 
 ## Result: PASS
 
-- 已审阅分页 shortcut：**4/4**
-- 覆盖入口：`devapp +list`、`+permission-list`、`+event-list`、`+version-list`
-- 焦点测试：`TestDevApp(ProjectedLists(PreservePaginationEvidence|RejectInvalidPaginationEvidence)|ListProjectionSeparatesKnownEmptyFromUnknown|PaginatedShortcutsEmitUnifiedResumableResults)`
+- 已审阅分页能力：**4/4，两个既有命令前缀共用一个 projector**
+- 覆盖入口：`dev app list/permission list/event list/version list` 与对应
+  `devapp +list/+permission-list/+event-list/+version-list`
+- 焦点测试：`TestDevAppSharedListProjection*`、
+  `TestDevAppNativeAndShortcutListToolsShareProjectedResult`、
+  `TestDevAppPaginatedShortcutsEmitUnifiedResumableResults` 和
+  `TestDevAppListPaginationProjectsMeta`
 - 测试退出码：`0`
 
 ## Required behavior
@@ -20,15 +24,18 @@
    DevApp 实际终页会保留一个位置 cursor，`hasMore=false` 为权威终态，该 cursor 不得投影为 `next_token`。
 5. 上述失败均为 `response_projection`、不可安全重试；不得输出成功列表。
 6. 只有显式的空数组才可投影为成功空列表；缺容器、非数组、非法行或仅展示字段的行必须为 `api/projection_unknown`。
-7. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
+7. 经本项 Agent 审阅的八条 terminal command 在各自既有路径直接输出统一结果；不改
+   `dev` / `devapp` 前缀，调用者只传 `--format json`。
 8. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
 9. 末页必须输出 `endpoint_exhausted:true`，即使原始响应携带位置 cursor，也不能诱导 Agent 继续请求。
 10. 业务 `data` 只保留资源数组；`count/hasMore/nextCursor` 不得与 `meta.count/meta.pagination` 重复发布。
 
 ## Source coverage
 
-- PASS：四个列表 Shortcut 均先验证分页证据，再交给统一结果映射。
-- PASS：四条已审阅的列表 Shortcut 均在原命令路径直接输出统一结果；没有公开版本/协议选择参数。
+- PASS：四类列表的 native 与 Shortcut 都调用
+  `helpers.ProjectDevAppListPage`，字段、稳定 ID、空态与分页判断不再各自实现。
+- PASS：八条已审阅的 terminal command 均在原命令路径直接输出统一结果；没有公开
+  版本/协议选择参数。
 
 ## Live pagination evidence
 
@@ -36,60 +43,31 @@
 cursor 再次读取得到 0 项、同一 cursor、仍为 `hasMore=false`。修复后四条 active 列表
 均只在 `meta` 发布 count/分页，业务 `data` 不含 legacy 分页键：
 
-| 命令 | 页数 | 结构计数合计 | 终态 |
+| 能力（两入口同形） | 页数 | 结构计数合计 | 终态 |
 |---|---:|---:|---|
-| `devapp +list` | 1 | 11 | exhausted，无 next_token |
-| `devapp +permission-list` | 5 | 249 | exhausted，无 token 缺失/循环 |
-| `devapp +event-list` | 3 | 255 | exhausted，无 token 缺失/循环 |
-| `devapp +version-list` | 1 | 0 | exhausted，已知空 |
+| 应用 list | 1 | 11 | exhausted，无 next_token |
+| permission list | 5 | 249 | exhausted，无 token 缺失/循环 |
+| event list | 3 | 255 | exhausted，无 token 缺失/循环 |
+| version list | 1 | 0 | exhausted，已知空 |
 
 探针不保存原始 JSON，也不打印应用、权限、事件、版本或 cursor 值。计数只证明当前账号
 本次 endpoint 响应，不能扩大成企业权限覆盖或服务端业务完整性。
+
+共享 projector 接入后又对八条命令逐一执行首屏脱敏对拍：两入口的业务键分别严格为
+`apps/permissions/events/versions`，`meta.count` 分别为 `11/20/20/0`，应用和版本为
+已耗尽、权限和事件为可续页；八条均为 `ok:true/outcome:success`，且不含版本标记。
 
 
 ## Focused test transcript
 
 ```text
-=== RUN   TestDevAppProjectedListsPreservePaginationEvidence
-=== RUN   TestDevAppProjectedListsPreservePaginationEvidence/top_level
-=== RUN   TestDevAppProjectedListsPreservePaginationEvidence/nested_result
-=== RUN   TestDevAppProjectedListsPreservePaginationEvidence/nested_page_info
---- PASS: TestDevAppProjectedListsPreservePaginationEvidence (0.00s)
-    --- PASS: TestDevAppProjectedListsPreservePaginationEvidence/top_level (0.00s)
-    --- PASS: TestDevAppProjectedListsPreservePaginationEvidence/nested_result (0.00s)
-    --- PASS: TestDevAppProjectedListsPreservePaginationEvidence/nested_page_info (0.00s)
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/has_more_is_not_boolean
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/cursor_is_not_string
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/has_more_conflicts_across_envelopes
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/cursor_conflicts_across_envelopes
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/nonfinal_page_omits_cursor
-=== RUN   TestDevAppProjectedListsTreatTerminalCursorAsNonActionable
---- PASS: TestDevAppProjectedListsRejectInvalidPaginationEvidence (0.00s)
-    --- PASS: TestDevAppProjectedListsRejectInvalidPaginationEvidence/has_more_is_not_boolean (0.00s)
-    --- PASS: TestDevAppPr
-... (middle transcript elided) ...
-ctionSeparatesKnownEmptyFromUnknown/events/display_only_row (0.00s)
-    --- PASS: TestDevAppListProjectionSeparatesKnownEmptyFromUnknown/versions (0.00s)
-        --- PASS: TestDevAppListProjectionSeparatesKnownEmptyFromUnknown/versions/unknown_container (0.00s)
-        --- PASS: TestDevAppListProjectionSeparatesKnownEmptyFromUnknown/versions/not_an_array (0.00s)
-        --- PASS: TestDevAppListProjectionSeparatesKnownEmptyFromUnknown/versions/malformed_row (0.00s)
-        --- PASS: TestDevAppListProjectionSeparatesKnownEmptyFromUnknown/versions/display_only_row (0.00s)
-=== RUN   TestDevAppPaginatedShortcutsEmitUnifiedResumableResults
-=== RUN   TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/apps
-=== RUN   TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/permissions
-=== RUN   TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/events
-=== RUN   TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/versions
---- PASS: TestDevAppPaginatedShortcutsEmitUnifiedResumableResults (0.00s)
-    --- PASS: TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/apps (0.00s)
-    --- PASS: TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/permissions (0.00s)
-    --- PASS: TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/events (0.00s)
-    --- PASS: TestDevAppPaginatedShortcutsEmitUnifiedResumableResults/versions (0.00s)
-PASS
-ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/devapp	0.385s
+$ DWS_PACKAGE_VERSION=0.0.0-test go test -count=1 ./internal/helpers ./internal/shortcut/devapp \
+  -run 'TestDevApp(SharedListProjection|NativeAndShortcutListToolsShareProjectedResult|PaginatedShortcutsEmitUnifiedResumableResults|ListPaginationProjectsMeta)'
+ok  .../internal/helpers
+ok  .../internal/shortcut/devapp
 ```
 
 ## Boundary
 
-这证明本地投影不会再静默吞掉异常分页字段，并已对拍一组真实终页位置 cursor；
-非终页续翻、已知空、权限受限、其他列表接口和 `dev ...` / `devapp +...` 的完整端到端矩阵仍需单独 Agent 实测。
+这证明本地投影不会再静默吞掉异常分页字段，并已对拍真实终页位置 cursor、四类列表
+完整续翻以及两前缀首屏等价；权限受限、其他账号和上游异常响应仍需单独 Agent 实测。

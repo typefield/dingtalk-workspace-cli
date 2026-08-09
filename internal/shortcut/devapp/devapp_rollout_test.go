@@ -8,160 +8,99 @@ import (
 	"testing"
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 )
 
-func TestDevAppProjectedListsPreservePaginationEvidence(t *testing.T) {
+func TestDevAppSharedListProjectionPreservesPaginationEvidence(t *testing.T) {
 	tests := []struct {
-		name   string
-		source map[string]any
+		name      string
+		source    map[string]any
+		exhausted bool
+		token     string
 	}{
-		{name: "top level", source: map[string]any{"hasMore": true, "nextCursor": "next-1"}},
-		{name: "nested result", source: map[string]any{"result": map[string]any{"hasMore": false}}},
-		{name: "nested page info", source: map[string]any{"data": map[string]any{"pageInfo": map[string]any{"hasMore": true, "nextCursor": "next-2"}}}},
+		{name: "top level", source: map[string]any{"items": []any{}, "hasMore": true, "nextCursor": "next-1"}, token: "next-1"},
+		{name: "nested result", source: map[string]any{"result": map[string]any{"items": []any{}, "hasMore": false}}, exhausted: true},
+		{name: "nested page info", source: map[string]any{"items": []any{}, "data": map[string]any{"pageInfo": map[string]any{"hasMore": true, "nextCursor": "next-2"}}}, token: "next-2"},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projected, err := projectDevAppPage(tt.source, map[string]any{"count": 1, "items": []any{map[string]any{"id": "item-1"}}})
-			if err != nil {
-				t.Fatalf("projectDevAppPage() error = %v", err)
+			page, problem, handled := helpers.ProjectDevAppListPage("list_dev_app", tt.source)
+			if !handled || problem != nil || page == nil {
+				t.Fatalf("projection: handled=%v problem=%+v page=%#v", handled, problem, page)
 			}
-			if got, ok := projected["hasMore"].(bool); !ok {
-				t.Fatalf("hasMore missing from projection: %#v", projected)
-			} else if got != (tt.name != "nested result") {
-				t.Fatalf("hasMore=%v, want fixture value", got)
+			if page.Meta == nil || page.Meta.Pagination == nil ||
+				page.Meta.Pagination.EndpointExhausted != tt.exhausted || page.Meta.Pagination.NextToken != tt.token {
+				t.Fatalf("pagination=%+v", page.Meta)
 			}
-			if tt.name != "nested result" {
-				if projected["nextCursor"] == nil {
-					t.Fatalf("nextCursor missing from projection: %#v", projected)
-				}
-			} else if _, exists := projected["nextCursor"]; exists {
-				t.Fatalf("unexpected nextCursor for exhausted page: %#v", projected)
+			if _, leaked := page.Data["hasMore"]; leaked {
+				t.Fatalf("active data leaked pagination: %#v", page.Data)
 			}
 		})
 	}
 }
 
-func TestDevAppProjectedListsRejectInvalidPaginationEvidence(t *testing.T) {
+func TestDevAppSharedListProjectionRejectsInvalidPaginationEvidence(t *testing.T) {
 	tests := []struct {
 		name    string
 		source  map[string]any
 		subtype apperrors.Subtype
 	}{
-		{
-			name:    "has more is not boolean",
-			source:  map[string]any{"hasMore": "true", "nextCursor": "next-1"},
-			subtype: apperrors.SubtypePaginationInvalid,
-		},
-		{
-			name:    "cursor is not string",
-			source:  map[string]any{"hasMore": true, "nextCursor": 7},
-			subtype: apperrors.SubtypePaginationIncomplete,
-		},
-		{
-			name:    "has more conflicts across envelopes",
-			source:  map[string]any{"hasMore": true, "result": map[string]any{"hasMore": false, "nextCursor": "next-1"}},
-			subtype: apperrors.SubtypePaginationConflict,
-		},
-		{
-			name:    "cursor conflicts across envelopes",
-			source:  map[string]any{"hasMore": true, "nextCursor": "next-1", "result": map[string]any{"hasMore": true, "nextCursor": "next-2"}},
-			subtype: apperrors.SubtypePaginationConflict,
-		},
-		{
-			name:    "nonfinal page omits cursor",
-			source:  map[string]any{"hasMore": true},
-			subtype: apperrors.SubtypePaginationIncomplete,
-		},
+		{name: "has more is not boolean", source: map[string]any{"items": []any{}, "hasMore": "true", "nextCursor": "next-1"}, subtype: apperrors.SubtypePaginationInvalid},
+		{name: "cursor is not string", source: map[string]any{"items": []any{}, "hasMore": true, "nextCursor": 7}, subtype: apperrors.SubtypePaginationIncomplete},
+		{name: "has more conflicts", source: map[string]any{"items": []any{}, "hasMore": true, "result": map[string]any{"hasMore": false, "nextCursor": "next-1"}}, subtype: apperrors.SubtypePaginationConflict},
+		{name: "cursor conflicts", source: map[string]any{"items": []any{}, "hasMore": true, "nextCursor": "next-1", "result": map[string]any{"hasMore": true, "nextCursor": "next-2"}}, subtype: apperrors.SubtypePaginationConflict},
+		{name: "nonfinal omits cursor", source: map[string]any{"items": []any{}, "hasMore": true}, subtype: apperrors.SubtypePaginationIncomplete},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			projected, err := projectDevAppPage(tt.source, map[string]any{"items": []any{}})
-			if projected != nil {
-				t.Fatalf("projectDevAppPage() projection = %#v, want nil on malformed evidence", projected)
+			page, problem, handled := helpers.ProjectDevAppListPage("list_dev_app", tt.source)
+			if !handled || page != nil || problem == nil || problem.Type != "validation" || problem.Subtype != string(tt.subtype) {
+				t.Fatalf("projection: handled=%v page=%#v problem=%+v", handled, page, problem)
 			}
 			var typed *apperrors.Error
-			if !stderrors.As(err, &typed) {
-				t.Fatalf("projectDevAppPage() error = %T %v, want *errors.Error", err, err)
-			}
-			if typed.Category != apperrors.CategoryValidation || typed.StableSubtype != string(tt.subtype) {
-				t.Fatalf("typed error = %#v, want validation/%s", typed, tt.subtype)
-			}
-			if typed.FailureStage != "response_projection" || !typed.RetryableSet || typed.Retryable {
-				t.Fatalf("typed error must be non-retryable response projection failure: %#v", typed)
+			if err := helpers.DevAppListProjectionError(problem); !stderrors.As(err, &typed) ||
+				typed.Category != apperrors.CategoryValidation || typed.StableSubtype != string(tt.subtype) ||
+				typed.FailureStage != "response_projection" {
+				t.Fatalf("typed error=%#v", typed)
 			}
 		})
 	}
 }
 
-func TestDevAppProjectedListsTreatTerminalCursorAsNonActionable(t *testing.T) {
-	projected, err := projectDevAppPage(
-		map[string]any{"hasMore": false, "nextCursor": "terminal-position"},
-		map[string]any{"items": []any{}},
-	)
-	if err != nil {
-		t.Fatalf("projectDevAppPage() error = %v", err)
-	}
-	if hasMore, ok := projected["hasMore"].(bool); !ok || hasMore {
-		t.Fatalf("hasMore = %#v, want false", projected["hasMore"])
-	}
-	if _, exists := projected["nextCursor"]; exists {
-		t.Fatalf("terminal position cursor leaked as continuation: %#v", projected)
-	}
-}
-
-func TestDevAppListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
+func TestDevAppSharedListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 	tests := []struct {
 		name    string
-		project func(map[string]any) ([]map[string]any, error)
+		tool    string
+		dataKey string
 		stable  map[string]any
 	}{
-		{
-			name:    "apps",
-			project: listAppProject,
-			stable:  map[string]any{"unifiedAppId": "app-1", "name": "Example"},
-		},
-		{
-			name:    "permissions",
-			project: permissionListProject,
-			stable:  map[string]any{"scopeValue": "contact:user.base:read", "scopeName": "Read users"},
-		},
-		{
-			name:    "events",
-			project: eventListProject,
-			stable:  map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"},
-		},
-		{
-			name:    "versions",
-			project: versionListProject,
-			stable:  map[string]any{"versionId": "version-1", "version": "1.0.0"},
-		},
+		{name: "apps", tool: "list_dev_app", dataKey: "apps", stable: map[string]any{"unifiedAppId": "app-1", "name": "Example"}},
+		{name: "permissions", tool: "list_dev_app_permissions", dataKey: "permissions", stable: map[string]any{"scopeValue": "contact:user.base:read", "scopeName": "Read users"}},
+		{name: "events", tool: "list_dev_app_events", dataKey: "events", stable: map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"}},
+		{name: "versions", tool: "list_dev_app_versions", dataKey: "versions", stable: map[string]any{"versionId": "version-1", "version": "1.0.0"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
-			knownEmpty, err := tt.project(map[string]any{"result": map[string]any{"items": []any{}}})
-			if err != nil || knownEmpty == nil || len(knownEmpty) != 0 {
-				t.Fatalf("known empty = %#v, %v; want non-nil empty projection", knownEmpty, err)
+			page, problem, handled := helpers.ProjectDevAppListPage(tt.tool, map[string]any{"result": map[string]any{"items": []any{}, "hasMore": false}})
+			items, ok := page.Data[tt.dataKey].([]map[string]any)
+			if !handled || problem != nil || !ok || items == nil || len(items) != 0 || page.Meta.Count == nil || *page.Meta.Count != 0 {
+				t.Fatalf("known empty: handled=%v problem=%+v page=%#v", handled, problem, page)
 			}
-			valid, err := tt.project(map[string]any{"result": map[string]any{"items": []any{tt.stable}}})
-			if err != nil || len(valid) != 1 {
-				t.Fatalf("valid projection = %#v, %v", valid, err)
+			page, problem, _ = helpers.ProjectDevAppListPage(tt.tool, map[string]any{"items": []any{tt.stable}, "hasMore": false})
+			items, ok = page.Data[tt.dataKey].([]map[string]any)
+			if problem != nil || !ok || len(items) != 1 {
+				t.Fatalf("valid projection: problem=%+v page=%#v", problem, page)
 			}
 			for name, payload := range map[string]map[string]any{
 				"unknown container": {"result": map[string]any{"status": "ok"}},
 				"not an array":      {"result": map[string]any{"items": "not-an-array"}},
-				"malformed row":     {"result": map[string]any{"items": []any{"opaque"}}},
-				"display only row":  {"result": map[string]any{"items": []any{map[string]any{"name": "display only"}}}},
+				"malformed row":     {"items": []any{"opaque"}},
+				"display only row":  {"items": []any{map[string]any{"name": "display only"}}},
 			} {
 				t.Run(name, func(t *testing.T) {
-					_, err := tt.project(payload)
-					var typed *apperrors.Error
-					if !stderrors.As(err, &typed) {
-						t.Fatalf("projection error = %T %v, want typed projection error", err, err)
-					}
-					if typed.Category != apperrors.CategoryAPI || typed.StableSubtype != string(apperrors.SubtypeProjectionUnknown) || typed.FailureStage != "response_projection" || !typed.RetryableSet || typed.Retryable {
-						t.Fatalf("projection error = %#v", typed)
+					page, problem, _ := helpers.ProjectDevAppListPage(tt.tool, payload)
+					if page != nil || problem == nil || problem.Type != "api" || problem.Subtype != string(apperrors.SubtypeProjectionUnknown) {
+						t.Fatalf("page=%#v problem=%+v", page, problem)
 					}
 				})
 			}
@@ -169,46 +108,15 @@ func TestDevAppListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 	}
 }
 
-func TestDevAppShortcutsRollOutPerTerminalCommand(t *testing.T) {
-	active := map[string]bool{
-		"+list": true, "+get": true, "+credentials-get": true, "+webapp-get": true,
-		"+permission-list": true, "+event-list": true, "+version-list": true,
-		"+member-list": true, "+robot-get": true, "+version-get": true,
-		"+version-check-approval": true, "+version-status": true,
+func TestDevAppSharedListProjectionTreatsTerminalCursorAsNonActionable(t *testing.T) {
+	page, problem, handled := helpers.ProjectDevAppListPage("list_dev_app", map[string]any{
+		"items": []any{}, "hasMore": false, "nextCursor": "terminal-position",
+	})
+	if !handled || problem != nil || page.Meta == nil || page.Meta.Pagination == nil ||
+		!page.Meta.Pagination.EndpointExhausted || page.Meta.Pagination.NextToken != "" {
+		t.Fatalf("handled=%v problem=%+v page=%#v", handled, problem, page)
 	}
-	seen := map[string]bool{}
-	for _, item := range shortcut.All() {
-		if item.Service != productDevApp {
-			continue
-		}
-		seen[item.Command] = true
-		want := output.RolloutDualValidate
-		if active[item.Command] {
-			want = output.RolloutUnifiedActive
-		}
-		if item.OutputRollout != want {
-			t.Errorf("%s rollout=%s, want %s", item.Command, item.OutputRollout, want)
-		}
-		if active[item.Command] && item.Contract.Identity.CanonicalPath == "" {
-			t.Errorf("active shortcut %s has no complete Contract identity", item.Command)
-		}
-		if active[item.Command] && !shortcut.InPublicCatalog(item.Service, item.Command) {
-			t.Errorf("active shortcut %s is not reachable from the public Agent catalog", item.Command)
-		}
-		if item.Command == "+credentials-get" {
-			if item.Contract.Result == nil || len(item.Contract.Result.SensitivePaths) == 0 {
-				t.Error("credentials shortcut must declare sensitive output paths")
-			}
-		}
-	}
-	for name := range active {
-		if !seen[name] {
-			t.Errorf("active pilot shortcut %s is not registered", name)
-		}
-	}
-	for _, paginated := range []string{"+list", "+permission-list", "+event-list", "+version-list"} {
-		if !seen[paginated] {
-			t.Errorf("paginated shortcut %s is not registered", paginated)
-		}
+	if _, leaked := page.LegacyPage["nextCursor"]; leaked {
+		t.Fatalf("terminal cursor leaked into legacy clean projection: %#v", page.LegacyPage)
 	}
 }

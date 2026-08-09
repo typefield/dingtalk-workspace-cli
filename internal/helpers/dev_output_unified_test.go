@@ -21,7 +21,10 @@ func (r *countingDevUnifiedRunner) Run(_ context.Context, invocation executor.In
 		Invocation: invocation,
 		Response: map[string]any{"content": map[string]any{
 			"success": true,
-			"result":  map[string]any{"id": "dev-1"},
+			"result": map[string]any{
+				"items":   []any{map[string]any{"unifiedAppId": "dev-1", "name": "DemoApp"}},
+				"hasMore": false,
+			},
 		}},
 	}, nil
 }
@@ -55,7 +58,7 @@ func TestDevAppUnifiedResultExecutesOnceAndReturnsFrameworkResult(t *testing.T) 
 	if runner.calls != 1 {
 		t.Fatalf("runner calls=%d, want exactly 1", runner.calls)
 	}
-	if !bytes.Contains(stdout.Bytes(), []byte(`"outcome": "success"`)) || !bytes.Contains(stdout.Bytes(), []byte(`"id": "dev-1"`)) {
+	if !bytes.Contains(stdout.Bytes(), []byte(`"outcome": "success"`)) || !bytes.Contains(stdout.Bytes(), []byte(`"unifiedAppId": "dev-1"`)) {
 		t.Fatalf("stdout=%s", stdout.String())
 	}
 }

@@ -32,11 +32,7 @@ func TestDevAppAllLeavesStdoutZeroLogBytes(t *testing.T) {
 				args = append(args, "--dry-run")
 			}
 			out, errBuf, err := runDevAppFamily(t,
-				devAppFamilyContentRunner(map[string]any{
-					"unifiedAppId": "u-1",
-					"name":         "DemoApp",
-					"appStatus":    "ENABLED",
-				}),
+				devAppFamilyContentRunner(devAppEnvelopeRegressionContent(entry.path)),
 				args...)
 			if err != nil {
 				t.Fatalf("Execute() error = %v\nstdout:\n%s\nstderr:\n%s", err, out.String(), errBuf.String())

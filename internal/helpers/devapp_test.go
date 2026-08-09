@@ -1165,9 +1165,9 @@ func TestDevAppUnwrapsSuccessfulServiceResult(t *testing.T) {
 	if _, ok := rendered["success"]; ok {
 		t.Fatalf("output kept ServiceResult wrapper: %#v", rendered)
 	}
-	items, ok := rendered["items"].([]any)
+	items, ok := rendered["versions"].([]any)
 	if !ok || len(items) != 1 {
-		t.Fatalf("items = %#v, want one item", rendered["items"])
+		t.Fatalf("versions = %#v, want one item", rendered["versions"])
 	}
 }
 

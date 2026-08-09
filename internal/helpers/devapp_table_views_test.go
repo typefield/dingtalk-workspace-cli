@@ -43,7 +43,7 @@ func TestDevAppTableViewColumns(t *testing.T) {
 				map[string]any{"unifiedAppId": "u-1", "name": "DemoApp", "appStatus": "ENABLED"},
 				map[string]any{"unifiedAppId": "u-2", "name": "Another", "appStatus": "DISABLED"},
 			},
-			headers: []string{"appStatus", "name", "unifiedAppId"},
+			headers: []string{"name", "status", "unifiedAppId"},
 			wantVal: "Another",
 		},
 		{

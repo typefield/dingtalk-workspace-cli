@@ -26,11 +26,11 @@ package devapp
 
 import (
 	"encoding/json"
-	"fmt"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
@@ -141,250 +141,23 @@ var ListApp = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		apps, err := listAppProject(data)
-		if err != nil {
-			return err
-		}
-		page, err := projectDevAppPage(data, map[string]any{"count": len(apps), "apps": apps})
-		if err != nil {
-			return err
-		}
-		return outputDevAppPage(rt, page)
+		return outputSharedDevAppListPage(rt, "list_dev_app", data)
 	},
 }
 
-// listAppProject reshapes list_dev_app into a clean app list
-// ({unifiedAppId, name, appKey, agentId, status, gmtModified}) — output-projection
-// clean output projection. The list container and per-item field names are probed
-// defensively across candidate keys. An explicit empty array is a successful
-// empty result; an unknown container, malformed row, or missing stable ID is
-// a projection failure, never a fabricated empty list.
-func listAppProject(data map[string]any) ([]map[string]any, error) {
-	raw, err := devAppFindList(data, []string{"list", "items", "apps", "appList", "result", "data"}, "list_dev_app")
-	if err != nil {
-		return nil, err
+// outputSharedDevAppListPage keeps the two existing DevApp command prefixes on
+// one business projection. The legacy payload remains available for an
+// internal rollout rollback; an active command stores only the unified data
+// and authoritative count/pagination meta.
+func outputSharedDevAppListPage(rt *shortcut.RuntimeContext, tool string, source map[string]any) error {
+	page, problem, handled := helpers.ProjectDevAppListPage(tool, source)
+	if !handled {
+		return apperrors.NewInternal("unsupported DevApp list projection: " + tool)
 	}
-	out := make([]map[string]any, 0, len(raw))
-	for index, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app", "devapp app list contains a non-object item")
-		}
-		id, ok := devAppStableString(m, "unifiedAppId", "unified_app_id")
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app", fmt.Sprintf("devapp app list item %d has no stable unifiedAppId", index+1))
-		}
-		row := map[string]any{"unifiedAppId": id}
-		if v, ok := listAppFirst(m, "name", "appName", "app_name"); ok {
-			row["name"] = v
-		}
-		if v, ok := listAppFirst(m, "appKey", "clientId", "app_key", "client_id"); ok {
-			row["appKey"] = v
-		}
-		if v, ok := listAppFirst(m, "agentId", "agent_id"); ok {
-			row["agentId"] = v
-		}
-		if v, ok := listAppFirst(m, "status", "appStatus", "app_status"); ok {
-			row["status"] = v
-		}
-		if v, ok := listAppFirst(m, "gmtModified", "gmt_modified", "modifyTime", "modified_time"); ok {
-			row["gmtModified"] = v
-		}
-		out = append(out, row)
+	if problem != nil {
+		return helpers.DevAppListProjectionError(problem)
 	}
-	return out, nil
-}
-
-// listAppFirst returns the first present candidate key's value.
-func listAppFirst(m map[string]any, keys ...string) (any, bool) {
-	for _, k := range keys {
-		if v, ok := m[k]; ok {
-			return v, true
-		}
-	}
-	return nil, false
-}
-
-// devAppFindList recognizes an explicit list container at the top level or
-// under one ServiceResult envelope. It intentionally distinguishes a known
-// empty array from an unrecognized response: the latter is not evidence that
-// there are no resources.
-func devAppFindList(data map[string]any, keys []string, tool string) ([]any, error) {
-	if data == nil {
-		return nil, devAppProjectionUnknown(tool, "devapp list response is empty or not an object")
-	}
-	for _, key := range keys {
-		value, present := data[key]
-		if !present {
-			continue
-		}
-		if list, ok := value.([]any); ok {
-			return list, nil
-		}
-		inner, ok := value.(map[string]any)
-		if !ok {
-			continue
-		}
-		for _, nestedKey := range keys {
-			if list, ok := inner[nestedKey].([]any); ok {
-				return list, nil
-			}
-		}
-	}
-	return nil, devAppProjectionUnknown(tool, "devapp list response does not contain a recognized list container")
-}
-
-// devAppStableString returns an Agent-usable stable identifier. Display-only
-// fields are deliberately insufficient because a later mutation or detail read
-// needs a deterministic key.
-func devAppStableString(data map[string]any, keys ...string) (string, bool) {
-	value, ok := listAppFirst(data, keys...)
-	if !ok {
-		return "", false
-	}
-	id, ok := value.(string)
-	id = strings.TrimSpace(id)
-	return id, ok && id != ""
-}
-
-func devAppProjectionUnknown(tool, message string) error {
-	return apperrors.NewAPI(message,
-		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
-		apperrors.WithFailureStage("response_projection"),
-		apperrors.WithOperation(productDevApp+"/"+tool),
-		apperrors.WithRetryable(false),
-	)
-}
-
-// projectDevAppPage keeps pagination evidence alongside a projected list.
-// The upstream devapp adapters have returned page fields both at the top
-// level and under result/data across versions.  Dropping these fields while
-// reshaping items makes a non-final page indistinguishable from a complete
-// result. Keep every pagination fact long enough to validate it, then preserve
-// the coherent facts needed by the unified-output mapper. Never synthesize
-// hasMore or a cursor. The live DevApp adapter uses a non-empty nextCursor as
-// a terminal position marker even when hasMore=false; in that explicit terminal
-// state the cursor is not actionable and must not be exposed as next_token.
-func projectDevAppPage(source map[string]any, projected map[string]any) (map[string]any, error) {
-	if projected == nil {
-		projected = map[string]any{}
-	}
-	type evidence struct {
-		hasMoreSet bool
-		hasMore    bool
-		cursorSet  bool
-		cursor     string
-	}
-	var found evidence
-	var visit func(map[string]any, int) error
-	visit = func(m map[string]any, depth int) error {
-		if m == nil || depth > 3 {
-			return nil
-		}
-		if raw, present := m["hasMore"]; present {
-			value, ok := raw.(bool)
-			if !ok {
-				return devAppPaginationProjectionError(
-					apperrors.SubtypePaginationInvalid,
-					"devapp pagination hasMore must be a boolean",
-				)
-			}
-			if found.hasMoreSet && found.hasMore != value {
-				return devAppPaginationProjectionError(
-					apperrors.SubtypePaginationConflict,
-					"devapp pagination hasMore conflicts across nested response envelopes",
-				)
-			}
-			found.hasMoreSet = true
-			found.hasMore = value
-		}
-		if raw, present := m["nextCursor"]; present {
-			value, ok := raw.(string)
-			if !ok {
-				return devAppPaginationProjectionError(
-					apperrors.SubtypePaginationIncomplete,
-					"devapp pagination nextCursor must be a string",
-				)
-			}
-			value = strings.TrimSpace(value)
-			if found.cursorSet && found.cursor != "" && value != "" && found.cursor != value {
-				return devAppPaginationProjectionError(
-					apperrors.SubtypePaginationConflict,
-					"devapp pagination nextCursor conflicts across nested response envelopes",
-				)
-			}
-			if value != "" {
-				found.cursor = value
-			}
-			found.cursorSet = true
-		}
-		for _, key := range []string{"result", "data", "content", "pageInfo", "pagination"} {
-			if nested, ok := m[key].(map[string]any); ok {
-				if err := visit(nested, depth+1); err != nil {
-					return err
-				}
-			}
-		}
-		return nil
-	}
-	if err := visit(source, 0); err != nil {
-		return nil, err
-	}
-	if found.hasMoreSet && found.hasMore && found.cursor == "" {
-		return nil, devAppPaginationProjectionError(
-			apperrors.SubtypePaginationIncomplete,
-			"devapp pagination hasMore=true requires nextCursor",
-		)
-	}
-	if found.hasMoreSet {
-		projected["hasMore"] = found.hasMore
-	}
-	if found.cursor != "" && (!found.hasMoreSet || found.hasMore) {
-		projected["nextCursor"] = found.cursor
-	} else {
-		delete(projected, "nextCursor")
-	}
-	return projected, nil
-}
-
-// outputDevAppPage moves list count and continuation facts into the unified
-// meta layer. The projection helper keeps the upstream facts in-band long
-// enough to validate them; the public active result must not duplicate legacy
-// hasMore/nextCursor/count keys inside business data.
-func outputDevAppPage(rt *shortcut.RuntimeContext, page map[string]any) error {
-	data := make(map[string]any, len(page))
-	for key, value := range page {
-		switch key {
-		case "count", "hasMore", "nextCursor":
-			continue
-		default:
-			data[key] = value
-		}
-	}
-	meta := &output.Meta{}
-	if count, ok := page["count"].(int); ok {
-		meta.Count = output.NewCount(count)
-	}
-	hasMore, hasMoreSet := page["hasMore"].(bool)
-	cursor, _ := page["nextCursor"].(string)
-	cursor = strings.TrimSpace(cursor)
-	switch {
-	case hasMoreSet && hasMore:
-		meta.Pagination = &output.Pagination{EndpointExhausted: false, NextToken: cursor}
-	case hasMoreSet && !hasMore:
-		meta.Pagination = &output.Pagination{EndpointExhausted: true}
-	case cursor != "":
-		meta.Pagination = &output.Pagination{EndpointExhausted: false, NextToken: cursor}
-	}
-	return rt.OutputWithMeta(data, meta)
-}
-
-func devAppPaginationProjectionError(subtype apperrors.Subtype, message string) error {
-	return apperrors.NewValidation(message,
-		apperrors.WithSubtype(subtype),
-		apperrors.WithFailureStage("response_projection"),
-		apperrors.WithRetryable(false),
-	)
+	return rt.OutputResult(page.LegacyPage, output.Success(page.Data, output.WithMeta(page.Meta)))
 }
 
 // GetApp maps helper `get_dev_app`.
@@ -871,64 +644,8 @@ var PermissionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		permissions, err := permissionListProject(data)
-		if err != nil {
-			return err
-		}
-		page, err := projectDevAppPage(data, map[string]any{"count": len(permissions), "permissions": permissions})
-		if err != nil {
-			return err
-		}
-		return outputDevAppPage(rt, page)
+		return outputSharedDevAppListPage(rt, "list_dev_app_permissions", data)
 	},
-}
-
-// permissionListProject reshapes list_dev_app_permissions into a clean
-// permission-point list ({scopeValue, scopeName, apiName, authStatus, scopeType})
-// — clean output projection. The list container and per-item field
-// names are probed defensively across candidate keys. An explicit empty array
-// is valid; a shape that cannot supply stable scope values is fail-closed.
-func permissionListProject(data map[string]any) ([]map[string]any, error) {
-	raw, err := devAppFindList(data, []string{"list", "items", "permissions", "permissionList", "scopes", "result", "data"}, "list_dev_app_permissions")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]map[string]any, 0, len(raw))
-	for index, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_permissions", "devapp permission list contains a non-object item")
-		}
-		scope, ok := devAppStableString(m, "scopeValue", "scope_value", "permissionCode", "code")
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_permissions", fmt.Sprintf("devapp permission list item %d has no stable scopeValue", index+1))
-		}
-		row := map[string]any{"scopeValue": scope}
-		if v, ok := permissionListFirst(m, "scopeName", "scope_name", "permissionName", "name"); ok {
-			row["scopeName"] = v
-		}
-		if v, ok := permissionListFirst(m, "apiName", "api_name", "interfaceName"); ok {
-			row["apiName"] = v
-		}
-		if v, ok := permissionListFirst(m, "authStatus", "auth_status", "status"); ok {
-			row["authStatus"] = v
-		}
-		if v, ok := permissionListFirst(m, "scopeType", "scope_type"); ok {
-			row["scopeType"] = v
-		}
-		out = append(out, row)
-	}
-	return out, nil
-}
-
-// permissionListFirst returns the first present candidate key's value.
-func permissionListFirst(m map[string]any, keys ...string) (any, bool) {
-	for _, k := range keys {
-		if v, ok := m[k]; ok {
-			return v, true
-		}
-	}
-	return nil, false
 }
 
 // PermissionAdd maps helper `apply_dev_app_permissions`.
@@ -1333,60 +1050,8 @@ var EventList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		events, err := eventListProject(data)
-		if err != nil {
-			return err
-		}
-		page, err := projectDevAppPage(data, map[string]any{"count": len(events), "events": events})
-		if err != nil {
-			return err
-		}
-		return outputDevAppPage(rt, page)
+		return outputSharedDevAppListPage(rt, "list_dev_app_events", data)
 	},
-}
-
-// eventListProject reshapes list_dev_app_events into a clean subscribed-event
-// list ({eventCode, eventName, status, gmtModified}) — output-projection
-// clean output projection. An explicitly empty list is preserved, but unknown
-// containers, malformed rows and missing stable event codes are rejected.
-func eventListProject(data map[string]any) ([]map[string]any, error) {
-	raw, err := devAppFindList(data, []string{"list", "items", "events", "eventList", "result", "data"}, "list_dev_app_events")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]map[string]any, 0, len(raw))
-	for index, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_events", "devapp event list contains a non-object item")
-		}
-		code, ok := devAppStableString(m, "eventCode", "event_code", "code")
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_events", fmt.Sprintf("devapp event list item %d has no stable eventCode", index+1))
-		}
-		row := map[string]any{"eventCode": code}
-		if v, ok := eventListFirst(m, "eventName", "event_name", "name"); ok {
-			row["eventName"] = v
-		}
-		if v, ok := eventListFirst(m, "status", "subscribeStatus", "subscribe_status"); ok {
-			row["status"] = v
-		}
-		if v, ok := eventListFirst(m, "gmtModified", "gmt_modified", "modifyTime", "modified_time"); ok {
-			row["gmtModified"] = v
-		}
-		out = append(out, row)
-	}
-	return out, nil
-}
-
-// eventListFirst returns the first present candidate key's value.
-func eventListFirst(m map[string]any, keys ...string) (any, bool) {
-	for _, k := range keys {
-		if v, ok := m[k]; ok {
-			return v, true
-		}
-	}
-	return nil, false
 }
 
 // EventSubscribe maps helper `subscribe_dev_app_events`.
@@ -1503,63 +1168,8 @@ var VersionList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		versions, err := versionListProject(data)
-		if err != nil {
-			return err
-		}
-		page, err := projectDevAppPage(data, map[string]any{"count": len(versions), "versions": versions})
-		if err != nil {
-			return err
-		}
-		return outputDevAppPage(rt, page)
+		return outputSharedDevAppListPage(rt, "list_dev_app_versions", data)
 	},
-}
-
-// versionListProject reshapes list_dev_app_versions into a clean version list
-// ({versionId, version, status, desc, gmtCreate}) — output-projection fidelity
-// for clean output. A known empty list is allowed; unknown containers,
-// malformed rows, and rows without a usable version ID are not.
-func versionListProject(data map[string]any) ([]map[string]any, error) {
-	raw, err := devAppFindList(data, []string{"list", "items", "versions", "versionList", "result", "data"}, "list_dev_app_versions")
-	if err != nil {
-		return nil, err
-	}
-	out := make([]map[string]any, 0, len(raw))
-	for index, item := range raw {
-		m, ok := item.(map[string]any)
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_versions", "devapp version list contains a non-object item")
-		}
-		id, ok := devAppStableString(m, "versionId", "version_id", "id")
-		if !ok {
-			return nil, devAppProjectionUnknown("list_dev_app_versions", fmt.Sprintf("devapp version list item %d has no stable versionId", index+1))
-		}
-		row := map[string]any{"versionId": id}
-		if v, ok := versionListFirst(m, "version", "versionName", "version_name"); ok {
-			row["version"] = v
-		}
-		if v, ok := versionListFirst(m, "status", "publishStatus", "publish_status", "versionStatus"); ok {
-			row["status"] = v
-		}
-		if v, ok := versionListFirst(m, "desc", "description", "remark"); ok {
-			row["desc"] = v
-		}
-		if v, ok := versionListFirst(m, "gmtCreate", "gmt_create", "createTime", "create_time"); ok {
-			row["gmtCreate"] = v
-		}
-		out = append(out, row)
-	}
-	return out, nil
-}
-
-// versionListFirst returns the first present candidate key's value.
-func versionListFirst(m map[string]any, keys ...string) (any, bool) {
-	for _, k := range keys {
-		if v, ok := m[k]; ok {
-			return v, true
-		}
-	}
-	return nil, false
 }
 
 // VersionGet maps helper `get_dev_app_version_detail`.
