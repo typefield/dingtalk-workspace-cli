@@ -42,6 +42,14 @@ task UUID；只有该字段的条目返回不可重试的 `projection_unknown`�
 三条入口继续保持隐藏，未扩大 Agent 公开命令面。Agent 内存测试证据见
 `agent-scans/minutes-latest-target-projection-20260809.md`；真实服务端形状、排序和详情终态仍待隔离账号复验。
 
+## 2026-08-09 Sheet 工作表列表输出晋级复核
+
+`sheet +list-sheets` 已从 `dual_validate` 迁入 `unified_active`：普通 `--format json` 直接输出统一结果，
+其中 `data.count` 与 `meta.count` 对齐，且不带版本选择或版本标记。投影只接受 `sheetId` / `sheet_id`；
+可能代表工作簿或展示记录的通用 `id` 不能再充当后续操作的工作表 ID。该命令没有可靠的上游分页事实，
+因此不伪造 endpoint 完整性。Agent 内存审阅证据见
+`agent-scans/sheet-list-projection-20260809.md`；真实工作表的权限、空表和服务端形状仍待隔离文档复验。
+
 ## 当前结论
 
 | 报告问题 | 当前状态 | 当前证据 | 剩余动作 |

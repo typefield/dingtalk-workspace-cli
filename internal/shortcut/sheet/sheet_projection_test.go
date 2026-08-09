@@ -58,6 +58,11 @@ func TestListSheetsProjectRejectsDisplayOnlyRow(t *testing.T) {
 	assertSheetProjectionUnknown(t, err)
 }
 
+func TestListSheetsProjectRejectsGenericIDOnlyRow(t *testing.T) {
+	_, err := listSheetsProject(map[string]any{"sheets": []any{map[string]any{"id": "workbook-or-display-id"}}})
+	assertSheetProjectionUnknown(t, err)
+}
+
 func TestListSheetsProjectSupportsNestedKnownContainer(t *testing.T) {
 	got, err := listSheetsProject(map[string]any{
 		"result": map[string]any{
@@ -72,15 +77,16 @@ func TestListSheetsProjectSupportsNestedKnownContainer(t *testing.T) {
 	}
 }
 
-func TestListSheetsDualValidationPreservesLegacyOutput(t *testing.T) {
-	if ListSheets.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("list-sheets rollout = %q, want dual validation", ListSheets.OutputRollout)
+func TestListSheetsUsesUnifiedOutput(t *testing.T) {
+	if ListSheets.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("list-sheets rollout = %q, want unified active", ListSheets.OutputRollout)
 	}
 	caller := &sheetListCaller{}
 	helpers.InitDeps(caller)
 	cmd := corecmd.New(shortcut.FromShortcut(ListSheets))
 	cmd.PersistentFlags().String("format", "json", "")
-	cmd.SetContext(context.Background())
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&bytes.Buffer{})
@@ -88,21 +94,30 @@ func TestListSheetsDualValidationPreservesLegacyOutput(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
+	exitCode, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || exitCode != 0 {
+		t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
+	}
 	if caller.product != "sheet" || caller.tool != "get_all_sheets" {
 		t.Fatalf("route = %s/%s", caller.product, caller.tool)
 	}
-	var payload map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
 		t.Fatalf("decode output: %v\n%s", err, stdout.String())
 	}
-	if _, changed := payload["ok"]; changed {
-		t.Fatalf("dual validation changed the external legacy wire: %#v", payload)
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", envelope)
 	}
-	if _, changed := payload["outcome"]; changed {
-		t.Fatalf("dual validation changed the external legacy wire: %#v", payload)
+	if _, leaked := envelope["contract_version"]; leaked {
+		t.Fatalf("result leaked removed version marker: %#v", envelope)
 	}
-	if payload["count"] != float64(1) || len(payload["sheets"].([]any)) != 1 {
-		t.Fatalf("legacy payload = %#v", payload)
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["count"] != float64(1) || len(data["sheets"].([]any)) != 1 {
+		t.Fatalf("data = %#v", data)
+	}
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok || meta["count"] != float64(1) {
+		t.Fatalf("meta = %#v", meta)
 	}
 }
 
@@ -112,7 +127,8 @@ func assertSheetProjectionUnknown(t *testing.T, err error) {
 		t.Fatal("projection unexpectedly succeeded")
 	}
 	var typed *apperrors.Error
-	if !errors.As(err, &typed) || typed.Reason != "projection_unknown" {
-		t.Fatalf("projection error = %T %#v, want typed projection_unknown", err, err)
+	if !errors.As(err, &typed) || typed.Reason != "projection_unknown" ||
+		typed.FailureStage != "response_projection" || !typed.RetryableSet || typed.Retryable {
+		t.Fatalf("projection error = %T %#v, want non-retryable response_projection/projection_unknown", err, err)
 	}
 }

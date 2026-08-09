@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T15:21:41+08:00
+扫描时间：2026-08-09T15:30:00+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1350 |
-| `dual_validate` | 21 |
-| `unified_active` | 112 |
+| `dual_validate` | 20 |
+| `unified_active` | 113 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,14 +18,11 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-659db6ce.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-before-sheet-list-active.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws devapp +event-list`: `dual_validate` → `unified_active`
-- PASS: `dws devapp +list`: `dual_validate` → `unified_active`
-- PASS: `dws devapp +permission-list`: `dual_validate` → `unified_active`
-- PASS: `dws devapp +version-list`: `dual_validate` → `unified_active`
+- PASS: `dws sheet +list-sheets`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -1320,7 +1317,7 @@
 | `dws report template list` | `legacy_only` | `legacy` | no |
 | `dws schema` | `legacy_only` | `legacy` | no |
 | `dws sheet` | `legacy_only` | `legacy` | no |
-| `dws sheet +list-sheets` | `dual_validate` | `legacy` | no |
+| `dws sheet +list-sheets` | `unified_active` | `unified` | no |
 | `dws sheet +read` | `legacy_only` | `legacy` | no |
 | `dws sheet add-dimension` | `legacy_only` | `legacy` | no |
 | `dws sheet append` | `legacy_only` | `legacy` | no |
