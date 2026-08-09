@@ -214,7 +214,7 @@ func todoCardsReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "保留已读取待办；从失败页重新读取，不要把当前结果解释为完整待办集合。",
@@ -224,6 +224,7 @@ func todoCardsReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true,
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func todoCardsProjectionFailureInfo(err error) *output.ErrorInfo {

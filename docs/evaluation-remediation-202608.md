@@ -61,6 +61,20 @@ Agent 扫描在实际 Skill 语料与当前 Sheet 回归上确认：legacy 正�
 42 个文件，焦点测试通过。证据见 `agent-scans/sheet-list-skill-routing-20260809.md` 和
 `agent-scans/skill-cli-versions-20260809.md`；这只证明本地路由和投影契约，不证明真实文档权限或服务端响应形状。
 
+## 2026-08-09 复合读取类型化错误保真复核
+
+分页/聚合读取原先会给未分类的幂等读错误提供 `retryable:true`，但也因此把下游已经明确给出的
+`auth`、`validation`、稳定 subtype、hint、actions 与 `retryable:false` 抹平成通用 API 可重试错误。
+这会诱导 Agent 对重新登录、修正参数等确定性失败继续重放。当前共享投影器在保留失败页、artifact、
+operation 与 stage 上下文的同时，以已分类下游错误为恢复事实来源；普通未分类读错误仍保留安全的读重试建议。
+
+该规则已覆盖 `minutes +detail`，Chat 的 `+chat-messages`、`+thread-replies`、`+at-me`、`+search-msg`、
+`+chat-search`、`+conversation-list`、`+flag-list`，以及 `+my-groups`、`+chat-list-all` 和 Todo 聚合读取候选，
+共 **11** 个错误投影点。
+Agent 矩阵测试和源码关系证据见
+`agent-scans/composite-typed-error-propagation-20260809.md`。这证明本地错误投影，不证明真实账号权限、
+服务端可用性或页面终态。
+
 ## 当前结论
 
 | 报告问题 | 当前状态 | 当前证据 | 剩余动作 |

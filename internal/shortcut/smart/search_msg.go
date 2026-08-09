@@ -414,7 +414,7 @@ func searchMsgReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败游标继续；不要重放已成功读取的页面。",
@@ -424,6 +424,7 @@ func searchMsgReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true, // this command only performs idempotent reads
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func searchMsgPaginationFailureInfo(message string) *output.ErrorInfo {

@@ -504,7 +504,7 @@ func myGroupsReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败游标继续；不要重放已成功读取的页面。",
@@ -514,6 +514,7 @@ func myGroupsReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true,
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func myGroupsPaginationFailureInfo(message string) *output.ErrorInfo {

@@ -19,10 +19,18 @@ import sys
 ROOT = Path(__file__).resolve().parents[2]
 HELPER = ROOT / "internal/shortcut/error_info.go"
 CALLERS = {
-    "minutes +detail": ROOT / "internal/shortcut/smart/minutes_detail.go",
-    "chat +chat-messages": ROOT / "internal/shortcut/smart/chat_messages.go",
+    "minutes +detail": (ROOT / "internal/shortcut/smart/minutes_detail.go", 1),
+    "chat +chat-messages": (ROOT / "internal/shortcut/smart/chat_messages.go", 1),
+    "chat +thread-replies": (ROOT / "internal/shortcut/smart/thread_replies.go", 1),
+    "chat +my-groups candidate": (ROOT / "internal/shortcut/smart/my_groups.go", 1),
+    "chat +at-me": (ROOT / "internal/shortcut/smart/at_me.go", 1),
+    "chat +search-msg": (ROOT / "internal/shortcut/smart/search_msg.go", 1),
+    "todo aggregate reads": (ROOT / "internal/shortcut/smart/todo_shared.go", 1),
+    "chat +chat-search / +chat-list-all": (ROOT / "internal/shortcut/chat/chat_group.go", 2),
+    "chat +conversation-list": (ROOT / "internal/shortcut/chat/chat_conversation.go", 1),
+    "chat +flag-list": (ROOT / "internal/shortcut/chat/lark_alignment.go", 1),
 }
-TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes"
+TEST_PATTERN = r"TestPreserveTypedErrorInfo|TestMinutesDetailPreservesTyped|TestChatMessagesUnifiedPaginationOutcomes|TestCompositeReadFailuresPreserveTypedRecoveryFacts|TestChatCompositeReadFailuresPreserveTypedRecoveryFacts"
 
 
 def main() -> int:
@@ -43,8 +51,8 @@ def main() -> int:
         )
     )
     callers = {
-        label: "shortcut.PreserveTypedErrorInfo(info, err)" in path.read_text(encoding="utf-8")
-        for label, path in CALLERS.items()
+        label: path.read_text(encoding="utf-8").count("shortcut.PreserveTypedErrorInfo(info, err)") >= expected
+        for label, (path, expected) in CALLERS.items()
     }
 
     environment = os.environ.copy()
@@ -56,6 +64,7 @@ def main() -> int:
             "-count=1",
             "./internal/shortcut",
             "./internal/shortcut/smart",
+            "./internal/shortcut/chat",
             "-run",
             TEST_PATTERN,
             "-v",
@@ -67,8 +76,8 @@ def main() -> int:
     )
     passed = helper_keeps_facts and all(callers.values()) and result.returncode == 0
     transcript = (result.stdout + result.stderr).strip()
-    if len(transcript) > 3000:
-        transcript = transcript[-3000:]
+    if len(transcript) > 8000:
+        transcript = transcript[-8000:]
     caller_lines = "\n".join(
         f"- `{label}` uses the shared typed-error projection: **{'yes' if active else 'no'}**"
         for label, active in callers.items()

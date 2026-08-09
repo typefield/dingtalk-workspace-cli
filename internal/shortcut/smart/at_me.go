@@ -694,7 +694,8 @@ func atMeReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{Type: "api", Message: message, Hint: "从失败游标继续；不要重放已成功读取的页面。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "pagination_read", ExecutionStarted: &started, Retryable: true}
+	info := &output.ErrorInfo{Type: "api", Message: message, Hint: "从失败游标继续；不要重放已成功读取的页面。", Operation: "chat/search_at_me_message", Origin: "mcp_gateway", Stage: "pagination_read", ExecutionStarted: &started, Retryable: true}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func atMePaginationFailureInfo(message string) *output.ErrorInfo {

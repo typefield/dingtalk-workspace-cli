@@ -736,7 +736,7 @@ func threadRepliesReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败页边界继续；不要重放已经成功的页面",
@@ -746,6 +746,7 @@ func threadRepliesReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true, // idempotent read
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func threadRepliesPaginationFailureInfo(message string) *output.ErrorInfo {

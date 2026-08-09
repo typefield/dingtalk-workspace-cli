@@ -776,7 +776,7 @@ func flagListReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败页 cursor 继续；不要重放已经成功的页面",
@@ -786,6 +786,7 @@ func flagListReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true, // list_message_favorites is an idempotent read.
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func flagListPaginationFailureInfo(message string) *output.ErrorInfo {

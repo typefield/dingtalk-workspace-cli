@@ -440,7 +440,7 @@ func chatSearchReadFailureInfo(err error, stage string) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败页 cursor 继续；不要重放已经成功的页面",
@@ -450,6 +450,7 @@ func chatSearchReadFailureInfo(err error, stage string) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true, // search_groups is an idempotent read.
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func chatSearchPaginationFailureInfo(message string) *output.ErrorInfo {
@@ -1386,7 +1387,7 @@ func chatListAllReadFailureInfo(err error) *output.ErrorInfo {
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败游标继续；不要重放已成功读取的页面。",
@@ -1396,6 +1397,7 @@ func chatListAllReadFailureInfo(err error) *output.ErrorInfo {
 		ExecutionStarted: &started,
 		Retryable:        true,
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func chatListAllPaginationFailureInfo(message string) *output.ErrorInfo {
