@@ -20,9 +20,14 @@
 package drive
 
 import (
+	"fmt"
+	"math"
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -612,12 +617,13 @@ var Move = shortcut.Shortcut{
 // PermissionRemove → remove_permission (doc)
 // Recent → get_recent_list (doc)
 var Recent = shortcut.Shortcut{
-	Service:     "drive",
-	Command:     "+recent",
-	Product:     "doc",
-	Description: "获取最近访问/编辑的文档列表",
-	Intent:      "当你想快速找回「我最近看过/改过的那个文档」而不记得它放在哪时使用；可按操作类型（最近访问/最近编辑）和创建人（全部/我创建/他人创建）过滤，返回近期文档列表及其节点信息。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "drive",
+	Command:       "+recent",
+	Product:       "doc",
+	Description:   "获取最近访问/编辑的文档列表",
+	Intent:        "当你想快速找回「我最近看过/改过的那个文档」而不记得它放在哪时使用；可按操作类型（最近访问/最近编辑）和创建人（全部/我创建/他人创建）过滤，返回近期文档列表及其节点信息。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -650,7 +656,7 @@ var Recent = shortcut.Shortcut{
 		{Name: "operate-type", Type: shortcut.FlagInt, Desc: "操作类型: 0=最近访问(默认), 1=最近编辑"},
 		{Name: "creator-type", Type: shortcut.FlagInt, Desc: "创建人过滤: 0=全部, 1=我创建, 2=他人创建"},
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 20，最大 20)"},
-		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标 (从上次结果的 nextCursor 获取)"},
+		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标（从上次 meta.pagination.next_token 获取）"},
 	},
 	Tips: []string{
 		`dws drive +recent`,
@@ -671,33 +677,74 @@ var Recent = shortcut.Shortcut{
 			params["nextToken"] = rt.Str("cursor")
 		}
 		// Project the verbose raw response (logId + per-item giant docUrl noise)
-		// down to a clean {count, items:[…], nextCursor, hasMore}.
+		// down to a clean list. The unified result owns pagination facts in
+		// meta.pagination; business data never has to guess whether a page is
+		// terminal.
 		data, err := rt.CallMCPData("doc", "get_recent_list", params)
 		if err != nil {
 			return err
 		}
-		return rt.Output(recentListProject(data))
+		payload, result, err := recentListResult(data)
+		if err != nil {
+			return err
+		}
+		return rt.OutputResult(payload, result)
 	},
 }
 
-// recentListProject reshapes a get_recent_list response into a clean paginated
-// document list, dropping transport noise (logId) while keeping the pagination
-// cursor.
-func recentListProject(data map[string]any) map[string]any {
+// recentListResult projects get_recent_list into a typed, resumable unified
+// result. A known empty recentItems array is a valid zero-item answer; a
+// missing/malformed container or non-resumable pagination signal is not.
+func recentListResult(data map[string]any) (map[string]any, output.CommandResult, error) {
+	payload, known := recentListPayload(data)
+	if !known {
+		return nil, nil, driveProjectionUnknown("无法识别 get_recent_list 返回的最近文档列表容器")
+	}
+	items, err := recentListProject(payload)
+	if err != nil {
+		return nil, nil, err
+	}
+	page, paginationKnown, err := recentListPagination(data)
+	if err != nil {
+		return nil, nil, err
+	}
+	business := map[string]any{
+		"count":            len(items),
+		"items":            items,
+		"pagination_known": paginationKnown,
+	}
+	meta := &output.Meta{Count: output.NewCount(len(items))}
+	if paginationKnown {
+		meta.Pagination = page
+	}
+	return business, output.Success(business, output.WithMeta(meta)), nil
+}
+
+// recentListProject reshapes the known recentItems payload into a clean
+// document list. It is intentionally strict: an unrecognised row must not be
+// presented to an Agent as a real document it can subsequently operate on.
+func recentListProject(payload map[string]any) ([]map[string]any, error) {
 	// get_recent_list nests its payload under result.recentItems; earlier this
 	// read data["recentItems"] at the top level only, so the whole list silently
-	// projected to empty. Resolve the payload container (top-level or one level
-	// under result/data) before reading recentItems / pagination fields.
-	payload := data
-	if inner, ok := recentListPayload(data); ok {
-		payload = inner
+	// projected to empty. The caller already resolved that container and must
+	// now require an actual array, including a known-empty one.
+	raw, present := payload["recentItems"]
+	if !present {
+		return nil, driveProjectionUnknown("最近文档响应缺少 recentItems 列表")
+	}
+	entries, ok := raw.([]any)
+	if !ok {
+		return nil, driveProjectionUnknown("最近文档响应的 recentItems 必须是数组")
 	}
 	items := []map[string]any{}
-	raw, _ := payload["recentItems"].([]any)
-	for _, it := range raw {
+	for _, it := range entries {
 		m, ok := it.(map[string]any)
 		if !ok {
-			continue
+			return nil, driveProjectionUnknown("最近文档列表包含无法识别的条目")
+		}
+		nodeID, present := m["nodeId"]
+		if !present || strings.TrimSpace(fmt.Sprint(nodeID)) == "" {
+			return nil, driveProjectionUnknown("最近文档条目缺少 nodeId")
 		}
 		items = append(items, map[string]any{
 			"name":        m["name"],
@@ -705,17 +752,10 @@ func recentListProject(data map[string]any) map[string]any {
 			"contentType": m["contentType"],
 			"accessTime":  m["accessTime"],
 			"docUrl":      m["docUrl"],
-			"nodeId":      m["nodeId"],
+			"nodeId":      nodeID,
 		})
 	}
-	out := map[string]any{"count": len(items), "items": items}
-	if nc, ok := payload["nextCursor"]; ok && nc != nil {
-		out["nextCursor"] = nc
-	}
-	if hm, ok := payload["hasMore"]; ok {
-		out["hasMore"] = hm
-	}
-	return out
+	return items, nil
 }
 
 // recentListPayload returns the map that actually holds recentItems, tolerating
@@ -732,6 +772,140 @@ func recentListPayload(data map[string]any) (map[string]any, bool) {
 		}
 	}
 	return nil, false
+}
+
+// recentListPagination accepts only an authoritative, internally consistent
+// continuation signal. No pagination fields means the service did not provide
+// evidence either way: the response remains a successful one-page read, but
+// deliberately has no meta.pagination claim.
+func recentListPagination(data map[string]any) (*output.Pagination, bool, error) {
+	var selected *output.Pagination
+	for _, scope := range recentListPaginationScopes(data) {
+		page, present, err := recentListPaginationFromScope(scope)
+		if err != nil {
+			return nil, false, err
+		}
+		if !present {
+			continue
+		}
+		if selected != nil && (selected.EndpointExhausted != page.EndpointExhausted || selected.NextToken != page.NextToken) {
+			return nil, false, drivePaginationError("最近文档响应的分页字段在嵌套容器间互相矛盾")
+		}
+		selected = page
+	}
+	if selected == nil {
+		return nil, false, nil
+	}
+	return selected, true, nil
+}
+
+func recentListPaginationScopes(data map[string]any) []map[string]any {
+	if data == nil {
+		return nil
+	}
+	scopes := []map[string]any{data}
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := data[key].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	return scopes
+}
+
+func recentListPaginationFromScope(scope map[string]any) (*output.Pagination, bool, error) {
+	if scope == nil {
+		return nil, false, nil
+	}
+	rawMore, hasMore := scope["hasMore"]
+	rawCursor, hasCursor := recentListCursorField(scope)
+	if !hasMore && !hasCursor {
+		return nil, false, nil
+	}
+	if !hasMore {
+		return nil, false, drivePaginationError("最近文档响应返回 continuation cursor，但没有 hasMore")
+	}
+	more, ok := rawMore.(bool)
+	if !ok {
+		return nil, false, drivePaginationError("最近文档响应的 hasMore 必须是布尔值")
+	}
+	cursor, err := recentListPaginationToken(rawCursor, hasCursor)
+	if err != nil {
+		return nil, false, err
+	}
+	if more {
+		if cursor == "" {
+			return nil, false, drivePaginationError("最近文档响应 hasMore=true 但没有可续用的 nextCursor")
+		}
+		return &output.Pagination{EndpointExhausted: false, NextToken: cursor}, true, nil
+	}
+	if cursor != "" {
+		return nil, false, drivePaginationError("最近文档响应 hasMore=false 却携带 continuation cursor")
+	}
+	return &output.Pagination{EndpointExhausted: true}, true, nil
+}
+
+func recentListCursorField(scope map[string]any) (any, bool) {
+	for _, key := range []string{"nextCursor", "nextToken", "next_cursor", "next_token"} {
+		if value, ok := scope[key]; ok {
+			return value, true
+		}
+	}
+	return nil, false
+}
+
+func recentListPaginationToken(raw any, present bool) (string, error) {
+	if !present || raw == nil {
+		return "", nil
+	}
+	var token string
+	switch value := raw.(type) {
+	case string:
+		token = strings.TrimSpace(value)
+	case int:
+		token = fmt.Sprint(value)
+	case int8:
+		token = fmt.Sprint(value)
+	case int16:
+		token = fmt.Sprint(value)
+	case int32:
+		token = fmt.Sprint(value)
+	case int64:
+		token = fmt.Sprint(value)
+	case uint:
+		token = fmt.Sprint(value)
+	case uint8:
+		token = fmt.Sprint(value)
+	case uint16:
+		token = fmt.Sprint(value)
+	case uint32:
+		token = fmt.Sprint(value)
+	case uint64:
+		token = fmt.Sprint(value)
+	case float32:
+		if math.Trunc(float64(value)) != float64(value) {
+			return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+		}
+		token = fmt.Sprint(int64(value))
+	case float64:
+		if math.Trunc(value) != value {
+			return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+		}
+		token = fmt.Sprint(int64(value))
+	default:
+		return "", drivePaginationError("最近文档响应的 nextCursor 必须是整数或字符串")
+	}
+	if token == "0" {
+		return "", nil
+	}
+	return token, nil
+}
+
+func drivePaginationError(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 func init() {

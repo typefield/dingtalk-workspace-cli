@@ -56,7 +56,7 @@ metadata:
 
 **触发**：找文件/搜文件/我的文件/最近文件/某文档在哪。
 
-1. **选源（必须）**：最近访问 → `dws drive recent --limit <n> --format json`（翻页用上次返回的 `nextCursor` 传 `--cursor`）；按内容/名称全局搜 → `dws drive search --query "<关键词>" --format json`；浏览某目录 → `dws drive list --folder <dentryUuid> --format json`。
+1. **选源（必须）**：最近访问 → `dws drive +recent --limit <n> --format json`。只在 `meta.pagination.endpoint_exhausted:false` 时，以 `meta.pagination.next_token` 继续传 `--cursor`；缺少 pagination meta 不代表目录完整。仅当确实需要原子命令独有的 `--file-types` 或 `--org-ids` 筛选时，才退回 `dws drive recent`，并在调用前按其 leaf Help 解析旧响应。按内容/名称全局搜 → `dws drive search --query "<关键词>" --format json`；浏览某目录 → `dws drive list --folder <dentryUuid> --format json`。
 2. **解析（必须）**：取真实 `dentryUuid`（= `id`/`nodeId`）；多候选让用户确认，**禁止**默认取第一个。
 3. **下钻（必须）**：根目录没命中时，进入最相关文件夹继续 `drive list --folder`，必要时 `python scripts/drive_tree_list.py --depth 2` 递归，**禁止**只看根目录就放弃。
 4. **回读元数据（必须）**：命中后 `dws drive info --node <dentryUuid> --format json`，按 `extension` 确认类型。

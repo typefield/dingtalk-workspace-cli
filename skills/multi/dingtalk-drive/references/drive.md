@@ -105,6 +105,22 @@ Flags:
 
 ### 获取最近访问/编辑的文档列表
 
+Agent 的默认入口是已迁入统一返回的 Shortcut：
+
+```bash
+dws drive +recent --limit 20 --format json
+```
+
+读取 `ok` / `outcome` 后再看 `meta.pagination`：
+
+- `endpoint_exhausted: false` 时，把 `meta.pagination.next_token` 原样传给下一次 `+recent --cursor`；
+- `endpoint_exhausted: true` 只表示服务端本次分页已耗尽，不表示“所有可访问文档”或搜索索引完整；
+- 缺少 `meta.pagination` 表示服务端没有给出足以判断分页终态的证据，不能自行补成完整。
+
+`drive recent` 原子命令保留给其独有的 `--file-types`、`--org-ids` 等筛选；它不是默认 Agent 路径。使用该原子命令前必须读取其 Help，且不要把它的旧 `nextCursor` 字段规则套用到 `+recent`。
+
+### 原子命令兼容入口：`drive recent`
+
 ```
 Usage:
   dws drive recent [flags]
@@ -752,8 +768,9 @@ dws drive copy --node <源文件dentryUuid> --folder <目标文件夹fileId> --f
 | `mkdir`       | `fileId`（UUID 格式）            | list 的 --folder                                          |
 | `recycle list` | `id`（回收项 ID）               | recycle restore 的 --id                                    |
 | `recycle list` | `name`（原始文件名）             | 供用户确认还原目标                                          |
-| `recent`      | `recentItems[].nodeId` / `docUrl` | doc read / info / update / block 操作的 --node |
-| `recent`      | `nextCursor`                 | recent 的 --cursor（翻页）                                  |
+| `+recent`      | `data.items[].nodeId` / `docUrl` | doc read / info / update / block 操作的 --node |
+| `+recent`      | `meta.pagination.next_token` | `+recent --cursor`（仅 `endpoint_exhausted:false` 时续页） |
+| `recent`（原子兼容入口） | `recentItems[].nodeId` / `docUrl` | doc read / info / update / block 操作的 --node；分页字段以 leaf Help 为准 |
 | `permission apply-info` | `availableRoles[].roleId` | `permission apply` 的 --role                        |
 | `permission apply-info` | `approvers[].userId`      | `permission apply` 的 --users                       |
 | `star list`   | `starList[].nodeId`             | star remove 的 --node；info / download 的 --node             |

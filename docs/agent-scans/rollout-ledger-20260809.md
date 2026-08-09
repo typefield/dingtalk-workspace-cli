@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T09:33:23+08:00
+扫描时间：2026-08-09T10:44:22+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1397 |
+| `legacy_only` | 1394 |
 | `dual_validate` | 24 |
-| `unified_active` | 62 |
+| `unified_active` | 65 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,9 +18,21 @@
 
 ## Transition review
 
-未提供基线；这是初始 inventory，后续发布应以本报告作为 --baseline。
+基线：`rollout-ledger-20260809.md`（1483 条 runnable command node）。
 
-初始 inventory 不对状态迁移下结论；发布审阅必须补充兼容样本、观测窗口与回滚责任人。
+### 状态迁移
+
+- REVIEW: `dws chat +at-me`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws chat +search-msg`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws drive +recent`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+
+### 新增可执行命令节点
+
+无新增可执行命令节点。
+
+### 移除可执行命令节点
+
+无移除可执行命令节点。
 
 ## Live command declaration
 
@@ -460,7 +472,7 @@
 | `dws calendar update` | `legacy_only` | `legacy` | yes |
 | `dws catalog` | `legacy_only` | `legacy` | yes |
 | `dws chat` | `legacy_only` | `legacy` | no |
-| `dws chat +at-me` | `legacy_only` | `legacy` | no |
+| `dws chat +at-me` | `unified_active` | `unified` | no |
 | `dws chat +bot-find` | `legacy_only` | `legacy` | no |
 | `dws chat +bot-search` | `legacy_only` | `legacy` | no |
 | `dws chat +broadcast` | `legacy_only` | `legacy` | no |
@@ -556,7 +568,7 @@
 | `dws chat +messages-unset-top` | `legacy_only` | `legacy` | no |
 | `dws chat +messages-update-card` | `legacy_only` | `legacy` | no |
 | `dws chat +my-groups` | `legacy_only` | `legacy` | no |
-| `dws chat +search-msg` | `legacy_only` | `legacy` | no |
+| `dws chat +search-msg` | `unified_active` | `unified` | no |
 | `dws chat +send-to-group` | `legacy_only` | `legacy` | no |
 | `dws chat +thread-replies` | `unified_active` | `unified` | no |
 | `dws chat +unread-chats` | `legacy_only` | `legacy` | no |
@@ -992,7 +1004,7 @@
 | `dws drive +info` | `legacy_only` | `legacy` | no |
 | `dws drive +list` | `legacy_only` | `legacy` | yes |
 | `dws drive +move` | `legacy_only` | `legacy` | no |
-| `dws drive +recent` | `legacy_only` | `legacy` | no |
+| `dws drive +recent` | `unified_active` | `unified` | no |
 | `dws drive +search` | `legacy_only` | `legacy` | no |
 | `dws drive +search-docs` | `legacy_only` | `legacy` | no |
 | `dws drive commit` | `legacy_only` | `legacy` | no |
