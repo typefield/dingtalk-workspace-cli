@@ -104,8 +104,8 @@ func (c *resolveDeptProjectionCaller) DryRun() bool   { return false }
 func (c *resolveDeptProjectionCaller) Fields() string { return "" }
 func (c *resolveDeptProjectionCaller) JQ() string     { return "" }
 
-func TestResolveDeptDualValidatePreservesLegacyBytes(t *testing.T) {
-	if ResolveDept.OutputRollout != output.RolloutDualValidate {
+func TestResolveDeptUnifiedResultUsesCompleteCandidateProjection(t *testing.T) {
+	if ResolveDept.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout=%q", ResolveDept.OutputRollout)
 	}
 	if ResolveDept.Contract.Result == nil {
@@ -115,7 +115,8 @@ func TestResolveDeptDualValidatePreservesLegacyBytes(t *testing.T) {
 	helpers.InitDepsForTest(t, caller)
 	cmd := corecmd.New(shortcut.FromShortcut(ResolveDept))
 	cmd.PersistentFlags().String("format", "json", "")
-	cmd.SetContext(context.Background())
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	var stdout, stderr bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&stderr)
@@ -123,8 +124,31 @@ func TestResolveDeptDualValidatePreservesLegacyBytes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	const want = "{\n  \"candidates\": [\n    {\n      \"deptId\": \"7\",\n      \"name\": \"Engineering\"\n    },\n    {\n      \"deptId\": \"8\",\n      \"name\": \"Platform\"\n    }\n  ],\n  \"count\": 2,\n  \"resolved\": false\n}\n"
-	if caller.calls != 1 || stdout.String() != want || stderr.Len() != 0 {
-		t.Fatalf("calls=%d stdout=%q stderr=%q", caller.calls, stdout.String(), stderr.String())
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 || caller.calls != 1 || stderr.Len() != 0 {
+		t.Fatalf("code=%d emitted=%v calls=%d stderr=%q err=%v", code, emitted, caller.calls, stderr.String(), err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil || envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope=%#v err=%v output=%q", envelope, err, stdout.String())
+	}
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("removed version marker leaked: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["resolved"] != false || data["count"] != float64(2) {
+		t.Fatalf("data=%#v", envelope["data"])
+	}
+	candidates, ok := data["candidates"].([]any)
+	if !ok || len(candidates) != 2 || candidates[0].(map[string]any)["deptId"] != "7" {
+		t.Fatalf("candidates=%#v", data["candidates"])
+	}
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok || meta["count"] != float64(2) {
+		t.Fatalf("meta=%#v", envelope["meta"])
+	}
+	pagination, ok := meta["pagination"].(map[string]any)
+	if !ok || pagination["endpoint_exhausted"] != true || pagination["pages"] != float64(1) || pagination["items"] != float64(2) {
+		t.Fatalf("pagination=%#v", meta["pagination"])
 	}
 }

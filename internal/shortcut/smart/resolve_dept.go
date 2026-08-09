@@ -46,7 +46,7 @@ import (
 //
 //	dws contact +resolve-dept --name 技术部
 var ResolveDept = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "contact",
 	Command:       "+resolve-dept",
 	Product:       "contact",
