@@ -57,6 +57,8 @@ def validate(payload: Any, rc: int, stderr_empty: bool) -> tuple[bool, list[str]
             [f"命令未返回可解析成功 JSON（exit code={rc}）。"],
             "保留读取错误；不要将失败或不可解析输出解释为没有 Base。",
         )
+    # Base discovery is deliberately in dual_validate. Public bytes must stay
+    # historical while the framework validates the richer result in-process.
     bases = payload.get("bases")
     count = payload.get("count")
     rows_ok = isinstance(bases, list) and all(
@@ -87,18 +89,21 @@ def validate(payload: Any, rc: int, stderr_empty: bool) -> tuple[bool, list[str]
         and payload.get("inventoryCoverageKnown") is False
         and paging_ok
         and stderr_empty
+        and "ok" not in payload
+        and "outcome" not in payload
     )
     facts = [
-        "当前命令为 legacy JSON；本扫描不把它误报为 unified active。",
+        "当前命令处于 `dual_validate`：外部仍为 historical Base payload；统一结果只在进程内校验，未对 Agent 激活。",
         f"投影 Base 数与 `count` 一致：{len(bases) if isinstance(bases, list) else 'unknown'}。",
         f"所有投影 Base 均有稳定 `baseId`：{str(rows_ok).lower()}。",
         f"非权威目录边界：`authoritativeInventory:false`、`inventoryCoverageKnown:false`。",
-        f"分页事实已知性为 {known!r}，已知时的 hasMore/continuation 自洽：{str(paging_ok).lower()}。",
+        f"分页事实已知性为 {known!r}，已知时 hasMore/continuation 自洽：{str(paging_ok).lower()}。",
         f"stderr 为空：{str(stderr_empty).lower()}。",
     ]
     boundary = (
         "本次只验证一个真实正常单页，不证明最近访问列表等于所有可访问 Base，"
-        "也不验证死条目、检索召回或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项单元回归覆盖。"
+        "也不验证死条目、检索召回或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项单元回归覆盖；"
+        "在明确晋级 unified_active 前，Agent 继续按现有 payload 解析。"
     )
     return passed, facts, boundary
 

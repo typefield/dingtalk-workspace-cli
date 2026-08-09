@@ -30,6 +30,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -112,12 +113,13 @@ func resolveNamedList(operation string, data map[string]any, outerKeys, innerKey
 
 // BaseList 获取 AI 表格列表（list_bases）。
 var BaseList = shortcut.Shortcut{
-	Service:     "aitable",
-	Command:     "+base-list",
-	Product:     serverMain,
-	Description: "获取最近访问的 AI 表格 Base 列表（非权威全量目录，支持游标分页）",
-	Intent:      "当你不知道具体 baseId、想先浏览最近访问的 AI 表格以便定位目标时使用；这是发现入口而非权威全量目录，支持游标分页，返回 Base 列表及其 baseId。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "aitable",
+	Command:       "+base-list",
+	Product:       serverMain,
+	Description:   "获取最近访问的 AI 表格 Base 列表（非权威全量目录，支持游标分页）",
+	Intent:        "当你不知道具体 baseId、想先浏览最近访问的 AI 表格以便定位目标时使用；这是发现入口而非权威全量目录，支持游标分页，返回 Base 列表及其 baseId。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -171,7 +173,11 @@ var BaseList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(payload)
+		meta, err := baseDiscoveryMeta("list_bases", data, len(bases))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(payload, meta)
 	},
 }
 
@@ -184,27 +190,45 @@ var BaseList = shortcut.Shortcut{
 func baseListProject(operation string, data map[string]any) ([]map[string]any, error) {
 	raw, err := baseListResolveList(operation, data)
 	if err != nil {
-		return nil, err
+		return nil, baseDiscoveryProjectionUnknown(operation, err.Error())
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for index, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			return nil, fmt.Errorf("%s response item %d must be an object, got %T", operation, index, item)
+			return nil, baseDiscoveryProjectionUnknown(operation, fmt.Sprintf("response item %d must be an object, got %T", index, item))
 		}
 		row := map[string]any{}
-		if v, ok := baseListFirst(m, "baseId", "base_id", "id"); ok {
+		if v, ok := baseListStableID(m, "baseId", "base_id"); ok {
 			row["baseId"] = v
 		}
 		if v, ok := baseListFirst(m, "baseName", "base_name", "name", "title"); ok {
 			row["baseName"] = v
 		}
 		if _, ok := row["baseId"]; !ok {
-			return nil, fmt.Errorf("%s response item %d is missing baseId", operation, index)
+			return nil, baseDiscoveryProjectionUnknown(operation, fmt.Sprintf("response item %d is missing a stable baseId", index))
 		}
 		out = append(out, row)
 	}
 	return out, nil
+}
+
+// baseListStableID only accepts the exact Base identifier spellings consumed
+// by downstream --base-id flags. A generic id can describe a wrapper or a
+// display row, and empty/non-string values are not safely reusable by Agents.
+func baseListStableID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, exists := m[key]
+		if !exists {
+			continue
+		}
+		id, ok := value.(string)
+		id = strings.TrimSpace(id)
+		if ok && id != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // baseListResolveList locates the list payload inside the response, tolerating a
@@ -253,6 +277,40 @@ func baseDiscoveryPayload(operation string, data map[string]any, bases []map[str
 		}
 	}
 	return payload, nil
+}
+
+// baseDiscoveryMeta carries only pagination facts actually observed in the
+// discovery response. It deliberately never converts recently-accessed or
+// name-search output into an authoritative Base inventory.
+func baseDiscoveryMeta(operation string, data map[string]any, count int) (*output.Meta, error) {
+	meta := &output.Meta{Count: output.NewCount(count)}
+	hasMore, nextCursor, known, err := baseDiscoveryPagination(operation, data)
+	if err != nil {
+		return nil, err
+	}
+	if !known {
+		return meta, nil
+	}
+	nextToken := ""
+	if nextCursor != nil {
+		nextToken = strings.TrimSpace(fmt.Sprint(nextCursor))
+	}
+	page, err := output.NewPagination(!hasMore, nextToken)
+	if err != nil {
+		return nil, baseDiscoveryPaginationError(operation, err.Error())
+	}
+	meta.Pagination = page
+	return meta, nil
+}
+
+func baseDiscoveryProjectionUnknown(operation, message string) error {
+	return apperrors.NewAPI(fmt.Sprintf("%s response cannot be projected safely: %s", operation, message),
+		apperrors.WithOperation(operation),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 func baseDiscoveryScopes(data map[string]any) []map[string]any {
@@ -377,12 +435,13 @@ func baseDiscoveryPaginationError(operation, message string) error {
 
 // BaseSearch 按名称关键词搜索 AI 表格（search_bases）。
 var BaseSearch = shortcut.Shortcut{
-	Service:     "aitable",
-	Command:     "+base-search",
-	Product:     serverMain,
-	Description: "按名称关键词搜索 AI 表格 Base",
-	Intent:      "当你知道某个 AI 表格的名字或部分关键词、想直接定位到它并拿到 baseId 时使用；输入名称关键词，返回匹配的 Base 列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "aitable",
+	Command:       "+base-search",
+	Product:       serverMain,
+	Description:   "按名称关键词搜索 AI 表格 Base",
+	Intent:        "当你知道某个 AI 表格的名字或部分关键词、想直接定位到它并拿到 baseId 时使用；输入名称关键词，返回匹配的 Base 列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -430,7 +489,11 @@ var BaseSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(payload)
+		meta, err := baseDiscoveryMeta("search_bases", data, len(bases))
+		if err != nil {
+			return err
+		}
+		return rt.OutputWithMeta(payload, meta)
 	},
 }
 

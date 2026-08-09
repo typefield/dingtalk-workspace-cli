@@ -5,6 +5,7 @@ package aitable
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"fmt"
@@ -13,6 +14,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/spf13/cobra"
 )
@@ -28,8 +30,23 @@ func runAITableCompositeCLI(t *testing.T, caller *upsertByKeyCaller, command str
 	stdout := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(&bytes.Buffer{})
-	root.SetArgs(append([]string{"aitable", command}, args...))
+	commandArgs := append([]string{"aitable", command}, args...)
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	leaf, _, findErr := root.Find(commandArgs)
+	if findErr != nil {
+		t.Fatalf("find %q: %v", commandArgs, findErr)
+	}
+	root.SetArgs(commandArgs)
 	err := root.Execute()
+	if err == nil {
+		exitCode, emitted, emitErr := output.EmitStoredResult(leaf)
+		if emitErr != nil {
+			err = emitErr
+		} else if emitted && exitCode != 0 {
+			err = fmt.Errorf("unified result exit code = %d", exitCode)
+		}
+	}
 	return stdout.String(), err
 }
 
