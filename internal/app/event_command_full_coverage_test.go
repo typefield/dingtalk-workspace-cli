@@ -18,6 +18,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/personal"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/source"
 	eventtransport "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/event/transport"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
 )
@@ -364,6 +365,8 @@ func TestCrossPlatformCoverageEventListStatusCollectAndStopCoverage(t *testing.T
 
 	appStop := func() *cobra.Command {
 		cmd := newEventStopCommand()
+		ctx, _ := output.WithResultStore(context.Background())
+		cmd.SetContext(ctx)
 		cmd.SetOut(io.Discard)
 		cmd.Flags().Bool("yes", true, "")
 		_ = cmd.Flags().Set("as", "app")

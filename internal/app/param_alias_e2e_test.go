@@ -114,6 +114,11 @@ type paramAliasDryRunPreview struct {
 	Arguments map[string]any `json:"arguments"`
 }
 
+type paramAliasDryRunResult struct {
+	paramAliasDryRunPreview
+	Data *paramAliasDryRunPreview `json:"data"`
+}
+
 // executeParamAliasDryRunE2E uses the existing root --dry-run barrier as a
 // parameter-normalization probe. These commands do not publish command-owned
 // dry-run capabilities in Schema; the test deliberately makes no such claim.
@@ -145,7 +150,11 @@ func executeParamAliasDryRunE2E(t *testing.T, args ...string) (*pipeline.Context
 	}
 	root := NewRootCommand()
 	rootNewCommandRunnerWithFlags = originalRunnerFactory
-	root.SetOut(io.Discard)
+	// Legacy commands may still write through os.Stdout while unified-active
+	// commands emit through Cobra's output writer in PersistentPostRun. Point
+	// both paths at the same capture so this cross-generation alias test
+	// observes the actual public bytes instead of dropping unified results.
+	root.SetOut(captureFile)
 	root.SetErr(io.Discard)
 	root.SetArgs(args)
 
@@ -164,10 +173,19 @@ func executeParamAliasDryRunE2E(t *testing.T, args ...string) (*pipeline.Context
 	if err != nil {
 		t.Fatalf("read dry-run output capture: %v", err)
 	}
+	var decoded paramAliasDryRunResult
 	var preview paramAliasDryRunPreview
 	if executeErr == nil {
-		if err := json.Unmarshal(output, &preview); err != nil {
+		if err := json.Unmarshal(output, &decoded); err != nil {
 			t.Fatalf("decode dry-run preview: %v\noutput=%s", err, output)
+		}
+		preview = decoded.paramAliasDryRunPreview
+		if decoded.Data != nil {
+			// Unified-active commands wrap the same preview in data; legacy
+			// commands retain the historical top-level shape. This helper is
+			// intentionally generation-neutral so alias equivalence remains
+			// testable while commands migrate one at a time.
+			preview = *decoded.Data
 		}
 	}
 	return ctx, preview, append([]executor.Invocation(nil), rejectRunner.attempts...), executeErr

@@ -19,7 +19,7 @@ const (
 	publicShortcutCount = 383
 	// schemaPublishedShortcutCount counts every delivered *.shortcut_* tool,
 	// including hidden leaves such as minutes.shortcut_minutes_search.
-	schemaPublishedShortcutCount = 383
+	schemaPublishedShortcutCount = 384
 	// publiclyDeliveredShortcutCount is the public-catalog subset of that surface.
 	publiclyDeliveredShortcutCount = 383
 )
