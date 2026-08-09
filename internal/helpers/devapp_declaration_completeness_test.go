@@ -14,6 +14,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"reflect"
 	"sort"
 	"strings"
@@ -58,13 +59,11 @@ func TestDevRepresentativeResultContractsReachContractFinal(t *testing.T) {
 		{
 			canonical: "dev.list_dev_app",
 			outcomes:  []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure},
-			check: func(t *testing.T, result *contract.ResultSpec) {
-				if result.NDJSON == nil || result.NDJSON.RecordPath != "items" || result.Pagination == nil ||
-					result.Pagination.CursorPath != "nextCursor" || result.Pagination.ExhaustionPath != "hasMore" || result.Pagination.ExhaustedWhen {
-					t.Fatalf("paginated list result = %#v", result)
-				}
-			},
+			check:     checkDevAppListResultContract("apps"),
 		},
+		{canonical: "dev.list_dev_app_permissions", outcomes: []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure}, check: checkDevAppListResultContract("permissions")},
+		{canonical: "dev.list_dev_app_events", outcomes: []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure}, check: checkDevAppListResultContract("events")},
+		{canonical: "dev.list_dev_app_versions", outcomes: []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure}, check: checkDevAppListResultContract("versions")},
 		{canonical: "dev.get_dev_app", outcomes: []contract.ResultOutcome{contract.ResultOutcomeSuccess, contract.ResultOutcomeFailure}},
 		{
 			canonical: "dev.get_dev_app_credentials",
@@ -95,6 +94,28 @@ func TestDevRepresentativeResultContractsReachContractFinal(t *testing.T) {
 				test.check(t, final.Result)
 			}
 		})
+	}
+}
+
+func checkDevAppListResultContract(dataKey string) func(*testing.T, *contract.ResultSpec) {
+	return func(t *testing.T, result *contract.ResultSpec) {
+		t.Helper()
+		if result.NDJSON == nil || result.NDJSON.RecordPath != dataKey {
+			t.Fatalf("list NDJSON result = %#v, want record path %q", result.NDJSON, dataKey)
+		}
+		if result.Pagination != nil {
+			t.Fatalf("list business schema must not duplicate unified meta pagination: %#v", result.Pagination)
+		}
+		var schema struct {
+			Properties map[string]json.RawMessage `json:"properties"`
+			Required   []string                   `json:"required"`
+		}
+		if err := json.Unmarshal(result.DataSchema, &schema); err != nil {
+			t.Fatalf("decode list result schema: %v", err)
+		}
+		if len(schema.Properties) != 1 || schema.Properties[dataKey] == nil || !reflect.DeepEqual(schema.Required, []string{dataKey}) {
+			t.Fatalf("list result schema properties=%v required=%v, want only %q", schema.Properties, schema.Required, dataKey)
+		}
 	}
 }
 

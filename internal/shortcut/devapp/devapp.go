@@ -84,6 +84,7 @@ var ListApp = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +list",
 		},
 		Description: "查询开放平台企业内部应用列表",
+		Result:      helpers.DevAppListResultSpec("list_dev_app"),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -602,6 +603,7 @@ var PermissionList = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +permission-list",
 		},
 		Description: "查询开放平台应用权限列表",
+		Result:      helpers.DevAppListResultSpec("list_dev_app_permissions"),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -1024,6 +1026,7 @@ var EventList = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +event-list",
 		},
 		Description: "查询应用已订阅的事件列表",
+		Result:      helpers.DevAppListResultSpec("list_dev_app_events"),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -1146,6 +1149,7 @@ var VersionList = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +version-list",
 		},
 		Description: "分页查询应用版本列表",
+		Result:      helpers.DevAppListResultSpec("list_dev_app_versions"),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",

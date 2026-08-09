@@ -14,9 +14,11 @@
 package helpers
 
 import (
+	"encoding/json"
 	"fmt"
 	"strings"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
@@ -102,6 +104,69 @@ var devAppListSpecs = map[string]devAppListSpec{
 			return row, nil
 		},
 	},
+}
+
+// DevAppListResultSpec publishes the exact active data shape produced by
+// ProjectDevAppListPage. Pagination is intentionally absent here: unified
+// list continuation is framework-owned meta.pagination, not a second copy of
+// hasMore/nextCursor inside business data. Keeping this declaration beside the
+// projector prevents the native and shortcut command trees from advertising
+// the historical ServiceResult shape after their renderer has migrated.
+func DevAppListResultSpec(tool string) *contract.ResultSpec {
+	var dataSchema, recordSchema json.RawMessage
+	var recordPath string
+	switch strings.TrimSpace(tool) {
+	case devAppListTool:
+		recordPath = "apps"
+		recordSchema = json.RawMessage(`{"type":"object","properties":{"unifiedAppId":{"type":"string"},"name":{},"appKey":{},"agentId":{},"status":{},"gmtModified":{}},"required":["unifiedAppId"],"additionalProperties":false}`)
+		dataSchema = devAppListDataSchema(recordPath, recordSchema)
+	case devAppPermissionListTool:
+		recordPath = "permissions"
+		recordSchema = json.RawMessage(`{"type":"object","properties":{"scopeValue":{"type":"string"},"scopeName":{},"apiName":{},"authStatus":{},"scopeType":{}},"required":["scopeValue"],"additionalProperties":false}`)
+		dataSchema = devAppListDataSchema(recordPath, recordSchema)
+	case devAppEventListTool:
+		recordPath = "events"
+		recordSchema = json.RawMessage(`{"type":"object","properties":{"eventCode":{"type":"string"},"eventName":{},"status":{},"gmtModified":{}},"required":["eventCode"],"additionalProperties":false}`)
+		dataSchema = devAppListDataSchema(recordPath, recordSchema)
+	case devAppVersionListTool:
+		recordPath = "versions"
+		recordSchema = json.RawMessage(`{"type":"object","properties":{"versionId":{"type":"string"},"version":{},"status":{},"desc":{},"gmtCreate":{}},"required":["versionId"],"additionalProperties":false}`)
+		dataSchema = devAppListDataSchema(recordPath, recordSchema)
+	default:
+		return nil
+	}
+	return &contract.ResultSpec{
+		Outcomes: []contract.ResultOutcome{
+			contract.ResultOutcomeSuccess,
+			contract.ResultOutcomeFailure,
+		},
+		DataSchema: dataSchema,
+		NDJSON: &contract.ResultNDJSONSpec{
+			RecordPath:   recordPath,
+			RecordSchema: recordSchema,
+		},
+	}
+}
+
+func devAppListDataSchema(recordPath string, recordSchema json.RawMessage) json.RawMessage {
+	// recordPath and recordSchema are compile-time reviewed values above. Using
+	// json.Marshal here avoids hand-building an object whose required key can
+	// drift from the NDJSON record path.
+	raw, err := json.Marshal(map[string]any{
+		"type": "object",
+		"properties": map[string]any{
+			recordPath: map[string]any{
+				"type":  "array",
+				"items": json.RawMessage(recordSchema),
+			},
+		},
+		"required":             []string{recordPath},
+		"additionalProperties": false,
+	})
+	if err != nil {
+		panic("marshal reviewed DevApp list result schema: " + err.Error())
+	}
+	return raw
 }
 
 // ProjectDevAppListPage projects one supported DevApp list response. handled

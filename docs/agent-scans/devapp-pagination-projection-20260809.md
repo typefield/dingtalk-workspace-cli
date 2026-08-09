@@ -10,6 +10,9 @@
 - 覆盖入口：`dev app list/permission list/event list/version list` 与对应
   `devapp +list/+permission-list/+event-list/+version-list`
 - 焦点测试：`TestDevAppSharedListProjection*`、
+  `TestDevAppListResultSpecMatchesSharedProjection`、
+  `TestDevRepresentativeResultContractsReachContractFinal`、
+  `TestDevAppPaginatedShortcutContractsMatchActiveData`、
   `TestDevAppNativeAndShortcutListToolsShareProjectedResult`、
   `TestDevAppPaginatedShortcutsEmitUnifiedResumableResults` 和
   `TestDevAppListPaginationProjectsMeta`
@@ -29,6 +32,8 @@
 8. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
 9. 末页必须输出 `endpoint_exhausted:true`，即使原始响应携带位置 cursor，也不能诱导 Agent 继续请求。
 10. 业务 `data` 只保留资源数组；`count/hasMore/nextCursor` 不得与 `meta.count/meta.pagination` 重复发布。
+11. 八条命令的 live Runtime Schema 必须只声明对应 active data 键；NDJSON record path
+    必须相同，且不得把框架拥有的 `meta.pagination` 重新声明成业务 data 分页。
 
 ## Source coverage
 
@@ -36,6 +41,9 @@
   `helpers.ProjectDevAppListPage`，字段、稳定 ID、空态与分页判断不再各自实现。
 - PASS：八条已审阅的 terminal command 均在原命令路径直接输出统一结果；没有公开
   版本/协议选择参数。
+- PASS：共享 `helpers.DevAppListResultSpec` 与 projector 同模块维护；native 与 shortcut
+  的八条 live Schema 分别只声明 `apps/permissions/events/versions`，required 与 NDJSON
+  record path 完全一致，不再发布旧 `items/hasMore/nextCursor` 声明。
 
 ## Live pagination evidence
 
@@ -62,7 +70,7 @@ cursor 再次读取得到 0 项、同一 cursor、仍为 `hasMore=false`。修�
 
 ```text
 $ DWS_PACKAGE_VERSION=0.0.0-test go test -count=1 ./internal/helpers ./internal/shortcut/devapp \
-  -run 'TestDevApp(SharedListProjection|NativeAndShortcutListToolsShareProjectedResult|PaginatedShortcutsEmitUnifiedResumableResults|ListPaginationProjectsMeta)'
+  -run 'TestDevApp(ListResultSpecMatchesSharedProjection|SharedListProjection|NativeAndShortcutListToolsShareProjectedResult|PaginatedShortcutContractsMatchActiveData|PaginatedShortcutsEmitUnifiedResumableResults|ListPaginationProjectsMeta)|TestDevRepresentativeResultContractsReachContractFinal'
 ok  .../internal/helpers
 ok  .../internal/shortcut/devapp
 ```

@@ -17,14 +17,57 @@ import (
 	"bytes"
 	"context"
 	"encoding/json"
+	"reflect"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
+
+func TestDevAppPaginatedShortcutContractsMatchActiveData(t *testing.T) {
+	tests := []struct {
+		name    string
+		decl    shortcut.Shortcut
+		dataKey string
+	}{
+		{name: "apps", decl: ListApp, dataKey: "apps"},
+		{name: "permissions", decl: PermissionList, dataKey: "permissions"},
+		{name: "events", decl: EventList, dataKey: "events"},
+		{name: "versions", decl: VersionList, dataKey: "versions"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			result := tt.decl.Contract.Result
+			if result == nil || result.NDJSON == nil || result.NDJSON.RecordPath != tt.dataKey {
+				t.Fatalf("result contract = %#v", result)
+			}
+			if result.Pagination != nil {
+				t.Fatalf("business schema must not duplicate unified meta pagination: %#v", result.Pagination)
+			}
+			if got, want := result.Outcomes, []contract.ResultOutcome{
+				contract.ResultOutcomeSuccess,
+				contract.ResultOutcomeFailure,
+			}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("outcomes = %#v, want %#v", got, want)
+			}
+			var schema struct {
+				Properties map[string]json.RawMessage `json:"properties"`
+				Required   []string                   `json:"required"`
+			}
+			if err := json.Unmarshal(result.DataSchema, &schema); err != nil {
+				t.Fatalf("decode data schema: %v", err)
+			}
+			if len(schema.Properties) != 1 || schema.Properties[tt.dataKey] == nil ||
+				!reflect.DeepEqual(schema.Required, []string{tt.dataKey}) {
+				t.Fatalf("schema properties=%v required=%v", schema.Properties, schema.Required)
+			}
+		})
+	}
+}
 
 // devAppListCaller returns one fully formed, non-final ServiceResult for each
 // list leaf.  It proves the shortcut's active renderer preserves the projected

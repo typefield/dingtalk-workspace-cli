@@ -290,6 +290,7 @@ func newDevAppEventListCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "查询应用已订阅的事件列表",
 			DryRun:      devAppDryRun,
+			Result:      DevAppListResultSpec(devAppEventListTool),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "列出或搜索应用可订阅的事件",
@@ -403,16 +404,8 @@ func newDevAppListCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "查询开放平台企业内部应用列表",
 			DryRun:      devAppDryRun,
-			Result: &contract.ResultSpec{
-				Outcomes:   []contract.ResultOutcome{contract.ResultOutcomeFailure, contract.ResultOutcomeSuccess},
-				DataSchema: json.RawMessage(`{"type":"object","properties":{"items":{"type":"array","items":{"type":"object","properties":{"unifiedAppId":{"type":"string"},"name":{"type":"string"},"appKey":{"type":"string"}},"additionalProperties":true}},"hasMore":{"type":"boolean"},"nextCursor":{"type":"string"}},"required":["items"],"additionalProperties":true}`),
-				NDJSON: &contract.ResultNDJSONSpec{
-					RecordPath:   "items",
-					RecordSchema: json.RawMessage(`{"type":"object","properties":{"unifiedAppId":{"type":"string"},"name":{"type":"string"},"appKey":{"type":"string"}},"additionalProperties":true}`),
-				},
-				Pagination: &contract.ResultPaginationSpec{CursorPath: "nextCursor", ExhaustionPath: "hasMore", ExhaustedWhen: false},
-			},
-			Interface: devAppCompositeInterface(),
+			Result:      DevAppListResultSpec(devAppListTool),
+			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "按条件分页查询开放平台应用",
 				UseWhen:      []string{"需要按名称、创建人或应用键筛选应用时"},
@@ -886,6 +879,7 @@ func newDevAppPermissionListCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "查询开放平台应用权限列表",
 			DryRun:      devAppDryRun,
+			Result:      DevAppListResultSpec(devAppPermissionListTool),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询应用权限及其授权状态",
@@ -1557,6 +1551,7 @@ func newDevAppVersionListCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "分页查询应用版本列表",
 			DryRun:      devAppDryRun,
+			Result:      DevAppListResultSpec(devAppVersionListTool),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "分页列出应用的历史和待发布版本",

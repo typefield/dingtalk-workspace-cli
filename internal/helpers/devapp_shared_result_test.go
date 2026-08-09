@@ -4,10 +4,66 @@
 package helpers
 
 import (
+	"encoding/json"
+	"reflect"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
+
+func TestDevAppListResultSpecMatchesSharedProjection(t *testing.T) {
+	tests := []struct {
+		tool    string
+		dataKey string
+	}{
+		{tool: devAppListTool, dataKey: "apps"},
+		{tool: devAppPermissionListTool, dataKey: "permissions"},
+		{tool: devAppEventListTool, dataKey: "events"},
+		{tool: devAppVersionListTool, dataKey: "versions"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.dataKey, func(t *testing.T) {
+			result := DevAppListResultSpec(tt.tool)
+			if result == nil || result.NDJSON == nil || result.NDJSON.RecordPath != tt.dataKey {
+				t.Fatalf("result spec = %#v", result)
+			}
+			if result.Pagination != nil {
+				t.Fatalf("business result must not redeclare meta pagination: %#v", result.Pagination)
+			}
+			if got, want := result.Outcomes, []contract.ResultOutcome{
+				contract.ResultOutcomeSuccess,
+				contract.ResultOutcomeFailure,
+			}; !reflect.DeepEqual(got, want) {
+				t.Fatalf("outcomes = %#v, want %#v", got, want)
+			}
+			var schema struct {
+				Properties map[string]json.RawMessage `json:"properties"`
+				Required   []string                   `json:"required"`
+			}
+			if err := json.Unmarshal(result.DataSchema, &schema); err != nil {
+				t.Fatalf("decode data schema: %v", err)
+			}
+			if len(schema.Properties) != 1 || schema.Properties[tt.dataKey] == nil ||
+				!reflect.DeepEqual(schema.Required, []string{tt.dataKey}) {
+				t.Fatalf("schema properties=%v required=%v", schema.Properties, schema.Required)
+			}
+
+			page, problem, handled := ProjectDevAppListPage(tt.tool, map[string]any{
+				"items": []any{}, "hasMore": false,
+			})
+			if !handled || problem != nil || page == nil || len(page.Data) != 1 {
+				t.Fatalf("projection: handled=%v problem=%+v page=%#v", handled, problem, page)
+			}
+			if _, ok := page.Data[tt.dataKey]; !ok {
+				t.Fatalf("declared key %q missing from active data %#v", tt.dataKey, page.Data)
+			}
+		})
+	}
+	if result := DevAppListResultSpec("not-a-list-tool"); result != nil {
+		t.Fatalf("unsupported tool unexpectedly has result spec: %#v", result)
+	}
+}
 
 func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 	t.Run("normalized success", func(t *testing.T) {
