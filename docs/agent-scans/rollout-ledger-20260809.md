@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T16:08:55+08:00
+扫描时间：2026-08-09T16:20:10+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,8 +8,8 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1347 |
-| `dual_validate` | 23 |
+| `legacy_only` | 1346 |
+| `dual_validate` | 24 |
 | `unified_active` | 113 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
@@ -18,11 +18,11 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-drive-list-dual.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-before-my-groups-dual.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws drive +list`: `legacy_only` → `dual_validate`
+- PASS: `dws chat +my-groups`: `legacy_only` → `dual_validate`
 
 ### 新增可执行命令节点
 
@@ -565,7 +565,7 @@
 | `dws chat +messages-unset-pin` | `legacy_only` | `legacy` | no |
 | `dws chat +messages-unset-top` | `legacy_only` | `legacy` | no |
 | `dws chat +messages-update-card` | `legacy_only` | `legacy` | no |
-| `dws chat +my-groups` | `legacy_only` | `legacy` | no |
+| `dws chat +my-groups` | `dual_validate` | `legacy` | no |
 | `dws chat +search-msg` | `unified_active` | `unified` | no |
 | `dws chat +send-to-group` | `legacy_only` | `legacy` | no |
 | `dws chat +thread-replies` | `unified_active` | `unified` | no |

@@ -10,7 +10,7 @@
 
 ## 可观测事实
 
-- 当前命令仍为 legacy JSON（无 `ok/outcome` 信封）；这次扫描不把它误报为 unified active。
+- 当前命令处于 dual_validate：外部仍为 legacy JSON（无 `ok/outcome` 信封）；这次扫描不把它误报为 unified active。
 - 投影群数与 `count` 一致：1。
 - 所有投影群均有稳定 `conversationId`：true。
 - 单页续页事实可判定：`hasMore` 为 bool，continuation 自洽：true。

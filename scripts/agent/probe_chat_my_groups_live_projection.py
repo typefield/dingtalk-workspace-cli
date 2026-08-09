@@ -80,7 +80,7 @@ def validate(payload: Any, rc: int, stderr_empty: bool) -> tuple[bool, list[str]
         and stderr_empty
     )
     facts = [
-        "当前命令仍为 legacy JSON（无 `ok/outcome` 信封）；这次扫描不把它误报为 unified active。",
+        "当前命令处于 dual_validate：外部仍为 legacy JSON（无 `ok/outcome` 信封）；这次扫描不把它误报为 unified active。",
         f"投影群数与 `count` 一致：{len(groups) if isinstance(groups, list) else 'unknown'}。",
         f"所有投影群均有稳定 `conversationId`：{str(rows_ok).lower()}。",
         f"单页续页事实可判定：`hasMore` 为 bool，continuation 自洽：{str(continuation_ok).lower()}。",

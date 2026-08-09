@@ -22,6 +22,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
 )
@@ -48,10 +49,15 @@ const (
 //	dws chat +my-groups
 //	dws chat +my-groups --type group
 var MyGroups = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+my-groups",
-	Product:     "chat",
-	Description: "列出我加入的群，可按类型过滤并投影关键字段",
+	// The existing payload remains the external result while the exact same
+	// read is projected into the PageLedger candidate. A real single-page
+	// observation exists, but empty/continuation/partial paths still need more
+	// tenant evidence before this public shortcut may become unified_active.
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "chat",
+	Command:       "+my-groups",
+	Product:       "chat",
+	Description:   "列出我加入的群，可按类型过滤并投影关键字段",
 	Intent: "当你想快速看一眼自己都加入了哪些群、以及每个群的会话ID、名称、群主和人数，而不想翻分页或盯着原始返回时使用；" +
 		"内部分页拉取你加入的群列表，把每个群防御式地投影成 会话id / 名称 / 群主 / 人数 / 类型 等关键字段，输出成干净的结果。" +
 		"可选 --type 在本地按群类型过滤（底层接口本身不带类型参数，故为客户端过滤）。这是只读操作，不会改动任何群或成员关系。",
@@ -126,20 +132,78 @@ func executeMyGroups(rt *shortcut.RuntimeContext) error {
 	if cursor := strings.TrimSpace(rt.Str("cursor")); cursor != "" && cursor != "0" {
 		params["cursor"] = cursor
 	}
+	pageLimit := 1
 	if rt.Bool("page-all") {
-		payload, err := readAllMyGroups(rt, params)
-		if outputErr := rt.Output(payload); outputErr != nil {
+		pageLimit = defaultChatPageLimit(rt.Int("page-limit"), myGroupsDefaultPageLimit)
+	}
+	pageLedger, err := output.NewPageLedger(pageLimit)
+	if err != nil {
+		return apperrors.NewInternal("初始化我的群分页账本失败", apperrors.WithCause(err))
+	}
+	if rt.Bool("page-all") {
+		payload, legacyErr := readAllMyGroups(rt, params, pageLedger)
+		result, resultErr := myGroupsUnifiedResult(pageLedger, payload, rt.DryRun())
+		if resultErr != nil {
+			return apperrors.NewInternal("生成我的群统一分页候选结果失败", apperrors.WithCause(resultErr))
+		}
+		if payload == nil {
+			// Legacy's first-page error has no stdout payload. Dual validation must
+			// still validate the candidate but must not invent legacy output.
+			if output.UsesUnifiedResult(rt.Command()) {
+				return rt.OutputResult(nil, result)
+			}
+			if err := output.ValidateResult(result); err != nil {
+				return apperrors.NewInternal("我的群影子结果违反统一契约", apperrors.WithCause(err))
+			}
+			return legacyErr
+		}
+		if output.UsesUnifiedResult(rt.Command()) {
+			// An activated command emits the candidate exactly once. In
+			// particular, do not return the legacy aggregate error after storing
+			// a partial result: Cobra would otherwise emit a second failure.
+			return rt.OutputResult(payload, result)
+		}
+		if outputErr := rt.OutputResult(payload, result); outputErr != nil {
 			return outputErr
 		}
-		return err
+		return legacyErr
 	}
 	data, err := rt.CallMCPData("im", "list_my_groups_pagination", params)
 	if err != nil {
+		if recordErr := pageLedger.RecordFailure(myGroupsCursorString(params["cursor"]), myGroupsReadFailureInfo(err)); recordErr != nil {
+			return apperrors.NewInternal("记录我的群读取失败状态失败", apperrors.WithCause(recordErr))
+		}
+		result, resultErr := myGroupsUnifiedResult(pageLedger, nil, rt.DryRun())
+		if resultErr != nil {
+			return apperrors.NewInternal("生成我的群读取失败候选结果失败", apperrors.WithCause(resultErr))
+		}
+		if output.UsesUnifiedResult(rt.Command()) {
+			return rt.OutputResult(nil, result)
+		}
+		if validationErr := output.ValidateResult(result); validationErr != nil {
+			return apperrors.NewInternal("我的群影子结果违反统一契约", apperrors.WithCause(validationErr))
+		}
 		return err
 	}
 	groups, err := myGroupsExtract(data)
 	if err != nil {
+		if recordErr := pageLedger.RecordFailure(myGroupsCursorString(params["cursor"]), myGroupsProjectionFailureInfo(err)); recordErr != nil {
+			return apperrors.NewInternal("记录我的群投影失败状态失败", apperrors.WithCause(recordErr))
+		}
+		result, resultErr := myGroupsUnifiedResult(pageLedger, nil, rt.DryRun())
+		if resultErr != nil {
+			return apperrors.NewInternal("生成我的群投影失败候选结果失败", apperrors.WithCause(resultErr))
+		}
+		if output.UsesUnifiedResult(rt.Command()) {
+			return rt.OutputResult(nil, result)
+		}
+		if validationErr := output.ValidateResult(result); validationErr != nil {
+			return apperrors.NewInternal("我的群影子结果违反统一契约", apperrors.WithCause(validationErr))
+		}
 		return err
+	}
+	if err := observeMyGroupsPage(pageLedger, myGroupsCursorString(params["cursor"]), data, myGroupsPayload(rt, groups), false); err != nil {
+		return apperrors.NewInternal("记录我的群分页证据失败", apperrors.WithCause(err))
 	}
 	payload := myGroupsPayload(rt, groups)
 	chatmsg.ApplyPagination(payload, data)
@@ -149,7 +213,11 @@ func executeMyGroups(rt *shortcut.RuntimeContext) error {
 	} else {
 		payload["stopReason"] = "single_page"
 	}
-	return rt.Output(payload)
+	result, resultErr := myGroupsUnifiedResult(pageLedger, payload, rt.DryRun())
+	if resultErr != nil {
+		return apperrors.NewInternal("生成我的群统一分页候选结果失败", apperrors.WithCause(resultErr))
+	}
+	return rt.OutputResult(payload, result)
 }
 
 func myGroupsPayload(rt *shortcut.RuntimeContext, groups []map[string]any) map[string]any {
@@ -168,7 +236,7 @@ func myGroupsPayload(rt *shortcut.RuntimeContext, groups []map[string]any) map[s
 	return map[string]any{"count": len(projected), "groups": projected}
 }
 
-func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (map[string]any, error) {
+func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any, pageLedger *output.PageLedger) (map[string]any, error) {
 	pageLimit := defaultChatPageLimit(rt.Int("page-limit"), myGroupsDefaultPageLimit)
 	cursorValue := baseParams["cursor"]
 	cursorKey := myGroupsCursorString(cursorValue)
@@ -194,6 +262,9 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 		}
 		data, err := rt.CallMCPData("im", "list_my_groups_pagination", params)
 		if err != nil {
+			if recordErr := pageLedger.RecordFailure(cursorKey, myGroupsReadFailureInfo(err)); recordErr != nil {
+				return nil, apperrors.NewInternal("记录我的群读取失败状态失败", apperrors.WithCause(recordErr))
+			}
 			if pagesFetched == 0 {
 				return nil, err
 			}
@@ -206,6 +277,9 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 		pagesFetched++
 		pageGroups, projectErr := myGroupsExtract(data)
 		if projectErr != nil {
+			if recordErr := pageLedger.RecordFailure(cursorKey, myGroupsProjectionFailureInfo(projectErr)); recordErr != nil {
+				return nil, apperrors.NewInternal("记录我的群投影失败状态失败", apperrors.WithCause(recordErr))
+			}
 			if pagesFetched == 1 && len(allGroups) == 0 {
 				return nil, projectErr
 			}
@@ -225,6 +299,9 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 				seenGroups[id] = true
 			}
 			allGroups = append(allGroups, group)
+		}
+		if observeErr := observeMyGroupsPage(pageLedger, cursorKey, data, myGroupsPayload(rt, pageGroups), true); observeErr != nil {
+			return nil, apperrors.NewInternal("记录我的群分页证据失败", apperrors.WithCause(observeErr))
 		}
 
 		page := chatmsg.Pagination(data)
@@ -296,6 +373,153 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 		fmt.Sprintf("我的群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
 		options...,
 	)
+}
+
+// observeMyGroupsPage converts the gateway's pagination fields into one
+// PageLedger record. It deliberately keeps unknown single-page pagination as
+// unknown rather than falsely calling it exhausted. A page-all request treats
+// absent continuation evidence as a boundary failure because it cannot finish
+// the requested traversal safely.
+func observeMyGroupsPage(pageLedger *output.PageLedger, cursor string, data map[string]any, pageData map[string]any, requireContinuation bool) error {
+	if pageLedger == nil {
+		return fmt.Errorf("missing pagination ledger")
+	}
+	items, _ := pageData["count"].(int)
+	evidence := output.PageEvidence{Cursor: cursor, Items: items, Data: pageData}
+	page := chatmsg.Pagination(data)
+	hasMore, known := page["hasMore"].(bool)
+	nextToken := myGroupsCursorString(page["nextCursor"])
+
+	if !known {
+		if err := pageLedger.ObservePage(evidence); err != nil {
+			return myGroupsObserveFailure(pageLedger, cursor, err)
+		}
+		if !requireContinuation {
+			return nil
+		}
+		return pageLedger.RecordBoundaryFailure(myGroupsPaginationFailureInfo("下层未返回可靠的 hasMore，无法继续全量分页"))
+	}
+	if !hasMore {
+		if nextToken != "" {
+			// Preserve the legacy payload in dual validation, but make the
+			// candidate an explicit partial result instead of declaring this
+			// contradictory response endpoint-exhausted.
+			if err := pageLedger.ObservePage(evidence); err != nil {
+				return myGroupsObserveFailure(pageLedger, cursor, err)
+			}
+			return pageLedger.RecordBoundaryFailure(myGroupsPaginationFailureInfo("hasMore=false，但同时携带可用 nextCursor"))
+		}
+		more := false
+		evidence.HasMore = &more
+		if err := pageLedger.ObservePage(evidence); err != nil {
+			return myGroupsObserveFailure(pageLedger, cursor, err)
+		}
+		return nil
+	}
+	if nextToken == "" {
+		if err := pageLedger.ObservePage(evidence); err != nil {
+			return myGroupsObserveFailure(pageLedger, cursor, err)
+		}
+		return pageLedger.RecordBoundaryFailure(myGroupsPaginationFailureInfo("hasMore=true，但缺少可继续的 nextCursor"))
+	}
+	more := true
+	evidence.HasMore = &more
+	evidence.NextToken = nextToken
+	if err := pageLedger.ObservePage(evidence); err != nil {
+		return myGroupsObserveFailure(pageLedger, cursor, err)
+	}
+	return nil
+}
+
+// myGroupsObserveFailure attaches an invalid continuation to an already-read
+// page as a typed partial boundary. The first page has no succeeded unit yet,
+// so the caller must surface its typed framework error instead.
+func myGroupsObserveFailure(pageLedger *output.PageLedger, cursor string, observeErr error) error {
+	if pageLedger != nil && pageLedger.Pages() > 0 {
+		if err := pageLedger.RecordPostPageFailure(myGroupsPaginationFailureInfo(observeErr.Error())); err == nil {
+			return nil
+		}
+	}
+	return observeErr
+}
+
+// myGroupsUnifiedResult is the candidate output contract. It excludes legacy
+// fields such as complete/hasMore/nextCursor/failures: the framework owns
+// outcome and endpoint pagination. PageLedger preserves each completed page
+// when a later page fails, so the candidate can report partial_failure without
+// asking an Agent to replay already-read groups.
+func myGroupsUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
+	if pageLedger == nil {
+		return nil, fmt.Errorf("missing pagination ledger")
+	}
+	data := map[string]any{}
+	count := 0
+	if payload != nil {
+		for _, key := range []string{"groups", "count"} {
+			if value, ok := payload[key]; ok {
+				data[key] = value
+			}
+		}
+		count, _ = payload["count"].(int)
+	}
+	if pageLedger.State() == output.PageStateUnknown {
+		data["pagination_known"] = false
+	}
+	options := []output.ResultOption{output.WithMeta(&output.Meta{Count: output.NewCount(count)})}
+	if dryRun {
+		options = append(options, output.WithDryRun())
+	}
+	return pageLedger.Result(data, options...)
+}
+
+func myGroupsReadFailureInfo(err error) *output.ErrorInfo {
+	message := "我的群列表分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败游标继续；不要重放已成功读取的页面。",
+		Operation:        "im/list_my_groups_pagination",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true,
+	}
+}
+
+func myGroupsPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽。",
+		Operation:        "im/list_my_groups_pagination",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func myGroupsProjectionFailureInfo(err error) *output.ErrorInfo {
+	message := "我的群列表响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          message,
+		Hint:             "检查服务端返回结构；不要把未知响应形状解释为空群列表。",
+		Operation:        "im/list_my_groups_pagination",
+		Origin:           "mcp_gateway",
+		Stage:            "projection",
+		ExecutionStarted: &started,
+	}
 }
 
 func myGroupsCursorString(value any) string {
