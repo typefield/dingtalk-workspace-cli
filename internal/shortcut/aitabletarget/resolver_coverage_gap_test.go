@@ -76,12 +76,12 @@ func TestCrossPlatformCoverageResolveTableRemainingFailures(t *testing.T) {
 	if _, err := ResolveTableName(reader, "base", "name", false); err == nil {
 		t.Fatal("table error was swallowed")
 	}
-	reader = &resolverReader{steps: []resolverStep{{data: map[string]any{"tables": "bad"}}}}
-	if _, err := ResolveTableName(reader, "base", "name", false); errorReason(err) != "target_invalid_response" {
+	reader = &resolverReader{steps: []resolverStep{{data: map[string]any{"success": true, "data": map[string]any{"tables": "bad"}}}}}
+	if _, err := ResolveTableName(reader, "base", "name", false); errorReason(err) != "projection_unknown" {
 		t.Fatalf("invalid table list = %v", err)
 	}
 	reader = &resolverReader{steps: []resolverStep{{data: map[string]any{"success": true}}}}
-	if _, err := ResolveTableName(reader, "base", "name", false); errorReason(err) != "target_invalid_response" {
+	if _, err := ResolveTableName(reader, "base", "name", false); errorReason(err) != "projection_unknown" {
 		t.Fatalf("missing table list = %v", err)
 	}
 }

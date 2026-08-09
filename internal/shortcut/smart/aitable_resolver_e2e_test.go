@@ -79,7 +79,7 @@ func TestCrossPlatformCoverageResolveBaseCLIAmbiguityIsFailureE2E(t *testing.T) 
 }
 
 func TestCrossPlatformCoverageResolveTableCLIFuzzyRequiresOptInE2E(t *testing.T) {
-	payload := `{"tables":[{"tableId":"t1","tableName":"任务归档"}]}`
+	payload := `{"success":true,"data":{"tables":[{"tableId":"t1","tableName":"任务归档"}]}}`
 	caller := &aitableResolverCaller{text: payload}
 	out, err := runAITableResolverCLI(t, caller, "aitable", "+resolve-table", "--base", "base", "--name", "任务")
 	if err == nil || out != "" {

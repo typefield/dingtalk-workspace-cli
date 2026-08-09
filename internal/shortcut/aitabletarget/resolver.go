@@ -234,35 +234,158 @@ func ResolveBaseName(reader Reader, name string, allowFuzzy bool) (Resolution, e
 	return Resolution{}, incomplete("base", query, all, fmt.Sprintf("达到 %d 页安全上限", maxResolutionPages))
 }
 
-// ResolveTableName resolves one table within a known Base using get_tables.
+// ListTables reads the reviewed get_tables response and returns the complete
+// stable table directory for one Base. The endpoint is non-paginated when
+// tableIds is omitted, so callers must not guess containers or silently drop
+// malformed rows: an unknown shape is not an empty Base.
+func ListTables(reader Reader, baseID string) ([]Candidate, error) {
+	_, candidates, err := FetchTableDirectory(reader, baseID)
+	return candidates, err
+}
+
+// FetchTableDirectory returns both the once-fetched legacy payload and its
+// strict projection. Composite shortcuts use the former only while preserving
+// pre-activation bytes; all semantic decisions use the latter.
+func FetchTableDirectory(reader Reader, baseID string) (map[string]any, []Candidate, error) {
+	baseID = strings.TrimSpace(baseID)
+	if !validID(baseID) {
+		return nil, nil, apperrors.NewValidation("列出数据表需要合法 baseId")
+	}
+	data, err := reader.CallMCPData("aitable", "get_tables", map[string]any{"baseId": baseID})
+	if err != nil {
+		return nil, nil, err
+	}
+	candidates, err := ProjectTableDirectory(data)
+	if err != nil {
+		return data, nil, err
+	}
+	return data, candidates, nil
+}
+
+// ResolveTableName resolves one table within a known Base using the same
+// reviewed directory projection as ListTables.
 func ResolveTableName(reader Reader, baseID, name string, allowFuzzy bool) (Resolution, error) {
 	baseID = strings.TrimSpace(baseID)
 	query := strings.TrimSpace(name)
 	if !validID(baseID) || query == "" {
 		return Resolution{}, apperrors.NewValidation("解析数据表名称需要合法 baseId 和非空名称")
 	}
-	data, err := reader.CallMCPData("aitable", "get_tables", map[string]any{"baseId": baseID})
+	candidates, err := ListTables(reader, baseID)
 	if err != nil {
 		return Resolution{}, err
 	}
-	items, found, listErr := findObjectList(data, "tables", "items", "list", "result", "records")
-	if listErr != nil {
-		return Resolution{}, invalidResponse("table", query, listErr.Error())
+	return selectCandidate("table", query, candidates, allowFuzzy)
+}
+
+// ProjectTableDirectory validates the one live-reviewed get_tables shape.
+func ProjectTableDirectory(data map[string]any) ([]Candidate, error) {
+	if data == nil {
+		return nil, tableDirectoryError("get_tables 响应不是 JSON 对象")
 	}
-	if !found {
-		return Resolution{}, invalidResponse("table", query, "get_tables 响应缺少 tables 列表")
+	if unknown := unknownKeys(data, "success", "status", "summary", "data", "error", "meta"); len(unknown) > 0 {
+		return nil, tableDirectoryError("get_tables 顶层包含未审阅字段: " + strings.Join(unknown, ","))
 	}
-	candidates := make([]Candidate, 0, len(items))
-	for index, item := range items {
-		id := firstString(item, "tableId", "table_id", "id")
-		candidateName := firstString(item, "tableName", "name", "title")
-		if id == "" || candidateName == "" {
-			return Resolution{}, invalidResponse("table", query,
-				fmt.Sprintf("get_tables 候选 %d 缺少 tableId 或名称", index))
+	success, ok := data["success"].(bool)
+	if !ok {
+		return nil, tableDirectoryError("get_tables success 缺失或不是布尔值")
+	}
+	if !success {
+		return nil, tableDirectoryError("get_tables 业务结果明确失败")
+	}
+	for _, key := range []string{"status", "summary"} {
+		if raw, exists := data[key]; exists {
+			if _, ok := raw.(string); !ok {
+				return nil, tableDirectoryError("get_tables " + key + " 不是字符串")
+			}
 		}
-		candidates = append(candidates, Candidate{ID: id, Name: candidateName})
 	}
-	return selectCandidate("table", query, dedupe(candidates), allowFuzzy)
+	for _, key := range []string{"error", "meta"} {
+		if raw, exists := data[key]; exists && raw != nil {
+			if _, ok := raw.(map[string]any); !ok {
+				return nil, tableDirectoryError("get_tables " + key + " 不是对象")
+			}
+		}
+	}
+	body, ok := data["data"].(map[string]any)
+	if !ok {
+		return nil, tableDirectoryError("get_tables data 缺失或不是对象")
+	}
+	if unknown := unknownKeys(body, "tables"); len(unknown) > 0 {
+		return nil, tableDirectoryError("get_tables data 包含未审阅字段: " + strings.Join(unknown, ","))
+	}
+	rows, ok := body["tables"].([]any)
+	if !ok {
+		return nil, tableDirectoryError("get_tables data.tables 缺失或不是数组")
+	}
+
+	candidates := make([]Candidate, 0, len(rows))
+	seen := make(map[string]struct{}, len(rows))
+	for index, raw := range rows {
+		row, ok := raw.(map[string]any)
+		if !ok {
+			return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d] 不是对象", index))
+		}
+		if unknown := unknownKeys(row, "tableId", "tableName", "description", "fields", "views"); len(unknown) > 0 {
+			return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d] 包含未审阅字段: %s", index, strings.Join(unknown, ",")))
+		}
+		id, idOK := row["tableId"].(string)
+		id = strings.TrimSpace(id)
+		if !idOK || !validID(id) {
+			return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d] 缺少稳定 tableId", index))
+		}
+		if _, duplicate := seen[id]; duplicate {
+			return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d] tableId 重复", index))
+		}
+		seen[id] = struct{}{}
+		name, nameOK := row["tableName"].(string)
+		name = strings.TrimSpace(name)
+		if !nameOK || name == "" {
+			return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d] 缺少可展示 tableName", index))
+		}
+		for _, key := range []string{"fields", "views"} {
+			if raw, exists := row[key]; exists {
+				if _, ok := raw.([]any); !ok {
+					return nil, tableDirectoryError(fmt.Sprintf("get_tables data.tables[%d].%s 不是数组", index, key))
+				}
+			}
+		}
+		candidates = append(candidates, Candidate{ID: id, Name: name})
+	}
+	return candidates, nil
+}
+
+func unknownKeys(values map[string]any, allowed ...string) []string {
+	allow := make(map[string]struct{}, len(allowed))
+	for _, key := range allowed {
+		allow[key] = struct{}{}
+	}
+	unknown := make([]string, 0)
+	for key := range values {
+		if _, ok := allow[key]; !ok {
+			unknown = append(unknown, key)
+		}
+	}
+	if len(unknown) > 1 {
+		for left := 0; left < len(unknown)-1; left++ {
+			for right := left + 1; right < len(unknown); right++ {
+				if unknown[right] < unknown[left] {
+					unknown[left], unknown[right] = unknown[right], unknown[left]
+				}
+			}
+		}
+	}
+	return unknown
+}
+
+func tableDirectoryError(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithOperation("aitable/get_tables"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+		apperrors.WithHint("不要把未知表目录、非法条目、重复 ID 或缺少 tableId/tableName 的条目压成空列表；保留脱敏结构后修复投影。"),
+	)
 }
 
 func selectCandidate(entityType, query string, candidates []Candidate, allowFuzzy bool) (Resolution, error) {

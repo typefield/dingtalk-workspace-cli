@@ -177,7 +177,7 @@ func TestCrossPlatformCoverageResolveNameDistinguishesEmptyFromUnknown(t *testin
 }
 
 func TestCrossPlatformCoverageResolveTableNameE2E(t *testing.T) {
-	reader := &resolverReader{steps: []resolverStep{{data: map[string]any{"data": map[string]any{"tables": []any{
+	reader := &resolverReader{steps: []resolverStep{{data: map[string]any{"success": true, "data": map[string]any{"tables": []any{
 		map[string]any{"tableId": "t1", "tableName": "任务"},
 		map[string]any{"tableId": "t2", "tableName": "任务归档"},
 	}}}}}}
@@ -192,19 +192,63 @@ func TestCrossPlatformCoverageResolveTableNameE2E(t *testing.T) {
 
 func TestCrossPlatformCoverageResolveTableNameMalformedCandidateIsInvalidResponse(t *testing.T) {
 	for name, data := range map[string]map[string]any{
-		"explicit empty is not found": {"tables": []any{}},
-		"scalar candidate":            {"tables": []any{1}},
-		"candidate missing name":      {"tables": []any{map[string]any{"tableId": "t1"}}},
+		"explicit empty is not found": {"success": true, "data": map[string]any{"tables": []any{}}},
+		"scalar candidate":            {"success": true, "data": map[string]any{"tables": []any{1}}},
+		"candidate missing name":      {"success": true, "data": map[string]any{"tables": []any{map[string]any{"tableId": "t1"}}}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			reader := &resolverReader{steps: []resolverStep{{data: data}}}
 			_, err := ResolveTableName(reader, "base", "missing", false)
-			want := "target_invalid_response"
+			want := "projection_unknown"
 			if name == "explicit empty is not found" {
 				want = "target_not_found"
 			}
 			if errorReason(err) != want {
 				t.Fatalf("resolution error = %v, want reason %s", err, want)
+			}
+		})
+	}
+}
+
+func TestCrossPlatformCoverageListTablesStrictProjection(t *testing.T) {
+	reader := &resolverReader{steps: []resolverStep{{data: map[string]any{
+		"success": true,
+		"status":  "success",
+		"summary": "one table",
+		"error":   map[string]any{},
+		"meta":    map[string]any{},
+		"data": map[string]any{"tables": []any{
+			map[string]any{"tableId": "t1", "tableName": "任务", "fields": []any{}, "views": []any{}},
+		}},
+	}}}}
+	got, err := ListTables(reader, "base")
+	if err != nil || !reflect.DeepEqual(got, []Candidate{{ID: "t1", Name: "任务"}}) {
+		t.Fatalf("ListTables() = %#v, %v", got, err)
+	}
+	if len(reader.calls) != 1 || reader.tools[0] != "get_tables" || len(reader.calls[0]) != 1 || reader.calls[0]["baseId"] != "base" {
+		t.Fatalf("ListTables call = %v %#v", reader.tools, reader.calls)
+	}
+}
+
+func TestCrossPlatformCoverageListTablesRejectsGuessesAndMalformedRows(t *testing.T) {
+	tests := map[string]map[string]any{
+		"legacy guessed top-level list": {"tables": []any{}},
+		"unknown top-level key":         {"success": true, "data": map[string]any{"tables": []any{}}, "hasMore": false},
+		"unknown data container":        {"success": true, "data": map[string]any{"items": []any{}}},
+		"generic id alias":              {"success": true, "data": map[string]any{"tables": []any{map[string]any{"id": "t1", "name": "任务"}}}},
+		"duplicate stable id": {"success": true, "data": map[string]any{"tables": []any{
+			map[string]any{"tableId": "t1", "tableName": "任务"},
+			map[string]any{"tableId": "t1", "tableName": "任务副本"},
+		}}},
+		"wrong child collection": {"success": true, "data": map[string]any{"tables": []any{
+			map[string]any{"tableId": "t1", "tableName": "任务", "views": map[string]any{}},
+		}}},
+	}
+	for name, data := range tests {
+		t.Run(name, func(t *testing.T) {
+			reader := &resolverReader{steps: []resolverStep{{data: data}}}
+			if _, err := ListTables(reader, "base"); errorReason(err) != "projection_unknown" {
+				t.Fatalf("ListTables error = %v", err)
 			}
 		})
 	}
