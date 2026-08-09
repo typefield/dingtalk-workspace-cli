@@ -14,11 +14,14 @@
 package smart
 
 import (
+	"fmt"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -41,10 +44,11 @@ import (
 //	dws minutes +detail --id <taskUuid> --artifacts summary,todos
 //	dws minutes +detail --id <taskUuid> --direction 1
 var MinutesDetail = shortcut.Shortcut{
-	Service:     "minutes",
-	Command:     "+detail",
-	Product:     "minutes",
-	Description: "一条命令聚合取一条妙记（听记）的多项产物（基础信息/摘要/关键词/逐字稿/待办）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "minutes",
+	Command:       "+detail",
+	Product:       "minutes",
+	Description:   "一条命令聚合取一条妙记（听记）的多项产物（基础信息/摘要/关键词/逐字稿/待办）",
 	Intent: "当你已经有某条听记的 taskUuid，想在一次操作里同时拿到它的基础信息、AI 摘要、关键词、逐字稿和待办，而不想分别敲 4~5 个子命令再自己拼时使用；" +
 		"内部按 --artifacts 选择要拉的产物（默认全部：basic/summary/keywords/transcript/todos），逐个调用对应的原子工具并聚合成一个结果，" +
 		"某一项失败不会中断整体（会以错误字符串记录在该项下）。这是纯只读操作，不会修改听记；--direction 仅影响逐字稿排序（0=正序默认，1=倒序）。",
@@ -100,28 +104,109 @@ var MinutesDetail = shortcut.Shortcut{
 			want = minutesArtifactOrder
 		}
 
-		bundle := map[string]any{"taskUuid": taskUUID}
+		artifacts := make([]minutesArtifactRead, 0, len(want))
 		for _, raw := range want {
 			name := strings.ToLower(strings.TrimSpace(raw))
 			tool, ok := minutesArtifactTools[name]
 			if !ok {
-				continue // guarded by Validate, but stay defensive
+				return apperrors.NewValidation(fmt.Sprintf("不支持的听记产物 %q", raw))
 			}
 			params := map[string]any{"taskUuid": taskUUID}
 			if name == "transcript" {
 				params["direction"] = direction
 			}
 			data, err := rt.CallMCPData("minutes", tool, params)
-			if err != nil {
-				// Partial-failure tolerance: record and continue.
-				bundle[name] = map[string]any{"error": err.Error()}
-				continue
-			}
-			bundle[name] = data
+			artifacts = append(artifacts, minutesArtifactRead{Name: name, Data: data, Err: err})
 		}
 
-		return rt.Output(bundle)
+		payload, result, legacyErr, err := minutesDetailResult(taskUUID, artifacts)
+		if err != nil {
+			return err
+		}
+		if result.Outcome() == output.OutcomePartialFailure {
+			return rt.OutputPartial(result, legacyErr)
+		}
+		return rt.OutputResult(payload, result)
 	},
+}
+
+type minutesArtifactRead struct {
+	Name string
+	Data map[string]any
+	Err  error
+}
+
+// minutesDetailResult translates each independently executed read into the
+// framework's terminal result model. A failed artifact must never be hidden in
+// a successful bundle: retaining the successful artifacts alongside typed
+// failed entries gives an Agent a precise, safe resume point.
+func minutesDetailResult(taskUUID string, artifacts []minutesArtifactRead) (map[string]any, output.CommandResult, error, error) {
+	succeeded := make([]any, 0, len(artifacts))
+	failed := make([]output.PartialFailedEntry, 0, len(artifacts))
+	bundle := make(map[string]any, len(artifacts)+1)
+	bundle["task_uuid"] = taskUUID
+
+	for _, artifact := range artifacts {
+		name := strings.TrimSpace(artifact.Name)
+		if name == "" {
+			return nil, nil, nil, fmt.Errorf("minutes detail artifact is missing a stable name")
+		}
+		id := "artifact:" + name
+		if artifact.Err != nil {
+			failed = append(failed, output.PartialFailedEntry{
+				ID:    id,
+				Error: minutesArtifactFailureInfo(name, artifact.Err),
+			})
+			continue
+		}
+		entry := map[string]any{"id": id, "artifact": name, "data": artifact.Data}
+		succeeded = append(succeeded, entry)
+		bundle[name] = artifact.Data
+	}
+
+	if len(failed) == 0 {
+		bundle["artifact_count"] = len(succeeded)
+		return bundle, output.Success(bundle,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(succeeded))}),
+		), nil, nil
+	}
+	if len(succeeded) == 0 {
+		failedArtifacts := make([]string, 0, len(failed))
+		for _, entry := range failed {
+			failedArtifacts = append(failedArtifacts, entry.ID)
+		}
+		return nil, nil, nil, apperrors.NewAPI(
+			"请求的妙记产物均未能读取",
+			apperrors.WithOperation("minutes/detail"),
+			apperrors.WithFailureStage("artifact_read"),
+			apperrors.WithRetryable(true),
+			apperrors.WithDetails(map[string]any{"task_uuid": taskUUID, "failed_artifacts": failedArtifacts}),
+		)
+	}
+
+	partial, err := output.NewPartialData(len(succeeded)+len(failed), succeeded, failed, []output.PartialUnknownEntry{})
+	if err != nil {
+		return nil, nil, nil, err
+	}
+	return nil, output.Partial(partial), fmt.Errorf("妙记详情部分产物读取失败"), nil
+}
+
+func minutesArtifactFailureInfo(name string, err error) *output.ErrorInfo {
+	message := fmt.Sprintf("读取妙记产物 %q 失败", name)
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "保留已读取产物；只重新读取失败的 artifact，不要把当前结果当作完整详情",
+		Operation:        "minutes/detail",
+		Origin:           "mcp_gateway",
+		Stage:            "artifact_read",
+		ExecutionStarted: &started,
+		Retryable:        true,
+	}
 }
 
 // minutesArtifactTools maps the user-facing artifact name to the real MCP tool
