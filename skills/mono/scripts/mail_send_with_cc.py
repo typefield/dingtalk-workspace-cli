@@ -7,7 +7,7 @@
         --to colleague@company.com \
         --cc boss@company.com,team@company.com \
         --subject "周报" \
-        --body "本周完成任务A和任务B"
+        --body "本周完成任务A和任务B" --yes
 
     python mail_send_with_cc.py --dry-run \
         --to a@b.com --subject "test" --body "hello"
@@ -18,7 +18,10 @@ import re
 import argparse
 from typing import List, Any, Optional
 
-from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
+from _runtime import (
+    ChildDWSResult, add_contract_flags, add_write_confirmation_flag, emit,
+    failure, require_write_confirmation, run_child_dws, run_main,
+)
 
 EMAIL_PATTERN = re.compile(
     r'^[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}$'
@@ -90,12 +93,21 @@ def main() -> int:
     parser.add_argument('--subject', required=True, help='标题')
     parser.add_argument('--body', required=True, help='正文')
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     if not validate_emails(args.to):
         return failure(args.format, '收件人邮箱地址无效')
     if args.cc and not validate_emails(args.cc):
         return failure(args.format, '抄送邮箱地址无效')
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='mail_send_with_cc',
+        data={'to': [item.strip() for item in args.to.split(',') if item.strip()], 'cc': [item.strip() for item in args.cc.split(',') if item.strip()], 'subject': args.subject},
+    ):
+        return confirmation
 
     print('📬 获取发件邮箱...', file=sys.stderr)
     from_email = get_my_email(dry_run=args.dry_run)
@@ -109,6 +121,7 @@ def main() -> int:
         '--subject', args.subject,
         '--content', args.body,
         '--format', 'json',
+        '--yes',
     ]
     if args.cc:
         cmd_args.extend(['--cc', args.cc])

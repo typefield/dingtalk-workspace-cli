@@ -1089,7 +1089,7 @@ Vector/SVG。完整协议见 [whiteboard.md](./whiteboard.md)。
 
 | 脚本 | 场景 | 用法 |
 |------|------|------|
-| [doc_create_and_write.py](../../scripts/doc_create_and_write.py) | 创建文档并写入 Markdown 内容 | `python doc_create_and_write.py --name "周报" --content "# 本周总结"` |
+| [doc_create_and_write.py](../../scripts/doc_create_and_write.py) | 创建文档并写入 Markdown 内容；先 dry-run 展示计划，确认后以 `--yes` 执行 | `python doc_create_and_write.py --name "周报" --content "# 本周总结" --yes` |
 
 ## 相关产品
 

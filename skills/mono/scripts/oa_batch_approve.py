@@ -3,9 +3,9 @@
 批量同意/拒绝待审批项（含安全确认）
 
 用法:
-    python oa_batch_approve.py --action approve --days 7
-    python oa_batch_approve.py --action reject --remark "不符合要求"
-    python oa_batch_approve.py --action approve --instance-ids id1,id2
+    python oa_batch_approve.py --action approve --days 7 --yes
+    python oa_batch_approve.py --action reject --remark "不符合要求" --yes
+    python oa_batch_approve.py --action approve --instance-ids id1,id2 --yes
     python oa_batch_approve.py --dry-run --action approve
 """
 
@@ -21,6 +21,7 @@ from _runtime import (
     batch_outcome,
     emit,
     failure,
+    require_write_confirmation,
     run_child_dws,
     run_main,
 )
@@ -133,11 +134,15 @@ def main() -> int:
 
     action_label = '同意' if args.action == 'approve' else '拒绝'
     count = len(instance_ids) if instance_ids else '?'
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='oa_batch_approve',
+        data={'action': args.action, 'instance_ids': instance_ids, 'total': len(instance_ids)},
+    ):
+        return confirmation
     print(f"\n⚠️  即将 {action_label} {count} 条审批", file=sys.stderr)
-    if not args.yes and not args.dry_run:
-        confirm = input('确认执行？(y/N): ').strip().lower()
-        if confirm != 'y':
-            return failure(args.format, '用户取消审批操作')
 
     succeeded_items: List[dict[str, Any]] = []
     failed_items: List[dict[str, Any]] = []
@@ -189,6 +194,7 @@ def main() -> int:
             '--instance-id', inst_id,
             '--task-id', task_id or '<TASK_ID>',
             '--format', 'json',
+            '--yes',
         ]
         if args.remark:
             cmd_args.extend(['--remark', args.remark])

@@ -62,6 +62,14 @@ def main() -> int:
                 [sys.executable, "scripts/agent/probe_mono_result_contract.py"],
             ),
             (
+                "Mono 深层 dry-run 受控探针",
+                [sys.executable, "scripts/agent/probe_mono_dry_run.py"],
+            ),
+            (
+                "Mono 复合写确认门禁受控探针",
+                [sys.executable, "scripts/agent/probe_mono_write_confirmation.py"],
+            ),
+            (
                 "Multi 脚本 Help/Skill 参数对账",
                 [sys.executable, "scripts/agent/scan_multi_script_contract.py"],
             ),
@@ -126,7 +134,7 @@ def main() -> int:
             "- Help 对账只证明参数可发现，不证明业务执行安全。",
             "- CLI 路径/参数对拍只证明当前公开 Help 接受文档中的 flags；隐藏兼容别名是否应继续教学，仍需 Agent 语义审阅。",
             "- 隐藏兼容 flag 审阅只把正向示例列为 REVIEW，不删除兼容 alias，也不作为 CI 阻断；应由 Agent 决定改 canonical 参数或保留历史说明。",
-            "- dry-run 仍需由受控 child-runner、临时 HOME 和写请求计数器证明零写入。",
+            "- dry-run 与确认门禁的受控 probe 只能证明脚本在该夹具下未启动 child CLI/新增本地文件；真实租户的写入终态、权限和 exactly-once 仍需隔离账号或受控后端验证。",
             "- 集合对账只证明 Runtime、目录和 Skill 不漂移，不证明后端数据真实存在。",
         ]
         final_report = "\n".join(sections) + "\n"

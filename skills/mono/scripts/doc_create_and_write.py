@@ -5,14 +5,14 @@
 用法:
     python doc_create_and_write.py \
         --name "项目周报" \
-        --content "# 本周总结\n\n## 完成事项\n- 任务A"
+        --content "# 本周总结\n\n## 完成事项\n- 任务A" --yes
 
     python doc_create_and_write.py \
         --name "会议纪要" \
-        --content-file notes.md
+        --content-file notes.md --yes
 
     python doc_create_and_write.py \
-        --name "知识库文档" --content "# 内容" --folder FOLDER_ID
+        --name "知识库文档" --content "# 内容" --folder FOLDER_ID --yes
 
     python doc_create_and_write.py --name "test" --content "hello" --dry-run
 """
@@ -25,12 +25,14 @@ from typing import List, Any, Optional
 from _runtime import (
     ChildDWSResult,
     add_contract_flags,
+    add_write_confirmation_flag,
     batch_data,
     batch_outcome,
     emit,
     failure,
     run_child_dws,
     run_main,
+    require_write_confirmation,
 )
 
 
@@ -75,6 +77,7 @@ def main():
         help='兼容参数；为避免重复写入，文档写入不会自动重试',
     )
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     content = args.content
@@ -85,9 +88,17 @@ def main():
         content = p.read_text(encoding='utf-8')
     if not content:
         return failure(args.format, '需要 --content 或 --content-file')
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='doc_create_and_write',
+        data={'name': args.name, 'mode': args.mode, 'folder': args.folder or None, 'workspace': args.workspace or None},
+    ):
+        return confirmation
     chunk_size = 30000
 
-    create_args = ['doc', 'create', '--name', args.name, '--format', 'json']
+    create_args = ['doc', 'create', '--name', args.name, '--format', 'json', '--yes']
     if args.folder:
         create_args.extend(['--folder', args.folder])
     if args.workspace:
@@ -176,6 +187,7 @@ def main():
             '--content', chunk,
             '--mode', chunk_mode,
             '--format', 'json',
+            '--yes',
         ], dry_run=args.dry_run)
         if (entry := child_meta(chunk_id, write)):
             meta_entries.append(entry)

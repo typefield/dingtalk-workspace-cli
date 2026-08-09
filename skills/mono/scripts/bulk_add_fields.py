@@ -3,7 +3,7 @@
 批量添加字段到钉钉 AI 表格数据表（新版 schema）
 
 用法:
-    python bulk_add_fields.py <baseId> <tableId> fields.json
+    python bulk_add_fields.py <baseId> <tableId> fields.json --yes
 
 fields.json 格式:
     [
@@ -25,7 +25,10 @@ import argparse
 from pathlib import Path
 from typing import Union, List, Dict, Any, Optional, Tuple
 
-from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
+from _runtime import (
+    ChildDWSResult, add_contract_flags, add_write_confirmation_flag, emit,
+    failure, require_write_confirmation, run_child_dws, run_main,
+)
 
 JsonData = Union[List[Any], Dict[str, Any]]
 
@@ -174,7 +177,7 @@ def run_dws(args: List[str], dry_run: bool = False) -> ChildDWSResult:
 
 
 def bulk_add_fields(
-    base_id: str, table_id: str, fields_file: str, dry_run: bool = False
+    base_id: str, table_id: str, fields_file: str, dry_run: bool = False, *, confirmed: bool = False,
 ) -> Optional[ChildDWSResult]:
     try:
         safe_path = resolve_safe_path(fields_file)
@@ -218,6 +221,7 @@ def bulk_add_fields(
         '--table-id', table_id,
         '--fields', fields_json,
         '--format', 'json',
+        *( ['--yes'] if confirmed else [] ),
     ], dry_run=dry_run)
 
     if result.state == 'success':
@@ -235,6 +239,7 @@ def main() -> int:
     parser.add_argument('table_id')
     parser.add_argument('fields_file')
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     base_id = args.base_id
@@ -245,8 +250,16 @@ def main() -> int:
         return failure(args.format, '无效的 baseId 格式')
     if not validate_resource_id(table_id):
         return failure(args.format, '无效的 tableId 格式')
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='aitable_bulk_add_fields',
+        data={'baseId': base_id, 'tableId': table_id, 'input': str(Path(fields_file))},
+    ):
+        return confirmation
 
-    result = bulk_add_fields(base_id, table_id, fields_file, args.dry_run)
+    result = bulk_add_fields(base_id, table_id, fields_file, args.dry_run, confirmed=args.yes)
     if result is None:
         return failure(args.format, '字段创建失败')
     if result.state != 'success':

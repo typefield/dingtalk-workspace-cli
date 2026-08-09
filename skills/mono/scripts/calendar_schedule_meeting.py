@@ -8,7 +8,7 @@
         --start "2026-03-15T14:00" \
         --end "2026-03-15T15:00" \
         --users userId1,userId2 \
-        --book-room
+        --book-room --yes
 
     python calendar_schedule_meeting.py --dry-run \
         --title "测试" --start "2026-03-15T14:00" --end "2026-03-15T15:00"
@@ -22,10 +22,12 @@ from typing import Any, Dict, List
 from _runtime import (
     ChildDWSResult,
     add_contract_flags,
+    add_write_confirmation_flag,
     batch_data,
     batch_outcome,
     emit,
     failure,
+    require_write_confirmation,
     run_child_dws,
     run_main,
 )
@@ -92,6 +94,7 @@ def main() -> int:
         '--book-room', action='store_true', help='自动预定会议室'
     )
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     try:
@@ -113,6 +116,14 @@ def main() -> int:
             + (["search and reserve room"] if args.book_room else []),
         }
         return emit(fmt=args.format, outcome='success', data=plan, dry_run=True, text='[dry-run] 将创建日程并执行请求的后续步骤')
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=False,
+        operation='calendar_schedule_meeting',
+        data={'title': args.title, 'start': start_iso, 'end': end_iso, 'participants': [user for user in args.users.split(',') if user], 'book_room': args.book_room},
+    ):
+        return confirmation
 
     print('📅 创建日程...', file=sys.stderr)
     create_args = [
@@ -121,6 +132,7 @@ def main() -> int:
         '--start', start_iso,
         '--end', end_iso,
         '--format', 'json',
+        '--yes',
     ]
     if args.desc:
         create_args.extend(['--desc', args.desc])
@@ -163,6 +175,7 @@ def main() -> int:
             '--event', event_id,
             '--users', args.users,
             '--format', 'json',
+            '--yes',
         ])
         metas.extend(child_meta(r, 'event:participants'))
         if r.state == 'success':
@@ -198,6 +211,7 @@ def main() -> int:
                         '--event', event_id,
                         '--rooms', str(room_id),
                         '--format', 'json',
+                        '--yes',
                     ])
                     metas.extend(child_meta(r, f'{event_id}:room:{room_id}'))
                     if r.state == 'success':

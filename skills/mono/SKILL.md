@@ -20,7 +20,7 @@ cli_version: ">=1.0.15"
 ## 严格要求 (MUST DO)
 - 终结型 CLI 命令默认使用 `--format json` 获取可解析输出；先以 leaf Help 确认该 flag。长连接 `event consume` 默认使用 `--format ndjson`，只有设置 `--max-events` 或 `--duration` 后才使用 `json/pretty`；不要把无限事件流强行改成单个 JSON 文档。Skill 脚本是独立入口，当前 32 个 Agent 入口均在 Help 中声明脚本级 `--format` 与 `--dry-run`；调用前仍必须以该脚本的 Help 和 Agent 扫描台账为准，脚本内部调用 dws 时再传递合适的格式。
 - `skills/mono/scripts/` 当前有 35 个 Python 文件，其中 32 个是可执行 Agent 入口、3 个是内部模块。32 个入口的 Help 当前均声明脚本级 `--format text|json|ndjson` 与 `--dry-run`；这只证明参数可发现，不等于每个入口都完成了零远端写入/零本地写入证明。调用前以该脚本的 `--help` 和 Agent 扫描台账为准；不要从文件名或源码中的 `add_contract_flags` 推断安全语义。
-- 危险操作必须先向用户确认，用户同意后才加 `--yes` 执行
+- 危险操作必须先向用户确认，用户同意后才加 `--yes` 执行。9 个复合写脚本（文档创建写入、发邮件、创建日程、批量待办、OA 批量审批、字段/记录/文件导入、附件上传）也在脚本入口强制这一规则：非 `--dry-run` 缺少 `--yes` 时必须返回 `policy/confirmation_required`，不得启动子 `dws` 或写入本地输出。先用 `--dry-run --format json` 展示计划、取得确认后再以相同参数追加 `--yes`；`aitable_export_via_task.py` 的本地目标覆盖则单独使用 `--overwrite` 门禁。
 - 报表类脚本（包括 `attendance_report_detail.py`、`attendance_report_checkin.py`、`attendance_schedule_import.py`）的 dry-run 可能执行远端只读查询，但不得下载图片、写入 Excel 或触发业务写入；具体 `remote_reads` 语义以脚本 Help/台账为准。
 - 单次批量操作不超过 30 条记录
 - 所有命令必须**严格遵循**对应产品参考文档里面规定的参数格式（如：如果有参数值，则参数和参数值之间至少用一个空格隔开）

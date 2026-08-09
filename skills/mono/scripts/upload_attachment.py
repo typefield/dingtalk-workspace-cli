@@ -8,7 +8,7 @@
   3. 返回 fileToken，可直接用于 record create/update
 
 用法:
-    python upload_attachment.py <baseId> <filePath>
+    python upload_attachment.py <baseId> <filePath> --yes
 
 输出 (JSON):
     { "fileToken": "ft_xxx", "fileName": "report.pdf", "size": 204800 }
@@ -30,7 +30,10 @@ from typing import Optional, Dict, Any, Mapping
 from urllib.request import Request, urlopen
 from urllib.error import HTTPError, URLError
 
-from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
+from _runtime import (
+    ChildDWSResult, add_contract_flags, add_write_confirmation_flag, emit,
+    failure, run_child_dws, run_main,
+)
 
 RESOURCE_ID_PATTERN = re.compile(r'^[A-Za-z0-9_-]{8,128}$')
 MAX_FILE_SIZE = 100 * 1024 * 1024  # 100MB
@@ -103,7 +106,9 @@ def child_status(result: ChildDWSResult, data: Mapping[str, Any]) -> Optional[st
     return status if isinstance(status, str) else None
 
 
-def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False) -> AttachmentResult:
+def upload_attachment(
+    base_id: str, file_path_str: str, *, dry_run: bool = False, confirmed: bool = False,
+) -> AttachmentResult:
     """
     执行完整的附件上传流程:
       1. prepare_attachment_upload → uploadUrl + fileToken
@@ -131,7 +136,6 @@ def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False
     mime_type = detect_mime_type(file_path)
 
     # 步骤 1: prepare_attachment_upload
-    print(f"步骤 1/3: 准备上传 {file_name} ({file_size:,} 字节, {mime_type})...", file=sys.stderr)
     dws_args = [
         'aitable', 'attachment', 'upload',
         '--base-id', base_id,
@@ -149,6 +153,19 @@ def upload_attachment(base_id: str, file_path_str: str, *, dry_run: bool = False
             "steps": ["prepare_attachment_upload", "PUT uploadUrl", "return fileToken"],
             "request": dws_args,
         })
+    if not confirmed:
+        return AttachmentResult(
+            'failed', 'confirmation', {
+                'baseId': base_id, 'fileName': file_name, 'size': file_size,
+            }, {
+                'type': 'policy',
+                'subtype': 'confirmation_required',
+                'message': '这是附件上传操作；请先向用户展示计划并获得明确确认。',
+                'hint': '确认后使用相同参数追加 --yes；也可先使用 --dry-run 生成预览。',
+            },
+        )
+    print(f"步骤 1/3: 准备上传 {file_name} ({file_size:,} 字节, {mime_type})...", file=sys.stderr)
+    dws_args.append('--yes')
     result = run_dws(dws_args)
     base_data = {
         'baseId': base_id,
@@ -203,6 +220,7 @@ def main() -> int:
     parser.add_argument("base_id", help="目标 AI 表格 baseId")
     parser.add_argument("file_path", help="待上传文件路径")
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     base_id = args.base_id
@@ -211,7 +229,7 @@ def main() -> int:
     if not validate_resource_id(base_id):
         return failure(args.format, '无效的 baseId 格式')
 
-    result = upload_attachment(base_id, file_path, dry_run=args.dry_run)
+    result = upload_attachment(base_id, file_path, dry_run=args.dry_run, confirmed=args.yes)
     if result.state != 'success':
         data = {**result.data, 'phase': result.phase,
                 'execution_state': 'unknown' if result.state == 'unknown' else 'not_executed'}

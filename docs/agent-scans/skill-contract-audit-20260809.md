@@ -10,6 +10,8 @@
 |---|---|
 | Mono 脚本 Help/Skill 参数对账 | PASS |
 | Mono 脚本结果/异常边界 | PASS |
+| Mono 深层 dry-run 受控探针 | PASS |
+| Mono 复合写确认门禁受控探针 | PASS |
 | Multi 脚本 Help/Skill 参数对账 | PASS |
 | Shortcut 运行时/目录/Skill 集合对账 | PASS |
 | Shortcut exclusion 逐条审阅队列 | PASS |
@@ -133,7 +135,7 @@
 | 日程后续写入失败保留部分结果 | PASS | ok |
 | 记录导入保留成功与未知批次 | PASS | ok |
 | 字段创建旧业务失败不误报成功 | PASS | ok |
-| 文件导入旧业务失败不误报终态 | PASS | ok |
+| 文件导入不丢失各子步骤 meta | PASS | ok |
 | 附件 PUT 未知不误报可用 | PASS | ok |
 
 结果：24/24 通过
@@ -143,6 +145,60 @@
 - 本探针证明入口都接入共享异常边界，并证明该边界在机器格式下不会以 traceback 取代结果信封。
 - 子 dws 探针覆盖待办、审批、文档、邮件、日程、记录导入、字段创建、文件导入任务和附件上传的代表性混合结果：成功、明确未执行和可能已执行不得压成布尔值；它不替代其他脚本和真实服务端终态验证。
 - dry-run 零写、真实服务端终态和批量每项语义，仍按独立受控探针或真实环境证据标记。
+```
+
+### Mono 深层 dry-run 受控探针
+
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/probe_mono_dry_run.py`
+
+```text
+# Mono 深层 dry-run Agent 受控探针
+
+> 临时 HOME、临时工作目录和 sentinel dws；不保存 JSON fixture。PASS 表示单一 JSON stdout、dry_run=true、无 dws 调用、无额外本地文件。
+
+| 入口 | 结果 | 说明 |
+|---|---|---|
+| `doc_create_and_write.py` | PASS | ok |
+| `oa_batch_approve.py` | PASS | ok |
+| `todo_batch_create.py` | PASS | ok |
+| `bulk_add_fields.py` | PASS | ok |
+| `import_records.py` | PASS | ok |
+| `aitable_import_via_task.py` | PASS | ok |
+| `aitable_export_via_task.py` | PASS | ok |
+| `calendar_schedule_meeting.py` | PASS | ok |
+| `upload_attachment.py` | PASS | ok |
+| `mail_send_with_cc.py` | PASS | ok |
+
+结果：10/10 通过
+```
+
+### Mono 复合写确认门禁受控探针
+
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/probe_mono_write_confirmation.py`
+
+```text
+# Mono 复合写确认门禁 Agent 受控探针
+
+> 调用均省略 `--yes` 且不使用 `--dry-run`。临时 HOME、工作目录和 sentinel `dws` 用于证明本地脚本在 child CLI/本地写入前停止；仅保存 Markdown 证据，不替代真实租户验证。
+
+| 入口 | 结果 | 说明 |
+|---|---|---|
+| `doc_create_and_write.py` | PASS | ok |
+| `mail_send_with_cc.py` | PASS | ok |
+| `calendar_schedule_meeting.py` | PASS | ok |
+| `todo_batch_create.py` | PASS | ok |
+| `bulk_add_fields.py` | PASS | ok |
+| `import_records.py` | PASS | ok |
+| `aitable_import_via_task.py` | PASS | ok |
+| `upload_attachment.py` | PASS | ok |
+| `oa_batch_approve.py` | PASS | ok |
+
+结果：9/9 通过
+
+## 边界
+
+- PASS 表示缺少确认时本地脚本返回 `policy/confirmation_required`、`execution_state=not_executed`，且 probe 未观察到子 dws 调用或新增本地文件。
+- 不证明真实租户的权限、服务端写入终态或确认后的 exactly-once；这些仍需要隔离账号或受控后端证据。
 ```
 
 ### Multi 脚本 Help/Skill 参数对账
@@ -201,7 +257,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T11:47:12`
+- generated_at: `2026-08-09T13:02:28`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -325,5 +381,5 @@ skill command integrity check: ok (1144 executable command paths)
 - Help 对账只证明参数可发现，不证明业务执行安全。
 - CLI 路径/参数对拍只证明当前公开 Help 接受文档中的 flags；隐藏兼容别名是否应继续教学，仍需 Agent 语义审阅。
 - 隐藏兼容 flag 审阅只把正向示例列为 REVIEW，不删除兼容 alias，也不作为 CI 阻断；应由 Agent 决定改 canonical 参数或保留历史说明。
-- dry-run 仍需由受控 child-runner、临时 HOME 和写请求计数器证明零写入。
+- dry-run 与确认门禁的受控 probe 只能证明脚本在该夹具下未启动 child CLI/新增本地文件；真实租户的写入终态、权限和 exactly-once 仍需隔离账号或受控后端验证。
 - 集合对账只证明 Runtime、目录和 Skill 不漂移，不证明后端数据真实存在。

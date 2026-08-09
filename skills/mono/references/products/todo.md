@@ -488,5 +488,5 @@ dws todo task list-sub --task-id <taskId> --format json
 | 脚本 | 场景 | 用法 |
 |------|------|------|
 | [todo_daily_summary.py](../../scripts/todo_daily_summary.py) | 查看今天/明天/本周未完成待办汇总 | `python todo_daily_summary.py today` |
-| [todo_batch_create.py](../../scripts/todo_batch_create.py) | 从 JSON 文件批量创建待办 | `python todo_batch_create.py todos.json` |
+| [todo_batch_create.py](../../scripts/todo_batch_create.py) | 从 JSON 文件批量创建待办；先 dry-run 展示计划，确认后以 `--yes` 执行 | `python todo_batch_create.py todos.json --yes` |
 | [todo_overdue_check.py](../../scripts/todo_overdue_check.py) | 扫描逾期待办输出逾期清单 | `python todo_overdue_check.py` |

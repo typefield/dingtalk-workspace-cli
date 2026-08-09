@@ -426,7 +426,7 @@ dws mail message send --from my@company.com --to zhangsan@company.com \
 
 用户说"约张三明天下午开会"：
 
-> 有脚本: `python scripts/calendar_schedule_meeting.py --title "会议" --start "..." --end "..." --users userId1 --book-room`
+> 有脚本: 先用 `--dry-run --format json` 展示计划；用户确认后执行 `python scripts/calendar_schedule_meeting.py --title "会议" --start "..." --end "..." --users userId1 --book-room --yes`
 
 ```bash
 # 手动流程（脚本不可用时）:

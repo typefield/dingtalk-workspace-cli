@@ -7,9 +7,9 @@
 - import_records.py：走 create_records，写入已有 table。
 
 用法:
-    python scripts/aitable_import_via_task.py <baseId> <filePath>
-    python scripts/aitable_import_via_task.py <baseId> <filePath> --timeout 30
-    python scripts/aitable_import_via_task.py <baseId> <filePath> --dws /tmp/dws
+    python scripts/aitable_import_via_task.py <baseId> <filePath> --yes
+    python scripts/aitable_import_via_task.py <baseId> <filePath> --timeout 30 --yes
+    python scripts/aitable_import_via_task.py <baseId> <filePath> --dws /tmp/dws --yes
 """
 
 from __future__ import annotations
@@ -24,7 +24,10 @@ from typing import Any, Dict, Mapping, Optional, Tuple
 from urllib.error import HTTPError, URLError
 from urllib.request import Request, urlopen
 
-from _runtime import ChildDWSResult, add_contract_flags, emit, failure, run_child_dws, run_main
+from _runtime import (
+    ChildDWSResult, add_contract_flags, add_write_confirmation_flag, emit,
+    failure, require_write_confirmation, run_child_dws, run_main,
+)
 
 RESOURCE_ID_PATTERN = re.compile(r"^[A-Za-z0-9_-]{8,128}$")
 ALLOWED_EXTENSIONS = {".csv", ".xlsx", ".xls"}
@@ -131,6 +134,7 @@ def main() -> int:
     parser.add_argument("--timeout-sec", type=int, default=300, help="CLI 内置轮询整体超时（秒），默认 300（5 分钟）")
     parser.add_argument("--dws", default="dws", help="dws 可执行文件路径，默认 dws")
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     base_id = args.base_id.strip()
@@ -161,6 +165,14 @@ def main() -> int:
             dry_run=True,
             text="\n".join(f"[dry-run] {step}" for step in plan["steps"]),
         )
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=False,
+        operation="aitable_import_via_task",
+        data={"baseId": base_id, "fileName": file_path.name, "fileSize": file_size},
+    ):
+        return confirmation
 
     print(f"[1/3] prepare import upload: {file_path.name} ({file_size} bytes)", file=sys.stderr)
     prepare = run_dws(
@@ -177,6 +189,7 @@ def main() -> int:
             str(file_size),
             "--format",
             "json",
+            "--yes",
         ],
     )
     prepare_metas = child_metas(("prepare_import_upload", prepare))
@@ -242,6 +255,7 @@ def main() -> int:
             "30",
             "--format",
             "json",
+            "--yes",
         ],
         timeout_sec=max(120, args.timeout_sec + 30),
     )

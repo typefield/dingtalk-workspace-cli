@@ -21,7 +21,7 @@ Flags:
 
 ```bash
 # 步骤 1: 使用脚本一键上传（内部自动完成 prepare + PUT）
-python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf
+python3 scripts/upload_attachment.py <BASE_ID> /path/to/report.pdf --yes
 # 输出: { "fileToken": "ft_xxx", "fileName": "report.pdf", "size": 204800 }
 
 # 步骤 2: 在 record create/update 中使用 fileToken 写入

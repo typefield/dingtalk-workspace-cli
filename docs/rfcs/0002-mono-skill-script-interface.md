@@ -59,6 +59,11 @@ Help 可观测性、JSON 流向和 dry-run 副作用是三个独立验收维度�
 不增加 `--output-contract` 或 `contract_version`。Agent 只通过 `--format` 选择
 表现形式，迁移状态由脚本发布版本决定。
 
+会发起远端写入的复合脚本还必须接受 `--yes`。它不是全局脚本 flag：只读、查询和
+本地导出入口不应为了形式统一而伪造确认门禁。对写入口，`--dry-run` 可免确认地生成
+计划；缺少 `--yes` 的非 dry-run 调用必须在任何 child CLI、远端写入或本地输出写入前
+返回 `policy/confirmation_required` 与 `execution_state=not_executed`。
+
 ### format
 
 - `json`：一次执行输出一个可解析的统一结果对象；业务结果放在 `data`，失败放在
@@ -97,6 +102,8 @@ typed internal failure。若出现，`meta` 必须是对象、`dry_run` 必须�
 ```text
 scripts/_runtime.py
   add_contract_flags(parser, *, dry_run=True)
+  add_write_confirmation_flag(parser)
+  require_write_confirmation(*, fmt, confirmed, dry_run, operation, data=None)
   emit(*, fmt, outcome, data=None, error=None, meta=None, dry_run=False, text=None, items=None)
   failure(fmt, message, *, details=None, meta=None)
   run_child_dws(args, *, dry_run=False, timeout=60) -> ChildDWSResult
@@ -135,6 +142,7 @@ scripts/_runtime.py
 |---|---|---|
 | 32 个 Agent 入口的 `--format` / `--dry-run` | 已实施 | 逐入口 `--help` 为 32/32、Help 非零为 0；这只证明能力可发现 |
 | `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
+| 9 个复合远端写入口的 `--yes` 门禁 | 已受控探针验证 | `probe_mono_write_confirmation.py` 以临时 HOME、工作区和 sentinel `dws` 覆盖文档、邮件、日程、待办、审批、字段/记录/文件导入与附件上传；缺确认时为 typed policy failure，未观察 child 调用或新增本地文件；不证明确认后的真实服务端终态 |
 | 10 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
 | 其余 22 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
 | 三条写编排的 mixed result 映射 | 已受控 child-runner 验证 | 待办保留成功与未知写入；审批任务解析失败不会发送占位写入；文档写入失败只调用一次并标 `unknown`。假子进程只验证编排和信封，不证明真实后端终态 |
@@ -158,7 +166,9 @@ scripts/_runtime.py
 4. 注入一个成功、一个明确失败和一个结果不确定的步骤，确认
    `succeeded/failed/unknown` 不丢失；
 5. 对流式脚本检查每行独立可解析且有界/无限模式语义不同；
-6. 把扫描结果写入评测台账，禁止把生成的 JSON 结果作为仓库 fixture 保存。
+6. 对每个复合写入口省略 `--yes` 执行，确认返回 `policy/confirmation_required`、
+   `execution_state=not_executed`，且临时 child runner 未被调用；
+7. 把扫描结果写入评测台账，禁止把生成的 JSON 结果作为仓库 fixture 保存。
 
 仓库提供 `scripts/agent/scan_mono_script_contract.py` 作为可重复的 Agent 扫描器。
 它只生成 Markdown：统计入口/内部模块、逐个运行 Help、核对实际 flags，并把未完成的
@@ -208,6 +218,14 @@ dry-run 副作用仍须在报告中分开标注，不能把总审计
 ```bash
 python3 scripts/agent/probe_mono_dry_run.py \
   --output docs/agent-scans/mono-dry-run-probe-YYYYMMDD.md
+```
+
+对复合写脚本的确认门禁，另有独立 Agent 探针。它故意省略 `--yes`，使用临时 HOME、
+工作区和假的 `dws` 子进程确认入口在执行前停止；同样只保存 Markdown，不接入 CI：
+
+```bash
+python3 scripts/agent/probe_mono_write_confirmation.py \
+  --output docs/agent-scans/mono-write-confirmation-YYYYMMDD.md
 ```
 
 ## 兼容与回滚

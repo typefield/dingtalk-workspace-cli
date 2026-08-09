@@ -3,8 +3,8 @@
 从 CSV / JSON 批量导入记录到钉钉 AI 表格（新版 schema）
 
 用法:
-    python import_records.py <baseId> <tableId> data.csv [batch_size]
-    python import_records.py <baseId> <tableId> data.json [batch_size]
+    python import_records.py <baseId> <tableId> data.csv [batch_size] --yes
+    python import_records.py <baseId> <tableId> data.json [batch_size] --yes
 
 说明：
 - CSV 表头默认视为 fieldId
@@ -25,10 +25,12 @@ from typing import Union, List, Dict, Any, Optional, Tuple
 from _runtime import (
     ChildDWSResult,
     add_contract_flags,
+    add_write_confirmation_flag,
     batch_data,
     batch_outcome,
     emit,
     failure,
+    require_write_confirmation,
     run_child_dws,
     run_main,
 )
@@ -238,7 +240,7 @@ def import_from_json(
 
 def import_records(
     base_id: str, table_id: str,
-    records: List[Dict[str, Any]], batch_size: int, dry_run: bool = False,
+    records: List[Dict[str, Any]], batch_size: int, dry_run: bool = False, *, confirmed: bool = False,
 ) -> Optional[dict[str, Any]]:
     if batch_size <= 0:
         print('错误：batch_size 必须大于 0', file=sys.stderr)
@@ -262,6 +264,7 @@ def import_records(
             '--table-id', table_id,
             '--records', records_json,
             '--format', 'json',
+            *( ['--yes'] if confirmed else [] ),
         ], dry_run=dry_run)
         entry_id = f"batch:{batch_num}"
         if result.meta:
@@ -309,6 +312,7 @@ def main() -> int:
     parser.add_argument('input_file')
     parser.add_argument('batch_size', nargs='?', type=int, default=DEFAULT_BATCH_SIZE)
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     base_id = args.base_id
@@ -334,7 +338,15 @@ def main() -> int:
 
     if records is None:
         return failure(args.format, '记录导入失败')
-    data = import_records(base_id, table_id, records, batch_size, args.dry_run)
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='aitable_import_records',
+        data={'baseId': base_id, 'tableId': table_id, 'recordCount': len(records), 'input': str(Path(input_file))},
+    ):
+        return confirmation
+    data = import_records(base_id, table_id, records, batch_size, args.dry_run, confirmed=args.yes)
     if data is None:
         return failure(args.format, '记录导入失败')
     data['input'] = str(Path(input_file))

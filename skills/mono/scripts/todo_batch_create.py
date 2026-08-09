@@ -3,7 +3,7 @@
 从 JSON 文件批量创建待办（含优先级、截止时间、执行者）
 
 用法:
-    python todo_batch_create.py todos.json
+    python todo_batch_create.py todos.json --yes
     python todo_batch_create.py todos.json --dry-run
 
 todos.json 格式:
@@ -34,10 +34,12 @@ from typing import List, Dict, Any, Optional
 from _runtime import (
     ChildDWSResult,
     add_contract_flags,
+    add_write_confirmation_flag,
     batch_data,
     batch_outcome,
     emit,
     failure,
+    require_write_confirmation,
     run_child_dws,
     run_main,
 )
@@ -102,6 +104,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description='从 JSON 文件批量创建待办')
     parser.add_argument('input', help='待办 JSON 文件')
     add_contract_flags(parser)
+    add_write_confirmation_flag(parser)
     args = parser.parse_args()
 
     file_path = Path(args.input)
@@ -121,6 +124,14 @@ def main() -> int:
     for i, item in enumerate(todos):
         if not validate_todo(item, i):
             return failure(args.format, f'第 {i + 1} 条待办参数无效')
+    if confirmation := require_write_confirmation(
+        fmt=args.format,
+        confirmed=args.yes,
+        dry_run=args.dry_run,
+        operation='todo_batch_create',
+        data={'total': len(todos), 'titles': [str(item['title']).strip() for item in todos]},
+    ):
+        return confirmation
 
     if args.format == 'text':
         print(f"📋 准备创建 {len(todos)} 条待办\n")
@@ -137,6 +148,7 @@ def main() -> int:
             '--title', title,
             '--executors', item['executors'].strip(),
             '--format', 'json',
+            '--yes',
         ]
         priority = item.get('priority')
         if priority is not None:

@@ -286,6 +286,59 @@ def add_contract_flags(parser: argparse.ArgumentParser, *, dry_run: bool = True)
         )
 
 
+def add_write_confirmation_flag(parser: argparse.ArgumentParser) -> None:
+    """Add the explicit acknowledgement required by a composite write script.
+
+    Mono scripts are independent Agent entrypoints, not merely aliases for a
+    leaf command.  They must therefore carry their own confirmation gate
+    instead of relying on a Skill instruction being remembered by every
+    caller.  ``--dry-run`` remains available without acknowledgement so an
+    Agent can produce the exact plan that a user confirms.
+    """
+    parser.add_argument(
+        "--yes",
+        action="store_true",
+        help="用户已确认该写入计划；非 dry-run 执行必填。",
+    )
+
+
+def require_write_confirmation(
+    *,
+    fmt: str,
+    confirmed: bool,
+    dry_run: bool,
+    operation: str,
+    data: Optional[Mapping[str, Any]] = None,
+) -> Optional[int]:
+    """Return a typed no-effect failure unless a write plan is acknowledged.
+
+    The caller returns the non-``None`` value before its first child call,
+    network write, or local output write.  A script-specific ``data`` summary
+    gives an Agent enough context to show a confirmation prompt without
+    inventing a separate interactive protocol.
+    """
+    if confirmed or dry_run:
+        return None
+    result_data: dict[str, Any] = {
+        "operation": operation,
+        "execution_state": "not_executed",
+    }
+    if data:
+        result_data.update(dict(data))
+    return emit(
+        fmt=fmt,
+        outcome="failure",
+        data=result_data,
+        error={
+            "type": "policy",
+            "subtype": "confirmation_required",
+            "message": "这是写入操作；请先向用户展示计划并获得明确确认。",
+            "hint": "确认后使用相同参数追加 --yes；也可先使用 --dry-run 生成预览。",
+        },
+        text="需要用户明确确认；请先预览或确认后追加 --yes。",
+    )
+
+
 def _envelope(
     *,
     ok: bool,

@@ -392,7 +392,7 @@ print(json.dumps({'ok': True, 'outcome': 'pending', 'data': {'task_id': 'task-1'
             encoding="utf-8",
         )
         todo_child = run_with_fake_dws(
-            [sys.executable, str(SCRIPT_DIR / "todo_batch_create.py"), str(todo_path), "--format", "json"],
+            [sys.executable, str(SCRIPT_DIR / "todo_batch_create.py"), str(todo_path), "--yes", "--format", "json"],
             """import json, sys
 title = sys.argv[sys.argv.index('--title') + 1]
 if title == 'confirmed':
@@ -453,7 +453,7 @@ else:
         doc_child = run_with_fake_dws(
             [
                 sys.executable, str(SCRIPT_DIR / "doc_create_and_write.py"),
-                "--name", "probe", "--content", "body", "--max-retries", "3", "--format", "json",
+                "--name", "probe", "--content", "body", "--max-retries", "3", "--yes", "--format", "json",
             ],
             f"""import json, pathlib, sys
 args = sys.argv[1:]
@@ -483,7 +483,7 @@ else:
         mail_child = run_with_fake_dws(
             [
                 sys.executable, str(SCRIPT_DIR / "mail_send_with_cc.py"),
-                "--to", "recipient@example.com", "--subject", "probe", "--body", "body", "--format", "json",
+                "--to", "recipient@example.com", "--subject", "probe", "--body", "body", "--yes", "--format", "json",
             ],
             """import json, sys
 args = sys.argv[1:]
@@ -512,7 +512,7 @@ else:
             [
                 sys.executable, str(SCRIPT_DIR / "calendar_schedule_meeting.py"),
                 "--title", "probe", "--start", "2026-08-09T10:00", "--end", "2026-08-09T11:00",
-                "--users", "user-1", "--format", "json",
+                "--users", "user-1", "--yes", "--format", "json",
             ],
             """import json, sys
 args = sys.argv[1:]
@@ -548,7 +548,7 @@ else:
         import_child = run_with_fake_dws(
             [
                 sys.executable, str(SCRIPT_DIR / "import_records.py"),
-                "base-01", "table-01", str(import_path), "1", "--format", "json",
+                "base-01", "table-01", str(import_path), "1", "--yes", "--format", "json",
             ],
             """import json, sys
 args = sys.argv[1:]
@@ -584,7 +584,7 @@ else:
         fields_child = run_with_fake_dws(
             [
                 sys.executable, str(SCRIPT_DIR / "bulk_add_fields.py"),
-                "base-01", "table-01", str(fields_path), "--format", "json",
+                "base-01", "table-01", str(fields_path), "--yes", "--format", "json",
             ],
             """import json
 # The old script accepted any decoded dict as success.  This is a business
@@ -623,7 +623,7 @@ print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'field c
             file_import_child = run_with_fake_dws(
                 [
                     sys.executable, str(SCRIPT_DIR / "aitable_import_via_task.py"),
-                    "base-001", str(file_import_path), "--dws", str(temp_dir / "dws"), "--format", "json",
+                    "base-001", str(file_import_path), "--dws", str(temp_dir / "dws"), "--yes", "--format", "json",
                 ],
                 f"""import json, sys
 args = sys.argv[1:]
@@ -666,7 +666,7 @@ else:
         attachment_child = run_with_fake_dws(
             [
                 sys.executable, str(SCRIPT_DIR / "upload_attachment.py"),
-                "base-001", str(attachment_path), "--format", "json",
+                "base-001", str(attachment_path), "--yes", "--format", "json",
             ],
             """import json
 # Bare ticket replies are the real prepare_attachment_upload shape: no status
