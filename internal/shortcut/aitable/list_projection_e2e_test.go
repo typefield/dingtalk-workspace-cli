@@ -4,8 +4,11 @@
 package aitable
 
 import (
+	stderrors "errors"
 	"strings"
 	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 )
 
 func TestCrossPlatformCoverageAITableListProjectionExplicitEmptyIsSuccessE2E(t *testing.T) {
@@ -86,6 +89,27 @@ func TestCrossPlatformCoverageAITableListProjectionMalformedItemIsNotSilentlyDro
 			out, err := runAITableCompositeCLI(t, caller, test.command, test.args...)
 			if err == nil || out != "" || len(caller.calls) != 1 {
 				t.Fatalf("malformed list item was accepted = output:%q err:%v calls:%#v", out, err, caller.calls)
+			}
+		})
+	}
+}
+
+func TestCrossPlatformCoverageBaseDiscoveryPaginationConflictDoesNotEmitSuccessE2E(t *testing.T) {
+	cases := []struct {
+		name    string
+		payload string
+	}{
+		{name: "open page missing cursor", payload: `{"bases":[],"hasMore":true}`},
+		{name: "terminal page has cursor", payload: `{"bases":[],"hasMore":false,"nextCursor":"next"}`},
+		{name: "outer inner conflict", payload: `{"bases":[],"hasMore":true,"nextCursor":"next","data":{"hasMore":false}}`},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			caller := &upsertByKeyCaller{steps: []upsertByKeyStep{{text: tc.payload}}}
+			out, err := runAITableCompositeCLI(t, caller, "+base-list")
+			var typed *apperrors.Error
+			if out != "" || !stderrors.As(err, &typed) || typed.StableSubtype != string(apperrors.SubtypePaginationInconsistent) || !typed.RetryableSet || typed.Retryable {
+				t.Fatalf("pagination conflict = output:%q err:%#v", out, err)
 			}
 		})
 	}

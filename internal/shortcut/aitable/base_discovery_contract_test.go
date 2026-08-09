@@ -13,16 +13,23 @@
 
 package aitable
 
-import "testing"
+import (
+	"testing"
+
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+)
 
 func TestBaseDiscoveryPayloadDoesNotClaimAuthoritativeInventory(t *testing.T) {
 	bases := []map[string]any{{"baseId": "base-1", "baseName": "recent"}}
-	payload := baseDiscoveryPayload(map[string]any{
+	payload, err := baseDiscoveryPayload("list_bases", map[string]any{
 		"data": map[string]any{
 			"hasMore":    false,
 			"nextCursor": "",
 		},
 	}, bases, "recently_accessed")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if payload["sourceKind"] != "recently_accessed" || payload["authoritativeInventory"] != false ||
 		payload["inventoryCoverageKnown"] != false {
@@ -37,11 +44,14 @@ func TestBaseDiscoveryPayloadDoesNotClaimAuthoritativeInventory(t *testing.T) {
 }
 
 func TestBaseDiscoveryPayloadKeepsUnknownPaginationAndIndexCoverageHonest(t *testing.T) {
-	payload := baseDiscoveryPayload(map[string]any{
+	payload, err := baseDiscoveryPayload("search_bases", map[string]any{
 		"result": map[string]any{
 			"bases": []any{},
 		},
 	}, []map[string]any{}, "name_search_index")
+	if err != nil {
+		t.Fatal(err)
+	}
 
 	if payload["paginationKnown"] != false || payload["indexCoverageKnown"] != false ||
 		payload["authoritativeInventory"] != false {
@@ -49,5 +59,42 @@ func TestBaseDiscoveryPayloadKeepsUnknownPaginationAndIndexCoverageHonest(t *tes
 	}
 	if _, exists := payload["endpointExhausted"]; exists {
 		t.Fatalf("unknown pagination must not claim exhaustion: %#v", payload)
+	}
+}
+
+func TestBaseDiscoveryPayloadRejectsContradictoryOrUnresumablePagination(t *testing.T) {
+	cases := []struct {
+		name string
+		data map[string]any
+	}{
+		{
+			name: "open page missing cursor",
+			data: map[string]any{"hasMore": true},
+		},
+		{
+			name: "terminal page has continuation",
+			data: map[string]any{"hasMore": false, "nextCursor": "next"},
+		},
+		{
+			name: "outer and nested has more disagree",
+			data: map[string]any{
+				"hasMore":    true,
+				"nextCursor": "outer-next",
+				"data":       map[string]any{"hasMore": false},
+			},
+		},
+		{
+			name: "invalid has more type",
+			data: map[string]any{"hasMore": "true", "nextCursor": "next"},
+		},
+	}
+	for _, tc := range cases {
+		t.Run(tc.name, func(t *testing.T) {
+			_, err := baseDiscoveryPayload("list_bases", tc.data, []map[string]any{}, "recently_accessed")
+			typed, ok := err.(*apperrors.Error)
+			if !ok || typed.StableSubtype != string(apperrors.SubtypePaginationInconsistent) || !typed.RetryableSet || typed.Retryable {
+				t.Fatalf("error = %#v, want non-retryable pagination_inconsistent", err)
+			}
+		})
 	}
 }

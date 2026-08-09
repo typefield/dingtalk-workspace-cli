@@ -24,10 +24,12 @@ package aitable
 import (
 	"encoding/json"
 	"fmt"
+	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -165,7 +167,11 @@ var BaseList = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(baseDiscoveryPayload(data, bases, "recently_accessed"))
+		payload, err := baseDiscoveryPayload("list_bases", data, bases, "recently_accessed")
+		if err != nil {
+			return err
+		}
+		return rt.Output(payload)
 	},
 }
 
@@ -222,7 +228,7 @@ func baseListFirst(m map[string]any, keys ...string) (any, bool) {
 // baseDiscoveryPayload keeps discovery results honest: neither recent-list
 // nor name-search is an authoritative inventory of every Base. Pagination
 // exhaustion and index coverage are therefore reported independently.
-func baseDiscoveryPayload(data map[string]any, bases []map[string]any, sourceKind string) map[string]any {
+func baseDiscoveryPayload(operation string, data map[string]any, bases []map[string]any, sourceKind string) (map[string]any, error) {
 	payload := map[string]any{
 		"count":                  len(bases),
 		"bases":                  bases,
@@ -234,20 +240,19 @@ func baseDiscoveryPayload(data map[string]any, bases []map[string]any, sourceKin
 	if sourceKind == "name_search_index" {
 		payload["indexCoverageKnown"] = false
 	}
-	for _, scope := range baseDiscoveryScopes(data) {
-		hasMore, known := baseDiscoveryBool(scope, "hasMore", "has_more")
-		if !known {
-			continue
-		}
+	hasMore, nextCursor, known, err := baseDiscoveryPagination(operation, data)
+	if err != nil {
+		return nil, err
+	}
+	if known {
 		payload["paginationKnown"] = true
 		payload["hasMore"] = hasMore
 		payload["endpointExhausted"] = !hasMore
-		if token, ok := baseListFirst(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "cursor"); ok && token != nil {
-			payload["nextCursor"] = token
+		if nextCursor != nil {
+			payload["nextCursor"] = nextCursor
 		}
-		break
 	}
-	return payload
+	return payload, nil
 }
 
 func baseDiscoveryScopes(data map[string]any) []map[string]any {
@@ -263,13 +268,111 @@ func baseDiscoveryScopes(data map[string]any) []map[string]any {
 	return scopes
 }
 
-func baseDiscoveryBool(data map[string]any, keys ...string) (bool, bool) {
-	for _, key := range keys {
-		if value, ok := data[key].(bool); ok {
-			return value, true
+// baseDiscoveryPagination combines pagination evidence across the top-level
+// response and common nested envelopes. Recent Base discovery is not an
+// authoritative inventory, but any endpoint pagination fact it does expose
+// must still be self-consistent. In particular, an outer and inner hasMore
+// disagreement, an open page without a continuation, or a terminal page with
+// a usable continuation is a protocol error, not a successful empty list.
+func baseDiscoveryPagination(operation string, data map[string]any) (hasMore bool, nextCursor any, known bool, err error) {
+	var cursorSet bool
+	var cursorTerminal bool
+	for _, scope := range baseDiscoveryScopes(data) {
+		scopeHasMore, scopeKnown, scopeErr := baseDiscoveryHasMore(scope)
+		if scopeErr != nil {
+			return false, nil, false, baseDiscoveryPaginationError(operation, scopeErr.Error())
 		}
+		if scopeKnown {
+			if known && hasMore != scopeHasMore {
+				return false, nil, false, baseDiscoveryPaginationError(operation, "分页响应的外层与嵌套 hasMore 相互矛盾")
+			}
+			hasMore, known = scopeHasMore, true
+		}
+
+		token, tokenSet, terminal, tokenErr := baseDiscoveryContinuation(scope)
+		if tokenErr != nil {
+			return false, nil, false, baseDiscoveryPaginationError(operation, tokenErr.Error())
+		}
+		if !tokenSet {
+			continue
+		}
+		if cursorSet && (cursorTerminal != terminal || (!terminal && fmt.Sprint(nextCursor) != fmt.Sprint(token))) {
+			return false, nil, false, baseDiscoveryPaginationError(operation, "分页响应包含互相矛盾的 continuation cursor")
+		}
+		cursorSet, cursorTerminal, nextCursor = true, terminal, token
 	}
-	return false, false
+	if !known {
+		return false, nil, false, nil
+	}
+	if hasMore && (!cursorSet || cursorTerminal) {
+		return false, nil, false, baseDiscoveryPaginationError(operation, "分页响应 hasMore=true 但缺少可继续使用的 nextCursor")
+	}
+	if !hasMore && cursorSet && !cursorTerminal {
+		return false, nil, false, baseDiscoveryPaginationError(operation, "分页响应 hasMore=false 却携带可继续使用的 nextCursor")
+	}
+	if !hasMore || cursorTerminal {
+		nextCursor = nil
+	}
+	return hasMore, nextCursor, true, nil
+}
+
+func baseDiscoveryHasMore(scope map[string]any) (bool, bool, error) {
+	var value bool
+	var known bool
+	for _, key := range []string{"hasMore", "has_more"} {
+		raw, present := scope[key]
+		if !present {
+			continue
+		}
+		parsed, ok := raw.(bool)
+		if !ok {
+			return false, false, fmt.Errorf("分页字段 %s 必须为 boolean", key)
+		}
+		if known && value != parsed {
+			return false, false, fmt.Errorf("分页字段 hasMore/has_more 相互矛盾")
+		}
+		value, known = parsed, true
+	}
+	return value, known, nil
+}
+
+func baseDiscoveryContinuation(scope map[string]any) (token any, present bool, terminal bool, err error) {
+	for _, key := range []string{"nextCursor", "next_cursor", "nextToken", "next_token"} {
+		raw, exists := scope[key]
+		if !exists {
+			continue
+		}
+		if present && fmt.Sprint(token) != fmt.Sprint(raw) {
+			return nil, false, false, fmt.Errorf("分页字段 nextCursor/nextToken 相互矛盾")
+		}
+		if raw != nil {
+			switch raw.(type) {
+			case string, float64, float32, int, int64, int32, json.Number:
+			default:
+				return nil, false, false, fmt.Errorf("分页 continuation cursor 类型 %T 不可识别", raw)
+			}
+		}
+		token, present, terminal = raw, true, baseDiscoveryTerminalCursor(raw)
+	}
+	return token, present, terminal, nil
+}
+
+func baseDiscoveryTerminalCursor(value any) bool {
+	if value == nil {
+		return true
+	}
+	text := strings.TrimSpace(fmt.Sprint(value))
+	return text == "" || text == "0" || text == "<nil>"
+}
+
+func baseDiscoveryPaginationError(operation, message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithOperation(operation),
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // BaseSearch 按名称关键词搜索 AI 表格（search_bases）。
@@ -323,7 +426,11 @@ var BaseSearch = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(baseDiscoveryPayload(data, bases, "name_search_index"))
+		payload, err := baseDiscoveryPayload("search_bases", data, bases, "name_search_index")
+		if err != nil {
+			return err
+		}
+		return rt.Output(payload)
 	},
 }
 
