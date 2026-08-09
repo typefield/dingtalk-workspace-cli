@@ -573,6 +573,14 @@ func memberListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 	return out, complete && len(out) == len(raw)
 }
 
+// ProjectMemberList is the reviewed member projection shared by canonical
+// Contact commands and composite shortcuts such as contact +team. Keeping one
+// projector prevents the two Agent entry points from disagreeing about
+// wrappers, stable user IDs, or fail-closed cardinality.
+func ProjectMemberList(data map[string]any) ([]map[string]any, bool) {
+	return memberListProjectWithStatus(data)
+}
+
 // memberListFindList returns the first slice found under the common list
 // container keys, or nil when none is present. get_dept_members_by_deptId nests
 // its members under deptUserList, so that key must be probed too.
