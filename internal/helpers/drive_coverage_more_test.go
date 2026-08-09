@@ -183,6 +183,107 @@ func TestDriveDownloadDryRunReturnsStructuredJSONWithoutCallingServer(t *testing
 	}
 }
 
+func TestDriveDownloadVersionUsesSameUnifiedDryRunContract(t *testing.T) {
+	caller := &scriptedToolCaller{dry: true}
+	destination := filepath.Join(t.TempDir(), "download-v3.txt")
+	stdout, stderr, err := executeDriveEdgeCapture(t, caller,
+		"download-version", "--node", "node-1", "--version", "3", "--output", destination, "--dry-run", "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if caller.calls != 0 {
+		t.Fatalf("dry-run calls = %d, want zero", caller.calls)
+	}
+	if stderr != "" {
+		t.Fatalf("dry-run stderr = %q, want empty", stderr)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("stdout is not JSON: %v\n%s", err, stdout)
+	}
+	if payload["ok"] != true || payload["outcome"] != "success" || payload["dry_run"] != true {
+		t.Fatalf("payload = %#v", payload)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok || data["executed"] != false || data["operation"] != "download_drive_file_version" || data["file_id"] != "node-1" || data["version"] != float64(3) || data["output"] != destination {
+		t.Fatalf("payload data = %#v", payload["data"])
+	}
+}
+
+func TestDriveDownloadVersionJSONKeepsStdoutMachineReadable(t *testing.T) {
+	oldGet := httpGetFile
+	httpGetFile = func(_ context.Context, _ string, _ map[string]string, destination string) error {
+		return os.WriteFile(destination, []byte("fixture"), 0o600)
+	}
+	t.Cleanup(func() { httpGetFile = oldGet })
+
+	destination := filepath.Join(t.TempDir(), "download-v3.txt")
+	caller := &scriptedToolCaller{steps: []scriptedToolStep{{
+		text: `{"resourceUrl":"https://download.invalid/download-v3.txt","fileName":"download-v3.txt","fileSize":7}`,
+	}}}
+	stdout, stderr, err := executeDriveEdgeCapture(t, caller,
+		"download-version", "--node", "node-1", "--version", "3", "--output", destination, "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("stdout is not one valid JSON value: %v\nstdout=%q\nstderr=%q", err, stdout, stderr)
+	}
+	if payload["ok"] != true || payload["outcome"] != "success" {
+		t.Fatalf("payload = %#v", payload)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if !ok || data["downloaded"] != true || data["file_id"] != "node-1" || data["version"] != float64(3) || data["path"] != destination || data["size"] != float64(7) {
+		t.Fatalf("payload data = %#v", payload["data"])
+	}
+	if strings.Contains(stdout, "[1/2]") || strings.Contains(stdout, "[2/2]") || strings.Contains(stdout, "[INFO]") {
+		t.Fatalf("stdout contains diagnostic text: %q", stdout)
+	}
+	if !strings.Contains(stderr, "[1/2]") || !strings.Contains(stderr, "[2/2]") {
+		t.Fatalf("stderr = %q, want download progress", stderr)
+	}
+}
+
+func TestDriveDownloadVersionAliasUsesUnifiedDryRunContract(t *testing.T) {
+	caller := &scriptedToolCaller{dry: true}
+	destination := filepath.Join(t.TempDir(), "download-v4.txt")
+	stdout, stderr, err := executeDriveEdgeCapture(t, caller,
+		"download", "--node", "node-1", "--version", "4", "--output", destination, "--dry-run", "--format", "json")
+	if err != nil {
+		t.Fatal(err)
+	}
+	if caller.calls != 0 {
+		t.Fatalf("dry-run calls = %d, want zero", caller.calls)
+	}
+	if stderr != "" {
+		t.Fatalf("dry-run stderr = %q, want empty", stderr)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(stdout), &payload); err != nil {
+		t.Fatalf("stdout is not JSON: %v\n%s", err, stdout)
+	}
+	data, ok := payload["data"].(map[string]any)
+	if payload["ok"] != true || payload["outcome"] != "success" || payload["dry_run"] != true || !ok || data["operation"] != "download_drive_file_version" || data["version"] != float64(4) {
+		t.Fatalf("payload = %#v", payload)
+	}
+}
+
+func TestDriveDownloadVersionLocalValidationIsTyped(t *testing.T) {
+	for name, args := range map[string][]string{
+		"non-positive version": {"download-version", "--node", "node-1", "--version", "0", "--output", "history.bin"},
+		"missing output":       {"download-version", "--node", "node-1", "--version", "3"},
+	} {
+		t.Run(name, func(t *testing.T) {
+			err := executeDriveEdge(t, &scriptedToolCaller{}, args...)
+			var typed *apperrors.Error
+			if !errors.As(err, &typed) || typed.Category != apperrors.CategoryValidation || typed.Reason == "" {
+				t.Fatalf("error = %#v, want typed validation", err)
+			}
+		})
+	}
+}
+
 func TestDriveDownloadMissingLocalInputsAreTypedValidation(t *testing.T) {
 	for _, args := range [][]string{
 		{"download", "--output", filepath.Join(t.TempDir(), "download.txt"), "--dry-run", "--format", "json"},

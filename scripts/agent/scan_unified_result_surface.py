@@ -11,6 +11,7 @@ directory; no result JSON is saved in the repository.
 from __future__ import annotations
 
 import argparse
+import json
 import os
 from datetime import date
 from pathlib import Path
@@ -46,6 +47,60 @@ def run(command: list[str], *, env: dict[str, str], timeout: int = 180) -> tuple
 
 def fenced(text: str) -> str:
     return text if text else "(no stdout/stderr)"
+
+
+def check_drive_download_version_dry_run(binary: Path, temp: Path, env: dict[str, str]) -> tuple[int, str]:
+    """Exercise both historical-download spellings without touching the network.
+
+    This is deliberately an Agent audit sample rather than a policy check.  The
+    two CLI paths share implementation through a compatibility route, so both
+    must preserve the same terminal JSON contract.  Only a compact structural
+    summary is returned; the transient JSON wire is never persisted in the
+    repository or copied into the Markdown evidence.
+    """
+    cases = (
+        ("download-version", ["drive", "download-version", "--node", "agent-audit-node", "--version", "3"]),
+        ("download --version alias", ["drive", "download", "--node", "agent-audit-node", "--version", "3"]),
+    )
+    summaries: list[str] = []
+    for label, command in cases:
+        destination = temp / ("history-" + label.replace(" ", "-") + ".bin")
+        try:
+            completed = subprocess.run(
+                [str(binary), *command, "--output", str(destination), "--dry-run", "--format", "json"],
+                cwd=ROOT,
+                env=env,
+                capture_output=True,
+                text=True,
+                timeout=90,
+            )
+        except subprocess.TimeoutExpired:
+            return 124, f"{label}: dry-run timeout"
+        except OSError as exc:
+            return 125, f"{label}: cannot start binary ({type(exc).__name__})"
+
+        try:
+            payload = json.loads(completed.stdout)
+        except json.JSONDecodeError:
+            return 1, f"{label}: stdout is not one JSON result (rc={completed.returncode})"
+        data = payload.get("data") if isinstance(payload, dict) else None
+        valid = (
+            completed.returncode == 0
+            and not completed.stderr.strip()
+            and isinstance(payload, dict)
+            and payload.get("ok") is True
+            and payload.get("outcome") == "success"
+            and payload.get("dry_run") is True
+            and "contract_version" not in payload
+            and isinstance(data, dict)
+            and data.get("executed") is False
+            and data.get("operation") == "download_drive_file_version"
+            and data.get("version") == 3
+        )
+        if not valid:
+            return 1, f"{label}: result contract mismatch (rc={completed.returncode})"
+        summaries.append(f"{label}: rc=0, one JSON success dry-run, version=3")
+    return 0, "; ".join(summaries)
 
 
 def main() -> int:
@@ -86,6 +141,11 @@ def main() -> int:
         sections.append(f"| 临时构建当前二进制 | {'PASS' if build_rc == 0 else f'REVIEW (rc={build_rc})'} |")
 
         if build_rc == 0:
+            history_rc, history_output = check_drive_download_version_dry_run(binary, temp, env)
+            evidence.append(("drive 历史版本下载 dry-run 输出对拍", history_rc, history_output))
+            sections.append(
+                f"| drive 历史版本下载 dry-run 输出对拍 | {'PASS' if history_rc == 0 else f'REVIEW (rc={history_rc})'} |"
+            )
             for check in CHECKS:
                 script = ROOT / "scripts" / "policy" / check
                 for label, command in (

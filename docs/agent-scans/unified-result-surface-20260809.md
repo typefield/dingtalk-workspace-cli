@@ -9,6 +9,7 @@
 | 项目 | 结果 |
 |---|---|
 | 临时构建当前二进制 | PASS |
+| drive 历史版本下载 dry-run 输出对拍 | PASS |
 | check-stdout-json.sh self-test | PASS |
 | check-stdout-json.sh offline surface | PASS |
 | check-string-bool.sh self-test | PASS |
@@ -24,6 +25,14 @@
 
 ```text
 (no stdout/stderr)
+```
+
+### drive 历史版本下载 dry-run 输出对拍
+
+退出码：`0`
+
+```text
+download-version: rc=0, one JSON success dry-run, version=3; download --version alias: rc=0, one JSON success dry-run, version=3
 ```
 
 ### check-stdout-json.sh self-test

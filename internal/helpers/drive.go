@@ -819,11 +819,14 @@ func newDriveCommand() *cobra.Command {
 			}
 			versionNum, _ := cmd.Flags().GetInt("version")
 			if versionNum <= 0 {
-				return fmt.Errorf("--version 必须为正整数，当前值: %d（版本号从 drive list --versions 获取）", versionNum)
+				return apperrors.NewValidation(
+					fmt.Sprintf("--version 必须为正整数，当前值: %d（版本号从 drive list --versions 获取）", versionNum),
+					apperrors.WithSubtype(apperrors.SubtypeInvalidArgument),
+				)
 			}
 			outputPath, _ := cmd.Flags().GetString("output")
 			if outputPath == "" {
-				return fmt.Errorf("flag --output is required")
+				return apperrors.NewValidation("flag --output is required", apperrors.WithSubtype(apperrors.SubtypeMissingRequiredFlags))
 			}
 
 			// fail-fast：分片下载参数校验
@@ -832,19 +835,26 @@ func newDriveCommand() *cobra.Command {
 				return err
 			}
 			dlOpts.logf = func(format string, a ...any) {
-				deps.Out.PrintInfo(fmt.Sprintf(format, a...))
+				fmt.Fprintf(cmd.ErrOrStderr(), "[INFO] "+format+"\n", a...)
 			}
 
 			if deps.Caller.DryRun() {
-				deps.Out.PrintKeyValue("操作", "下载文件历史版本")
-				deps.Out.PrintKeyValue("节点ID", fileID)
-				deps.Out.PrintKeyValue("版本号", fmt.Sprintf("%d", versionNum))
-				deps.Out.PrintKeyValue("输出", outputPath)
-				return nil
+				preview := map[string]any{
+					"dry_run":   true,
+					"executed":  false,
+					"operation": "download_drive_file_version",
+					"file_id":   fileID,
+					"version":   versionNum,
+					"output":    outputPath,
+				}
+				if output.UsesUnifiedResult(cmd) {
+					delete(preview, "dry_run")
+				}
+				return writeCommandPayload(cmd, preview)
 			}
 
 			ctx := cmd.Context()
-			deps.Out.PrintInfo("[1/2] 获取历史版本下载链接...")
+			fmt.Fprintln(cmd.ErrOrStderr(), "[1/2] 获取历史版本下载链接...")
 			dlArgsMap := map[string]any{
 				"nodeId":  fileID,
 				"version": versionNum,
@@ -864,8 +874,9 @@ func newDriveCommand() *cobra.Command {
 				}
 				outputPath = filepath.Join(outputPath, filename)
 			}
-			deps.Out.PrintInfo(fmt.Sprintf("[2/2] 下载文件到 %s ...", outputPath))
-			dlOpts.knownSize = parseDownloadFileSize(text)
+			fmt.Fprintf(cmd.ErrOrStderr(), "[2/2] 下载文件到 %s ...\n", outputPath)
+			expectedSize := parseDownloadFileSize(text)
+			dlOpts.knownSize = expectedSize
 			dlOpts.nodeID = fileID
 			dlOpts.version = versionNum
 			fetchCred := func(fctx context.Context) (string, map[string]string, int, error) {
@@ -893,11 +904,49 @@ func newDriveCommand() *cobra.Command {
 				}
 				return err
 			}
-			deps.Out.PrintInfo(fmt.Sprintf("下载完成: %s", outputPath))
-			return nil
+			info, statErr := os.Stat(outputPath)
+			if statErr != nil {
+				return apperrors.NewInternal("下载完成后无法读取本地文件信息",
+					apperrors.WithSubtype(apperrors.SubtypeDownloadOutputUnavailable),
+					apperrors.WithExecutionStarted(true),
+					apperrors.WithDetails(map[string]any{"path": outputPath}),
+					apperrors.WithCause(statErr),
+				)
+			}
+			actualSize := info.Size()
+			if expectedSize > 0 && actualSize != expectedSize {
+				return apperrors.NewAPI("下载文件长度与服务端元数据不一致",
+					apperrors.WithSubtype(apperrors.SubtypeDownloadSizeMismatch),
+					apperrors.WithExecutionStarted(true),
+					apperrors.WithRetryable(true),
+					apperrors.WithDetails(map[string]any{
+						"expected_size": expectedSize,
+						"actual_size":   actualSize,
+						"path":          outputPath,
+						"version":       versionNum,
+					}),
+					apperrors.WithActions(fmt.Sprintf("重新下载：dws drive download-version --node %q --version %d --output %q --format json", fileID, versionNum, outputPath)),
+				)
+			}
+
+			result := map[string]any{
+				"downloaded": true,
+				"file_id":    fileID,
+				"version":    versionNum,
+				"path":       outputPath,
+				"size":       actualSize,
+			}
+			if expectedSize > 0 {
+				result["verification"] = map[string]any{
+					"state":  "size_verified",
+					"method": "source_file_size",
+				}
+			}
+			return writeCommandPayload(cmd, result)
 		},
 	}
 	DeclareLeafMetadata(driveDownloadVersionCmd, LeafSpec{
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
@@ -916,6 +965,7 @@ func newDriveCommand() *cobra.Command {
 				Availability: "available",
 				Reason:       "Reviewed unpinned remote adapter: this executable CLI wrapper calls a remote helper that is absent from the pinned MCP metadata snapshot; no single pinned semantically equivalent interface_ref can represent the command.",
 			},
+			DryRun: &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest, RemoteReads: false},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "下载钉盘普通文件的指定历史版本到本地（两步下载：取签名 URL 后 HTTP GET）",
 				UseWhen: []string{
