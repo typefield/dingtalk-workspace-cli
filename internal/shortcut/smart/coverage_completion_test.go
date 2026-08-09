@@ -328,30 +328,30 @@ func TestCrossPlatformCoverageSearchValidationAndTimeErrors(t *testing.T) {
 
 func TestCrossPlatformCoverageSearchPaginationFailureModes(t *testing.T) {
 	cases := []struct {
-		name      string
-		responses []string
-		failAt    int
-		args      []string
-		wantError bool
+		name        string
+		responses   []string
+		failAt      int
+		args        []string
+		wantOutcome string
 	}{
-		{name: "initial error", failAt: 1, args: []string{"--query", "x"}, wantError: true},
+		{name: "initial error", failAt: 1, args: []string{"--query", "x"}, wantOutcome: "failure"},
 		{
 			name: "duplicate and inferred cursor",
 			responses: []string{
 				`{"result":{"messages":[{"openMessageId":"m1"},{"openMessageId":"m1"}],"nextCursor":"c2"}}`,
 				`{"result":{"messages":[],"hasMore":false}}`,
 			},
-			args: []string{"--query", "x", "--page-all", "--no-enrich"},
+			args: []string{"--query", "x", "--page-all", "--no-enrich"}, wantOutcome: "success",
 		},
 		{
 			name:      "stalled cursor",
 			responses: []string{`{"result":{"messages":[],"hasMore":true,"nextCursor":"same"}}`},
-			args:      []string{"--query", "x", "--cursor", "same", "--page-all", "--no-enrich"},
+			args:      []string{"--query", "x", "--cursor", "same", "--page-all", "--no-enrich"}, wantOutcome: "partial_failure",
 		},
 		{
 			name:      "page limit",
 			responses: []string{`{"result":{"messages":[],"hasMore":true,"nextCursor":"next"}}`},
-			args:      []string{"--query", "x", "--page-all", "--page-limit", "1", "--no-enrich"},
+			args:      []string{"--query", "x", "--page-all", "--page-limit", "1", "--no-enrich"}, wantOutcome: "success",
 		},
 	}
 	for _, tc := range cases {
@@ -365,24 +365,29 @@ func TestCrossPlatformCoverageSearchPaginationFailureModes(t *testing.T) {
 			var output bytes.Buffer
 			root.SetOut(&output)
 			root.SetArgs(append([]string{"chat", "+search-msg", "--yes"}, tc.args...))
-			err := root.Execute()
-			if (err != nil) != tc.wantError {
-				t.Fatalf("error = %v, wantError=%v", err, tc.wantError)
+			if err := root.Execute(); err != nil {
+				t.Fatalf("active command must render a typed result, got execute error: %v", err)
 			}
-			if err == nil {
-				var payload map[string]any
-				if decodeErr := json.Unmarshal(output.Bytes(), &payload); decodeErr != nil {
-					t.Fatalf("decode %q: %v", strings.TrimSpace(output.String()), decodeErr)
+			var envelope map[string]any
+			if decodeErr := json.Unmarshal(output.Bytes(), &envelope); decodeErr != nil {
+				t.Fatalf("decode %q: %v", strings.TrimSpace(output.String()), decodeErr)
+			}
+			if envelope["outcome"] != tc.wantOutcome {
+				t.Fatalf("outcome=%#v, want %q: %#v", envelope["outcome"], tc.wantOutcome, envelope)
+			}
+			if _, exists := envelope["complete"]; exists {
+				t.Fatalf("search must not publish the over-broad complete field: %#v", envelope)
+			}
+			if tc.wantOutcome == "success" {
+				data := searchMsgSuccessData(t, envelope)
+				if data["indexCoverageKnown"] != false {
+					t.Fatalf("search index coverage must remain explicitly unknown: %#v", data)
 				}
-				if _, exists := payload["complete"]; exists {
-					t.Fatalf("search must not publish the over-broad complete field: %#v", payload)
-				}
-				if payload["indexCoverageKnown"] != false {
-					t.Fatalf("search index coverage must remain explicitly unknown: %#v", payload)
-				}
+				meta, _ := envelope["meta"].(map[string]any)
+				pagination, _ := meta["pagination"].(map[string]any)
 				wantExhausted := tc.name == "duplicate and inferred cursor"
-				if payload["endpointExhausted"] != wantExhausted {
-					t.Fatalf("payload = %#v", payload)
+				if pagination["endpoint_exhausted"] != wantExhausted {
+					t.Fatalf("pagination = %#v", pagination)
 				}
 			}
 		})

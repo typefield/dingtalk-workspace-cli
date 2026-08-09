@@ -352,6 +352,7 @@ func TestCrossPlatformCoverageSearchMsgPreservesResolvedSenderWhenDisplayNameDif
 	if err := json.Unmarshal(output.Bytes(), &payload); err != nil {
 		t.Fatalf("decode output: %v\n%s", err, output.String())
 	}
+	payload = searchMsgSuccessData(t, payload)
 	filters, ok := payload["resolvedFilters"].(map[string]any)
 	if !ok {
 		t.Fatalf("resolvedFilters missing: %#v", payload)

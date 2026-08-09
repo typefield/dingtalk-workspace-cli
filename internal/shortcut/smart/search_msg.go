@@ -23,6 +23,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	chatshortcut "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chatmsg"
@@ -31,7 +32,7 @@ import (
 
 const searchMsgUseWhen = "当你要按关键词、发送者、@对象、会话、消息类型或机器人来源组合搜索 IM 消息时使用；会话与发送者过滤使用稳定 ID。默认查询近 7 天，也可指定精确起止时间。" +
 	"--page-all 会连续拉取游标页，默认再按消息 ID 分批富化详情；任何续页或富化失败都会保留已取得结果并返回逐项失败 ledger。" +
-	"endpointExhausted 只表示服务端游标耗尽；indexCoverageKnown 为 false 时，空结果不等于业务数据确定不存在。" +
+	"meta.pagination.endpoint_exhausted 只表示服务端游标耗尽；indexCoverageKnown 为 false 时，空结果不等于业务数据确定不存在。" +
 	"--download-resources 使用安全本地路径、默认不覆盖和原子落盘。"
 
 // SearchMsg is the semantic message-search entry point. It exposes the native
@@ -41,12 +42,16 @@ const searchMsgUseWhen = "当你要按关键词、发送者、@对象、会话�
 // output separates endpoint pagination exhaustion from unknown search-index
 // coverage and carries an explicit failure ledger.
 var SearchMsg = shortcut.Shortcut{
-	Service:     "chat",
-	Command:     "+search-msg",
-	Product:     "im",
-	Description: "按稳定 ID 和内容等条件跨会话搜索消息，可全量翻页并批量富化",
-	Intent:      searchMsgUseWhen,
-	Risk:        shortcut.RiskRead,
+	// This is the default Agent route for multi-dimensional IM search. Its
+	// pagination and failure ledger have an activated, single machine contract:
+	// callers keep using --format json; they never select an output generation.
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "chat",
+	Command:       "+search-msg",
+	Product:       "im",
+	Description:   "按稳定 ID 和内容等条件跨会话搜索消息，可全量翻页并批量富化",
+	Intent:        searchMsgUseWhen,
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -105,7 +110,7 @@ var SearchMsg = shortcut.Shortcut{
 		{Name: "sort", Type: shortcut.FlagString, Enum: []string{"asc", "desc"}, Desc: "--order 的 lark-cli 对齐别名（可选）"},
 		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页返回数量（1-100）", Default: "100"},
 		{Name: "page-size", Type: shortcut.FlagInt, Desc: "--limit 的 lark-cli 对齐别名（1-100）"},
-		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，翻页传上次的 nextCursor", Default: "0"},
+		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标，翻页传上次 meta.pagination.next_token", Default: "0"},
 		{Name: "page-token", Type: shortcut.FlagString, Desc: "--cursor 的 lark-cli 对齐别名"},
 		{Name: "page-all", Type: shortcut.FlagBool, Desc: "自动连续拉取所有游标页"},
 		{Name: "page-limit", Type: shortcut.FlagInt, Desc: "--page-all 的最大页数（1-40）", Default: "20"},
@@ -154,6 +159,13 @@ var SearchMsg = shortcut.Shortcut{
 		if rt.Bool("page-all") {
 			pageLimit = rt.Int("page-limit")
 		}
+		pageLedger, err := output.NewPageLedger(pageLimit)
+		if err != nil {
+			return apperrors.NewInternal("初始化消息搜索分页账本失败", apperrors.WithCause(err))
+		}
+		rollout := output.CommandRollout(rt.Command())
+		usesUnified := output.UsesUnifiedResult(rt.Command())
+		shadowsUnified := usesUnified || rollout == output.RolloutDualValidate
 		cursor := rt.StrFirst("page-token", "cursor")
 		messages := make([]map[string]any, 0)
 		seen := map[string]bool{}
@@ -169,7 +181,20 @@ var SearchMsg = shortcut.Shortcut{
 			params["cursor"] = cursor
 			data, callErr := rt.CallMCPData("im", "search_messages", params)
 			if callErr != nil {
+				if shadowsUnified {
+					if recordErr := pageLedger.RecordFailure(cursor, searchMsgReadFailureInfo(callErr)); recordErr != nil {
+						return apperrors.NewInternal("记录消息搜索读取失败状态失败", apperrors.WithCause(recordErr))
+					}
+				}
 				if pagesFetched == 0 {
+					if usesUnified {
+						return searchMsgOutputResult(rt, nil, pageLedger)
+					}
+					if rollout == output.RolloutDualValidate {
+						if resultErr := searchMsgValidateShadowResult(nil, pageLedger, rt.DryRun()); resultErr != nil {
+							return resultErr
+						}
+					}
 					return callErr
 				}
 				failures = append(failures, map[string]any{
@@ -192,13 +217,36 @@ var SearchMsg = shortcut.Shortcut{
 				messages = append(messages, message)
 			}
 
+			var unifiedNextCursor string
+			var unifiedTerminal bool
+			if shadowsUnified {
+				unifiedNextCursor, unifiedTerminal, err = observeSearchMsgUnifiedPage(pageLedger, cursor, data, !rt.Bool("no-reactions"))
+				if err != nil {
+					return apperrors.NewInternal("记录消息搜索分页证据失败", apperrors.WithCause(err))
+				}
+				if usesUnified && unifiedTerminal {
+					break
+				}
+			}
+
 			page := chatmsg.Pagination(data)
 			hasMoreValue, hasMoreKnown := page["hasMore"].(bool)
-			nextCursor = strings.TrimSpace(fmt.Sprint(page["nextCursor"]))
+			nextCursor = searchMsgCursorText(page["nextCursor"])
 			if !hasMoreKnown {
 				if nextCursor != "" && nextCursor != "<nil>" {
 					hasMoreValue = true
 				} else {
+					if usesUnified {
+						// A single page remains truthful, but does not prove endpoint
+						// exhaustion. A caller that explicitly requested page-all gets
+						// a partial result with the missing boundary recorded below.
+						if rt.Bool("page-all") {
+							if recordErr := pageLedger.RecordBoundaryFailure(searchMsgPaginationFailureInfo("下层未返回 hasMore 或 nextCursor，无法继续全量分页")); recordErr != nil {
+								return apperrors.NewInternal("记录消息搜索未知分页边界失败", apperrors.WithCause(recordErr))
+							}
+						}
+						break
+					}
 					failures = append(failures, map[string]any{
 						"stage": "search-pagination",
 						"error": "下层未返回 hasMore 或 nextCursor，无法证明结果完整",
@@ -216,6 +264,11 @@ var SearchMsg = shortcut.Shortcut{
 				break
 			}
 			if nextCursor == "" || nextCursor == "<nil>" || nextCursor == cursor {
+				if usesUnified {
+					// The observer already recorded a typed boundary failure while
+					// preserving this successfully decoded page.
+					break
+				}
 				failures = append(failures, map[string]any{
 					"stage": "search-page",
 					"error": "下层返回 hasMore=true，但缺少可继续且会前进的 nextCursor",
@@ -223,14 +276,20 @@ var SearchMsg = shortcut.Shortcut{
 				resultPartial = true
 				break
 			}
+			if usesUnified && unifiedNextCursor != "" {
+				cursor = unifiedNextCursor
+				continue
+			}
 			cursor = nextCursor
 		}
 		if rt.Bool("page-all") && hasMore && pagesFetched == pageLimit {
-			failures = append(failures, map[string]any{
-				"stage": "search-page-limit",
-				"error": fmt.Sprintf("达到 --page-limit=%d，仍有更多结果", pageLimit),
-			})
-			resultPartial = true
+			if !usesUnified {
+				failures = append(failures, map[string]any{
+					"stage": "search-page-limit",
+					"error": fmt.Sprintf("达到 --page-limit=%d，仍有更多结果", pageLimit),
+				})
+				resultPartial = true
+			}
 		}
 
 		enrichedCount := 0
@@ -240,6 +299,11 @@ var SearchMsg = shortcut.Shortcut{
 			failures = append(failures, enrichFailures...)
 			if len(enrichFailures) > 0 {
 				resultPartial = true
+				if shadowsUnified {
+					if recordErr := pageLedger.RecordPostPageFailure(searchMsgEnrichmentFailureInfo(enrichFailures)); recordErr != nil {
+						return apperrors.NewInternal("记录消息搜索富化失败状态失败", apperrors.WithCause(recordErr))
+					}
+				}
 			}
 		}
 
@@ -253,7 +317,6 @@ var SearchMsg = shortcut.Shortcut{
 			results = append(results, searchMsgProjectWithReactions(m, !rt.Bool("no-reactions")))
 		}
 		payload := map[string]any{
-			"contractVersion":    chatmsg.MessageListContractVersion,
 			"count":              len(results),
 			"messages":           results,
 			"pagesFetched":       pagesFetched,
@@ -276,13 +339,279 @@ var SearchMsg = shortcut.Shortcut{
 			payload["nextCursor"] = nextCursor
 		}
 		if rt.Bool("download-resources") {
-			chatshortcut.AttachMessageResourceDownloads(
-				payload,
-				chatshortcut.DownloadMessageResources(rt, messages, ""),
-			)
+			resourceLedger := chatshortcut.DownloadMessageResources(rt, messages, "")
+			chatshortcut.AttachMessageResourceDownloads(payload, resourceLedger)
+			if shadowsUnified {
+				if failureInfo := searchMsgResourceDownloadFailureInfo(resourceLedger); failureInfo != nil {
+					if recordErr := pageLedger.RecordPostPageFailure(failureInfo); recordErr != nil {
+						return apperrors.NewInternal("记录消息搜索资源下载失败状态失败", apperrors.WithCause(recordErr))
+					}
+				}
+			}
+		}
+		if usesUnified {
+			return searchMsgOutputResult(rt, payload, pageLedger)
+		}
+		if rollout == output.RolloutDualValidate {
+			if resultErr := searchMsgValidateShadowResult(payload, pageLedger, rt.DryRun()); resultErr != nil {
+				return resultErr
+			}
 		}
 		return rt.Output(payload)
 	},
+}
+
+// searchMsgOutputResult turns the one internal page ledger into the framework
+// result. It is intentionally the only activated exit: error, partial, and
+// pagination results therefore have the same stdout/exit-code contract.
+func searchMsgOutputResult(rt *shortcut.RuntimeContext, payload map[string]any, pageLedger *output.PageLedger) error {
+	result, err := searchMsgUnifiedResult(pageLedger, payload, rt.DryRun())
+	if err != nil {
+		return apperrors.NewInternal("生成消息搜索统一分页结果失败", apperrors.WithCause(err))
+	}
+	return rt.OutputResult(payload, result)
+}
+
+func searchMsgValidateShadowResult(payload map[string]any, pageLedger *output.PageLedger, dryRun bool) error {
+	result, err := searchMsgUnifiedResult(pageLedger, payload, dryRun)
+	if err != nil {
+		return apperrors.NewInternal("生成消息搜索影子分页结果失败", apperrors.WithCause(err))
+	}
+	if err := output.ValidateResult(result); err != nil {
+		return apperrors.NewInternal("消息搜索影子结果违反统一契约", apperrors.WithCause(err))
+	}
+	return nil
+}
+
+// searchMsgUnifiedResult exposes only business data in data. Legacy transport
+// fields such as contractVersion/partial/hasMore/nextCursor are deliberately
+// not copied: the framework owns outcome and meta.pagination.
+func searchMsgUnifiedResult(pageLedger *output.PageLedger, payload map[string]any, dryRun bool) (output.CommandResult, error) {
+	if pageLedger == nil {
+		return nil, fmt.Errorf("missing pagination ledger")
+	}
+	data := map[string]any{}
+	if payload != nil {
+		for _, key := range []string{"messages", "count", "enrichedCount", "indexCoverageKnown", "coverageScope", "queryRange", "resolvedFilters", "resourceDownloads"} {
+			if value, ok := payload[key]; ok {
+				data[key] = value
+			}
+		}
+	}
+	if pageLedger.State() == output.PageStateUnknown {
+		data["pagination_known"] = false
+	}
+	options := make([]output.ResultOption, 0, 1)
+	if dryRun {
+		options = append(options, output.WithDryRun())
+	}
+	return pageLedger.Result(data, options...)
+}
+
+func searchMsgReadFailureInfo(err error) *output.ErrorInfo {
+	message := "消息搜索分页读取失败"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          message,
+		Hint:             "从失败游标继续；不要重放已成功读取的页面。",
+		Operation:        "im/search_messages",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_read",
+		ExecutionStarted: &started,
+		Retryable:        true, // this command only performs idempotent reads
+	}
+}
+
+func searchMsgPaginationFailureInfo(message string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypePaginationInconsistent),
+		Message:          strings.TrimSpace(message),
+		Hint:             "保留已读取页面；不要把当前结果解释为 endpoint 已耗尽。",
+		Operation:        "im/search_messages",
+		Origin:           "mcp_gateway",
+		Stage:            "pagination_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func searchMsgProjectionFailureInfo(err error) *output.ErrorInfo {
+	message := "消息搜索响应无法可靠投影"
+	if err != nil && strings.TrimSpace(err.Error()) != "" {
+		message = err.Error()
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          message,
+		Hint:             "检查服务端返回结构；不要把未知响应形状解释为空搜索结果。",
+		Operation:        "im/search_messages",
+		Origin:           "mcp_gateway",
+		Stage:            "projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func searchMsgEnrichmentFailureInfo(failures []map[string]any) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          fmt.Sprintf("消息搜索富化未完成：%d 个批次失败", len(failures)),
+		Hint:             "保留搜索命中；查看失败项后只重新读取缺失消息详情。",
+		Operation:        "im/list_messages_by_ids",
+		Origin:           "mcp_gateway",
+		Stage:            "message_enrichment",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"failures": failures,
+		},
+	}
+}
+
+func searchMsgResourceDownloadFailureInfo(ledger map[string]any) *output.ErrorInfo {
+	failedCount := searchMsgLedgerCount(ledger["failedCount"])
+	if failedCount == 0 {
+		return nil
+	}
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Message:          fmt.Sprintf("消息搜索资源下载失败：%d 个资源未完成", failedCount),
+		Hint:             "保留已读取消息和已下载文件；查看失败资源后仅处理失败项。",
+		Operation:        "chat/message_resource_download",
+		Origin:           "local_resource_download",
+		Stage:            "resource_download",
+		ExecutionStarted: &started,
+		Details: map[string]any{
+			"resource_downloads": ledger,
+		},
+	}
+}
+
+func searchMsgLedgerCount(value any) int {
+	switch typed := value.(type) {
+	case int:
+		return typed
+	case int32:
+		return int(typed)
+	case int64:
+		return int(typed)
+	case float32:
+		return int(typed)
+	case float64:
+		return int(typed)
+	default:
+		return 0
+	}
+}
+
+// observeSearchMsgUnifiedPage converts IM's cursor fields into narrow framework
+// pagination evidence. Its strict message projection deliberately distinguishes
+// an empty, recognized list from an unknown response shape: the latter must
+// never become a successful empty search result.
+func observeSearchMsgUnifiedPage(
+	pageLedger *output.PageLedger,
+	cursor string,
+	data map[string]any,
+	includeReactions bool,
+) (nextToken string, terminal bool, err error) {
+	items, projectionErr := searchMsgItemsStrict(data)
+	if projectionErr != nil {
+		if recordErr := pageLedger.RecordFailure(cursor, searchMsgProjectionFailureInfo(projectionErr)); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	evidence := output.PageEvidence{
+		Cursor: cursor,
+		Items:  len(items),
+		Data:   map[string]any{"messages": searchMsgProjectItems(items, includeReactions)},
+	}
+	page := chatmsg.Pagination(data)
+	hasMore, known := page["hasMore"].(bool)
+	if !known {
+		token := searchMsgCursorText(page["nextCursor"])
+		if token != "" {
+			evidence.NextToken = token
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, searchMsgRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			return token, false, nil
+		}
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		return "", false, nil
+	}
+	if !hasMore {
+		if searchMsgCursorText(page["nextCursor"]) != "" {
+			if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+				return "", true, searchMsgRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+			}
+			if recordErr := pageLedger.RecordBoundaryFailure(searchMsgPaginationFailureInfo("hasMore=false，但同时携带可用 nextCursor")); recordErr != nil {
+				return "", true, recordErr
+			}
+			return "", true, nil
+		}
+		more := false
+		evidence.HasMore = &more
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", false, observeErr
+		}
+		return "", false, nil
+	}
+
+	token := searchMsgCursorText(page["nextCursor"])
+	if token == "" {
+		if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+			return "", true, observeErr
+		}
+		if recordErr := pageLedger.RecordBoundaryFailure(searchMsgPaginationFailureInfo("hasMore=true，但缺少可继续的 nextCursor")); recordErr != nil {
+			return "", true, recordErr
+		}
+		return "", true, nil
+	}
+	more := true
+	evidence.HasMore = &more
+	evidence.NextToken = token
+	if observeErr := pageLedger.ObservePage(evidence); observeErr != nil {
+		return "", true, searchMsgRecordUnifiedBoundary(pageLedger, evidence, observeErr.Error())
+	}
+	return token, false, nil
+}
+
+func searchMsgRecordUnifiedBoundary(pageLedger *output.PageLedger, evidence output.PageEvidence, message string) error {
+	evidence.HasMore = nil
+	evidence.NextToken = ""
+	if err := pageLedger.ObservePage(evidence); err != nil {
+		return err
+	}
+	return pageLedger.RecordBoundaryFailure(searchMsgPaginationFailureInfo(message))
+}
+
+func searchMsgCursorText(value any) string {
+	if value == nil {
+		return ""
+	}
+	text := strings.TrimSpace(fmt.Sprint(value))
+	if text == "" || text == "<nil>" || text == "0" {
+		return ""
+	}
+	return text
+}
+
+func searchMsgProjectItems(items []map[string]any, includeReactions bool) []map[string]any {
+	projected := make([]map[string]any, 0, len(items))
+	for _, item := range items {
+		projected = append(projected, searchMsgProjectWithReactions(item, includeReactions))
+	}
+	return projected
 }
 
 func validateSearchMsgWithResources(rt *shortcut.RuntimeContext) error {
@@ -594,6 +923,104 @@ func searchMsgToMaps(arr []any) []map[string]any {
 		}
 	}
 	return out
+}
+
+// searchMsgItemsStrict is the activated projection boundary. Legacy search
+// output historically tolerated a missing or malformed list as an empty one;
+// the Agent-facing result cannot make that equivalence because it converts a
+// service-shape failure into a false "no messages" answer.
+func searchMsgItemsStrict(data map[string]any) ([]map[string]any, error) {
+	if data == nil {
+		return nil, fmt.Errorf("response is empty")
+	}
+	scopes := []map[string]any{data}
+	if result, ok := data["result"].(map[string]any); ok {
+		scopes = append(scopes, result)
+	}
+	for _, scope := range scopes {
+		if raw, present := scope["conversationMessagesList"]; present {
+			groups, ok := raw.([]any)
+			if !ok {
+				return nil, fmt.Errorf("conversationMessagesList is not a list")
+			}
+			return searchMsgFlattenGroupsStrict(groups)
+		}
+		for _, key := range []string{"list", "messages", "messageList", "items", "data", "records", "result"} {
+			raw, present := scope[key]
+			if !present {
+				continue
+			}
+			if _, wrapped := raw.(map[string]any); wrapped {
+				continue
+			}
+			values, ok := raw.([]any)
+			if !ok {
+				return nil, fmt.Errorf("%s is not a message list", key)
+			}
+			return searchMsgValidateItems(values, key)
+		}
+	}
+	return nil, fmt.Errorf("response has no recognized message list")
+}
+
+func searchMsgFlattenGroupsStrict(groups []any) ([]map[string]any, error) {
+	out := make([]map[string]any, 0)
+	for groupIndex, rawGroup := range groups {
+		group, ok := rawGroup.(map[string]any)
+		if !ok || group == nil {
+			return nil, fmt.Errorf("conversationMessagesList[%d] is not an object", groupIndex)
+		}
+		rawMessages, present := group["messages"]
+		if !present {
+			return nil, fmt.Errorf("conversationMessagesList[%d] has no messages", groupIndex)
+		}
+		messages, ok := rawMessages.([]any)
+		if !ok {
+			return nil, fmt.Errorf("conversationMessagesList[%d].messages is not a list", groupIndex)
+		}
+		conversationID := searchMsgCursorText(group["openConversationId"])
+		conversationTitle := strings.TrimSpace(fmt.Sprint(group["title"]))
+		singleChat, hasSingleChat := group["singleChat"]
+		for messageIndex, rawMessage := range messages {
+			message, ok := rawMessage.(map[string]any)
+			if !ok || message == nil {
+				return nil, fmt.Errorf("conversationMessagesList[%d].messages[%d] is not an object", groupIndex, messageIndex)
+			}
+			if strings.TrimSpace(chatmsg.StableMessageID(message)) == "" {
+				return nil, fmt.Errorf("conversationMessagesList[%d].messages[%d] has no stable message ID", groupIndex, messageIndex)
+			}
+			item := make(map[string]any, len(message)+3)
+			for key, value := range message {
+				item[key] = value
+			}
+			if _, exists := item["openConversationId"]; !exists && conversationID != "" {
+				item["openConversationId"] = conversationID
+			}
+			if _, exists := item["conversationTitle"]; !exists && conversationTitle != "" && conversationTitle != "<nil>" {
+				item["conversationTitle"] = conversationTitle
+			}
+			if _, exists := item["singleChat"]; !exists && hasSingleChat {
+				item["singleChat"] = singleChat
+			}
+			out = append(out, item)
+		}
+	}
+	return out, nil
+}
+
+func searchMsgValidateItems(values []any, label string) ([]map[string]any, error) {
+	items := make([]map[string]any, 0, len(values))
+	for index, value := range values {
+		item, ok := value.(map[string]any)
+		if !ok || item == nil {
+			return nil, fmt.Errorf("%s[%d] is not an object", label, index)
+		}
+		if strings.TrimSpace(chatmsg.StableMessageID(item)) == "" {
+			return nil, fmt.Errorf("%s[%d] has no stable message ID", label, index)
+		}
+		items = append(items, item)
+	}
+	return items, nil
 }
 
 // searchMsgProject reshapes one matched message into {sender, time, text,

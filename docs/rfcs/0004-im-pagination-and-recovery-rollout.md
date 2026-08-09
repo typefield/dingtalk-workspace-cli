@@ -1,6 +1,6 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：已实施（PageLedger 已落地；首批五条 IM 分页命令已进入 `unified_active`，真实服务端返回仍待 Agent 取证）
+- 状态：已实施（PageLedger 已落地；首批六条 IM 分页命令已进入 `unified_active`，真实服务端返回仍待 Agent 取证）
 - 日期：2026-08-08
 - 适用范围：`internal/shortcut/chat` 与 `internal/shortcut/smart` 的可终结分页命令；
   主路径为只读，部分命令可选执行本地资源下载或导出
@@ -14,7 +14,7 @@
 IM 已经实现了游标去重、页数上限、满页无游标探测、跨页去重和失败记录。这些执行层
 算法应保留。RFC 起草时，其结果仍以每个 shortcut 自定义的
 `complete/hasMore/nextCursor/failures/partial` payload 表达，且大部分 IM shortcut 尚未
-声明统一返回 rollout。首批五条已经完成 active 迁移；其他 IM 分页入口仍按命令逐条迁移。
+声明统一返回 rollout。首批六条已经完成 active 迁移；其他 IM 分页入口仍按命令逐条迁移。
 
 本 RFC 将 IM 改造为两层：
 
@@ -128,7 +128,7 @@ legacy_only
   -> unified_stable
 ```
 
-迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批五条命令已经完成
+迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批六条命令已经完成
 `dual_validate → unified_active`：
 
 1. `chat +flag-list`；
@@ -136,6 +136,7 @@ legacy_only
 3. `chat +conversation-list`（`+chat-list` 为兼容别名）。
 4. `chat +thread-replies`。
 5. `chat +chat-messages`。
+6. `chat +search-msg`。
 
 `+chat-messages` 与 `+thread-replies` 的 `--download-resources`、以及
 `+chat-messages --output` 也使用该命令唯一的统一结果契约；Agent 仍只传
@@ -145,11 +146,11 @@ legacy_only
 
 每个 `dual_validate` 命令在晋级前必须：一次业务调用、legacy stdout 字节不变、shadow
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
-选择协议。这个历史阶段已经完成，当前五条命令都由其真实 `OutputRollout` 声明为
+选择协议。这个历史阶段已经完成，当前六条命令都由其真实 `OutputRollout` 声明为
 `unified_active`，不是靠测试临时覆盖声明来观察新信封。
 
 当前进度：`chat +flag-list`、`chat +chat-search`、`chat +conversation-list`、
-`chat +thread-replies` 与 `chat +chat-messages` 都在单次业务执行中构建
+`chat +thread-replies`、`chat +chat-messages` 与 `chat +search-msg` 都在单次业务执行中构建
 PageLedger，并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为
 `CommandResult`。历史 dual 阶段的 legacy JSON 逐字节 golden 仍保留，用于防止未来
 回退阶段意外修改旧输出。当前 active 回归直接验证 continuation 的
@@ -177,6 +178,16 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 `pagination_inconsistent` / `projection_unknown`。时间范围后处理失败也会中断统一结果，
 不会把已读页伪装成完整终态。
 
+`search-msg` 是 Skill 默认的多维消息检索入口。激活后，搜索响应中原有的
+`contractVersion`、`partial`、`hasMore`、`nextCursor`、`endpointExhausted` 与
+`paginationKnown` 不再进入统一结果的业务 data；框架的 `outcome` 和
+`meta.pagination` 是唯一的终态/续页表达。它继续在业务 data 明确保留
+`indexCoverageKnown:false`，因此空命中或 endpoint 耗尽均不能扩大为“消息业务上不存在”。
+已识别的空数组可成功；未知列表容器、非法项或缺稳定消息 ID 返回
+`projection_unknown`，`--page-all` 缺少端点分页证据返回 `partial_failure`；本地
+`--page-limit` 仅返回可续跑的 success，而不是伪造远端失败。富化和显式资源下载是在读取页
+之后发生的请求步骤，失败时保留成功页并返回 `partial_failure`。
+
 ## 6. 验收
 
 1. `hasMore=true` 必须带可续 `next_token`；`endpoint_exhausted:true` 禁止带 token。
@@ -189,10 +200,10 @@ success，而不是把安全预算耗尽伪装成远端失败；后续页读取�
 
 ### 6.1 2026-08-08 Agent 声明面扫描
 
-Agent 以当前源码构建临时 CLI，并逐项读取五条命令的 leaf Help、`schema --all` 中的精确
+Agent 以当前源码构建临时 CLI，并逐项读取六条命令的 leaf Help、`schema --all` 中的精确
 tool 声明，以及 multi chat Skill 的根路由和精确 reference。结果如下：
 
-- 五条命令均只公开全局 `--format`，没有输出协议选择参数；
+- 六条命令均只公开全局 `--format`，没有输出协议选择参数；
 - canonical path、`--page-all`、`--page-limit`、page size/token 约束与运行时一致；
 - Schema 的 effect/risk/confirmation/idempotency 均为 `read/low/not_required/idempotent`；
 - Skill 路由均指向当前 canonical path，没有要求 Agent 选择 rollout 状态；

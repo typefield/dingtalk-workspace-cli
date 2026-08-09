@@ -109,6 +109,9 @@ func TestCrossPlatformCoverageMessageReadShortcutsPublishResourceDownloadPlans(t
 			if tc.name == "thread replies" {
 				payload = threadRepliesSuccessData(t, payload)
 			}
+			if tc.name == "search" {
+				payload = searchMsgSuccessData(t, payload)
+			}
 			rows, ok := payload[tc.resultKey].([]any)
 			if !ok || len(rows) != 1 {
 				t.Fatalf("payload missing %s: %#v", tc.resultKey, payload)

@@ -13,7 +13,10 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
 
@@ -79,10 +82,18 @@ func searchMsgToolResult(text string) *edition.ToolResult {
 func executeSearchMsg(t *testing.T, caller *searchMsgExecutionCaller, args ...string) map[string]any {
 	t.Helper()
 	helpers.InitDeps(caller)
-	root := newPlatformCoverageRoot()
+	// These historical projection tests intentionally keep exercising the
+	// legacy renderer. Activated-contract behavior has dedicated envelope tests
+	// below, while this clone proves a rollback/dual phase still preserves the
+	// old payload bytes and fields.
+	declaration := SearchMsg
+	declaration.OutputRollout = frameworkoutput.RolloutLegacyOnly
+	root := corecmd.New(shortcutcore.FromShortcut(declaration))
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().String("format", "json", "")
 	var output bytes.Buffer
 	root.SetOut(&output)
-	root.SetArgs(append([]string{"chat", "+search-msg", "--yes"}, args...))
+	root.SetArgs(append([]string{"--yes"}, args...))
 	if err := root.Execute(); err != nil {
 		t.Fatal(err)
 	}
@@ -91,6 +102,18 @@ func executeSearchMsg(t *testing.T, caller *searchMsgExecutionCaller, args ...st
 		t.Fatalf("decode output: %v\n%s", err, output.String())
 	}
 	return payload
+}
+
+func searchMsgSuccessData(t *testing.T, envelope map[string]any) map[string]any {
+	t.Helper()
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("expected unified success envelope, got %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("expected unified search data, got %#v", envelope)
+	}
+	return data
 }
 
 func TestCrossPlatformCoverageSearchMsgPagesAndEnrichesWithAdvancedFilters(t *testing.T) {
