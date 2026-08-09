@@ -49,8 +49,8 @@ metadata:
 | "紧急 / 最高优先级 / 立即处理" | `dws todo task create ... --priority 40` |
 | "循环待办（每天）" | `dws todo task create ... --due "<首次截止ISO>" --recurrence "DTSTART:<UTC>\nRRULE:FREQ=DAILY;INTERVAL=1"` |
 | "批量建待办" | 有 JSON 文件时用 `python scripts/todo_batch_create.py todos.json --format json`；脚本已对可识别 taskId 逐项 `task get` 回读。读取 `succeeded[]/failed[]/unknown[]`，仅 `verification.state=verified` 才可报告终态成功；未知项禁止盲目重做 |
-| "今天 / 本周未完成待办" | `python scripts/todo_daily_summary.py [today\|tomorrow\|week]` |
-| "逾期待办" | `python scripts/todo_overdue_check.py` |
+| "今天 / 本周未完成待办" | `python scripts/todo_daily_summary.py [today\|tomorrow\|week] --format json` |
+| "逾期待办" | `python scripts/todo_overdue_check.py --format json` |
 | "标记完成 / 重开" | `dws todo task done --task-id <taskId> --status true\|false` |
 | "修改标题/截止时间/优先级" | `dws todo task update --task-id <taskId> ...` |
 | "删除待办" | `dws todo task delete --task-id <taskId>`（需用户确认） |
@@ -74,7 +74,7 @@ metadata:
 **触发**：查待办/今天本周待办/未完成/已完成。
 
 1. **执行（必须）**：`dws todo task list --status false|true --format json`（`false`=未完成、`true`=已完成、不传=全部）；`hasMore=true` 必须翻页。
-2. **摘要脚本（必须）**：今天/本周未完成 → `python scripts/todo_daily_summary.py today|tomorrow|week`；逾期 → `python scripts/todo_overdue_check.py`。
+2. **摘要脚本（必须）**：今天/本周未完成 → `python scripts/todo_daily_summary.py today|tomorrow|week --format json`；逾期 → `python scripts/todo_overdue_check.py --format json`。脚本返回 `partial_failure` / rc 7 时必须保留已成功页，只针对 `failed[]/unknown[]` 继续核查；不得把已读页面当完整列表。
 3. **详情（必须）**：`dws todo task get --task-id <taskId> --format json`；按主题筛选先 `task list` 再按标题过滤，**禁止**编造主题查询 flag。
 
 **禁止**：写 `--done true`（用 `--status true`）、编造主题筛选参数。

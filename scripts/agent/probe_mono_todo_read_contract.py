@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent probe for mono Todo read pagination and child-result preservation."""
+"""Agent probe for Mono/Multi Todo read pagination and child-result preservation."""
 
 from __future__ import annotations
 
@@ -16,8 +16,10 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = (
-    ROOT / "skills/mono/scripts/todo_daily_summary.py",
-    ROOT / "skills/mono/scripts/todo_overdue_check.py",
+    ("mono-daily", ROOT / "skills/mono/scripts/todo_daily_summary.py"),
+    ("mono-overdue", ROOT / "skills/mono/scripts/todo_overdue_check.py"),
+    ("multi-daily", ROOT / "skills/multi/dingtalk-todo/scripts/todo_daily_summary.py"),
+    ("multi-overdue", ROOT / "skills/multi/dingtalk-todo/scripts/todo_overdue_check.py"),
 )
 
 
@@ -101,8 +103,7 @@ def main() -> int:
         fake.chmod(0o755)
         marker = fake_dir / "calls"
 
-        for script in SCRIPTS:
-            label = script.stem
+        for label, script in SCRIPTS:
 
             success = run_script(script, "success", fake_dir, marker)
             payload = parse_result(success)
@@ -172,7 +173,7 @@ def main() -> int:
 
     passed = sum(ok for _, ok, _ in checks)
     lines = [
-        "# Mono Todo 只读分页结果契约 Agent 探针",
+        "# Mono/Multi Todo 只读分页结果契约 Agent 探针",
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
@@ -189,7 +190,7 @@ def main() -> int:
         "",
         f"结论：**{passed}/{len(checks)} PASS**。",
         "",
-        "范围：证明两个 Mono Todo 汇总入口不会把后续页失败压成完整成功，并保留 child meta；端点真实耗尽、数据覆盖率与服务端终态仍需 live evidence。",
+        "范围：证明 Mono/Multi 四个 Todo 汇总入口不会把后续页失败压成完整成功，并保留 child meta；端点真实耗尽、数据覆盖率与服务端终态仍需 live evidence。",
         "",
     ])
     report = "\n".join(lines)
