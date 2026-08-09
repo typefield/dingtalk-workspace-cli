@@ -361,6 +361,13 @@ func (rt *RuntimeContext) storePayload(tool string, params map[string]any, paylo
 }
 
 func (rt *RuntimeContext) resultForPayload(tool string, payload any, params ...map[string]any) output.CommandResult {
+	if rt.shortcut.ResultMapper != nil && tool != "" {
+		var invocation map[string]any
+		if len(params) > 0 {
+			invocation = params[0]
+		}
+		return rt.shortcut.ResultMapper(tool, payload, invocation, rt.DryRun())
+	}
 	if rt.shortcut.product() == "devapp" {
 		return helpers.DevAppCommandResultFromPayload(tool, payload, rt.DryRun(), params...)
 	}

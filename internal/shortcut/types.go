@@ -213,6 +213,13 @@ type Shortcut struct {
 	// non-nil error to abort with a validation message. Runs after built-in
 	// Required/Enum checks.
 	Validate func(rt *RuntimeContext) error
+	// ResultMapper projects the response of a terminal CallMCP invocation into
+	// the command's reviewed unified result. During dual validation the same
+	// business response is validated through this mapper but rendered by the
+	// legacy writer byte-for-byte; after activation only the mapped result is
+	// emitted. It is deliberately command-local and is never a user/Agent
+	// protocol selector. A nil mapper preserves the generic shortcut behavior.
+	ResultMapper func(tool string, payload any, params map[string]any, dryRun bool) output.CommandResult
 	// Execute performs the shortcut. It is required. Typically it builds a
 	// params map from rt's flags, calls rt.CallMCP, and rt.Output's the result.
 	Execute func(rt *RuntimeContext) error
