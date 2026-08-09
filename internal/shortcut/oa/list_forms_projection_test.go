@@ -14,12 +14,35 @@
 package oa
 
 import (
+	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"testing"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 )
+
+type oaDiscoveryCaller struct {
+	product string
+	tool    string
+	texts   map[string]string
+}
+
+func (c *oaDiscoveryCaller) CallTool(_ context.Context, product, tool string, _ map[string]any) (*edition.ToolResult, error) {
+	c.product, c.tool = product, tool
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: c.texts[tool]}}}, nil
+}
+
+func (*oaDiscoveryCaller) Format() string { return "json" }
+func (*oaDiscoveryCaller) DryRun() bool   { return false }
+func (*oaDiscoveryCaller) Fields() string { return "" }
+func (*oaDiscoveryCaller) JQ() string     { return "" }
 
 // TestListFormsProjectProcessCodeListShape guards against the projection-data-loss
 // class: list_user_visible_process nests the forms under result.processCodeList.
@@ -118,6 +141,141 @@ func TestOAListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 		t.Run(name+" malformed row", func(t *testing.T) {
 			_, err := project(map[string]any{"items": []any{"opaque"}})
 			assertOAProjectionUnknown(t, err)
+		})
+	}
+}
+
+func TestOAListProjectionRejectsDisplayOnlyRows(t *testing.T) {
+	for name, project := range map[string]func(map[string]any) ([]map[string]any, error){
+		"forms":  listFormsProject,
+		"search": searchFormsProject,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := project(map[string]any{"items": []any{map[string]any{"name": "Leave"}}})
+			assertOAProjectionUnknown(t, err)
+		})
+	}
+	for name, project := range map[string]func(map[string]any) ([]map[string]any, error){
+		"pending":   listPendingProject,
+		"executed":  listExecutedProject,
+		"submitted": listSubmittedProject,
+		"cc":        listCcProject,
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := project(map[string]any{"items": []any{map[string]any{"title": "Reimbursement"}}})
+			assertOAProjectionUnknown(t, err)
+		})
+	}
+}
+
+func TestOAApprovalDiscoveryUsesUnifiedOutput(t *testing.T) {
+	for name, declaration := range map[string]shortcut.Shortcut{
+		"list-pending":   ListPending,
+		"list-forms":     ListForms,
+		"search-forms":   SearchForms,
+		"list-executed":  ListExecuted,
+		"list-submitted": ListSubmitted,
+		"list-cc":        ListCc,
+	} {
+		if declaration.OutputRollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout = %q, want unified active", name, declaration.OutputRollout)
+		}
+	}
+}
+
+func TestOAApprovalDiscoveryUnifiedOutputHasOneMachineEnvelope(t *testing.T) {
+	tests := []struct {
+		name    string
+		decl    shortcut.Shortcut
+		tool    string
+		text    string
+		itemKey string
+		args    []string
+	}{
+		{
+			name:    "pending",
+			decl:    ListPending,
+			tool:    "list_pending_approvals",
+			text:    `{"result":{"values":[{"processInstanceId":"instance-1","title":"Leave"}]}}`,
+			itemKey: "instances",
+			args:    []string{"--start", "1", "--end", "2"},
+		},
+		{
+			name:    "forms",
+			decl:    ListForms,
+			tool:    "list_user_visible_process",
+			text:    `{"result":{"processCodeList":[{"processCode":"PROC-1","name":"Leave"}]}}`,
+			itemKey: "forms",
+		},
+		{
+			name:    "search forms",
+			decl:    SearchForms,
+			tool:    "search_form",
+			text:    `{"result":{"forms":[{"processCode":"PROC-1","name":"Leave"}]}}`,
+			itemKey: "forms",
+			args:    []string{"--query", "Leave"},
+		},
+		{
+			name:    "executed",
+			decl:    ListExecuted,
+			tool:    "get_done_tasks",
+			text:    `{"result":{"values":[{"processInstanceId":"instance-1","title":"Leave"}]}}`,
+			itemKey: "instances",
+		},
+		{
+			name:    "submitted",
+			decl:    ListSubmitted,
+			tool:    "get_submitted_instances",
+			text:    `{"result":{"values":[{"processInstanceId":"instance-1","title":"Leave"}]}}`,
+			itemKey: "instances",
+		},
+		{
+			name:    "cc",
+			decl:    ListCc,
+			tool:    "get_noticed_instances",
+			text:    `{"result":{"values":[{"processInstanceId":"instance-1","title":"Leave"}]}}`,
+			itemKey: "instances",
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			caller := &oaDiscoveryCaller{texts: map[string]string{tc.tool: tc.text}}
+			helpers.InitDeps(caller)
+			cmd := corecmd.New(shortcut.FromShortcut(tc.decl))
+			cmd.PersistentFlags().String("format", "json", "")
+			ctx, _ := output.WithResultStore(context.Background())
+			cmd.SetContext(ctx)
+			var stdout bytes.Buffer
+			cmd.SetOut(&stdout)
+			cmd.SetErr(&bytes.Buffer{})
+			cmd.SetArgs(append(tc.args, "--format", "json"))
+			if err := cmd.Execute(); err != nil {
+				t.Fatalf("execute: %v", err)
+			}
+			exitCode, emitted, err := output.EmitStoredResult(cmd)
+			if err != nil || !emitted || exitCode != 0 {
+				t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
+			}
+			if caller.product != "oa" || caller.tool != tc.tool {
+				t.Fatalf("route = %s/%s, want oa/%s", caller.product, caller.tool, tc.tool)
+			}
+			var envelope map[string]any
+			if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+				t.Fatalf("decode output: %v\n%s", err, stdout.String())
+			}
+			if envelope["ok"] != true || envelope["outcome"] != "success" {
+				t.Fatalf("envelope = %#v", envelope)
+			}
+			if _, leaked := envelope["contract_version"]; leaked {
+				t.Fatalf("result leaked removed version marker: %#v", envelope)
+			}
+			data := envelope["data"].(map[string]any)
+			if data["count"] != float64(1) || data["pagination_known"] != false || len(data[tc.itemKey].([]any)) != 1 {
+				t.Fatalf("data = %#v", data)
+			}
+			if envelope["meta"].(map[string]any)["count"] != float64(1) {
+				t.Fatalf("meta = %#v", envelope["meta"])
+			}
 		})
 	}
 }

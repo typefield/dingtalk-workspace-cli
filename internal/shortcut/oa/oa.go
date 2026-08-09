@@ -16,20 +16,24 @@
 package oa
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
 // ListPending — 查询待我处理的审批 (list_pending_approvals)
 var ListPending = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+list-pending",
-	Product:     "oa",
-	Description: "查询待我处理的审批（时间范围为 epoch 毫秒）",
-	Intent:      "当你想知道自己当前有哪些审批还没处理、需要清理审批待办或按时间段/关键字盘点待审批单时使用；传入起止时间（epoch 毫秒，可选关键字与分页），返回待我审批的实例列表，是后续 +get 查详情、+approve/+reject 处理的入口。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+list-pending",
+	Product:       "oa",
+	Description:   "查询待我处理的审批（时间范围为 epoch 毫秒）",
+	Intent:        "当你想知道自己当前有哪些审批还没处理、需要清理审批待办或按时间段/关键字盘点待审批单时使用；传入起止时间（epoch 毫秒，可选关键字与分页），返回待我审批的实例列表，是后续 +get 查详情、+approve/+reject 处理的入口。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -85,7 +89,7 @@ var ListPending = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
+		return oaListOutput(rt, "instances", instances)
 	},
 }
 
@@ -107,12 +111,13 @@ func listPendingProject(data map[string]any) ([]map[string]any, error) {
 // ListTasks — 查询待我审批的任务 ID (list_pending_tasks)
 // ListForms — 获取当前用户可见的审批表单列表 (list_user_visible_process)
 var ListForms = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+list-forms",
-	Product:     "oa",
-	Description: "获取当前用户可见的审批表单列表",
-	Intent:      "当你想浏览自己有权限发起哪些审批模板、或需要为 +list-initiated 等操作枚举 processCode 时使用；无需关键字，按游标分页返回当前用户可见的全部审批表单，适合不确定表单名称时先整体看一遍。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+list-forms",
+	Product:       "oa",
+	Description:   "获取当前用户可见的审批表单列表",
+	Intent:        "当你想浏览自己有权限发起哪些审批模板、或需要为 +list-initiated 等操作枚举 processCode 时使用；无需关键字，按游标分页返回当前用户可见的全部审批表单，适合不确定表单名称时先整体看一遍。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -155,7 +160,7 @@ var ListForms = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(forms), "forms": forms})
+		return oaListOutput(rt, "forms", forms)
 	},
 }
 
@@ -196,10 +201,12 @@ func oaFormResolveList(data map[string]any) ([]any, bool) {
 
 // oaFormProjectItem picks the stable identity/label fields of a single approval
 // form, probing candidate key spellings so it survives snake/camel drift.
-func oaFormProjectItem(m map[string]any) map[string]any {
+func oaFormProjectItem(m map[string]any) (map[string]any, error) {
 	row := map[string]any{}
-	if v, ok := oaFormFirst(m, "processCode", "process_code", "code"); ok {
+	if v, ok := oaStableID(m, "processCode", "process_code", "code"); ok {
 		row["processCode"] = v
+	} else {
+		return nil, oaProjectionUnknown("审批表单列表条目缺少可用于后续操作的稳定 processCode")
 	}
 	if v, ok := oaFormFirst(m, "name", "processName", "process_name", "flowTitle"); ok {
 		row["name"] = v
@@ -207,7 +214,7 @@ func oaFormProjectItem(m map[string]any) map[string]any {
 	if v, ok := oaFormFirst(m, "iconUrl", "icon_url", "iconName"); ok {
 		row["iconUrl"] = v
 	}
-	return row
+	return row, nil
 }
 
 // oaFormFirst returns the first present candidate key's value.
@@ -222,12 +229,13 @@ func oaFormFirst(m map[string]any, keys ...string) (any, bool) {
 
 // SearchForms — 按关键字模糊搜索可见审批表单 (search_form)
 var SearchForms = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+search-forms",
-	Product:     "oa",
-	Description: "按关键字模糊搜索当前用户可见的审批表单",
-	Intent:      "当你已知想找的审批大致名称（如「报销」「请假」）、想快速定位对应表单及其 processCode 时使用，比 +list-forms 全量列举更高效；传入关键字，返回名称或 processCode 匹配的表单，供后续 +list-initiated 按模板查询。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+search-forms",
+	Product:       "oa",
+	Description:   "按关键字模糊搜索当前用户可见的审批表单",
+	Intent:        "当你已知想找的审批大致名称（如「报销」「请假」）、想快速定位对应表单及其 processCode 时使用，比 +list-forms 全量列举更高效；传入关键字，返回名称或 processCode 匹配的表单，供后续 +list-initiated 按模板查询。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -268,7 +276,7 @@ var SearchForms = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(forms), "forms": forms})
+		return oaListOutput(rt, "forms", forms)
 	},
 }
 
@@ -283,12 +291,13 @@ func searchFormsProject(data map[string]any) ([]map[string]any, error) {
 // DingInfo — 获取审批任务的被催办人 userId (oa_ding_user)
 // ListExecuted — 获取当前用户已处理过的审批单列表 (get_done_tasks)
 var ListExecuted = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+list-executed",
-	Product:     "oa",
-	Description: "获取当前用户已经处理过的审批单列表",
-	Intent:      "当你想回顾自己历史上审批过（已同意/拒绝等）的单子、做复盘或查找某条已办审批时使用，区别于 +list-pending 的待办；按页码/关键字分页返回我已处理的审批单。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+list-executed",
+	Product:       "oa",
+	Description:   "获取当前用户已经处理过的审批单列表",
+	Intent:        "当你想回顾自己历史上审批过（已同意/拒绝等）的单子、做复盘或查找某条已办审批时使用，区别于 +list-pending 的待办；按页码/关键字分页返回我已处理的审批单。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -336,7 +345,7 @@ var ListExecuted = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
+		return oaListOutput(rt, "instances", instances)
 	},
 }
 
@@ -381,10 +390,12 @@ func oaInstanceResolveList(data map[string]any) ([]any, bool) {
 // oaInstanceProjectItem picks the stable identity/label fields of a single
 // approval instance, probing candidate key spellings so it survives
 // snake/camel drift.
-func oaInstanceProjectItem(m map[string]any) map[string]any {
+func oaInstanceProjectItem(m map[string]any) (map[string]any, error) {
 	row := map[string]any{}
-	if v, ok := oaFormFirst(m, "processInstanceId", "process_instance_id", "instanceId", "id"); ok {
+	if v, ok := oaStableID(m, "processInstanceId", "process_instance_id", "instanceId", "id"); ok {
 		row["processInstanceId"] = v
+	} else {
+		return nil, oaProjectionUnknown("审批实例列表条目缺少可用于后续操作的稳定 processInstanceId")
 	}
 	if v, ok := oaFormFirst(m, "title", "processTitle", "process_title", "name"); ok {
 		row["title"] = v
@@ -395,17 +406,18 @@ func oaInstanceProjectItem(m map[string]any) map[string]any {
 	if v, ok := oaFormFirst(m, "createTime", "create_time", "gmtCreate", "createdTime"); ok {
 		row["createTime"] = v
 	}
-	return row
+	return row, nil
 }
 
 // ListSubmitted — 获取当前用户已发起的审批单列表 (get_submitted_instances)
 var ListSubmitted = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+list-submitted",
-	Product:     "oa",
-	Description: "获取当前用户已发起的审批单列表",
-	Intent:      "当你想查看自己提交发起的审批单及其审批进度（如某笔报销/请假审到哪一步）时使用；按页码/关键字分页返回我发起的审批单，可据此决定是否 +revoke 撤销或催办。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+list-submitted",
+	Product:       "oa",
+	Description:   "获取当前用户已发起的审批单列表",
+	Intent:        "当你想查看自己提交发起的审批单及其审批进度（如某笔报销/请假审到哪一步）时使用；按页码/关键字分页返回我发起的审批单，可据此决定是否 +revoke 撤销或催办。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -453,7 +465,7 @@ var ListSubmitted = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
+		return oaListOutput(rt, "instances", instances)
 	},
 }
 
@@ -467,12 +479,13 @@ func listSubmittedProject(data map[string]any) ([]map[string]any, error) {
 
 // ListCc — 获取抄送当前用户的审批单列表 (get_noticed_instances)
 var ListCc = shortcut.Shortcut{
-	Service:     "oa",
-	Command:     "+list-cc",
-	Product:     "oa",
-	Description: "获取抄送当前用户的审批单列表",
-	Intent:      "当你想查看抄送给自己、需要知悉但无需审批的单子时使用；按页码/关键字分页返回抄送我的审批单列表，适合了解与自己相关但不用自己动手处理的审批动态。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "oa",
+	Command:       "+list-cc",
+	Product:       "oa",
+	Description:   "获取抄送当前用户的审批单列表",
+	Intent:        "当你想查看抄送给自己、需要知悉但无需审批的单子时使用；按页码/关键字分页返回抄送我的审批单列表，适合了解与自己相关但不用自己动手处理的审批动态。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -520,7 +533,7 @@ var ListCc = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(instances), "instances": instances})
+		return oaListOutput(rt, "instances", instances)
 	},
 }
 
@@ -544,9 +557,9 @@ func oaProjectFormList(data map[string]any) ([]map[string]any, error) {
 		if !ok {
 			return nil, oaProjectionUnknown("审批表单列表包含无法识别的条目")
 		}
-		row := oaFormProjectItem(m)
-		if len(row) == 0 {
-			return nil, oaProjectionUnknown("审批表单列表条目缺少可识别字段")
+		row, err := oaFormProjectItem(m)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, row)
 	}
@@ -564,9 +577,9 @@ func oaProjectInstanceList(data map[string]any) ([]map[string]any, error) {
 		if !ok {
 			return nil, oaProjectionUnknown("审批实例列表包含无法识别的条目")
 		}
-		row := oaInstanceProjectItem(m)
-		if len(row) == 0 {
-			return nil, oaProjectionUnknown("审批实例列表条目缺少可识别字段")
+		row, err := oaInstanceProjectItem(m)
+		if err != nil {
+			return nil, err
 		}
 		out = append(out, row)
 	}
@@ -579,6 +592,35 @@ func oaProjectionUnknown(message string) error {
 		apperrors.WithFailureStage("response_projection"),
 		apperrors.WithRetryable(false),
 	)
+}
+
+// oaListOutput is the shared active result path for approval discovery. Its
+// inputs expose page/cursor knobs but these projectors do not yet have verified
+// continuation facts, so they state that pagination truth is unknown instead
+// of turning the returned slice into a claim of endpoint exhaustion.
+func oaListOutput(rt *shortcut.RuntimeContext, key string, rows []map[string]any) error {
+	payload := map[string]any{
+		"count":            len(rows),
+		key:                rows,
+		"pagination_known": false,
+	}
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(len(rows))}),
+	))
+}
+
+func oaStableID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // RedirectTask — 转交审批任务给其他人 (redirect_task)

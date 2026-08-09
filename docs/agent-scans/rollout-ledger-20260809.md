@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:07:26+08:00
+扫描时间：2026-08-09T12:11:58+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1365 |
+| `legacy_only` | 1359 |
 | `dual_validate` | 24 |
-| `unified_active` | 94 |
+| `unified_active` | 100 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,9 +22,12 @@
 
 ### 状态迁移
 
-- REVIEW: `dws todo +list-attachment`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws todo +list-comment`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws todo +list-sub`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +list-cc`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +list-executed`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +list-forms`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +list-pending`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +list-submitted`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws oa +search-forms`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -1236,14 +1239,14 @@
 | `dws oa` | `legacy_only` | `legacy` | no |
 | `dws oa +approve-by` | `legacy_only` | `legacy` | yes |
 | `dws oa +done-approvals` | `legacy_only` | `legacy` | no |
-| `dws oa +list-cc` | `legacy_only` | `legacy` | no |
-| `dws oa +list-executed` | `legacy_only` | `legacy` | no |
-| `dws oa +list-forms` | `legacy_only` | `legacy` | no |
-| `dws oa +list-pending` | `legacy_only` | `legacy` | no |
-| `dws oa +list-submitted` | `legacy_only` | `legacy` | no |
+| `dws oa +list-cc` | `unified_active` | `unified` | no |
+| `dws oa +list-executed` | `unified_active` | `unified` | no |
+| `dws oa +list-forms` | `unified_active` | `unified` | no |
+| `dws oa +list-pending` | `unified_active` | `unified` | no |
+| `dws oa +list-submitted` | `unified_active` | `unified` | no |
 | `dws oa +my-initiated` | `legacy_only` | `legacy` | no |
 | `dws oa +pending` | `legacy_only` | `legacy` | no |
-| `dws oa +search-forms` | `legacy_only` | `legacy` | no |
+| `dws oa +search-forms` | `unified_active` | `unified` | no |
 | `dws oa approval` | `legacy_only` | `legacy` | no |
 | `dws oa approval append-task` | `legacy_only` | `legacy` | no |
 | `dws oa approval approve` | `legacy_only` | `legacy` | no |
