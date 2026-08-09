@@ -487,11 +487,53 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("keyword"); v != "" {
 				toolArgs["keyword"] = v
 			}
-			return callMCPTool("list_report_statistics", toolArgs)
+			return runAgoalReportStatistics(cmd, toolArgs)
 		},
 	}
 	reportListStatisticsCmd.Flags().String("request-id", "", "requestId (可选)")
 	reportListStatisticsCmd.Flags().String("keyword", "", "搜索规则名称 (可选)")
+	DeclareLeafMetadata(reportListStatisticsCmd, LeafSpec{
+		OutputRollout: output.RolloutDualValidate,
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "agoal",
+				Name:           "report_list_statistics",
+				CanonicalPath:  "agoal.report_list_statistics",
+				CLIPath:        "agoal report list-statistics",
+				PrimaryCLIPath: "agoal report list-statistics",
+			},
+			Description: "获取 Agoal 周月报规则的提交统计，并发现 submit-detail 所需的 templateId",
+			Result:      agoalReportStatisticsResultSpec(),
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "agoal", RPCName: "list_report_statistics"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "获取 Agoal 周月报规则的提交统计列表",
+				UseWhen: []string{
+					"需要查看周报、月报规则的按时、迟交或未提交人数时",
+					"需要发现 report submit-detail 所需的 templateId 时",
+				},
+				AvoidWhen: []string{
+					"需要人员级提交明细时，先从本命令取得 templateId，再使用 agoal report submit-detail",
+					"不要把返回列表解释为当前组织全部可见模板；上游没有提供目录覆盖或分页终态证据",
+				},
+				Examples: []string{
+					"dws agoal report list-statistics --format json",
+					"dws agoal report list-statistics --keyword <RULE_NAME> --format json",
+				},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "keyword", Property: "keyword"},
+				{Name: "request-id", Property: "requestId"},
+			},
+		},
+	})
 
 	reportSubmitDetailCmd := &cobra.Command{
 		Use:   "submit-detail",
