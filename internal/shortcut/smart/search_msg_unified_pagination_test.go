@@ -43,6 +43,7 @@ func runSearchMsgUnifiedResult(t *testing.T, fake *searchMsgExecutionCaller, arg
 	if _, present := envelope["contract_version"]; present {
 		t.Fatalf("unified envelope must not expose a protocol version: %#v", envelope)
 	}
+	assertNoLegacyProtocolMarker(t, envelope)
 	return envelope, exitCode
 }
 
