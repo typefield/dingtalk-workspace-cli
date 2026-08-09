@@ -57,7 +57,7 @@ def run_child_dws(
     except FileNotFoundError:
         return ChildDWSResult("failed", error={"type": "internal", "message": "未找到 dws 可执行文件。"}, command=command)
     except subprocess.TimeoutExpired:
-        return ChildDWSResult("unknown", error={"type": "network", "message": "dws 调用超时；请求是否已执行未知，请先核查审批状态。"}, command=command)
+        return ChildDWSResult("unknown", error={"type": "network", "message": "dws 调用超时；请求是否已执行未知，请先核查目标状态。"}, command=command)
     except OSError as exc:
         return ChildDWSResult("failed", error={"type": "internal", "message": f"无法启动 dws：{type(exc).__name__}"}, command=command)
     try:
@@ -92,7 +92,7 @@ def run_child_dws(
             else _error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
         )
         return ChildDWSResult("failed" if error["type"] in _NOT_EXECUTED_TYPES else "unknown", payload=payload, error=error, meta=meta, command=command)
-    return ChildDWSResult("unknown", error={"type": "api", "message": "dws 未返回可解析的终态结果；请求是否已执行未知，请先核查审批状态。", "exit_code": completed.returncode}, command=command)
+    return ChildDWSResult("unknown", error={"type": "api", "message": "dws 未返回可解析的终态结果；请求是否已执行未知，请先核查目标状态。", "exit_code": completed.returncode}, command=command)
 
 
 def batch_data(

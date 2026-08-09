@@ -1379,8 +1379,8 @@ dws attendance boss-check --plan-id 948964045503 --time "2026-05-13 18:00" --res
 
 | 脚本 | 场景 | 用法 |
 |------|------|------|
-| [attendance_my_record.py](../scripts/attendance_my_record.py) | 查看我今天/指定日期的考勤记录 | `python attendance_my_record.py today` |
-| [attendance_team_shift.py](../scripts/attendance_team_shift.py) | 查询团队成员本周排班 | `python attendance_team_shift.py --users userId1,userId2` |
+| [attendance_my_record.py](../scripts/attendance_my_record.py) | 查看我今天/指定日期的考勤记录；读取失败不伪装为空 | `python attendance_my_record.py today --format json` |
+| [attendance_team_shift.py](../scripts/attendance_team_shift.py) | 查询团队成员 7 天内班次；严格投影 | `python attendance_team_shift.py --users userId1,userId2 --start <YYYY-MM-DD> --end <YYYY-MM-DD> --format json` |
 | [attendance_report_common.py](../scripts/attendance_report_common.py) | 考勤报表导出公共模块（不可单独执行） | — |
 | [attendance_vacation_balance.py](../scripts/attendance_vacation_balance.py) | 假期余额列表 Excel 导出 | **禁止直接调用**，必须先读 [attendance-vacation.md](./attendance-vacation.md) 按工作流执行 |
 | attendance_report_detail.py | 考勤报表 — **明细粒度** |  **禁止直接调用**，必须先读 [attendance-report.md](./attendance-report.md) 按工作流执行 |
@@ -1456,8 +1456,8 @@ dws attendance boss-check --plan-id 948964045503 --time "2026-05-13 18:00" --res
 
 | 用户说 | 命令 |
 |--------|------|
-| "查我自己的打卡 / 某天考勤" | `python scripts/attendance_my_record.py 2026-03-08` 或 `dws attendance record get --user <userId> --date <YYYY-MM-DD>` |
-| "查团队排班" | `python scripts/attendance_team_shift.py --users <userId1,userId2> --from <YYYY-MM-DD> --to <YYYY-MM-DD>` |
+| "查我自己的打卡 / 某天考勤" | `python scripts/attendance_my_record.py 2026-03-08 --format json` 或 `dws attendance record get --user <userId> --date <YYYY-MM-DD> --format json` |
+| "查团队排班" | `python scripts/attendance_team_shift.py --users <userId1,userId2> --start <YYYY-MM-DD> --end <YYYY-MM-DD> --format json` |
 | "导出考勤报表 / 月度汇总 / 考勤明细 / 每日统计" | **必须先读 [attendance-report.md](./attendance-report.md)** 强制门禁后选择 `attendance_report_{detail,monthly,daily}.py` |
 | "创建班次 / 设置班次" | 先读 [attendance.md](./attendance.md) 的 `class create`，确认后执行 |
 | "导入排班 / 安排排班" | 先读 [attendance.md](./attendance.md) 的 `schedule import`，确认后执行 |

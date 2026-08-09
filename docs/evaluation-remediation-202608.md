@@ -615,7 +615,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   迁移清单混写成全仓结论是口径错误，已由独立 Multi 扫描纠正。
 - Multi 的 Agent 扫描见 `docs/agent-scans/skill-contract-audit-20260809.md`：
   57 个 Python 文件、42 个入口，当前 42/42 `--help` 成功；Help 文本已有 31/42
-  提及 `--dry-run`、22/42 提及脚本级 `--format`（这不是副作用安全证明）。这不是要求强行给所有工具增加两个参数，
+  提及 `--dry-run`、24/42 提及脚本级 `--format`（这不是副作用安全证明）。这不是要求强行给所有工具增加两个参数，
   （本轮为 5 个 AITable 写/上传/导出入口补齐脚本级 dry-run，其中 export 同时接入格式与任务结果边界），但仍不是要求 Skill 对固定输出、
   内部检查器和真正的 Agent 契约强行统一；各类能力必须分别声明，不能笼统宣称“所有脚本统一支持”。
 - 本轮修复了 Multi 9 个入口把 `--help` 当业务参数导致的非零返回；这只证明 Help
@@ -655,6 +655,14 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   `meta.pagination.endpoint_exhausted:true` 才表示请求深度内读取完成，历史
   `--parent-id` 仅保留为隐藏兼容别名。`drive-tree-contract-20260809.md` 以临时 child
   runner 对拍 Mono/Multi，26/26 PASS；不证明真实账号目录可见范围或服务端终态。
+- 考勤默认只读脚本 `attendance_my_record.py` / `attendance_team_shift.py` 原先也把
+  child 非零、超时、坏 JSON 和真实空结果统一压成“未查到”，且 Multi 两入口没有稳定
+  机器格式。现 Mono/Multi 四入口统一通过共享 child 结果边界：当前用户必须投影出稳定
+  `userId`，个人考勤只接受明确的详情对象/数组/null，团队班次只接受已知列表容器且每项
+  必须有 `userId`；child typed error 与投影漂移均为 failure，不再伪装空结果。团队输入
+  在调用前完成去重、有效日期和 7 天上限校验，dry-run 零 child。专项 Agent 探针
+  `attendance-basic-read-contract-20260809.md` 为 30/30 PASS；它不证明真实考勤权限、
+  组织覆盖或服务端终态。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。
