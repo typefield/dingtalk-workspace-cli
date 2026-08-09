@@ -22,10 +22,16 @@ func TestDriveListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 }
 
 func TestDriveListProjectionRejectsUntargetableRow(t *testing.T) {
-	_, err := listFilesProject(map[string]any{
-		"files": []any{map[string]any{"name": "only-a-display-name"}},
-	})
-	assertDriveProjectionUnknown(t, err)
+	for name, data := range map[string]map[string]any{
+		"missing id": {"files": []any{map[string]any{"name": "only-a-display-name"}}},
+		"empty id":   {"files": []any{map[string]any{"name": "empty-id", "dentryId": ""}}},
+		"numeric id": {"files": []any{map[string]any{"name": "numeric-id", "dentryId": float64(12)}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := listFilesProject(data)
+			assertDriveProjectionUnknown(t, err)
+		})
+	}
 }
 
 func TestDriveSearchProjectionRejectsUnknownRows(t *testing.T) {
@@ -59,10 +65,27 @@ func TestDriveSearchProjectionAcceptsNestedKnownContainers(t *testing.T) {
 }
 
 func TestDriveSearchDocsRejectsUntargetableRow(t *testing.T) {
-	_, err := searchDocsProject(map[string]any{
-		"docs": []any{map[string]any{"title": "display-only document"}},
-	})
-	assertDriveProjectionUnknown(t, err)
+	for name, data := range map[string]map[string]any{
+		"missing id": {"docs": []any{map[string]any{"title": "display-only document"}}},
+		"empty id":   {"docs": []any{map[string]any{"title": "empty-id", "nodeId": " "}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := searchDocsProject(data)
+			assertDriveProjectionUnknown(t, err)
+		})
+	}
+}
+
+func TestDriveSearchFilesRejectsEmptyStableIDs(t *testing.T) {
+	for name, data := range map[string]map[string]any{
+		"empty file id":  {"items": []any{map[string]any{"name": "empty-file", "dentryUuid": ""}}},
+		"empty space id": {"items": []any{map[string]any{"name": "empty-space", "spaceId": " "}}},
+	} {
+		t.Run(name, func(t *testing.T) {
+			_, err := searchFilesProject(data)
+			assertDriveProjectionUnknown(t, err)
+		})
+	}
 }
 
 func TestDriveSearchDocsRolloutIsUnifiedActive(t *testing.T) {

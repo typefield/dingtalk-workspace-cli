@@ -108,7 +108,7 @@ func listFilesProject(data map[string]any) ([]map[string]any, error) {
 		listFilesPick(row, m, "type", "type", "dentryType", "fileType", "spaceType")
 		listFilesPick(row, m, "dentryId", "dentryId", "dentryUuid", "id", "fileId", "nodeId")
 		listFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
-		if len(row) == 0 || row["dentryId"] == nil {
+		if len(row) == 0 || !driveHasStableID(row["dentryId"]) {
 			return nil, driveProjectionUnknown("文件条目缺少可用于后续操作的稳定 dentryId")
 		}
 		out = append(out, row)
@@ -145,6 +145,15 @@ func listFilesPick(dst, src map[string]any, canonical string, aliases ...string)
 			return
 		}
 	}
+}
+
+// driveHasStableID keeps output projection from treating an empty display
+// placeholder as an actionable identifier. Drive/node IDs are opaque strings:
+// accepting a numeric JSON value risks precision loss before an Agent can use
+// it in a follow-up command, so malformed non-string identifiers fail closed.
+func driveHasStableID(value any) bool {
+	id, ok := value.(string)
+	return ok && strings.TrimSpace(id) != ""
 }
 
 // Info → get_file_info
@@ -366,7 +375,7 @@ func searchFilesProject(data map[string]any) ([]map[string]any, error) {
 		searchFilesPick(row, m, "spaceId", "spaceId", "space_id", "workspaceId", "workspace_id")
 		searchFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
 		searchFilesPick(row, m, "creatorId", "creatorId", "creatorUserId", "creator", "creatorUid")
-		if len(row) == 0 || (row["dentryId"] == nil && row["spaceId"] == nil) {
+		if len(row) == 0 || (!driveHasStableID(row["dentryId"]) && !driveHasStableID(row["spaceId"])) {
 			return nil, driveProjectionUnknown("搜索结果文件条目缺少可用于后续操作的稳定 ID")
 		}
 		out = append(out, row)
@@ -497,7 +506,7 @@ func searchDocsProject(data map[string]any) ([]map[string]any, error) {
 		searchDocsPick(row, m, "nodeId", "nodeId", "id", "docId", "dentryUuid", "fileId")
 		searchDocsPick(row, m, "type", "type", "docType", "nodeType", "fileType")
 		searchDocsPick(row, m, "url", "url", "docUrl", "link", "webUrl")
-		if len(row) == 0 || row["nodeId"] == nil {
+		if len(row) == 0 || !driveHasStableID(row["nodeId"]) {
 			return nil, driveProjectionUnknown("文档搜索结果条目缺少可用于后续操作的稳定 nodeId")
 		}
 		out = append(out, row)
