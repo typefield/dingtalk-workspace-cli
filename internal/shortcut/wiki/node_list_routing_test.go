@@ -105,6 +105,30 @@ func TestNodeListRoutesToDocServerAndProjectsNodes(t *testing.T) {
 	}
 }
 
+func TestNodeListRejectsInvalidLimitBeforeRemoteCall(t *testing.T) {
+	for _, limit := range []string{"0", "51", "-1"} {
+		t.Run(limit, func(t *testing.T) {
+			caller := &nodeListRoutingCaller{}
+			helpers.InitDeps(caller)
+			cmd := corecmd.New(shortcut.FromShortcut(NodeList))
+			cmd.SilenceErrors = true
+			cmd.SilenceUsage = true
+			cmd.SetArgs([]string{"--workspace", "workspace-1", "--limit", limit})
+			err := cmd.Execute()
+			if err == nil {
+				t.Fatal("invalid limit unexpectedly succeeded")
+			}
+			var appErr *apperrors.Error
+			if !errors.As(err, &appErr) || appErr.StableSubtype != string(apperrors.SubtypeInvalidFlagValue) || appErr.ExitCode() != 3 {
+				t.Fatalf("error = %#v, want validation/invalid_flag_value rc=3", err)
+			}
+			if caller.calls != 0 {
+				t.Fatalf("remote calls = %d, want 0", caller.calls)
+			}
+		})
+	}
+}
+
 func TestNodeListFailsClosedOnProjectionAndPaginationUncertainty(t *testing.T) {
 	tests := []struct {
 		name          string
@@ -125,8 +149,34 @@ func TestNodeListFailsClosedOnProjectionAndPaginationUncertainty(t *testing.T) {
 			wantCursor:    "page-2",
 		},
 		{
+			name:          "real service next page token",
+			text:          `{"nodes":[],"hasMore":true,"nextPageToken":"pos:-1245174.5"}`,
+			wantExhausted: false,
+			wantCursor:    "pos:-1245174.5",
+		},
+		{
 			name:       "unknown projection",
 			text:       `{"result":{"unexpected":[]}}`,
+			wantReason: "projection_unknown",
+		},
+		{
+			name:       "non object row",
+			text:       `{"nodes":["invalid"],"hasMore":false}`,
+			wantReason: "projection_unknown",
+		},
+		{
+			name:       "row without stable node id",
+			text:       `{"nodes":[{"name":"display only"}],"hasMore":false}`,
+			wantReason: "projection_unknown",
+		},
+		{
+			name:       "row with non string node id",
+			text:       `{"nodes":[{"nodeId":42}],"hasMore":false}`,
+			wantReason: "projection_unknown",
+		},
+		{
+			name:       "row with invalid presentation type",
+			text:       `{"nodes":[{"nodeId":"node-1","name":{},"nodeType":"doc"}],"hasMore":false}`,
 			wantReason: "projection_unknown",
 		},
 		{

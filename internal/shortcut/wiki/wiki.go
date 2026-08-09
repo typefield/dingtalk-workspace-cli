@@ -256,10 +256,23 @@ var NodeList = shortcut.Shortcut{
 	Flags: []shortcut.Flag{
 		{Name: "workspace", Type: shortcut.FlagString, Desc: "知识库 ID", Required: true},
 		{Name: "folder", Type: shortcut.FlagString, Desc: "父节点 nodeId (不传则列出根目录)"},
-		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 50，最大 50)"},
+		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量（默认 50；显式 --limit 必须在 1-50 之间）"},
 		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标"},
 	},
+	Constraints: []shortcut.Constraint{
+		{Kind: shortcut.ConstraintCustom, Flags: []string{"limit"}, Description: "显式 --limit 必须在 1-50 之间"},
+	},
 	Tips: []string{`dws wiki +node-list --workspace <workspaceId> --folder <parentNodeId>`},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		if rt.Changed("limit") {
+			if limit := rt.Int("limit"); limit < 1 || limit > 50 {
+				return apperrors.NewValidation("--limit 必须在 1-50 之间",
+					apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
+					apperrors.WithHint("省略 --limit 使用默认值 50，或传入 1-50 之间的整数。"))
+			}
+		}
+		return nil
+	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		params := map[string]any{"workspaceId": rt.Str("workspace")}
 		if rt.Changed("folder") {
@@ -299,27 +312,38 @@ func nodeListProject(data map[string]any) []map[string]any {
 
 func nodeListProjectWithStatus(data map[string]any) ([]map[string]any, bool) {
 	raw, known := nodeListRawList(data)
+	if !known {
+		return nil, false
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, false
 		}
-		row := map[string]any{}
+		rawID := nodeListFirst(m, "nodeId", "node_id", "id", "uuid", "dentryUuid")
+		nodeID, ok := rawID.(string)
+		if !ok || strings.TrimSpace(nodeID) == "" {
+			return nil, false
+		}
+		row := map[string]any{"nodeId": nodeID}
 		if v := nodeListFirst(m, "name", "title", "nodeName"); v != nil {
-			row["name"] = v
-		}
-		if v := nodeListFirst(m, "nodeId", "node_id", "id", "uuid", "dentryUuid"); v != nil {
-			row["nodeId"] = v
+			name, ok := v.(string)
+			if !ok {
+				return nil, false
+			}
+			row["name"] = name
 		}
 		if v := nodeListFirst(m, "type", "nodeType", "docType", "fileType"); v != nil {
-			row["type"] = v
+			nodeType, ok := v.(string)
+			if !ok {
+				return nil, false
+			}
+			row["type"] = nodeType
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out, known
+	return out, true
 }
 
 // nodeListRawList locates the node array across candidate container keys,
@@ -393,7 +417,9 @@ func nodeListPaginationFromScope(scope map[string]any) (*output.Pagination, bool
 		return nil, false, nil
 	}
 	rawMore, hasMore := nodeListFirstPresent(scope, "hasMore", "has_more")
-	rawCursor, hasCursor := nodeListFirstPresent(scope, "nextCursor", "next_cursor", "nextToken", "next_token", "pageToken", "page_token")
+	rawCursor, hasCursor := nodeListFirstPresent(scope,
+		"nextPageToken", "next_page_token",
+		"nextCursor", "next_cursor", "nextToken", "next_token", "pageToken", "page_token")
 	if !hasMore && !hasCursor {
 		return nil, false, nil
 	}
@@ -477,7 +503,7 @@ func nodeListPaginationScopes(data map[string]any) []map[string]any {
 			scopes = append(scopes, inner)
 		}
 	}
-	return append(scopes, data)
+	return scopes
 }
 
 // nodeListFirst returns the first present value among candidate keys.
