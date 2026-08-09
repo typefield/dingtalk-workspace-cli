@@ -1,4 +1,4 @@
-# Agoal user rules Agent surface 审阅
+# Agoal user rules Agent active 审阅
 
 扫描日期：2026-08-10
 
@@ -13,10 +13,10 @@
 | 无业务参数 Help 发现 | PASS | `rc=0, canonical_flags=yes` |
 | Runtime Schema 从 exclusion 进入公开面 | PASS | `rc=0, parameters=2` |
 | Agoal 按叶渐进公开而非整域放开 | PASS | `public_agoal_tools=1` |
-| 当前用户真实只读规则发现 | PASS | `rc=0, rules=1, stable_ids=yes` |
+| 当前用户真实只读统一投影 | PASS | `rc=0, rules=1, stable_ids=yes` |
 
 ## 结论
 
 - `agoal user rules` 是 Agoal 整域 exclusion 中首个逐叶完成 Contract、read/low Safety、参数映射和真实只读取证的命令；其余 Agoal 叶仍保持 exclusion，不批量放开。
 - 这次只证明当前用户规则响应可被读取并含稳定规则 ID，不证明 Agoal 全域权限、规则覆盖或目标完成情况。
-- 本次 surface 准入扫描时业务输出仍为 legacy JSON；后续迁移证据见 `agoal-user-rules-dual-validation-20260810.md` 与 `agoal-user-rules-unified-projection-20260810.md`，不要把本历史快照解释为当前输出。
+- 当前命令处于 unified_active：普通 `--format json` 直接得到 `ok/outcome/data/meta`，不含协议选择参数或版本标记；`ruleCoverageKnown:false` 且不伪造分页终态。

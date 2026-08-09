@@ -221,6 +221,10 @@ dws agoal scorecard update --dept-id DEPT_ID --selected-time "2025-01-01T00:00:0
 # 11. 查看用户规则 → 提取 ruleId 和 periodId
 dws agoal user rules --user-id USER_ID --format json
 
+该命令直接返回统一 `ok/outcome/data/meta`。从 `data.rules[].ruleId` 取得规则 ID，从
+`data.rules[].periods.current[]/history[].periodId` 取得周期 ID；`meta.count` 只表示本次投影规则数。
+`data.ruleCoverageKnown:false` 表示服务端没有给出权威覆盖或分页终态，空数组不能扩大为“该用户业务上没有任何规则”。
+
 # 12. 查看用户目标
 dws agoal user objectives --user-id USER_ID --rule-id RULE_ID --period-ids "period1,period2"
 

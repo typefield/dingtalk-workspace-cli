@@ -2,6 +2,7 @@ package helpers
 
 import (
 	"bytes"
+	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -10,6 +11,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
+	"github.com/spf13/cobra"
 )
 
 func validAgoalUserRulesResponse() map[string]any {
@@ -170,6 +172,51 @@ func TestAgoalUserRulesDualValidatePreservesLegacyJSONExactlyOnce(t *testing.T) 
 	}
 	if legacyCalls != 1 || dualCalls != 1 {
 		t.Fatalf("business calls legacy/dual = %d/%d", legacyCalls, dualCalls)
+	}
+}
+
+func TestAgoalUserRulesUnifiedActiveEmitsOneFrameworkResult(t *testing.T) {
+	raw, err := json.Marshal(validAgoalUserRulesResponse())
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: string(raw)}}}
+	installScriptedCaller(t, caller)
+	ctx, _ := output.WithResultStore(context.Background())
+	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
+	root.SetContext(ctx)
+	root.PersistentFlags().String("format", "json", "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		_, _, err := output.EmitStoredResult(cmd)
+		return err
+	}
+	root.AddCommand(newAgoalCommand())
+	var stdout bytes.Buffer
+	root.SetOut(&stdout)
+	root.SetErr(&bytes.Buffer{})
+	root.SetArgs([]string{"agoal", "user", "rules", "--format", "json"})
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if caller.calls != 1 {
+		t.Fatalf("business calls = %d, want 1", caller.calls)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode stdout %q: %v", stdout.String(), err)
+	}
+	_, hasVersion := envelope["contract_version"]
+	if envelope["ok"] != true || envelope["outcome"] != "success" || hasVersion {
+		t.Fatalf("envelope = %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["ruleCoverageKnown"] != false {
+		t.Fatalf("data = %#v", envelope["data"])
+	}
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok || meta["count"] != float64(1) {
+		t.Fatalf("meta = %#v", envelope["meta"])
 	}
 }
 

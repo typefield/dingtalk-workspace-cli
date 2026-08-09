@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"context"
 	"encoding/json"
 	"errors"
 	"reflect"
@@ -9,6 +10,7 @@ import (
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contractfinal"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
 func TestAgoalUserRulesPublishesReviewedAgentContract(t *testing.T) {
@@ -49,7 +51,10 @@ func TestAgoalUserRulesRoutesExactlyOnce(t *testing.T) {
 	}
 	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: string(raw)}}}
 	installScriptedCaller(t, caller)
-	if err := executeFilterCoverage(t, newAgoalCommand(), "user", "rules", "--user-id", "user-1", "--request-id", "request-1"); err != nil {
+	root := newAgoalCommand()
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	if err := executeFilterCoverage(t, root, "user", "rules", "--user-id", "user-1", "--request-id", "request-1"); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
 	if caller.calls != 1 || caller.tool != "get_user_rules" {

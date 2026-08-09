@@ -33,7 +33,7 @@ def main() -> int:
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--live", action="store_true")
     parser.add_argument(
-        "--phase", choices=("surface", "dual", "active"), default="surface",
+        "--phase", choices=("surface", "dual", "active"), default="active",
         help="expected public result: surface/dual keep legacy bytes; active uses the unified envelope",
     )
     args = parser.parse_args()

@@ -400,7 +400,7 @@ scopeType 支持:
 	userRulesCmd.Flags().String("user-id", "", "要查询的人员钉钉 id (可选，默认取操作人)")
 	userRulesCmd.Flags().String("request-id", "", "requestId (可选)")
 	DeclareLeafMetadata(userRulesCmd, LeafSpec{
-		OutputRollout: output.RolloutDualValidate,
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
