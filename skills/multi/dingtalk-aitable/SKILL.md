@@ -80,7 +80,7 @@ metadata:
 | `dws aitable +record-update` | write | 批量更新记录，自动按 100 条分片并逐批读回验证 |
 | `dws aitable +record-upsert` | write | 按 recordId 自动拆分 create/update，按 100 条分片并读回验证 |
 | `dws aitable +record-upsert-by-key` | write | 按唯一字段值有则更新、无则创建记录，并读回验证 |
-| `dws aitable +resolve-base` | read | 按名称搜索多维表 Base 并解析出唯一 baseId（只读） |
+| `dws aitable +resolve-base` | read | 在名称搜索端点完整耗尽后解析唯一 Base（索引覆盖未知，只读） |
 | `dws aitable +resolve-table` | read | 在某个多维表 Base 的完整表目录内按名称解析唯一 tableId（只读） |
 | `dws aitable +role-create` | write | 在指定 Base 下创建自定义角色 |
 | `dws aitable +role-delete` | high-risk-write | 删除 Base 下指定的自定义角色（不可逆） |

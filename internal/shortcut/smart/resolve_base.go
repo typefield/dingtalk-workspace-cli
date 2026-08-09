@@ -23,6 +23,12 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/aitabletarget"
 )
 
+const resolveBaseIntent = "当你只知道某个多维表 Base 的名称、想把它解析成可直接用于后续工具的 baseId 时使用；" +
+	"内部严格校验 search_bases 的稳定字段和分页证据，只有搜索端点明确耗尽后才做大小写不敏感的精确名称匹配；显式 --fuzzy 才允许关键词包含匹配。" +
+	"0 个或多个候选都会以结构化错误失败并返回候选，绝不替你猜选。" +
+	"名称搜索索引覆盖始终未知，因此空结果只表示索引当前没有候选，不证明业务上不存在该 Base。" +
+	"这是纯只读操作，只做搜索与本地投影，不会修改任何 Base。"
+
 // ResolveBase: resolve a 多维表 Base by name keyword into a single baseId.
 //
 // This is the Base-level analogue of "resolve a user by name". It searches
@@ -40,17 +46,13 @@ import (
 //
 //	dws aitable +resolve-base --name 项目管理
 var ResolveBase = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+resolve-base",
 	Product:       "aitable",
 	Description:   "在名称搜索端点完整耗尽后解析唯一 Base（索引覆盖未知，只读）",
-	Intent: "当你只知道某个多维表 Base 的名称、想把它解析成可直接用于后续工具的 baseId 时使用；" +
-		"内部严格校验 search_bases 的稳定字段和分页证据，只有搜索端点明确耗尽后才做大小写不敏感的精确名称匹配；显式 --fuzzy 才允许关键词包含匹配。" +
-		"0 个或多个候选都会以结构化错误失败并返回候选，绝不替你猜选。" +
-		"名称搜索索引覆盖始终未知，因此空结果只表示索引当前没有候选，不证明业务上不存在该 Base。" +
-		"这是纯只读操作，只做搜索与本地投影，不会修改任何 Base。",
-	Risk: shortcut.RiskRead,
+	Intent:        resolveBaseIntent,
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -82,7 +84,7 @@ var ResolveBase = shortcut.Shortcut{
 		},
 		Selection: contract.SelectionSpec{
 			AgentSummary: "在名称搜索端点完整耗尽后解析唯一 Base（索引覆盖未知，只读）",
-			UseWhen:      []string{"当你只知道某个 Base 的名称并接受名称索引覆盖未知这一边界时使用；命令会穷尽连贯分页并只返回唯一稳定 baseId/baseName，绝不猜测。"},
+			UseWhen:      []string{resolveBaseIntent},
 			AvoidWhen:    []string{"已有 URL/baseId 时直接使用确定性标识；需要证明 Base 不存在或枚举全部可访问 Base 时不要依赖名称索引"},
 			Examples:     []string{"dws aitable +resolve-base --name 项目管理"},
 		},

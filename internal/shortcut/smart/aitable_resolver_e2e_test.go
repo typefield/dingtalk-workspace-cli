@@ -85,7 +85,7 @@ func TestCrossPlatformCoverageResolveBaseCLIExactMatchE2E(t *testing.T) {
 	if err != nil {
 		t.Fatalf("resolve base CLI error = %v", err)
 	}
-	for _, want := range []string{`"resolved": true`, `"matchType": "exact"`, `"baseId": "b2"`} {
+	for _, want := range []string{`"ok": true`, `"outcome": "success"`, `"resolved": true`, `"matchType": "exact"`, `"baseId": "b2"`, `"baseName": "项目"`, `"endpoint_exhausted": true`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
 			t.Fatalf("output missing %s: %s", want, out)
 		}

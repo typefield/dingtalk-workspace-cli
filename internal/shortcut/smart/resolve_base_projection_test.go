@@ -10,8 +10,8 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
-func TestResolveBaseDualValidatePreservesLegacyAndValidatesReviewedResult(t *testing.T) {
-	if ResolveBase.OutputRollout != output.RolloutDualValidate {
+func TestResolveBaseUnifiedActiveEmitsReviewedResult(t *testing.T) {
+	if ResolveBase.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout = %q", ResolveBase.OutputRollout)
 	}
 	if ResolveBase.Contract.Result == nil || len(ResolveBase.Contract.Result.DataSchema) == 0 {
@@ -27,14 +27,14 @@ func TestResolveBaseDualValidatePreservesLegacyAndValidatesReviewedResult(t *tes
 	if caller.calls != 1 || caller.tool != "search_bases" {
 		t.Fatalf("calls=%d tool=%q", caller.calls, caller.tool)
 	}
-	for _, want := range []string{`"resolved": true`, `"status": "resolved"`, `"matchType": "exact"`, `"baseId": "b1"`, `"name": "项目"`} {
+	for _, want := range []string{`"ok": true`, `"outcome": "success"`, `"resolved": true`, `"matchType": "exact"`, `"count": 1`, `"candidates"`, `"baseId": "b1"`, `"baseName": "项目"`, `"sourceKind": "name_search_index"`, `"indexCoverageKnown": false`, `"endpoint_exhausted": true`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
-			t.Fatalf("legacy output missing %s: %s", want, out)
+			t.Fatalf("unified output missing %s: %s", want, out)
 		}
 	}
-	for _, forbidden := range []string{`"ok"`, `"outcome"`, `"contract_version"`, `"candidates"`} {
+	for _, forbidden := range []string{`"contract_version"`, `"status"`, `"name":`} {
 		if bytes.Contains([]byte(out), []byte(forbidden)) {
-			t.Fatalf("dual validation changed legacy output with %s: %s", forbidden, out)
+			t.Fatalf("active output leaked legacy/protocol field %s: %s", forbidden, out)
 		}
 	}
 }
