@@ -117,6 +117,11 @@
 | 机器结果与退出码一致性 | PASS | ok |
 | 子 dws 严格布尔失败识别 | PASS | ok |
 | 子 dws 非布尔状态不伪装成功 | PASS | ok |
+| 子 dws 矛盾 ok/outcome 不伪装成功 | PASS | ok |
+| 子 dws 非字符串 outcome 不泄漏异常或伪装成功 | PASS | ok |
+| 子 dws pending 不伪装终态成功且保留任务 meta | PASS | ok |
+| failure 缺 typed error 会被统一出口拒绝 | PASS | ok |
+| meta/dry_run 非法类型会被统一出口拒绝 | PASS | ok |
 | 非零 SystemExit JSON 兜底 | PASS | ok |
 | 部分成功结果与退出码 | PASS | ok |
 | 可选 meta 承载 | PASS | ok |
@@ -131,7 +136,7 @@
 | 文件导入旧业务失败不误报终态 | PASS | ok |
 | 附件 PUT 未知不误报可用 | PASS | ok |
 
-结果：19/19 通过
+结果：24/24 通过
 
 ## 边界
 
@@ -196,7 +201,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T06:34:04`
+- generated_at: `2026-08-09T09:25:58`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
