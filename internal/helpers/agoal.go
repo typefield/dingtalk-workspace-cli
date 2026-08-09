@@ -195,10 +195,49 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
 			}
-			return callMCPTool("list_op_contract_fields", toolArgs)
+			return runAgoalContractFields(cmd, toolArgs)
 		},
 	}
 	contractFieldsCmd.Flags().String("request-id", "", "requestId (可选)")
+	DeclareLeafMetadata(contractFieldsCmd, LeafSpec{
+		OutputRollout: output.RolloutDualValidate,
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "agoal",
+				Name:           "contract_fields",
+				CanonicalPath:  "agoal.contract_fields",
+				CLIPath:        "agoal contract fields",
+				PrimaryCLIPath: "agoal contract fields",
+			},
+			Description: "获取当前组织的 Agoal 经营合约字段定义摘要",
+			Result:      agoalContractFieldsResultSpec(),
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "agoal", RPCName: agoalContractFieldsTool},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "获取当前组织的 Agoal 经营合约字段定义摘要",
+				UseWhen: []string{
+					"需要了解经营合约字段 ID、code、名称、类型和必填状态时",
+					"构造经营合约查询或更新前需要核对当前组织字段定义时",
+				},
+				AvoidWhen: []string{
+					"需要经营合约实例时使用 agoal contract list 或 detail，不要把字段定义当成实例数据",
+					"不要把本结果解释为企业长期稳定或全部字段目录；上游没有分页或覆盖终态证据",
+				},
+				Examples: []string{
+					"dws agoal contract fields --format json",
+					"dws agoal contract fields --request-id <REQUEST_ID> --format json",
+				},
+			},
+			Parameters: []contract.ParamDecl{{Name: "request-id", Property: "requestId"}},
+		},
+	})
 
 	contractDetailCmd := &cobra.Command{
 		Use:     "detail",

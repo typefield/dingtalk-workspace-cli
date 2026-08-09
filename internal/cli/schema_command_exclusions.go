@@ -59,7 +59,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 		Reviewed: true,
 		Commands: []string{
 			"agoal contract detail",
-			"agoal contract fields",
 			"agoal contract list",
 			"agoal contract update",
 			"agoal obj-template create-or-update",
