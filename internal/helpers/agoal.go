@@ -75,8 +75,12 @@ scopeType 支持:
 			if err := validateRequiredFlags(cmd, "scope-type", "scope-id"); err != nil {
 				return err
 			}
+			scopeType, err := normalizeAgoalScopeType(mustGetFlag(cmd, "scope-type"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
-				"scopeType": mustGetFlag(cmd, "scope-type"),
+				"scopeType": scopeType,
 				"openId":    mustGetFlag(cmd, "scope-id"),
 			}
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
@@ -171,8 +175,12 @@ scopeType 支持:
 			if err := validateRequiredFlags(cmd, "scope-type", "scope-id"); err != nil {
 				return err
 			}
+			scopeType, err := normalizeAgoalScopeType(mustGetFlag(cmd, "scope-type"))
+			if err != nil {
+				return err
+			}
 			toolArgs := map[string]any{
-				"scopeType": mustGetFlag(cmd, "scope-type"),
+				"scopeType": scopeType,
 				"openId":    mustGetFlag(cmd, "scope-id"),
 			}
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {

@@ -2,22 +2,28 @@
 
 扫描日期：2026-08-10
 
-> Agent 使用当前源码临时构建；当前用户 ID 由 `contact +me` 在内存中取得，不打印、不写入文件。真实响应只记录结构、数量和退出状态，不保存原始 JSON 或业务值，也不接入 CI / policy。
+> 当前用户、部门和业务对象 ID 仅在 Agent 内存中使用；报告只保存响应形状与计数，不保存原始 JSON，也不接入 CI / policy。
 
-## Result: KEEP_EXCLUDED
+## Result: PASS
 
-| 命令与范围 | rc | stderr | content 形状 | 条数 |
-|---|---:|---:|---|---:|
-| `agoal strategy list` / `PERSONAL` 当前用户 | 0 | 0 B | array | 0 |
-| `agoal strategy list` / `DEPT` 根部门 1 | 0 | 0 B | array | 0 |
-| `agoal contract list` / `PERSONAL` 当前用户 | 0 | 0 B | array | 0 |
-| `agoal contract list` / `DEPT` 根部门 1 | 0 | 0 B | array | 0 |
+| 检查项 | 结果 | 脱敏证据 |
+|---|---|---|
+| Agoal 与精确 exclusion 回归 | PASS | `rc=0` |
+| 临时构建当前源码 | PASS | `rc=0` |
+| 两条兼容命令 Help 可发现 | PASS | `canonical_flags=yes` |
+| 非法 scope-type 在远端调用前 fail-closed | PASS | `two commands typed validation rc=3` |
+| 脱敏抽样范围可建立 | PASS | `personal=yes, root=1, child_samples=10` |
+| strategy list 有界真实响应 | PASS | `sampled=12, empty=12, nonempty=0, typed_failure=0, null_success=0, unexpected=0` |
+| contract list 有界真实响应 | PASS | `sampled=12, empty=12, nonempty=0, typed_failure=0, null_success=0, unexpected=0` |
 
-四次响应顶层均为审阅到的 `code/content/message/requestId/success`，但所有业务数组为空。
+## 非空行字段证据
+
+- `strategy list`: UNVERIFIED（未观察到非空行）
+- `contract list`: UNVERIFIED（未观察到非空行）
 
 ## 结论
 
-- 空数组只能证明当前身份与所选范围本次没有返回行，不能证明组织业务上没有战略解码或经营合约。
-- 没有非空行就无法验证稳定业务 ID、字段类型、嵌套对象、重复项和后续 detail/update 所需上下文，因此不能据此发布 ResultSpec。
-- `agoal strategy list` 与 `agoal contract list` 继续留在 `agoal-out-of-surface` 精确 exclusion；取得脱敏非空样本后再逐命令进入 dual validation。
-- 本次没有为追求 exclusion 数量下降而把空数组或旧 passthrough 包装成统一成功契约。
+- 空数组只证明本次所选身份与范围没有返回行，不能扩大成组织不存在战略解码或经营合约。
+- `--scope-type` 只允许 DEPT/PERSONAL；大小写在本地归一，其他值在任何业务调用前以 `validation/invalid_flag_value`、rc=3 拒绝。
+- 未取得非空行时无法验证稳定业务 ID、嵌套类型和 detail/update 所需上下文，因此两条命令继续保持精确 exclusion。
+- 一旦有界抽样观察到非空行，应基于字段证据定义严格 ResultSpec，并按单命令 `legacy_only → dual_validate → unified_active` 迁移。
