@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T14:50:56+08:00
+扫描时间：2026-08-09T15:21:41+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1350 |
-| `dual_validate` | 25 |
-| `unified_active` | 108 |
+| `dual_validate` | 21 |
+| `unified_active` | 112 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,9 +18,22 @@
 
 ## Transition review
 
-未提供基线；这是初始 inventory，后续发布应以本报告作为 --baseline。
+基线：`rollout-ledger-before-659db6ce.md`（1483 条 runnable command node）。
 
-初始 inventory 不对状态迁移下结论；发布审阅必须补充兼容样本、观测窗口与回滚责任人。
+### 状态迁移
+
+- PASS: `dws devapp +event-list`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +list`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +permission-list`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +version-list`: `dual_validate` → `unified_active`
+
+### 新增可执行命令节点
+
+无新增可执行命令节点。
+
+### 移除可执行命令节点
+
+无移除可执行命令节点。
 
 ## Live command declaration
 
@@ -833,16 +846,16 @@
 | `dws devapp +delete` | `dual_validate` | `legacy` | no |
 | `dws devapp +disable` | `dual_validate` | `legacy` | no |
 | `dws devapp +enable` | `dual_validate` | `legacy` | no |
-| `dws devapp +event-list` | `dual_validate` | `legacy` | no |
+| `dws devapp +event-list` | `unified_active` | `unified` | no |
 | `dws devapp +event-subscribe` | `dual_validate` | `legacy` | yes |
 | `dws devapp +event-unsubscribe` | `dual_validate` | `legacy` | yes |
 | `dws devapp +get` | `unified_active` | `unified` | no |
-| `dws devapp +list` | `dual_validate` | `legacy` | no |
+| `dws devapp +list` | `unified_active` | `unified` | no |
 | `dws devapp +member-add` | `dual_validate` | `legacy` | no |
 | `dws devapp +member-list` | `dual_validate` | `legacy` | no |
 | `dws devapp +member-remove` | `dual_validate` | `legacy` | no |
 | `dws devapp +permission-add` | `dual_validate` | `legacy` | yes |
-| `dws devapp +permission-list` | `dual_validate` | `legacy` | no |
+| `dws devapp +permission-list` | `unified_active` | `unified` | no |
 | `dws devapp +permission-remove` | `dual_validate` | `legacy` | yes |
 | `dws devapp +robot-config` | `dual_validate` | `legacy` | yes |
 | `dws devapp +robot-disable` | `dual_validate` | `legacy` | yes |
@@ -853,7 +866,7 @@
 | `dws devapp +version-check-approval` | `unified_active` | `unified` | no |
 | `dws devapp +version-create` | `dual_validate` | `legacy` | yes |
 | `dws devapp +version-get` | `unified_active` | `unified` | no |
-| `dws devapp +version-list` | `dual_validate` | `legacy` | no |
+| `dws devapp +version-list` | `unified_active` | `unified` | no |
 | `dws devapp +version-publish` | `dual_validate` | `legacy` | yes |
 | `dws devapp +version-status` | `unified_active` | `unified` | no |
 | `dws devapp +webapp-config` | `dual_validate` | `legacy` | no |
