@@ -50,10 +50,11 @@ import (
 const dueTodayIntent = "当你想快速看清自己今天（planFinishDate 落在今天 00:00 到次日 00:00 之间）到期的待办、方便安排一天的工作时使用；内部按今天的本地时间窗，把 planFinishDateStart=今天0点、planFinishDateEnd=次日0点（毫秒时间戳）传给 get_user_todos_in_current_org 做服务端过滤，默认拉取你作为执行人(executor)的待办，可用 --role-types 覆盖角色范围，最后只打印这些今天到期待办的标题、状态、优先级、创建人、到期时间和任务 ID。这与 +overdue（已过期）不同：+overdue 看的是已经过了截止时间的待办，本命令看的是今天当天到期的待办。这是纯只读操作，只做列表与投影，不会修改或完成任何待办；若今天没有到期的待办则返回空列表。"
 
 var DueToday = shortcut.Shortcut{
-	// Preserve the historical renderer while checking the partial-preserving
-	// page result. This command can move to unified output only after real
-	// tenant evidence covers the todo API's undocumented page boundary.
-	OutputRollout: output.RolloutDualValidate,
+	// The command has completed its legacy-byte, projection, partial-result and
+	// live read-only review. The Todo API still does not expose an authoritative
+	// page boundary, so the unified data says pagination_known:false rather
+	// than inventing endpoint exhaustion.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "todo",
 	Command:       "+due-today",
 	Product:       "todo",

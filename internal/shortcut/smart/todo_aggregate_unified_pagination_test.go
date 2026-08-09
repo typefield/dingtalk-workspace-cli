@@ -46,14 +46,41 @@ func (c *todoAggregatePagingCaller) DryRun() bool   { return false }
 func (c *todoAggregatePagingCaller) Fields() string { return "" }
 func (c *todoAggregatePagingCaller) JQ() string     { return "" }
 
-func TestTodoAggregateRolloutStartsDualValidate(t *testing.T) {
+func TestTodoAggregateRolloutIsUnifiedActive(t *testing.T) {
 	for name, declaration := range map[string]shortcut.Shortcut{
 		"related-tasks": RelatedTasks,
 		"due-today":     DueToday,
 	} {
-		if declaration.OutputRollout != output.RolloutDualValidate {
-			t.Fatalf("%s rollout=%q, want dual_validate", name, declaration.OutputRollout)
+		if declaration.OutputRollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout=%q, want unified_active", name, declaration.OutputRollout)
 		}
+	}
+}
+
+func TestTodoAggregateUnifiedSuccessKeepsPaginationBoundaryHonest(t *testing.T) {
+	for name, declaration := range map[string]shortcut.Shortcut{
+		"related-tasks": RelatedTasks,
+		"due-today":     DueToday,
+	} {
+		t.Run(name, func(t *testing.T) {
+			envelope, exitCode, calls := runTodoAggregateUnified(t, declaration, &todoAggregatePagingCaller{
+				pages: []string{todoAggregatePage(t, 1, 1)},
+			})
+			if calls != 1 || exitCode != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+				t.Fatalf("envelope=%#v exit=%d calls=%d", envelope, exitCode, calls)
+			}
+			data, ok := envelope["data"].(map[string]any)
+			if !ok || data["pagination_known"] != false {
+				t.Fatalf("data=%#v, want explicit pagination_known=false", envelope["data"])
+			}
+			meta, ok := envelope["meta"].(map[string]any)
+			if !ok || meta["count"] != float64(1) {
+				t.Fatalf("meta=%#v, want count=1", envelope["meta"])
+			}
+			if _, exists := meta["pagination"]; exists {
+				t.Fatalf("meta=%#v must not invent endpoint exhaustion", meta)
+			}
+		})
 	}
 }
 

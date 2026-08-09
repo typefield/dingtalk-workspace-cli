@@ -51,10 +51,10 @@ import (
 const relatedTasksIntent = "当你想一次看清『所有和我有关的待办』——不管是我创建(creator)的、指派给我执行(executor)的、还是我作为参与人(participant)协作的——时使用；内部默认拉取你当前组织下 roleTypes=[\"creator\",\"executor\",\"participant\"] 三种角色的待办并集（这三个值正是待办列表支持的角色枚举），再在本地按任务 ID(taskId) 去重（同一条待办可能因多角色重复出现），把每条投影成标题、状态、优先级、创建人、计划完成时间和 taskId 打印出来。可用 --role-types 以逗号分隔覆盖默认角色（取值 creator/executor/participant），可用 --status 透传 todoStatus 过滤状态。这是纯只读操作，只做列表、去重与投影，不会创建或修改任何待办；若没有与你相关的待办则返回空列表。"
 
 var RelatedTasks = shortcut.Shortcut{
-	// The pager previously discarded all earlier cards on a later-page error.
-	// Dual validation now checks a partial-preserving candidate while leaving
-	// the established legacy bytes and error behavior untouched.
-	OutputRollout: output.RolloutDualValidate,
+	// The pager preserves all earlier cards on a later-page error. The command
+	// has completed its legacy-byte, projection, partial-result and live
+	// read-only review, so normal --format json now emits the unified result.
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "todo",
 	Command:       "+related-tasks",
 	Product:       "todo",

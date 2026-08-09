@@ -40,6 +40,12 @@ metadata:
 | `dws todo +todo-done` | write | 按标题关键词把我的某条待办标记完成（自动定位 taskId） |
 <!-- VISIBLE_SHORTCUTS_END -->
 
+`+due-today` 与 `+related-tasks` 使用普通 `--format json` 直接返回统一
+`ok/outcome/data/meta` 结果。上游 Todo 列表没有权威 continuation 事实，成功结果中的
+`data.pagination_known:false` 必须保留，不能据此宣称已经遍历全部待办；后续页失败时读取
+`partial_failure` 的 `succeeded[]/failed[]/unknown[]`，保留已读页并只恢复失败页，禁止把
+当前集合当完整结果或从头盲目重试。
+
 ## 意图表
 
 | 用户说 | 命令 |
