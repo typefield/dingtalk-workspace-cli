@@ -125,7 +125,11 @@ func latestMinutesTaskUUID(data map[string]any) (string, error) {
 }
 
 func latestMinutesUUID(m map[string]any) string {
-	for _, key := range []string{"taskUuid", "taskUUID", "uuid", "id"} {
+	// A generic id can be the Minutes document identifier rather than the
+	// asynchronous task identifier accepted by the detail endpoints. Treating
+	// it as taskUuid would select a different resource and turn an ambiguous
+	// list response into a misleading successful composite read.
+	for _, key := range []string{"taskUuid", "taskUUID", "uuid"} {
 		if s, ok := m[key].(string); ok && s != "" {
 			return s
 		}

@@ -39,6 +39,7 @@ func TestLatestMinutesTaskUUIDRejectsUnknownOrUntargetableResponse(t *testing.T)
 		"unknown container": {"result": map[string]any{"notice": "unrecognized"}},
 		"malformed row":     {"result": map[string]any{"itemList": []any{"invalid"}}},
 		"missing task uuid": {"result": map[string]any{"itemList": []any{map[string]any{"title": "display-only"}}}},
+		"generic id only":   {"result": map[string]any{"itemList": []any{map[string]any{"id": "minutes-document-id"}}}},
 	} {
 		t.Run(name, func(t *testing.T) {
 			_, err := latestMinutesTaskUUID(data)

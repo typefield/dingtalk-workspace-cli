@@ -34,6 +34,14 @@
 异常形状仍按各行的后续真实复验项继续取证。为保护隐私，本台账不保留实际标题、ID、
 邮箱、日历名或听记链接。
 
+## 2026-08-09 Minutes 最近听记目标选择复核
+
+`+latest-minutes`、`+action-items` 和 `+transcript` 在从列表选择后续详情目标时，只接受
+`taskUuid`、`taskUUID` 或 `uuid`。可能代表听记文档而非异步任务的通用 `id` 不再被当作
+task UUID；只有该字段的条目返回不可重试的 `projection_unknown`，不会在错误资源上继续读取。
+三条入口继续保持隐藏，未扩大 Agent 公开命令面。Agent 内存测试证据见
+`agent-scans/minutes-latest-target-projection-20260809.md`；真实服务端形状、排序和详情终态仍待隔离账号复验。
+
 ## 当前结论
 
 | 报告问题 | 当前状态 | 当前证据 | 剩余动作 |
