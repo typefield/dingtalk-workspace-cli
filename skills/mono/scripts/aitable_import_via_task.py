@@ -87,6 +87,22 @@ def business_status(result: ChildDWSResult, data: Mapping[str, Any]) -> Optional
     return status if isinstance(status, str) else None
 
 
+def child_metas(*entries: tuple[str, ChildDWSResult]) -> Optional[dict[str, Any]]:
+    """Preserve per-step child metadata without merging unrelated facts.
+
+    ``prepare_import_upload`` and ``import_data`` are separate requests.  A
+    later response must not overwrite pagination, task, or transport metadata
+    emitted by the earlier request.  Keep each fact under its stable step ID
+    so an Agent can associate it with the matching operation.
+    """
+    children = [
+        {"id": entry_id, "meta": dict(result.meta)}
+        for entry_id, result in entries
+        if result.meta
+    ]
+    return {"children": children} if children else None
+
+
 def child_failure(
     *,
     fmt: str,
@@ -163,6 +179,7 @@ def main() -> int:
             "json",
         ],
     )
+    prepare_metas = child_metas(("prepare_import_upload", prepare))
     if prepare.state != "success":
         return child_failure(
             fmt=args.format,
@@ -171,7 +188,7 @@ def main() -> int:
             execution_state="unknown" if prepare.state == "unknown" else "not_executed",
             plan=plan,
             error=prepare.error,
-            meta=prepare.meta,
+            meta=prepare_metas,
         )
     pdata = result_data(prepare)
     if pdata is None:
@@ -181,7 +198,7 @@ def main() -> int:
             phase="prepare_import_upload",
             execution_state="unknown",
             plan=plan,
-            meta=prepare.meta,
+            meta=prepare_metas,
         )
     upload_url = pdata.get("uploadUrl")
     import_id = pdata.get("importId")
@@ -192,7 +209,7 @@ def main() -> int:
             phase="prepare_import_upload",
             execution_state="unknown",
             plan=plan,
-            meta=prepare.meta,
+            meta=prepare_metas,
         )
 
     plan["importId"] = import_id
@@ -207,7 +224,7 @@ def main() -> int:
             execution_state="unknown" if upload.state == "unknown" else "not_executed",
             plan=plan,
             error=upload.error,
-            meta=prepare.meta,
+            meta=prepare_metas,
         )
 
     print("[3/3] trigger import_data", file=sys.stderr)
@@ -228,6 +245,10 @@ def main() -> int:
         ],
         timeout_sec=max(120, args.timeout_sec + 30),
     )
+    operation_metas = child_metas(
+        ("prepare_import_upload", prepare),
+        ("import_data", trigger),
+    )
     if trigger.state != "success":
         return child_failure(
             fmt=args.format,
@@ -236,7 +257,7 @@ def main() -> int:
             execution_state="unknown" if trigger.state == "unknown" else "not_executed",
             plan=plan,
             error=trigger.error,
-            meta=trigger.meta,
+            meta=operation_metas,
         )
     import_data = result_data(trigger)
     if import_data is None:
@@ -246,7 +267,7 @@ def main() -> int:
             phase="import_data",
             execution_state="unknown",
             plan=plan,
-            meta=trigger.meta,
+            meta=operation_metas,
         )
 
     status = business_status(trigger, import_data)
@@ -271,13 +292,13 @@ def main() -> int:
             execution_state="unknown",
             plan=result,
             error={"type": "api", "message": "import_data 未报告成功"},
-            meta=trigger.meta,
+            meta=operation_metas,
         )
     return emit(
         fmt=args.format,
         outcome="success",
         data=result,
-        meta=trigger.meta,
+        meta=operation_metas,
         text=json.dumps(result, ensure_ascii=False, indent=2),
     )
 

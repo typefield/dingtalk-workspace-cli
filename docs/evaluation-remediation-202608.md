@@ -426,7 +426,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 
 本轮按 Agent 实际加载的 mono Skill 做了语义扫描，不只检查命令路径：
 
-- **2026-08-09 复扫**：`mono-script-contract-20260809.md` 重新确认 35 个 Python 文件中 32 个为 Agent 入口，Help 为 `32/32` dry-run、`32/32` format、0 个非零；`mono-result-contract-20260809.md` 对共享 `run_main` 的未捕获异常、stdout 污染拒绝、结果/退出码一致性、非零 `SystemExit`、partial rc=7、meta 透传、failure typed error、`meta/dry_run` 类型、严格布尔/非布尔/矛盾子状态识别、非终态 pending 保留和关键 child-dws 编排路径均为 `24/24 PASS`。因此“类型错误导致 traceback 打破 JSON”“脚本信封不能承载 meta”“failure 没有可分支的错误类型”“非终态任务被当作完成”以及“旧 `success:false` 被当作邮件已发送”都是修复前快照的问题；记录导入不再把已确认批次压成总布尔失败，字段创建不再将旧业务失败误报为成功，文件导入在 `import_data` 未给终态时会保留任务标识，附件上传在 PUT 未得终态时也不再误报为可用。`mono-dry-run-probe-20260809.md` 用临时 HOME/工作区和 sentinel dws 验证 8 个深层门控写入口均未调用子进程、未新增本地文件；它仍不替代真实后端零写或其余 24 个入口的逐路径验证。
+- **2026-08-09 复扫**：`mono-script-contract-20260809.md` 重新确认 35 个 Python 文件中 32 个为 Agent 入口，Help 为 `32/32` dry-run、`32/32` format、0 个非零；`mono-result-contract-20260809.md` 对共享 `run_main` 的未捕获异常、stdout 污染拒绝、结果/退出码一致性、非零 `SystemExit`、partial rc=7、meta 透传、failure typed error、`meta/dry_run` 类型、严格布尔/非布尔/矛盾子状态识别、非终态 pending 保留和关键 child-dws 编排路径均为 `24/24 PASS`。因此“类型错误导致 traceback 打破 JSON”“脚本信封不能承载 meta”“failure 没有可分支的错误类型”“非终态任务被当作完成”以及“旧 `success:false` 被当作邮件已发送”都是修复前快照的问题；记录导入不再把已确认批次压成总布尔失败，字段创建不再将旧业务失败误报为成功，文件导入在 `import_data` 未给终态时会保留任务标识，并将 `prepare_import_upload` 与 `import_data` 的子 `meta` 按步骤写入 `meta.children[]`，避免后一步覆盖前一步的任务、分页或传输线索；附件上传在 PUT 未得终态时也不再误报为可用。`mono-dry-run-probe-20260809.md` 用临时 HOME/工作区和 sentinel dws 验证 8 个深层门控写入口均未调用子进程、未新增本地文件；它仍不替代真实后端零写或其余 24 个入口的逐路径验证。
 - 当前 `skills/mono/scripts/` 中共有 35 个 Python 文件，其中 32 个是含
   `if __name__ == "__main__"` 的 Agent 入口，另有 3 个内部模块；对 32 个入口逐个执行
   `python3 <script> --help`，实测 32/32 声明脚本级 `--dry-run`、32/32 声明脚本级

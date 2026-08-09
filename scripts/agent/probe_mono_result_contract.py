@@ -628,11 +628,11 @@ print(json.dumps({'success': False, 'error': {'type': 'api', 'message': 'field c
                 f"""import json, sys
 args = sys.argv[1:]
 if args[:3] == ['aitable', 'import', 'upload']:
-    print(json.dumps({{'ok': True, 'data': {{'uploadUrl': 'http://127.0.0.1:{upload_server.server_port}/upload', 'importId': 'import-1'}}}}))
+    print(json.dumps({{'ok': True, 'data': {{'uploadUrl': 'http://127.0.0.1:{upload_server.server_port}/upload', 'importId': 'import-1'}}, 'meta': {{'phase': 'prepared'}}}}))
 elif args[:3] == ['aitable', 'import', 'data']:
     # The upload completed, but an old business-level failure with rc=0 leaves
     # the import task ambiguous.  It must not be reported as terminal success.
-    print(json.dumps({{'success': False, 'error': {{'type': 'api', 'message': 'import task uncertain'}}}}))
+    print(json.dumps({{'success': False, 'error': {{'type': 'api', 'message': 'import task uncertain'}}, 'meta': {{'phase': 'triggered'}}}}))
 else:
     raise SystemExit(9)
 """,
@@ -650,10 +650,16 @@ else:
             and payload["data"].get("phase") == "import_data"
             and payload["data"].get("execution_state") == "unknown"
             and payload["data"].get("importId") == "import-1"
+            and payload.get("meta") == {
+                "children": [
+                    {"id": "prepare_import_upload", "meta": {"phase": "prepared"}},
+                    {"id": "import_data", "meta": {"phase": "triggered"}},
+                ],
+            }
             and isinstance(payload.get("error"), dict) and payload["error"].get("type") == "api"
             and "import_data 完成" not in file_import_child.stderr
         )
-        outcomes.append(("文件导入旧业务失败不误报终态", *result("PASS" if file_import_child_ok else "FAIL", detail)))
+        outcomes.append(("文件导入不丢失各子步骤 meta", *result("PASS" if file_import_child_ok else "FAIL", detail)))
 
         attachment_path = temp_dir / "attachment.txt"
         attachment_path.write_text("attachment probe", encoding="utf-8")
