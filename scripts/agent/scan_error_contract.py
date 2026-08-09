@@ -51,6 +51,7 @@ CONSTRUCTOR = re.compile(r"\b(?:apperrors\.)?New(API|Auth|Validation|Discovery|I
 HINT = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithHint\(")
 ACTIONS = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithActions\(")
 RETRYABLE = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithRetryable\(")
+RETRYABLE_VALUE = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithRetryable\(\s*(true|false)\s*\)")
 RETRY_AFTER = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithRetryAfterSeconds\(")
 EXECUTION = re.compile(r"(?:\b(?:apperrors|errors)\.)?WithExecutionStarted\(")
 
@@ -62,7 +63,7 @@ class Occurrence:
     category: str
     hint: bool
     actions: bool
-    retryable: bool
+    retryable: str
     retry_after: bool
     execution_started: bool
     registered: bool
@@ -89,6 +90,25 @@ def local_context(lines: list[str], index: int) -> str:
     start = max(0, index - 8)
     end = min(len(lines), index + 13)
     return "\n".join(lines[start:end])
+
+
+def nearby_retryable_value(context: str) -> str:
+    """Describe a nearby explicit retryability value without guessing it.
+
+    A mere `WithRetryable(...)` occurrence is not equivalent to
+    `retryable:true`: high-risk write paths deliberately use
+    `WithRetryable(false)`.  This scan is source-local rather than a control
+    flow proof, so a variable expression stays `unknown` and competing nearby
+    constructors stay `mixed`.
+    """
+    values = {match.group(1) for match in RETRYABLE_VALUE.finditer(context)}
+    if len(values) == 1:
+        return values.pop()
+    if len(values) > 1:
+        return "mixed"
+    if RETRYABLE.search(context):
+        return "unknown"
+    return "not_declared"
 
 
 def nearby_category(lines: list[str], index: int) -> str:
@@ -135,7 +155,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
                 category=nearby_category(lines, line - 1),
                 hint=bool(HINT.search(context)),
                 actions=bool(ACTIONS.search(context)),
-                retryable=bool(RETRYABLE.search(context)),
+                retryable=nearby_retryable_value(context),
                 retry_after=bool(RETRY_AFTER.search(context)),
                 execution_started=bool(EXECUTION.search(context)),
                 registered=False,
@@ -159,7 +179,7 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
                     category=descriptor_categories.get(constant, nearby_category(lines, line - 1)),
                     hint=bool(HINT.search(context)) or bool(descriptor_default_hints.get(constant)),
                     actions=bool(ACTIONS.search(context)),
-                    retryable=bool(RETRYABLE.search(context)),
+                    retryable=nearby_retryable_value(context),
                     retry_after=bool(RETRY_AFTER.search(context)),
                     execution_started=bool(EXECUTION.search(context)),
                     registered=True,
@@ -200,6 +220,15 @@ def scan(root: Path) -> tuple[dict[str, ReasonFacts], list[str], list[str], dict
 
 def observed(values: list[Occurrence], attr: str) -> str:
     return "yes" if any(getattr(value, attr) for value in values) else "no"
+
+
+def retryability(values: list[Occurrence]) -> str:
+    declared = {value.retryable for value in values if value.retryable != "not_declared"}
+    if not declared:
+        return "none"
+    if len(declared) == 1:
+        return next(iter(declared))
+    return "mixed"
 
 
 def categories(values: list[Occurrence]) -> str:
@@ -263,14 +292,14 @@ def main() -> int:
         "",
         "## 源码 subtype 清单",
         "",
-        "| subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable | retry-after | execution-started | 例子 |",
+        "| subtype | 治理状态 | 调用点 | 推断 Category | 有效 hint | actions | retryable 值 | retry-after | execution-started | 例子 |",
         "|---|---|---:|---|:---:|:---:|:---:|:---:|:---:|---|",
     ]
     for reason, item in sorted(facts.items()):
         values = item.occurrences
         lines.append(
             f"| `{reason}` | {status(values)} | {len(values)} | `{categories(values)}` | {observed(values, 'hint')} | "
-            f"{observed(values, 'actions')} | {observed(values, 'retryable')} | "
+            f"{observed(values, 'actions')} | {retryability(values)} | "
             f"{observed(values, 'retry_after')} | {observed(values, 'execution_started')} | {examples(values)} |"
         )
 
@@ -318,9 +347,19 @@ def main() -> int:
         "",
         "## Agent 审阅结论",
         "",
-        "1. 当前 `Category`/退出码、`hint/actions/retryable/retry_after_seconds` 已是可复用底座。",
-        "2. registry 已覆盖本地校验、目标预检、下载完整性与 transport/服务端响应等高价值路径；剩余 `WithReason(string)` 仍没有闭集，也没有逐 subtype 的恢复字段声明。",
-        "3. 下一步应逐命令迁移高频 subtype 的自由调用，并将动态上游 reason 映射到声明值或当前 Category 对应的 unclassified subtype；不应一次性重命名现有 wire 字段或类别。",
+        "1. 当前 `Category`/退出码、`hint/actions/retryable/retry_after_seconds` 已是可复用底座；表中的 retryable 值区分显式 `true` 与 `false`，不把“声明过字段”误读为“允许重试”。",
+    ]
+    if free_occurrences or dynamic:
+        lines += [
+            "2. registry 已覆盖本地校验、目标预检、下载完整性与 transport/服务端响应等高价值路径；剩余自由或动态 `WithReason` 必须继续迁入有限 subtype，不能把上游文本变成 Agent 分支键。",
+            "3. 下一步应逐命令处理这些自由调用或有限映射；不应一次性重命名现有 wire 字段或类别。",
+        ]
+    else:
+        lines += [
+            "2. 当前源码的字面与变量 `WithReason` 均已归入 registry 或兼容桥；下一步是审阅有限间接映射与实际恢复行为，而不是重复开展 reason 清零迁移。",
+            "3. 对写请求，`retryable:false` 或省略仍不等于“绝无副作用”；应以 execution state、幂等键和真实账号验证决定恢复流程。",
+        ]
+    lines += [
         "4. 扫描只证明源码出现与邻近选项，不能证明服务端终态或 recovery action 在真实账号上可执行。",
     ]
     args.output.parent.mkdir(parents=True, exist_ok=True)
