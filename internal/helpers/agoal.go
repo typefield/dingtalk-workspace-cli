@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/spf13/cobra"
 )
@@ -601,22 +602,72 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
 			}
-			if v, _ := cmd.Flags().GetInt("page"); v != 0 {
+			if v, _ := cmd.Flags().GetInt("page"); cmd.Flags().Changed("page") {
+				if v < 1 {
+					return apperrors.NewValidation("--page must be at least 1")
+				}
 				toolArgs["page"] = v
 			}
-			if v, _ := cmd.Flags().GetInt("page-size"); v != 0 {
+			if v, _ := cmd.Flags().GetInt("page-size"); cmd.Flags().Changed("page-size") {
+				if v < 1 {
+					return apperrors.NewValidation("--page-size must be at least 1")
+				}
 				toolArgs["pageSize"] = v
 			}
 			if v, _ := cmd.Flags().GetString("keyword"); v != "" {
 				toolArgs["keyword"] = v
 			}
-			return callMCPTool("list_obj_template", toolArgs)
+			return runAgoalObjTemplateList(cmd, toolArgs)
 		},
 	}
 	objTemplateListCmd.Flags().String("request-id", "", "requestId (可选)")
 	objTemplateListCmd.Flags().Int("page", 0, "页码，默认 1 (可选)")
 	objTemplateListCmd.Flags().Int("page-size", 0, "每页数量，默认 10 (可选)")
 	objTemplateListCmd.Flags().String("keyword", "", "搜索关键词 (可选)")
+	DeclareLeafMetadata(objTemplateListCmd, LeafSpec{
+		OutputRollout: output.RolloutDualValidate,
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "agoal",
+				Name:           "obj_template_list",
+				CanonicalPath:  "agoal.obj_template_list",
+				CLIPath:        "agoal obj-template list",
+				PrimaryCLIPath: "agoal obj-template list",
+			},
+			Description: "分页发现当前身份可见的 Agoal 目标模板",
+			Result:      agoalObjTemplateListResultSpec(),
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "agoal", RPCName: "list_obj_template"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "分页发现当前身份可见的 Agoal 目标模板",
+				UseWhen: []string{
+					"需要发现目标模板及 create-or-update 所需的 templateId 时",
+					"需要按关键词筛选当前身份可见的目标模板时",
+				},
+				AvoidWhen: []string{
+					"不要把当前身份与关键词下的分页结果解释为企业全部目标模板",
+					"需要完整模板维度内容时，不要依赖本命令的摘要投影；使用受审阅的详情或更新前读取路径",
+				},
+				Examples: []string{
+					"dws agoal obj-template list --format json",
+					"dws agoal obj-template list --keyword <KEYWORD> --page 1 --page-size 20 --format json",
+				},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "keyword", Property: "keyword"},
+				{Name: "page", Property: "page"},
+				{Name: "page-size", Property: "pageSize"},
+				{Name: "request-id", Property: "requestId"},
+			},
+		},
+	})
 
 	objTemplateCreateOrUpdateCmd := &cobra.Command{
 		Use:   "create-or-update",

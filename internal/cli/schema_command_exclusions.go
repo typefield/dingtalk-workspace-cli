@@ -63,7 +63,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"agoal contract list",
 			"agoal contract update",
 			"agoal obj-template create-or-update",
-			"agoal obj-template list",
 			"agoal report submit-detail",
 			"agoal scorecard detail",
 			"agoal scorecard entity-detail",
