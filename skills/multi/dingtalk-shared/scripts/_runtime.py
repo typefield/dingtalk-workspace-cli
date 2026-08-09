@@ -77,11 +77,14 @@ def run_child_dws(args: Sequence[str], *, dry_run: bool = False, timeout: float 
             )
         )
     )
-    if completed.returncode == 0 and payload is not None and not explicitly_failed and not ambiguous_status:
+    pending = isinstance(payload, Mapping) and payload.get("ok") is True and payload.get("outcome") == "pending"
+    if completed.returncode == 0 and payload is not None and not explicitly_failed and not ambiguous_status and not pending:
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if isinstance(payload, Mapping):
         error = (
-            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
+            {"type": "api", "subtype": "operation_pending", "message": "dws 操作尚未完成；请保留任务信息并按恢复指令继续核查。"}
+            if pending
+            else {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
             if ambiguous_status
             else _error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
         )

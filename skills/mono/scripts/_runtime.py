@@ -113,6 +113,15 @@ def _child_status_is_ambiguous(payload: Any) -> bool:
     return payload.get("ok") is not expected_ok
 
 
+def _child_is_pending(payload: Any) -> bool:
+    """Return whether a coherent child envelope explicitly lacks a terminal result."""
+    return (
+        isinstance(payload, Mapping)
+        and payload.get("ok") is True
+        and payload.get("outcome") == "pending"
+    )
+
+
 def run_child_dws(
     args: Sequence[str],
     *,
@@ -172,10 +181,28 @@ def run_child_dws(
     meta = _meta_from_child(payload)
     if completed.returncode == 0 and decoded:
         if not _child_explicitly_failed(payload) and not _child_status_is_ambiguous(payload):
+            if _child_is_pending(payload):
+                return ChildDWSResult(
+                    "unknown",
+                    payload=payload,
+                    error={
+                        "type": "api",
+                        "subtype": "operation_pending",
+                        "message": "dws 操作尚未完成；请保留任务信息并按恢复指令继续核查。",
+                    },
+                    meta=meta,
+                    command=command,
+                )
             return ChildDWSResult("success", payload=payload, meta=meta, command=command)
 
     if decoded and isinstance(payload, Mapping):
-        if _child_status_is_ambiguous(payload):
+        if _child_is_pending(payload):
+            error = {
+                "type": "api",
+                "subtype": "operation_pending",
+                "message": "dws 操作尚未完成；请保留任务信息并按恢复指令继续核查。",
+            }
+        elif _child_status_is_ambiguous(payload):
             error = {
                 "type": "api",
                 "subtype": "untyped_status",

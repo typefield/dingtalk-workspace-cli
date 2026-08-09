@@ -14,6 +14,7 @@
 | 子 dws 非布尔状态不伪装成功 | PASS | ok |
 | 子 dws 矛盾 ok/outcome 不伪装成功 | PASS | ok |
 | 子 dws 非字符串 outcome 不泄漏异常或伪装成功 | PASS | ok |
+| 子 dws pending 不伪装终态成功且保留任务 meta | PASS | ok |
 | 非零 SystemExit JSON 兜底 | PASS | ok |
 | 部分成功结果与退出码 | PASS | ok |
 | 可选 meta 承载 | PASS | ok |
@@ -28,7 +29,7 @@
 | 文件导入旧业务失败不误报终态 | PASS | ok |
 | 附件 PUT 未知不误报可用 | PASS | ok |
 
-结果：21/21 通过
+结果：22/22 通过
 
 ## 边界
 

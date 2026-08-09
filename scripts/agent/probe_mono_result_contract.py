@@ -252,6 +252,33 @@ print(json.dumps({'ok': True, 'outcome': []}))
     )
     outcomes.append(("子 dws 非字符串 outcome 不泄漏异常或伪装成功", *result("PASS" if malformed_outcome_ok else "FAIL", detail)))
 
+    with tempfile.TemporaryDirectory(prefix="dws-mono-pending-child-") as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        pending_child = run_with_fake_dws(
+            [
+                sys.executable,
+                "-c",
+                "import json, sys; sys.path.insert(0, 'skills/mono/scripts'); "
+                "from _runtime import run_child_dws; result = run_child_dws(['todo','task','create','--format','json']); "
+                "print(json.dumps({'state':result.state,'subtype':(result.error or {}).get('subtype'),'meta':result.meta}))",
+            ],
+            """import json
+print(json.dumps({'ok': True, 'outcome': 'pending', 'data': {'task_id': 'task-1'}, 'meta': {'operation': {'id': 'task-1'}}}))
+""",
+            temp_dir=temp_dir,
+        )
+    valid, payload, detail = parse_single_result(pending_child)
+    pending_child_ok = (
+        valid
+        and pending_child.returncode == 0
+        and payload == {
+            "state": "unknown",
+            "subtype": "operation_pending",
+            "meta": {"operation": {"id": "task-1"}},
+        }
+    )
+    outcomes.append(("子 dws pending 不伪装终态成功且保留任务 meta", *result("PASS" if pending_child_ok else "FAIL", detail)))
+
     system_exit = runtime_probe(
         "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
         "raise SystemExit(_runtime.run_main(lambda: (_ for _ in ()).throw(SystemExit(2)), argv=['--format','json']))"

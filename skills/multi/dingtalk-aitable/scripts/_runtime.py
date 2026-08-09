@@ -88,6 +88,14 @@ def _child_status_is_ambiguous(payload: Any) -> bool:
     return payload.get("ok") is not (outcome in {"success", "pending"})
 
 
+def _child_is_pending(payload: Any) -> bool:
+    return (
+        isinstance(payload, Mapping)
+        and payload.get("ok") is True
+        and payload.get("outcome") == "pending"
+    )
+
+
 def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
     if isinstance(payload, Mapping) and isinstance(payload.get("meta"), Mapping):
         return dict(payload["meta"])
@@ -135,10 +143,18 @@ def run_child_dws(
             pass
     meta = _meta_from_child(payload)
     if completed.returncode == 0 and decoded and not _child_explicitly_failed(payload) and not _child_status_is_ambiguous(payload):
+        if _child_is_pending(payload):
+            return ChildDWSResult(
+                "unknown", payload=payload,
+                error={"type": "api", "subtype": "operation_pending", "message": "dws 操作尚未完成；请保留任务信息并按恢复指令继续核查。"},
+                meta=meta, command=command,
+            )
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if decoded and isinstance(payload, Mapping):
         error = (
-            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
+            {"type": "api", "subtype": "operation_pending", "message": "dws 操作尚未完成；请保留任务信息并按恢复指令继续核查。"}
+            if _child_is_pending(payload)
+            else {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
             if _child_status_is_ambiguous(payload)
             else _child_error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
         )

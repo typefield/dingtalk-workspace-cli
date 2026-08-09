@@ -119,6 +119,24 @@ def main() -> int:
         malformed_ok = malformed.returncode == 0 and malformed_payload == {"state": "unknown", "subtype": "untyped_status"}
         checks.append((f"{name}: 非字符串 outcome 不泄漏异常或伪装成功", "PASS" if malformed_ok else "FAIL", f"rc={malformed.returncode}; payload={malformed_payload}"))
 
+        pending = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "result = _runtime.run_child_dws(['-c', \"import json; print(json.dumps({'ok': True, 'outcome': 'pending', 'meta': {'operation': {'id': 'task-1'}}}))\"], executable=sys.executable)",
+            "print(json.dumps({'state': result.state, 'subtype': (result.error or {}).get('subtype'), 'meta': result.meta}))",
+        ]))
+        try:
+            pending_payload = json.loads(pending.stdout)
+        except json.JSONDecodeError:
+            pending_payload = None
+        pending_ok = pending.returncode == 0 and pending_payload == {
+            "state": "unknown",
+            "subtype": "operation_pending",
+            "meta": {"operation": {"id": "task-1"}},
+        }
+        checks.append((f"{name}: pending 不伪装终态成功且保留任务 meta", "PASS" if pending_ok else "FAIL", f"rc={pending.returncode}; payload={pending_payload}"))
+
         partial_lines = [
             f"import sys; sys.path.insert(0, {str(directory)!r})",
             "import _runtime",
