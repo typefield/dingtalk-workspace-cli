@@ -180,6 +180,15 @@ python3 scripts/agent/probe_mono_result_contract.py \
   --output docs/agent-scans/mono-result-contract-YYYYMMDD.md
 ```
 
+异步导出这类“任务完成”和“本地文件已安全落盘”分离的入口，应再运行专项 Agent
+语义探针。探针使用临时 child runner 与本地 HTTP server，只保存 Markdown，不将
+任何 JSON 结果作为仓库 fixture，也不替代真实租户验证：
+
+```bash
+python3 scripts/agent/probe_mono_aitable_export_contract.py \
+  --output docs/agent-scans/mono-aitable-export-contract-YYYYMMDD.md
+```
+
 如需一次性复核 Mono、Multi、Shortcut surface 以及隐藏 shortcut exclusion 队列，可运行：
 
 ```bash
