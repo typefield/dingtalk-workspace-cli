@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T10:52:49+08:00
+扫描时间：2026-08-09T11:01:36+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1393 |
+| `legacy_only` | 1392 |
 | `dual_validate` | 24 |
-| `unified_active` | 66 |
+| `unified_active` | 67 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,7 +22,7 @@
 
 ### 状态迁移
 
-- REVIEW: `dws drive +search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws drive +find-file`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -998,7 +998,7 @@
 | `dws drive` | `legacy_only` | `legacy` | no |
 | `dws drive +copy` | `legacy_only` | `legacy` | no |
 | `dws drive +download` | `legacy_only` | `legacy` | yes |
-| `dws drive +find-file` | `legacy_only` | `legacy` | no |
+| `dws drive +find-file` | `unified_active` | `unified` | no |
 | `dws drive +info` | `legacy_only` | `legacy` | no |
 | `dws drive +list` | `legacy_only` | `legacy` | yes |
 | `dws drive +move` | `legacy_only` | `legacy` | no |
