@@ -199,6 +199,10 @@ func TestCrossPlatformCoverageMCPReturnTextClassification(t *testing.T) {
 	if got, err := callMCPToolReturnTextOnServer(context.Background(), "server", "tool", nil); err != nil || got != "" {
 		t.Fatalf("low-level empty text representation = %q, %v", got, err)
 	}
+	caller.result = &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text"}, {Type: "text", Text: "later text"}}}
+	if got, err := callMCPToolReturnTextOnServer(context.Background(), "server", "tool", nil); err != nil || got != "later text" {
+		t.Fatalf("low-level parser must skip empty leading text blocks: got %q, %v", got, err)
+	}
 	caller.result = nil
 	if _, err := callMCPToolReturnTextOnServer(context.Background(), "server", "tool", nil); err == nil {
 		t.Fatal("nil result must fail")

@@ -478,7 +478,9 @@ dws devapp +list ...
 - `FromShortcut` 把状态透传到 `corecmd.Spec`；
 - `RuntimeContext.Output(payload)` 在 unified active 时包装为 `Success(payload)` 并 `StoreResult`，legacy 时保持旧 renderer；
 - 增加显式 `OutputResult(CommandResult)`，供 partial/pending 等非普通 success 使用；
-- `dual_validate` 业务执行一次，只 shadow-build/validate 统一结果；
+- `dual_validate` 业务执行一次，只 shadow-build/validate 统一结果；对 MCP passthrough，shadow
+  校验后仍必须走同一 legacy formatter，保留原有 HTML escaping、mail/AITable 归一化、
+  filter、raw/no-text fallback，不能用 unified renderer 重排旧 JSON；
 - 未声明状态 fail closed 为 `legacy_only`。
 
 禁止通过“所有 shortcut 自动接入统一结果”完成迁移；每条 terminal command 都要有独立 golden、Schema 和风险评审。
@@ -533,12 +535,15 @@ dws devapp +list ...
 9. custom exit code（如 130）不丢失；
 10. pending 必须有 id/state/next_command；
 11. partial 三通道、failed error、total 和 id 互斥严格校验；
-12. pagination 两态与非负计数严格校验；
-13. typed DTO、map、slice、pointer 构造后修改不影响 stored result；
-14. NDJSON 一行一条、failure 单行合法；
-15. timeout 不覆盖已有 deadline，`HTTPClient.Timeout==0`；
-16. `tools/call` 不自动重放，Retry-After 可透传；
-17. `dws dev ...` 和对应 `dws devapp +...` 均保持原 argv 可执行并独立返回统一结果。
+12. dual validation 以相同 fixture 比对 legacy stdout/stderr/rc 的逐字节输出，且每次只触发
+    一次业务调用；至少覆盖含 `&<>` 的 JSON、非结构化文本、空 text 和无 text block，防止
+    compatibility 阶段误用 unified JSON renderer。
+13. pagination 两态与非负计数严格校验；
+14. typed DTO、map、slice、pointer 构造后修改不影响 stored result；
+15. NDJSON 一行一条、failure 单行合法；
+16. timeout 不覆盖已有 deadline，`HTTPClient.Timeout==0`；
+17. `tools/call` 不自动重放，Retry-After 可透传；
+18. `dws dev ...` 和对应 `dws devapp +...` 均保持原 argv 可执行并独立返回统一结果。
 
 ### 12.3 发布前 Agent 证据
 

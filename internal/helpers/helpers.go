@@ -174,6 +174,153 @@ func callMCPToolReturnTextOnServer(ctx context.Context, serverID, toolName strin
 	return parseMCPToolTextResult(serverID, toolName, result, err)
 }
 
+// MCPToolPayload is one already-classified MCP response. It lets a caller
+// validate a shadow result and then reproduce the legacy renderer without
+// making a second business request. Data is the parsed JSON payload when the
+// tool returned JSON text, the original text for an unstructured response, or
+// the complete ToolResult when there was no text content (the legacy fallback).
+//
+// The remaining fields deliberately stay private: callers must not make
+// presentation decisions from them. Use WriteMCPToolPayloadLegacy to preserve
+// the established --format behavior exactly during a dual-validation rollout.
+type MCPToolPayload struct {
+	Data       any
+	text       string
+	hasText    bool
+	structured bool
+}
+
+func callMCPToolResultOnServer(ctx context.Context, serverID, toolName string, args map[string]any) (*edition.ToolResult, error) {
+	result, err := deps.Caller.CallTool(ctx, serverID, toolName, args)
+	if err != nil {
+		if patErr := reclassifyPATFromError(err); patErr != nil {
+			return nil, patErr
+		}
+		return nil, WrapErrorWithOperation(err, serverID+"/"+toolName)
+	}
+	if result == nil {
+		return nil, &CLIError{
+			Code:       CodeMCPToolError,
+			Message:    "MCP 工具返回 nil result，无法判断操作结果",
+			Suggestion: "不要把空回复当作成功；请重试并携带 operation/trace 信息排查服务端",
+			Operation:  serverID + "/" + toolName,
+		}
+	}
+	return result, nil
+}
+
+func classifyMCPToolText(serverID, toolName, text string) error {
+	var errBody map[string]any
+	if json.Unmarshal([]byte(text), &errBody) != nil {
+		return nil
+	}
+	if _, ok := getDWSGatewayErrorCode(errBody); ok {
+		return &CLIError{
+			Code:       CodeAuthTokenExpired,
+			Message:    text,
+			Suggestion: authExpiredSuggestion(),
+		}
+	}
+	if isNotLoggedInError(errBody) {
+		return &CLIError{
+			Code:       CodeAuthNotConfigured,
+			Message:    "当前未登录",
+			Suggestion: notLoggedInSuggestion(),
+		}
+	}
+	if patErr := classifyPATError(errBody); patErr != nil {
+		return patErr
+	}
+	if isBusinessError(errBody) {
+		return &CLIError{
+			Code:       CodeMCPToolError,
+			Message:    text,
+			Suggestion: suggestForBusinessError(errBody),
+		}
+	}
+	return nil
+}
+
+func payloadFromMCPToolResult(serverID, toolName string, result *edition.ToolResult, preserveEmptyText bool) (MCPToolPayload, error) {
+	for _, c := range result.Content {
+		if c.Type != "text" || (!preserveEmptyText && strings.TrimSpace(c.Text) == "") {
+			continue
+		}
+		dumpRawToolResponse(serverID, toolName, c.Text)
+		if err := classifyMCPToolText(serverID, toolName, c.Text); err != nil {
+			return MCPToolPayload{}, err
+		}
+		var data any
+		if err := json.Unmarshal([]byte(c.Text), &data); err == nil {
+			return MCPToolPayload{Data: data, text: c.Text, hasText: true, structured: true}, nil
+		}
+		return MCPToolPayload{Data: c.Text, text: c.Text, hasText: true}, nil
+	}
+	return MCPToolPayload{Data: result}, nil
+}
+
+// CallMCPToolPayloadOnServer calls one MCP tool once and exposes the response
+// for a shadow validator. It applies the same transport, auth, PAT and
+// business-error classification as CallMCPToolOnServer before returning data.
+func CallMCPToolPayloadOnServer(ctx context.Context, serverID, toolName string, args map[string]any) (MCPToolPayload, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	result, err := callMCPToolResultOnServer(ctx, serverID, toolName, args)
+	if err != nil {
+		return MCPToolPayload{}, err
+	}
+	return payloadFromMCPToolResult(serverID, toolName, result, true)
+}
+
+// WriteMCPToolPayloadLegacy renders an already-fetched payload through the
+// exact legacy formatter. It is intentionally not a general output API: it is
+// the compatibility seam used while a shortcut is dual-validated. In
+// particular it keeps legacy HTML escaping, mail success normalization,
+// AITable discovery annotations, table formatting and raw-text fallback.
+func WriteMCPToolPayloadLegacy(serverID, toolName string, payload MCPToolPayload) error {
+	return writeMCPToolPayloadLegacy(serverID, toolName, payload, false)
+}
+
+func writeMCPToolPayloadLegacy(serverID, toolName string, payload MCPToolPayload, unescapeHTML bool) error {
+	printJSON := deps.Out.PrintJSON
+	if unescapeHTML {
+		printJSON = deps.Out.PrintJSONUnescaped
+	}
+	if !payload.hasText {
+		return printJSON(payload.Data)
+	}
+
+	flagFormat := deps.Caller.Format()
+	if flagFormat == "json" && payload.structured {
+		data := payload.Data
+		if serverID == "mail" {
+			data = normalizeMailSuccessBooleans(data)
+		}
+		if serverID == "aitable" && (toolName == "list_bases" || toolName == "search_bases") {
+			var err error
+			data, err = annotateAitableDiscoveryBoundary(data, toolName)
+			if err != nil {
+				return err
+			}
+		}
+		return printJSON(data)
+	}
+	if toolName == "search_open_platform_docs" && flagFormat == "table" {
+		if formatted := formatDevdocSearchTable(payload.text); formatted {
+			return nil
+		}
+	}
+	if format := output.ParseFormat(flagFormat, output.FormatJSON); format != output.FormatJSON && format != output.FormatRaw && payload.structured {
+		return output.WriteFiltered(deps.Out.w, format, payload.Data, deps.Caller.Fields(), deps.Caller.JQ())
+	}
+	if unescapeHTML && payload.structured {
+		return printJSON(payload.Data)
+	}
+	deps.Out.PrintRaw(payload.text)
+	return nil
+}
+
 // CallMCPReadToolTextOnServer performs a read-only lookup needed to construct a
 // semantic Shortcut dry-run plan. Under ordinary execution it is identical to
 // CallMCPToolTextOnServer. Under --dry-run it requires the host's optional
@@ -244,38 +391,12 @@ func parseMCPToolTextResult(serverID, toolName string, result *edition.ToolResul
 			Operation:  serverID + "/" + toolName,
 		}
 	}
-	for _, c := range result.Content {
-		if c.Type == "text" && strings.TrimSpace(c.Text) != "" {
-			dumpRawToolResponse(serverID, toolName, c.Text)
-			var errBody map[string]any
-			if json.Unmarshal([]byte(c.Text), &errBody) == nil {
-				if _, ok := getDWSGatewayErrorCode(errBody); ok {
-					return "", &CLIError{
-						Code:       CodeAuthTokenExpired,
-						Message:    c.Text,
-						Suggestion: authExpiredSuggestion(),
-					}
-				}
-				if isNotLoggedInError(errBody) {
-					return "", &CLIError{
-						Code:       CodeAuthNotConfigured,
-						Message:    "当前未登录",
-						Suggestion: notLoggedInSuggestion(),
-					}
-				}
-				if patErr := classifyPATError(errBody); patErr != nil {
-					return "", patErr
-				}
-				if isBusinessError(errBody) {
-					return "", &CLIError{
-						Code:       CodeMCPToolError,
-						Message:    c.Text,
-						Suggestion: suggestForBusinessError(errBody),
-					}
-				}
-			}
-			return c.Text, nil
-		}
+	payload, err := payloadFromMCPToolResult(serverID, toolName, result, false)
+	if err != nil {
+		return "", err
+	}
+	if payload.hasText {
+		return payload.text, nil
 	}
 	// Some legacy tools intentionally use an empty text response as an
 	// acknowledgement. This low-level parser cannot know the business contract,
@@ -396,97 +517,11 @@ func callMCPToolInternalOpts(explicitServerID, toolName string, args map[string]
 		serverID = resolveProductID()
 	}
 
-	// 调用 MCP Server
-	result, err := deps.Caller.CallTool(ctx, serverID, toolName, args)
+	payload, err := CallMCPToolPayloadOnServer(ctx, serverID, toolName, args)
 	if err != nil {
-		if patErr := reclassifyPATFromError(err); patErr != nil {
-			return patErr
-		}
-		return WrapErrorWithOperation(err, serverID+"/"+toolName)
+		return err
 	}
-
-	// 根据 unescapeHTML 选择 JSON 输出函数：
-	// - false（默认）：使用 PrintJSON，& 会被转义为 \u0026
-	// - true：使用 PrintJSONUnescaped，保留原始字符（适用于含 URL 的返回值）
-	printJSON := deps.Out.PrintJSON
-	if unescapeHTML {
-		printJSON = deps.Out.PrintJSONUnescaped
-	}
-
-	flagFormat := deps.Caller.Format()
-	for _, c := range result.Content {
-		if c.Type == "text" {
-			dumpRawToolResponse(serverID, toolName, c.Text)
-			// 尝试将返回文本解析为 JSON，进行错误分类
-			var errBody map[string]any
-			if json.Unmarshal([]byte(c.Text), &errBody) == nil {
-				// 网关层错误（如 token 过期）
-				if _, ok := getDWSGatewayErrorCode(errBody); ok {
-					return &CLIError{Code: CodeAuthTokenExpired, Message: c.Text, Suggestion: authExpiredSuggestion()}
-				}
-				// 未登录错误
-				if isNotLoggedInError(errBody) {
-					return &CLIError{Code: CodeAuthNotConfigured, Message: "当前未登录", Suggestion: notLoggedInSuggestion()}
-				}
-				// PAT（个人访问令牌）相关错误
-				if patErr := classifyPATError(errBody); patErr != nil {
-					return patErr
-				}
-				// 业务逻辑错误
-				if isBusinessError(errBody) {
-					return &CLIError{Code: CodeMCPToolError, Message: c.Text, Suggestion: suggestForBusinessError(errBody)}
-				}
-			}
-
-			// JSON 格式输出：解析后使用选定的 printJSON 函数输出
-			if flagFormat == "json" {
-				var parsed any
-				if err := json.Unmarshal([]byte(c.Text), &parsed); err == nil {
-					if serverID == "mail" {
-						parsed = normalizeMailSuccessBooleans(parsed)
-					}
-					if serverID == "aitable" && (toolName == "list_bases" || toolName == "search_bases") {
-						var err error
-						parsed, err = annotateAitableDiscoveryBoundary(parsed, toolName)
-						if err != nil {
-							return err
-						}
-					}
-					return printJSON(parsed)
-				}
-			}
-			// 特殊处理：开放平台文档搜索结果的表格格式输出
-			if toolName == "search_open_platform_docs" && flagFormat == "table" {
-				if formatted := formatDevdocSearchTable(c.Text); formatted {
-					return nil
-				}
-			}
-			// 统一输出试点（A3）：非 json 的结构化格式（table/pretty/csv/ndjson）
-			// 经 output.WriteFiltered 分发渲染——table/pretty 出视图，csv/ndjson
-			// 对单对象自动降级为键值表/单行 JSON。文本可解析为 JSON 才分发，
-			// 否则落到下方原文透传，保持向后兼容；json 与未知值不走本分支。
-			if format := output.ParseFormat(flagFormat, output.FormatJSON); format != output.FormatJSON && format != output.FormatRaw {
-				var parsed any
-				if err := json.Unmarshal([]byte(c.Text), &parsed); err == nil {
-					return output.WriteFiltered(deps.Out.w, format, parsed, deps.Caller.Fields(), deps.Caller.JQ())
-				}
-			}
-			// 默认：原样输出文本内容。
-			// 当 unescapeHTML=true 时，c.Text 是一段 JSON 字符串，其中 & 已被服务端
-			// 的 JSON 编码器转义为 \u0026。此处先 Unmarshal 还原为 Go 对象，再用
-			// PrintJSONUnescaped 输出，保证 & 不被二次转义。
-			if unescapeHTML {
-				var parsed any
-				if err := json.Unmarshal([]byte(c.Text), &parsed); err == nil {
-					return printJSON(parsed)
-				}
-			}
-			deps.Out.PrintRaw(c.Text)
-			return nil
-		}
-	}
-	// 无 text 类型内容时，将整个 result 对象序列化为 JSON 输出
-	return printJSON(result)
+	return writeMCPToolPayloadLegacy(serverID, toolName, payload, unescapeHTML)
 }
 
 // normalizeMailSuccessBooleans repairs a wire inconsistency in the mail
