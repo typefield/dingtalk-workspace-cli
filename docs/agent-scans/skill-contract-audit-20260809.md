@@ -9,6 +9,7 @@
 | 审计项 | 结果 |
 |---|---|
 | Mono 脚本 Help/Skill 参数对账 | PASS |
+| Skill 已迁移 Doc 文件管理路由 | PASS |
 | Mono 脚本结果/异常边界 | PASS |
 | Mono 深层 dry-run 受控探针 | PASS |
 | Mono 复合写确认门禁受控探针 | PASS |
@@ -99,6 +100,24 @@
 ## 结论
 
 当前 32 个 Agent 入口的 Help 可观测性为 32/32 dry-run、32/32 format、0 个 Help 非零；副作用和结果契约仍需单独实测。
+```
+
+### Skill 已迁移 Doc 文件管理路由
+
+命令：`/Library/Developer/CommandLineTools/usr/bin/python3 scripts/agent/scan_deprecated_doc_routes.py`
+
+```text
+# Skill 已迁移 Doc 文件管理路由 Agent 审阅
+
+扫描日期：2026-08-09
+
+> 本扫描检查 Agent 文档是否把旧 `dws doc` 文件管理入口当作正向路径。它是 Markdown 评测证据，不接入 CI，也不保存 JSON fixture。
+
+## 结论
+
+**PASS**：Mono/Multi Skill 均未发现未标注为迁移/兼容的 `doc upload/download/copy/move/rename/delete/list/search` 正向路由。
+
+默认路由：文件发现、传输和节点管理使用 `dws drive`；文档正文读取、创建、块编辑、导出和媒体嵌入保留 `dws doc`。
 ```
 
 ### Mono 脚本结果/异常边界
@@ -282,7 +301,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T13:19:58`
+- generated_at: `2026-08-09T15:39:39`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -389,7 +408,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1144 executable command paths)
+skill command integrity check: ok (1143 executable command paths)
 ```
 
 ### Skill 隐藏兼容 flag Agent 审阅
@@ -398,7 +417,7 @@ skill command integrity check: ok (1144 executable command paths)
 
 ```text
 Agent semantic flag review: 0 hidden compatibility references
-skill command integrity check: ok (1144 executable command paths)
+skill command integrity check: ok (1143 executable command paths)
 ```
 
 ## 解释边界

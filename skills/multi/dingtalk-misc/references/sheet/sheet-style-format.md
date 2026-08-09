@@ -240,7 +240,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "D1" \
 # ── 工作流 8: 合并单元格 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 合并所有单元格（默认 mergeAll）
 dws sheet merge-cells --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:B3" --format json
@@ -262,7 +262,7 @@ dws sheet merge-cells --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:C3" --m
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ `range update` / `range set-style` / `range batch-set-style` 单次调用上限（强制）：行数 ≤ 1000，单元格总数（行×列）建议≤ 5000（服务端硬限 30000）；超限请拆分多次调用。CLI 会在调用前做本地预校验，服务端超 30000 会直接报错
 - `range set-style` / `range batch-set-style` 的样式枚举按驼峰书写：`wordWrap` 取 `overflow`/`clip`/`autoWrap`，`fontWeight` 取 `bold`/`normal`，`hAlign` 取 `left`/`center`/`right`/`general`，`vAlign` 取 `top`/`middle`/`bottom`；背景色/字体颜色统一使用 `#RRGGBB` 格式
 - `range update` 支持通过 `cellStyles` 在写值时附带 per-cell 样式，适合少量单元格写值 + 样式一步到位的场景。批量设置整片区域的统一样式时，仍应使用 `set-style` / `batch-set-style`

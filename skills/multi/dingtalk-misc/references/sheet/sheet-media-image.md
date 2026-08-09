@@ -204,7 +204,7 @@ dws sheet write-image --node <NODE_ID> --sheet-id <SHEET_ID> --range C3:C3 --fil
 # 4. 完整流程: 创建表格 → 写表头 → 写入图片
 dws sheet create --name "产品目录" -f json
 # 提取 nodeId 后，先用 list 获取真实 sheetId:
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:B1" \
   --values '[[{"type":"text","text":"产品名称"},{"type":"text","text":"产品图片"}]]' -f json
 dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A2:A2" \
@@ -227,7 +227,7 @@ dws sheet write-image --node <NODE_ID> --sheet-id <SHEET_ID> --range B2:B2 --fil
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - `media-upload` 是两步自动完成的流程 (获取附件上传凭证 → OSS 上传)，无需手动分步操作
 - `write-image` 是三步自动完成的流程 (获取附件上传凭证 → OSS 上传 → 写入图片到单元格)，无需手动分步操作
 - ★ 向表格单元格中写入图片必须使用 `write-image`，禁止使用 `range update`。`range update` 不支持图片对象

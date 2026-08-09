@@ -5,7 +5,7 @@
 用户说"写数据/填表/更新单元格/写入公式":
 - 更新数据 → `range update`
 - 写入公式前先读 [sheet-formula](./sheet-formula.md)；写完必须回读公式文本并运行 `formula-verify`，关键业务数值还要抽样对账，不能只看写入返回成功
-- 【强制】`--sheet-id` 必填：即使是单工作表也不能省略，不要参照 `range read` 的默认行为；未知时先执行 `dws sheet list --node <NODE_ID> --format json` 获取 `sheetId`，禁止凭空臆测为 `Sheet1`、`sheet1`、`0`、`default` 等
+- 【强制】`--sheet-id` 必填：即使是单工作表也不能省略，不要参照 `range read` 的默认行为；未知时先执行 `dws sheet +list-sheets --node <NODE_ID> --format json` 获取 `sheetId`，禁止凭空臆测为 `Sheet1`、`sheet1`、`0`、`default` 等
 - 注意：如果用户的目的是替换文本、移动行列、追加空行空列、清空区域、排序、填充、复制区域或移动区域，请勿使用 `range update`，必须使用对应的专用命令（`replace`/`move-dimension`/`add-dimension`/`range clear`/`range sort`/`range fill`/`range copy-to`/`range move-to`）
 - **批量 CSV 值/公式写入优先用 `csv-put`**：当写入场景同时满足以下条件时，必须优先使用 `csv-put` 而非 `range update`：(1) 不需要超链接、dataValidation、cellStyles 或 richText；(2) 数据量较大（超过 5 行或超过 20 个单元格）；(3) 数据来源为表格/CSV 文本/结构化文本。`csv-put` 无需手动构造二维 JSON 数组，字段值以 `=` 开头时按公式解析，并支持自动扩容
 
@@ -366,7 +366,7 @@ Flags:
 ```
 
 - 不传 `subType` 时按 `path` 处理，适合外部 URL
-- `subType:"sheet"` / `"range"` 需要使用真实工作表名称或 A1 范围；未知时先 `dws sheet list --node <NODE_ID> --format json`，禁止猜 `Sheet1`
+- `subType:"sheet"` / `"range"` 需要使用真实工作表名称或 A1 范围；未知时先 `dws sheet +list-sheets --node <NODE_ID> --format json`，禁止猜 `Sheet1`
 - 这只影响富文本片段链接；整格链接仍使用 cell-level `hyperlink`
 - 写入后用 `range read` 读取时，`richText.texts[].subType` 会按同样语义返回；不要把 richText 片段链接和整格 `hyperlink` 混淆
 
@@ -474,7 +474,7 @@ dws sheet range update --node NODE_ID --sheet-id SHEET_ID --range "A1:C1" \
 dws sheet create --name "销售数据" --format json
 
 # 2. 查看工作表列表 — 提取 sheetId
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 3. 写入表头和数据
 dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:C1" \
@@ -509,7 +509,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "D1" \
 # ── 工作流 5: 追加数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 查看工作表详情（确认列结构）
 dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --format json
@@ -537,7 +537,7 @@ dws sheet append --node <NODE_ID> --sheet-id <SHEET_ID> \
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - ★ **`range update` 维度校验（强制）**：调用 `range update` 写入 `--values` 时，必须严格校验二维 JSON 数组的行数与列数与 `--range` 指定的范围完全一致：
   - 例如 `--range "A1:C3"` 表示 3 行 × 3 列，`--values` 必须是 `[[v1,v2,v3],[v4,v5,v6],[v7,v8,v9]]` 这样 3×3 的数组
   - `--range "A1"` 表示 1 行 × 1 列，`--values` 必须是 `[[v]]`

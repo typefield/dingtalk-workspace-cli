@@ -188,7 +188,7 @@ Example:
 | extension | 文件类型 | 操作 | 命令 |
 |-----------|---------|------|------|
 | adoc | 在线文档 | 在线获取 Markdown 内容 | `dws doc read --node <nodeId>` |
-| axls | 在线表格 | 在线读取表格数据 | `dws sheet list` → `dws sheet range read` |
+| axls | 在线表格 | 在线读取表格数据 | `dws sheet +list-sheets` → `dws sheet range read` |
 | able | 多维表格 | 在线查询记录 | `dws aitable base get` → `dws aitable record query` |
 | 其他（pdf/docx/txt/png 等） | 普通文件 | **不支持在线分析**，需用户主动下载后本地查看 | `dws drive download --node <nodeId> --output <path>` |
 

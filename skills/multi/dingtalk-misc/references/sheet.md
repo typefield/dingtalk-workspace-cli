@@ -28,7 +28,7 @@
 
 ## Agent 编辑总则
 
-1. **先定位再编辑**：未知 `sheet-id` 时必须先 `dws sheet list --node <ID> --format json`，禁止猜 `Sheet1` / `sheet1` / `0` / `default`。用户只给工作表名称时，也先用 `list` 确认真实名称或 ID。
+1. **先定位再编辑**：未知 `sheet-id` 时必须先 `dws sheet +list-sheets --node <ID> --format json`，禁止猜 `Sheet1` / `sheet1` / `0` / `default`。用户只给工作表名称时，也先用 `list` 确认真实名称或 ID。
 2. **先读结构再动结构**：合并、冻结、行列分组、行高列宽、隐藏行列、最后非空边界都属于工作表结构信息，先读 `dws sheet info --node <ID> --sheet-id <SHEET_ID> --format json`。
 3. **按目的选择读取方式**：快速看值和大表分批用 `csv-get`；需要 `columns` / `data` / `dtypes` / `formats` 用 `table-get`；需要公式、样式、数据验证、超链接、富文本等 per-cell 元数据用 `range read`。
 4. **写返回不等于完成**：任何写操作完成后都要用独立读命令回读确认。值写入用 `csv-get` / `range read` / `table-get`，结构变更用 `sheet info`，对象类操作用对应 `list` / `get`。
@@ -92,7 +92,7 @@
 
 ## 全局硬约束
 
-1. **`--sheet-id` 禁止臆测**：未知时必须 `dws sheet list --node <ID> --format json` 查询，禁止编造 `Sheet1`/`sheet1`/`0`/`default`
+1. **`--sheet-id` 禁止臆测**：未知时必须 `dws sheet +list-sheets --node <ID> --format json` 查询，禁止编造 `Sheet1`/`sheet1`/`0`/`default`
 2. **合并单元格是结构信息**：`dws sheet info --node <ID> --sheet-id <SHEET_ID> --format json` 返回 `mergedRanges`（如 `["C7:D11"]`）；不要在 `range read` / `csv-get` 里寻找合并信息
 3. **冻结行列是工作表元数据**：`sheet info` 顶层返回 `frozenRowCount` / `frozenColumnCount`，分别表示从顶部第 1 行、左侧第 A 列开始冻结的数量；`0` 表示未冻结。不要在 `range read` / `csv-get` 里寻找冻结信息
 4. **结构变更后回读**：创建/取消分组、调整行高列宽或隐藏行列后，用 `dws sheet info --node <ID> --sheet-id <SHEET_ID> --format json` 回读工作表结构确认。
@@ -241,7 +241,7 @@ Flags:
   `dws drive info --node "<URL>" --format json` 探测；只有 `extension=axls`
   才继续走 `sheet`。
 - `spreadsheetv2` 链接不要截取短 path segment，必须把完整 URL 原样传给 `--node`。
-- 写入类命令必须先用 `dws sheet list --node <nodeId或URL> --format json` 取得真实 `sheetId`；不要猜 `Sheet1`、`sheet1`、`0`。
+- 写入类命令必须先用 `dws sheet +list-sheets --node <nodeId或URL> --format json` 取得真实 `sheetId`；不要猜 `Sheet1`、`sheet1`、`0`。
 - 所有 sheet 子命令使用 `--node` 参数；不要写 `--node-id`、`--file-id` 或把 JSON 字段名 `id` 当成节点值传入。
 
 ## 高频硬约束

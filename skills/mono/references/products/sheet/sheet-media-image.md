@@ -226,7 +226,7 @@ dws sheet write-image --node <NODE_ID> --sheet-id Sheet1 --range B2:B2 --file ./
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - `media-upload` 是两步自动完成的流程 (获取附件上传凭证 → OSS 上传)，无需手动分步操作
 - `write-image` 是三步自动完成的流程 (获取附件上传凭证 → OSS 上传 → 写入图片到单元格)，无需手动分步操作
 - ★ 向表格单元格中写入图片必须使用 `write-image`，禁止使用 `range update`。`range update` 底层调用的 `update_range` MCP 工具不支持图片类型参数，调用会失败

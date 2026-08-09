@@ -232,7 +232,7 @@ Flags:
 # ── 工作流 1: 创建柱形图 ──
 
 # 1. 先查 sheetId
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 
 # 2. 查看数据范围确认列对应关系
 dws sheet csv-get --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:E5"
@@ -338,7 +338,7 @@ dws sheet chart update --node <NODE_ID> --sheet-id <SHEET_ID> --chart-id <CHART_
 
 ## 注意事项
 
-- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - [强制] **创建后必须验证**：图表创建后必须调用 `chart list` 验证配置是否正确
 - [强制] **chart-id 禁止臆测**：必须通过 `chart list` 获取真实的图表 ID，不可编造
 - **图表类型映射**：用户说"柱形图"用 `column`，"条形图"（横向）用 `bar`，"散点图"用 `scatter`，"雷达图"用 `radar`，"环形图"用 `doughnut`，"柱+线/组合/双轴"用 `combo`

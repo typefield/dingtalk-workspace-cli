@@ -218,7 +218,7 @@ dws sheet filter-view --help
 
 用户说"写数据/填表/更新单元格/写入公式":
 - 更新数据 → `range update`
-- 【强制】`--sheet-id` 必填：即使是单工作表也不能省略，不要参照 `range read` 的默认行为；未知时先执行 `dws sheet list --node <NODE_ID> --format json` 获取 `sheetId`，禁止凭空臆测为 `Sheet1`、`sheet1`、`0`、`default` 等
+- 【强制】`--sheet-id` 必填：即使是单工作表也不能省略，不要参照 `range read` 的默认行为；未知时先执行 `dws sheet +list-sheets --node <NODE_ID> --format json` 获取 `sheetId`，禁止凭空臆测为 `Sheet1`、`sheet1`、`0`、`default` 等
 - 注意：如果用户的目的是替换文本、移动行列或追加空行空列，请勿使用 `range update`，必须使用对应的专用命令（`replace`/`move-dimension`/`add-dimension`）
 - **批量 CSV 值/公式写入优先用 `csv-put`**：当数据可表达为 CSV（可含 `=` 开头的公式）、不需要超链接或富格式且数据量较大（超过 5 行或超过 20 个单元格）时，必须优先使用 `csv-put`。它无需手动构造二维 JSON 数组并支持自动扩容；要写以 `=` 开头的字面文本时在字段值前加单引号
 
@@ -411,7 +411,7 @@ dws sheet filter-view --help
 
 以下是最容易出错的规则，**必须严格遵守**：
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **`range update` 单元格协议（强制）**：`--values` 是二维 JSON 数组，**每个单元格必须是 object**（如 `{"type":"text","text":"张三"}`），不再支持裸值 `"张三"` / `90` / `null`。裸值会报错「不支持原始值……每个单元格必须是 object」。数字/布尔也写成字符串 object（如 `{"type":"text","text":"90"}`），服务端自动识别类型。超链接写在单元格 object 的 `hyperlink` 字段，**没有 `--hyperlinks` flag**（传了报 unknown flag）
 - ★ **`range update` 维度校验（强制）**：`--values` 的行列数必须与 `--range` 完全一致。例如 `--range "A1:C3"` → `--values` 必须是 3×3 的 object 数组
 - ★ **`range update` 清空规范（强制）**：清空单个单元格用 `{"type":"text","text":""}`；清空整片区域用 `range clear`。跳过某格保留原值用 `{}` 空对象
@@ -450,10 +450,10 @@ Flags:
 ### 获取全部工作表列表
 ```
 Usage:
-  dws sheet list [flags]
+  dws sheet +list-sheets [flags]
 Example:
-  dws sheet list --node <NODE_ID>
-  dws sheet list --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>"
+  dws sheet +list-sheets --node <NODE_ID>
+  dws sheet +list-sheets --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>"
 Flags:
       --node string   表格文档 ID 或 URL (必填)
 ```
@@ -1678,7 +1678,7 @@ template apply Flags:
 dws sheet create --name "销售数据" --format json
 
 # 2. 查看工作表列表 — 提取 sheetId
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 3. 写入表头和数据（每个单元格必须是 object；数字也写成字符串）
 dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:C1" \
@@ -1690,7 +1690,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A2:C4" \
 # ── 工作流 2: 读取已有表格数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 查看工作表详情（行列数、最后非空位置等）
 dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --format json
@@ -1730,7 +1730,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "D1" \
 # ── 工作流 5: 追加数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 查看工作表详情（确认列结构）
 dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --format json
@@ -1748,7 +1748,7 @@ dws sheet append --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 6: 插入行或列 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 在第 3 行之前插入 2 行
 dws sheet insert-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -1767,7 +1767,7 @@ dws sheet insert-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 6b: 删除行或列 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 从第 3 行开始删除 2 行
 dws sheet delete-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -1786,7 +1786,7 @@ dws sheet delete-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 6c: 更新行/列属性（显隐、行高/列宽） ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 隐藏第 3~4 行
 dws sheet update-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -1809,7 +1809,7 @@ dws sheet update-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 7: 搜索表格数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 基本搜索 — 在指定工作表中查找文本
 dws sheet find --node <NODE_ID> --sheet-id <SHEET_ID> --find "销售额" --format json
@@ -1831,7 +1831,7 @@ dws sheet find --node <NODE_ID> --sheet-id <SHEET_ID> --find "SUM" --match-formu
 # ── 工作流 8: 合并单元格 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 合并所有单元格（默认 mergeAll）
 dws sheet merge-cells --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:B3" --format json
@@ -1884,7 +1884,7 @@ dws sheet write-image --node <NODE_ID> --sheet-id Sheet1 --range B2:B2 --file ./
 # ── 工作流 11: 筛选视图管理 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 
 # 2. 查看已有筛选视图
 dws sheet filter-view list --node <NODE_ID> --sheet-id <SHEET_ID> -f json
@@ -2029,7 +2029,7 @@ dws sheet export --node <NODE_ID> --output ./
 
 > 标 ★ 的条目已在前文「关键注意事项」中列出，此处为完整说明。
 
-- ★ `--sheet-id` 获取规范（强制）：所有涉及 `--sheet-id` 参数的命令（`info` / `new` / `range read` / `range update` / `find` / `append` / `insert-dimension` / `delete-dimension` / `update-dimension` / `move-dimension` / `add-dimension` / `merge-cells` / `unmerge-cells` / `replace` / `write-image` / `set-dropdown` / `get-dropdown` / `delete-dropdown` / `filter-view *` 等），除非用户主动提供了工作表 ID 或工作表名称，否则在 `sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ `--sheet-id` 获取规范（强制）：所有涉及 `--sheet-id` 参数的命令（`info` / `new` / `range read` / `range update` / `find` / `append` / `insert-dimension` / `delete-dimension` / `update-dimension` / `move-dimension` / `add-dimension` / `merge-cells` / `unmerge-cells` / `replace` / `write-image` / `set-dropdown` / `get-dropdown` / `delete-dropdown` / `filter-view *` 等），除非用户主动提供了工作表 ID 或工作表名称，否则在 `sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - ★ `range update` 单元格对象协议（强制）：`--values` 每个单元格必须是 object（`{"type":"text","text":...}` / `{"type":"richText",...}` / `{}` 等），不支持裸值 `"张三"` / `90` / `null`，裸值报「不支持原始值……每个单元格必须是 object」。数字/布尔写成字符串 object，服务端自动识别类型。超链接写在 cell object 的 `hyperlink` 字段，没有 `--hyperlinks` flag
 - ★ `range update` 维度校验（强制）：`--values` 二维数组的行数与列数必须与 `--range` 完全一致：
   - 例如 `--range "A1:C3"` 表示 3 行 × 3 列，`--values` 必须是 3×3 的 object 数组

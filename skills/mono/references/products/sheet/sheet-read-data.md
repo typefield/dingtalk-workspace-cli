@@ -194,7 +194,7 @@ Flags:
 # ── 工作流: 读取已有表格数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 查看工作表详情（行列数、最后非空位置、mergedRanges 等）
 dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --format json
@@ -215,7 +215,7 @@ dws sheet range read --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:D10" --f
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - `range read` 不传 `--range` 时默认读取整个工作表的全部非空数据
 - `range read` 的 `--range` 支持 `Sheet1!A1:D10` 格式直接指定工作表（此时忽略 `--sheet-id`）
 - ★ `csv-get` / `range read` / `range get` 不返回合并单元格结构；查看合并范围必须用 `sheet info` 的 `mergedRanges`

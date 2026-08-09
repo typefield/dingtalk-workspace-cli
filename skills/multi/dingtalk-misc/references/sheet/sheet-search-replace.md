@@ -79,7 +79,7 @@ Flags:
 # ── 工作流: 搜索表格数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 基本搜索 — 在指定工作表中查找文本
 dws sheet find --node <NODE_ID> --sheet-id <SHEET_ID> --find "销售额" --format json
@@ -107,7 +107,7 @@ dws sheet find --node <NODE_ID> --sheet-id <SHEET_ID> --find "SUM" --match-formu
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - ★ **搜索用 `find` 不用 `range read`**：`find` 是服务端搜索，禁止用 `range read` 全量读取后客户端过滤
 - ★ **替换用 `replace` 不用 `range update`**：`replace` 是服务端原子操作，返回替换计数
 - `find` 返回匹配单元格的地址（A1 表示法）和值，无匹配时返回空数组

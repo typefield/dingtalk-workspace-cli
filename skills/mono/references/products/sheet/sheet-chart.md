@@ -223,7 +223,7 @@ Flags:
 # ── 工作流 1: 创建柱形图 ──
 
 # 1. 先查 sheetId
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 
 # 2. 查看数据范围确认列对应关系
 dws sheet csv-get --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:E5"
@@ -342,7 +342,7 @@ dws sheet chart update --node <NODE_ID> --sheet-id <SHEET_ID> --chart-id <CHART_
 
 ## 注意事项
 
-- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - [强制] **创建后必须验证**：图表创建后必须调用 `chart list` 验证配置是否正确
 - ⚠️ **`chart list` 判空看 `totalCount` 不看数组长度**：无图表时 `floatCharts` 仍含 1 个全 null 幽灵元素（无 id），`totalCount` 为 0、`message` 说明为空。判断有没有图表以 `totalCount` 为准或过滤无 `id` 的元素
 - [强制] **chart-id 禁止臆测**：必须通过 `chart list` 获取真实的图表 ID，不可编造

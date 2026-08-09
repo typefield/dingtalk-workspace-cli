@@ -1,6 +1,6 @@
 ---
 name: dingtalk-drive
-version: 1.0.0
+version: 1.0.1
 description: 钉钉文件管理（存储层）。Use when 用户说 钉盘/上传文件/下载文件/文件夹/查文件/找文件/全局搜索文件/复制/移动/重命名/删除/回收站/还原删除文件/权限管理/普通文件下载。任何文件类型都适用；文档内容编辑走 dingtalk-doc，知识库空间和空间内节点管理走 dingtalk-wiki。命令前缀：dws drive。
 metadata:
   cli_version: ">=1.0.15"

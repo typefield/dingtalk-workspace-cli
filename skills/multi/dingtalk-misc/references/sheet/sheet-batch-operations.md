@@ -267,7 +267,7 @@ Cause: The requested resource was not found by the identifier 'NonExistentSheet'
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **需要对多个区域执行相同清除操作时，用 `range batch-clear`**：一次原子请求清除多个区域（可跨工作表），失败时整批回滚
 - ★ **需要组合多个不同写操作（清除+写入等）时，用 `batch-update`**：原子事务，任一操作失败则整批回滚，避免留下半成品
 - ★ **table 写入不进 batch-update**：当前 `batch-update` 不支持结构化 table 写入；结构化 table 请直接调用 `dws sheet table-put`

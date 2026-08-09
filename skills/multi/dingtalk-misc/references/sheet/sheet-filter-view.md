@@ -266,7 +266,7 @@ Flags:
 # ── 工作流 11: 筛选视图管理 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 
 # 2. 查看已有筛选视图
 dws sheet filter-view list --node <NODE_ID> --sheet-id <SHEET_ID> -f json
@@ -322,7 +322,7 @@ dws sheet filter-view create --node <NODE_ID> --sheet-id <SHEET_ID> \
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **全局筛选（filter）与筛选视图（filter-view）的区别**：全局筛选影响所有协作者看到的数据展示，每个工作表最多一个；筛选视图是个人化的，互不影响。用户只说"筛选"时默认走 `filter` 系列
 - `filter-view list` 获取指定工作表的所有筛选视图列表，返回的 `id` 可用于后续 info / update / delete / update-criteria / delete-criteria / list-criteria / get-criteria 的 `--filter-view-id`
 - `filter-view info` 获取单个筛选视图的完整信息（含 criteria），按 `--filter-view-id` 返回对应视图

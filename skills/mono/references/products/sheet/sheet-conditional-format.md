@@ -260,7 +260,7 @@ Flags:
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **强制走条件格式的触发词**：用户说"标红/标黄/高亮/突出/标记/数据条/色阶/颜色随数据变"时，强制走 `cond-format create/update/delete`，禁止用 `range set-style` 写静态背景色代替
 - **创建后必须验证**：条件格式创建后必须调用 `cond-format list` 验证规则是否生效
 - **范围要精确**：条件格式的应用范围必须精确覆盖用户指定的列/行，不要遗漏也不要过度扩大

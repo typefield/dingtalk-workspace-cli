@@ -162,7 +162,7 @@ Flags:
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - ★ **全局筛选（filter）与筛选视图（filter-view）的区别**：全局筛选影响所有协作者看到的数据展示，每个工作表最多一个；筛选视图是个人化的，互不影响。用户只说"筛选"时默认走 `filter` 系列
 - `filter get` 获取工作表的全局筛选信息，返回 `range`（筛选范围）、`id` 和 `criteria`（各列条件对象，无条件时为 `{}`）。无筛选时返回空
 - `filter create` 创建全局筛选时 `--range` 必须包含表头行（如 `A1:E100`），不能只包含数据行。每个工作表只能有一个筛选，已存在时报错

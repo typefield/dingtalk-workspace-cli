@@ -146,7 +146,7 @@ Flags:
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - ★ **清空区域用 `range clear` 不用 `range update`**：`range clear` 支持按类型（值/格式/全部）清除，比手动构造全空数组更简洁可靠
 - ★ **复制区域用 `range copy-to` 不用 `range read` + `range update`**：原子操作，保留公式引用自动调整，支持跨工作表
 - ★ **移动区域用 `range move-to` 不用 `range read` + `range update` + `range clear`**：原子操作，源区域自动清空，支持跨工作表

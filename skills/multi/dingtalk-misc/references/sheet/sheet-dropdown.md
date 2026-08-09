@@ -88,7 +88,7 @@ Flags:
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - `set-dropdown` 在指定范围内设置下拉列表，`--options` 为 JSON 数组，每个元素包含 `value`（必填）和 `color`（可选，`#RRGGBB` 格式）。选项值不能包含英文逗号。`--multi-select` 启用多选模式。如果目标范围已存在下拉列表，会被新配置覆盖
 - `get-dropdown` 查询指定范围内的下拉列表配置，返回 `dataValidations` 数组，相同选项的单元格聚合为一组。无下拉列表时 `hasDropdown` 为 false
 - `delete-dropdown` 删除指定范围内的下拉列表配置，单元格恢复为普通文本格式。已填写的值不会被清除。目标范围不存在下拉列表时操作仍返回成功

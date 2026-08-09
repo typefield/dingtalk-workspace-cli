@@ -55,7 +55,7 @@ Flags:
       --mention string   被 @ 的用户 uid 列表，逗号分隔
 ```
 
-- 未知工作表名称时，先 `dws sheet list --node <SHEET_ID> --format json` 确认真实名称，禁止臆测 `Sheet1` / `0` / `default`。
+- 未知工作表名称时，先 `dws sheet +list-sheets --node <SHEET_ID> --format json` 确认真实名称，禁止臆测 `Sheet1` / `0` / `default`。
 
 ---
 
@@ -113,7 +113,7 @@ Flags:
 
 - `--mention` 接受 `userId` 列表（逗号分隔），需要先用 `dws aisearch person --keyword "<姓名>" --dimension name` 拿到 userId。
 - `--comment-key` 是 13 位毫秒时间戳 + 32 位 UUID 的拼接字符串，从 `list` / `create` 返回中提取，用于 `reply` / `update` / `delete`。
-- `create` / `list`（按单元格过滤）的 `--sheet-id` 是工作表 ID 或名称；未知时先 `dws sheet list` 确认，禁止臆测。
+- `create` / `list`（按单元格过滤）的 `--sheet-id` 是工作表 ID 或名称；未知时先 `dws sheet +list-sheets` 确认，禁止臆测。
 - `reply` 加 `--emoji` 时 `--content` 填表情名称（如 `比心`、`赞`），不是文字内容。
 - `delete` 是不可逆操作；AI Agent 必须先向用户展示操作摘要并获得明确同意，同意后才追加 `--yes`。
 
@@ -139,7 +139,7 @@ dws sheet comment list --node <SHEET_ID> --sheet-id Sheet1 --range A2 --format j
 dws sheet comment list --node <SHEET_ID> --resolve-status unresolved --format json
 
 # 在单元格上创建评论（未知工作表名先 sheet list 确认）
-dws sheet list --node <SHEET_ID> --format json
+dws sheet +list-sheets --node <SHEET_ID> --format json
 dws sheet comment create --node <SHEET_ID> --sheet-id Sheet1 --range A2 --content "这个数字有问题" --format json
 
 # 创建评论 + @人（先 aisearch person 拿 userId）

@@ -185,7 +185,7 @@ Flags:
 | extension | 文件类型 | 操作 | 命令 |
 |-----------|---------|------|------|
 | adoc | 在线文档 | 在线获取 Markdown 内容 | `dws doc read --node <fileId>` |
-| axls | 在线表格 | 在线读取表格数据 | `dws sheet list --node <ID>` → `dws sheet range read --node <ID> --sheet-id <SHEET_ID> --range <RANGE>` |
+| axls | 在线表格 | 在线读取表格数据 | `dws sheet +list-sheets --node <ID>` → `dws sheet range read --node <ID> --sheet-id <SHEET_ID> --range <RANGE>` |
 | able | 多维表格 | 在线查询记录 | `dws aitable table list --base-id <BASE_ID>` → `dws aitable record query --base-id <BASE_ID> --table-id <TABLE_ID>` |
 | md | Markdown 文件 | 读内容 / 创建 / 覆盖 / 局部替换 | `dws markdown fetch` / `dws markdown create` / `dws markdown overwrite` / `dws markdown patch` |
 | 其他（pdf/docx/txt/png 等） | 普通文件 | **不支持在线分析**，需用户主动下载后本地查看 | `dws drive download` |

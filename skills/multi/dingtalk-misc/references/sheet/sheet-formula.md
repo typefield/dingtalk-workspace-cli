@@ -34,7 +34,7 @@
 
 ## 推荐流程
 
-1. 用 `dws sheet list --node <NODE_ID> --format json` 获取真实 `sheetId`。
+1. 用 `dws sheet +list-sheets --node <NODE_ID> --format json` 获取真实 `sheetId`。
 2. 用 `range read` 或 `csv-get` 读取表头和样本数据，确认目标列与行号。
 3. 明确相对引用和绝对引用：向下填充时检查固定汇率、税率、查找表、标题行是否需要 `$` 锁定。
 4. 按数据形态写入公式：精确 cell object 用 `range update`，CSV/表格文本用 `csv-put`。`range update` 的矩阵行列数必须与 `--range` 完全一致。

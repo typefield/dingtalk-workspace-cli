@@ -218,7 +218,7 @@ dws sheet pivot-table create --node <NODE_ID> \
 # -- 工作流 1: 创建简单分组汇总 --
 
 # 1. 先查 sheetId
-dws sheet list --node <NODE_ID> -f json
+dws sheet +list-sheets --node <NODE_ID> -f json
 
 # 2. 查看数据范围确认列名和边界
 dws sheet csv-get --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:F5"
@@ -281,7 +281,7 @@ dws sheet pivot-table update --node <NODE_ID> --sheet-id <SHEET_ID> --pivot-tabl
 
 ## 注意事项
 
-- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- [强制] **`--sheet-id` 获取规范**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - [强制] **创建后必须验证**：透视表创建后必须调用 `pivot-table list` 验证配置是否正确
 - [强制] **pivot-table-id 禁止臆测**：必须通过 `pivot-table list` 获取真实的透视表 ID，不可编造
 - [强制] **source 必须精确**：数据源范围必须从表头行开始，精确覆盖数据区域，先用 `csv-get` 确认数据边界

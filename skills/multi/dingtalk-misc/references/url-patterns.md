@@ -125,7 +125,7 @@ Step 3 → 按下方路由规则映射到对应产品
 dws drive info --node "https://alidocs.dingtalk.com/i/nodes/abc123" --format json
 
 # 返回 extension=axls → 在线电子表格，路由到 sheet
-dws sheet list --node "https://alidocs.dingtalk.com/i/nodes/abc123" --format json
+dws sheet +list-sheets --node "https://alidocs.dingtalk.com/i/nodes/abc123" --format json
 
 # 返回 extension=xlsx/xls/csv → 本地表格文件，必须下载处理（禁止走 sheet）
 dws drive download --node "https://alidocs.dingtalk.com/i/nodes/xlsx456" --output <PATH> --format json

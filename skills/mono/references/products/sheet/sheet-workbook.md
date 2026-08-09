@@ -54,10 +54,10 @@ Flags:
 ### 获取全部工作表列表
 ```
 Usage:
-  dws sheet list [flags]
+  dws sheet +list-sheets [flags]
 Example:
-  dws sheet list --node <NODE_ID>
-  dws sheet list --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>"
+  dws sheet +list-sheets --node <NODE_ID>
+  dws sheet +list-sheets --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>"
 Flags:
       --node string   表格文档 ID 或 URL (必填)
 ```
@@ -190,7 +190,7 @@ Flags:
 dws sheet create --name "销售数据" --format json
 
 # 2. 查看工作表列表 — 提取 sheetId
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 3. 写入表头和数据（每个单元格必须是 object；数字也写成字符串）
 dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A1:C1" \
@@ -202,7 +202,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <SHEET_ID> --range "A2:C4" \
 # ── 工作流 2: 读取已有表格数据 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 查看工作表详情（行列数、最后非空位置等）
 dws sheet info --node <NODE_ID> --sheet-id <SHEET_ID> --format json
@@ -237,7 +237,7 @@ dws sheet range update --node <NODE_ID> --sheet-id <NEW_SHEET_ID> --range "A2:B2
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：所有涉及 `--sheet-id` 参数的命令，除非用户主动提供了工作表 ID 或工作表名称，否则在 `sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
+- ★ **`--sheet-id` 获取规范（强制）**：所有涉及 `--sheet-id` 参数的命令，除非用户主动提供了工作表 ID 或工作表名称，否则在 `sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询真实的 `sheetId` / 工作表名称后再调用，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）；用户仅给出工作表名称时，也应通过 `list` 校验该名称是否存在，避免名称大小写或拼写不一致导致失败
 - `mergedRanges` 中的范围表示一个整体语义区域。合并区域内非左上角单元格为空并不代表无内容，通常应以左上角单元格的值作为该合并区域的含义。
 - `create` 不传 `--folder` 和 `--workspace` 时，默认创建在"我的文档"根目录
 - `list` 返回所有工作表的 ID 和名称，是后续操作的必要前置步骤

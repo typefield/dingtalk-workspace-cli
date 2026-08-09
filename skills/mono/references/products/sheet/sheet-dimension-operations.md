@@ -216,7 +216,7 @@ Flags:
 # ── 工作流 6: 插入行或列 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 在第 3 行之前插入 2 行
 dws sheet insert-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -235,7 +235,7 @@ dws sheet insert-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 6b: 删除行或列 ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 从第 3 行开始删除 2 行
 dws sheet delete-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -254,7 +254,7 @@ dws sheet delete-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 # ── 工作流 6c: 更新行/列属性（显隐、行高/列宽） ──
 
 # 1. 获取工作表列表
-dws sheet list --node <NODE_ID> --format json
+dws sheet +list-sheets --node <NODE_ID> --format json
 
 # 2. 隐藏第 3~4 行
 dws sheet update-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
@@ -288,7 +288,7 @@ dws sheet update-dimension --node <NODE_ID> --sheet-id <SHEET_ID> \
 
 ## 注意事项
 
-- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet list --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
+- ★ **`--sheet-id` 获取规范（强制）**：`sheetId` 未知时必须先通过 `dws sheet +list-sheets --node <NODE_ID> --format json` 查询，禁止凭空编造（如臆测为 `Sheet1`、`sheet1`、`0`、`default` 等）
 - `sheet info` 的 `mergedRanges` 是行列结构操作的重要预检信息。插入列时尤其要检查多行表头合并区，原有合并区域通常不会自动扩展到新列，必要时需重新设置合并区域
 - `insert-dimension` 在指定位置之前插入空行或空列，不写入数据；如需在末尾追加行/列，使用 `append`
 - `insert-dimension` 的 `--dimension` 只接受 `ROWS` 或 `COLUMNS`
