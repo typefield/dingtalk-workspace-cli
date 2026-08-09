@@ -6,6 +6,7 @@ import (
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/spf13/cobra"
 )
 
@@ -393,12 +394,13 @@ scopeType 支持:
 			if v, _ := cmd.Flags().GetString("request-id"); v != "" {
 				toolArgs["requestId"] = v
 			}
-			return callMCPTool("get_user_rules", toolArgs)
+			return runAgoalUserRules(cmd, toolArgs)
 		},
 	}
 	userRulesCmd.Flags().String("user-id", "", "要查询的人员钉钉 id (可选，默认取操作人)")
 	userRulesCmd.Flags().String("request-id", "", "requestId (可选)")
 	DeclareLeafMetadata(userRulesCmd, LeafSpec{
+		OutputRollout: output.RolloutDualValidate,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
@@ -412,6 +414,7 @@ scopeType 支持:
 				PrimaryCLIPath: "agoal user rules",
 			},
 			Description: "获取当前用户或指定用户的 Agoal 规则周期列表",
+			Result:      agoalUserRulesResultSpec(),
 			Interface: &contract.InterfaceSpec{
 				Mode:         "mcp",
 				Availability: "available",

@@ -1,6 +1,7 @@
 package helpers
 
 import (
+	"encoding/json"
 	"errors"
 	"reflect"
 	"strings"
@@ -42,7 +43,11 @@ func TestAgoalUserRulesPublishesReviewedAgentContract(t *testing.T) {
 }
 
 func TestAgoalUserRulesRoutesExactlyOnce(t *testing.T) {
-	caller := &scriptedToolCaller{format: "json"}
+	raw, err := json.Marshal(validAgoalUserRulesResponse())
+	if err != nil {
+		t.Fatalf("marshal fixture: %v", err)
+	}
+	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: string(raw)}}}
 	installScriptedCaller(t, caller)
 	if err := executeFilterCoverage(t, newAgoalCommand(), "user", "rules", "--user-id", "user-1", "--request-id", "request-1"); err != nil {
 		t.Fatalf("execute: %v", err)

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Audit the first Agoal leaf admitted from Runtime Schema exclusion."""
+"""Audit Agoal user-rules discovery and per-terminal output rollout."""
 
 from __future__ import annotations
 
@@ -32,6 +32,10 @@ def main() -> int:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--output", type=Path, required=True)
     parser.add_argument("--live", action="store_true")
+    parser.add_argument(
+        "--phase", choices=("surface", "dual", "active"), default="surface",
+        help="expected public result: surface/dual keep legacy bytes; active uses the unified envelope",
+    )
     args = parser.parse_args()
     env = dict(os.environ)
     env.setdefault("DWS_PACKAGE_VERSION", "0.0.0-agent-review")
@@ -75,6 +79,14 @@ def main() -> int:
                 and params.get("user-id", {}).get("property") == "dingUserId"
                 and params.get("request-id", {}).get("property") == "requestId"
             )
+            if args.phase != "surface":
+                result_spec = schema.get("result") if isinstance(schema.get("result"), dict) else {}
+                outcomes = result_spec.get("outcomes") if isinstance(result_spec.get("outcomes"), list) else []
+                data_schema = result_spec.get("data_schema") if isinstance(result_spec.get("data_schema"), dict) else {}
+                required = data_schema.get("required") if isinstance(data_schema.get("required"), list) else []
+                schema_ok = schema_ok and outcomes == ["success", "failure"] and set(required) == {
+                    "rules", "preference", "ruleCoverageKnown",
+                }
             checks.append(("Runtime Schema 从 exclusion 进入公开面", schema_ok, f"rc={schema_result.returncode}, parameters={len(params)}"))
             if not schema_ok:
                 findings.append("Agoal user rules Runtime Schema is incomplete")
@@ -98,19 +110,58 @@ def main() -> int:
             if args.live:
                 live = run([str(binary), "agoal", "user", "rules", "--format", "json"], env, 300)
                 payload = parse_object(live.stdout)
-                content = payload.get("content") if isinstance(payload, dict) and isinstance(payload.get("content"), dict) else {}
-                rules = content.get("rules") if isinstance(content.get("rules"), list) else None
-                stable = bool(rules is not None and all(isinstance(row, dict) and isinstance(row.get("id"), str) and row.get("id", "").strip() for row in rules))
-                live_ok = live.returncode == 0 and isinstance(payload, dict) and payload.get("success") is True and stable and not live.stderr.strip()
-                checks.append(("当前用户真实只读规则发现", live_ok, f"rc={live.returncode}, rules={len(rules) if rules is not None else 'unknown'}, stable_ids={'yes' if stable else 'no'}"))
+                if args.phase == "active":
+                    data = payload.get("data") if isinstance(payload, dict) and isinstance(payload.get("data"), dict) else {}
+                    meta = payload.get("meta") if isinstance(payload, dict) and isinstance(payload.get("meta"), dict) else {}
+                    rules = data.get("rules") if isinstance(data.get("rules"), list) else None
+                    stable = bool(rules is not None and all(
+                        isinstance(row, dict)
+                        and isinstance(row.get("ruleId"), str) and row.get("ruleId", "").strip()
+                        and isinstance(row.get("periods"), dict)
+                        and all(
+                            isinstance(period, dict)
+                            and isinstance(period.get("periodId"), str)
+                            and period.get("periodId", "").strip()
+                            for key in ("current", "history")
+                            for period in row["periods"].get(key, [])
+                        )
+                        for row in rules
+                    ))
+                    live_ok = (
+                        live.returncode == 0
+                        and isinstance(payload, dict)
+                        and set(payload).issubset({"ok", "outcome", "data", "meta", "dry_run", "_notice"})
+                        and "contract_version" not in payload
+                        and payload.get("ok") is True
+                        and payload.get("outcome") == "success"
+                        and data.get("ruleCoverageKnown") is False
+                        and meta.get("count") == len(rules or [])
+                        and "pagination" not in meta
+                        and stable
+                        and not live.stderr.strip()
+                    )
+                else:
+                    content = payload.get("content") if isinstance(payload, dict) and isinstance(payload.get("content"), dict) else {}
+                    rules = content.get("rules") if isinstance(content.get("rules"), list) else None
+                    stable = bool(rules is not None and all(isinstance(row, dict) and isinstance(row.get("id"), str) and row.get("id", "").strip() for row in rules))
+                    live_ok = (
+                        live.returncode == 0
+                        and isinstance(payload, dict)
+                        and payload.get("success") is True
+                        and "ok" not in payload
+                        and stable
+                        and not live.stderr.strip()
+                    )
+                label = "当前用户真实只读统一投影" if args.phase == "active" else "当前用户真实只读 legacy 字节"
+                checks.append((label, live_ok, f"rc={live.returncode}, rules={len(rules) if rules is not None else 'unknown'}, stable_ids={'yes' if stable else 'no'}"))
                 if not live_ok:
-                    findings.append("live Agoal user rules did not return the reviewed stable shape")
+                    findings.append(f"live Agoal user rules did not match the reviewed {args.phase} shape")
             else:
                 checks.append(("当前用户真实只读规则发现", True, "SKIPPED（未传 --live）"))
 
     passed = not findings
     lines = [
-        "# Agoal user rules Agent surface 审阅",
+        f"# Agoal user rules Agent {args.phase} 审阅",
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
@@ -128,8 +179,13 @@ def main() -> int:
         "",
         "- `agoal user rules` 是 Agoal 整域 exclusion 中首个逐叶完成 Contract、read/low Safety、参数映射和真实只读取证的命令；其余 Agoal 叶仍保持 exclusion，不批量放开。",
         "- 这次只证明当前用户规则响应可被读取并含稳定规则 ID，不证明 Agoal 全域权限、规则覆盖或目标完成情况。",
-        "- 当前业务输出仍为 legacy JSON；本次关闭的是 Agent 发现面 exclusion，不把它误写成统一输出迁移已经完成。",
     ]
+    if args.phase == "surface":
+        lines.append("- 当前业务输出仍为 legacy JSON；本次关闭的是 Agent 发现面 exclusion，不把它误写成统一输出迁移已经完成。")
+    elif args.phase == "dual":
+        lines.append("- 当前命令处于 dual_validate：同一次业务调用会严格构造并验证统一结果，但外部 stdout 仍为 legacy JSON；Agent 不选择协议版本。")
+    else:
+        lines.append("- 当前命令处于 unified_active：普通 `--format json` 直接得到 `ok/outcome/data/meta`，不含协议选择参数或版本标记；`ruleCoverageKnown:false` 且不伪造分页终态。")
     if findings:
         lines += ["", "## Findings", ""] + [f"- {finding}" for finding in findings]
     args.output.parent.mkdir(parents=True, exist_ok=True)
