@@ -40,7 +40,7 @@
 
 | 错误现象 / summary | 原因 | 恢复动作 |
 |-------------------|------|---------|
-| `base not found` | base-id 错误或无权限 | 确认 base-id 正确；尝试 `base list` 或 `base search` 重新定位 |
+| `base not found` | base-id 错误或无权限 | 确认 base-id 正确；尝试 `+base-list` 或 `+base-search` 重新定位 |
 | `table not found` | table-id 错误 | 用 `table get --base-id <baseId>` 不带 table-ids 查看所有表 |
 | 表名重复 | 同 Base 下已存在同名表 | 系统会自动续号（如"原名 1"），无需额外处理 |
 

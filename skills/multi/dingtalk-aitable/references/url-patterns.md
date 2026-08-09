@@ -31,7 +31,7 @@
 
 | 产品 | 用途 | URL 格式 | ID 来源 |
 |------|------|----------|---------|
-| `aitable` | AI表格 Base 链接 | `https://alidocs.dingtalk.com/i/nodes/{baseId}` | `base list/search/create/get` 返回的 `baseId` |
+| `aitable` | AI表格 Base 链接 | `https://alidocs.dingtalk.com/i/nodes/{baseId}` | `+base-list`、`+base-search`、`base create` 或 `+base-get` 返回的 `baseId` |
 | `aitable` | AI表格指定数据表链接 | `https://alidocs.dingtalk.com/i/nodes/{baseId}?iframeQuery=sheetId%3D{tableId}` | `baseId` + `table create/get` 或 `base get` 返回的 `tableId` |
 | `aitable` | AI表格指定数据表+视图链接 | `https://alidocs.dingtalk.com/i/nodes/{baseId}?iframeQuery=sheetId%3D{tableId}%26viewId%3D{viewId}` | `baseId` + `tableId` + `view create/get` 返回的 `viewId` |
 | `aitable` | AI表格模板预览 | `https://docs.dingtalk.com/table/template/{templateId}` | `template search` 返回的 `templateId` |

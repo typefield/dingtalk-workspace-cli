@@ -283,7 +283,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-09T21:11:52`
+- generated_at: `2026-08-09T21:36:09`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -390,7 +390,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1143 executable command paths)
+skill command integrity check: ok (1141 executable command paths)
 ```
 
 ### Skill 隐藏兼容 flag Agent 审阅
@@ -399,7 +399,7 @@ skill command integrity check: ok (1143 executable command paths)
 
 ```text
 Agent semantic flag review: 0 hidden compatibility references
-skill command integrity check: ok (1143 executable command paths)
+skill command integrity check: ok (1141 executable command paths)
 ```
 
 ## 解释边界

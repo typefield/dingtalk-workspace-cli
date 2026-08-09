@@ -8,8 +8,8 @@
 | "在表格里加一个数据表" | `table create` | 不是 `base create` |
 | "看看表格里有哪些表" | `base get` | 不是 `field get` |
 | "看看表里有哪些列" | `field get` | 不是 `base get` |
-| "搜索表格" (找 Base) | `base search` | 不是 `record query` |
-| "搜索记录" (查表内数据) | `record query` | 不是 `base search` |
+| "搜索表格" (找 Base) | `+base-search` | 不是 `record query` |
+| "搜索记录" (查表内数据) | `record query` | 不是 `+base-search` |
 | "删掉这个数据表" | `table delete` | 不是 `record delete` |
 | "删掉这条数据" | `record delete` | 不是 `table delete` |
 | "删掉这个列" | `field delete` | 不是 `record delete` |

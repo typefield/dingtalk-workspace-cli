@@ -33,13 +33,15 @@ func (*baseDiscoveryUnifiedCaller) DryRun() bool   { return false }
 func (*baseDiscoveryUnifiedCaller) Fields() string { return "" }
 func (*baseDiscoveryUnifiedCaller) JQ() string     { return "" }
 
-func TestBaseDiscoveryDualValidationKeepsLegacyWire(t *testing.T) {
+func TestBaseDiscoveryUsesUnifiedOutput(t *testing.T) {
 	tests := []struct {
 		name              string
 		decl              shortcut.Shortcut
 		args              []string
 		tool              string
 		text              string
+		paginationKnown   bool
+		paginationPresent bool
 		endpointExhausted bool
 		nextToken         string
 	}{
@@ -48,6 +50,8 @@ func TestBaseDiscoveryDualValidationKeepsLegacyWire(t *testing.T) {
 			decl:              BaseList,
 			tool:              "list_bases",
 			text:              `{"data":{"bases":[{"baseId":"base-1","baseName":"Recent"}],"hasMore":true,"nextCursor":"cursor-2"}}`,
+			paginationKnown:   true,
+			paginationPresent: true,
 			endpointExhausted: false,
 			nextToken:         "cursor-2",
 		},
@@ -57,21 +61,32 @@ func TestBaseDiscoveryDualValidationKeepsLegacyWire(t *testing.T) {
 			args:              []string{"--query", "项目"},
 			tool:              "search_bases",
 			text:              `{"result":{"bases":[{"baseId":"base-2","baseName":"项目表"}],"hasMore":false,"nextCursor":"0"}}`,
+			paginationKnown:   true,
+			paginationPresent: true,
 			endpointExhausted: true,
+		},
+		{
+			name:              "recent bases preserve unknown pagination",
+			decl:              BaseList,
+			tool:              "list_bases",
+			text:              `{"bases":[{"baseId":"base-3","baseName":"Recent without paging evidence"}]}`,
+			paginationKnown:   false,
+			paginationPresent: false,
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			if tc.decl.OutputRollout != output.RolloutDualValidate {
-				t.Fatalf("rollout = %q, want dual validation", tc.decl.OutputRollout)
+			if tc.decl.OutputRollout != output.RolloutUnifiedActive {
+				t.Fatalf("rollout = %q, want unified active", tc.decl.OutputRollout)
 			}
 			caller := &baseDiscoveryUnifiedCaller{text: tc.text}
 			helpers.InitDeps(caller)
 			cmd := corecmd.New(shortcut.FromShortcut(tc.decl))
 			cmd.PersistentFlags().String("format", "json", "")
 			cmd.PersistentFlags().Bool("dry-run", false, "")
-			cmd.SetContext(context.Background())
+			ctx, _ := output.WithResultStore(context.Background())
+			cmd.SetContext(ctx)
 			var stdout bytes.Buffer
 			cmd.SetOut(&stdout)
 			cmd.SetErr(&bytes.Buffer{})
@@ -79,43 +94,48 @@ func TestBaseDiscoveryDualValidationKeepsLegacyWire(t *testing.T) {
 			if err := cmd.Execute(); err != nil {
 				t.Fatalf("execute: %v", err)
 			}
+			exitCode, emitted, err := output.EmitStoredResult(cmd)
+			if err != nil || !emitted || exitCode != 0 {
+				t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
+			}
 			if caller.tool != tc.tool {
 				t.Fatalf("tool = %q, want %q", caller.tool, tc.tool)
 			}
 
-			var payload map[string]any
-			if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
+			var envelope map[string]any
+			if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
 				t.Fatalf("decode output: %v\n%s", err, stdout.String())
 			}
-			if payload["count"] != float64(1) || payload["authoritativeInventory"] != false {
-				t.Fatalf("legacy payload = %#v", payload)
+			if envelope["ok"] != true || envelope["outcome"] != "success" {
+				t.Fatalf("envelope = %#v", envelope)
 			}
-
-			projected, err := baseListProject(tc.tool, mustUnmarshalMap(t, tc.text))
-			if err != nil {
-				t.Fatalf("project candidate: %v", err)
+			if _, leaked := envelope["contract_version"]; leaked {
+				t.Fatalf("result leaked removed version marker: %#v", envelope)
 			}
-			candidate, err := baseDiscoveryPayload(tc.tool, mustUnmarshalMap(t, tc.text), projected, map[bool]string{true: "name_search_index", false: "recently_accessed"}[tc.tool == "search_bases"])
-			if err != nil {
-				t.Fatalf("candidate payload: %v", err)
+			data, ok := envelope["data"].(map[string]any)
+			if !ok || data["count"] != float64(1) || data["authoritativeInventory"] != false || data["paginationKnown"] != tc.paginationKnown {
+				t.Fatalf("data = %#v", envelope["data"])
 			}
-			meta, err := baseDiscoveryMeta(tc.tool, mustUnmarshalMap(t, tc.text), len(projected))
-			if err != nil {
-				t.Fatalf("candidate meta: %v", err)
+			for _, key := range []string{"complete", "hasMore", "endpointExhausted", "nextCursor"} {
+				if _, leaked := data[key]; leaked {
+					t.Fatalf("data leaked duplicate pagination key %q: %#v", key, data)
+				}
 			}
-			envelope, err := output.EnvelopeFromResult(output.Success(candidate, output.WithMeta(meta)))
-			if err != nil {
-				t.Fatalf("shadow unified envelope: %v", err)
+			meta, ok := envelope["meta"].(map[string]any)
+			if !ok || meta["count"] != float64(1) {
+				t.Fatalf("meta = %#v", envelope["meta"])
 			}
-			if envelope.OK != true || envelope.Outcome != output.OutcomeSuccess || envelope.Meta == nil || envelope.Meta.Count == nil || *envelope.Meta.Count != 1 {
-				t.Fatalf("shadow envelope = %#v", envelope)
+			page, present := meta["pagination"].(map[string]any)
+			if present != tc.paginationPresent {
+				t.Fatalf("pagination presence = %v, want %v: %#v", present, tc.paginationPresent, meta)
 			}
-			page := envelope.Meta.Pagination
-			if page == nil || page.EndpointExhausted != tc.endpointExhausted {
-				t.Fatalf("shadow pagination = %#v", page)
-			}
-			if page.NextToken != tc.nextToken {
-				t.Fatalf("shadow next token = %q, want %q", page.NextToken, tc.nextToken)
+			if present {
+				if page["endpoint_exhausted"] != tc.endpointExhausted {
+					t.Fatalf("pagination = %#v", page)
+				}
+				if got, _ := page["next_token"].(string); got != tc.nextToken {
+					t.Fatalf("next token = %q, want %q", got, tc.nextToken)
+				}
 			}
 		})
 	}

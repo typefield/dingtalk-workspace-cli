@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T20:56:57+08:00
+扫描时间：2026-08-09T21:27:12+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1343 |
-| `dual_validate` | 22 |
-| `unified_active` | 118 |
+| `dual_validate` | 20 |
+| `unified_active` | 120 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,11 +18,12 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-drive-list-active.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-before-aitable.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws drive +list`: `dual_validate` → `unified_active`
+- PASS: `dws aitable +base-list`: `dual_validate` → `unified_active`
+- PASS: `dws aitable +base-search`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -74,9 +75,9 @@
 | `dws aitable +base-delete` | `legacy_only` | `legacy` | no |
 | `dws aitable +base-get` | `legacy_only` | `legacy` | no |
 | `dws aitable +base-get-primary-doc-id` | `legacy_only` | `legacy` | no |
-| `dws aitable +base-list` | `dual_validate` | `legacy` | no |
+| `dws aitable +base-list` | `unified_active` | `unified` | no |
 | `dws aitable +base-schema-snapshot` | `legacy_only` | `legacy` | no |
-| `dws aitable +base-search` | `dual_validate` | `legacy` | no |
+| `dws aitable +base-search` | `unified_active` | `unified` | no |
 | `dws aitable +base-update` | `legacy_only` | `legacy` | no |
 | `dws aitable +chart-delete` | `legacy_only` | `legacy` | no |
 | `dws aitable +chart-get` | `legacy_only` | `legacy` | no |

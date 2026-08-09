@@ -38,7 +38,7 @@
 | `openConversationId` | `chat search` | `chat message list/send --group` |
 | `todoTaskId` | `todo task list` | `todo task update/done --task-id` |
 | `reportId` | `report inbox list` / `report outbox list` | `report entry get/stats --report-id` |
-| `baseId` / `tableId` | `aitable base search` | `aitable record query --base-id --table-id` |
+| `baseId` / `tableId` | `aitable +base-search` | `aitable record query --base-id --table-id` |
 | `dentryUuid` | `drive list` / `drive mkdir` | `drive info/download/copy/move/rename/delete --node`、`drive list/mkdir/upload/copy/move --folder` |
 | `dentryId` | `drive info` 的数字字段 | 仅用于 `chat message send --dentry-id` |
 

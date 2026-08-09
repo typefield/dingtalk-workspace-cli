@@ -123,7 +123,7 @@ metadata:
 
 | 用户说 | 命令 |
 |--------|------|
-| "搜表格 / 找一个 base" | `dws aitable base search --query "<名>"` |
+| "搜表格 / 找一个 base" | `dws aitable +base-search --query "<名>"` |
 | "创建 AI 表格 / 多维表" | `dws aitable base create --name "<名称>" [--template-id <id>]` |
 | "查数据表 / 建数据表" | `dws aitable table get --base-id <baseId>` / `dws aitable table create --base-id <baseId> --name "<表名>" --fields '[...]'` |
 | "查字段 / 字段类型" | `dws aitable field get --base-id <id> --table-id <id>` |
@@ -144,11 +144,11 @@ metadata:
 
 **触发**：找/打开某张 AI 表格、不知 baseId 或 tableId。
 
-1. **选源（必须）**：有名称/关键词 → `dws aitable base search --query "<名称>"`；列最近访问 → `dws aitable base list`。`base list` 仅返回最近访问，不是全部，**禁止**当作全量清单。
-2. **执行（必须）**：`dws aitable base search --query "<完整名>" --format json`（或 `dws aitable base list --format json`）。
+1. **选源（必须）**：有名称/关键词 → `dws aitable +base-search --query "<名称>"`；列最近访问 → `dws aitable +base-list`。`+base-list` 仅返回最近访问，不是全部，**禁止**当作全量清单。
+2. **执行（必须）**：`dws aitable +base-search --query "<完整名>" --format json`（或 `dws aitable +base-list --format json`）。
 3. **解析（必须）**：从 JSON 取真实 `baseId`；**多候选必须输出让用户选，禁止默认取第一个**。
 4. **取 tableId（必须）**：`dws aitable table get --base-id <baseId> --format json` → 从 `data.tables[].tableId` 取目标表 ID，并记录 `views[]`。枚举模式不返回 `fields[]`；需要字段目录时必须继续执行 SOP-2 的 `field get`。若只核对某张表，可显式加 `--table-ids <tableId>` 控制返回体。
-5. **失败（必须）**：`base list` 为空或不命中 → 换 `base search --query` 关键词重试一次；仍无果**必须如实告知**，禁止臆造 baseId/tableId。
+5. **失败（必须）**：`+base-list` 为空或不命中 → 换 `+base-search --query` 关键词重试一次；仍无果**必须如实告知**，禁止臆造 baseId/tableId。
 
 **禁止**：跳过 `table get` 直接用字段名写记录、用模糊名匹配当 baseId、用旧会话里的 ID 不再校验。
 

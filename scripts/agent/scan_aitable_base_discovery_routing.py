@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Agent-only review of AITable Base discovery routes during dual validation.
+"""Agent-only review of active AITable Base discovery routes.
 
 The review reads the actual Skill corpus and current CLI Help/test surface. It
 writes Markdown evidence only; it is not a CI or policy gate and never saves a
@@ -60,15 +60,16 @@ def main() -> int:
     list_help = run(["go", "run", "./cmd", "aitable", "+base-list", "--help"], environment)
     search_help_ok = search_help.returncode == 0 and "--query string" in search_help.stdout and "必填" in search_help.stdout
     list_help_ok = list_help.returncode == 0 and "--limit int" in list_help.stdout and "--cursor string" in list_help.stdout
-    # In dual_validate, Skills retain native routes. The shortcuts are not
-    # taught until their unified result has been promoted to active.
-    passed = bool(native_hits) and not shortcut_routes and tests.returncode == 0 and search_help_ok and list_help_ok
+    # Active discovery routes must teach the unified shortcuts. The historical
+    # native commands remain executable compatibility, but must not be the
+    # positive Agent route after rollout.
+    passed = not native_hits and bool(shortcut_routes) and tests.returncode == 0 and search_help_ok and list_help_ok
 
     transcript = (tests.stdout + tests.stderr).strip()
     if len(transcript) > 3000:
         transcript = transcript[-3000:]
     hits = lambda values: "无" if not values else "<br>".join(f"`{value}`" for value in values[:30])
-    report = f"""# AITable Base 发现 dual-validate — Agent review
+    report = f"""# AITable Base 发现 unified-active — Agent review
 
 扫描时间：{dt.datetime.now().astimezone().isoformat(timespec="seconds")}
 
@@ -78,7 +79,7 @@ def main() -> int:
 
 - native Agent 路由 `dws aitable base list/search`：**{len(native_hits)}** 处
 - shortcut catalog 提及（非工作流）：**{len(shortcut_catalog)}** 处
-- 过早教学 shortcut 路由 `dws aitable +base-list/+base-search`：**{len(shortcut_routes)}** 处
+- active shortcut Agent 路由 `dws aitable +base-list/+base-search`：**{len(shortcut_routes)}** 处
 - AITable 焦点测试退出码：`{tests.returncode}`
 - `+base-search --help` 声明必填 `--query`：`{str(search_help_ok).lower()}`
 - `+base-list --help` 声明 `--limit/--cursor`：`{str(list_help_ok).lower()}`
@@ -88,24 +89,22 @@ def main() -> int:
 有名称关键词时：
 
 ```sh
-dws aitable base search --query "<名称>" --format json
+dws aitable +base-search --query "<名称>" --format json
 ```
 
 只浏览最近访问时：
 
 ```sh
-dws aitable base list --format json
+dws aitable +base-list --format json
 ```
 
-二者都不是全量 Base 目录；`base search` 的零候选也不证明业务上不存在。没有可信候选时请求 URL 或 baseId，不得臆造标识符。
-
-`+base-list/+base-search` 仍在内部做严格投影与 unified 结果候选验证，但本轮不改变 Agent 的输出解析或命令路由；只有完成 dual evidence 后才可单命令晋级。
+二者都不是全量 Base 目录；`+base-search` 的零候选也不证明业务上不存在。没有可信候选时请求 URL 或 baseId，不得臆造标识符。Agent 只按顶层 `ok/outcome`、`data` 和 `meta.pagination` 分支；不再解析 historical 裸 payload。
 
 ## Native route hits
 
 {hits(native_hits)}
 
-## Premature shortcut route hits
+## Active shortcut route hits
 
 {hits(shortcut_routes)}
 

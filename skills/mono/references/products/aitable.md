@@ -9,7 +9,7 @@
 | Base 文档 | `https://alidocs.dingtalk.com/i/nodes/{baseId}` |
 | 模板预览 | `https://docs.dingtalk.com/table/template/{templateId}` |
 
-> **操作后请返回文档 URI**：每次执行 base list/search/create/get 操作后，从返回数据中提取 `baseId`，拼接为 `https://alidocs.dingtalk.com/i/nodes/{baseId}` 返回给用户。
+> **操作后请返回文档 URI**：每次执行 `+base-list`、`+base-search`、`base create` 或 `+base-get` 后，从返回数据中提取 `baseId`，拼接为 `https://alidocs.dingtalk.com/i/nodes/{baseId}` 返回给用户。
 > 补充：如果 URL 不是来自 `aitable` 命令返回，而是用户直接贴的原始 `alidocs` URL，先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe，确认是 `able` 后再按 AI 表格处理。
 
 ## 命令索引表
@@ -18,8 +18,8 @@
 
 | 命令 | 用途 | 必填参数 | 路由提醒 |
 |------|------|----------|----------|
-| `base list` | 列出最近访问的 Base | — | 仅返回最近访问过的，优先用 `base search` |
-| `base search` | 按名称搜索 Base（别名 `aitable search`） | — | `--query` help 标必填但实际可省略：不传时返回最近访问的 Base 列表。`--keyword` 是 `--query` 的隐藏别名，同义 |
+| `+base-list` | 列出最近访问的 Base | — | 仅返回最近访问过的，优先用 `+base-search` |
+| `+base-search` | 按名称搜索 Base | `--query` | 关键词必填；空命中不证明 Base 业务上不存在 |
 | `base get` | 获取 Base 信息（含 tables 列表） | `--base-id` | 用户给 URL 时提取末尾 ID |
 | `base copy` | 复制整个 Base 到目标文件夹 | `--base-id` `--target-folder-id` | 默认全量复制；`--only-struct` 仅复制结构不含数据 |
 | `base get-primary-doc-id` | 获取某记录的主键文档 ID | `--base-id` `--table-id` `--record-id` | 等价 `record primary-doc-get` 的取 ID 视角 |
@@ -305,7 +305,7 @@ dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 300
 ## 意图判断
 
 用户说"表格/多维表/AI表格":
-- 查看/查找/列表 → `base search`（优先）或 `base list`（仅浏览最近访问）
+- 查看/查找/列表 → `+base-search`（优先）或 `+base-list`（仅浏览最近访问）
 - 详情 → `base get`
 - 创建 → `base create`
 - 修改 → `base update`
@@ -354,7 +354,7 @@ dws aitable export data --base-id <BASE_ID> --task-id <TASK_ID> --timeout-ms 300
 
 ```bash
 # 1. 搜索/列出 Base — 提取 baseId
-dws aitable base search --query "项目" --format json
+dws aitable +base-search --query "项目" --format json
 
 # 2. 获取 Base 信息 — 提取 tableId
 dws aitable base get --base-id <BASE_ID> --format json
@@ -374,7 +374,7 @@ dws aitable record create --base-id <BASE_ID> --table-id <TABLE_ID> \
 
 | 操作 | 从返回中提取 | 用于 |
 |------|-------------|------|
-| `base list/search` | `baseId` | 所有后续命令的 --base-id，拼接文档 URI |
+| `+base-list` / `+base-search` | `baseId` | 所有后续命令的 --base-id，拼接文档 URI |
 | `base create` | `baseId` | 后续命令 + 文档 URI |
 | `base get` | `tables[].tableId` | --table-id |
 | `table get` | `fields[].fieldId` | record 操作的 cells key, field get/update/delete |

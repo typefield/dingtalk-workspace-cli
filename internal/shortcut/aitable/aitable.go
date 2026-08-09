@@ -113,7 +113,7 @@ func resolveNamedList(operation string, data map[string]any, outerKeys, innerKey
 
 // BaseList 获取 AI 表格列表（list_bases）。
 var BaseList = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+base-list",
 	Product:       serverMain,
@@ -264,17 +264,12 @@ func baseDiscoveryPayload(operation string, data map[string]any, bases []map[str
 	if sourceKind == "name_search_index" {
 		payload["indexCoverageKnown"] = false
 	}
-	hasMore, nextCursor, known, err := baseDiscoveryPagination(operation, data)
+	_, _, known, err := baseDiscoveryPagination(operation, data)
 	if err != nil {
 		return nil, err
 	}
 	if known {
 		payload["paginationKnown"] = true
-		payload["hasMore"] = hasMore
-		payload["endpointExhausted"] = !hasMore
-		if nextCursor != nil {
-			payload["nextCursor"] = nextCursor
-		}
 	}
 	return payload, nil
 }
@@ -435,7 +430,7 @@ func baseDiscoveryPaginationError(operation, message string) error {
 
 // BaseSearch 按名称关键词搜索 AI 表格（search_bases）。
 var BaseSearch = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+base-search",
 	Product:       serverMain,

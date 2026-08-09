@@ -35,11 +35,13 @@ func TestBaseDiscoveryPayloadDoesNotClaimAuthoritativeInventory(t *testing.T) {
 		payload["inventoryCoverageKnown"] != false {
 		t.Fatalf("inventory boundary = %#v", payload)
 	}
-	if payload["paginationKnown"] != true || payload["endpointExhausted"] != true || payload["hasMore"] != false {
+	if payload["paginationKnown"] != true {
 		t.Fatalf("pagination facts = %#v", payload)
 	}
-	if _, exists := payload["complete"]; exists {
-		t.Fatalf("base discovery must not publish semantically broad complete: %#v", payload)
+	for _, key := range []string{"complete", "hasMore", "endpointExhausted", "nextCursor"} {
+		if _, exists := payload[key]; exists {
+			t.Fatalf("base discovery data must not duplicate pagination key %q: %#v", key, payload)
+		}
 	}
 }
 
@@ -57,8 +59,10 @@ func TestBaseDiscoveryPayloadKeepsUnknownPaginationAndIndexCoverageHonest(t *tes
 		payload["authoritativeInventory"] != false {
 		t.Fatalf("unknown discovery facts = %#v", payload)
 	}
-	if _, exists := payload["endpointExhausted"]; exists {
-		t.Fatalf("unknown pagination must not claim exhaustion: %#v", payload)
+	for _, key := range []string{"hasMore", "endpointExhausted", "nextCursor"} {
+		if _, exists := payload[key]; exists {
+			t.Fatalf("unknown pagination must not publish %q: %#v", key, payload)
+		}
 	}
 }
 

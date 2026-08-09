@@ -83,7 +83,7 @@ dws aitable form share get --base-id BASE_ID --table-id TABLE_ID --view-id VIEW_
 ## 完整工作流示例
 
 > **占位符约定**：
-> - `BASE_ID` 来自 `dws aitable base list` / `base search` 返回的 `data.bases[].baseId`
+> - `BASE_ID` 来自 `dws aitable +base-list` / `+base-search` 返回的 `data.bases[].baseId`
 > - `TABLE_ID` 来自 `dws aitable base get --base-id BASE_ID` 返回的 `data.tables[].tableId`
 > - `VIEW_ID` 来自步骤 1 `form create` 返回的 `data.viewId`
 > - `FIELD_ID` 来自步骤 2 `form questions create` 返回的 `data.results[].fieldId`

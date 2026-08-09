@@ -22,7 +22,7 @@ def render(status: str, facts: list[str], boundary: str) -> str:
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
-        "> 本探针只读取当前用户最近访问 Base 的一页；不保存 Base 名称、ID 或原始 JSON，不接入 CI。",
+        "> 本探针只读取当前用户最近访问 Base 的一页，并在内存中取一个返回名称做搜索对拍；不保存 Base 名称、ID、查询词或原始 JSON，不接入 CI。",
         "",
         "## 结果",
         "",
@@ -36,9 +36,9 @@ def render(status: str, facts: list[str], boundary: str) -> str:
     return "\n".join(lines)
 
 
-def call(dws: str) -> tuple[int, Any | None, bool]:
+def call(dws: str, command: str, extra: list[str]) -> tuple[int, Any | None, bool]:
     completed = subprocess.run(
-        [dws, "aitable", "+base-list", "--limit", "1", "--format", "json"],
+        [dws, "aitable", command, *extra, "--format", "json"],
         text=True,
         capture_output=True,
         check=False,
@@ -50,62 +50,60 @@ def call(dws: str) -> tuple[int, Any | None, bool]:
     return completed.returncode, payload, not completed.stderr.strip()
 
 
-def validate(payload: Any, rc: int, stderr_empty: bool) -> tuple[bool, list[str], str]:
+def validate(payload: Any, rc: int, stderr_empty: bool, source: str) -> tuple[bool, dict[str, Any] | None, list[str]]:
     if rc != 0 or not isinstance(payload, dict):
-        return (
-            False,
-            [f"命令未返回可解析成功 JSON（exit code={rc}）。"],
-            "保留读取错误；不要将失败或不可解析输出解释为没有 Base。",
-        )
-    # Base discovery is deliberately in dual_validate. Public bytes must stay
-    # historical while the framework validates the richer result in-process.
-    bases = payload.get("bases")
-    count = payload.get("count")
+        return False, None, [f"{source} 未返回可解析成功 JSON（exit code={rc}）。"]
+    data = payload.get("data")
+    meta = payload.get("meta")
+    if not isinstance(data, dict) or not isinstance(meta, dict):
+        return False, None, [f"{source} 缺少统一 data/meta 对象。"]
+    bases = data.get("bases")
+    count = data.get("count")
     rows_ok = isinstance(bases, list) and all(
         isinstance(row, dict)
         and isinstance(row.get("baseId"), str)
         and bool(row["baseId"].strip())
         for row in bases
     )
-    known = payload.get("paginationKnown")
+    known = data.get("paginationKnown")
     paging_ok = isinstance(known, bool)
     if known is True:
-        more = payload.get("hasMore")
-        exhausted = payload.get("endpointExhausted")
-        token = payload.get("nextCursor")
+        pagination = meta.get("pagination")
         paging_ok = (
-            isinstance(more, bool)
-            and isinstance(exhausted, bool)
-            and exhausted is (not more)
-            and (not more or (token is not None and str(token).strip() not in {"", "0"}))
-            and (more or token is None or str(token).strip() in {"", "0"})
+            isinstance(pagination, dict)
+            and isinstance(pagination.get("endpoint_exhausted"), bool)
+            and (
+                pagination["endpoint_exhausted"] is True
+                or isinstance(pagination.get("next_token"), str) and bool(pagination["next_token"].strip())
+            )
         )
+    elif known is False:
+        paging_ok = "pagination" not in meta
+    duplicate_paging = any(key in data for key in ("complete", "hasMore", "endpointExhausted", "nextCursor"))
     passed = (
-        isinstance(bases, list)
+        payload.get("ok") is True
+        and payload.get("outcome") == "success"
+        and "contract_version" not in payload
+        and isinstance(bases, list)
         and isinstance(count, int)
         and count == len(bases)
         and rows_ok
-        and payload.get("authoritativeInventory") is False
-        and payload.get("inventoryCoverageKnown") is False
+        and data.get("sourceKind") == source
+        and data.get("authoritativeInventory") is False
+        and data.get("inventoryCoverageKnown") is False
+        and (source != "name_search_index" or data.get("indexCoverageKnown") is False)
+        and meta.get("count") == count
         and paging_ok
+        and not duplicate_paging
         and stderr_empty
-        and "ok" not in payload
-        and "outcome" not in payload
     )
     facts = [
-        "当前命令处于 `dual_validate`：外部仍为 historical Base payload；统一结果只在进程内校验，未对 Agent 激活。",
-        f"投影 Base 数与 `count` 一致：{len(bases) if isinstance(bases, list) else 'unknown'}。",
-        f"所有投影 Base 均有稳定 `baseId`：{str(rows_ok).lower()}。",
-        f"非权威目录边界：`authoritativeInventory:false`、`inventoryCoverageKnown:false`。",
-        f"分页事实已知性为 {known!r}，已知时 hasMore/continuation 自洽：{str(paging_ok).lower()}。",
-        f"stderr 为空：{str(stderr_empty).lower()}。",
+        f"`{source}` 已返回统一 success，count={len(bases) if isinstance(bases, list) else 'unknown'}，稳定 baseId={str(rows_ok).lower()}。",
+        f"`{source}` 保留非权威目录/覆盖未知边界：{str(data.get('authoritativeInventory') is False and data.get('inventoryCoverageKnown') is False).lower()}。",
+        f"`{source}` 分页已知性为 {known!r}，只在 `meta.pagination` 表达续页事实：{str(paging_ok and not duplicate_paging).lower()}。",
+        f"`{source}` stderr 为空：{str(stderr_empty).lower()}。",
     ]
-    boundary = (
-        "本次只验证一个真实正常单页，不证明最近访问列表等于所有可访问 Base，"
-        "也不验证死条目、检索召回或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项单元回归覆盖；"
-        "在明确晋级 unified_active 前，Agent 继续按现有 payload 解析。"
-    )
-    return passed, facts, boundary
+    return passed, data, facts
 
 
 def main() -> int:
@@ -113,9 +111,25 @@ def main() -> int:
     parser.add_argument("--dws", default="dws", help="dws executable to query (default: dws)")
     parser.add_argument("--output", type=Path, help="write Markdown report; default is stdout")
     args = parser.parse_args()
+    passed = False
     try:
-        rc, payload, stderr_empty = call(args.dws)
-        passed, facts, boundary = validate(payload, rc, stderr_empty)
+        list_rc, list_payload, list_stderr_empty = call(args.dws, "+base-list", ["--limit", "1"])
+        list_ok, list_data, list_facts = validate(list_payload, list_rc, list_stderr_empty, "recently_accessed")
+        rows = list_data.get("bases") if isinstance(list_data, dict) else None
+        query = rows[0].get("baseName") if isinstance(rows, list) and rows and isinstance(rows[0], dict) else None
+        if isinstance(query, str) and query.strip():
+            search_rc, search_payload, search_stderr_empty = call(args.dws, "+base-search", ["--query", query])
+            search_ok, _, search_facts = validate(search_payload, search_rc, search_stderr_empty, "name_search_index")
+        else:
+            search_ok = False
+            search_facts = ["最近访问结果未提供可用名称，未执行脱敏搜索对拍。"]
+        passed = list_ok and search_ok
+        facts = [*list_facts, *search_facts]
+        boundary = (
+            "本次只验证一组真实正常列表/搜索响应，不证明最近访问列表等于所有可访问 Base，"
+            "也不验证死条目、搜索召回率或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项回归覆盖；"
+            "搜索零命中仍只能表示当前索引返回为空，不能扩大成业务上不存在。"
+        )
         text = render("PASS" if passed else "REVIEW：Base 发现投影不满足安全条件", facts, boundary)
     except OSError as exc:
         text = render(
@@ -128,7 +142,7 @@ def main() -> int:
         args.output.write_text(text, encoding="utf-8")
     else:
         sys.stdout.write(text)
-    return 0
+    return 0 if passed else 1
 
 
 if __name__ == "__main__":

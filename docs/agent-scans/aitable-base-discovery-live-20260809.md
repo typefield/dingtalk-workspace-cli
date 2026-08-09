@@ -2,7 +2,7 @@
 
 扫描日期：2026-08-09
 
-> 本探针只读取当前用户最近访问 Base 的一页；不保存 Base 名称、ID 或原始 JSON，不接入 CI。
+> 本探针只读取当前用户最近访问 Base 的一页，并在内存中取一个返回名称做搜索对拍；不保存 Base 名称、ID、查询词或原始 JSON，不接入 CI。
 
 ## 结果
 
@@ -10,13 +10,15 @@
 
 ## 可观测事实
 
-- 当前命令处于 `dual_validate`：外部仍为 historical Base payload；统一结果只在进程内校验，未对 Agent 激活。
-- 投影 Base 数与 `count` 一致：1。
-- 所有投影 Base 均有稳定 `baseId`：true。
-- 非权威目录边界：`authoritativeInventory:false`、`inventoryCoverageKnown:false`。
-- 分页事实已知性为 False，已知时 hasMore/continuation 自洽：true。
-- stderr 为空：true。
+- `recently_accessed` 已返回统一 success，count=1，稳定 baseId=true。
+- `recently_accessed` 保留非权威目录/覆盖未知边界：true。
+- `recently_accessed` 分页已知性为 False，只在 `meta.pagination` 表达续页事实：true。
+- `recently_accessed` stderr 为空：true。
+- `name_search_index` 已返回统一 success，count=1，稳定 baseId=true。
+- `name_search_index` 保留非权威目录/覆盖未知边界：true。
+- `name_search_index` 分页已知性为 True，只在 `meta.pagination` 表达续页事实：true。
+- `name_search_index` stderr 为空：true。
 
 ## 边界
 
-本次只验证一个真实正常单页，不证明最近访问列表等于所有可访问 Base，也不验证死条目、检索召回或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项单元回归覆盖；在明确晋级 unified_active 前，Agent 继续按现有 payload 解析。
+本次只验证一组真实正常列表/搜索响应，不证明最近访问列表等于所有可访问 Base，也不验证死条目、搜索召回率或服务端索引健康。分页矛盾/缺 continuation 的 fail-closed 行为由专项回归覆盖；搜索零命中仍只能表示当前索引返回为空，不能扩大成业务上不存在。
