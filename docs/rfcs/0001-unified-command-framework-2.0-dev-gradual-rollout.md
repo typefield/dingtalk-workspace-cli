@@ -602,7 +602,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 - [ ] success/pending/partial/failure、stream、exit code 全矩阵通过。
 - [ ] partial/pending/pagination/dry-run/retry/timeout 的严格测试通过。
 - [ ] active unified 无结果、重复结果、panic、sink close、PAT、custom rc 都有 root E2E。
-- [ ] live rollout ledger 和 transition 已由 Agent 在每轮发布审阅中取证；不把它们接入 CI / `make policy`。
+- [x] Agent 扫描器已从 live Cobra tree 生成初始 rollout inventory：[rollout-ledger-20260809](../agent-scans/rollout-ledger-20260809.md)。后续发布必须以该 Markdown 或上一发布的 ledger 作为 `--baseline` 审阅跳级/回退；初始 inventory 不替代历史发布 transition 证据，且不得接入 CI / `make policy`。
 - [ ] Agent 使用的 devapp shortcut 已从 Schema exclusion 精确移除。
 - [ ] legacy golden、统一结果 golden、Lark/GWS 对齐矩阵和 release note 完整。
 - [ ] MCP 未接入的限制仍被准确说明；不得用 CLI 验收替代 MCP E2E。
