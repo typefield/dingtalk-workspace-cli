@@ -16,6 +16,7 @@ package smart
 import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -27,10 +28,11 @@ import (
 //
 //	dws contact +lookup --name 张三
 var Lookup = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+lookup",
-	Product:     "contact",
-	Description: "按姓名查询某人的完整资料（自动解析 userId 后取详情）",
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "contact",
+	Command:       "+lookup",
+	Product:       "contact",
+	Description:   "按姓名查询某人的完整资料（自动解析 userId 后取详情）",
 	Intent: "当你只知道对方姓名、想一步拿到其完整资料（部门、职位、联系方式等）而不想先搜 userId 再查详情时使用；" +
 		"内部先按姓名搜通讯录解析出唯一 userId，再取详情，姓名匹配到多人时会列出候选让你区分。只读操作。",
 	Risk: shortcut.RiskRead,
@@ -47,6 +49,7 @@ var Lookup = shortcut.Shortcut{
 			PrimaryCLIPath: "contact +lookup",
 		},
 		Description: "按姓名查询某人的完整资料（自动解析 userId 后取详情）",
+		Result:      lookupResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -56,13 +59,14 @@ var Lookup = shortcut.Shortcut{
 			AgentSummary: "按姓名查询某人的完整资料（自动解析 userId 后取详情）",
 			UseWhen:      []string{"当你只知道对方姓名、想一步拿到其完整资料（部门、职位、联系方式等）而不想先搜 userId 再查详情时使用；内部先按姓名搜通讯录解析出唯一 userId，再取详情，姓名匹配到多人时会列出候选让你区分。只读操作。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
-			Examples:     []string{"dws contact +lookup --name 张三"},
+			Examples:     []string{"dws contact +lookup --name 张三 --format json"},
 		},
 	},
 	Flags: []shortcut.Flag{
 		{Name: "name", Type: shortcut.FlagString, Desc: "姓名/花名", Required: true},
 	},
-	Tips: []string{`dws contact +lookup --name 张三`},
+	Tips:         []string{`dws contact +lookup --name 张三`},
+	ResultMapper: lookupCommandResult,
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		// Step 1 — resolve the name to a unique userId.
 		user, err := resolveUser(rt, rt.Str("name"))
