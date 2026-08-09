@@ -1267,9 +1267,9 @@ func devAppNameMap(cmd *cobra.Command, runner executor.Runner) (map[string]strin
 		}
 		nextCursor := devAppConnectFirst(payload, "nextCursor", "cursor")
 		if !hasMore {
-			if nextCursor != "" {
-				return nil, fmt.Errorf("list_dev_app returned a continuation cursor after pagination ended")
-			}
+			// The DevApp adapter returns a terminal position cursor on the final
+			// page. hasMore=false is authoritative; the cursor is not actionable
+			// and must not trigger another read.
 			completed = true
 			break
 		}

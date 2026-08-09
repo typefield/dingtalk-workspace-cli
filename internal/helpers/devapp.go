@@ -1951,7 +1951,8 @@ func devAppEnvelopeData(result executor.Result) any {
 // （契约规范 §3：分页元数据挂 meta 层）。透传语义不变：CLI 只观察服务端
 // 返回的 hasMore/nextCursor，不做合成。hasMore=true 且带 nextCursor →
 // endpoint_exhausted:false + next_token（可续跑）；hasMore=false →
-// endpoint_exhausted:true。hasMore=true 却无 cursor 时不产出分页元数据，
+// endpoint_exhausted:true；DevApp 服务在终页仍可能返回位置 cursor，该值
+// 不是 continuation，统一 meta 不暴露 next_token。hasMore=true 却无 cursor 时不产出分页元数据，
 // 避免违反「endpoint_exhausted:false 必须携带 next_token」。本批只投影、
 // 不从 data 剥离原字段（剥离属三期强类型 handler 的职责，记入 findings）。
 func devAppPaginationMeta(payload any) *output.Meta {
@@ -1985,8 +1986,10 @@ func devAppPaginationMeta(payload any) *output.Meta {
 
 // devAppPaginationError rejects pagination evidence that would otherwise be
 // silently discarded by devAppPaginationMeta. A non-final page must be
-// resumable, while an exhausted page cannot also advertise a continuation
-// token. This keeps both native dev and devapp shortcut projections honest.
+// resumable. A DevApp terminal page may carry a non-actionable position cursor;
+// hasMore=false remains the authoritative terminal fact and the cursor is not
+// projected as next_token. This keeps both native dev and devapp shortcut
+// projections aligned with the observed API contract.
 func devAppPaginationError(payload map[string]any) *output.ErrorInfo {
 	rawMore, hasMoreKey := payload["hasMore"]
 	rawCursor, hasCursorKey := payload["nextCursor"]
@@ -2010,15 +2013,6 @@ func devAppPaginationError(payload map[string]any) *output.ErrorInfo {
 			Type:      "validation",
 			Subtype:   string(apperrors.SubtypePaginationIncomplete),
 			Message:   "devapp pagination continuation is missing nextCursor",
-			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
-			Operation: "devapp.pagination_projection",
-		}
-	}
-	if hasMoreKey && !hasMore && cursor != "" {
-		return &output.ErrorInfo{
-			Type:      "validation",
-			Subtype:   string(apperrors.SubtypePaginationConflict),
-			Message:   "devapp pagination cannot be exhausted while nextCursor is present",
 			Hint:      "不要将结果当作完整列表；保留脱敏响应证据后排查上游分页字段。",
 			Operation: "devapp.pagination_projection",
 		}

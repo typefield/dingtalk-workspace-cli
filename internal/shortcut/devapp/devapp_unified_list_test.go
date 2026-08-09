@@ -225,3 +225,63 @@ func TestDevAppMemberListUsesSharedUnifiedResult(t *testing.T) {
 		t.Fatalf("shared mapper data = %#v, shortcut data = %#v", sharedEnvelope.Data, data)
 	}
 }
+
+func TestDevAppListDoesNotPublishTerminalPositionCursor(t *testing.T) {
+	serviceResult, err := json.Marshal(map[string]any{
+		"success": true,
+		"result": map[string]any{
+			"items": []any{
+				map[string]any{"unifiedAppId": "app-1", "name": "Example app"},
+			},
+			"hasMore":    false,
+			"nextCursor": "terminal-position",
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal service result: %v", err)
+	}
+	caller := &devAppListCaller{result: string(serviceResult)}
+	helpers.InitDepsForTest(t, caller)
+
+	cmd := corecmd.New(shortcut.FromShortcut(frameworkUnified(ListApp)))
+	cmd.PersistentFlags().String("format", "json", "")
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--format", "json"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	exitCode, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || exitCode != 0 {
+		t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
+	}
+
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode output: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("data = %#v", envelope["data"])
+	}
+	if _, leaked := data["nextCursor"]; leaked {
+		t.Fatalf("terminal position cursor leaked into active data: %#v", data)
+	}
+	meta, ok := envelope["meta"].(map[string]any)
+	if !ok {
+		t.Fatalf("meta = %#v", envelope["meta"])
+	}
+	pagination, ok := meta["pagination"].(map[string]any)
+	if !ok || pagination["endpoint_exhausted"] != true {
+		t.Fatalf("pagination = %#v", meta["pagination"])
+	}
+	if _, leaked := pagination["next_token"]; leaked {
+		t.Fatalf("terminal position cursor leaked as next_token: %#v", pagination)
+	}
+}

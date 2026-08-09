@@ -120,18 +120,18 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 		}
 	})
 
-	t.Run("pagination contradiction is a failure", func(t *testing.T) {
+	t.Run("terminal position cursor is not a continuation", func(t *testing.T) {
 		result := DevAppCommandResultFromPayload("", map[string]any{
-			"items": []any{}, "hasMore": false, "nextCursor": "stale-token",
+			"items": []any{}, "hasMore": false, "nextCursor": "terminal-position",
 		}, false)
 		env, err := output.EnvelopeFromResult(result)
 		if err != nil {
 			t.Fatal(err)
 		}
-		if env.Outcome != output.OutcomeFailure || result.ExitCode() == 0 || env.Error == nil ||
-			env.Error.Subtype != "pagination_conflict" || env.Error.Hint == "" ||
-			env.Error.Operation != "devapp.pagination_projection" {
-			t.Fatalf("contradictory pagination envelope=%+v rc=%d", env, result.ExitCode())
+		if env.Outcome != output.OutcomeSuccess || result.ExitCode() != 0 || env.Meta == nil ||
+			env.Meta.Pagination == nil || !env.Meta.Pagination.EndpointExhausted ||
+			env.Meta.Pagination.NextToken != "" {
+			t.Fatalf("terminal pagination envelope=%+v rc=%d", env, result.ExitCode())
 		}
 	})
 

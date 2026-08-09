@@ -26,9 +26,9 @@ DWS 已有 `Category`、退出码、`hint`、`actions`、`retryable`、
 
 | 事实 | 数量 | 含义 |
 |---|---:|---|
-| 已注册 descriptor / 直接 `WithSubtype(...)` 或兼容桥调用 / 间接映射 | 105 / 166 / 11 | 前十四批已覆盖本地校验、认证、传输、写前确认、IM 分页、Skill/插件协议、PAT 终止态与写入不确定态；第十五批将个人订阅的有限本地状态机映射为三个稳定分支：`personal_subscription_unverified`、`personal_subscription_rejected`、`personal_subscription_auth`。旧 `reason` 仍保留为诊断兼容字段，不能再成为 Agent 分支键。`request_build_failed` 同样经兼容桥保留旧 `reason`，但按 API/discovery 投影不同 stable subtype。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值 |
+| 已注册 descriptor / 直接 `WithSubtype(...)` 或兼容桥调用 / 间接映射 | 105 / 183 / 12 | 前十四批已覆盖本地校验、认证、传输、写前确认、IM 分页、Skill/插件协议、PAT 终止态与写入不确定态；第十五批将个人订阅的有限本地状态机映射为三个稳定分支：`personal_subscription_unverified`、`personal_subscription_rejected`、`personal_subscription_auth`。旧 `reason` 仍保留为诊断兼容字段，不能再成为 Agent 分支键。`request_build_failed` 同样经兼容桥保留旧 `reason`，但按 API/discovery 投影不同 stable subtype。间接映射函数或有限局部状态选择由单元测试证明只返回有限注册值 |
 | `WithReason("…")` 自由字面调用 | 0 | 字面和变量 `WithReason` 均已进入 registry 或显式兼容桥；这只证明本地分类闭合，不包含服务端终态证明 |
-| 全部 subtype / 调用点 | 84 / 166 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
+| 全部 subtype / 调用点 | 84 / 183 | 同一 subtype 可能有多条、且恢复信息不同的构造路径 |
 | 直接设置 `ErrorInfo.Subtype` | 9 | 绕过 `WithReason` 的第二条入口；Agent 扫描现同时识别枚举转换的赋值，event stop 的 `event_stop_unverified` 已登记 registry |
 | 动态 `WithReason(variable)` | 0 | 个人订阅的有限 reason 仍作为 legacy diagnostics 保留，但现经稳定 subtype 兼容桥投影；新增上游码不得直接变为 subtype |
 | 缺有效恢复提示的 subtype | 0 | 所有已扫描到的 stable subtype 至少有命令级 hint 或 registry 默认 hint；这不等于服务端终态已验证 |

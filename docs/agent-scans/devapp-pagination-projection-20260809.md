@@ -16,16 +16,25 @@
 1. 保留顶层及嵌套 `result/data/content/pageInfo/pagination` 中的有效 `hasMore` / `nextCursor`。
 2. `hasMore` 非布尔值必须返回 `validation/pagination_invalid`，不能投影成空分页。
 3. `nextCursor` 非字符串、`hasMore=true` 无游标必须返回 `validation/pagination_incomplete`。
-4. 多层 `hasMore` 或非空 `nextCursor` 互相冲突、末页仍带游标必须返回 `validation/pagination_conflict`。
+4. 多层 `hasMore` 或非空 `nextCursor` 互相冲突必须返回 `validation/pagination_conflict`；
+   DevApp 实际终页会保留一个位置 cursor，`hasMore=false` 为权威终态，该 cursor 不得投影为 `next_token`。
 5. 上述失败均为 `response_projection`、不可安全重试；不得输出成功列表。
 6. 只有显式的空数组才可投影为成功空列表；缺容器、非数组、非法行或仅展示字段的行必须为 `api/projection_unknown`。
 7. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
 8. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
+9. 末页必须输出 `endpoint_exhausted:true`，即使原始响应携带位置 cursor，也不能诱导 Agent 继续请求。
 
 ## Source coverage
 
 - PASS：四个列表 Shortcut 均先验证分页证据，再交给统一结果映射。
 - PASS：四条已审阅的列表 Shortcut 均在原命令路径直接输出统一结果；没有公开版本/协议选择参数。
+
+## Live pagination evidence
+
+真实只读、脱敏探针确认：首屏 11 项，`hasMore=false` 且位置 cursor 非空；使用该 cursor
+再次读取得到 0 项、同一 cursor、仍为 `hasMore=false`。修复后 `devapp +list` 输出
+`success`、`endpoint_exhausted:true`，没有 `next_token` 或协议版本标记。探针不保存原始
+JSON，也不打印应用或 cursor 值。
 
 
 ## Focused test transcript
@@ -45,7 +54,7 @@
 === RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/has_more_conflicts_across_envelopes
 === RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/cursor_conflicts_across_envelopes
 === RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/nonfinal_page_omits_cursor
-=== RUN   TestDevAppProjectedListsRejectInvalidPaginationEvidence/exhausted_page_carries_cursor
+=== RUN   TestDevAppProjectedListsTreatTerminalCursorAsNonActionable
 --- PASS: TestDevAppProjectedListsRejectInvalidPaginationEvidence (0.00s)
     --- PASS: TestDevAppProjectedListsRejectInvalidPaginationEvidence/has_more_is_not_boolean (0.00s)
     --- PASS: TestDevAppPr
@@ -72,4 +81,5 @@ ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/devapp
 
 ## Boundary
 
-这证明本地投影不会再静默吞掉异常或矛盾的分页字段；真实 devapp 账号的续翻、服务端末页语义及 `dev ...` / `devapp +...` 的端到端对拍仍需单独 Agent 实测。
+这证明本地投影不会再静默吞掉异常分页字段，并已对拍一组真实终页位置 cursor；
+非终页续翻、已知空、权限受限、其他列表接口和 `dev ...` / `devapp +...` 的完整端到端矩阵仍需单独 Agent 实测。

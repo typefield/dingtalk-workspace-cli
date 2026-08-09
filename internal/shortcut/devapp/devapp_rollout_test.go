@@ -74,11 +74,6 @@ func TestDevAppProjectedListsRejectInvalidPaginationEvidence(t *testing.T) {
 			source:  map[string]any{"hasMore": true},
 			subtype: apperrors.SubtypePaginationIncomplete,
 		},
-		{
-			name:    "exhausted page carries cursor",
-			source:  map[string]any{"hasMore": false, "nextCursor": "next-1"},
-			subtype: apperrors.SubtypePaginationConflict,
-		},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -97,6 +92,22 @@ func TestDevAppProjectedListsRejectInvalidPaginationEvidence(t *testing.T) {
 				t.Fatalf("typed error must be non-retryable response projection failure: %#v", typed)
 			}
 		})
+	}
+}
+
+func TestDevAppProjectedListsTreatTerminalCursorAsNonActionable(t *testing.T) {
+	projected, err := projectDevAppPage(
+		map[string]any{"hasMore": false, "nextCursor": "terminal-position"},
+		map[string]any{"items": []any{}},
+	)
+	if err != nil {
+		t.Fatalf("projectDevAppPage() error = %v", err)
+	}
+	if hasMore, ok := projected["hasMore"].(bool); !ok || hasMore {
+		t.Fatalf("hasMore = %#v, want false", projected["hasMore"])
+	}
+	if _, exists := projected["nextCursor"]; exists {
+		t.Fatalf("terminal position cursor leaked as continuation: %#v", projected)
 	}
 }
 

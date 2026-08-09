@@ -262,8 +262,9 @@ func devAppProjectionUnknown(tool, message string) error {
 // reshaping items makes a non-final page indistinguishable from a complete
 // result. Keep every pagination fact long enough to validate it, then preserve
 // the coherent facts needed by the unified-output mapper. Never synthesize
-// hasMore or a cursor, and never silently discard an invalid or contradictory
-// upstream pagination field.
+// hasMore or a cursor. The live DevApp adapter uses a non-empty nextCursor as
+// a terminal position marker even when hasMore=false; in that explicit terminal
+// state the cursor is not actionable and must not be exposed as next_token.
 func projectDevAppPage(source map[string]any, projected map[string]any) (map[string]any, error) {
 	if projected == nil {
 		projected = map[string]any{}
@@ -335,17 +336,13 @@ func projectDevAppPage(source map[string]any, projected map[string]any) (map[str
 			"devapp pagination hasMore=true requires nextCursor",
 		)
 	}
-	if found.hasMoreSet && !found.hasMore && found.cursor != "" {
-		return nil, devAppPaginationProjectionError(
-			apperrors.SubtypePaginationConflict,
-			"devapp pagination cannot be exhausted while nextCursor is present",
-		)
-	}
 	if found.hasMoreSet {
 		projected["hasMore"] = found.hasMore
 	}
-	if found.cursor != "" {
+	if found.cursor != "" && (!found.hasMoreSet || found.hasMore) {
 		projected["nextCursor"] = found.cursor
+	} else {
+		delete(projected, "nextCursor")
 	}
 	return projected, nil
 }

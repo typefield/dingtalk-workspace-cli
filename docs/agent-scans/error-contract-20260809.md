@@ -6,9 +6,9 @@
 
 ## 当前事实
 
-- 已注册 descriptor：**105** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**172** 个；间接映射调用点：**11** 个。
-- `WithReason("…")` 的自由字面调用点：**0** 个；与已注册调用合计覆盖 **84** 个 subtype、**172** 个调用点。
-- 直接构造 `ErrorInfo.Subtype`：**10** 个不同值，其中已登记 **10** 个、未登记 **0** 个。
+- 已注册 descriptor：**105** 个；直接 `WithSubtype(...)` / 兼容桥 `WithStableSubtypeAndLegacyReason(...)` 调用点：**183** 个；间接映射调用点：**12** 个。
+- `WithReason("…")` 的自由字面调用点：**0** 个；与已注册调用合计覆盖 **84** 个 subtype、**183** 个调用点。
+- 直接构造 `ErrorInfo.Subtype`：**9** 个不同值，其中已登记 **9** 个、未登记 **0** 个。
 - 动态 `WithReason(variable)` 调用：**0** 个。
 - 至少一个调用点既没有邻近 `WithHint`、也没有 registry `DefaultHint` 的 subtype：**0** 个。
 - 无法从同一局部构造窗口解析 Category 的 subtype：**0** 个。
@@ -25,17 +25,17 @@
 | `auth_refresh_failed` | registered 1 | 1 | `auth` | yes | no | none | no | no | `internal/app/auth_refresh_retry.go:151` |
 | `batch_write_failed` | registered 1 | 1 | `api` | yes | yes | false | no | yes | `internal/shortcut/chat/batch_write.go:80` |
 | `business_error` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/errors/pat.go:295` |
-| `chat_list_all_incomplete` | registered 1 | 1 | `api` | yes | no | mixed | no | yes | `internal/shortcut/chat/chat_group.go:1200` |
-| `chat_list_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/lark_alignment.go:1246` |
-| `chat_messages_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/smart/chat_messages.go:820` |
+| `chat_list_all_incomplete` | registered 1 | 1 | `api` | yes | no | mixed | no | yes | `internal/shortcut/chat/chat_group.go:1274` |
+| `chat_list_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/lark_alignment.go:1247` |
+| `chat_messages_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/smart/chat_messages.go:822` |
 | `chat_search_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/chat_group.go:426` |
 | `confirmation_required` | registered 7 | 7 | `validation` | yes | yes | none | no | no | `internal/app/plugin_commands.go:759`<br>`internal/corecmd/corecmd.go:1206`<br>`internal/helpers/chat/toolbar_remove_custom.go:51` … |
 | `discovery_request_build_failed` | registered 1 | 1 | `discovery` | yes | no | none | no | yes | `internal/transport/client.go:602` |
 | `doc_download_preflight_failed` | registered 2 | 2 | `api` | yes | yes | none | no | no | `internal/app/doc_download_preflight.go:62`<br>`internal/app/doc_download_preflight.go:72` |
 | `doc_grant_permission_partial_failure` | registered 1 | 1 | `api` | yes | yes | false | no | yes | `internal/shortcut/smart/doc_access.go:448` |
 | `doc_share_message_failed` | registered 1 | 1 | `api` | yes | yes | false | no | yes | `internal/shortcut/smart/doc_access.go:523` |
-| `download_output_unavailable` | registered 1 | 1 | `internal` | yes | no | none | no | yes | `internal/helpers/drive.go:708` |
-| `download_size_mismatch` | registered 1 | 1 | `api` | yes | yes | true | no | yes | `internal/helpers/drive.go:721` |
+| `download_output_unavailable` | registered 2 | 2 | `internal` | yes | no | true | no | yes | `internal/helpers/drive.go:708`<br>`internal/helpers/drive.go:910` |
+| `download_size_mismatch` | registered 2 | 2 | `api` | yes | yes | true | no | yes | `internal/helpers/drive.go:721`<br>`internal/helpers/drive.go:919` |
 | `empty_tool_response` | registered 1 | 1 | `api` | yes | no | false | no | no | `internal/shortcut/runner.go:282` |
 | `endpoint_not_resolved` | registered 1 | 1 | `api` | yes | yes | none | no | no | `internal/app/runner.go:493` |
 | `flag_list_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/lark_alignment.go:762` |
@@ -47,18 +47,18 @@
 | `invalid_agent_host` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/app/agent_host.go:68` |
 | `invalid_agent_product` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/app/agent_product.go:46` |
 | `invalid_aitable_url` | registered 1 | 1 | `validation` | yes | no | none | no | yes | `internal/shortcut/aitabletarget/resolver.go:391` |
-| `invalid_argument` | registered 10 | 10 | `validation` | yes | no | none | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
+| `invalid_argument` | registered 11 | 11 | `validation` | yes | no | none | no | no | `internal/helpers/calendar.go:25`<br>`internal/helpers/ding.go:38`<br>`internal/helpers/ding.go:62` … |
 | `invalid_flag_value` | registered 14 | 14 | `validation` | yes | yes | none | no | no | `internal/helpers/chat.go:81`<br>`internal/helpers/chat.go:90`<br>`internal/helpers/chat.go:105` … |
 | `invalid_json_input` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/helpers/sheet_formula_verify.go:230` |
 | `key_value_conflict` | registered 1 | 1 | `validation` | yes | no | none | no | yes | `internal/shortcut/aitable/record_upsert_by_key.go:99` |
 | `mcp_tool_error` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/app/runner.go:855` |
-| `messages_list_direct_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/chat_message.go:648` |
-| `missing_required_flags` | registered 22 | 22 | `validation` | yes | yes | none | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
+| `messages_list_direct_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/chat/chat_message.go:649` |
+| `missing_required_flags` | registered 23 | 23 | `validation` | yes | yes | none | no | no | `internal/corecmd/corecmd.go:680`<br>`internal/helpers/chat/deps.go:123`<br>`internal/helpers/chat/toolbar_helpers.go:78` … |
 | `missing_target` | registered 1 | 1 | `validation` | yes | no | none | no | yes | `internal/shortcut/targetresolver/resolver.go:310` |
-| `my_groups_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/smart/my_groups.go:269` |
+| `my_groups_incomplete` | registered 1 | 1 | `api` | yes | no | mixed | no | yes | `internal/shortcut/smart/my_groups.go:361` |
 | `not_authenticated` | registered 4 | 4 | `auth` | yes | yes | none | no | no | `internal/app/runner.go:611`<br>`internal/app/runner.go:904`<br>`internal/app/skill_command.go:651` … |
 | `not_configured` | registered 1 | 1 | `auth` | yes | yes | none | no | no | `internal/errors/pat.go:283` |
-| `pagination_inconsistent` | registered 6 | 6 | `api` | yes | no | mixed | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:627`<br>`internal/shortcut/drive/drive.go:950` … |
+| `pagination_inconsistent` | registered 7 | 7 | `api` | yes | no | mixed | no | yes | `internal/helpers/doc.go:115`<br>`internal/helpers/helpers.go:627`<br>`internal/shortcut/aitable/aitable.go:424` … |
 | `parameter_conflict` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/app/root.go:347` |
 | `partial_failure` | registered 1 | 1 | `api` | yes | yes | false | no | no | `internal/app/event_personal_command.go:1196` |
 | `pat_auth_cancelled` | registered 1 | 1 | `auth` | yes | no | none | no | no | `internal/app/pat_auth_retry.go:696` |
@@ -73,7 +73,7 @@
 | `personal_subscription_unverified` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/app/event_personal_attempts.go:575` |
 | `plugin_input_schema_invalid` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/app/plugin_input_schema.go:120` |
 | `plugin_tool_not_found` | registered 1 | 1 | `validation` | yes | no | none | no | no | `internal/app/runner.go:833` |
-| `projection_unknown` | registered 19 | 19 | `api` | yes | no | false | no | no | `internal/shortcut/calendar/calendar.go:967`<br>`internal/shortcut/chat/chat_group.go:1284`<br>`internal/shortcut/contact/contact.go:295` … |
+| `projection_unknown` | registered 25 | 25 | `api` | yes | no | false | no | no | `internal/shortcut/aitable/aitable.go:304`<br>`internal/shortcut/calendar/calendar.go:967`<br>`internal/shortcut/chat/chat_group.go:1513` … |
 | `raw_api_credentials_required` | registered 1 | 1 | `auth` | yes | yes | false | no | yes | `internal/app/api_command.go:316` |
 | `resolution_ambiguous` | registered 1 | 1 | `validation` | yes | no | false | no | yes | `internal/shortcut/targetresolver/resolver.go:662` |
 | `resolution_batch_failed` | registered 1 | 1 | `validation` | yes | no | false | no | yes | `internal/shortcut/targetresolver/resolver.go:723` |
@@ -92,9 +92,9 @@
 | `target_type_conflict` | registered 1 | 1 | `validation` | yes | no | none | no | yes | `internal/shortcut/aitable/view_preset.go:79` |
 | `target_type_mismatch` | registered 1 | 1 | `validation` | yes | no | none | no | yes | `internal/shortcut/targetresolver/resolver.go:182` |
 | `target_verification_failed` | registered 1 | 1 | `api` | yes | no | false | no | yes | `internal/shortcut/aitable/url_resolve.go:128` |
-| `thread_context_missing` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/shortcut/smart/thread_replies.go:266` |
-| `thread_replies_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/smart/thread_replies.go:555` |
-| `thread_root_message_not_found` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/shortcut/smart/thread_replies.go:255` |
+| `thread_context_missing` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/shortcut/smart/thread_replies.go:268` |
+| `thread_replies_incomplete` | registered 1 | 1 | `api` | yes | no | true | no | yes | `internal/shortcut/smart/thread_replies.go:557` |
+| `thread_root_message_not_found` | registered 1 | 1 | `api` | yes | no | none | no | no | `internal/shortcut/smart/thread_replies.go:257` |
 | `tool_request_build_failed` | registered 1 | 1 | `api` | yes | no | none | no | yes | `internal/transport/client.go:597` |
 | `unknown_flag` | registered 2 | 2 | `validation` | yes | yes | none | no | no | `internal/app/root.go:436`<br>`internal/app/root.go:450` |
 | `unknown_shortcut` | registered 1 | 1 | `validation` | yes | yes | none | no | no | `internal/pipeline/command_resolution.go:67` |
@@ -112,12 +112,11 @@
 |---|---|---|
 | `event_stop_unverified` | registered | `internal/app/event_personal_command.go:1155` |
 | `invalid_success_type` | registered | `internal/shortcut/runner.go:385` |
-| `pagination_conflict` | registered | `internal/helpers/devapp.go:2020` |
-| `pagination_incomplete` | registered | `internal/helpers/devapp.go:2011`, `internal/helpers/devapp.go:2029` |
-| `pagination_inconsistent` | registered | `internal/shortcut/chat/chat_conversation.go:551`, `internal/shortcut/chat/chat_group.go:459`, `internal/shortcut/chat/lark_alignment.go:795`, `internal/shortcut/smart/at_me.go:702`, `internal/shortcut/smart/chat_messages.go:1173` … |
-| `pagination_invalid` | registered | `internal/helpers/devapp.go:2000` |
-| `projection_unknown` | registered | `internal/shortcut/chat/chat_conversation.go:569`, `internal/shortcut/smart/at_me.go:711`, `internal/shortcut/smart/chat_messages.go:1191`, `internal/shortcut/smart/search_msg.go:451`, `internal/shortcut/smart/thread_replies.go:773` |
-| `resolution_batch_failed` | registered | `internal/shortcut/smart/chat_messages.go:1078` |
+| `pagination_incomplete` | registered | `internal/helpers/devapp.go:2014`, `internal/helpers/devapp.go:2023`, `internal/shortcut/smart/todo_shared.go:256` |
+| `pagination_inconsistent` | registered | `internal/shortcut/chat/chat_conversation.go:552`, `internal/shortcut/chat/chat_group.go:460`, `internal/shortcut/chat/chat_group.go:1407`, `internal/shortcut/chat/lark_alignment.go:796`, `internal/shortcut/smart/at_me.go:703` … |
+| `pagination_invalid` | registered | `internal/helpers/devapp.go:2003` |
+| `projection_unknown` | registered | `internal/shortcut/chat/chat_conversation.go:570`, `internal/shortcut/chat/chat_group.go:1425`, `internal/shortcut/smart/at_me.go:712`, `internal/shortcut/smart/chat_messages.go:1090`, `internal/shortcut/smart/my_groups.go:542` … |
+| `resolution_batch_failed` | registered | `internal/shortcut/smart/chat_messages.go:1026` |
 | `skill_setup_failed` | registered | `internal/app/skill_setup.go:797` |
 | `skill_setup_result_invalid` | registered | `internal/app/skill_setup.go:786` |
 
@@ -133,6 +132,7 @@
 
 - internal/app/root.go:410: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/aitabletarget/resolver.go:410: `apperrors.WithSubtype(subtype)`
+- internal/shortcut/devapp/devapp.go:352: `apperrors.WithSubtype(subtype)`
 - internal/shortcut/doc/common.go:125: `apperrors.WithSubtype(subtype)`
 - internal/transport/client.go:1033: `apperrors.WithSubtype(httpStatusSubtype(`
 - internal/transport/client.go:1162: `apperrors.WithSubtype(jsonRPCSubtype(`

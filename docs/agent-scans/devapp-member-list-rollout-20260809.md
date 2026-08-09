@@ -36,22 +36,25 @@ DWS_PACKAGE_VERSION=0.0.0-test go test -count=1 ./internal/shortcut/devapp ./int
 
 ## 真实只读探针
 
-源码构建二进制先尝试通过 `devapp +list` 在内存中取得一个稳定
-`unifiedAppId`，再查询成员；探针不保存原始 JSON，也不打印应用、人员或查询标识。
+源码构建二进制先通过 `devapp +list` 在内存中取得一个稳定
+`unifiedAppId`，再查询成员；探针不保存原始 JSON，也不打印应用、人员、cursor 或查询标识。
 
-前置列表在真实账号上返回：
+第一次探针发现 DevApp 原始响应为 11 项、`hasMore=false`，但仍携带长度为 10 的
+`nextCursor`。将该 cursor 原样用于第二次只读调用后，服务端返回 0 项、同一 cursor、
+`hasMore=false`。因此它是终页位置标记，不是 continuation。客户端据此仅在 DevApp
+适配层改为：相信明确的 `hasMore=false`，输出 `endpoint_exhausted:true`，不暴露
+`next_token`；其他产品的分页规则不变。
+
+修复后脱敏结果：
 
 ```text
-rc=3 ok=false outcome=failure error_type=validation error_subtype=pagination_conflict
+list_rc=0 list_ok=true list_outcome=success list_count=11 endpoint_exhausted=true has_next_token=false version_marker=false
+member_rc=0 member_ok=true member_outcome=success data_type=object version_marker=false
+member_count=1 stable_member_ids=1 business_success_type=boolean
 ```
-
-因此 Agent 遵循 fail-closed，没有从矛盾分页结果中提取应用 ID，也没有发出成员
-查询。这个结果证明分页冲突会被诚实表达，但**不构成 member-list 真实正向证明**。
 
 ## 结论与边界
 
-- 命令级统一输出迁移和受控结果对拍通过；
-- 真实环境的成员正向、已知空和权限受限场景仍待有可信
-  `unifiedAppId` 的受控账号复验；
-- `devapp +list` 的真实 `pagination_conflict` 需由 DevApp 服务适配层确认：不能为
-  方便发现 ID 而忽略矛盾 cursor，也不能把当前列表扩大成完整应用目录。
+- 命令级统一输出迁移、受控结果对拍和一组真实成员正向读取通过；
+- 真实环境的已知空、权限受限、非终页续翻和异常字段仍待隔离账号复验；
+- 当前 11 项只证明该账号本次 endpoint 已耗尽，不证明企业应用目录的权限覆盖或业务完整性。

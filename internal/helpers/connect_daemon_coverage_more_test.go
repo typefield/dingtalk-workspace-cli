@@ -793,7 +793,7 @@ func TestCrossPlatformCoverageDaemonListAndNamePaginationEdges(t *testing.T) {
 
 	runner := &daemonSequenceRunner{responses: []map[string]any{
 		{"items": []any{map[string]any{"id": "u-1", "appName": "App One"}}, "hasMore": true, "nextCursor": "next"},
-		{"items": []any{map[string]any{"unifiedAppId": "u-2", "name": "App Two"}}, "hasMore": false},
+		{"items": []any{map[string]any{"unifiedAppId": "u-2", "name": "App Two"}}, "hasMore": false, "nextCursor": "terminal-position"},
 	}}
 	names, err := devAppNameMap(cmd, runner)
 	if err != nil || names["u-1"] != "App One" || names["u-2"] != "App Two" || runner.calls != 2 {
