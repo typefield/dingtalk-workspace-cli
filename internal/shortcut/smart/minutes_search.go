@@ -14,9 +14,12 @@
 package smart
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -35,10 +38,11 @@ import (
 //
 //	dws minutes +minutes-search --query 周会
 var MinutesSearch = shortcut.Shortcut{
-	Service:     "minutes",
-	Command:     "+minutes-search",
-	Product:     "minutes",
-	Description: "按关键词搜索我的妙记并投影列表",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "minutes",
+	Command:       "+minutes-search",
+	Product:       "minutes",
+	Description:   "按关键词搜索我的妙记并投影列表",
 	Intent: "当你想按关键词快速找回自己创建的会议听记（妙记），只需要看到匹配到的标题、创建时间和 taskUuid 列表、而不想拿到一大坨原始字段时使用；" +
 		"内部按 --query 关键词列出你创建的听记（最多 20 条），再在本地投影出每条的标题、创建时间和 taskUuid。" +
 		"这是纯只读操作，只做搜索与本地投影，不会修改任何听记；若没有匹配的听记则提示「没搜到妙记」。",
@@ -86,26 +90,95 @@ var MinutesSearch = shortcut.Shortcut{
 			return err
 		}
 
-		// Step 2 — project matched entries. latestMinutesItems (from
-		// latest_minutes.go) defensively unwraps the list container.
-		items := latestMinutesItems(data)
-		results := make([]map[string]any, 0, len(items))
-		for _, m := range items {
-			results = append(results, map[string]any{
-				"title":      minutesSearchTitle(m),
-				"createTime": minutesSearchCreateTime(m),
-				// latestMinutesUUID probes taskUuid/taskUUID/uuid/id in order.
-				"taskUuid": latestMinutesUUID(m),
-			})
+		// Step 2 — project matched entries. An explicit empty array is a real
+		// no-match result; an unrecognized container, malformed row, or missing
+		// task UUID is not and therefore fails closed.
+		results, err := minutesSearchProject(data)
+		if err != nil {
+			return err
 		}
-
-		// Step 3 — empty result guard.
-		if len(results) == 0 {
-			return apperrors.NewValidation("没搜到妙记")
+		payload := map[string]any{
+			"count":                len(results),
+			"minutes":              results,
+			"index_coverage_known": false,
+			"pagination_known":     false,
 		}
-
-		return rt.Output(map[string]any{"minutes": results})
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(results))}),
+		))
 	},
+}
+
+func minutesSearchProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := minutesSearchItems(data)
+	if !known {
+		return nil, minutesSearchProjectionUnknown("无法识别 list_by_keyword_and_time_range 返回的妙记列表容器")
+	}
+	results := make([]map[string]any, 0, len(raw))
+	for _, item := range raw {
+		minute, ok := item.(map[string]any)
+		if !ok {
+			return nil, minutesSearchProjectionUnknown("妙记列表包含无法识别的条目")
+		}
+		taskUUID := latestMinutesUUID(minute)
+		if strings.TrimSpace(taskUUID) == "" {
+			return nil, minutesSearchProjectionUnknown("妙记条目缺少可用于读取详情的稳定 taskUuid")
+		}
+		results = append(results, map[string]any{
+			"title":       minutesSearchTitle(minute),
+			"create_time": minutesSearchCreateTime(minute),
+			"task_uuid":   taskUUID,
+		})
+	}
+	return results, nil
+}
+
+func minutesSearchItems(data map[string]any) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	for _, scope := range minutesSearchScopes(data) {
+		if items, ok := scope.([]any); ok {
+			return items, true
+		}
+		object, ok := scope.(map[string]any)
+		if !ok {
+			continue
+		}
+		for _, key := range []string{"list", "minutesList", "items", "records", "result"} {
+			if items, ok := object[key].([]any); ok {
+				return items, true
+			}
+		}
+	}
+	return nil, false
+}
+
+func minutesSearchScopes(data map[string]any) []any {
+	scopes := make([]any, 0, 5)
+	for _, outerKey := range []string{"result", "data"} {
+		outer, ok := data[outerKey]
+		if !ok {
+			continue
+		}
+		if object, ok := outer.(map[string]any); ok {
+			for _, innerKey := range []string{"result", "data"} {
+				if inner, ok := object[innerKey]; ok {
+					scopes = append(scopes, inner)
+				}
+			}
+		}
+		scopes = append(scopes, outer)
+	}
+	return append(scopes, data)
+}
+
+func minutesSearchProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // minutesSearchTitle reads a minute's display title, tolerating the common

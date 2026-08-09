@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T11:31:02+08:00
+扫描时间：2026-08-09T11:34:53+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1382 |
+| `legacy_only` | 1381 |
 | `dual_validate` | 24 |
-| `unified_active` | 77 |
+| `unified_active` | 78 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,8 +22,7 @@
 
 ### 状态迁移
 
-- REVIEW: `dws calendar +free`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws calendar +my-free`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws minutes +minutes-search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -1179,7 +1178,7 @@
 | `dws minutes +list-all` | `legacy_only` | `legacy` | no |
 | `dws minutes +list-mine` | `legacy_only` | `legacy` | no |
 | `dws minutes +list-shared` | `legacy_only` | `legacy` | no |
-| `dws minutes +minutes-search` | `legacy_only` | `legacy` | no |
+| `dws minutes +minutes-search` | `unified_active` | `unified` | no |
 | `dws minutes +record-pause` | `legacy_only` | `legacy` | yes |
 | `dws minutes +record-resume` | `legacy_only` | `legacy` | yes |
 | `dws minutes +record-start` | `legacy_only` | `legacy` | no |
