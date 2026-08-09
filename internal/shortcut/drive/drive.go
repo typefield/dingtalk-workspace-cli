@@ -108,8 +108,8 @@ func listFilesProject(data map[string]any) ([]map[string]any, error) {
 		listFilesPick(row, m, "type", "type", "dentryType", "fileType", "spaceType")
 		listFilesPick(row, m, "dentryId", "dentryId", "dentryUuid", "id", "fileId", "nodeId")
 		listFilesPick(row, m, "fileSize", "fileSize", "size", "byteSize", "length")
-		if len(row) == 0 {
-			return nil, driveProjectionUnknown("文件条目缺少可识别字段")
+		if len(row) == 0 || row["dentryId"] == nil {
+			return nil, driveProjectionUnknown("文件条目缺少可用于后续操作的稳定 dentryId")
 		}
 		out = append(out, row)
 	}

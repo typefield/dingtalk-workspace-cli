@@ -20,6 +20,13 @@ func TestDriveListProjectionSeparatesKnownEmptyFromUnknown(t *testing.T) {
 	assertDriveProjectionUnknown(t, err)
 }
 
+func TestDriveListProjectionRejectsUntargetableRow(t *testing.T) {
+	_, err := listFilesProject(map[string]any{
+		"files": []any{map[string]any{"name": "only-a-display-name"}},
+	})
+	assertDriveProjectionUnknown(t, err)
+}
+
 func TestDriveSearchProjectionRejectsUnknownRows(t *testing.T) {
 	_, err := searchFilesProject(map[string]any{"data": map[string]any{"items": []any{"opaque"}}})
 	assertDriveProjectionUnknown(t, err)
