@@ -48,7 +48,7 @@ metadata:
 | "查我自己的信息" | `dws contact user get-self` |
 | "按 userId 查详情" | `dws contact user get --ids <userId1>,<userId2>,...`（多个并行） |
 | "完整手机号反查用户" | `dws contact user search-mobile --mobile <手机号>` |
-| "按部门名拉成员" | `python scripts/contact_dept_members.py --query "<部门名>"` |
+| "按部门名拉成员" | `python scripts/contact_dept_members.py --query "<部门名>" --format json` |
 | "搜部门" | `dws contact dept search --query "<关键词>"` |
 | "部门成员列表" | `dws contact dept list-members --depts <deptId>` |
 | "列出企业角色 / 有哪些角色" | `dws contact label list` |

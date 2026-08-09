@@ -571,4 +571,4 @@ dws contact dept update --dept 12345 --name "新部门名" --parent 67890 --yes 
 
 | 脚本 | 场景 | 用法 |
 |------|------|------|
-| [contact_dept_members.py](../scripts/contact_dept_members.py) | 按部门名称搜索并列出所有成员 | `python contact_dept_members.py --query "技术部"` |
+| [contact_dept_members.py](../scripts/contact_dept_members.py) | 按部门名称搜索并列出所有成员 | `python contact_dept_members.py --query "技术部" --format json` |

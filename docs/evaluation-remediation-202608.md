@@ -235,6 +235,26 @@ Mono/Multi 的 `calendar_today_agenda.py` 与 `calendar_free_slot_finder.py` 已
 投影漂移、参与人覆盖、忙时段、参数校验、meta 和 dry-run，为 **26/26 PASS**。临时探针
 不证明真实日历权限、数据覆盖或服务端终态。
 
+## Contact 部门成员聚合脚本本轮验收证据
+
+Mono/Multi 的 `contact_dept_members.py` 已从“失败即 None、逐部门 continue”迁入共享
+child-result 边界，并统一使用公开 canonical `--depts`：
+
+1. 部门搜索 child failure 原样保留 typed error；未知容器、非法行、缺稳定 `deptId`
+   返回 `projection_unknown`，不再静默跳过。
+2. 每个匹配部门独立查询成员；单部门失败/投影漂移保留成功部门并返回
+   `partial_failure` / rc 7，全失败才返回 failure。
+3. 成员只接受已知 `deptUserList[]/userlist[]` 与稳定 `userId`；未知结构不伪装成
+   “暂无成员”，已知空数组则保留对应部门并返回空成员成功。
+4. 子调用 meta 按 search/department ID 透传；dry-run 为零 child 进程；空 query 在调用前
+   validation。
+5. 输出明确 `coverage.scope=server_search_response, complete=false`，避免把关键词搜索结果
+   扩大成完整组织目录；Multi/Mono 正向脚本示例统一显式 `--format json`。
+
+`docs/agent-scans/contact-dept-members-contract-20260809.md` 对两入口验证搜索、稳定 ID、
+逐部门 partial、投影漂移、已知空、meta、dry-run 和参数校验，为 **22/22 PASS**。临时
+探针不证明真实通讯录权限、索引覆盖或跨层级完整性。
+
 ## attendance 本轮验收证据
 
 ```text
