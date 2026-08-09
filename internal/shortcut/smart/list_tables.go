@@ -31,7 +31,7 @@ import (
 //
 //	dws aitable +list-tables --base B
 var ListTables = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "aitable",
 	Command:       "+list-tables",
 	Product:       "aitable",

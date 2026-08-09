@@ -12,8 +12,8 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 )
 
-func TestListTablesDualValidatePreservesReviewedLegacyProjection(t *testing.T) {
-	if ListTables.OutputRollout != output.RolloutDualValidate {
+func TestListTablesUnifiedActiveEmitsReviewedProjection(t *testing.T) {
+	if ListTables.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout = %q", ListTables.OutputRollout)
 	}
 	if ListTables.Contract.Result == nil || len(ListTables.Contract.Result.DataSchema) == 0 {
@@ -27,27 +27,30 @@ func TestListTablesDualValidatePreservesReviewedLegacyProjection(t *testing.T) {
 	if caller.calls != 1 || caller.tool != "get_tables" {
 		t.Fatalf("calls=%d tool=%q", caller.calls, caller.tool)
 	}
-	for _, want := range []string{`"tables"`, `"tableId": "t1"`, `"tableName": "任务"`} {
+	for _, want := range []string{`"ok": true`, `"outcome": "success"`, `"data"`, `"tables"`, `"tableId": "t1"`, `"tableName": "任务"`, `"count": 1`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
-			t.Fatalf("legacy output missing %s: %s", want, out)
+			t.Fatalf("unified output missing %s: %s", want, out)
 		}
 	}
-	if bytes.Contains([]byte(out), []byte(`"ok"`)) || bytes.Contains([]byte(out), []byte(`"outcome"`)) {
-		t.Fatalf("dual validation changed legacy wire: %s", out)
+	if bytes.Contains([]byte(out), []byte(`"contract_version"`)) {
+		t.Fatalf("active wire exposed a protocol version: %s", out)
 	}
 }
 
-func TestListTablesDualValidatePreservesHistoricalEmptyBytes(t *testing.T) {
+func TestListTablesUnifiedActiveNormalizesEmptyDirectory(t *testing.T) {
 	response := `{"success":true,"status":"success","summary":"empty","data":{"tables":[]},"error":{},"meta":{}}`
 	caller := &aitableResolverCaller{text: response}
 	out, err := runAITableResolverCLI(t, caller, "aitable", "+list-tables", "--base", "base")
 	if err != nil {
 		t.Fatalf("list-tables empty error = %v", err)
 	}
-	for _, want := range []string{`"success": true`, `"summary": "empty"`, `"tables": []`} {
+	for _, want := range []string{`"ok": true`, `"outcome": "success"`, `"tables": []`, `"count": 0`} {
 		if !bytes.Contains([]byte(out), []byte(want)) {
-			t.Fatalf("empty legacy output missing %s: %s", want, out)
+			t.Fatalf("empty unified output missing %s: %s", want, out)
 		}
+	}
+	if bytes.Contains([]byte(out), []byte(`"summary"`)) || bytes.Contains([]byte(out), []byte(`"status"`)) {
+		t.Fatalf("active empty directory leaked the transport wrapper: %s", out)
 	}
 }
 

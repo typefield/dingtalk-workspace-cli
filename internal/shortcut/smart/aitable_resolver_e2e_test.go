@@ -11,6 +11,7 @@ import (
 
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
 	"github.com/spf13/cobra"
@@ -42,6 +43,12 @@ func runAITableResolverCLI(t *testing.T, caller *aitableResolverCaller, args ...
 	root.PersistentFlags().Bool("dry-run", false, "")
 	root.PersistentFlags().String("format", "json", "")
 	root.AddCommand(shortcut.Commands()...)
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	root.PersistentPostRunE = func(cmd *cobra.Command, _ []string) error {
+		_, _, err := output.EmitStoredResult(cmd)
+		return err
+	}
 	stdout := &bytes.Buffer{}
 	root.SetOut(stdout)
 	root.SetErr(&bytes.Buffer{})
