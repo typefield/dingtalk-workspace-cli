@@ -43,7 +43,11 @@ from attendance_report_common import (
     error,
     DwsCallError,
     DATE_FMT,
+    CallStats,
+    extract_records_strict,
+    report_result,
 )
+from _runtime import add_contract_flags, emit, run_main
 
 # ─────────────────────────────────────────────────────────────────────────────
 # 常量
@@ -221,7 +225,9 @@ _TAG_FILTER: dict[str, str | None] = {
 }
 
 
-def fetch_approve_list(user_ids: list[str], record_type: str, start: str, end: str) -> list[dict]:
+def fetch_approve_list(
+    user_ids: list[str], record_type: str, start: str, end: str, stats: CallStats,
+) -> list[dict]:
     """
     分批调用 dws attendance approve list 获取审批单摘要。
 
@@ -236,6 +242,7 @@ def fetch_approve_list(user_ids: list[str], record_type: str, start: str, end: s
     for i in range(0, len(user_ids), APPROVE_LIST_BATCH_SIZE):
         batch = user_ids[i:i + APPROVE_LIST_BATCH_SIZE]
         users_str = ",".join(batch)
+        step_id = f"approve-list:batch:{i // APPROVE_LIST_BATCH_SIZE + 1}"
         try:
             result = run_dws([
                 "attendance", "approve", "list",
@@ -244,32 +251,41 @@ def fetch_approve_list(user_ids: list[str], record_type: str, start: str, end: s
                 "--start", start,
                 "--end", end,
             ])
-            records: list[dict] = []
-            if isinstance(result, list):
-                records = result
-            elif isinstance(result, dict):
-                records = result.get("approveList", result.get("list", []))
-                if not isinstance(records, list):
-                    records = []
+            records = extract_records_strict(
+                result,
+                source="attendance approve list",
+                keys=("approveList", "list", "records", "items", "result", "data"),
+            )
+            stats.record_success(step_id, item_count=len(records))
             # 按 tagName 过滤
             if tag_filter:
                 records = [r for r in records if r.get("tagName") == tag_filter]
             all_records.extend(records)
         except DwsCallError as e:
-            warn(f"查询审批列表失败(batch {i // APPROVE_LIST_BATCH_SIZE + 1}): {e}")
+            stats.record_failure(step_id, e)
     return all_records
 
 
-def fetch_detail(instance_id: str) -> dict | None:
+def fetch_detail(instance_id: str, stats: CallStats) -> dict | None:
     """调用 dws oa approval detail 获取审批单完整详情。"""
     try:
         result = run_dws([
             "oa", "approval", "detail",
             "--instance-id", instance_id,
         ])
-        return result if isinstance(result, dict) else None
+        if not isinstance(result, dict):
+            raise DwsCallError(
+                "oa approval detail 响应不是对象。",
+                error_info={
+                    "type": "api",
+                    "subtype": "projection_unknown",
+                    "message": "oa approval detail 响应不是对象。",
+                },
+            )
+        stats.record_success(f"approval-detail:{instance_id}", item_count=1)
+        return result
     except DwsCallError as e:
-        warn(f"获取审批详情失败({instance_id[:20]}...): {e}")
+        stats.record_failure(f"approval-detail:{instance_id}", e)
         return None
 
 
@@ -475,7 +491,9 @@ def parse_trip_from_approve_record(
             time_range, str(duration), unit_str, approve_cell, status]
 
 
-def fetch_check_results(user_ids: list[str], start: str, end: str) -> dict[str, list[dict]]:
+def fetch_check_results(
+    user_ids: list[str], start: str, end: str, stats: CallStats,
+) -> dict[str, list[dict]]:
     """
     批量查询打卡结果，返回 {userId: [records...]} 映射。
 
@@ -485,6 +503,7 @@ def fetch_check_results(user_ids: list[str], start: str, end: str) -> dict[str, 
     batch_size = 50
     for i in range(0, len(user_ids), batch_size):
         batch = user_ids[i:i + batch_size]
+        step_id = f"check-results:batch:{i // batch_size + 1}"
         try:
             result = run_dws([
                 "attendance", "check", "result",
@@ -492,23 +511,22 @@ def fetch_check_results(user_ids: list[str], start: str, end: str) -> dict[str, 
                 "--start", start,
                 "--end", end,
             ])
-            records = []
-            if isinstance(result, list):
-                records = result
-            elif isinstance(result, dict):
-                records = result.get("result", result.get("list", []))
-                if not isinstance(records, list):
-                    records = []
+            records = extract_records_strict(
+                result,
+                source="attendance check result",
+                keys=("result", "list", "records", "items", "data"),
+            )
+            stats.record_success(step_id, item_count=len(records))
             for rec in records:
                 uid = rec.get("userId", "")
                 if uid:
                     result_map.setdefault(uid, []).append(rec)
         except DwsCallError as e:
-            warn(f"查询打卡结果失败(batch {i // batch_size + 1}): {e}")
+            stats.record_failure(step_id, e)
     return result_map
 
 
-def fetch_user_group_map(user_ids: list[str]) -> dict[str, str]:
+def fetch_user_group_map(user_ids: list[str], stats: CallStats) -> dict[str, str]:
     """
     查询考勤组列表并建立 userId → 考勤组名称映射。
 
@@ -520,16 +538,13 @@ def fetch_user_group_map(user_ids: list[str]) -> dict[str, str]:
 
     try:
         result = run_dws(["attendance", "group", "search"])
-        items: list[dict] = []
-        if isinstance(result, list):
-            items = result
-        elif isinstance(result, dict):
-            # 适配 {items: [...]} 或 {result: {items: [...]}}
-            inner = result.get("items", result.get("result", result))
-            if isinstance(inner, dict):
-                items = inner.get("items", [])
-            elif isinstance(inner, list):
-                items = inner
+        source = result.get("result") if isinstance(result, dict) and isinstance(result.get("result"), dict) else result
+        items = extract_records_strict(
+            source,
+            source="attendance group search",
+            keys=("items", "list", "records", "result", "data"),
+        )
+        stats.record_success("attendance-group-search", item_count=len(items))
 
         for g in items:
             group_name = g.get("name", g.get("groupName", ""))
@@ -546,19 +561,26 @@ def fetch_user_group_map(user_ids: list[str]) -> dict[str, str]:
                     "--group-id", str(group_id), "--member",
                 ])
                 member_users: list[str] = []
-                if isinstance(detail, dict):
-                    member_users = detail.get("memberUsers", [])
-                    if not isinstance(member_users, list):
-                        member_users = []
+                if not isinstance(detail, dict) or not isinstance(detail.get("memberUsers"), list):
+                    raise DwsCallError(
+                        "attendance group filtered-get 缺少 memberUsers 数组。",
+                        error_info={
+                            "type": "api",
+                            "subtype": "projection_unknown",
+                            "message": "attendance group filtered-get 缺少 memberUsers 数组。",
+                        },
+                    )
+                member_users = detail["memberUsers"]
+                stats.record_success(f"attendance-group-members:{group_id}", item_count=len(member_users))
                 for uid in member_users:
                     uid_str = str(uid)
                     if uid_str in user_id_set:
                         group_map[uid_str] = group_name
-            except DwsCallError:
-                pass
+            except DwsCallError as exc:
+                stats.record_failure(f"attendance-group-members:{group_id}", exc)
 
     except DwsCallError as e:
-        warn(f"查询考勤组失败: {e}")
+        stats.record_failure("attendance-group-search", e)
     return group_map
 
 
@@ -761,10 +783,11 @@ def parse_args() -> argparse.Namespace:
                         help="结束日期 YYYY-MM-DD")
     parser.add_argument("--out", default="",
                         help="输出文件路径（不传则自动生成）")
+    add_contract_flags(parser)
     return parser.parse_args()
 
 
-def main() -> None:
+def main() -> int:
     args = parse_args()
     record_type: str = args.type
     user_ids = [u.strip() for u in args.users.split(",") if u.strip()]
@@ -773,27 +796,41 @@ def main() -> None:
 
     if not user_ids:
         error("--users 不能为空")
-        sys.exit(1)
+        return 1
 
     try:
         datetime.strptime(start_date, DATE_FMT)
         datetime.strptime(end_date, DATE_FMT)
     except ValueError:
         error("日期格式错误，请使用 YYYY-MM-DD")
-        sys.exit(1)
+        return 1
 
     sheet_name = SHEET_NAMES[record_type]
+    stats = CallStats(
+        user_batches=(len(user_ids) + APPROVE_LIST_BATCH_SIZE - 1) // APPROVE_LIST_BATCH_SIZE,
+    )
     log(f"开始导出{sheet_name}：{len(user_ids)} 人，{start_date} ~ {end_date}")
 
     # ── Step 1: 获取审批单列表 ──
     log("步骤 1/4：查询审批单列表...")
-    approve_records = fetch_approve_list(user_ids, record_type, start_date, end_date)
+    approve_records = fetch_approve_list(user_ids, record_type, start_date, end_date, stats)
     log(f"  获取到 {len(approve_records)} 条审批记录")
 
     if not approve_records:
         log("未查询到任何记录")
-        print(f"{sheet_name}：0 条记录，无需生成文件")
-        sys.exit(0)
+        report = {
+            "type": record_type, "count": 0, "output": None,
+        }
+        outcome, output_data, output_error = report_result(stats, report)
+        if outcome == "partial_failure":
+            outcome = "failure"
+            output_error = stats.failed[0]["error"]
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=args.dry_run,
+            text=(f"{sheet_name}：0 条记录，无需生成文件" if outcome == "success"
+                  else f"{sheet_name}查询失败；未生成文件"),
+        )
 
     # 从 approve list 记录中提取 corpId（用于构建审批单跳转链接）
     corp_id = ""
@@ -806,6 +843,20 @@ def main() -> None:
     instance_ids = list(dict.fromkeys(
         r.get("originId", "") for r in approve_records if r.get("originId")
     ))
+    if record_type != "trip":
+        for index, record in enumerate(approve_records):
+            if not record.get("originId"):
+                stats.record_failure(
+                    f"approve-item:{index + 1}",
+                    DwsCallError(
+                        "审批摘要缺少稳定 originId。",
+                        error_info={
+                            "type": "api",
+                            "subtype": "projection_unknown",
+                            "message": "审批摘要缺少稳定 originId。",
+                        },
+                    ),
+                )
     log(f"步骤 2/4：共 {len(instance_ids)} 个审批实例")
 
     # ── Step 3: 解析用户信息 ──
@@ -820,11 +871,11 @@ def main() -> None:
         log("  获取用户完整信息（工号/职位）...")
         user_info_map = resolve_user_info(user_ids)
         log("  查询考勤组映射...")
-        group_map = fetch_user_group_map(user_ids)
+        group_map = fetch_user_group_map(user_ids, stats)
 
     if record_type == "patch":
         log("  查询原打卡结果...")
-        check_result_map = fetch_check_results(user_ids, start_date, end_date)
+        check_result_map = fetch_check_results(user_ids, start_date, end_date, stats)
 
     all_rows: list[list[str]] = []
 
@@ -846,7 +897,7 @@ def main() -> None:
             if (idx + 1) % 10 == 0:
                 log(f"  进度: {idx + 1}/{len(instance_ids)}")
 
-            detail = fetch_detail(instance_id)
+            detail = fetch_detail(instance_id, stats)
             if not detail:
                 continue
 
@@ -883,17 +934,59 @@ def main() -> None:
                 )
             else:
                 rows = PARSERS[record_type](detail, name_map)
+            if not rows:
+                stats.record_failure(
+                    f"approval-parse:{instance_id}",
+                    DwsCallError(
+                        "审批详情未投影出可交付记录。",
+                        error_info={
+                            "type": "api",
+                            "subtype": "projection_unknown",
+                            "message": "审批详情未投影出可交付记录。",
+                        },
+                    ),
+                )
+            else:
+                stats.record_success(f"approval-parse:{instance_id}", item_count=len(rows))
             all_rows.extend(rows)
 
     log(f"  解析完成，共 {len(all_rows)} 行")
 
     if not all_rows:
         log("无有效数据行")
-        print(f"{sheet_name}：解析后 0 行有效数据，无需生成文件")
-        sys.exit(0)
+        report = {
+            "type": record_type, "count": 0, "approvalCount": len(instance_ids),
+            "output": None,
+        }
+        outcome, output_data, output_error = report_result(stats, report)
+        if outcome == "partial_failure":
+            outcome = "failure"
+            output_error = stats.failed[0]["error"]
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=args.dry_run,
+            text=(f"{sheet_name}：解析后 0 行有效数据，无需生成文件"
+                  if outcome == "success" else f"{sheet_name}解析失败；未生成文件"),
+        )
 
     # ── 写入 Excel ──
     out_path = args.out or f"attendance_report_record_{record_type}_{start_date}_{end_date}.xlsx"
+    result_data = {
+        "type": record_type,
+        "rowCount": len(all_rows),
+        "approvalCount": len(instance_ids),
+        "output": os.path.abspath(out_path),
+    }
+    outcome, output_data, output_error = report_result(stats, result_data)
+    if args.dry_run:
+        preview = {**result_data, "write": False}
+        outcome, output_data, output_error = report_result(stats, preview)
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data, error=output_error,
+            dry_run=True,
+            text=("[dry-run] 已完成远端只读解析，不写入 Excel 文件"
+                  if outcome == "success" else "[dry-run] 记录查询不完整；未写入 Excel 文件"),
+        )
     headers = COLUMNS[record_type]
     title = f"{sheet_name}  统计日期：{start_date} 至 {end_date}"
     subtitle = f"报表生成时间：{datetime.now().strftime('%Y-%m-%d %H:%M')}"
@@ -940,8 +1033,16 @@ def main() -> None:
 
     abs_path = os.path.abspath(out_path)
     log(f"✅ 导出完成: {abs_path}")
+    if args.format != "text":
+        return emit(fmt=args.format, outcome=outcome, data=output_data, error=output_error)
+    if outcome == "partial_failure":
+        return emit(
+            fmt=args.format, outcome=outcome, data=output_data,
+            text=f"[警告] {sheet_name}仅包含成功读取的记录：{abs_path}",
+        )
     print(f"{sheet_name}导出完成：{abs_path}（{len(all_rows)} 行，{len(instance_ids)} 个审批单）")
+    return 0
 
 
 if __name__ == "__main__":
-    main()
+    sys.exit(run_main(main))

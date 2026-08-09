@@ -262,7 +262,12 @@ def extract_records(payload: Any) -> list[dict]:
     return []
 
 
-def extract_records_strict(payload: Any, *, source: str) -> list[dict]:
+def extract_records_strict(
+    payload: Any,
+    *,
+    source: str,
+    keys: tuple[str, ...] = ("data", "records", "list", "items", "result"),
+) -> list[dict]:
     """Extract a known record array without collapsing projection drift to empty.
 
     ``None`` and an explicit empty list are the only empty-success forms.  A
@@ -275,7 +280,7 @@ def extract_records_strict(payload: Any, *, source: str) -> list[dict]:
     if isinstance(payload, list):
         rows = payload
     elif isinstance(payload, dict):
-        for key in ("data", "records", "list", "items", "result"):
+        for key in keys:
             if key in payload and isinstance(payload[key], list):
                 rows = payload[key]
                 break

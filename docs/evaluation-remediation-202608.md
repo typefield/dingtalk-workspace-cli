@@ -677,6 +677,13 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   validation；全批失败则在本地 Excel 写入前返回 typed failure。产品 Skill 明确禁止把部分文件描述
   为完整报表或重做已成功批次。`attendance-report-partial-contract-20260809.md` 受控对拍
   为 44/44 PASS；它不创建 Excel，也不证明真实考勤权限、图片下载或后端覆盖。
+- 第五类 `attendance_report_record.py` 此前仍在 Mono 静默跳过审批列表/详情/打卡结果/
+  考勤组失败，Multi 入口甚至没有脚本级 format、dry-run 和异常边界。现两入口共享同一
+  实现：审批列表只接受已知容器，详情必须是对象，缺失 `originId` 或无法投影记录均进入
+  typed ledger；权限失败保留 authorization。完整成功保持原 data 形状，部分读取仍可
+  交付只含成功记录的文件但返回 `partial_failure`/rc 7，全批失败或零可交付行且存在失败
+  时在 Excel 写入前返回 typed failure。`attendance-record-contract-20260809.md` 受控对拍
+  为 16/16 PASS；它不创建 Excel，也不证明真实审批内容、考勤组覆盖或后端终态。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。
