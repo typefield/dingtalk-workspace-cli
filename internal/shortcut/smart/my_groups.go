@@ -137,7 +137,11 @@ func executeMyGroups(rt *shortcut.RuntimeContext) error {
 	if err != nil {
 		return err
 	}
-	payload := myGroupsPayload(rt, myGroupsExtract(data))
+	groups, err := myGroupsExtract(data)
+	if err != nil {
+		return err
+	}
+	payload := myGroupsPayload(rt, groups)
 	chatmsg.ApplyPagination(payload, data)
 	payload["pagesFetched"] = 1
 	if payload["complete"] == true {
@@ -180,6 +184,7 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 	hasMore := false
 	stopReason := "source_complete"
 	truncatedByPageLimit := false
+	projectionFailure := false
 	var nextCursor any
 
 	for pagesFetched < pageLimit {
@@ -199,7 +204,18 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 			break
 		}
 		pagesFetched++
-		pageGroups := myGroupsExtract(data)
+		pageGroups, projectErr := myGroupsExtract(data)
+		if projectErr != nil {
+			if pagesFetched == 1 && len(allGroups) == 0 {
+				return nil, projectErr
+			}
+			projectionFailure = true
+			failures = append(failures, map[string]any{
+				"page": pagesFetched, "stage": "response_projection", "cursor": cursorKey, "error": projectErr.Error(),
+			})
+			stopReason = "projection_error"
+			break
+		}
 		for _, group := range pageGroups {
 			id := myGroupsStr(group, "openConversationId", "openConversationID", "conversationId", "openCid", "cid", "id")
 			if id != "" && seenGroups[id] {
@@ -263,15 +279,22 @@ func readAllMyGroups(rt *shortcut.RuntimeContext, baseParams map[string]any) (ma
 	if len(failures) == 0 {
 		return payload, nil
 	}
-	return payload, apperrors.NewAPI(
-		fmt.Sprintf("我的群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
+	options := []apperrors.Option{
 		apperrors.WithOperation("im/list_my_groups_pagination"),
 		apperrors.WithSubtype(apperrors.SubtypeMyGroupsIncomplete),
 		apperrors.WithOrigin("mcp_gateway"),
 		apperrors.WithFailureStage("pagination"),
 		apperrors.WithExecutionStarted(true),
-		apperrors.WithRetryable(true),
 		apperrors.WithHint("请根据 failures 和 nextCursor 重试"),
+	}
+	if projectionFailure {
+		options = append(options, apperrors.WithRetryable(false))
+	} else {
+		options = append(options, apperrors.WithRetryable(true))
+	}
+	return payload, apperrors.NewAPI(
+		fmt.Sprintf("我的群列表分页未完成：成功读取 %d 页，存在 %d 个失败项", pagesFetched, len(failures)),
+		options...,
 	)
 }
 
@@ -288,8 +311,10 @@ func myGroupsCursorString(value any) string {
 
 // myGroupsExtract walks a list_my_groups_pagination response and returns its
 // group entries. The gateway wraps the list under one of several common
-// container keys, so we probe them (and one nested level) before giving up.
-func myGroupsExtract(data map[string]any) []map[string]any {
+// container keys, so we probe them (and one nested level). A missing container
+// or an item without a stable conversation ID is not an empty group list: the
+// caller must fail closed instead of teaching an Agent that no target exists.
+func myGroupsExtract(data map[string]any) ([]map[string]any, error) {
 	for _, key := range []string{"result", "list", "groups", "groupList", "items", "data", "records", "conversations"} {
 		if arr, ok := data[key].([]any); ok {
 			return myGroupsToMaps(arr)
@@ -302,17 +327,32 @@ func myGroupsExtract(data map[string]any) []map[string]any {
 			}
 		}
 	}
-	return nil
+	return nil, myGroupsProjectionUnknown("我的群列表响应缺少可识别的列表容器")
 }
 
-func myGroupsToMaps(arr []any) []map[string]any {
+func myGroupsToMaps(arr []any) ([]map[string]any, error) {
 	out := make([]map[string]any, 0, len(arr))
-	for _, it := range arr {
-		if m, ok := it.(map[string]any); ok {
-			out = append(out, m)
+	for _, item := range arr {
+		m, ok := item.(map[string]any)
+		if !ok {
+			return nil, myGroupsProjectionUnknown("我的群列表包含无法识别的条目")
 		}
+		if myGroupsStr(m, "openConversationId", "openConversationID", "conversationId", "openCid", "cid", "id") == "" {
+			return nil, myGroupsProjectionUnknown("我的群列表条目缺少稳定 conversationId")
+		}
+		out = append(out, m)
 	}
-	return out
+	return out, nil
+}
+
+func myGroupsProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithOperation("im/list_my_groups_pagination"),
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // myGroupsProject reshapes a single group into the projected key fields, probing

@@ -6,8 +6,10 @@ package smart
 import (
 	"bytes"
 	"encoding/json"
+	stderrors "errors"
 	"testing"
 
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 )
 
@@ -128,6 +130,77 @@ func TestCrossPlatformCoverageRemainingReadPaginationValidation(t *testing.T) {
 		if err := root.Execute(); err == nil {
 			t.Fatalf("invalid args succeeded: %v", args)
 		}
+	}
+}
+
+func TestMyGroupsProjectionFailsClosedOnUnknownOrUnaddressableRows(t *testing.T) {
+	tests := []struct {
+		name      string
+		response  map[string]any
+		wantCount int
+		wantError bool
+	}{
+		{
+			name:      "known empty group list",
+			response:  map[string]any{"result": map[string]any{"groups": []any{}}},
+			wantCount: 0,
+		},
+		{
+			name:      "unknown list container",
+			response:  map[string]any{"result": map[string]any{"rows": []any{}}},
+			wantError: true,
+		},
+		{
+			name:      "non object list row",
+			response:  map[string]any{"result": map[string]any{"groups": []any{"not-a-group"}}},
+			wantError: true,
+		},
+		{
+			name:      "row without stable conversation id",
+			response:  map[string]any{"result": map[string]any{"groups": []any{map[string]any{"title": "display-only"}}}},
+			wantError: true,
+		},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			groups, err := myGroupsExtract(tc.response)
+			if (err != nil) != tc.wantError {
+				t.Fatalf("myGroupsExtract() error = %v, wantError=%v", err, tc.wantError)
+			}
+			if err == nil && len(groups) != tc.wantCount {
+				t.Fatalf("myGroupsExtract() count = %d, want %d", len(groups), tc.wantCount)
+			}
+		})
+	}
+}
+
+func TestMyGroupsLaterProjectionFailureKeepsPriorPageAndDisablesReplay(t *testing.T) {
+	payload, err := func() (map[string]any, error) {
+		helper := &chatMessagesPagingCaller{responses: []string{
+			`{"result":{"groups":[{"openConversationId":"g1"}],"hasMore":true,"nextCursor":2}}`,
+			`{"result":{"groups":[{"title":"display-only"}],"hasMore":false}}`,
+		}}
+		helpers.InitDeps(helper)
+		root := newPlatformCoverageRoot()
+		var output bytes.Buffer
+		root.SetOut(&output)
+		root.SetArgs([]string{"chat", "+my-groups", "--page-all", "--page-limit", "5"})
+		err := root.Execute()
+		var payload map[string]any
+		if decodeErr := json.Unmarshal(output.Bytes(), &payload); decodeErr != nil {
+			t.Fatal(decodeErr)
+		}
+		return payload, err
+	}()
+	if err == nil {
+		t.Fatal("later projection failure unexpectedly succeeded")
+	}
+	var typed *apperrors.Error
+	if !stderrors.As(err, &typed) || typed.StableSubtype != string(apperrors.SubtypeMyGroupsIncomplete) || !typed.RetryableSet || typed.Retryable {
+		t.Fatalf("projection failure must remain a non-retryable typed partial error, got %#v", err)
+	}
+	if payload["partial"] != true || payload["stopReason"] != "projection_error" || payload["count"] != float64(1) {
+		t.Fatalf("payload = %#v", payload)
 	}
 }
 
