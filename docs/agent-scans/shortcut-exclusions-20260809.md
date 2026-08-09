@@ -46,7 +46,7 @@
 | `minutes` | `+record-stop` | `write` | `user_required` | yes | 保留隐藏：会终止听记录音且可能不可恢复；需补确认、终态回读和失败后状态核验。 |
 | `minutes` | `+transcript` | `read` | `not_required` | yes | 保留隐藏：大体量转写读取涉及长响应和分页/异步处理；当前使用明确的 minutes get transcription 路径，避免重复 canonical。 |
 | `oa` | `+approve-by` | `write` | `user_required` | yes | 保留隐藏：会代表用户执行审批动作，涉及审批人/实例消歧和不可逆业务变更；待完整审批结果与幂等证据。 |
-| `report` | `+report-latest` | `read` | `not_required` | yes | 保留隐藏：旧的最近日志聚合入口与 report inbox/outbox 规范路径重叠，展示字段和方向语义不够明确。 |
+| `report` | `+report-latest` | `read` | `not_required` | yes | 保留隐藏：本地最新项投影已 fail-closed，但旧聚合入口仍与 report outbox list + detail 规范路径重叠，且缺少真实账号详情样本；避免形成第二个 Agent canonical。 |
 | `wiki` | `+node-copy` | `write` | `user_required` | yes | 保留隐藏：会复制知识库节点并产生新资源，需补目标空间确认、幂等和回滚/部分失败投影。 |
 | `wiki` | `+node-move` | `write` | `user_required` | yes | 保留隐藏：会改变知识库节点归属，影响范围和回滚边界较大；待 dry-run、权限和终态回读证据。 |
 | `wiki` | `+wiki-new-doc` | `write` | `user_required` | yes | 保留隐藏：会创建新文档资源，需补重复创建保护、失败后资源未知状态和清理动作。 |

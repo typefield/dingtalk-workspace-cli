@@ -14,6 +14,7 @@
 package smart
 
 import (
+	"fmt"
 	"strconv"
 	"strings"
 	"time"
@@ -88,16 +89,15 @@ var ReportLatest = shortcut.Shortcut{
 		}
 
 		// Step 2 — pick the newest sent report.
-		row, reportID := shortcutReportLatestPick(data)
+		row, reportID, err := shortcutReportLatestPick(data)
+		if err != nil {
+			return err
+		}
 		if row == nil {
 			return apperrors.NewValidation("暂无日志")
 		}
 
 		// Step 3 — print its detail (report_id mirrors helpers.runReportDetail).
-		// If we somehow could not read a reportId, fall back to the list row.
-		if reportID == "" {
-			return rt.Output(row)
-		}
 		return rt.CallMCP("get_report_entry_details", map[string]any{
 			"report_id": reportID,
 		})
@@ -106,12 +106,29 @@ var ReportLatest = shortcut.Shortcut{
 
 // shortcutReportLatestPick walks a get_send_report_list response, finds the
 // report entries, and returns the newest one (largest create time, falling back
-// to the first entry that carries a reportId) together with its reportId.
-// Returns (nil, "") when there are no entries.
-func shortcutReportLatestPick(data map[string]any) (map[string]any, string) {
-	items := shortcutReportLatestItems(data)
-	if len(items) == 0 {
-		return nil, ""
+// to server order only when no entry has a usable timestamp) together with its
+// reportId. Unknown containers, malformed rows, and missing IDs fail closed.
+func shortcutReportLatestPick(data map[string]any) (map[string]any, string, error) {
+	raw, known, err := shortcutReportLatestItems(data)
+	if err != nil {
+		return nil, "", err
+	}
+	if !known {
+		return nil, "", reportLatestProjectionUnknown("日志列表响应缺少可识别的列表容器")
+	}
+	if len(raw) == 0 {
+		return nil, "", nil
+	}
+	items := make([]map[string]any, 0, len(raw))
+	for _, item := range raw {
+		row, ok := item.(map[string]any)
+		if !ok {
+			return nil, "", reportLatestProjectionUnknown("日志列表包含无法识别的条目")
+		}
+		if shortcutReportLatestID(row) == "" {
+			return nil, "", reportLatestProjectionUnknown("日志列表条目缺少稳定 reportId，无法可靠选择最新日志")
+		}
+		items = append(items, row)
 	}
 
 	var firstItem map[string]any
@@ -120,6 +137,7 @@ func shortcutReportLatestPick(data map[string]any) (map[string]any, string) {
 	bestID := ""
 	var bestTime int64
 	haveTime := false
+	timedCount := 0
 
 	for _, m := range items {
 		id := shortcutReportLatestID(m)
@@ -131,6 +149,7 @@ func shortcutReportLatestPick(data map[string]any) (map[string]any, string) {
 			firstID = id
 		}
 		if t, ok := shortcutReportLatestCreateMillis(m); ok {
+			timedCount++
 			if !haveTime || t > bestTime {
 				haveTime = true
 				bestTime = t
@@ -139,47 +158,61 @@ func shortcutReportLatestPick(data map[string]any) (map[string]any, string) {
 			}
 		}
 	}
+	if timedCount > 0 && timedCount != len(items) {
+		return nil, "", reportLatestProjectionUnknown("日志列表只有部分条目带可比较时间，无法可靠选择最新日志")
+	}
 
 	if haveTime && bestItem != nil {
-		return bestItem, bestID
+		return bestItem, bestID, nil
 	}
 	if firstItem != nil {
-		return firstItem, firstID
+		return firstItem, firstID, nil
 	}
-	// No entry carried a reportId; still surface the first raw item so the
-	// caller can print something rather than mis-report "暂无日志".
-	return items[0], ""
+	return nil, "", reportLatestProjectionUnknown("日志列表无法可靠选择最新日志")
 }
 
 // shortcutReportLatestItems pulls the report entries out of a
 // get_send_report_list response, probing the same container keys the helper's
 // findReportListItems uses (list/items/data/reports/records/report_list/
 // reportList nested under the top level or under result).
-func shortcutReportLatestItems(data map[string]any) []map[string]any {
+func shortcutReportLatestItems(data map[string]any) ([]any, bool, error) {
 	keys := []string{"list", "items", "data", "reports", "records", "report_list", "reportList", "result"}
 	for _, key := range keys {
-		if arr, ok := data[key].([]any); ok {
-			return shortcutReportLatestToMaps(arr)
+		value, present := data[key]
+		if !present {
+			continue
 		}
-		if inner, ok := data[key].(map[string]any); ok {
+		if arr, ok := value.([]any); ok {
+			return arr, true, nil
+		}
+		if inner, ok := value.(map[string]any); ok {
 			for _, k2 := range []string{"list", "items", "data", "reports", "records", "report_list", "reportList"} {
-				if arr, ok := inner[k2].([]any); ok {
-					return shortcutReportLatestToMaps(arr)
+				innerValue, innerPresent := inner[k2]
+				if !innerPresent {
+					continue
 				}
+				if arr, ok := innerValue.([]any); ok {
+					return arr, true, nil
+				}
+				return nil, true, reportLatestProjectionUnknown(fmt.Sprintf("日志列表字段 %s.%s 不是数组", key, k2))
 			}
+			continue
 		}
+		return nil, true, reportLatestProjectionUnknown(fmt.Sprintf("日志列表字段 %s 不是数组或对象", key))
 	}
-	return nil
+	return nil, false, nil
 }
 
-func shortcutReportLatestToMaps(arr []any) []map[string]any {
-	out := make([]map[string]any, 0, len(arr))
-	for _, it := range arr {
-		if m, ok := it.(map[string]any); ok {
-			out = append(out, m)
-		}
-	}
-	return out
+func reportLatestProjectionUnknown(message string) error {
+	return apperrors.NewAPI(
+		message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithRetryable(false),
+		apperrors.WithOperation("report/get_send_report_list"),
+		apperrors.WithOrigin("mcp_gateway"),
+		apperrors.WithFailureStage("latest_report_projection"),
+		apperrors.WithHint("检查日志列表响应结构；不要把未知响应解释为暂无日志或成功详情。"),
+	)
 }
 
 // shortcutReportLatestID reads an entry's reportId, mirroring the key aliases in

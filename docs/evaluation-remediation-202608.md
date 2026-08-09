@@ -42,6 +42,17 @@ task UUID；只有该字段的条目返回不可重试的 `projection_unknown`�
 三条入口继续保持隐藏，未扩大 Agent 公开命令面。Agent 内存测试证据见
 `agent-scans/minutes-latest-target-projection-20260809.md`；真实服务端形状、排序和详情终态仍待隔离账号复验。
 
+## 2026-08-09 Report latest 投影复核
+
+`report +report-latest` 原先把未知列表容器与显式空列表都归成“暂无日志”，并在列表条目缺少
+稳定 `reportId` 时直接输出原始行成功。当前投影已区分已知空、未知容器、非法条目和缺稳定 ID；
+部分条目有时间、部分没有时也不再猜测“最新”。不可信形状统一返回不可重试的
+`api/projection_unknown`，带恢复 hint，而不是空结果或成功详情。
+
+该命令仍保留在 Agent exclusion：它与规范的 `report outbox list + detail` 路径重叠，并缺少真实账号的
+稳定详情样本。本轮只关闭本地投影错误，不形成第二个 canonical。Agent Markdown 证据见
+`agent-scans/report-latest-projection-20260809.md`。
+
 ## 2026-08-09 Sheet 工作表列表输出晋级复核
 
 `sheet +list-sheets` 已从 `dual_validate` 迁入 `unified_active`：普通 `--format json` 直接输出统一结果，
