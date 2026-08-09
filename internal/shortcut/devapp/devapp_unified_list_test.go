@@ -154,3 +154,74 @@ func TestDevAppPaginatedShortcutsEmitUnifiedResumableResults(t *testing.T) {
 		})
 	}
 }
+
+func TestDevAppMemberListUsesSharedUnifiedResult(t *testing.T) {
+	serviceResult, err := json.Marshal(map[string]any{
+		"success": true,
+		"result": map[string]any{
+			"members": []any{
+				map[string]any{"userId": "user-1", "memberType": "DEVELOPER"},
+			},
+		},
+	})
+	if err != nil {
+		t.Fatalf("marshal service result: %v", err)
+	}
+	caller := &devAppListCaller{result: string(serviceResult)}
+	helpers.InitDepsForTest(t, caller)
+
+	cmd := corecmd.New(shortcut.FromShortcut(frameworkUnified(MemberList)))
+	cmd.PersistentFlags().String("format", "json", "")
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs([]string{"--format", "json", "--unified-app-id", "app-1"})
+	if err := cmd.Execute(); err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	exitCode, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || exitCode != 0 {
+		t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
+	}
+	if caller.product != productDevApp || caller.tool != "list_dev_app_members" {
+		t.Fatalf("route = %s/%s", caller.product, caller.tool)
+	}
+
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode output: %v\n%s", err, stdout.String())
+	}
+	if envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope = %#v", envelope)
+	}
+	if _, found := envelope["contract_version"]; found {
+		t.Fatalf("removed version marker leaked into result: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok {
+		t.Fatalf("data = %#v", envelope["data"])
+	}
+	members, ok := data["members"].([]any)
+	if !ok || len(members) != 1 {
+		t.Fatalf("members = %#v", data["members"])
+	}
+
+	shared := helpers.DevAppCommandResultFromPayload("list_dev_app_members", map[string]any{
+		"success": true,
+		"result":  map[string]any{"members": []any{map[string]any{"userId": "user-1", "memberType": "DEVELOPER"}}},
+	}, false)
+	sharedEnvelope, err := output.EnvelopeFromResult(shared)
+	if err != nil {
+		t.Fatalf("shared mapper: %v", err)
+	}
+	if sharedEnvelope.Outcome != output.OutcomeSuccess {
+		t.Fatalf("shared mapper outcome = %s", sharedEnvelope.Outcome)
+	}
+	sharedData, ok := sharedEnvelope.Data.(map[string]any)
+	sharedMembers, membersOK := sharedData["members"].([]any)
+	if !ok || !membersOK || len(sharedMembers) != len(members) {
+		t.Fatalf("shared mapper data = %#v, shortcut data = %#v", sharedEnvelope.Data, data)
+	}
+}

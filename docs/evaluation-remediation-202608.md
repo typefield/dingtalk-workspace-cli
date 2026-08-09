@@ -63,6 +63,21 @@ task UUID；只有该字段的条目返回不可重试的 `projection_unknown`�
 因此不伪造 endpoint 完整性。Agent 内存审阅证据见
 `agent-scans/sheet-list-projection-20260809.md`；真实工作表的权限、空表和服务端形状仍待隔离文档复验。
 
+## 2026-08-09 DevApp 成员读取输出晋级复核
+
+`devapp +member-list` 已按 terminal command 从 `dual_validate` 单步晋级
+`unified_active`，没有批量切换相邻写命令。普通 `--format json` 直接返回
+`ok/outcome/data/error/meta`，不含公开协议选择参数或版本标记；它与
+`dev app member list` 共用同一 `ServiceResult -> CommandResult` 分类器。专项回归锁定
+一次业务调用、稳定成功信封和两入口 outcome 对齐，rollout Agent ledger 确认
+`dual_validate=19`、`unified_active=121`。
+
+真实只读探针未获得成员正向证据：前置 `devapp +list` 在当前账号返回
+`validation/pagination_conflict`，Agent 因此没有从矛盾页中提取
+`unifiedAppId`，也没有继续发起成员查询。该结果证明 fail-closed 生效，但不能扩大成
+成员接口已通过真实账号复验；DevApp 适配层仍需确认“终页同时携带非空 cursor”的来源。
+脱敏证据见 [DevApp member-list Agent review](agent-scans/devapp-member-list-rollout-20260809.md)。
+
 ## 2026-08-09 Sheet Skill 路由复核
 
 `sheet +list-sheets` 已晋级为统一结果入口后，Skill 曾仍把 Agent 引向 legacy `sheet list`，使同一
@@ -709,5 +724,7 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 
 1. 真实环境复验 contact 投影 `8/5/1`、`wiki +node-list`、event stop、todo participant、approval create-instance。
 2. 在隔离数据上完成 sheet 二次回滚官方自证。
-3. 对保留的 CLI 生命周期与 Agoal 产品边界 exclusion 做发布级复核，确保没有新的业务
+3. 对拍 DevApp `list_dev_app` 的真实分页字段，确认终页非空 cursor 是后端契约、适配层
+   包装还是字段误投影；结论前不得忽略 `pagination_conflict` 或宣称应用目录完整。
+4. 对保留的 CLI 生命周期与 Agoal 产品边界 exclusion 做发布级复核，确保没有新的业务
    leaf 被误归入边界组；新增待审业务命令必须在同一变更中完成 Contract/Safety 审阅。

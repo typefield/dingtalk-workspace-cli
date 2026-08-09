@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T21:27:12+08:00
+扫描时间：2026-08-09T21:43:21+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1343 |
-| `dual_validate` | 20 |
-| `unified_active` | 120 |
+| `dual_validate` | 19 |
+| `unified_active` | 121 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,12 +18,11 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-aitable.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-20260809.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws aitable +base-list`: `dual_validate` → `unified_active`
-- PASS: `dws aitable +base-search`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +member-list`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -850,7 +849,7 @@
 | `dws devapp +get` | `unified_active` | `unified` | no |
 | `dws devapp +list` | `unified_active` | `unified` | no |
 | `dws devapp +member-add` | `dual_validate` | `legacy` | no |
-| `dws devapp +member-list` | `dual_validate` | `legacy` | no |
+| `dws devapp +member-list` | `unified_active` | `unified` | no |
 | `dws devapp +member-remove` | `dual_validate` | `legacy` | no |
 | `dws devapp +permission-add` | `dual_validate` | `legacy` | yes |
 | `dws devapp +permission-list` | `unified_active` | `unified` | no |

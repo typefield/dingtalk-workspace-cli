@@ -1719,7 +1719,7 @@ func init() {
 		frameworkUnified(PermissionList),
 		frameworkDualValidate(PermissionAdd),
 		frameworkDualValidate(PermissionRemove),
-		frameworkDualValidate(MemberList),
+		frameworkUnified(MemberList),
 		frameworkDualValidate(MemberAdd),
 		frameworkDualValidate(MemberRemove),
 		frameworkDualValidate(SecurityConfig),
