@@ -124,18 +124,23 @@ Flags:
       --mode string          更新模式: append / overwrite
 ```
 
-### 上传文件到钉钉文档或钉钉知识库
+### 上传文件到钉盘或知识库（已迁移到 drive）
+
+> `dws doc upload` 是兼容入口，不作为 Agent 默认路径。普通文件、钉盘和知识库
+> 上传统一使用 `dws drive upload`；只有要把文件插入**某篇文档正文**时才使用
+> `dws doc media insert`。
+
 ```
 Usage:
-  dws doc upload [flags]
+  dws drive upload [flags]
 Example:
-  dws doc upload --file ./report.pdf
-  dws doc upload --file ./slides.pptx --name "Q1汇报.pptx" --folder <FOLDER_ID>
-  dws doc upload --file ./data.xlsx --workspace <WS_ID> --convert
+  dws drive upload --file ./report.pdf
+  dws drive upload --file ./slides.pptx --file-name "Q1汇报.pptx" --folder <FOLDER_ID>
+  dws drive upload --file ./data.xlsx --workspace <WS_ID> --convert
 Flags:
       --file string        本地文件路径 (必填)
-      --name string        文件显示名称 (默认使用文件名)
-      --folder string      目标文件夹 ID 或 URL
+      --file-name string   文件显示名称 (默认使用文件名)
+      --folder string      目标文件夹 ID
       --workspace string   目标知识库 ID
       --convert            是否转换为钉钉在线文档
 ```
@@ -180,40 +185,50 @@ dws drive download --node <NODE_ID> --output ./report.pdf
 >
 > 命令详情见 [drive.md](./drive.md)。
 
-### 复制文档/文件
+### 复制文档/文件（已迁移到 drive）
+
+> `dws doc copy` 仅保留给历史自动化兼容；Agent 默认使用 `dws drive copy`。
+
 ```
 Usage:
-  dws doc copy [flags]
+  dws drive copy [flags]
 Example:
-  dws doc copy --node <DOC_ID> --folder <TARGET_FOLDER_ID>
-  dws doc copy --node <DOC_ID> --workspace <TARGET_WS_ID>
-  dws doc copy --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --folder <FOLDER_ID>
+  dws drive copy --node <DOC_ID> --folder <TARGET_FOLDER_ID>
+  dws drive copy --node <DOC_ID> --workspace <TARGET_WS_ID>
+  dws drive copy --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --folder <FOLDER_ID>
 Flags:
       --node string        源文档/文件 ID 或 URL (必填)
       --folder string      目标文件夹 ID 或 URL
       --workspace string   目标知识库 ID 或 URL (不传 --folder 时复制到该知识库根目录)
 ```
 
-### 移动文档/文件
+### 移动文档/文件（已迁移到 drive）
+
+> `dws doc move` 仅保留给历史自动化兼容；Agent 默认使用 `dws drive move`。
+
 ```
 Usage:
-  dws doc move [flags]
+  dws drive move [flags]
 Example:
-  dws doc move --node <DOC_ID> --folder <TARGET_FOLDER_ID>
-  dws doc move --node <DOC_ID> --workspace <TARGET_WS_ID>
+  dws drive move --node <DOC_ID> --folder <TARGET_FOLDER_ID>
+  dws drive move --node <DOC_ID> --workspace <TARGET_WS_ID>
 Flags:
       --node string        源文档/文件 ID 或 URL (必填)
       --folder string      目标文件夹 ID 或 URL
       --workspace string   目标知识库 ID 或 URL (不传 --folder 时移动到该知识库根目录)
 ```
 
-### 重命名文档/文件
+### 重命名文档/文件（已迁移到 drive）
+
+> `dws doc rename` 仅保留给历史自动化兼容；Agent 默认使用 `dws drive rename`，
+> 它会按真实节点类型避免重复扩展名。
+
 ```
 Usage:
-  dws doc rename [flags]
+  dws drive rename [flags]
 Example:
-  dws doc rename --node <DOC_ID> --name "新名称"
-  dws doc rename --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --name "项目周报 v2"
+  dws drive rename --node <DOC_ID> --name "新名称"
+  dws drive rename --node "https://alidocs.dingtalk.com/i/nodes/<DOC_UUID>" --name "项目周报 v2"
 Flags:
       --node string   文档/文件 ID 或 URL (必填)
       --name string   新名称 (必填)
@@ -396,7 +411,7 @@ Usage:
 **硬指引（任何 contentType=ALIDOC 文档都适用）**：
 
 - 当用户要求"按模板生成同形态变体 / 参照这个生成 / 复刻 / 仿照这个文档"时，**禁止**走 doc read → create_file → doc create 链路——这条链路会做两次 lossy projection（adoc → markdown 丢一次，markdown → adoc 重建再丢一次），最终交付物只有文本内容，富格式全部失真。
-- 正确路径：`dws doc copy`（adoc 层面整文档保形复制）+ `dws doc rename` + `dws doc block list / dws doc block update`（在副本上做局部修改）。详见 [best_practices/04-document.md](../best_practices/04-document.md#template-based-generation) 的 `template-based-generation` recipe。
+- 正确路径：`dws drive copy`（adoc 层面整文档保形复制）+ `dws drive rename` + `dws doc block list / dws doc block update`（在副本上做局部修改）。详见 [best_practices/04-document.md](../best_practices/04-document.md#template-based-generation) 的 `template-based-generation` recipe。
 - 当用户提到 `行高 / 颜色 / 字号 / 表格样式 / 周末高亮` 等富格式诉求时，agent 必须在动手前显式声明能力边界："这些属性 markdown 无法表达，需走 copy + block update 路径"，避免静默走破坏链。
 
 ### 内容写入管道（create / update 共用）
@@ -471,17 +486,18 @@ CLI **不会**自动执行回读验证。**Agent 必须在文档写入完成后�
 2. 已写入的部分内容可通过 `dws doc read --node <NODE_ID>` 查看
 3. 从断点处手动用 `dws doc update --mode append` 继续追加
 
-### 删除文档/文件到回收站
+### 删除文档/文件到回收站（已迁移到 drive）
 
-> **CAUTION:** 不可逆操作 — 执行前必须向用户确认。
+> **CAUTION:** 不可逆操作 — 执行前必须向用户确认。`dws doc delete` 仅为兼容入口；
+> 默认使用 `dws drive delete`。
 
 ```
 Usage:
-  dws doc delete [flags]
+  dws drive delete [flags]
 Example:
-  dws doc delete --node <DOC_ID> --format json    # 查询 nodeId: dws drive search --query "..." 或 dws drive list
+  dws drive delete --node <NODE_ID> --yes --format json
 Flags:
-      --node string   文档/文件 ID 或 URL (必填)
+      --node string   文件/文件夹 ID 或 URL (必填)
 ```
 
 权限要求: 对文档有"管理"权限。
@@ -665,8 +681,8 @@ Flags:
 - 知识库内 → `dws wiki node create --workspace <WS_ID> --type folder`（`doc folder create` / `doc file create --type folder` 已弃用）
 
 用户说"上传文件/传文件/上传到文档/上传到知识库":
-- 上传 → `upload`（需本地文件路径）
-- 上传并转换 → `upload --convert`
+- 上传 → `dws drive upload`（需本地文件路径）
+- 上传并转换 → `dws drive upload --convert`
 
 用户说"导入文件/导入为在线文档/导入 Word/导入 Excel/导入 xmind/导入 Markdown/把本地文件转在线文档":
 - 导入并转换为在线文档 → `doc import --file <本地路径>`
@@ -689,18 +705,18 @@ Flags:
 > **严禁将"导出文档"直接路由到 `drive download`**。`drive download` 只能下载已有文件（原样下载），`doc export` 是将在线文档格式转换后导出为 docx，两者完全不同。
 
 用户说"复制文档/拷贝一份/复制到":
-- 复制 → `copy` (需源 --node 和目标 --folder/--workspace)
+- 复制 → `dws drive copy` (需源 --node 和目标 --folder/--workspace)
 
 用户说"移动文档/搬到/移到/转移文件":
-- 移动 → `move` (需源 --node 和目标 --folder/--workspace)
+- 移动 → `dws drive move` (需源 --node 和目标 --folder/--workspace)
 
 用户说"重命名/rename/改名/改文档名/修改文档名称/修改文档标题/把这个文档叫做...":
-- 重命名 → `doc rename`（需文档 ID 或 URL + 新名称）
-- 只要意图是修改文档在列表和链接中展示的名称，统一路由到 `dws doc rename --node <DOC_ID_OR_URL> --name "新名称"`；不要走 `drive`、`doc update` 或重新 `doc create`
+- 重命名 → `dws drive rename`（需文档 ID 或 URL + 新名称）
+- 只要意图是修改文档在列表和链接中展示的名称，统一路由到 `dws drive rename --node <DOC_ID_OR_URL> --name "新名称"`；不要走 `doc update` 或重新 `doc create`
 - 只有用户明确说"正文里的标题/章节标题/段落标题/H1 标题"时，才走 `block update`
 
 用户说"删除文档/删掉这个文件/移到回收站/丢掉这篇文档":
-- 删除节点 → `delete`（危险操作，需 `--yes` 确认；需文档 ID 或 URL）
+- 删除节点 → `dws drive delete`（危险操作，需先向用户确认再加 `--yes`；需文档 ID 或 URL）
 
 用户说"插入附件/上传附件到文档/往文档里加文件/加附件":
 - 插入附件 → `media insert`（需文档 ID 或 URL + 本地文件路径）
@@ -799,16 +815,16 @@ dws doc update --node <DOC_ID> --content "# 本周总结\n\n- 完成了 A\n- 推
 
 dws doc create --name "会议纪要" --content "# 会议纪要\n\n## 议题\n\n1. ..." --format json
 
-# ── 工作流 4: 上传本地文件到钉钉文档/知识库 ──
+# ── 工作流 4: 上传本地文件到钉盘/知识库 ──
 
 # 1. 上传到"我的文档"根目录
-dws doc upload --file ./report.pdf
+dws drive upload --file ./report.pdf --format json
 
 # 2. 上传到指定文件夹
-dws doc upload --file ./slides.pptx --name "Q1汇报.pptx" --folder <DOC_FOLDER_NODE_ID>
+dws drive upload --file ./slides.pptx --file-name "Q1汇报.pptx" --folder <FOLDER_ID> --format json
 
 # 3. 上传到知识库并转换为在线文档
-dws doc upload --file ./data.xlsx --workspace <WS_ID> --convert
+dws drive upload --file ./data.xlsx --workspace <WS_ID> --convert --format json
 
 # ── 工作流 5: 下载/导出文件到本地 ──
 #  必须先用 info 判断文件类型，再决定用 drive download 还是 doc export：
@@ -881,7 +897,7 @@ dws doc block update --node <DOC_ID> --block-id <BLOCK_ID> --text "修改后的�
 # 5. 删除块
 dws doc block delete --node <DOC_ID> --block-id <BLOCK_ID> --yes
 
-# ── 工作流 8: 复制/移动/重命名文档 ──
+# ── 工作流 8: 用 drive 管理文件/文档节点 ──
 
 # 获取 nodeId 的三种方式（按场景选择，无需全部执行）:
 #   方式 A: 用户直接提供文档 URL — 直接传给 --node，无需额外查询
@@ -892,23 +908,23 @@ dws drive list --folder <DOC_FOLDER_NODE_ID> --format json
 # 注意: 这里的 <DOC_FOLDER_NODE_ID> 是文件夹 nodeId/dentryUuid 或文件夹 URL，不是数字 dentryId；示例统一使用 canonical --folder。
 
 # 复制文档到指定文件夹（--node 支持 ID 或 URL）
-dws doc copy --node <DOC_ID_OR_URL> --folder <TARGET_DOC_FOLDER_NODE_ID> --format json
+dws drive copy --node <DOC_ID_OR_URL> --folder <TARGET_FOLDER_ID> --format json
 
 # 复制到目标知识库根目录（不传 --folder 时）
-dws doc copy --node <DOC_ID_OR_URL> --workspace <TARGET_WS_ID> --format json
+dws drive copy --node <DOC_ID_OR_URL> --workspace <TARGET_WS_ID> --format json
 
 # 移动文档到指定文件夹
-dws doc move --node <DOC_ID_OR_URL> --folder <TARGET_DOC_FOLDER_NODE_ID> --format json
+dws drive move --node <DOC_ID_OR_URL> --folder <TARGET_FOLDER_ID> --format json
 
 # 移动到目标知识库根目录（不传 --folder 时）
-dws doc move --node <DOC_ID_OR_URL> --workspace <TARGET_WS_ID> --format json
+dws drive move --node <DOC_ID_OR_URL> --workspace <TARGET_WS_ID> --format json
 
 # 重命名文档
-dws doc rename --node <DOC_ID_OR_URL> --name "新名称" --format json
+dws drive rename --node <DOC_ID_OR_URL> --name "新名称" --format json
 
 # 删除文档到回收站（危险操作：必须先向用户确认，用户同意后才加 --yes 执行）
 # 正确流程：1.向用户展示"即将删除「文档名」到回收站" → 2.等用户确认 → 3.执行下面命令
-dws doc delete --node <DOC_ID_OR_URL> --yes --format json
+dws drive delete --node <NODE_ID_OR_URL> --yes --format json
 
 # ── 工作流 9: 文档评论管理 ──
 
@@ -1057,18 +1073,17 @@ EOF
 - 块类型包括: paragraph, heading, blockquote, callout, columns, orderedList, unorderedList, table, sheet, attachment, slot
 - 关键区分: doc(文档内容级操作) vs wiki(知识库空间级管理) vs aitable(数据表格操作) vs drive(钉盘文件管理)
 - wiki 是知识库容器，doc 是知识库中的文档内容；需要 `workspaceId` 时，先用 `dws wiki space list/search` 获取，再传给 doc 的 `--workspace` 参数
-- `doc upload vs drive upload`：用户提到"知识库/文档空间/workspace" → `doc upload`；提到"钉盘/网盘/我的文件" → `drive upload`；未明确目标时默认 `drive upload`
-- `upload` 支持上传任意类型文件 (PDF、Office、图片等) 到钉钉文档空间或知识库；`--convert` 可将 Office 文件转换为钉钉在线文档
-- `upload` 是三步自动完成的流程 (获取凭证 → OSS 上传 → 提交入库)，无需手动分步操作
+- 上传普通文件统一用 `drive upload`：可上传到钉盘或用 `--workspace` 上传到知识库；`--convert` 可将 Office 文件转换为钉钉在线文档。只有插入某篇正文的附件才用 `doc media insert`。
+- `drive upload` 是三步自动完成的流程 (获取凭证 → OSS 上传 → 提交入库)，无需手动分步操作。
 - `download` 是两步自动完成的流程 (获取下载链接 → HTTP GET 下载)，支持自动推断文件名；`--output` 可指定文件路径或目录
 - `media insert` 是三步自动完成的流程 (获取附件上传凭证 → OSS 上传 → 插入附件块到文档)，无需手动分步操作
 - `media insert` 的 `--mime-type` 可选，不指定时根据文件扩展名自动推断；支持常见文件类型 (PDF、Office、图片、视频、压缩包等)
 - `media insert` 与 `upload` 的区别：`upload` 将文件上传到文档空间/知识库作为独立文件；`media insert` 将文件作为附件块插入到文档正文中
 - `media download` 用于获取文档正文中附件的临时下载链接，`--resource-id` 可通过 `block list` 返回的 attachment 块获取
-- `copy` 需要对源节点有"阅读"权限，且对目标文件夹有"编辑"权限
-- `move` 需要对源节点有"管理"权限，且对目标文件夹有"编辑"权限；移动后原位置的文档将不再存在
-- `rename` 需要对文档有"编辑"权限
-- `copy` / `move` 不传 `--folder` 时，`--workspace` 表示放到知识库根目录；两者都不传则回落到"我的文档"
+- `drive copy` 需要对源节点有"阅读"权限，且对目标文件夹有"编辑"权限。
+- `drive move` 需要对源节点有"管理"权限，且对目标文件夹有"编辑"权限；移动后原位置不再存在。
+- `drive rename` 需要对节点有"编辑"权限。
+- `drive copy` / `drive move` 不传 `--folder` 时，`--workspace` 表示放到知识库根目录；两者都不传则回落到"我的文档"。
 - `comment create` 是全文评论；`comment create-inline` 是划词评论，必须先 `block list` 拿到 `blockId` 并确定 `--start` / `--end` 偏移（按块内纯文本字符算，从 0 开始）
 - 全文评论 `create` / `reply` / `update` 支持通过 `--mentioned-open-conversation-id` @群；划词评论 `create-inline` 不支持 @群
 

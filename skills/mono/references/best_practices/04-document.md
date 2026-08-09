@@ -34,7 +34,7 @@
 
 **保形优于重写**。adoc 富格式（行高、单元格背景色、字号、渐变文字色、表格列宽、合并单元格）在 markdown 层无表达，`doc read → create_file → doc create` 会做两次 lossy projection（先 adoc→markdown，再 markdown→adoc），必然丢失这些属性。
 
-正确做法：**在 adoc 层保形复制（`doc copy`）**，再局部改写需要替换的块（`doc block update`），保留所有富格式。
+正确做法：**在 adoc 层保形复制（`drive copy`）**，再局部改写需要替换的块（`doc block update`），保留所有富格式。`doc copy` / `doc rename` 仅为历史兼容入口，不再作为 Agent 默认路径。
 
 ### 固定路线
 
@@ -43,11 +43,11 @@
 dws doc info --node <模板NODE或URL> --format json
 
 # 2. 在 adoc 层保形复制（不经过 markdown 投影）
-dws doc copy --node <模板NODE或URL> --folder <目标文件夹NODE或URL> --format json
+dws drive copy --node <模板NODE或URL> --folder <目标文件夹NODE或URL> --format json
 # → 取返回的副本 nodeId
 
 # 3. 重命名副本
-dws doc rename --node <副本nodeId> --name "<新文档名>" --format json
+dws drive rename --node <副本nodeId> --name "<新文档名>" --format json
 
 # 4. 列出所有块定位要改的内容
 dws doc block list --node <副本nodeId> --format json
@@ -74,7 +74,7 @@ dws doc read --node <副本nodeId>
 ### 禁止反模式
 
 - ❌ doc read + doc create 重写模板文档（两次 lossy projection）
-- ❌ 先 `dws doc copy`，再删除副本退回 create 重写链路
+- ❌ 先 `dws drive copy`，再删除副本退回 create 重写链路
 - ❌ 用 `dws doc update --mode overwrite --yes` 把含富格式的 adoc 整篇覆盖成 markdown
 
 ---

@@ -522,7 +522,7 @@ Flags:
    > 4. **跳过** — 暂不处理发言人识别
 
    根据用户选择分别处理：
-   - 选 1 → 进入 `minutes-speaker-summarize` recipe 的智能推断流程（见 [10-minutes-speaker-match.md](10-minutes-speaker-match.md)）。**智能匹配核心：同时发起三路查询、不串行等待**：① 人员+组织架构 `dws aisearch person --keyword <姓名> --dimension name` → userId，再用 `dws contact user get --ids <userId>` 补部门/职级；② 聊天记录 `dws chat message list` → 工作内容/语言风格/职责线索；③ 本人文档 `dws doc search --keyword <姓名>` 前 3 篇 → 角色精确信号。**判定**：通讯录+聊天两路一致即可确认角色（通常无需查文档），仅一路或矛盾时补查文档兜底、两路以上一致才下结论；部门名 ≠ 角色。**文档角色对照**：PRD/需求/商业化方案→产品经理，视觉规范/原型/交互评审→产品设计师，技术方案/架构→研发，分析报告/底表→数据分析师。**置信度分支**：> 70% 输出匹配结果并执行替换，< 70% 不输出、请用户补充信息或改用手动设置
+   - 选 1 → 进入 `minutes-speaker-summarize` recipe 的智能推断流程（见 [10-minutes-speaker-match.md](10-minutes-speaker-match.md)）。**智能匹配核心：同时发起三路查询、不串行等待**：① 人员+组织架构 `dws aisearch person --keyword <姓名> --dimension name` → userId，再用 `dws contact user get --ids <userId>` 补部门/职级；② 聊天记录 `dws chat message list` → 工作内容/语言风格/职责线索；③ 本人文档 `dws drive search --query <姓名>` 前 3 篇 → 角色精确信号。**判定**：通讯录+聊天两路一致即可确认角色（通常无需查文档），仅一路或矛盾时补查文档兜底、两路以上一致才下结论；部门名 ≠ 角色。**文档角色对照**：PRD/需求/商业化方案→产品经理，视觉规范/原型/交互评审→产品设计师，技术方案/架构→研发，分析报告/底表→数据分析师。**置信度分支**：> 70% 输出匹配结果并执行替换，< 70% 不输出、请用户补充信息或改用手动设置
    - 选 2 → 请用户提供日程链接或参会人姓名列表：
      - 有日程链接 → 从链接提取 eventId → `dws calendar participant list --event <eventId>` 获取参与人 → 与转写发言人数量/顺序对照匹配 → 展示匹配结果请用户确认 → 确认后逐条执行 `speaker replace`
      - 有参会人名单（用户直接列出姓名）→ 与转写中匿名发言人做数量对照 → 结合发言内容/角色推断匹配 → 展示匹配结果请用户确认 → 确认后逐条执行 `speaker replace`
@@ -810,7 +810,7 @@ Step 7: 引导用户替换发言人（调用 speaker replace 写回听记）
 | 路径 | 命令 | 得到什么 |
 |------|------|----------|
 | ① 人员与组织架构 | `dws aisearch person --keyword "目标人名" --dimension name` → userId，再用 `dws contact user get --ids <userId>` 补详情 | 职能大类（技术/产品/设计/管理）+ 是否存在该人 |
-| ② 本人创建的文档 | `dws doc search --keyword "目标人名/真名"` 至少获取 3 篇标题 | 角色精确信号（PM写PRD、研发写技术方案、设计师写视觉规范）|
+| ② 本人创建的文档 | `dws drive search --query "目标人名/真名"` 至少获取 3 篇标题 | 角色精确信号（PM写PRD、研发写技术方案、设计师写视觉规范）|
 | ③ 近期日程类型 | `dws calendar event list` | 职能边界（参加什么类型的会）|
 | ④ 聊天记录 | `dws chat message list` 获取与目标人的近期 IM 消息 | 语言风格/工作内容/职责线索 |
 

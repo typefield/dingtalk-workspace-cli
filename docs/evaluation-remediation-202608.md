@@ -475,6 +475,12 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。
+- Agent 深层语义复核还发现 `doc.md`、Sheet 文件分流、URL 分流与 Minutes 的文档兜底
+  同时保留了已迁移的 `doc upload/download/copy/move/rename/delete/list/search` 正向 recipe；
+  顶层“已迁移”提示会被这些后续 recipe 覆盖。现已将默认路径统一为公开的 `drive`
+  命令（文档正文 read/create/update/export/block/media 仍属于 `doc`），并新增
+  `scan_deprecated_doc_routes.py` 作为 Agent Markdown 审阅。扫描覆盖 Mono/Multi，基于邻近
+  上下文区分旧命令对照表与正向教程，当前为 PASS；它不接入 CI，也不把“未命中旧路由”扩大为服务端能力证明。
 
 这项扫描发现的是 Agent 可执行语义漂移，不是 CI 路径缺失；后续每次 Skill 变更都应
 继续对 Help、参数、结果形状和安全语义做逐条 Agent 复核。

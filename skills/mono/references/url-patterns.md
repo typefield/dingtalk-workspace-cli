@@ -67,7 +67,7 @@ dws doc read --node "https://alidocs.dingtalk.com/i/p/Y7kmbokZp3pgGLq2/docs/AY39
 >
 > 你可以：
 > 1. 在钉钉客户端中打开该文档，将正文内容复制粘贴给我
-> 2. 如果文档已保存在你的文档空间中，可以告诉我文档名称，我通过 `dws doc search` 搜索后再读取
+> 2. 如果文档已保存在你的文档空间中，可以告诉我文档名称，我通过 `dws drive search --query` 搜索后再读取
 
 ---
 
@@ -92,7 +92,7 @@ Step 3 → 按下方路由规则映射到对应产品
 | `contentType=ALIDOC`, `extension=able` | `aitable` | 将 nodeId 作为 baseId，按 [aitable.md](./products/aitable.md) 操作 |
 | `contentType=DOCUMENT`, `extension=xlsx` / `xls` / `xlsm` / `csv` | `doc` | 必须用 `dws drive download` 下载到本地处理，禁止走 `sheet`（非在线表格，sheet 命令无法操作） |
 | `contentType≠ALIDOC`, `nodeType=file` | `doc` | 调用 `dws drive download` 下载，返回文件下载链接 |
-| `nodeType=folder` | `doc` | 调用 `dws doc list --folder <ID>` 列出指定文件夹直接子节点列表 |
+| `nodeType=folder` | `drive` | 调用 `dws drive list --folder <ID>` 列出指定文件夹直接子节点列表 |
 | 以上均不匹配 | — | 告知用户当前暂不支持该类型 |
 
 > axls vs xlsx 关键区分：
@@ -116,7 +116,7 @@ dws drive download --node "https://alidocs.dingtalk.com/i/nodes/xlsx456"
 dws drive download --node "https://alidocs.dingtalk.com/i/nodes/def456"
 
 # 返回 nodeType=folder → 文件夹，列出子节点
-dws doc list --folder "https://alidocs.dingtalk.com/i/nodes/ghi789" --format json
+dws drive list --folder "https://alidocs.dingtalk.com/i/nodes/ghi789" --format json
 ```
 
 ### 何时可跳过探测

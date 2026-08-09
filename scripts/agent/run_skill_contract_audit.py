@@ -58,6 +58,10 @@ def main() -> int:
                  "--strict-rfc", "--strict-flags"],
             ),
             (
+                "Skill 已迁移 Doc 文件管理路由",
+                [sys.executable, "scripts/agent/scan_deprecated_doc_routes.py"],
+            ),
+            (
                 "Mono 脚本结果/异常边界",
                 [sys.executable, "scripts/agent/probe_mono_result_contract.py"],
             ),

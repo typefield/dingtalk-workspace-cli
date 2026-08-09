@@ -8,12 +8,12 @@
 |---------|---------|
 | 在线电子表格（`axls`） | 走 `sheet` 全部命令（读/写/筛选/合并/导出等服务端原子操作） |
 | 本地路径上的 `xlsx` / `xls` | 用 `dws sheet import create --file <路径> --folder-token <ID>` 或 `--workspace <ID>` 转换为新的在线电子表格 |
-| 钉盘/文档中已有的 `xlsx` / `xls` / `xlsm` / `csv` 节点 | 不能直接调用工作表/单元格命令；先用 `dws doc download --node <ID> --output <路径>` 下载。若用户要转为在线表格，再对下载文件执行 `sheet import` |
+| 钉盘/文档中已有的 `xlsx` / `xls` / `xlsm` / `csv` 节点 | 不能直接调用工作表/单元格命令；先用 `dws drive download --node <ID> --output <路径>` 下载。若用户要转为在线表格，再对下载文件执行 `sheet import` |
 | 想把在线表格导出为 xlsx | 用 `dws sheet export` ——输入是 `axls`，输出是 xlsx（axls → xlsx 的格式转换） |
 
 > 用户直接粘贴原始 `alidocs` URL 时必须先 probe：先执行 `dws doc info --node <URL> --format json`，按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) 校验 `contentType` 和 `extension`：
 > - 仅当 `contentType=ALIDOC` 且 `extension=axls` 时，才继续走 `sheet`
-> - 如果是 `xlsx` / `xls` / `xlsm` / `csv`，立即转向 `dws doc download`，并告知用户"这是本地表格文件，已为你下载到本地处理"
+> - 如果是 `xlsx` / `xls` / `xlsm` / `csv`，立即转向 `dws drive download`，并告知用户"这是本地表格文件，已为你下载到本地处理"
 
 ## URL 识别与 NODE_ID 提取
 
@@ -27,7 +27,7 @@ dws doc info --node "<URL>" --format json
 
 根据返回路由：
 - `contentType=ALIDOC` + `extension=axls` → 继续走 `sheet`
-- `contentType≠ALIDOC` + `extension=xlsx` / `xls` / `xlsm` / `csv` → 转向 `dws doc download --node <ID> --output <路径>`，禁止调用任何 sheet 子命令
+- `contentType≠ALIDOC` + `extension=xlsx` / `xls` / `xlsm` / `csv` → 转向 `dws drive download --node <ID> --output <路径>`，禁止调用任何 sheet 子命令
 - 其他类型 → 按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) 路由
 
 补充：如果这是用户直接提供的原始 `alidocs` URL，先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe 一次确认真实类型，再判断是否继续走 `sheet`。
@@ -47,7 +47,7 @@ dws doc info --node "<URL>" --format json
    - 路径包含 `/i/nodes/` → 取 URL path 的最后一段作为 NODE_ID（去掉 query string 和 fragment）
    - 路径包含 `/spreadsheetv2/` → **不要提取 path segment**，必须将完整 URL 原样传给 `--node` 参数（因为 path 中的短 ID 不是合法的 nodeId，MCP 服务端会自行解析完整 URL）
 3. 对于 `/i/nodes/` 格式，提取出的 NODE_ID 可直接用于所有 `--node` 参数，也可将完整 URL 传给 `--node`（CLI 会自动解析）
-4. 对用户直接提供的原始 `alidocs` URL，先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe；只有 probe 确认 `contentType=ALIDOC` 且 `extension=axls` 时，才继续留在 `sheet`；如果 `extension=xlsx` / `xls` / `xlsm` / `csv`，必须转向 `dws doc download`，不能走任何 sheet 命令
+4. 对用户直接提供的原始 `alidocs` URL，先按 [链接规范](../url-patterns.md#alidocs-url-类型探测流程) probe；只有 probe 确认 `contentType=ALIDOC` 且 `extension=axls` 时，才继续留在 `sheet`；如果 `extension=xlsx` / `xls` / `xlsm` / `csv`，必须转向 `dws drive download`，不能走任何 sheet 命令
 
 ## 查询命令帮助
 
@@ -395,7 +395,7 @@ dws sheet filter-view --help
 用户直接粘贴表格 URL（无其他指令）:
 - 先 probe：`dws doc info --node <URL> --format json` 校验 `contentType` 和 `extension`
 - `extension=axls` → `list`（列出工作表）+ `range read`（读取第一个工作表数据）
-- `extension=xlsx` / `xls` / `xlsm` / `csv` → 转 `dws doc download --node <URL> --output ./`，告知用户"这是本地表格文件，已为你下载到本地"，然后基于本地文件继续后续处理
+- `extension=xlsx` / `xls` / `xlsm` / `csv` → 转 `dws drive download --node <URL> --output ./`，告知用户"这是本地表格文件，已为你下载到本地"，然后基于本地文件继续后续处理
 
 用户粘贴 URL + 附加指令:
 - 已 probe 为 `axls` 时：
@@ -2156,5 +2156,5 @@ dws sheet export --node <NODE_ID> --output ./
 - ★ 关键区分: sheet(电子表格/单元格读写) vs aitable(AI多维表/结构化记录/字段定义) vs doc(文档编辑/阅读)
 - 工作表与单元格命令仅支持 `axls`；本地 `xlsx` / `xls` 可通过 `sheet import` 转换为新的在线电子表格
 - 遇到未知 `alidocs` URL 时，必须先 probe（`dws doc info --node <URL> --format json`）确认 `contentType` 和 `extension`，才能决定是否走 sheet
-- 当节点 `extension=xlsx` / `xls` / `xlsm` / `csv`（`contentType≠ALIDOC`）时，必须用 `dws doc download --node <ID> --output <路径>` 先下载到本地再处理，禁止调用任何 sheet 子命令（sheet 底层 MCP 工具只识别 axls，调用 xlsx 节点必失败）
-- 要把在线表格导出为 xlsx 文件，走 `dws sheet export`；要把本地 xlsx/xls 转为在线表格，走 `dws sheet import`；要读取已上传但未转换的 xlsx 节点，先走 `dws doc download`
+- 当节点 `extension=xlsx` / `xls` / `xlsm` / `csv`（`contentType≠ALIDOC`）时，必须用 `dws drive download --node <ID> --output <路径>` 先下载到本地再处理，禁止调用任何 sheet 子命令（sheet 底层 MCP 工具只识别 axls，调用 xlsx 节点必失败）
+- 要把在线表格导出为 xlsx 文件，走 `dws sheet export`；要把本地 xlsx/xls 转为在线表格，走 `dws sheet import`；要读取已上传但未转换的 xlsx 节点，先走 `dws drive download`
