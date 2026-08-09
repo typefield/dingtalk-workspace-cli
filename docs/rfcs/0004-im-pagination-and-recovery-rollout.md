@@ -1,8 +1,9 @@
 # RFC-0004：IM 分页与错误恢复接入统一返回
 
-- 状态：Implementing（PageLedger 已落地，首批五条 IM 读命令已进入 dual_validate）
+- 状态：已实施（PageLedger 已落地；首批五条 IM 分页命令已进入 `unified_active`，真实服务端返回仍待 Agent 取证）
 - 日期：2026-08-08
-- 适用范围：`internal/shortcut/chat` 与 `internal/shortcut/smart` 的可终结、只读分页命令
+- 适用范围：`internal/shortcut/chat` 与 `internal/shortcut/smart` 的可终结分页命令；
+  主路径为只读，部分命令可选执行本地资源下载或导出
 - 依赖：RFC-0001（统一返回）、RFC-0003（错误 subtype 治理）
 
 框架通用契约已抽取至 [分页框架契约与能力](../pagination-framework-contract.md)；本 RFC
@@ -11,9 +12,9 @@
 ## 1. 摘要
 
 IM 已经实现了游标去重、页数上限、满页无游标探测、跨页去重和失败记录。这些执行层
-算法应保留，但其结果仍以每个 shortcut 自定义的
-`complete/hasMore/nextCursor/failures/partial` payload 表达；大部分 IM shortcut 也尚未
-声明统一返回 rollout。
+算法应保留。RFC 起草时，其结果仍以每个 shortcut 自定义的
+`complete/hasMore/nextCursor/failures/partial` payload 表达，且大部分 IM shortcut 尚未
+声明统一返回 rollout。首批五条已经完成 active 迁移；其他 IM 分页入口仍按命令逐条迁移。
 
 本 RFC 将 IM 改造为两层：
 
@@ -35,7 +36,7 @@ IM 已经实现了游标去重、页数上限、满页无游标探测、跨页�
 - 后续页读取失败时保留已读取内容和 `failures`；
 - 未知响应形状使用 `projection_unknown`，而不是空列表。
 
-但有三个结构性缺口：
+对尚未迁入统一返回的 IM 入口，仍有三个结构性缺口：
 
 | 缺口 | 当前表现 | 风险 |
 |---|---|---|
@@ -127,34 +128,35 @@ legacy_only
   -> unified_stable
 ```
 
-迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批选择只读、分页事实明确的
-命令；带可选资源下载/导出的本地写入模式只保持 dual_validate：
+迁移单位是**一个 terminal command**，不是整个 `chat` 域。首批五条命令已经完成
+`dual_validate → unified_active`：
 
 1. `chat +flag-list`；
 2. `chat +chat-search`；
-3. `chat +conversation-list` / `+chat-list`（以当前 canonical path 为准）。
+3. `chat +conversation-list`（`+chat-list` 为兼容别名）。
 4. `chat +thread-replies`。
 5. `chat +chat-messages`。
 
-`+chat-messages` 与 `+thread-replies` 均完成只读分页的 shadow 映射，但含
-`--download-resources`、`+chat-messages --output` 的本地写入路径仍只停留在
-dual_validate，未进入 active。写命令不因本 RFC 改变 retry 行为。
+`+chat-messages` 与 `+thread-replies` 的 `--download-resources`、以及
+`+chat-messages --output` 也使用该命令唯一的统一结果契约；Agent 仍只传
+`--format json`，不能按 flag 选择旧/新协议。读取成功而资源下载或本地导出失败时，
+适配器保留已读取页面并返回 `partial_failure`，不能把本地副作用失败包装为读取成功。
+这不等于资源字节完整性或服务端搜索覆盖已获验证，它们仍是产品层证据。
 
-每个 `dual_validate` 命令必须：一次业务调用、legacy stdout 字节不变、shadow
+每个 `dual_validate` 命令在晋级前必须：一次业务调用、legacy stdout 字节不变、shadow
 `CommandResult` 可验证并记录到 Agent 审阅台账；不允许在 dual 阶段重新取数或让 Agent
-选择协议。
+选择协议。这个历史阶段已经完成，当前五条命令都由其真实 `OutputRollout` 声明为
+`unified_active`，不是靠测试临时覆盖声明来观察新信封。
 
 当前进度：`chat +flag-list`、`chat +chat-search`、`chat +conversation-list`、
-`chat +thread-replies` 与 `chat +chat-messages` 已通过
-单次业务执行构建 PageLedger，
-并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为 shadow `CommandResult`；
-五条命令的 legacy JSON 逐字节 golden 均已锁定。`chat-search` 的最大窗口二次探测
-被建模为同一 cursor 的验证步骤：探测成功只记一个逻辑页，探测失败保留首批数据并
-进入 `partial_failure`，不会把探测次数伪装成 endpoint 页数。`hasMore=false` 同时
-携带 cursor 这类旧路径曾接受的矛盾只在 shadow 中 fail closed，避免 dual 阶段改变
-现有 Agent wire。测试还用同一命令声明临时进入 `unified_active`，验证 continuation 的
-`endpoint_exhausted:false + next_token`、unknown 时分页 meta 缺席，以及后续页失败的
-`partial_failure + exit 7`，不依赖生产 rollout 才能观察晋级后的真实信封。
+`chat +thread-replies` 与 `chat +chat-messages` 都在单次业务执行中构建
+PageLedger，并将成功、首屏失败、后续页失败/未知和分页边界矛盾投影为
+`CommandResult`。历史 dual 阶段的 legacy JSON 逐字节 golden 仍保留，用于防止未来
+回退阶段意外修改旧输出。当前 active 回归直接验证 continuation 的
+`endpoint_exhausted:false + next_token`、未知时分页 meta 缺席，以及后续页失败的
+`partial_failure + exit 7`。`chat-search` 的最大窗口二次探测被建模为同一 cursor 的
+验证步骤：探测成功只记一个逻辑页，探测失败保留首批数据并进入 `partial_failure`，
+不会把探测次数伪装成 endpoint 页数。
 
 `conversation-list` 额外使用严格 shadow 投影区分“已识别的空数组”和“未知容器/非法
 条目/缺稳定 ID”：legacy 投影与字节保持不变，统一侧将未知结构归为
