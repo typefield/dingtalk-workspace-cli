@@ -178,6 +178,25 @@ Mono 与 Multi 的 `minutes_recent_summary.py`、`minutes_extract_todos.py` 已�
 Mono/Multi 四入口的成功、逐项失败、投影漂移、display-only ID、text rc、meta 和指定
 ID dry-run，为 **22/22 PASS**。该证据不证明听记索引覆盖、服务端分页耗尽或真实内容。
 
+## Report 聚合脚本本轮验收证据
+
+Mono 的 `report_inbox_today.py` 与兼容入口 `report_received_today.py` 已改为共用同一
+实现，不再复制两套会继续漂移的分页与详情逻辑：
+
+1. 首页失败返回 typed failure，不再伪装成“暂无日志”；后续页失败保留已取得日志并
+   返回 `partial_failure` / rc 7。
+2. 只有明确观察到 `hasMore=false` 才输出 `endpoint_exhausted:true`；`hasMore=true`
+   却无 cursor、cursor 循环或超过 100 页均 fail-closed 为 `pagination_inconsistent`。
+3. `--detail` 在 text/JSON 两种模式都实际逐条读取正文；单条详情失败保留成功详情和
+   失败 reportId，不再只在 text 模式执行或静默跳过。
+4. `result[]` 与 `_internalDetailCommands[]` 无法逐项对应、详情内容形状未知时返回
+   `projection_unknown`，不把展示 ID 当稳定 reportId。
+5. `--dry-run --detail` 只生成列表与详情计划，受控探针证明零 child 进程。
+
+`docs/agent-scans/report-aggregate-contract-20260809.md` 对两个入口验证两页耗尽、首页/
+后续页失败、分页矛盾、JSON detail partial 与 dry-run，为 **12/12 PASS**。该探针使用
+临时假 `dws`，不保存 JSON fixture，也不证明真实账号的日志可见性或服务端终态。
+
 ## attendance 本轮验收证据
 
 ```text
