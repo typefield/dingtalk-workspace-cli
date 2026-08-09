@@ -74,9 +74,16 @@ def error(msg: str) -> None:
 class DwsCallError(Exception):
     """dws 调用失败（含进程退出非零、超时、JSON 解析失败、业务 success=false）。"""
 
-    def __init__(self, message: str, *, is_permission_error: bool = False) -> None:
+    def __init__(
+        self,
+        message: str,
+        *,
+        is_permission_error: bool = False,
+        error_info: dict[str, Any] | None = None,
+    ) -> None:
         super().__init__(message)
         self.is_permission_error = is_permission_error
+        self.error_info = dict(error_info) if error_info else None
 
 
 def _looks_like_permission_error(text: str) -> bool:
@@ -116,27 +123,33 @@ def run_dws(args: list[str]) -> Any:
     except FileNotFoundError as e:
         raise DwsCallError("未找到 dws 命令，请确认 dws CLI 已安装并在 PATH 中") from e
 
-    stdout = result.stdout or ""
-    stderr = result.stderr or ""
-
-    if result.returncode != 0:
-        is_perm = _looks_like_permission_error(stderr) or _looks_like_permission_error(stdout)
-        raise DwsCallError(
-            f"dws 调用失败（exit={result.returncode}）: {stderr.strip() or stdout.strip()}",
-            is_permission_error=is_perm,
-        )
-
+    stdout, stderr = result.stdout or "", result.stderr or ""
     try:
         data = json.loads(stdout)
     except json.JSONDecodeError as e:
+        if result.returncode != 0:
+            is_perm = _looks_like_permission_error(stderr) or _looks_like_permission_error(stdout)
+            raise DwsCallError(
+                f"dws 调用失败（exit={result.returncode}）: {stderr.strip() or stdout.strip()}",
+                is_permission_error=is_perm,
+            ) from e
         raise DwsCallError(f"dws 返回非 JSON：{stdout[:200]!r}") from e
-
-    return unwrap_result(data)
+    try:
+        value = unwrap_result(data)
+    except DwsCallError:
+        raise
+    if result.returncode != 0:
+        raise DwsCallError(
+            f"dws 退出码为 {result.returncode}，但机器结果未声明匹配的失败；拒绝继续处理。",
+            error_info={"type": "api", "subtype": "exit_outcome_inconsistent"},
+        )
+    return value
 
 
 def unwrap_result(data: Any) -> Any:
     """
-    解开 dws 返回的顶层 `{success, result, error}` 包装。
+    解开 dws 返回的统一 `{ok, outcome, data, error}` 或旧
+    `{success, result, error}` 包装。
 
     success=True  → 返回 result（可能是 dict / list / None）
     success=False → 抛 DwsCallError
@@ -145,9 +158,55 @@ def unwrap_result(data: Any) -> Any:
     if not isinstance(data, dict):
         return data
 
+    if "ok" in data or "outcome" in data:
+        ok = data.get("ok")
+        outcome = data.get("outcome")
+        allowed = {"success", "pending", "partial_failure", "failure"}
+        if not isinstance(ok, bool) or not isinstance(outcome, str) or outcome not in allowed:
+            raise DwsCallError(
+                "dws 返回了无法识别的 ok/outcome 状态。",
+                error_info={"type": "api", "subtype": "untyped_status"},
+            )
+        expected_ok = outcome in {"success", "pending"}
+        if ok is not expected_ok:
+            raise DwsCallError(
+                "dws 返回的 ok 与 outcome 相互矛盾。",
+                error_info={"type": "api", "subtype": "untyped_status"},
+            )
+        if outcome == "success":
+            return data.get("data")
+        candidate = data.get("error")
+        candidate = dict(candidate) if isinstance(candidate, dict) else {}
+        if outcome == "pending":
+            candidate.setdefault("type", "api")
+            candidate.setdefault("subtype", "operation_pending")
+            candidate.setdefault("message", "dws 操作尚未完成，当前报表不能当作终态数据。")
+        elif outcome == "partial_failure":
+            candidate.setdefault("type", "api")
+            candidate.setdefault("subtype", "child_partial_failure")
+            candidate.setdefault("message", "dws 只返回了部分结果，当前报表不能丢弃失败明细。")
+        else:
+            candidate.setdefault("type", "api")
+            candidate.setdefault("message", "dws 返回失败。")
+        error_type = str(candidate.get("type") or "api")
+        message = str(candidate.get("message") or "dws 返回失败。")
+        raise DwsCallError(
+            f"dws {outcome}：{message}",
+            is_permission_error=(
+                error_type in {"auth", "authorization"}
+                or _looks_like_permission_error(message)
+            ),
+            error_info=candidate,
+        )
+
     if "success" not in data:
-        # 不是标准包装，原样返回
         return data
+
+    if not isinstance(data.get("success"), bool):
+        raise DwsCallError(
+            "dws 旧信封 success 不是 boolean。",
+            error_info={"type": "api", "subtype": "untyped_status"},
+        )
 
     if data.get("success") is True:
         return data.get("result")
@@ -161,6 +220,7 @@ def unwrap_result(data: Any) -> Any:
     raise DwsCallError(
         f"dws 业务失败：{msg}",
         is_permission_error=_looks_like_permission_error(msg),
+        error_info=dict(err) if isinstance(err, dict) else {"type": "api", "message": msg},
     )
 
 

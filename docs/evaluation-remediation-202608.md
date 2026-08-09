@@ -663,6 +663,14 @@ Schema exclusion。本轮将它作为一个高风险本地能力逐项收口，�
   在调用前完成去重、有效日期和 7 天上限校验，dry-run 零 child。专项 Agent 探针
   `attendance-basic-read-contract-20260809.md` 为 30/30 PASS；它不证明真实考勤权限、
   组织覆盖或服务端终态。
+- 考勤报表公共 child 边界此前只解包旧 `{success,result,error}`；当底层命令迁入统一
+  `{ok,outcome,data,error}` 后，成功信封会被当作业务对象继续传递，而 nonzero typed
+  error 又在 JSON 解码前被降成 stderr 文本。现 Mono/Multi 公共模块同时严格支持统一、
+  旧和 bare JSON：`ok/outcome` 必须类型与语义一致，success 只向上返回 `data`，
+  pending/partial/failure 均保留 typed error 并停止报表投影，字符串布尔值和
+  “非零退出+成功信封”按协议矛盾拒绝。`attendance-report-child-contract-20260809.md`
+  以注入式 subprocess 对拍为 22/22 PASS；它只关闭 child 信封兼容问题，各报表逐批
+  失败仍需继续收敛为 partial ledger。
 - 发现 Mono `url-patterns.md` 与 `doc.md` 仍声称在线表格导出未暴露；当前 Help 已提供
   `dws sheet export --node <ID或URL> [--output <path>]`，已改为正确路由，避免 Agent
   把可用能力错误降级为“只能在客户端手动导出”。
