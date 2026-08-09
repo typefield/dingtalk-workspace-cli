@@ -285,8 +285,12 @@ func TestCrossPlatformCoverageChatListAllAdditionalEdges(t *testing.T) {
 	payload, err := run(t, &larkAlignmentCaller{responses: map[string]string{
 		"im/list_my_groups_pagination": `{"result":{"groups":[{"title":"无 ID 群"}],"hasMore":false}}`,
 	}}, "--page-all")
-	if err != nil || payload["count"] != float64(1) {
-		t.Fatalf("missing-id payload=%#v err=%v", payload, err)
+	if err == nil || payload != nil {
+		t.Fatalf("missing-id payload=%#v err=%v; want fail-closed projection error", payload, err)
+	}
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) || typed.Reason != "projection_unknown" || typed.Retryable {
+		t.Fatalf("missing-id error=%T %#v; want non-retryable projection_unknown", err, err)
 	}
 }
 
