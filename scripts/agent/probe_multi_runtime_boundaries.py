@@ -91,6 +91,34 @@ def main() -> int:
         untyped_ok = untyped.returncode == 0 and untyped_payload == {"state": "unknown", "subtype": "untyped_status"}
         checks.append((f"{name}: success 字符串不伪装执行成功", "PASS" if untyped_ok else "FAIL", f"rc={untyped.returncode}; payload={untyped_payload}"))
 
+        inconsistent = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "result = _runtime.run_child_dws(['-c', \"import json; print(json.dumps({'ok': True, 'outcome': 'failure'}))\"], executable=sys.executable)",
+            "print(json.dumps({'state': result.state, 'subtype': (result.error or {}).get('subtype')}))",
+        ]))
+        try:
+            inconsistent_payload = json.loads(inconsistent.stdout)
+        except json.JSONDecodeError:
+            inconsistent_payload = None
+        inconsistent_ok = inconsistent.returncode == 0 and inconsistent_payload == {"state": "unknown", "subtype": "untyped_status"}
+        checks.append((f"{name}: 矛盾 ok/outcome 不伪装执行成功", "PASS" if inconsistent_ok else "FAIL", f"rc={inconsistent.returncode}; payload={inconsistent_payload}"))
+
+        malformed = run(directory, "\n".join([
+            "import json, sys",
+            f"sys.path.insert(0, {str(directory)!r})",
+            "import _runtime",
+            "result = _runtime.run_child_dws(['-c', \"import json; print(json.dumps({'ok': True, 'outcome': []}))\"], executable=sys.executable)",
+            "print(json.dumps({'state': result.state, 'subtype': (result.error or {}).get('subtype')}))",
+        ]))
+        try:
+            malformed_payload = json.loads(malformed.stdout)
+        except json.JSONDecodeError:
+            malformed_payload = None
+        malformed_ok = malformed.returncode == 0 and malformed_payload == {"state": "unknown", "subtype": "untyped_status"}
+        checks.append((f"{name}: 非字符串 outcome 不泄漏异常或伪装成功", "PASS" if malformed_ok else "FAIL", f"rc={malformed.returncode}; payload={malformed_payload}"))
+
         partial_lines = [
             f"import sys; sys.path.insert(0, {str(directory)!r})",
             "import _runtime",

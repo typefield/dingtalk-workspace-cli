@@ -206,6 +206,52 @@ print(json.dumps({'success': 'false'}))
     )
     outcomes.append(("子 dws 非布尔状态不伪装成功", *result("PASS" if untyped_status_ok else "FAIL", detail)))
 
+    with tempfile.TemporaryDirectory(prefix="dws-mono-inconsistent-child-") as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        inconsistent_status = run_with_fake_dws(
+            [
+                sys.executable,
+                "-c",
+                "import json, sys; sys.path.insert(0, 'skills/mono/scripts'); "
+                "from _runtime import run_child_dws; result = run_child_dws(['todo','task','create','--format','json']); "
+                "print(json.dumps({'state':result.state,'subtype':(result.error or {}).get('subtype')}))",
+            ],
+            """import json
+print(json.dumps({'ok': True, 'outcome': 'failure'}))
+""",
+            temp_dir=temp_dir,
+        )
+    valid, payload, detail = parse_single_result(inconsistent_status)
+    inconsistent_status_ok = (
+        valid
+        and inconsistent_status.returncode == 0
+        and payload == {"state": "unknown", "subtype": "untyped_status"}
+    )
+    outcomes.append(("子 dws 矛盾 ok/outcome 不伪装成功", *result("PASS" if inconsistent_status_ok else "FAIL", detail)))
+
+    with tempfile.TemporaryDirectory(prefix="dws-mono-malformed-outcome-") as temp_dir_name:
+        temp_dir = Path(temp_dir_name)
+        malformed_outcome = run_with_fake_dws(
+            [
+                sys.executable,
+                "-c",
+                "import json, sys; sys.path.insert(0, 'skills/mono/scripts'); "
+                "from _runtime import run_child_dws; result = run_child_dws(['todo','task','create','--format','json']); "
+                "print(json.dumps({'state':result.state,'subtype':(result.error or {}).get('subtype')}))",
+            ],
+            """import json
+print(json.dumps({'ok': True, 'outcome': []}))
+""",
+            temp_dir=temp_dir,
+        )
+    valid, payload, detail = parse_single_result(malformed_outcome)
+    malformed_outcome_ok = (
+        valid
+        and malformed_outcome.returncode == 0
+        and payload == {"state": "unknown", "subtype": "untyped_status"}
+    )
+    outcomes.append(("子 dws 非字符串 outcome 不泄漏异常或伪装成功", *result("PASS" if malformed_outcome_ok else "FAIL", detail)))
+
     system_exit = runtime_probe(
         "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
         "raise SystemExit(_runtime.run_main(lambda: (_ for _ in ()).throw(SystemExit(2)), argv=['--format','json']))"

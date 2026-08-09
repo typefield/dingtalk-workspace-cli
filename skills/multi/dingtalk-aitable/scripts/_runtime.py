@@ -63,18 +63,29 @@ def _child_explicitly_failed(payload: Any) -> bool:
     truthiness decision: that would recreate the string-boolean drift this
     boundary is meant to contain.
     """
+    outcome = payload.get("outcome") if isinstance(payload, Mapping) else None
     return (
         isinstance(payload, Mapping)
-        and (payload.get("ok") is False or payload.get("success") is False)
+        and (
+            payload.get("ok") is False
+            or payload.get("success") is False
+            or (isinstance(outcome, str) and outcome in {"failure", "partial_failure"})
+        )
     )
 
 
 def _child_status_is_ambiguous(payload: Any) -> bool:
-    """Only boolean top-level outcome flags can establish child success."""
-    return isinstance(payload, Mapping) and any(
-        key in payload and not isinstance(payload[key], bool)
-        for key in ("ok", "success")
-    )
+    """Reject malformed unified status while allowing legacy bare payloads."""
+    if not isinstance(payload, Mapping):
+        return False
+    if any(key in payload and not isinstance(payload[key], bool) for key in ("ok", "success")):
+        return True
+    if "outcome" not in payload:
+        return False
+    outcome = payload["outcome"]
+    if not isinstance(outcome, str) or outcome not in {"success", "pending", "partial_failure", "failure"}:
+        return True
+    return payload.get("ok") is not (outcome in {"success", "pending"})
 
 
 def _meta_from_child(payload: Any) -> Optional[dict[str, Any]]:
@@ -127,7 +138,7 @@ def run_child_dws(
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if decoded and isinstance(payload, Mapping):
         error = (
-            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了非布尔 ok/success 字段，执行结果无法可靠判断。"}
+            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
             if _child_status_is_ambiguous(payload)
             else _child_error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
         )

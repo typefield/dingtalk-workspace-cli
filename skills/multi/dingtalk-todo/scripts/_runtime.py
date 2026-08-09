@@ -69,13 +69,26 @@ def run_child_dws(
     except json.JSONDecodeError:
         payload = None
     meta = dict(payload["meta"]) if isinstance(payload, Mapping) and isinstance(payload.get("meta"), Mapping) else None
-    explicitly_failed = isinstance(payload, Mapping) and (payload.get("ok") is False or payload.get("success") is False)
-    ambiguous_status = isinstance(payload, Mapping) and any(key in payload and not isinstance(payload[key], bool) for key in ("ok", "success"))
+    child_outcome = payload.get("outcome") if isinstance(payload, Mapping) else None
+    explicitly_failed = isinstance(payload, Mapping) and (
+        payload.get("ok") is False or payload.get("success") is False or (isinstance(child_outcome, str) and child_outcome in {"failure", "partial_failure"})
+    )
+    ambiguous_status = isinstance(payload, Mapping) and (
+        any(key in payload and not isinstance(payload[key], bool) for key in ("ok", "success"))
+        or (
+            "outcome" in payload
+            and (
+                not isinstance(payload["outcome"], str)
+                or payload["outcome"] not in {"success", "pending", "partial_failure", "failure"}
+                or payload.get("ok") is not (payload["outcome"] in {"success", "pending"})
+            )
+        )
+    )
     if completed.returncode == 0 and payload is not None and not explicitly_failed and not ambiguous_status:
         return ChildDWSResult("success", payload=payload, meta=meta, command=command)
     if isinstance(payload, Mapping):
         error = (
-            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了非布尔 ok/success 字段，执行结果无法可靠判断。"}
+            {"type": "api", "subtype": "untyped_status", "message": "dws 返回了不一致或无法识别的 ok/outcome 状态，执行结果无法可靠判断。"}
             if ambiguous_status
             else _error(payload, f"dws 未返回终态成功（exit {completed.returncode}）。", exit_code=completed.returncode or None)
         )
