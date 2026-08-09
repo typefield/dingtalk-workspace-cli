@@ -73,7 +73,6 @@ var reviewedRuntimeSchemaExclusionGroups = []runtimeSchemaExclusionGroup{
 			"agoal strategy list",
 			"agoal strategy update",
 			"agoal user objectives",
-			"agoal user rules",
 		},
 	},
 }

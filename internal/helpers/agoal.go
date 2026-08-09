@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	"github.com/spf13/cobra"
 )
 
@@ -15,6 +16,19 @@ var agoalLoadLocation = time.LoadLocation
 // ──────────────────────────────────────────────────────────
 
 func newAgoalCommand() *cobra.Command {
+	contract.RegisterProductDecl(contract.ProductDecl{
+		ID: "agoal",
+		Selection: contract.ProductSelectionDecl{
+			AgentSummary: "查询和维护钉钉 Agoal 战略、经营合约、计分卡、用户目标、周月报和目标模板",
+			UseWhen: []string{
+				"需要查询 Agoal 目标规则、周期、战略解码、经营合约、计分卡或周月报数据时",
+			},
+			AvoidWhen: []string{
+				"普通待办、OA 审批和工作日志使用 todo、oa、report；不要把 Agoal 规则周期当作这些产品的数据",
+				"Agoal 写命令尚未完成 Agent 安全审阅时，不要通过 raw API 或未公开入口绕过",
+			},
+		},
+	})
 	root := &cobra.Command{
 		Use:   "agoal",
 		Short: "Agoal 管理",
@@ -384,6 +398,46 @@ scopeType 支持:
 	}
 	userRulesCmd.Flags().String("user-id", "", "要查询的人员钉钉 id (可选，默认取操作人)")
 	userRulesCmd.Flags().String("request-id", "", "requestId (可选)")
+	DeclareLeafMetadata(userRulesCmd, LeafSpec{
+		Safety: contract.SafetySpec{
+			Effect: "read", Risk: "low",
+			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Contract: LeafContract{
+			Identity: contract.ToolIdentitySpec{
+				ProductID:      "agoal",
+				Name:           "user_rules",
+				CanonicalPath:  "agoal.user_rules",
+				CLIPath:        "agoal user rules",
+				PrimaryCLIPath: "agoal user rules",
+			},
+			Description: "获取当前用户或指定用户的 Agoal 规则周期列表",
+			Interface: &contract.InterfaceSpec{
+				Mode:         "mcp",
+				Availability: "available",
+				Ref:          &contract.InterfaceRefSpec{ProductID: "agoal", RPCName: "get_user_rules"},
+			},
+			Selection: contract.SelectionSpec{
+				AgentSummary: "获取当前用户或指定用户的 Agoal 规则周期列表",
+				UseWhen: []string{
+					"需要发现 Agoal 目标规则、周期或后续查询 objectives 所需的 ruleId/periodId 时",
+					"未指定 --user-id 时读取当前登录用户的规则周期",
+				},
+				AvoidWhen: []string{
+					"需要目标详情时先从本命令取得 ruleId/periodId，再使用 agoal user objectives",
+					"不要把规则周期列表解释为用户目标完成情况",
+				},
+				Examples: []string{
+					"dws agoal user rules --format json",
+					"dws agoal user rules --user-id <USER_ID> --format json",
+				},
+			},
+			Parameters: []contract.ParamDecl{
+				{Name: "user-id", Property: "dingUserId"},
+				{Name: "request-id", Property: "requestId"},
+			},
+		},
+	})
 
 	userObjectivesCmd := &cobra.Command{
 		Use:     "objectives",

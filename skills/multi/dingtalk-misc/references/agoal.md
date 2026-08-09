@@ -219,7 +219,7 @@ dws agoal scorecard entity-detail --sc-id SC_ID --entity-id ENTITY_ID
 dws agoal scorecard update --dept-id DEPT_ID --selected-time "2025-01-01T00:00:00+08:00" --id SC_ID --tracking-period-type MONTHLY --content '[{"id":"dim1","title":"业绩","items":[{"id":"item1","title":"收入","target":"100"}]}]'
 
 # 11. 查看用户规则 → 提取 ruleId 和 periodId
-dws agoal user rules --user-id USER_ID
+dws agoal user rules --user-id USER_ID --format json
 
 # 12. 查看用户目标
 dws agoal user objectives --user-id USER_ID --rule-id RULE_ID --period-ids "period1,period2"
@@ -287,6 +287,7 @@ dws agoal obj-template create-or-update --template-id TPL_ID --title "业绩模�
 | "更新经营合约" | 先 `contract detail` 获取完整内容，再 `contract update` 覆盖更新 |
 | "查计分卡" | `dws agoal scorecard detail` / `scorecard entity-detail` |
 | "更新计分卡" | 先查详情，再按 [agoal.md](./agoal.md) 覆盖更新 |
+| "查 Agoal 规则周期 / 目标周期" | `dws agoal user rules --format json` |
 | "查周月报统计/提交情况/跟催" | `dws agoal report list-statistics` / `report submit-detail` |
 
 ## 硬约束
