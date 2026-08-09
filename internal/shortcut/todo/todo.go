@@ -117,9 +117,7 @@ var GetMyTasks = shortcut.Shortcut{
 			"todos":            cards,
 			"pagination_known": false,
 		}
-		return rt.OutputResult(payload, output.Success(payload,
-			output.WithMeta(&output.Meta{Count: output.NewCount(len(cards))}),
-		))
+		return todoListOutput(rt, payload, len(cards))
 	},
 }
 
@@ -163,6 +161,10 @@ func getMyTasksProject(data map[string]any) ([]map[string]any, error) {
 }
 
 func todoStableTaskID(m map[string]any, keys ...string) (string, bool) {
+	return todoStableID(m, keys...)
+}
+
+func todoStableID(m map[string]any, keys ...string) (string, bool) {
 	for _, key := range keys {
 		value, ok := m[key]
 		if !ok {
@@ -186,12 +188,13 @@ func todoProjectionUnknown(message string) error {
 
 // ListSub maps helper `list_sub_tasks`.
 var ListSub = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+list-sub",
-	Product:     "todo",
-	Description: "查询子待办列表",
-	Intent:      "当你已知某个待办任务 ID、想了解它被拆解出的所有子任务时使用；输入父任务 ID，返回其下的子待办列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "todo",
+	Command:       "+list-sub",
+	Product:       "todo",
+	Description:   "查询子待办列表",
+	Intent:        "当你已知某个待办任务 ID、想了解它被拆解出的所有子任务时使用；输入父任务 ID，返回其下的子待办列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -230,43 +233,56 @@ var ListSub = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		subs := listSubProject(data)
-		return rt.Output(map[string]any{"count": len(subs), "subTasks": subs})
+		subs, err := listSubProject(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{"count": len(subs), "subTasks": subs}
+		return todoListOutput(rt, payload, len(subs))
 	},
 }
 
 // listSubProject reshapes list_sub_tasks into a clean sub-todo list
 // (subject/taskId/dueTime) — clean output projection. The list
 // container and field names are probed defensively across candidate keys.
-func listSubProject(data map[string]any) []map[string]any {
-	raw := listSubExtractList(data)
+// A missing list, malformed entry, or non-targetable entry is a projection
+// failure, never a fabricated empty sub-task list.
+func listSubProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := todoListExtract(data, "list", "items", "subTasks", "subTaskList")
+	if !known {
+		return nil, todoProjectionUnknown("子待办列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, todoProjectionUnknown("子待办列表包含无法识别的条目")
 		}
 		row := map[string]any{}
+		if taskID, ok := todoStableTaskID(m, "taskId", "task_id", "id", "subTaskId"); ok {
+			row["taskId"] = taskID
+		} else {
+			return nil, todoProjectionUnknown("子待办列表条目缺少可用于后续操作的稳定 taskId")
+		}
 		if v := listSubFirst(m, "subject", "title", "name", "content"); v != nil {
 			row["subject"] = v
-		}
-		if v := listSubFirst(m, "taskId", "id", "subTaskId"); v != nil {
-			row["taskId"] = v
 		}
 		if v := listSubFirst(m, "dueTime", "dueDate", "deadline"); v != nil {
 			row["dueTime"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
-// listSubExtractList unwraps common container shapes (a bare slice, or a
-// slice nested under result/data/list/items, optionally one level deeper) and
-// returns the sub-task slice, or nil when none is found.
-func listSubExtractList(data map[string]any) []any {
+// todoListExtract unwraps a bare slice or one nested under result/data,
+// returning whether a recognized list container was present. This distinction
+// is essential: a known empty list is a successful empty result, while an
+// unknown response shape cannot safely be called empty.
+func todoListExtract(data map[string]any, keys ...string) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
 	containers := []map[string]any{data}
 	for _, k := range []string{"result", "data"} {
 		if m, ok := data[k].(map[string]any); ok {
@@ -274,19 +290,19 @@ func listSubExtractList(data map[string]any) []any {
 		}
 	}
 	for _, c := range containers {
-		for _, k := range []string{"list", "items", "subTasks", "subTaskList", "result", "data"} {
+		for _, k := range keys {
 			if arr, ok := c[k].([]any); ok {
-				return arr
+				return arr, true
 			}
 		}
 	}
-	// data itself may be a bare list under result/data.
+	// data itself may carry a bare list under result/data.
 	for _, k := range []string{"result", "data"} {
 		if arr, ok := data[k].([]any); ok {
-			return arr
+			return arr, true
 		}
 	}
-	return nil
+	return nil, false
 }
 
 // listSubFirst returns the first present value among the candidate keys.
@@ -353,12 +369,13 @@ var Get = shortcut.Shortcut{
 // AddReminder maps helper `add_todo_reminder`.
 // ListAttachment maps helper `list_todo_attachment`.
 var ListAttachment = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+list-attachment",
-	Product:     "todo",
-	Description: "查询待办任务的附件列表",
-	Intent:      "当你想查看某条待办上挂了哪些附件、或需要拿到附件 ID 以便后续删除时使用；输入任务 ID，返回该待办的附件列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "todo",
+	Command:       "+list-attachment",
+	Product:       "todo",
+	Description:   "查询待办任务的附件列表",
+	Intent:        "当你想查看某条待办上挂了哪些附件、或需要拿到附件 ID 以便后续删除时使用；输入任务 ID，返回该待办的附件列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -397,26 +414,36 @@ var ListAttachment = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		atts := listAttachmentProject(data)
-		return rt.Output(map[string]any{"count": len(atts), "attachments": atts})
+		atts, err := listAttachmentProject(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{"count": len(atts), "attachments": atts}
+		return todoListOutput(rt, payload, len(atts))
 	},
 }
 
 // listAttachmentProject reshapes list_todo_attachment into a clean attachment
 // list (attachmentId/fileName/fileSize/fileType) — output-projection fidelity
 // for clean output. The list container and field names are probed defensively across
-// candidate keys so response-shape drift yields an empty list, not a crash.
-func listAttachmentProject(data map[string]any) []map[string]any {
-	raw := listAttachmentExtractList(data)
+// candidate keys. An unknown container or untargetable attachment fails
+// closed instead of being silently omitted from a successful list.
+func listAttachmentProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := todoListExtract(data, "list", "items", "attachments", "attachmentList")
+	if !known {
+		return nil, todoProjectionUnknown("待办附件列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, todoProjectionUnknown("待办附件列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v := listAttachmentFirst(m, "attachmentId", "id", "fileId"); v != nil {
-			row["attachmentId"] = v
+		if attachmentID, ok := todoStableID(m, "attachmentId", "attachment_id", "id", "fileId", "file_id"); ok {
+			row["attachmentId"] = attachmentID
+		} else {
+			return nil, todoProjectionUnknown("待办附件列表条目缺少可用于后续操作的稳定 attachmentId")
 		}
 		if v := listAttachmentFirst(m, "fileName", "name", "spaceFileName"); v != nil {
 			row["fileName"] = v
@@ -427,35 +454,9 @@ func listAttachmentProject(data map[string]any) []map[string]any {
 		if v := listAttachmentFirst(m, "fileType", "type"); v != nil {
 			row["fileType"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// listAttachmentExtractList unwraps a bare slice or one nested under common
-// envelope keys (optionally one level deeper), returning nil when none found.
-func listAttachmentExtractList(data map[string]any) []any {
-	containers := []map[string]any{data}
-	for _, k := range []string{"result", "data"} {
-		if m, ok := data[k].(map[string]any); ok {
-			containers = append(containers, m)
-		}
-	}
-	for _, c := range containers {
-		for _, k := range []string{"list", "items", "attachments", "attachmentList", "result", "data"} {
-			if arr, ok := c[k].([]any); ok {
-				return arr
-			}
-		}
-	}
-	for _, k := range []string{"result", "data"} {
-		if arr, ok := data[k].([]any); ok {
-			return arr
-		}
-	}
-	return nil
+	return out, nil
 }
 
 // listAttachmentFirst returns the first present value among the candidate keys.
@@ -472,12 +473,13 @@ func listAttachmentFirst(m map[string]any, keys ...string) any {
 // AddComment maps helper `add_todo_comment`.
 // ListComment maps helper `list_todo_comment`.
 var ListComment = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+list-comment",
-	Product:     "todo",
-	Description: "查询待办评论列表",
-	Intent:      "当你想查看某条待办下的讨论记录、了解协作沟通历史或获取评论 ID 以便删除时使用；输入任务 ID 并可分页，返回该待办的评论列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "todo",
+	Command:       "+list-comment",
+	Product:       "todo",
+	Description:   "查询待办评论列表",
+	Intent:        "当你想查看某条待办下的讨论记录、了解协作沟通历史或获取评论 ID 以便删除时使用；输入任务 ID 并可分页，返回该待办的评论列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -518,26 +520,40 @@ var ListComment = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		comments := listCommentProject(data)
-		return rt.Output(map[string]any{"count": len(comments), "comments": comments})
+		comments, err := listCommentProject(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"count":            len(comments),
+			"comments":         comments,
+			"pagination_known": false,
+		}
+		return todoListOutput(rt, payload, len(comments))
 	},
 }
 
 // listCommentProject reshapes list_todo_comment into a clean comment list
 // (commentId/content/creatorId/createTime) — clean output projection.
 // The list container and field names are probed defensively across
-// candidate keys so response-shape drift yields an empty list, not a crash.
-func listCommentProject(data map[string]any) []map[string]any {
-	raw := listCommentExtractList(data)
+// candidate keys. An unknown container or untargetable comment fails closed
+// rather than becoming a successful empty or incomplete comment list.
+func listCommentProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := todoListExtract(data, "list", "items", "comments", "commentList")
+	if !known {
+		return nil, todoProjectionUnknown("待办评论列表响应缺少可识别的列表容器")
+	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, todoProjectionUnknown("待办评论列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v := listCommentFirst(m, "commentId", "id"); v != nil {
-			row["commentId"] = v
+		if commentID, ok := todoStableID(m, "commentId", "comment_id", "id"); ok {
+			row["commentId"] = commentID
+		} else {
+			return nil, todoProjectionUnknown("待办评论列表条目缺少可用于后续操作的稳定 commentId")
 		}
 		if v := listCommentFirst(m, "content", "text", "comment"); v != nil {
 			row["content"] = v
@@ -548,35 +564,9 @@ func listCommentProject(data map[string]any) []map[string]any {
 		if v := listCommentFirst(m, "createTime", "createdTime", "gmtCreate"); v != nil {
 			row["createTime"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
-}
-
-// listCommentExtractList unwraps a bare slice or one nested under common
-// envelope keys (optionally one level deeper), returning nil when none found.
-func listCommentExtractList(data map[string]any) []any {
-	containers := []map[string]any{data}
-	for _, k := range []string{"result", "data"} {
-		if m, ok := data[k].(map[string]any); ok {
-			containers = append(containers, m)
-		}
-	}
-	for _, c := range containers {
-		for _, k := range []string{"list", "items", "comments", "commentList", "result", "data"} {
-			if arr, ok := c[k].([]any); ok {
-				return arr
-			}
-		}
-	}
-	for _, k := range []string{"result", "data"} {
-		if arr, ok := data[k].([]any); ok {
-			return arr
-		}
-	}
-	return nil
+	return out, nil
 }
 
 // listCommentFirst returns the first present value among the candidate keys.
@@ -587,6 +577,12 @@ func listCommentFirst(m map[string]any, keys ...string) any {
 		}
 	}
 	return nil
+}
+
+func todoListOutput(rt *shortcut.RuntimeContext, payload map[string]any, count int) error {
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(count)}),
+	))
 }
 
 // DeleteComment maps helper `delete_todo_comment`.

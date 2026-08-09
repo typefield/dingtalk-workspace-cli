@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:00:44+08:00
+扫描时间：2026-08-09T12:07:26+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1368 |
+| `legacy_only` | 1365 |
 | `dual_validate` | 24 |
-| `unified_active` | 91 |
+| `unified_active` | 94 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,9 +22,9 @@
 
 ### 状态迁移
 
-- REVIEW: `dws doc +list`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws doc +search`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws todo +get-my-tasks`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws todo +list-attachment`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws todo +list-comment`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws todo +list-sub`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -1437,9 +1437,9 @@
 | `dws todo +due-today` | `legacy_only` | `legacy` | no |
 | `dws todo +get` | `legacy_only` | `legacy` | no |
 | `dws todo +get-my-tasks` | `unified_active` | `unified` | no |
-| `dws todo +list-attachment` | `legacy_only` | `legacy` | no |
-| `dws todo +list-comment` | `legacy_only` | `legacy` | no |
-| `dws todo +list-sub` | `legacy_only` | `legacy` | no |
+| `dws todo +list-attachment` | `unified_active` | `unified` | no |
+| `dws todo +list-comment` | `unified_active` | `unified` | no |
+| `dws todo +list-sub` | `unified_active` | `unified` | no |
 | `dws todo +overdue` | `legacy_only` | `legacy` | no |
 | `dws todo +related-tasks` | `legacy_only` | `legacy` | no |
 | `dws todo +remind` | `legacy_only` | `legacy` | no |
