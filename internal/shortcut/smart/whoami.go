@@ -14,8 +14,12 @@
 package smart
 
 import (
+	"encoding/json"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -29,10 +33,11 @@ import (
 //
 //	dws contact +me
 var Whoami = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+me",
-	Product:     "contact",
-	Description: "查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影）",
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "contact",
+	Command:       "+me",
+	Product:       "contact",
+	Description:   "查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影）",
 	Intent: "当你（或 AI agent）需要知道「我是谁」——我自己的 userId、姓名、所在部门、组织、手机号，用于后续按名解析他人前先确定自己身份、或填充发起人信息时使用；" +
 		"内部调用零参数的 get_current_user_profile（永远是「我」，无需传姓名），再把冗长的原始资料投影成 {name,userId,mobile,dept,org,email} 几个关键字段。" +
 		"这是纯只读操作，不修改任何资料。",
@@ -50,6 +55,14 @@ var Whoami = shortcut.Shortcut{
 			PrimaryCLIPath: "contact +me",
 		},
 		Description: "查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影）",
+		Result: &contract.ResultSpec{
+			Outcomes: []contract.ResultOutcome{
+				contract.ResultOutcomeSuccess,
+				contract.ResultOutcomeFailure,
+			},
+			DataSchema:     json.RawMessage(`{"type":"object","properties":{"userId":{"type":"string"},"name":{"type":"string"},"mobile":{"type":"string"},"email":{"type":"string"},"org":{"type":"string"},"dept":{"type":"string"}},"required":["userId"],"additionalProperties":false}`),
+			SensitivePaths: []string{"email", "mobile"},
+		},
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -59,7 +72,7 @@ var Whoami = shortcut.Shortcut{
 			AgentSummary: "查看我自己的通讯录资料（姓名/userId/手机/部门/组织，干净投影）",
 			UseWhen:      []string{"当你（或 AI agent）需要知道「我是谁」——我自己的 userId、姓名、所在部门、组织、手机号，用于后续按名解析他人前先确定自己身份、或填充发起人信息时使用；内部调用零参数的 get_current_user_profile（永远是「我」，无需传姓名），再把冗长的原始资料投影成 {name,userId,mobile,dept,org,email} 几个关键字段。这是纯只读操作，不修改任何资料。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
-			Examples:     []string{"dws contact +me"},
+			Examples:     []string{"dws contact +me --format json"},
 		},
 	},
 	Tips: []string{
@@ -70,22 +83,31 @@ var Whoami = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(whoamiProject(data))
+		profile, err := whoamiProject(data)
+		if err != nil {
+			return err
+		}
+		return rt.Output(profile)
 	},
 }
 
 // whoamiProject digs the current user's core fields out of a
 // get_current_user_profile response, tolerating the {result:[{orgEmployeeModel}]}
 // envelope the gateway uses as well as flatter shapes.
-func whoamiProject(data map[string]any) map[string]any {
+func whoamiProject(data map[string]any) (map[string]any, error) {
+	if rows, ok := data["result"].([]any); ok && len(rows) != 1 {
+		return nil, whoamiProjectionError("当前用户资料响应没有唯一用户记录，不能任选一条作为本人")
+	}
 	m := whoamiEmployeeModel(data)
 	out := map[string]any{}
 	if v := whoamiStr(m, "orgUserName", "name", "userName", "nick"); v != "" {
 		out["name"] = v
 	}
-	if v := whoamiStr(m, "userId", "userid", "staffId"); v != "" {
-		out["userId"] = v
+	userID := whoamiStr(m, "userId", "userid", "staffId")
+	if userID == "" {
+		return nil, whoamiProjectionError("当前用户资料响应缺少稳定 userId，不能把未知资料形状作为成功结果")
 	}
+	out["userId"] = userID
 	if v := whoamiStr(m, "orgUserMobile", "mobile", "stateMobile"); v != "" {
 		out["mobile"] = v
 	}
@@ -98,12 +120,18 @@ func whoamiProject(data map[string]any) map[string]any {
 	if dept := whoamiFirstDept(m); dept != "" {
 		out["dept"] = dept
 	}
-	if len(out) == 0 {
-		// Unrecognised shape — fall back to the raw payload rather than an empty
-		// object.
-		return data
-	}
-	return out
+	return out, nil
+}
+
+func whoamiProjectionError(message string) error {
+	return apperrors.NewAPI(
+		message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithOperation("contact/get_current_user_profile"),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithHint("不要从姓名或手机号猜测 userId；保留脱敏响应结构并修复当前用户投影。"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // whoamiEmployeeModel locates the org-employee record inside the profile
