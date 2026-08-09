@@ -62,8 +62,12 @@ var LatestMinutes = shortcut.Shortcut{
 			return err
 		}
 
-		// Step 2 — locate the newest minute's taskUuid.
-		taskUUID := latestMinutesTaskUUID(data)
+		// Step 2 — locate the newest minute's taskUuid. Unknown or
+		// untargetable list responses must not become "暂无妙记".
+		taskUUID, err := latestMinutesTaskUUID(data)
+		if err != nil {
+			return err
+		}
 		if taskUUID == "" {
 			return apperrors.NewValidation("暂无妙记")
 		}
@@ -75,43 +79,17 @@ var LatestMinutes = shortcut.Shortcut{
 	},
 }
 
-// latestMinutesItems walks a list_by_keyword_and_time_range response and returns
-// its minutes entries. The gateway wraps the list under one of several common
-// container keys, so we probe them defensively before scanning for a bare list.
-func latestMinutesItems(data map[string]any) []map[string]any {
-	for _, key := range []string{"result", "list", "minutesList", "items", "data", "records"} {
-		if arr, ok := data[key].([]any); ok {
-			return latestMinutesToMaps(arr)
-		}
-		// Some responses nest the list one level deeper, e.g. {"data": {"list": [...]}}.
-		if inner, ok := data[key].(map[string]any); ok {
-			for _, k2 := range []string{"list", "minutesList", "items", "records", "result"} {
-				if arr, ok := inner[k2].([]any); ok {
-					return latestMinutesToMaps(arr)
-				}
-			}
-		}
-	}
-	return nil
-}
-
-func latestMinutesToMaps(arr []any) []map[string]any {
-	out := make([]map[string]any, 0, len(arr))
-	for _, it := range arr {
-		if m, ok := it.(map[string]any); ok {
-			out = append(out, m)
-		}
-	}
-	return out
-}
-
 // latestMinutesTaskUUID picks the newest minute's taskUuid: the item with the
 // largest numeric create time, falling back to the first item that carries a
-// taskUuid (lists come back newest-first).
-func latestMinutesTaskUUID(data map[string]any) string {
-	items := latestMinutesItems(data)
-	if len(items) == 0 {
-		return ""
+// taskUuid (lists come back newest-first). It distinguishes an explicit empty
+// list from an unrecognized container or an item that cannot be targeted.
+func latestMinutesTaskUUID(data map[string]any) (string, error) {
+	raw, known := minutesListItems(data)
+	if !known {
+		return "", minutesProjectionUnknown("无法识别 list_by_keyword_and_time_range 返回的妙记列表容器")
+	}
+	if len(raw) == 0 {
+		return "", nil
 	}
 
 	best := ""
@@ -119,10 +97,14 @@ func latestMinutesTaskUUID(data map[string]any) string {
 	haveTime := false
 	firstUUID := ""
 
-	for _, m := range items {
+	for _, item := range raw {
+		m, ok := item.(map[string]any)
+		if !ok {
+			return "", minutesProjectionUnknown("妙记列表包含无法识别的条目")
+		}
 		uuid := latestMinutesUUID(m)
 		if uuid == "" {
-			continue
+			return "", minutesProjectionUnknown("妙记条目缺少可用于读取详情的稳定 taskUuid")
 		}
 		if firstUUID == "" {
 			firstUUID = uuid
@@ -137,9 +119,9 @@ func latestMinutesTaskUUID(data map[string]any) string {
 	}
 
 	if haveTime && best != "" {
-		return best
+		return best, nil
 	}
-	return firstUUID
+	return firstUUID, nil
 }
 
 func latestMinutesUUID(m map[string]any) string {

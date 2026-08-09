@@ -55,9 +55,12 @@ var ActionItems = shortcut.Shortcut{
 			return err
 		}
 
-		// Step 2 — locate the newest minute's taskUuid. Reuse the defensive
-		// list/UUID/createTime parsing from latest_minutes.go.
-		taskUUID := latestMinutesTaskUUID(data)
+		// Step 2 — locate the newest minute's taskUuid. Reuse the strict
+		// list/UUID/createTime projection from latest_minutes.go.
+		taskUUID, err := latestMinutesTaskUUID(data)
+		if err != nil {
+			return err
+		}
 		if taskUUID == "" {
 			return apperrors.NewValidation("暂无妙记")
 		}

@@ -18,7 +18,6 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
-	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
@@ -110,19 +109,19 @@ var MinutesSearch = shortcut.Shortcut{
 }
 
 func minutesSearchProject(data map[string]any) ([]map[string]any, error) {
-	raw, known := minutesSearchItems(data)
+	raw, known := minutesListItems(data)
 	if !known {
-		return nil, minutesSearchProjectionUnknown("无法识别 list_by_keyword_and_time_range 返回的妙记列表容器")
+		return nil, minutesProjectionUnknown("无法识别 list_by_keyword_and_time_range 返回的妙记列表容器")
 	}
 	results := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		minute, ok := item.(map[string]any)
 		if !ok {
-			return nil, minutesSearchProjectionUnknown("妙记列表包含无法识别的条目")
+			return nil, minutesProjectionUnknown("妙记列表包含无法识别的条目")
 		}
 		taskUUID := latestMinutesUUID(minute)
 		if strings.TrimSpace(taskUUID) == "" {
-			return nil, minutesSearchProjectionUnknown("妙记条目缺少可用于读取详情的稳定 taskUuid")
+			return nil, minutesProjectionUnknown("妙记条目缺少可用于读取详情的稳定 taskUuid")
 		}
 		results = append(results, map[string]any{
 			"title":       minutesSearchTitle(minute),
@@ -131,54 +130,6 @@ func minutesSearchProject(data map[string]any) ([]map[string]any, error) {
 		})
 	}
 	return results, nil
-}
-
-func minutesSearchItems(data map[string]any) ([]any, bool) {
-	if data == nil {
-		return nil, false
-	}
-	for _, scope := range minutesSearchScopes(data) {
-		if items, ok := scope.([]any); ok {
-			return items, true
-		}
-		object, ok := scope.(map[string]any)
-		if !ok {
-			continue
-		}
-		for _, key := range []string{"list", "minutesList", "items", "records", "result"} {
-			if items, ok := object[key].([]any); ok {
-				return items, true
-			}
-		}
-	}
-	return nil, false
-}
-
-func minutesSearchScopes(data map[string]any) []any {
-	scopes := make([]any, 0, 5)
-	for _, outerKey := range []string{"result", "data"} {
-		outer, ok := data[outerKey]
-		if !ok {
-			continue
-		}
-		if object, ok := outer.(map[string]any); ok {
-			for _, innerKey := range []string{"result", "data"} {
-				if inner, ok := object[innerKey]; ok {
-					scopes = append(scopes, inner)
-				}
-			}
-		}
-		scopes = append(scopes, outer)
-	}
-	return append(scopes, data)
-}
-
-func minutesSearchProjectionUnknown(message string) error {
-	return apperrors.NewAPI(message,
-		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
-		apperrors.WithFailureStage("response_projection"),
-		apperrors.WithRetryable(false),
-	)
 }
 
 // minutesSearchTitle reads a minute's display title, tolerating the common

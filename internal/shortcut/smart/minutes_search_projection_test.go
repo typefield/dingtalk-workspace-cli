@@ -28,6 +28,16 @@ func TestMinutesSearchProjectDistinguishesKnownEmptyFromUnknown(t *testing.T) {
 	if err != nil || len(minutes) != 1 || minutes[0]["task_uuid"] != "minute-1" {
 		t.Fatalf("nested minute projection=%#v err=%v", minutes, err)
 	}
+
+	minutes, err = minutesSearchProject(map[string]any{
+		"result": map[string]any{"itemList": []any{map[string]any{
+			"taskUuid": "minute-item-list",
+			"title":    "周会",
+		}}},
+	})
+	if err != nil || len(minutes) != 1 || minutes[0]["task_uuid"] != "minute-item-list" {
+		t.Fatalf("result.itemList projection=%#v err=%v", minutes, err)
+	}
 }
 
 func TestMinutesSearchProjectRejectsUntargetableData(t *testing.T) {

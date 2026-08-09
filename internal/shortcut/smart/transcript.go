@@ -68,9 +68,12 @@ var Transcript = shortcut.Shortcut{
 			return err
 		}
 
-		// Step 2 — locate the newest minute's taskUuid (reuses helper from
-		// latest_minutes.go).
-		taskUUID := latestMinutesTaskUUID(data)
+		// Step 2 — locate the newest minute's taskUuid (reuses strict helper
+		// from latest_minutes.go).
+		taskUUID, err := latestMinutesTaskUUID(data)
+		if err != nil {
+			return err
+		}
 		if taskUUID == "" {
 			return apperrors.NewValidation("暂无妙记")
 		}
