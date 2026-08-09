@@ -102,7 +102,8 @@ func TestDevAppProjectedListsRejectInvalidPaginationEvidence(t *testing.T) {
 
 func TestDevAppShortcutsRollOutPerTerminalCommand(t *testing.T) {
 	active := map[string]bool{
-		"+get": true, "+credentials-get": true, "+webapp-get": true,
+		"+list": true, "+get": true, "+credentials-get": true, "+webapp-get": true,
+		"+permission-list": true, "+event-list": true, "+version-list": true,
 		"+robot-get": true, "+version-get": true,
 		"+version-check-approval": true, "+version-status": true,
 	}

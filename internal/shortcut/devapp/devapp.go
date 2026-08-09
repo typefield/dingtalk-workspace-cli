@@ -1735,7 +1735,7 @@ var VersionStatus = shortcut.Shortcut{
 
 func init() {
 	shortcut.Register(
-		frameworkDualValidate(ListApp),
+		frameworkUnified(ListApp),
 		frameworkUnified(GetApp),
 		frameworkDualValidate(CreateApp),
 		frameworkDualValidate(UpdateApp),
@@ -1745,7 +1745,7 @@ func init() {
 		frameworkUnified(GetCredentials),
 		frameworkUnified(WebappGet),
 		frameworkDualValidate(WebappConfig),
-		frameworkDualValidate(PermissionList),
+		frameworkUnified(PermissionList),
 		frameworkDualValidate(PermissionAdd),
 		frameworkDualValidate(PermissionRemove),
 		frameworkDualValidate(MemberList),
@@ -1756,11 +1756,11 @@ func init() {
 		frameworkDualValidate(RobotConfig),
 		frameworkDualValidate(RobotEnable),
 		frameworkDualValidate(RobotDisable),
-		frameworkDualValidate(EventList),
+		frameworkUnified(EventList),
 		frameworkDualValidate(EventSubscribe),
 		frameworkDualValidate(EventUnsubscribe),
 		frameworkDualValidate(VersionCreate),
-		frameworkDualValidate(VersionList),
+		frameworkUnified(VersionList),
 		frameworkUnified(VersionGet),
 		frameworkUnified(VersionCheckApproval),
 		frameworkDualValidate(VersionPublish),

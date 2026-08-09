@@ -20,7 +20,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "internal/shortcut/devapp/devapp.go"
-TEST_PATTERN = r"TestDevAppProjectedLists(PreservePaginationEvidence|RejectInvalidPaginationEvidence)"
+TEST_PATTERN = r"TestDevApp(ProjectedLists(PreservePaginationEvidence|RejectInvalidPaginationEvidence)|PaginatedShortcutsEmitUnifiedResumableResults)"
 EXPECTED_CALLERS = (
     "ListApp",
     "PermissionList",
@@ -36,6 +36,7 @@ def run() -> int:
 
     source = SOURCE.read_text(encoding="utf-8")
     missing = []
+    inactive = []
     for shortcut in EXPECTED_CALLERS:
         block = re.search(
             rf"var {shortcut} = shortcut\.Shortcut\{{(?:(?!^var ).)*?\n\}}",
@@ -44,6 +45,11 @@ def run() -> int:
         )
         if block is None or "projectDevAppPage(data" not in block.group(0):
             missing.append(shortcut)
+        # Output rollout is release-owned. An Agent must not select it through
+        # argv; this review verifies that the terminal is active on its ordinary
+        # --format json path.
+        if f"frameworkUnified({shortcut})" not in source:
+            inactive.append(shortcut)
 
     environment = os.environ.copy()
     environment.setdefault("DWS_PACKAGE_VERSION", "0.0.0-agent-review")
@@ -58,9 +64,9 @@ def run() -> int:
     ]
     result = subprocess.run(command, cwd=ROOT, env=environment, text=True, capture_output=True)
 
-    passed = result.returncode == 0 and not missing
+    passed = result.returncode == 0 and not missing and not inactive
     status = "PASS" if passed else "REVIEW"
-    checked_callers = len(EXPECTED_CALLERS) - len(missing)
+    checked_callers = len(EXPECTED_CALLERS) - len(missing) - len(inactive)
     timestamp = dt.datetime.now().astimezone().isoformat(timespec="seconds")
     test_excerpt = (result.stdout + result.stderr).strip()
     if len(test_excerpt) > 3000:
@@ -86,6 +92,8 @@ def run() -> int:
 3. `nextCursor` 非字符串、`hasMore=true` 无游标必须返回 `validation/pagination_incomplete`。
 4. 多层 `hasMore` 或非空 `nextCursor` 互相冲突、末页仍带游标必须返回 `validation/pagination_conflict`。
 5. 上述失败均为 `response_projection`、不可安全重试；不得输出成功列表。
+6. 只有经本项 Agent 审阅的四条 terminal command 才在原路径直接输出统一结果；调用者只传 `--format json`。
+7. 非末页必须在 `meta.pagination` 中保留 `endpoint_exhausted:false` 与 `next_token`，且不输出任何协议版本标记。
 
 ## Source coverage
 
@@ -94,6 +102,10 @@ def run() -> int:
         report += "- REVIEW：下列 Shortcut 未在 Execute 中调用 `projectDevAppPage`：" + ", ".join(f"`{name}`" for name in missing) + "\n"
     else:
         report += "- PASS：四个列表 Shortcut 均先验证分页证据，再交给统一结果映射。\n"
+    if inactive:
+        report += "- REVIEW：下列 Shortcut 尚未进入 `unified_active`，外部仍为 legacy：" + ", ".join(f"`{name}`" for name in inactive) + "\n"
+    else:
+        report += "- PASS：四条已审阅的列表 Shortcut 均在原命令路径直接输出统一结果；没有公开版本/协议选择参数。\n"
     report += f"""
 
 ## Focused test transcript
