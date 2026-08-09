@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T16:31:19+08:00
+扫描时间：2026-08-09T16:45:29+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,8 +8,8 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1345 |
-| `dual_validate` | 25 |
+| `legacy_only` | 1343 |
+| `dual_validate` | 27 |
 | `unified_active` | 113 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
@@ -18,11 +18,12 @@
 
 ## Transition review
 
-基线：`rollout-ledger-before-chat-list-all-dual.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-20260809.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws chat +chat-list-all`: `legacy_only` → `dual_validate`
+- PASS: `dws todo +due-today`: `legacy_only` → `dual_validate`
+- PASS: `dws todo +related-tasks`: `legacy_only` → `dual_validate`
 
 ### 新增可执行命令节点
 
@@ -1432,14 +1433,14 @@
 | `dws todo +assign` | `legacy_only` | `legacy` | no |
 | `dws todo +assign-multi` | `legacy_only` | `legacy` | no |
 | `dws todo +created-todos` | `legacy_only` | `legacy` | no |
-| `dws todo +due-today` | `legacy_only` | `legacy` | no |
+| `dws todo +due-today` | `dual_validate` | `legacy` | no |
 | `dws todo +get` | `legacy_only` | `legacy` | no |
 | `dws todo +get-my-tasks` | `unified_active` | `unified` | no |
 | `dws todo +list-attachment` | `unified_active` | `unified` | no |
 | `dws todo +list-comment` | `unified_active` | `unified` | no |
 | `dws todo +list-sub` | `unified_active` | `unified` | no |
 | `dws todo +overdue` | `legacy_only` | `legacy` | no |
-| `dws todo +related-tasks` | `legacy_only` | `legacy` | no |
+| `dws todo +related-tasks` | `dual_validate` | `legacy` | no |
 | `dws todo +remind` | `legacy_only` | `legacy` | no |
 | `dws todo +todo-done` | `legacy_only` | `legacy` | no |
 | `dws todo comment` | `legacy_only` | `legacy` | no |

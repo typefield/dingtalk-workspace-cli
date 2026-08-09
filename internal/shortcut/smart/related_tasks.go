@@ -20,6 +20,7 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -50,12 +51,16 @@ import (
 const relatedTasksIntent = "当你想一次看清『所有和我有关的待办』——不管是我创建(creator)的、指派给我执行(executor)的、还是我作为参与人(participant)协作的——时使用；内部默认拉取你当前组织下 roleTypes=[\"creator\",\"executor\",\"participant\"] 三种角色的待办并集（这三个值正是待办列表支持的角色枚举），再在本地按任务 ID(taskId) 去重（同一条待办可能因多角色重复出现），把每条投影成标题、状态、优先级、创建人、计划完成时间和 taskId 打印出来。可用 --role-types 以逗号分隔覆盖默认角色（取值 creator/executor/participant），可用 --status 透传 todoStatus 过滤状态。这是纯只读操作，只做列表、去重与投影，不会创建或修改任何待办；若没有与你相关的待办则返回空列表。"
 
 var RelatedTasks = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+related-tasks",
-	Product:     "todo",
-	Description: "一次性列出与我相关的全部待办（我作为创建人/执行人/参与人三种角色的并集，按 taskId 去重）",
-	Intent:      relatedTasksIntent,
-	Risk:        shortcut.RiskRead,
+	// The pager previously discarded all earlier cards on a later-page error.
+	// Dual validation now checks a partial-preserving candidate while leaving
+	// the established legacy bytes and error behavior untouched.
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "todo",
+	Command:       "+related-tasks",
+	Product:       "todo",
+	Description:   "一次性列出与我相关的全部待办（我作为创建人/执行人/参与人三种角色的并集，按 taskId 去重）",
+	Intent:        relatedTasksIntent,
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low", Confirmation: "not_required", Idempotency: "idempotent",
 	},
@@ -115,15 +120,12 @@ var RelatedTasks = shortcut.Shortcut{
 
 		// List ALL related cards across pages so a todo beyond the first page is
 		// not silently dropped from the union/dedupe.
-		cards, err := shortcutListAllTodoCards(rt, params)
-		if err != nil {
-			return err
-		}
+		read := shortcutReadAllTodoCards(rt, params)
 
 		// Step 2 — dedupe by taskId and project.
-		seen := make(map[string]bool, len(cards))
-		results := make([]map[string]any, 0, len(cards))
-		for _, m := range cards {
+		seen := make(map[string]bool, len(read.Cards))
+		results := make([]map[string]any, 0, len(read.Cards))
+		for _, m := range read.Cards {
 			taskID := shortcutRelatedTaskID(m)
 			if taskID != "" {
 				if seen[taskID] {
@@ -135,7 +137,12 @@ var RelatedTasks = shortcut.Shortcut{
 		}
 
 		// Step 3 — print the deduped, projected list.
-		return rt.Output(map[string]any{"tasks": results, "count": len(results)})
+		payload := map[string]any{"tasks": results, "count": len(results)}
+		result, err := todoAggregateResult(read, "todo:related_tasks", payload, rt.DryRun())
+		if err != nil {
+			return apperrors.NewInternal("生成关联待办统一分页候选结果失败", apperrors.WithCause(err))
+		}
+		return todoAggregateOutput(rt, payload, result, read.Err)
 	},
 }
 

@@ -18,6 +18,8 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -48,12 +50,16 @@ import (
 const dueTodayIntent = "当你想快速看清自己今天（planFinishDate 落在今天 00:00 到次日 00:00 之间）到期的待办、方便安排一天的工作时使用；内部按今天的本地时间窗，把 planFinishDateStart=今天0点、planFinishDateEnd=次日0点（毫秒时间戳）传给 get_user_todos_in_current_org 做服务端过滤，默认拉取你作为执行人(executor)的待办，可用 --role-types 覆盖角色范围，最后只打印这些今天到期待办的标题、状态、优先级、创建人、到期时间和任务 ID。这与 +overdue（已过期）不同：+overdue 看的是已经过了截止时间的待办，本命令看的是今天当天到期的待办。这是纯只读操作，只做列表与投影，不会修改或完成任何待办；若今天没有到期的待办则返回空列表。"
 
 var DueToday = shortcut.Shortcut{
-	Service:     "todo",
-	Command:     "+due-today",
-	Product:     "todo",
-	Description: "列出我今天到期的待办",
-	Intent:      dueTodayIntent,
-	Risk:        shortcut.RiskRead,
+	// Preserve the historical renderer while checking the partial-preserving
+	// page result. This command can move to unified output only after real
+	// tenant evidence covers the todo API's undocumented page boundary.
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "todo",
+	Command:       "+due-today",
+	Product:       "todo",
+	Description:   "列出我今天到期的待办",
+	Intent:        dueTodayIntent,
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low", Confirmation: "not_required", Idempotency: "idempotent",
 	},
@@ -114,16 +120,13 @@ var DueToday = shortcut.Shortcut{
 
 		// List ALL matching cards across pages so a todo due today beyond the
 		// first page is not silently dropped.
-		cards, err := shortcutListAllTodoCards(rt, params)
-		if err != nil {
-			return err
-		}
+		read := shortcutReadAllTodoCards(rt, params)
 
 		// Step 3 — project the cards. The server already filtered to today's
 		// window; we keep a defensive local guard against any planFinishDate that
 		// leaks outside [startMs, endMs).
-		results := make([]map[string]any, 0, len(cards))
-		for _, m := range cards {
+		results := make([]map[string]any, 0, len(read.Cards))
+		for _, m := range read.Cards {
 			if due, ok := shortcutOverdueDueTime(m); ok { // reused from overdue.go
 				if due < startMs || due >= endMs {
 					continue
@@ -134,7 +137,12 @@ var DueToday = shortcut.Shortcut{
 		}
 
 		// Step 4 — print the projected list.
-		return rt.Output(map[string]any{"count": len(results), "tasks": results})
+		payload := map[string]any{"count": len(results), "tasks": results}
+		result, err := todoAggregateResult(read, "todo:due_today", payload, rt.DryRun())
+		if err != nil {
+			return apperrors.NewInternal("生成今日到期待办统一分页候选结果失败", apperrors.WithCause(err))
+		}
+		return todoAggregateOutput(rt, payload, result, read.Err)
 	},
 }
 
