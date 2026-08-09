@@ -1,12 +1,13 @@
 #!/bin/sh
 
-# Shared library for the Phase I unified-result CI scan prototypes
+# Shared library for Phase I unified-result local scan helpers
 # (B161~B167): check-stdout-json.sh / check-string-bool.sh /
 # check-envelope-keys.sh. Sourced by the three check scripts; not executable
 # and not a policy gate by itself.
 #
-# Positioning: Phase I prototypes. They are NOT wired into `make policy`; the
-# wiring design draft lives in scripts/policy/README.md (B167).
+# Positioning: these helpers support an Agent-run review and are never a
+# `make policy` or CI gate. The Agent wrapper writes Markdown evidence only;
+# its usage and evidence boundary live in scripts/policy/README.md.
 #
 # Contract anchors:
 #   - AC-02  ok/success-style booleans are always JSON booleans; string
@@ -231,7 +232,7 @@ unified_result_materialize_fixture() {
 
 unified_result_require_jq() {
 	if ! command -v jq >/dev/null 2>&1; then
-		printf 'error: jq is required by the unified-result scan prototypes\n' >&2
+	printf 'error: jq is required by the unified-result local scan helpers\n' >&2
 		exit 2
 	fi
 }

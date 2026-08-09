@@ -204,13 +204,15 @@ Framework 2.0 也不新增 `--json` 别名。历史命令自带的局部 `--json
 
 当前状态必须来自 live command declaration。ledger 是审计产物，不是第二运行时配置源：
 
-1. CI 从真实 Cobra tree 导出排序后的 `cli_path -> rollout_state -> active_contract` inventory。
-2. CI 与 merge base 的 inventory 比较，调用 `ValidateRolloutTransition` 拒绝跳级或无审批回退。
-3. transition evidence 只记录 owner、测试报告、兼容样本、观测窗口和回滚人，不手写重复的 current state。
-4. release artifact 保存 inventory，便于定位“哪个 release 把哪条命令切到统一结果”。
-5. `dual_validate` 失败或统一结果指标恶化时，阻止晋级；不能用用户 flag 绕过。
+1. **Agent** 从真实 Cobra tree 导出排序后的 `cli_path -> rollout_state -> active_contract` inventory，并连同命令级证据写入 Markdown 审计报告。
+2. Agent 与基线版本比较，并用 `ValidateRolloutTransition` 审阅跳级或回退；它必须记录 owner、原因、兼容样本、观测窗口和回滚人。
+3. transition evidence 不手写重复的 current state；当前状态永远以 live declaration 为准。
+4. release artifact 可附带这份 Markdown inventory，便于定位“哪个 release 把哪条命令切到统一结果”，但不保存运行时 JSON catalog。
+5. `dual_validate` 失败、统一结果指标恶化或终态证据不足时，Agent 不得建议晋级；不能用用户 flag 绕过。
 
-现有 `ValidateRolloutTransition` 只有库函数和单测，尚未接入真实 CI ledger；`scripts/policy/` 下的统一输出扫描仍是 prototype。两项是 RFC 落地门槛，不得在文档中宣称已完成。
+`ValidateRolloutTransition` 是审阅辅助函数，不是 CI gate。统一输出检查也必须由
+Agent 在当前二进制上执行并保存 Markdown 证据；自动化测试只能覆盖实现分支，不能替代
+对结果真实性、真实账号和服务端终态的审阅。
 
 ## 7. 统一结果契约
 
@@ -493,20 +495,21 @@ dws devapp +list ...
 - 增加真实 server/stdio E2E；
 - 在完成前，文档不得宣称 CLI/MCP 已同构上线。
 
-## 12. CI、测试与发布门禁
+## 12. Agent 审阅、测试与发布证据
 
-### 12.1 静态门禁
+### 12.1 代码级回归
 
+- 单元/集成测试可以锁定下列代码约束，但不能据此宣称 Agent 语义或后端终态已验收：
 - Schema/help 不得出现任何输出协议或兼容模式选择参数。
 - Agent skill 中统一结果示例只允许 `--format json`，不得新增 `--json`。
 - 统一结果 handler 禁止直接写 stdout、手拼 envelope 或字符串布尔。
 - active unified command 必须存在 `CommandResult` 生产路径。
 - `Shortcut.OutputRollout` 与 `LeafSpec.OutputRollout` 都必须逐 command 声明。
-- live rollout inventory 必须通过合法状态迁移检查。
+- live rollout inventory 必须可由 Agent 审阅其合法状态迁移。
 - `dev` 与 `devapp +` capability relation 不得被登记成 CLI alias。
 - Agent 引用的 runnable terminal command 必须进入 Schema，不得残留 exclusion。
 
-### 12.2 动态 contract tests
+### 12.2 动态代码测试
 
 每个迁移命令至少覆盖：
 
@@ -528,23 +531,18 @@ dws devapp +list ...
 16. `tools/call` 不自动重放，Retry-After 可透传；
 17. `dws dev ...` 和对应 `dws devapp +...` 均保持原 argv 可执行并独立返回统一结果。
 
-### 12.3 发布门禁
+### 12.3 发布前 Agent 证据
 
 ```text
-make build
-DWS_PACKAGE_VERSION=0.0.0-test go test ./...
-./scripts/policy/check-generated-drift.sh
-./scripts/policy/check-schema-catalog.sh
+python3 scripts/agent/scan_unified_result_surface.py \
+  --output docs/agent-scans/unified-result-surface-YYYYMMDD.md
 ```
 
-统一输出的 policy prototypes 在成为 mandatory gate 前必须：
-
-- 纳入 `make policy`；
-- 允许并检查非零 rc 的 failure/partial 样本，不能把它们全部 skip；
-- allowed envelope key 与 `ok/outcome/identity/dry_run/data/meta/error/_notice` 一致；
-- 动态样本使用 `--format json`；
-- 同时覆盖 `dev` 和 `devapp +`；
-- 失败时不得 vacuous pass。
+发布前 Agent 必须结合当前二进制、命令级生命周期测试、必要的受控账号和外部评测
+复核统一结果。上面的扫描只覆盖无登录的安全样本，且只生成 Markdown 证据。它允许
+并检查非零 rc 的 failure/partial 样本，固定顶层键为
+`ok/outcome/identity/dry_run/data/meta/error/_notice`，但不能把通过扩大为服务端终态
+成功。`devapp +`、写操作、真实分页与异步任务必须由各命令独立取证。
 
 ## 13. 兼容与回滚
 
@@ -595,7 +593,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 - [ ] success/pending/partial/failure、stream、exit code 全矩阵通过。
 - [ ] partial/pending/pagination/dry-run/retry/timeout 的严格测试通过。
 - [ ] active unified 无结果、重复结果、panic、sink close、PAT、custom rc 都有 root E2E。
-- [ ] live rollout ledger 和 transition CI 已接入，policy 不再是 prototype。
+- [ ] live rollout ledger 和 transition 已由 Agent 在每轮发布审阅中取证；不把它们接入 CI / `make policy`。
 - [ ] Agent 使用的 devapp shortcut 已从 Schema exclusion 精确移除。
 - [ ] legacy golden、统一结果 golden、Lark/GWS 对齐矩阵和 release note 完整。
 - [ ] MCP 未接入的限制仍被准确说明；不得用 CLI 验收替代 MCP E2E。
@@ -611,8 +609,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 
 ### P1
 
-- 把 rollout transition 与生成式 ledger 接入 CI。
-- 把统一输出 policy scripts 接入 `make policy`，覆盖非零 rc 和非标准顶层字段。
+- 让 Agent 扫描器从 live declaration 生成 rollout Markdown inventory，并复核合法状态迁移、非零 rc 和非标准顶层字段；不得接入 CI / `make policy`。
 - 完善 typed error 投影，保留 HTTP/RPC/upstream code、hint、request id 和 retry metadata。
 - 严格校验 `failed[].error`、非负 count/pages/items。
 

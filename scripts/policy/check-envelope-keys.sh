@@ -16,11 +16,11 @@ set -eu
 # auth status) are exempt from the envelope-shape scan — that is their known
 # pre-migration shape, not a regression. See README.md.
 #
-# This is a PROTOTYPE scan, not a wired policy gate. Positioning, sample
-# selection, the B164 false-positive verification record, --scope semantics
-# (B166) and the `make policy` hook design draft (B167) live in
-# scripts/policy/README.md. Samples run under an isolated fresh HOME
-# (DWS_SCAN_HOME overrides), so the default dev scope needs no login.
+# This is a local helper for an Agent review, never a CI/policy gate.
+# Positioning, sample selection, the false-positive verification record, and
+# --scope semantics live in scripts/policy/README.md. Samples run under an
+# isolated fresh HOME (DWS_SCAN_HOME overrides), so the default dev scope
+# needs no login.
 #
 # Usage:
 #   check-envelope-keys.sh [--scope dev|all]   (default: dev)

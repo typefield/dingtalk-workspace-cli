@@ -1,31 +1,40 @@
-# scripts/policy —— 统一返回 CI 扫描原型（Phase I，B161~B167）
+# scripts/policy —— 统一返回的本地审计辅助工具（Phase I）
 
-本 README 只覆盖 Phase I「CI 扫描原型」四个脚本与配套 fixture：
+本 README 覆盖 Phase I 的三个本地检查器与共享临时样本库。它们只由
+`scripts/agent/scan_unified_result_surface.py` 或人工 Agent 审阅调用，不能作为
+CI / `make policy` 门禁或替代真实环境验证。
 
 - `check-stdout-json.sh`（B161）—— json 模式 stdout 纯 JSON 检查（AC-11）
 - `check-string-bool.sh`（B162）—— 字符串布尔违规扫描（AC-02）
 - `check-envelope-keys.sh`（B163）—— 非标准信封键名扫描（信封顶层键集合固化，G1）
 - `unified-result-lib.sh` —— 三脚本共享库（样本表、隔离 HOME、重试纪律、self-test 框架）；这是内部文件名，不是 CLI 协议或用户接口。
-- `unified-result-lib.sh` —— 在临时目录按需生成 self-test 输入（合法统一返回 + 各类违规样例），仓库不保存派生 JSON fixture。
+- `unified-result-lib.sh` 在临时目录按需生成 self-test 输入（合法统一返回 + 各类违规样例），仓库不保存派生 JSON fixture。`contract_version` 仅以“必须被拒绝”的临时负向样本存在，绝不属于 CLI 输出或仓库结果。
 
-## 定位：原型，非强制门禁（B165）
+## 定位：Agent 审计辅助，不是门禁
 
-这三个脚本是 **Phase I 扫描原型**：
+这三个脚本检查代表性终端命令的运行时 stdout。它们只能提供某一轮 Agent
+审阅的证据，不能证明全表面正确，更不能替代服务端终态或 dry-run 零写验证。
 
-- **不接入 `make policy`**，不是 CI 强制门禁；接入方式见文末「接入 make policy 的挂点设计草案」（B167，仅设计稿）。
-- 脚本自带 `--self-test` 模式，用运行时生成的临时输入验证扫描逻辑本身（合法样例必须 pass、违规样例必须 fail），这是原型阶段的主要回归手段。
+- **永不接入 `make policy` 或 CI**。测试可以覆盖代码分支，但“命令是否如实表达业务结果”必须由 Agent 按当前代码、当前二进制和必要的真实账号环境审阅。
+- 脚本自带 `--self-test`，用运行时生成的临时输入验证扫描逻辑本身（合法样例必须 pass、违规样例必须 fail）。自检不是发布准入，也不产出仓库 JSON fixture。
 - 返回锚点：AC-02（ok/success 类布尔恒为 JSON 布尔）、AC-11（json 模式 stdout 零日志字节、primary result 恰为一个可解析 JSON 文档）、顶层键集合固定（`ok/outcome/identity/dry_run/data/meta/error/_notice` snake_case；`contract_version/errcode/error_code/errorCode/success` 等非标准顶层形态违规，camelCase wire 键形态违规）。没有输出协议版本字段。
 
-## 用法
+## Agent 审阅用法
 
 ```bash
-make build            # 先构建 ./dws（脚本消费真实二进制）
-./scripts/policy/check-stdout-json.sh            # 默认 --scope dev
-./scripts/policy/check-string-bool.sh --scope all
-./scripts/policy/check-envelope-keys.sh --self-test   # fixture 自检
+python3 scripts/agent/scan_unified_result_surface.py \
+  --output docs/agent-scans/unified-result-surface-YYYYMMDD.md
 ```
 
-退出码：`0` = 通过；`1` = 发现违规（逐条打印 `[样本] 原因`）；`2` = 用法/环境错误（缺二进制、缺 jq、非法参数）。
+包装器在临时目录构建本轮二进制、运行三个检查器及其 self-test，并且只保存 Markdown
+证据。若 Agent 需要定位某个样本，可单独运行下列底层命令；它们的退出码只是审阅输入，
+不是 CI 判定：`0` = 无发现，`1` = 发现违规，`2` = 环境/用法无法审阅。
+
+```bash
+./scripts/policy/check-stdout-json.sh --scope dev
+./scripts/policy/check-string-bool.sh --scope dev
+./scripts/policy/check-envelope-keys.sh --self-test
+```
 
 ## 样本与 --scope（B166）
 
@@ -51,7 +60,7 @@ make build            # 先构建 ./dws（脚本消费真实二进制）
   使用非零退出码）；仅非零退出且 stdout 为空时视为环境/鉴权不可用，记
   `[skip]` 并打印 stderr 尾部。
 - **至少一个样本成功验证**，否则脚本拒绝通过（防止空跑假绿）。
-- `DWS_SCAN_HOME` 环境变量可覆盖样本 HOME（运维/CI 定制环境用）。
+- `DWS_SCAN_HOME` 环境变量可覆盖样本 HOME（仅供本地 Agent 审阅定制环境）。
 
 ## B164 误报核查记录
 
@@ -92,64 +101,10 @@ legacy 命名业务字段（如服务端返回的 `hasMore`/`success` 业务字�
    结果必须扫描，只有无 stdout 的环境/鉴权失败可 skip。skip 计数显式打印在
    结果行，全 skip 时拒绝通过。
 
-## 接入 make policy 的挂点设计草案（B167）
+## 与自动化测试的边界
 
-**本草案仅为设计稿，不修改 Makefile。**
-
-### 挂点位置
-
-建议挂在 `make policy` 链的**尾部**（`check-schema-binary.sh` 与
-`test-schema-agent-examples` 之后），理由：
-
-- 三脚本需要 `make build` 产物 `./dws`；policy 链前段的 schema 门禁已隐含
-  构建，挂尾部可复用产物、避免重复构建。
-- 扫描对象是「最终交付二进制的运行时输出」，语义上位于所有装配门禁之后。
-
-### 接入形态（两档渐进）
-
-**第一档（原型转正初期，建议）——独立 target，不进 policy 链：**
-
-```make
-unified-result-scan:
-	@$(POLICY_ENV) ./scripts/policy/check-stdout-json.sh
-	@$(POLICY_ENV) ./scripts/policy/check-string-bool.sh
-	@$(POLICY_ENV) ./scripts/policy/check-envelope-keys.sh
-```
-
-手动/按需触发，允许 skip（登录态、网络等环境差异）不阻塞主链。
-
-**第二档（dev 域全域迁移完成后）——进 policy 链，scope=dev 硬门禁：**
-
-```make
-policy: ...
-	@$(POLICY_ENV) ./scripts/policy/check-stdout-json.sh --scope dev
-	@$(POLICY_ENV) ./scripts/policy/check-string-bool.sh --scope dev
-	@$(POLICY_ENV) ./scripts/policy/check-envelope-keys.sh --scope dev
-```
-
-升级前提（进入第二档的准入条件）：
-
-1. dev 域全部叶子完成统一信封迁移（Phase F 收口，B138 核销清单测试通过）；
-2. `--scope dev` 样本表扩充到 dev 域全部读叶子（当前 4 个代表样本），
-   且连续 N 次（建议 N=5）本地全绿；
-3. CI 环境能提供登录态或确认全部样本离线可跑（当前 dev 档已满足离线要求，
-   此条主要针对第二档扩样后是否引入登录依赖）。
-
-`--scope all` 保持**永不进硬门禁**（legacy 样本的豁免语义 + 登录态依赖），
-作为 advisory 扫描保留在独立 target。
-
-### 与现有门禁的边界
-
-- 与 `check-schema-catalog.sh` 无重叠：后者校验 Schema Catalog 装配契约，
-  本原型校验命令**运行时输出**契约。
-- 与 `check-cli-smoke.sh` 无重叠：smoke 校验 help 渲染与命令树存在性，
-  本原型校验 json stdout 的机器消费契约。
-- self-test（`--self-test`）建议同时接入第一档 target，作为 fixture 回归：
-  `@for s in check-stdout-json check-string-bool check-envelope-keys; do ./scripts/policy/$$s.sh --self-test; done`
-
-### shellcheck 备注
-
-本批次开发机上 `shellcheck` 不可用（未安装），四脚本以 `sh -n` 语法校验 +
-真实运行（dev/all 两档 + stub 反向验证）替代；接入 CI 前建议补一轮
-`shellcheck -s sh`。脚本按 POSIX sh 编写（`#!/bin/sh` + `set -eu`，与目录
-既有脚本一致），bash 3.2 兼容（未使用 bash 扩展语法）。
+- `check-schema-catalog.sh`、`check-cli-smoke.sh` 等自动化测试仍可验证命令树和
+  装配约束；它们不替代本工具的运行时结果审阅。
+- 这三个检查器及其 self-test 永不升级为 policy / CI gate。样本覆盖、真实账号、
+  服务端响应形状和“是否可如实宣称终态”由 Agent 在评测或发布前取证。
+- shell 脚本保持 POSIX `sh`；本地 Agent 审阅应先跑 `sh -n`，再运行包装器。
