@@ -160,6 +160,31 @@ def main() -> int:
     )
     outcomes.append(("机器结果与退出码一致性", *result("PASS" if inconsistent_exit_ok else "FAIL", detail)))
 
+    zero_system_exit = runtime_probe(
+        "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print('leaked success'), (_ for _ in ()).throw(SystemExit(0)))[1], argv=['--format','json']))"
+    )
+    valid, payload, detail = parse_single_result(zero_system_exit)
+    zero_system_exit_ok = (
+        valid
+        and zero_system_exit.returncode == 1
+        and payload is not None
+        and payload.get("ok") is False
+        and payload.get("outcome") == "failure"
+        and isinstance(payload.get("error"), dict)
+        and payload["error"].get("type") == "internal"
+        and payload["error"].get("details", {}).get("violation") == "machine_stdout_contract"
+        and "leaked success" not in zero_system_exit.stdout
+    )
+    outcomes.append(("SystemExit(0) 不可绕过机器输出契约", *result("PASS" if zero_system_exit_ok else "FAIL", detail)))
+
+    help_exit = runtime_probe(
+        "import sys; sys.path.insert(0, 'skills/mono/scripts'); import _runtime; "
+        "raise SystemExit(_runtime.run_main(lambda: (print('usage: probe'), (_ for _ in ()).throw(SystemExit(0)))[1], argv=['--format','json','--help']))"
+    )
+    help_exit_ok = help_exit.returncode == 0 and help_exit.stdout.strip() == "usage: probe"
+    outcomes.append(("显式 Help 保留 argparse 人读输出", *result("PASS" if help_exit_ok else "FAIL", "ok" if help_exit_ok else "unexpected help result")))
+
     with tempfile.TemporaryDirectory(prefix="dws-mono-legacy-child-") as temp_dir_name:
         temp_dir = Path(temp_dir_name)
         legacy_false = run_with_fake_dws(

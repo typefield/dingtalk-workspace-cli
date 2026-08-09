@@ -442,6 +442,12 @@ def _requested_format(argv: Optional[Sequence[str]] = None) -> str:
     return "text"
 
 
+def _help_requested(argv: Optional[Sequence[str]] = None) -> bool:
+    """Return whether argparse help deliberately owns stdout for this run."""
+    args = list(sys.argv[1:] if argv is None else argv)
+    return "-h" in args or "--help" in args
+
+
 def _exit_status(value: object) -> int:
     """Mirror sys.exit's integer outcome while keeping the runtime total."""
     if value is None:
@@ -559,9 +565,28 @@ def run_main(
     except SystemExit as exc:
         status = _exit_status(exc.code)
         if status == 0:
-            if fmt != "text":
-                output.write(buffered_machine_stdout.getvalue())
-            return status
+            if fmt == "text" or _help_requested(argv):
+                if fmt != "text":
+                    output.write(buffered_machine_stdout.getvalue())
+                return status
+            captured = buffered_machine_stdout.getvalue()
+            if _machine_stdout_is_contract(fmt, captured, status):
+                output.write(captured)
+                return status
+            print(
+                "✗ 脚本以成功码退出，但未产生合法机器结果；已拒绝污染的 stdout。",
+                file=diagnostics,
+            )
+            return emit(
+                fmt=fmt,
+                outcome="failure",
+                error={
+                    "type": "internal",
+                    "message": "脚本以成功码退出，但未产生合法机器结果。",
+                    "details": {"violation": "machine_stdout_contract"},
+                },
+                stdout=output,
+            )
         if fmt == "text":
             return status
         return emit(
