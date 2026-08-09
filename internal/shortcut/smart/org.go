@@ -37,7 +37,7 @@ import (
 //
 //	dws contact +org --name 张三
 var Org = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "contact",
 	Command:       "+org",
 	Product:       "contact",

@@ -60,8 +60,8 @@ func (c *orgProjectionCaller) DryRun() bool   { return false }
 func (c *orgProjectionCaller) Fields() string { return "" }
 func (c *orgProjectionCaller) JQ() string     { return "" }
 
-func TestOrgDualValidatePreservesLegacyTerminalBytes(t *testing.T) {
-	if Org.OutputRollout != output.RolloutDualValidate {
+func TestOrgUnifiedResultUsesReviewedProjection(t *testing.T) {
+	if Org.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout=%q", Org.OutputRollout)
 	}
 	if Org.Contract.Result == nil || !reflect.DeepEqual(Org.Contract.Result.Outcomes, []contract.ResultOutcome{
@@ -77,7 +77,8 @@ func TestOrgDualValidatePreservesLegacyTerminalBytes(t *testing.T) {
 	}
 	cmd := corecmd.New(shortcut.FromShortcut(declaration))
 	cmd.PersistentFlags().String("format", "json", "")
-	cmd.SetContext(context.Background())
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	var stdout, stderr bytes.Buffer
 	helpers.GetFormatter().SetWriters(&stdout, &stderr)
 	cmd.SetOut(&stdout)
@@ -86,14 +87,19 @@ func TestOrgDualValidatePreservesLegacyTerminalBytes(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if caller.calls != 1 || stderr.Len() != 0 {
-		t.Fatalf("calls=%d stderr=%q", caller.calls, stderr.String())
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 || caller.calls != 1 || stderr.Len() != 0 {
+		t.Fatalf("code=%d emitted=%v calls=%d stderr=%q err=%v", code, emitted, caller.calls, stderr.String(), err)
 	}
-	var legacy map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &legacy); err != nil || legacy["success"] != true {
-		t.Fatalf("legacy=%#v err=%v output=%q", legacy, err, stdout.String())
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil || envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope=%#v err=%v output=%q", envelope, err, stdout.String())
 	}
-	if _, exists := legacy["ok"]; exists {
-		t.Fatalf("dual stage leaked unified output: %#v", legacy)
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("removed version marker leaked: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["deptId"] != float64(7) || data["deptName"] != "Engineering" || data["memberCount"] != float64(3) || len(data) != 3 {
+		t.Fatalf("data=%#v", envelope["data"])
 	}
 }
