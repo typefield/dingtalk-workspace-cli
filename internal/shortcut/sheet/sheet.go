@@ -17,9 +17,12 @@
 package sheet
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -28,12 +31,13 @@ import (
 // Create creates a new DingTalk online spreadsheet document.
 // ListSheets lists all worksheets in a spreadsheet document.
 var ListSheets = shortcut.Shortcut{
-	Service:     "sheet",
-	Command:     "+list-sheets",
-	Product:     "sheet",
-	Description: "获取表格文档中全部工作表列表",
-	Intent:      "当你拿到一个表格文档、想先了解它里面有哪些工作表（sheet）以及各自的 sheetId 时使用，通常作为读写具体数据前的第一步；传入表格文档 ID 或 URL，返回工作表清单。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "sheet",
+	Command:       "+list-sheets",
+	Product:       "sheet",
+	Description:   "获取表格文档中全部工作表列表",
+	Intent:        "当你拿到一个表格文档、想先了解它里面有哪些工作表（sheet）以及各自的 sheetId 时使用，通常作为读写具体数据前的第一步；传入表格文档 ID 或 URL，返回工作表清单。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -72,7 +76,10 @@ var ListSheets = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		return rt.Output(map[string]any{"count": len(sheets), "sheets": sheets})
+		payload := map[string]any{"count": len(sheets), "sheets": sheets}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(sheets))}),
+		))
 	},
 }
 
@@ -94,8 +101,11 @@ func listSheetsProject(data map[string]any) ([]map[string]any, error) {
 			return nil, sheetProjectionUnknown("工作表列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v, ok := listSheetsFirst(m, "sheetId", "sheet_id", "id"); ok {
+		if v, ok := sheetStableID(m, "sheetId", "sheet_id", "id"); ok {
 			row["sheetId"] = v
+		}
+		if _, ok := row["sheetId"]; !ok {
+			return nil, sheetProjectionUnknown("工作表条目缺少可用于后续操作的稳定 sheetId")
 		}
 		if v, ok := listSheetsFirst(m, "title", "name", "sheetName", "sheet_name"); ok {
 			row["title"] = v
@@ -162,6 +172,20 @@ func listSheetsFirst(m map[string]any, keys ...string) (any, bool) {
 		}
 	}
 	return nil, false
+}
+
+func sheetStableID(m map[string]any, keys ...string) (string, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return id, true
+		}
+	}
+	return "", false
 }
 
 // SheetInfo returns the detail of a single worksheet.

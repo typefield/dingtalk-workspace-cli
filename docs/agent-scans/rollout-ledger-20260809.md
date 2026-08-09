@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:21:54+08:00
+扫描时间：2026-08-09T12:25:10+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1352 |
+| `legacy_only` | 1351 |
 | `dual_validate` | 24 |
-| `unified_active` | 107 |
+| `unified_active` | 108 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,9 +22,7 @@
 
 ### 状态迁移
 
-- REVIEW: `dws contact +list-dept-members`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws contact +list-role-members`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws contact +list-roles`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws sheet +list-sheets`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -1319,7 +1317,7 @@
 | `dws report template list` | `legacy_only` | `legacy` | no |
 | `dws schema` | `legacy_only` | `legacy` | no |
 | `dws sheet` | `legacy_only` | `legacy` | no |
-| `dws sheet +list-sheets` | `legacy_only` | `legacy` | no |
+| `dws sheet +list-sheets` | `unified_active` | `unified` | no |
 | `dws sheet +read` | `legacy_only` | `legacy` | no |
 | `dws sheet add-dimension` | `legacy_only` | `legacy` | no |
 | `dws sheet append` | `legacy_only` | `legacy` | no |
