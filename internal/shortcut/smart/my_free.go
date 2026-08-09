@@ -20,6 +20,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -38,10 +39,11 @@ import (
 //     dws calendar +my-free
 //     dws calendar +my-free --start 2026-07-10T09:00:00+08:00 --end 2026-07-10T18:00:00+08:00
 var MyFree = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+my-free",
-	Product:     "calendar",
-	Description: "查我自己在某时间段的忙闲（默认今天，无需输入姓名）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+my-free",
+	Product:       "calendar",
+	Description:   "查我自己在某时间段的忙闲（默认今天，无需输入姓名）",
 	Intent: "当你（或 AI agent）想知道『我自己什么时候有空/忙』、用于安排会议或回复邀约时使用；" +
 		"不用像 +free 那样传别人的姓名——内部自动解析当前用户的 userId，再查其忙闲时段。" +
 		"默认查今天（本地时区 00:00 到次日 00:00），也可用 --start/--end 指定 ISO8601 时间范围。" +
@@ -118,7 +120,8 @@ var MyFree = shortcut.Shortcut{
 			return apperrors.NewValidation("--end 必须晚于 --start")
 		}
 
-		// Step 3 — query and project busy slots (reuse freebusySlots).
+		// Step 3 — query and project busy slots. Unknown containers or malformed
+		// intervals fail closed rather than becoming a misleading empty schedule.
 		data, err := rt.CallMCPData("calendar", "query_busy_status", map[string]any{
 			"startTime": startMillis,
 			"endTime":   endMillis,
@@ -127,12 +130,20 @@ var MyFree = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		busy := freebusySlots(data)
-		return rt.Output(map[string]any{
-			"userId": userID,
-			"busy":   busy,
-			"free":   len(busy) == 0,
-		})
+		busy, err := freebusySlotsProject(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"user_id":              userID,
+			"busy":                 busy,
+			"free":                 len(busy) == 0,
+			"busy_coverage_known":  false,
+			"response_entry_count": len(freebusyEntries(data)),
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(busy))}),
+		))
 	},
 }
 

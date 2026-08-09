@@ -21,6 +21,7 @@ import (
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -32,10 +33,11 @@ import (
 //
 //	dws calendar +free --who 张三 --start "2026-03-10T14:00:00+08:00" --end "2026-03-10T18:00:00+08:00"
 var FreeBusy = shortcut.Shortcut{
-	Service:     "calendar",
-	Command:     "+free",
-	Product:     "calendar",
-	Description: "按姓名查询某人在指定时间段内的忙闲状态（自动解析 userId）",
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "calendar",
+	Command:       "+free",
+	Product:       "calendar",
+	Description:   "按姓名查询某人在指定时间段内的忙闲状态（自动解析 userId）",
 	Intent: "当你只知道对方姓名、想知道 TA 在某段时间内是空闲还是被日程占用（比如约会前先看看有没有空）而不想先手动查 userId 时使用；" +
 		"内部先按姓名搜通讯录解析出唯一 userId，姓名匹配到多人时会列出候选让你区分，再按时间范围查询忙闲。只读，不产生任何日程变更。",
 	Risk: shortcut.RiskRead,
@@ -102,53 +104,103 @@ var FreeBusy = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		busy := freebusySlots(data)
-		return rt.Output(map[string]any{
-			"who":    user.name,
-			"userId": user.userID,
-			"busy":   busy,
-			"free":   len(busy) == 0,
-		})
+		busy, err := freebusySlotsProject(data)
+		if err != nil {
+			return err
+		}
+		payload := map[string]any{
+			"who":                  user.name,
+			"user_id":              user.userID,
+			"busy":                 busy,
+			"free":                 len(busy) == 0,
+			"busy_coverage_known":  false,
+			"response_entry_count": len(freebusyEntries(data)),
+		}
+		return rt.OutputResult(payload, output.Success(payload,
+			output.WithMeta(&output.Meta{Count: output.NewCount(len(busy))}),
+		))
 	},
 }
 
-// freebusySlots flattens a query_busy_status response (result[] → scheduleItems[]
-// → {start,end}.dateTime) into a flat list of {start,end} busy slots.
-func freebusySlots(data map[string]any) []map[string]any {
-	out := []map[string]any{}
-	entries, _ := data["result"].([]any)
-	for _, e := range entries {
-		em, ok := e.(map[string]any)
+// freebusySlotsProject flattens query_busy_status result[].scheduleItems[].
+// Only an explicit empty list means no busy slots. Unknown or malformed data
+// must not be represented as a person being free.
+func freebusySlotsProject(data map[string]any) ([]map[string]any, error) {
+	entries, known := freebusyEntriesKnown(data)
+	if !known {
+		return nil, calendarEventProjectionUnknown("无法识别 query_busy_status 返回的结果列表容器")
+	}
+	out := make([]map[string]any, 0)
+	for _, rawEntry := range entries {
+		entry, ok := rawEntry.(map[string]any)
+		if !ok {
+			return nil, calendarEventProjectionUnknown("忙闲结果列表包含无法识别的条目")
+		}
+		rawItems, exists := entry["scheduleItems"]
+		if !exists {
+			return nil, calendarEventProjectionUnknown("忙闲结果条目缺少 scheduleItems")
+		}
+		items, ok := rawItems.([]any)
+		if !ok {
+			return nil, calendarEventProjectionUnknown("忙闲结果条目的 scheduleItems 不是数组")
+		}
+		for _, rawItem := range items {
+			item, ok := rawItem.(map[string]any)
+			if !ok {
+				return nil, calendarEventProjectionUnknown("忙闲时间段包含无法识别的条目")
+			}
+			start, startOK := freebusyDateTime(item["start"])
+			end, endOK := freebusyDateTime(item["end"])
+			if !startOK || !endOK {
+				return nil, calendarEventProjectionUnknown("忙闲时间段缺少可识别的开始或结束时间")
+			}
+			out = append(out, map[string]any{"start": start, "end": end})
+		}
+	}
+	return out, nil
+}
+
+func freebusyEntries(data map[string]any) []any {
+	entries, _ := freebusyEntriesKnown(data)
+	return entries
+}
+
+func freebusyEntriesKnown(data map[string]any) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	for _, scope := range calendarEventScopes(data) {
+		if entries, ok := scope.([]any); ok {
+			return entries, true
+		}
+		object, ok := scope.(map[string]any)
 		if !ok {
 			continue
 		}
-		items, _ := em["scheduleItems"].([]any)
-		for _, it := range items {
-			im, ok := it.(map[string]any)
-			if !ok {
-				continue
+		for _, key := range []string{"result", "busyStatus", "items", "list", "records"} {
+			if entries, ok := object[key].([]any); ok {
+				return entries, true
 			}
-			out = append(out, map[string]any{
-				"start": freebusyDateTime(im["start"]),
-				"end":   freebusyDateTime(im["end"]),
-			})
 		}
 	}
-	return out
+	return nil, false
 }
 
 // freebusyDateTime pulls the readable timestamp out of a {date,dateTime,timeZone}
 // object, falling back to the raw value.
-func freebusyDateTime(v any) any {
+func freebusyDateTime(v any) (any, bool) {
 	if m, ok := v.(map[string]any); ok {
-		if dt, ok := m["dateTime"]; ok && dt != nil {
-			return dt
+		if dt, ok := m["dateTime"].(string); ok && dt != "" {
+			return dt, true
 		}
-		if d, ok := m["date"]; ok && d != nil {
-			return d
+		if d, ok := m["date"].(string); ok && d != "" {
+			return d, true
 		}
 	}
-	return v
+	if value, ok := v.(string); ok && value != "" {
+		return value, true
+	}
+	return nil, false
 }
 
 // freebusyParseMillis parses an ISO8601 timestamp into epoch milliseconds,
