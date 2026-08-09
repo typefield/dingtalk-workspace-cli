@@ -144,6 +144,14 @@ func TestMyGroupsPromotableUnifiedPaginationOutcomes(t *testing.T) {
 		if pagination["endpoint_exhausted"] != true {
 			t.Fatalf("terminal pagination=%#v", pagination)
 		}
+		groups := data["groups"].([]any)
+		group := groups[0].(map[string]any)
+		if group["openConversationId"] != "g1" {
+			t.Fatalf("unified group handle=%#v, want openConversationId", group)
+		}
+		if _, legacyName := group["conversationId"]; legacyName {
+			t.Fatalf("unified group retained competing conversationId: %#v", group)
+		}
 	})
 
 	t.Run("later read failure keeps prior page as partial", func(t *testing.T) {

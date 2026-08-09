@@ -52,6 +52,11 @@ def source_checks() -> list[tuple[str, str, str]]:
             "PASS" if "TestMyGroupsPromotableUnifiedPaginationOutcomes" in test and 'envelope["contract_version"]' in test else "FAIL",
             "promotion probe 只用 `--format json`，检查 partial_failure/rc=7。",
         ),
+        (
+            "未来 active 群句柄与 IM 后续命令对齐",
+            "PASS" if "myGroupsUnifiedGroups" in declaration and 'group["openConversationId"]' in test else "FAIL",
+            "兼容期仍保留 legacy conversationId；统一候选只发布可直接传入 IM 后续命令的 openConversationId。",
+        ),
     ]
 
 

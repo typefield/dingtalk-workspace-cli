@@ -455,10 +455,11 @@ func myGroupsUnifiedResult(pageLedger *output.PageLedger, payload map[string]any
 	data := map[string]any{}
 	count := 0
 	if payload != nil {
-		for _, key := range []string{"groups", "count"} {
-			if value, ok := payload[key]; ok {
-				data[key] = value
-			}
+		if groups, ok := payload["groups"]; ok {
+			data["groups"] = myGroupsUnifiedGroups(groups)
+		}
+		if value, ok := payload["count"]; ok {
+			data["count"] = value
 		}
 		count, _ = payload["count"].(int)
 	}
@@ -470,6 +471,31 @@ func myGroupsUnifiedResult(pageLedger *output.PageLedger, payload map[string]any
 		options = append(options, output.WithDryRun())
 	}
 	return pageLedger.Result(data, options...)
+}
+
+// myGroupsUnifiedGroups keeps the compatibility payload untouched while
+// exposing the IM-wide canonical group handle in a future unified result.
+// Other chat readers use openConversationId as the value accepted by follow-up
+// commands; a bare display-oriented conversationId would keep two competing
+// machine contracts alive after promotion.
+func myGroupsUnifiedGroups(value any) any {
+	groups, ok := value.([]map[string]any)
+	if !ok {
+		return value
+	}
+	canonical := make([]map[string]any, 0, len(groups))
+	for _, group := range groups {
+		row := make(map[string]any, len(group))
+		for key, item := range group {
+			row[key] = item
+		}
+		if conversationID, ok := row["conversationId"]; ok {
+			row["openConversationId"] = conversationID
+			delete(row, "conversationId")
+		}
+		canonical = append(canonical, row)
+	}
+	return canonical
 }
 
 func myGroupsReadFailureInfo(err error) *output.ErrorInfo {
