@@ -19,6 +19,7 @@ import sys
 
 ROOT = Path(__file__).resolve().parents[2]
 SOURCE = ROOT / "internal/shortcut/smart/minutes_detail.go"
+TYPED_ERROR_HELPER = ROOT / "internal/shortcut/error_info.go"
 TEST_PATTERN = r"TestMinutesDetail(Result|PreservesTyped)"
 
 
@@ -28,11 +29,12 @@ def main() -> int:
     args = parser.parse_args()
 
     source = SOURCE.read_text(encoding="utf-8")
+    typed_error_helper = TYPED_ERROR_HELPER.read_text(encoding="utf-8")
     active = "OutputRollout: output.RolloutUnifiedActive" in source
-    typed_projection = all(
-        token in source
+    typed_projection = "shortcut.PreserveTypedErrorInfo(info, err)" in source and all(
+        token in typed_error_helper
         for token in (
-            "stderrors.As(err, &typed)",
+            "func PreserveTypedErrorInfo",
             "typed.Category",
             "typed.StableSubtype",
             "typed.RetryableSet",

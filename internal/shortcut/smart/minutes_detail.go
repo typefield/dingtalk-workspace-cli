@@ -14,7 +14,6 @@
 package smart
 
 import (
-	stderrors "errors"
 	"fmt"
 	"strings"
 
@@ -225,55 +224,7 @@ func minutesArtifactFailureInfo(name string, err error) *output.ErrorInfo {
 	// lower layer.  A generic read error retains the conservative, safe-to-
 	// retry default above; a typed error is authoritative for its category,
 	// subtype and retry guidance.
-	var typed *apperrors.Error
-	if !stderrors.As(err, &typed) || typed == nil {
-		return info
-	}
-	if typed.Category == apperrors.CategoryPartial {
-		// A plain error cannot truthfully carry partial_failure.  Keep the
-		// framework's existing fail-closed internal category for this malformed
-		// lower-layer shape instead of leaking an invalid fifth error type.
-		info.Type = string(apperrors.CategoryInternal)
-	} else if typed.Category != "" {
-		info.Type = string(typed.Category)
-	}
-	if typed.StableSubtype != "" {
-		info.Subtype = typed.StableSubtype
-	} else {
-		info.Subtype = typed.Reason
-	}
-	if typed.Hint != "" {
-		info.Hint = typed.Hint
-	}
-	if len(typed.Actions) > 0 {
-		info.Actions = append([]string(nil), typed.Actions...)
-	}
-	if typed.RetryableSet {
-		info.Retryable = typed.Retryable
-	}
-	info.RetryAfterSeconds = typed.RetryAfterSeconds
-	if typed.ExecutionStarted != nil {
-		info.ExecutionStarted = typed.ExecutionStarted
-	}
-	if typed.Origin != "" {
-		info.Origin = typed.Origin
-	}
-	if typed.FailureStage != "" {
-		info.Stage = typed.FailureStage
-	}
-	if typed.Operation != "" {
-		info.Operation = typed.Operation
-	}
-	if typed.ServerKey != "" {
-		info.ServerKey = typed.ServerKey
-	}
-	if len(typed.Details) > 0 {
-		info.Details = make(map[string]any, len(typed.Details))
-		for key, value := range typed.Details {
-			info.Details[key] = value
-		}
-	}
-	return info
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 // minutesArtifactTools maps the user-facing artifact name to the real MCP tool

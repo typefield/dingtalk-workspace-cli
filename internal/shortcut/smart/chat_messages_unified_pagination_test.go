@@ -21,6 +21,7 @@ import (
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	frameworkoutput "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	shortcutcore "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
@@ -163,6 +164,39 @@ func TestChatMessagesUnifiedPaginationOutcomes(t *testing.T) {
 		data, _ := envelope["data"].(map[string]any)
 		if len(data["succeeded"].([]any)) != 1 || len(data["failed"].([]any)) != 1 {
 			t.Fatalf("partial details=%#v", data)
+		}
+	})
+
+	t.Run("later typed read failure preserves recovery guidance", func(t *testing.T) {
+		denied := apperrors.NewAuth("需要重新登录",
+			apperrors.WithSubtype(apperrors.SubtypeUpstreamAuthenticationRequired),
+			apperrors.WithHint("重新登录后从失败页继续读取。"),
+			apperrors.WithActions("dws login"),
+			apperrors.WithRetryable(false),
+			apperrors.WithOperation("chat/list_messages"),
+		)
+		envelope, exitCode := runChatMessagesUnifiedResult(t, &chatMessagesPagingCaller{
+			responses: []string{`{"result":{"hasMore":true,"nextCursor":1786022919361,"messages":[{"openMessageId":"m1","createTime":"2026-08-06 21:28:39"}]}}`},
+			failAt:    2,
+			failErr:   denied,
+		}, baseArgs...)
+		if exitCode != 7 || envelope["outcome"] != "partial_failure" {
+			t.Fatalf("typed partial envelope=%#v exit=%d", envelope, exitCode)
+		}
+		data, _ := envelope["data"].(map[string]any)
+		failed, _ := data["failed"].([]any)
+		if len(failed) != 1 {
+			t.Fatalf("typed partial data=%#v", data)
+		}
+		info, _ := failed[0].(map[string]any)["error"].(map[string]any)
+		if info["type"] != "auth" || info["subtype"] != string(apperrors.SubtypeUpstreamAuthenticationRequired) {
+			t.Fatalf("typed read error=%#v", info)
+		}
+		if _, present := info["retryable"]; present {
+			t.Fatalf("typed retryable=false must not become retryable=true: %#v", info)
+		}
+		if info["hint"] != "重新登录后从失败页继续读取。" || info["operation"] != "chat/list_messages" {
+			t.Fatalf("typed recovery guidance=%#v", info)
 		}
 	})
 

@@ -1154,7 +1154,7 @@ func chatMessagesReadFailureInfo(request chatMessagesRequest, err error) *output
 		message = err.Error()
 	}
 	started := true
-	return &output.ErrorInfo{
+	info := &output.ErrorInfo{
 		Type:             "api",
 		Message:          message,
 		Hint:             "从失败页边界继续；不要重放已经成功的页面",
@@ -1164,6 +1164,7 @@ func chatMessagesReadFailureInfo(request chatMessagesRequest, err error) *output
 		ExecutionStarted: &started,
 		Retryable:        true, // idempotent read
 	}
+	return shortcut.PreserveTypedErrorInfo(info, err)
 }
 
 func chatMessagesPaginationFailureInfo(request chatMessagesRequest, message string) *output.ErrorInfo {

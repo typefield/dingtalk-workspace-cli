@@ -106,6 +106,7 @@ type chatMessagesPagingCaller struct {
 	responses []string
 	args      []map[string]any
 	failAt    int
+	failErr   error
 }
 
 type chatMessagesFailWriter struct{}
@@ -193,6 +194,9 @@ func (c *chatMessagesPagingCaller) CallTool(
 	c.args = append(c.args, copied)
 	index := len(c.args) - 1
 	if c.failAt > 0 && len(c.args) == c.failAt {
+		if c.failErr != nil {
+			return nil, c.failErr
+		}
 		return nil, stderrors.New("fixture read failure")
 	}
 	if index >= len(c.responses) {

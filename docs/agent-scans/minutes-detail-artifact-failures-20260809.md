@@ -1,6 +1,6 @@
 # Minutes 详情 artifact 失败语义 — Agent review
 
-扫描时间：2026-08-09T16:59:16+08:00
+扫描时间：2026-08-09T17:07:55+08:00
 
 > 本扫描由 Agent 在当前工作树运行。它结合源码关系与内存 Go 测试生成 Markdown 证据；不是 CI / policy gate，也不保存服务端响应或 JSON fixture。
 
@@ -30,5 +30,5 @@
 === RUN   TestMinutesDetailPreservesTypedArtifactFailureGuidance
 --- PASS: TestMinutesDetailPreservesTypedArtifactFailureGuidance (0.00s)
 PASS
-ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/smart	0.371s
+ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/smart	0.400s
 ```
