@@ -146,6 +146,14 @@ dws agoal report submit-detail --template-id TPL_ID --submit-state LATE --query-
 # 目标模板
 dws agoal obj-template list --format json
 dws agoal obj-template list --keyword "业绩" --format json
+
+`obj-template list` 直接返回统一 `ok/outcome/data/meta`。从
+`data.templates[].templateId` 取得稳定模板 ID；当前页数量在 `meta.count`，未到末页时按
+`meta.pagination.next_token` 继续传给 `--page`。只有
+`meta.pagination.endpoint_exhausted:true` 才表示这个分页 endpoint 已耗尽；
+`data.authoritativeInventory:false` 与 `data.inventoryCoverageKnown:false` 表示它不是企业全部模板的权威目录。
+创建人和完整维度配置不进入摘要投影；覆盖更新前仍需通过已审阅详情能力取得完整配置，不能从列表摘要重建 `dimensions`。
+
 dws agoal obj-template create-or-update --title "业绩模板" --objective-weight --dimension-weight --dimensions '[...]' --format json
 dws agoal obj-template create-or-update --template-id TPL_ID --title "业绩模板" --dimensions '[...]' --format json
 ```
@@ -161,7 +169,7 @@ dws agoal obj-template create-or-update --template-id TPL_ID --title "业绩模�
 | `scorecard detail` | `scId`、`entityId` | `scorecard entity-detail` / `scorecard update` 的 `--id` |
 | `user rules` | `ruleId`、`periodIds` | `user objectives` 的 `--rule-id` `--period-ids` |
 | `report list-statistics` | `data.reports[].templateId` | `report submit-detail` 的 `--template-id` |
-| `obj-template list` | `templateId` | `obj-template create-or-update` 的 `--template-id`（更新时） |
+| `obj-template list` | `data.templates[].templateId` | `obj-template create-or-update` 的 `--template-id`（更新时） |
 
 ## 注意事项
 

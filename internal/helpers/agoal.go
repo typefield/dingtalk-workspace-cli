@@ -625,7 +625,7 @@ scopeType 支持:
 	objTemplateListCmd.Flags().Int("page-size", 0, "每页数量，默认 10 (可选)")
 	objTemplateListCmd.Flags().String("keyword", "", "搜索关键词 (可选)")
 	DeclareLeafMetadata(objTemplateListCmd, LeafSpec{
-		OutputRollout: output.RolloutDualValidate,
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",

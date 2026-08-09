@@ -113,8 +113,8 @@ def main() -> int:
 
             if args.live:
                 pages: list[dict[str, Any]] = []
-                live_ok = True
-                for page_number in (1, 2):
+
+                def fetch_page(page_number: int) -> dict[str, Any]:
                     live = run([str(binary), "agoal", "obj-template", "list", "--page", str(page_number), "--page-size", "20", "--format", "json"], env)
                     payload = parse_object(live.stdout)
                     page_fact: dict[str, Any] = {"rc": live.returncode, "stderr_empty": not live.stderr.strip()}
@@ -129,36 +129,57 @@ def main() -> int:
                         rows = content.get("result")
                         legacy_stable = isinstance(rows, list) and all(isinstance(row, dict) and isinstance(row.get("id"), str) and bool(row["id"].strip()) for row in rows)
                         page_fact.update({"rows": rows, "content": content, "payload": payload, "legacy_stable": legacy_stable})
-                    pages.append(page_fact)
+                    return page_fact
+
+                first = fetch_page(1)
+                pages.append(first)
+                if args.phase == "active":
+                    first_data = first.get("data") if isinstance(first.get("data"), dict) else {}
+                    total = first_data.get("totalCount")
+                else:
+                    first_content = first.get("content") if isinstance(first.get("content"), dict) else {}
+                    total = first_content.get("totalCount")
+                last_page_number = max(1, (total + 19) // 20) if isinstance(total, int) and not isinstance(total, bool) and total >= 0 else 1
+                if last_page_number > 1:
+                    pages.append(fetch_page(last_page_number))
 
                 if args.phase == "active":
-                    first, second = pages
-                    first_data, second_data = first["data"], second["data"]
-                    first_meta, second_meta = first["meta"], second["meta"]
-                    first_page, second_page = first["pagination"], second["pagination"]
+                    last = pages[-1]
+                    first_data, last_data = first["data"], last["data"]
+                    first_meta, last_meta = first["meta"], last["meta"]
+                    first_page, last_page = first["pagination"], last["pagination"]
+                    expected_first_count = min(20, total) if isinstance(total, int) and total >= 0 else -1
+                    expected_last_count = total - ((last_page_number - 1) * 20) if isinstance(total, int) and total >= 0 else -1
+                    first_is_terminal = last_page_number == 1
                     live_ok = (
                         all(page["rc"] == 0 and page["stderr_empty"] and stable_templates(page["rows"]) for page in pages)
                         and all(isinstance(page["payload"], dict) and "contract_version" not in page["payload"] and page["payload"].get("ok") is True and page["payload"].get("outcome") == "success" for page in pages)
-                        and len(first["rows"]) == 20 and len(second["rows"]) == 15
-                        and first_data.get("totalCount") == 35 and second_data.get("totalCount") == 35
+                        and len(first["rows"]) == expected_first_count and len(last["rows"]) == expected_last_count
+                        and first_data.get("totalCount") == total and last_data.get("totalCount") == total
                         and first_data.get("authoritativeInventory") is False and first_data.get("inventoryCoverageKnown") is False
-                        and first_meta.get("count") == 20 and second_meta.get("count") == 15
-                        and first_page.get("endpoint_exhausted") is False and first_page.get("next_token") == "2"
-                        and second_page.get("endpoint_exhausted") is True and "next_token" not in second_page
+                        and last_data.get("authoritativeInventory") is False and last_data.get("inventoryCoverageKnown") is False
+                        and first_meta.get("count") == expected_first_count and last_meta.get("count") == expected_last_count
+                        and first_page.get("endpoint_exhausted") is first_is_terminal
+                        and ((first_is_terminal and "next_token" not in first_page) or (not first_is_terminal and first_page.get("next_token") == "2"))
+                        and last_page.get("endpoint_exhausted") is True and "next_token" not in last_page
                     )
                 else:
-                    first, second = pages
-                    first_content, second_content = first["content"], second["content"]
+                    last = pages[-1]
+                    first_content, last_content = first["content"], last["content"]
+                    expected_first_count = min(20, total) if isinstance(total, int) and total >= 0 else -1
+                    expected_last_count = total - ((last_page_number - 1) * 20) if isinstance(total, int) and total >= 0 else -1
                     live_ok = (
                         all(page["rc"] == 0 and page["stderr_empty"] and page["legacy_stable"] for page in pages)
                         and all(isinstance(page["payload"], dict) and page["payload"].get("success") is True and "ok" not in page["payload"] for page in pages)
-                        and len(first["rows"]) == 20 and len(second["rows"]) == 15
-                        and first_content.get("page") == 1 and second_content.get("page") == 2
-                        and first_content.get("pageSize") == 20 and second_content.get("pageSize") == 20
-                        and first_content.get("totalCount") == 35 and second_content.get("totalCount") == 35
+                        and len(first["rows"]) == expected_first_count and len(last["rows"]) == expected_last_count
+                        and first_content.get("page") == 1 and last_content.get("page") == last_page_number
+                        and first_content.get("pageSize") == 20 and last_content.get("pageSize") == 20
+                        and first_content.get("totalCount") == total and last_content.get("totalCount") == total
                     )
-                label = "真实两页统一分页投影" if args.phase == "active" else "真实两页 dual legacy 输出"
-                checks.append((label, live_ok, "pages=2, items=20+15, total=35, stable_ids=yes" if live_ok else "shape mismatch"))
+                label = "真实首末页统一分页投影" if args.phase == "active" else "真实首末页 dual legacy 输出"
+                observed_counts = "+".join(str(len(page["rows"])) for page in pages if isinstance(page.get("rows"), list))
+                evidence = f"last_page={last_page_number}, sampled_items={observed_counts}, total={total}, stable_ids=yes"
+                checks.append((label, live_ok, evidence if live_ok else "shape mismatch"))
                 if not live_ok:
                     findings.append(f"live Agoal obj-template list did not match the reviewed {args.phase} shape")
             else:
@@ -170,7 +191,7 @@ def main() -> int:
         "",
         f"扫描日期：{date.today().isoformat()}",
         "",
-        "> Agent 从当前源码临时构建并审阅 Help、Runtime Schema 与可选真实两页响应；模板 ID、标题、创建人、维度内容和原始 JSON 只在内存中处理，不写入本报告，也不接入 CI / policy。",
+        "> Agent 从当前源码临时构建并审阅 Help、Runtime Schema 与可选真实首末页响应；模板 ID、标题、创建人、维度内容和原始 JSON 只在内存中处理，不写入本报告，也不接入 CI / policy。",
         "",
         f"## Result: {'PASS' if passed else 'REVIEW'}",
         "",
