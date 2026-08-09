@@ -18,21 +18,25 @@
 package contact
 
 import (
+	"strings"
+
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
 // GetSelf 获取当前登录用户信息（我是谁 / 本人）。
 // ListFollowings 获取当前用户的特别关注列表。
 var ListFollowings = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+list-followings",
-	Product:     "contact",
-	Description: "获取当前用户的特别关注列表",
-	Intent:      "当你想查看本人在通讯录里「特别关注」的联系人名单（例如常打交道的同事、上级）时使用；无需输入，返回关注对象的用户列表，可用于快速定位这些人的 userId 再发消息或排日程。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+list-followings",
+	Product:       "contact",
+	Description:   "获取当前用户的特别关注列表",
+	Intent:        "当你想查看本人在通讯录里「特别关注」的联系人名单（例如常打交道的同事、上级）时使用；无需输入，返回关注对象的用户列表，可用于快速定位这些人的 userId 再发消息或排日程。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -68,53 +72,50 @@ var ListFollowings = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		followings := listFollowingsProject(data)
-		return rt.Output(map[string]any{"count": len(followings), "followings": followings})
+		followings, err := listFollowingsProject(data)
+		if err != nil {
+			return err
+		}
+		return contactListOutput(rt, "followings", followings)
 	},
 }
 
 // listFollowingsProject reshapes a list_my_followings response into a clean
 // list, unwrapping the result.models container the gateway uses.
-func listFollowingsProject(data map[string]any) []map[string]any {
-	var raw []any
-	if res, ok := data["result"].(map[string]any); ok {
-		raw, _ = res["models"].([]any)
-	}
-	if raw == nil {
-		for _, k := range []string{"models", "list", "items"} {
-			if arr, ok := data[k].([]any); ok {
-				raw = arr
-				break
-			}
-		}
+func listFollowingsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := contactResolveList(data, "models", "list", "items", "followings")
+	if !known {
+		return nil, contactProjectionUnknown("特别关注列表响应缺少可识别的列表容器")
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, it := range raw {
 		m, ok := it.(map[string]any)
 		if !ok {
-			continue
+			return nil, contactProjectionUnknown("特别关注列表包含无法识别的条目")
 		}
 		row := map[string]any{}
+		if !contactHasStablePersonID(m) {
+			return nil, contactProjectionUnknown("特别关注条目缺少可用于后续操作的稳定用户标识")
+		}
 		for _, k := range []string{"openDingTalkId", "openDingtalkId", "userId", "name"} {
 			if v, ok := m[k]; ok && v != nil {
 				row[k] = v
 			}
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // SearchUser 按关键词搜索通讯录用户。
 var SearchUser = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+search-user",
-	Product:     "contact",
-	Description: "按关键词搜索通讯录用户",
-	Intent:      "当你只知道某人的姓名、花名或部分名字，需要把它解析成 userId 及部门等信息以便后续发消息、排日程或指派任务时使用；输入搜索关键词（--query），返回匹配的用户列表。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+search-user",
+	Product:       "contact",
+	Description:   "按关键词搜索通讯录用户",
+	Intent:        "当你只知道某人的姓名、花名或部分名字，需要把它解析成 userId 及部门等信息以便后续发消息、排日程或指派任务时使用；输入搜索关键词（--query），返回匹配的用户列表。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -153,8 +154,11 @@ var SearchUser = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		users := searchUserProject(data)
-		return rt.Output(map[string]any{"count": len(users), "users": users})
+		users, err := searchUserProject(data)
+		if err != nil {
+			return err
+		}
+		return contactListOutput(rt, "users", users)
 	},
 }
 
@@ -162,38 +166,40 @@ var SearchUser = shortcut.Shortcut{
 // clean, stable user list (name/userId/flowerName/openDingTalkId/title) — the
 // the clean output projection applied to every list command.
 // Field names are probed defensively across candidate keys.
-func searchUserProject(data map[string]any) []map[string]any {
-	raw, ok := data["result"].([]any)
-	if !ok {
-		return []map[string]any{}
+func searchUserProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := contactResolveList(data, "users", "userList", "list", "items")
+	if !known {
+		return nil, contactProjectionUnknown("通讯录用户搜索响应缺少可识别的列表容器")
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, contactProjectionUnknown("通讯录用户搜索结果包含无法识别的条目")
 		}
 		row := map[string]any{}
+		if !contactHasStablePersonID(m) {
+			return nil, contactProjectionUnknown("通讯录用户搜索结果缺少可用于后续操作的稳定用户标识")
+		}
 		for _, k := range []string{"name", "userId", "flowerName", "openDingTalkId", "title"} {
 			if v, ok := m[k]; ok {
 				row[k] = v
 			}
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
 // SearchMobile 按手机号搜索通讯录用户。
 var SearchMobile = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+search-mobile",
-	Product:     "contact",
-	Description: "按手机号搜索通讯录用户",
-	Intent:      "当你手里只有某人的手机号、需要反查出对应的通讯录用户和 userId 时使用；输入手机号（--mobile），返回该手机号所属的用户信息，适合从电话或名片信息定位到具体员工。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+search-mobile",
+	Product:       "contact",
+	Description:   "按手机号搜索通讯录用户",
+	Intent:        "当你手里只有某人的手机号、需要反查出对应的通讯录用户和 userId 时使用；输入手机号（--mobile），返回该手机号所属的用户信息，适合从电话或名片信息定位到具体员工。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -232,8 +238,11 @@ var SearchMobile = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		users := searchUserProject(data)
-		return rt.Output(map[string]any{"count": len(users), "users": users})
+		users, err := searchUserProject(data)
+		if err != nil {
+			return err
+		}
+		return contactListOutput(rt, "users", users)
 	},
 }
 
@@ -543,12 +552,13 @@ func memberListFirst(m map[string]any, keys ...string) any {
 // SearchDept 按关键词搜索部门。
 // ListSubDepts 查看指定部门的子部门。
 var ListSubDepts = shortcut.Shortcut{
-	Service:     "contact",
-	Command:     "+list-sub-depts",
-	Product:     "contact",
-	Description: "查看指定部门的子部门",
-	Intent:      "当你想逐层浏览组织架构、查看某个部门下一级的子部门时使用；输入父部门 ID（--dept，根部门为 1），返回其直属子部门列表，可用于自顶向下遍历部门树。",
-	Risk:        shortcut.RiskRead,
+	OutputRollout: output.RolloutUnifiedActive,
+	Service:       "contact",
+	Command:       "+list-sub-depts",
+	Product:       "contact",
+	Description:   "查看指定部门的子部门",
+	Intent:        "当你想逐层浏览组织架构、查看某个部门下一级的子部门时使用；输入父部门 ID（--dept，根部门为 1），返回其直属子部门列表，可用于自顶向下遍历部门树。",
+	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
 		Confirmation: "not_required", Idempotency: "idempotent",
@@ -587,62 +597,67 @@ var ListSubDepts = shortcut.Shortcut{
 		if err != nil {
 			return err
 		}
-		depts := listSubDeptsProject(data)
-		return rt.Output(map[string]any{"count": len(depts), "depts": depts})
+		depts, err := listSubDeptsProject(data)
+		if err != nil {
+			return err
+		}
+		return contactListOutput(rt, "depts", depts)
 	},
 }
 
 // listSubDeptsProject reshapes get_sub_depts_by_dept_id into a clean
 // {deptId, deptName} list — clean output projection. Both the list
 // container and the per-item field names are probed defensively across
-// candidate keys, so an empty/unknown shape yields an empty list rather than a
-// crash or fabricated data.
-func listSubDeptsProject(data map[string]any) []map[string]any {
-	if data == nil {
-		return []map[string]any{}
-	}
-	// Locate the list container: it may sit at the top level or be nested one
-	// level under a common envelope key.
-	raw := listSubDeptsFindList(data)
-	if raw == nil {
-		for _, container := range []string{"result", "data"} {
-			if inner, ok := data[container].(map[string]any); ok {
-				if r := listSubDeptsFindList(inner); r != nil {
-					raw = r
-					break
-				}
-			}
-		}
+// candidate keys. A missing list, malformed child, or non-targetable child is
+// a projection error, never a fabricated empty department list.
+func listSubDeptsProject(data map[string]any) ([]map[string]any, error) {
+	raw, known := contactResolveList(data, "depts", "deptList", "list", "items")
+	if !known {
+		return nil, contactProjectionUnknown("子部门列表响应缺少可识别的列表容器")
 	}
 	out := make([]map[string]any, 0, len(raw))
 	for _, item := range raw {
 		m, ok := item.(map[string]any)
 		if !ok {
-			continue
+			return nil, contactProjectionUnknown("子部门列表包含无法识别的条目")
 		}
 		row := map[string]any{}
-		if v := listSubDeptsFirst(m, "deptId", "dept_id", "id"); v != nil {
-			row["deptId"] = v
+		if deptID, ok := contactStableDeptID(m, "deptId", "dept_id", "id"); ok {
+			row["deptId"] = deptID
+		} else {
+			return nil, contactProjectionUnknown("子部门列表条目缺少可用于后续操作的稳定 deptId")
 		}
 		if v := listSubDeptsFirst(m, "deptName", "dept_name", "name"); v != nil {
 			row["deptName"] = v
 		}
-		if len(row) > 0 {
-			out = append(out, row)
-		}
+		out = append(out, row)
 	}
-	return out
+	return out, nil
 }
 
-// listSubDeptsFindList returns the first slice found under the common list
-// container keys, or nil when none is present.
-func listSubDeptsFindList(m map[string]any) []any {
-	for _, k := range []string{"result", "data", "list", "items"} {
-		if arr, ok := m[k].([]any); ok {
-			return arr
+func contactResolveList(data map[string]any, keys ...string) ([]any, bool) {
+	if data == nil {
+		return nil, false
+	}
+	containers := []map[string]any{data}
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := data[key].(map[string]any); ok {
+			containers = append(containers, inner)
 		}
 	}
-	return nil
+	for _, container := range containers {
+		for _, key := range keys {
+			if items, ok := container[key].([]any); ok {
+				return items, true
+			}
+		}
+	}
+	for _, key := range []string{"result", "data"} {
+		if items, ok := data[key].([]any); ok {
+			return items, true
+		}
+	}
+	return nil, false
 }
 
 // listSubDeptsFirst returns the value of the first present key among keys.
@@ -653,6 +668,56 @@ func listSubDeptsFirst(m map[string]any, keys ...string) any {
 		}
 	}
 	return nil
+}
+
+func contactHasStablePersonID(m map[string]any) bool {
+	for _, key := range []string{"userId", "user_id", "openDingTalkId", "openDingtalkId", "open_dingtalk_id"} {
+		value, ok := m[key]
+		if !ok {
+			continue
+		}
+		id, ok := value.(string)
+		if ok && strings.TrimSpace(id) != "" {
+			return true
+		}
+	}
+	return false
+}
+
+// contactStableDeptID preserves the service's integer department identity as
+// well as string forms. A numeric dept ID is a valid downstream --dept value;
+// unlike a display name it must not be discarded simply for not being a string.
+func contactStableDeptID(m map[string]any, keys ...string) (any, bool) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok || value == nil {
+			continue
+		}
+		switch id := value.(type) {
+		case string:
+			if strings.TrimSpace(id) != "" {
+				return id, true
+			}
+		case int, int32, int64, uint, uint32, uint64, float32, float64:
+			return id, true
+		}
+	}
+	return nil, false
+}
+
+func contactListOutput(rt *shortcut.RuntimeContext, key string, rows []map[string]any) error {
+	payload := map[string]any{"count": len(rows), key: rows}
+	return rt.OutputResult(payload, output.Success(payload,
+		output.WithMeta(&output.Meta{Count: output.NewCount(len(rows))}),
+	))
+}
+
+func contactProjectionUnknown(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
 }
 
 // GetDept 获取部门详情（部门 ID、名称、人数）。

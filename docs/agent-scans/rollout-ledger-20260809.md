@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:11:58+08:00
+扫描时间：2026-08-09T12:17:59+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1359 |
+| `legacy_only` | 1355 |
 | `dual_validate` | 24 |
-| `unified_active` | 100 |
+| `unified_active` | 104 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,12 +22,10 @@
 
 ### 状态迁移
 
-- REVIEW: `dws oa +list-cc`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws oa +list-executed`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws oa +list-forms`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws oa +list-pending`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws oa +list-submitted`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-- REVIEW: `dws oa +search-forms`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +list-followings`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +list-sub-depts`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +search-mobile`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
+- REVIEW: `dws contact +search-user`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
 
 ### 新增可执行命令节点
 
@@ -726,17 +724,17 @@
 | `dws contact +dept-members` | `legacy_only` | `legacy` | no |
 | `dws contact +get-roster` | `legacy_only` | `legacy` | yes |
 | `dws contact +list-dept-members` | `legacy_only` | `legacy` | no |
-| `dws contact +list-followings` | `legacy_only` | `legacy` | no |
+| `dws contact +list-followings` | `unified_active` | `unified` | no |
 | `dws contact +list-role-members` | `legacy_only` | `legacy` | no |
 | `dws contact +list-roles` | `legacy_only` | `legacy` | no |
 | `dws contact +list-roster-fields` | `legacy_only` | `legacy` | yes |
-| `dws contact +list-sub-depts` | `legacy_only` | `legacy` | no |
+| `dws contact +list-sub-depts` | `unified_active` | `unified` | no |
 | `dws contact +lookup` | `legacy_only` | `legacy` | no |
 | `dws contact +me` | `legacy_only` | `legacy` | no |
 | `dws contact +org` | `legacy_only` | `legacy` | no |
 | `dws contact +resolve-dept` | `legacy_only` | `legacy` | no |
-| `dws contact +search-mobile` | `legacy_only` | `legacy` | no |
-| `dws contact +search-user` | `legacy_only` | `legacy` | no |
+| `dws contact +search-mobile` | `unified_active` | `unified` | no |
+| `dws contact +search-user` | `unified_active` | `unified` | no |
 | `dws contact +team` | `legacy_only` | `legacy` | no |
 | `dws contact account` | `legacy_only` | `legacy` | no |
 | `dws contact account create` | `legacy_only` | `legacy` | no |
