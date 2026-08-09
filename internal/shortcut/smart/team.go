@@ -41,7 +41,7 @@ import (
 //
 //	dws contact +team --name 张三
 var Team = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "contact",
 	Command:       "+team",
 	Product:       "contact",
