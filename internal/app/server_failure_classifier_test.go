@@ -60,6 +60,38 @@ func TestCrossPlatformCoverageServerFailureClassifierBackendMetadataUnavailable(
 	}
 }
 
+func TestCrossPlatformCoverageServerFailureClassifierAmbiguousNetworkFailureDoesNotPermitReplay(t *testing.T) {
+	retryable := true
+	err := newServerFailureAPIError(
+		"business error: response lost after tool dispatch",
+		"business_error",
+		"check parameters",
+		"im",
+		apperrors.ServerDiagnostics{
+			TraceID:         "trace-ambiguous-write",
+			ServerErrorCode: "NETWORK_ERROR",
+			TechnicalDetail: "connection refused while the tool result was being relayed",
+			ServerRetryable: &retryable,
+		},
+	)
+	var typed *apperrors.Error
+	if !errors.As(err, &typed) {
+		t.Fatalf("error = %T, want *errors.Error", err)
+	}
+	if typed.Reason != string(apperrors.SubtypeBackendDependencyUnavailable) || typed.FailureStage != "backend_dependency" {
+		t.Fatalf("classification = reason %q stage %q", typed.Reason, typed.FailureStage)
+	}
+	if typed.RetryableSet || typed.Retryable {
+		t.Fatalf("ambiguous network error advertised safe replay: %#v", typed)
+	}
+	if typed.Details["server_retryable"] != true {
+		t.Fatalf("server retryability must remain diagnostic only: %#v", typed.Details)
+	}
+	if !strings.Contains(typed.Hint, "先核对目标状态") || !strings.Contains(strings.Join(typed.Actions, " "), "避免重复写入") {
+		t.Fatalf("ambiguous recovery guidance = hint:%q actions:%#v", typed.Hint, typed.Actions)
+	}
+}
+
 func TestCrossPlatformCoverageServerFailureClassifierRequiredConversationID(t *testing.T) {
 	err := newServerFailureAPIError(
 		"openCid or cid is required",

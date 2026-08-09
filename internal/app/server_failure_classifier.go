@@ -20,12 +20,13 @@ import (
 )
 
 type serverFailureClass struct {
-	message string
-	subtype apperrors.Subtype
-	origin  string
-	stage   string
-	hint    string
-	actions []string
+	message      string
+	subtype      apperrors.Subtype
+	origin       string
+	stage        string
+	hint         string
+	actions      []string
+	safeToReplay bool
 }
 
 func classifyServerFailure(message string, diag apperrors.ServerDiagnostics) (serverFailureClass, bool) {
@@ -41,15 +42,21 @@ func classifyServerFailure(message string, diag apperrors.ServerDiagnostics) (se
 			subtype: apperrors.SubtypeBackendDependencyUnavailable,
 			origin:  "mcp_gateway",
 			stage:   "backend_dependency",
-			hint:    "请求参数无需修改；请使用相同参数稍后重试。持续失败时请提供 Trace ID 排查 MCP 服务。",
+			hint:    "请求可能已到达后端；先核对目标状态。只有确认无副作用的读取才可使用相同参数重试。持续失败时请提供 Trace ID 排查 MCP 服务。",
 			actions: []string{
-				"使用相同参数重试一次",
+				"先核对目标状态，避免重复写入",
 				"持续失败时保留 Trace ID 并排查 MCP 后端依赖",
 			},
 		}
 		if strings.Contains(detail, "querytoolmeta") {
 			classified.message = "MCP 后端元数据服务暂时不可用"
 			classified.stage = "tool_metadata_lookup"
+			classified.hint = "业务工具尚未执行；请求参数无需修改，可使用相同参数稍后重试。持续失败时请提供 Trace ID 排查 MCP 元数据服务。"
+			classified.actions = []string{
+				"使用相同参数重试一次",
+				"持续失败时保留 Trace ID 并排查 MCP 元数据服务",
+			}
+			classified.safeToReplay = true
 		}
 		return classified, true
 	}
@@ -82,7 +89,7 @@ func newServerFailureAPIError(
 	// unless the reviewed backend-dependency class explicitly accepts service
 	// retry guidance.
 	recoveryDiag := diag
-	if diag.ServerRetryable != nil && (!classifiedOK || classified.subtype != apperrors.SubtypeBackendDependencyUnavailable) {
+	if diag.ServerRetryable != nil && (!classifiedOK || !classified.safeToReplay) {
 		recoveryDiag.ServerRetryable = nil
 	}
 	opts := []apperrors.Option{
