@@ -72,16 +72,15 @@ func TestListSheetsProjectSupportsNestedKnownContainer(t *testing.T) {
 	}
 }
 
-func TestListSheetsUsesUnifiedOutput(t *testing.T) {
-	if ListSheets.OutputRollout != output.RolloutUnifiedActive {
-		t.Fatalf("list-sheets rollout = %q, want unified active", ListSheets.OutputRollout)
+func TestListSheetsDualValidationPreservesLegacyOutput(t *testing.T) {
+	if ListSheets.OutputRollout != output.RolloutDualValidate {
+		t.Fatalf("list-sheets rollout = %q, want dual validation", ListSheets.OutputRollout)
 	}
 	caller := &sheetListCaller{}
 	helpers.InitDeps(caller)
 	cmd := corecmd.New(shortcut.FromShortcut(ListSheets))
 	cmd.PersistentFlags().String("format", "json", "")
-	ctx, _ := output.WithResultStore(context.Background())
-	cmd.SetContext(ctx)
+	cmd.SetContext(context.Background())
 	var stdout bytes.Buffer
 	cmd.SetOut(&stdout)
 	cmd.SetErr(&bytes.Buffer{})
@@ -89,29 +88,21 @@ func TestListSheetsUsesUnifiedOutput(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
-	exitCode, emitted, err := output.EmitStoredResult(cmd)
-	if err != nil || !emitted || exitCode != 0 {
-		t.Fatalf("emit: code=%d emitted=%v err=%v", exitCode, emitted, err)
-	}
 	if caller.product != "sheet" || caller.tool != "get_all_sheets" {
 		t.Fatalf("route = %s/%s", caller.product, caller.tool)
 	}
-	var envelope map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+	var payload map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &payload); err != nil {
 		t.Fatalf("decode output: %v\n%s", err, stdout.String())
 	}
-	if envelope["ok"] != true || envelope["outcome"] != "success" {
-		t.Fatalf("envelope = %#v", envelope)
+	if _, changed := payload["ok"]; changed {
+		t.Fatalf("dual validation changed the external legacy wire: %#v", payload)
 	}
-	if _, leaked := envelope["contract_version"]; leaked {
-		t.Fatalf("result leaked removed version marker: %#v", envelope)
+	if _, changed := payload["outcome"]; changed {
+		t.Fatalf("dual validation changed the external legacy wire: %#v", payload)
 	}
-	data := envelope["data"].(map[string]any)
-	if data["count"] != float64(1) || len(data["sheets"].([]any)) != 1 {
-		t.Fatalf("data = %#v", data)
-	}
-	if envelope["meta"].(map[string]any)["count"] != float64(1) {
-		t.Fatalf("meta = %#v", envelope["meta"])
+	if payload["count"] != float64(1) || len(payload["sheets"].([]any)) != 1 {
+		t.Fatalf("legacy payload = %#v", payload)
 	}
 }
 

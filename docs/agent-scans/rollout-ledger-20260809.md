@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-09T12:25:10+08:00
+扫描时间：2026-08-09T14:50:56+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,8 +8,8 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1351 |
-| `dual_validate` | 24 |
+| `legacy_only` | 1350 |
+| `dual_validate` | 25 |
 | `unified_active` | 108 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
@@ -18,19 +18,9 @@
 
 ## Transition review
 
-基线：`rollout-ledger-20260809.md`（1483 条 runnable command node）。
+未提供基线；这是初始 inventory，后续发布应以本报告作为 --baseline。
 
-### 状态迁移
-
-- REVIEW: `dws sheet +list-sheets`: `legacy_only` → `unified_active` (output rollout transition legacy_only -> unified_active skips intermediate states)
-
-### 新增可执行命令节点
-
-无新增可执行命令节点。
-
-### 移除可执行命令节点
-
-无移除可执行命令节点。
+初始 inventory 不对状态迁移下结论；发布审阅必须补充兼容样本、观测窗口与回滚责任人。
 
 ## Live command declaration
 
@@ -1010,7 +1000,7 @@
 | `dws drive cover` | `legacy_only` | `legacy` | no |
 | `dws drive delete` | `legacy_only` | `legacy` | no |
 | `dws drive download` | `unified_active` | `unified` | no |
-| `dws drive download-version` | `legacy_only` | `legacy` | no |
+| `dws drive download-version` | `unified_active` | `unified` | no |
 | `dws drive folder` | `legacy_only` | `legacy` | yes |
 | `dws drive folder create` | `legacy_only` | `legacy` | no |
 | `dws drive info` | `legacy_only` | `legacy` | no |
@@ -1317,7 +1307,7 @@
 | `dws report template list` | `legacy_only` | `legacy` | no |
 | `dws schema` | `legacy_only` | `legacy` | no |
 | `dws sheet` | `legacy_only` | `legacy` | no |
-| `dws sheet +list-sheets` | `unified_active` | `unified` | no |
+| `dws sheet +list-sheets` | `dual_validate` | `legacy` | no |
 | `dws sheet +read` | `legacy_only` | `legacy` | no |
 | `dws sheet add-dimension` | `legacy_only` | `legacy` | no |
 | `dws sheet append` | `legacy_only` | `legacy` | no |

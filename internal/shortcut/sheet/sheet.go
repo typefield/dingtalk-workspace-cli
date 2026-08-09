@@ -31,7 +31,12 @@ import (
 // Create creates a new DingTalk online spreadsheet document.
 // ListSheets lists all worksheets in a spreadsheet document.
 var ListSheets = shortcut.Shortcut{
-	OutputRollout: output.RolloutUnifiedActive,
+	// This established shortcut is intentionally in the command-level shadow
+	// validation stage.  The projection already builds a complete unified
+	// CommandResult, but callers keep the historical payload until an Agent
+	// rollout review promotes this terminal command.  Do not skip directly from
+	// legacy output to unified_active merely because the new renderer is ready.
+	OutputRollout: output.RolloutDualValidate,
 	Service:       "sheet",
 	Command:       "+list-sheets",
 	Product:       "sheet",
