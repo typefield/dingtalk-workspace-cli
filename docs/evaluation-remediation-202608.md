@@ -181,7 +181,8 @@ ID dry-run，为 **22/22 PASS**。该证据不证明听记索引覆盖、服务�
 ## Report 聚合脚本本轮验收证据
 
 Mono 的 `report_inbox_today.py` 与兼容入口 `report_received_today.py` 已改为共用同一
-实现，不再复制两套会继续漂移的分页与详情逻辑：
+实现；Multi Misc 的 `report_received_today.py` 同步使用相同边界，不再保留单页查询、
+无机器格式和详情失败静默丢失的旧实现：
 
 1. 首页失败返回 typed failure，不再伪装成“暂无日志”；后续页失败保留已取得日志并
    返回 `partial_failure` / rc 7。
@@ -193,8 +194,8 @@ Mono 的 `report_inbox_today.py` 与兼容入口 `report_received_today.py` 已�
    `projection_unknown`，不把展示 ID 当稳定 reportId。
 5. `--dry-run --detail` 只生成列表与详情计划，受控探针证明零 child 进程。
 
-`docs/agent-scans/report-aggregate-contract-20260809.md` 对两个入口验证两页耗尽、首页/
-后续页失败、分页矛盾、JSON detail partial 与 dry-run，为 **12/12 PASS**。该探针使用
+`docs/agent-scans/report-aggregate-contract-20260809.md` 对三个入口验证两页耗尽、首页/
+后续页失败、分页矛盾、JSON detail partial 与 dry-run，为 **18/18 PASS**。该探针使用
 临时假 `dws`，不保存 JSON fixture，也不证明真实账号的日志可见性或服务端终态。
 
 ## attendance 本轮验收证据

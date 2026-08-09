@@ -16,8 +16,9 @@ from typing import Any
 
 ROOT = Path(__file__).resolve().parents[2]
 SCRIPTS = (
-    ROOT / 'skills/mono/scripts/report_inbox_today.py',
-    ROOT / 'skills/mono/scripts/report_received_today.py',
+    ('mono-inbox', ROOT / 'skills/mono/scripts/report_inbox_today.py'),
+    ('mono-received', ROOT / 'skills/mono/scripts/report_received_today.py'),
+    ('multi-misc-received', ROOT / 'skills/multi/dingtalk-misc/scripts/report_received_today.py'),
 )
 
 FAKE_DWS = r'''#!/usr/bin/env python3
@@ -112,8 +113,7 @@ def main() -> int:
         fake.chmod(0o755)
         marker = fake_dir / 'calls'
 
-        for script in SCRIPTS:
-            label = script.stem
+        for label, script in SCRIPTS:
             success = run(script, 'two_pages', fake_dir, marker)
             payload = parse_result(success)
             checks.append((
