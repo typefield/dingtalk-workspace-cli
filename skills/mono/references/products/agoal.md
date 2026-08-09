@@ -104,6 +104,12 @@ dws agoal strategy update --profile-id PROFILE_ID \
 # 查看经营合约列表、字段与详情
 dws agoal contract list --scope-type PERSONAL --scope-id USER_ID --format json
 dws agoal contract fields --format json
+
+`contract fields` 直接返回统一 `ok/outcome/data/meta`。从 `data.fields[]` 读取
+`fieldId/code/title/category/type` 与激活、必填布尔值；`meta.count` 只表示本次安全投影数量。
+`data.fieldCoverageKnown:false` 表示服务端没有提供分页或权威目录覆盖事实。布局用的
+`scheme` 与当前恒空 `source` 只用于响应漂移校验，不进入 Agent 摘要；不要把字段定义当成经营合约实例。
+
 dws agoal contract detail --contract-id CONTRACT_ID --format json
 
 # 更新经营合约：必须基于 detail 返回内容修改后传入

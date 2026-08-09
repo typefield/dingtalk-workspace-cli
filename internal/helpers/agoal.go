@@ -200,7 +200,7 @@ scopeType 支持:
 	}
 	contractFieldsCmd.Flags().String("request-id", "", "requestId (可选)")
 	DeclareLeafMetadata(contractFieldsCmd, LeafSpec{
-		OutputRollout: output.RolloutDualValidate,
+		OutputRollout: output.RolloutUnifiedActive,
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",

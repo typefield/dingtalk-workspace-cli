@@ -229,7 +229,10 @@ func TestAgoalContractFieldsRoutesRequestIDExactlyOnce(t *testing.T) {
 	}
 	caller := &scriptedToolCaller{format: "json", steps: []scriptedToolStep{{text: string(raw)}}}
 	installScriptedCaller(t, caller)
-	if err := executeFilterCoverage(t, newAgoalCommand(), "contract", "fields", "--request-id", "request-2"); err != nil {
+	root := newAgoalCommand()
+	ctx, _ := output.WithResultStore(context.Background())
+	root.SetContext(ctx)
+	if err := executeFilterCoverage(t, root, "contract", "fields", "--request-id", "request-2"); err != nil {
 		t.Fatalf("execute: %v", err)
 	}
 	if caller.calls != 1 || caller.tool != agoalContractFieldsTool {

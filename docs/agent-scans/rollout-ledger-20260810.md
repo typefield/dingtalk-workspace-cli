@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-10T05:16:42+08:00
+扫描时间：2026-08-10T05:40:26+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,9 +8,9 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1330 |
+| `legacy_only` | 1329 |
 | `dual_validate` | 19 |
-| `unified_active` | 134 |
+| `unified_active` | 135 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -18,11 +18,11 @@
 
 ## Transition review
 
-基线：`agoal-obj-template-dual-ledger.md`（1483 条 runnable command node）。
+基线：`agoal-contract-fields-dual-ledger.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws agoal obj-template list`: `dual_validate` → `unified_active`
+- PASS: `dws agoal contract fields`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -39,7 +39,7 @@
 | `dws agoal` | `legacy_only` | `legacy` | no |
 | `dws agoal contract` | `legacy_only` | `legacy` | no |
 | `dws agoal contract detail` | `legacy_only` | `legacy` | no |
-| `dws agoal contract fields` | `legacy_only` | `legacy` | no |
+| `dws agoal contract fields` | `unified_active` | `unified` | no |
 | `dws agoal contract list` | `legacy_only` | `legacy` | no |
 | `dws agoal contract update` | `legacy_only` | `legacy` | no |
 | `dws agoal obj-template` | `legacy_only` | `legacy` | no |

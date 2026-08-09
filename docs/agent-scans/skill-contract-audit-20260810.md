@@ -283,7 +283,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-10T05:17:33`
+- generated_at: `2026-08-10T05:41:30`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
