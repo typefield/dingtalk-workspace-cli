@@ -59,19 +59,21 @@ func TestSearchMailPickMailbox(t *testing.T) {
 	}
 }
 
-// TestResolveSpaceItemsWikiSpaces guards that search_wikiSpaces' result.wikiSpaces
-// container is probed — otherwise +resolve-space silently finds no candidates.
-func TestResolveSpaceItemsWikiSpaces(t *testing.T) {
-	const raw = `{"result":{"wikiSpaces":[
-		{"spaceId":"s1","name":"R&D wiki"},
-		{"spaceId":"s2","name":"product wiki"}
-	]}}`
+// TestResolveSpaceReviewedWikiSpaces guards the live list_wikiSpaces shape and
+// its stable workspaceId. Generic spaceId/id aliases must not reappear in the
+// resolver because the live service does not use them for this resource.
+func TestResolveSpaceReviewedWikiSpaces(t *testing.T) {
+	const raw = `{"success":true,"hasMore":false,"nextPageToken":"","wikiSpaces":[
+		{"workspaceId":"s1","name":"R&D wiki"},
+		{"workspaceId":"s2","name":"product wiki"}
+	]}`
 	var data map[string]any
 	if err := json.Unmarshal([]byte(raw), &data); err != nil {
 		t.Fatal(err)
 	}
-	if got := resolveSpaceItems(data); len(got) != 2 {
-		t.Fatalf("lower/upper mismatch: result.wikiSpaces has 2 entries, resolver returned %d", len(got))
+	page, err := projectResolveSpacePage(data)
+	if err != nil || len(page.spaces) != 2 || page.spaces[0]["spaceId"] != "s1" {
+		t.Fatalf("reviewed projection=%#v err=%v", page, err)
 	}
 }
 
