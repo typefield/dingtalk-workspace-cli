@@ -64,6 +64,17 @@ func PreserveTypedErrorInfo(fallback *output.ErrorInfo, err error) *output.Error
 	}
 	if typed.RetryableSet {
 		info.Retryable = typed.Retryable
+	} else if descriptor, ok := apperrors.LookupSubtype(apperrors.Subtype(info.Subtype)); ok {
+		// The governed subtype registry is the recovery-policy source of
+		// truth. An outer idempotent read may retain its default only for a
+		// subtype explicitly reviewed as idempotent-read-only; RetryNever and
+		// server-directive-only errors must not inherit retryable=true.
+		info.Retryable = descriptor.RetryPolicy == apperrors.RetryIdempotentReadOnly && info.Retryable
+	} else if typed.Category != "" && typed.Category != apperrors.CategoryAPI {
+		// Auth, validation, discovery and internal errors without a governed
+		// subtype are deterministic by default. A lower layer can still opt in
+		// explicitly with WithRetryable when it has stronger evidence.
+		info.Retryable = false
 	}
 	if typed.RetryAfterSeconds != nil {
 		info.RetryAfterSeconds = typed.RetryAfterSeconds

@@ -67,6 +67,7 @@ Agent 扫描在实际 Skill 语料与当前 Sheet 回归上确认：legacy 正�
 `auth`、`validation`、稳定 subtype、hint、actions 与 `retryable:false` 抹平成通用 API 可重试错误。
 这会诱导 Agent 对重新登录、修正参数等确定性失败继续重放。当前共享投影器在保留失败页、artifact、
 operation 与 stage 上下文的同时，以已分类下游错误为恢复事实来源；普通未分类读错误仍保留安全的读重试建议。
+已登记 subtype 还会服从错误 registry 的 retry policy；`RetryNever` 不会继承外层幂等读取的 `retryable:true`。
 
 该规则已覆盖 `minutes +detail`，Chat 的 `+chat-messages`、`+thread-replies`、`+at-me`、`+search-msg`、
 `+chat-search`、`+conversation-list`、`+flag-list`，以及 `+my-groups`、`+chat-list-all` 和 Todo 聚合读取候选，

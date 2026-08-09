@@ -1,6 +1,6 @@
 # 复合读取类型化错误保真 — Agent review
 
-扫描时间：2026-08-09T17:27:40+08:00
+扫描时间：2026-08-09T17:32:38+08:00
 
 > 本扫描由 Agent 在当前工作树运行。它结合源码关系与内存 Go 测试生成 Markdown 证据；不是 CI / policy gate，不保存服务端响应或 JSON fixture。
 
@@ -24,6 +24,7 @@
 
 1. 复合读取可以添加命令自己的失败页、artifact 或恢复上下文，但不得把下游 `auth`、`validation`、`projection` 等 typed error 改写为笼统的 `api + retryable:true`。
 2. 明确的 `retryable:false` 必须保留；仅没有分类的幂等读取错误才能采用读路径的默认重试建议。
+   已登记 subtype 必须服从 registry 的 retry policy；`RetryNever` 不得继承外层读取的 `retryable:true`。
 3. 聚合层与下游错误的 details 若同名，两个事实必须同时保留，不能静默覆盖。
 4. 富化等批量后处理必须按失败批次保留独立 typed error，不能把多个不同原因压成一个自由字符串。
 5. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。
@@ -35,8 +36,16 @@
 --- PASS: TestPreserveTypedErrorInfoKeepsTypedRecoveryAndCompositeContext (0.00s)
 === RUN   TestPreserveTypedErrorInfoRejectsPlainPartialErrorType
 --- PASS: TestPreserveTypedErrorInfoRejectsPlainPartialErrorType (0.00s)
+=== RUN   TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors
+=== RUN   TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors/auth_category
+=== RUN   TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors/projection_subtype
+--- PASS: TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors (0.00s)
+    --- PASS: TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors/auth_category (0.00s)
+    --- PASS: TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors/projection_subtype (0.00s)
+=== RUN   TestPreserveTypedErrorInfoKeepsReviewedIdempotentReadDefault
+--- PASS: TestPreserveTypedErrorInfoKeepsReviewedIdempotentReadDefault (0.00s)
 PASS
-ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut	0.492s
+ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut	0.380s
 === RUN   TestChatMessagesUnifiedPaginationOutcomes
 === RUN   TestChatMessagesUnifiedPaginationOutcomes/terminal_zero_cursor_is_exhausted_success
 === RUN   TestChatMessagesUnifiedPaginationOutcomes/continuation_is_resumable_success
@@ -80,19 +89,19 @@ ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut	0.492s
     --- PASS: TestSearchMsgUnifiedPaginationOutcomes/missing_enrichment_rows_are_projection_partial_items (0.00s)
     --- PASS: TestSearchMsgUnifiedPaginationOutcomes/unknown_response_shape_is_typed_failure_rather_than_empty_success (0.00s)
 === RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts
-=== RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/search_message
 === RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/todo_aggregate
 === RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/thread_replies
 === RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/my_groups
 === RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/at_me
+=== RUN   TestCompositeReadFailuresPreserveTypedRecoveryFacts/search_message
 --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts (0.00s)
-    --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/search_message (0.00s)
     --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/todo_aggregate (0.00s)
     --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/thread_replies (0.00s)
     --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/my_groups (0.00s)
     --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/at_me (0.00s)
+    --- PASS: TestCompositeReadFailuresPreserveTypedRecoveryFacts/search_message (0.00s)
 PASS
-ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/smart	0.640s
+ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/smart	0.655s
 === RUN   TestChatCompositeReadFailuresPreserveTypedRecoveryFacts
 === RUN   TestChatCompositeReadFailuresPreserveTypedRecoveryFacts/joined_groups
 === RUN   TestChatCompositeReadFailuresPreserveTypedRecoveryFacts/conversations
@@ -104,5 +113,5 @@ ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/smart	
     --- PASS: TestChatCompositeReadFailuresPreserveTypedRecoveryFacts/favorites (0.00s)
     --- PASS: TestChatCompositeReadFailuresPreserveTypedRecoveryFacts/group_search (0.00s)
 PASS
-ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat	0.860s
+ok  	github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut/chat	0.878s
 ```

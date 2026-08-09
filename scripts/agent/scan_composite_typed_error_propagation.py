@@ -46,6 +46,7 @@ def main() -> int:
             "typed.Category",
             "typed.StableSubtype",
             "typed.RetryableSet",
+            "apperrors.LookupSubtype",
             "typed.Actions",
             "mergeErrorDetails",
         )
@@ -100,6 +101,7 @@ def main() -> int:
 
 1. 复合读取可以添加命令自己的失败页、artifact 或恢复上下文，但不得把下游 `auth`、`validation`、`projection` 等 typed error 改写为笼统的 `api + retryable:true`。
 2. 明确的 `retryable:false` 必须保留；仅没有分类的幂等读取错误才能采用读路径的默认重试建议。
+   已登记 subtype 必须服从 registry 的 retry policy；`RetryNever` 不得继承外层读取的 `retryable:true`。
 3. 聚合层与下游错误的 details 若同名，两个事实必须同时保留，不能静默覆盖。
 4. 富化等批量后处理必须按失败批次保留独立 typed error，不能把多个不同原因压成一个自由字符串。
 5. 此扫描不证明真实服务端读取成功、权限正确或资源终态；只证明本地错误投影契约。

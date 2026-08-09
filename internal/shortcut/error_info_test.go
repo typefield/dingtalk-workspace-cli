@@ -66,3 +66,28 @@ func TestPreserveTypedErrorInfoRejectsPlainPartialErrorType(t *testing.T) {
 		t.Fatalf("partial error type=%q, want internal", info.Type)
 	}
 }
+
+func TestPreserveTypedErrorInfoDoesNotInheritRetryForGovernedNeverRetryErrors(t *testing.T) {
+	fallback := &output.ErrorInfo{Type: "api", Retryable: true}
+	cases := map[string]error{
+		"auth category": apperrors.NewAuth("login required"),
+		"projection subtype": apperrors.NewAPI("shape drift",
+			apperrors.WithSubtype(apperrors.SubtypeProjectionUnknown)),
+	}
+	for name, err := range cases {
+		t.Run(name, func(t *testing.T) {
+			if info := PreserveTypedErrorInfo(fallback, err); info.Retryable {
+				t.Fatalf("retry-never error inherited retryable=true: %#v", info)
+			}
+		})
+	}
+}
+
+func TestPreserveTypedErrorInfoKeepsReviewedIdempotentReadDefault(t *testing.T) {
+	fallback := &output.ErrorInfo{Type: "api", Retryable: true}
+	err := apperrors.NewAPI("page stopped",
+		apperrors.WithSubtype(apperrors.SubtypeChatSearchIncomplete))
+	if info := PreserveTypedErrorInfo(fallback, err); !info.Retryable {
+		t.Fatalf("reviewed idempotent read lost retry guidance: %#v", info)
+	}
+}
