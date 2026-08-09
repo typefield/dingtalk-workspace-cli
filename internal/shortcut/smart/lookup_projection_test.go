@@ -71,6 +71,23 @@ func TestLookupFullProfileProjectionAndFailClosedBoundary(t *testing.T) {
 	}
 }
 
+func TestLookupProjectionTreatsNullOptionalOrganizationIDAsAbsent(t *testing.T) {
+	fixture := lookupFixture()
+	model := fixture["result"].([]any)[0].(map[string]any)["orgEmployeeModel"].(map[string]any)
+	model["orgId"] = nil
+	profile, err := lookupProjectProfile(fixture)
+	if err != nil {
+		t.Fatal(err)
+	}
+	organization, ok := profile["organization"].(map[string]any)
+	if !ok || organization["name"] != "Example Org" {
+		t.Fatalf("organization=%#v", profile["organization"])
+	}
+	if _, exists := organization["id"]; exists {
+		t.Fatalf("null optional orgId must be omitted: %#v", organization)
+	}
+}
+
 type lookupProjectionCaller struct{ calls int }
 
 func (c *lookupProjectionCaller) CallTool(_ context.Context, product, tool string, _ map[string]any) (*edition.ToolResult, error) {
@@ -87,8 +104,8 @@ func (c *lookupProjectionCaller) DryRun() bool   { return false }
 func (c *lookupProjectionCaller) Fields() string { return "" }
 func (c *lookupProjectionCaller) JQ() string     { return "" }
 
-func TestLookupDualValidatePreservesFullLegacyPayload(t *testing.T) {
-	if Lookup.OutputRollout != output.RolloutDualValidate {
+func TestLookupUnifiedResultPreservesReviewedFullProfile(t *testing.T) {
+	if Lookup.OutputRollout != output.RolloutUnifiedActive {
 		t.Fatalf("rollout=%q", Lookup.OutputRollout)
 	}
 	if Lookup.Contract.Result == nil || len(Lookup.Contract.Result.SensitivePaths) != 5 {
@@ -102,7 +119,8 @@ func TestLookupDualValidatePreservesFullLegacyPayload(t *testing.T) {
 	}
 	cmd := corecmd.New(shortcut.FromShortcut(declaration))
 	cmd.PersistentFlags().String("format", "json", "")
-	cmd.SetContext(context.Background())
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
 	var stdout, stderr bytes.Buffer
 	helpers.GetFormatter().SetWriters(&stdout, &stderr)
 	cmd.SetOut(&stdout)
@@ -111,14 +129,28 @@ func TestLookupDualValidatePreservesFullLegacyPayload(t *testing.T) {
 	if err := cmd.Execute(); err != nil {
 		t.Fatal(err)
 	}
-	if caller.calls != 1 || stderr.Len() != 0 {
-		t.Fatalf("calls=%d stderr=%q", caller.calls, stderr.String())
+	code, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted || code != 0 || caller.calls != 1 || stderr.Len() != 0 {
+		t.Fatalf("code=%d emitted=%v calls=%d stderr=%q err=%v", code, emitted, caller.calls, stderr.String(), err)
 	}
-	var legacy map[string]any
-	if err := json.Unmarshal(stdout.Bytes(), &legacy); err != nil || legacy["success"] != true {
-		t.Fatalf("legacy=%#v err=%v", legacy, err)
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil || envelope["ok"] != true || envelope["outcome"] != "success" {
+		t.Fatalf("envelope=%#v err=%v", envelope, err)
 	}
-	if _, exists := legacy["ok"]; exists {
-		t.Fatalf("dual stage leaked unified output: %#v", legacy)
+	if _, exists := envelope["contract_version"]; exists {
+		t.Fatalf("removed version marker leaked: %#v", envelope)
+	}
+	data, ok := envelope["data"].(map[string]any)
+	if !ok || data["userId"] != "u1" || data["name"] != "Alice" || data["jobNumber"] != "J1" || len(data) != 10 {
+		t.Fatalf("data=%#v", envelope["data"])
+	}
+	if _, leaked := data["orgEmployeeModel"]; leaked {
+		t.Fatalf("raw wrapper leaked: %#v", data)
+	}
+	for _, key := range []string{"departments", "positions", "labels"} {
+		rows, ok := data[key].([]any)
+		if !ok || len(rows) != 1 {
+			t.Fatalf("%s=%#v", key, data[key])
+		}
 	}
 }

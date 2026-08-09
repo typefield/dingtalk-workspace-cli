@@ -154,10 +154,16 @@ func lookupProjectProfile(payload any) (map[string]any, error) {
 func lookupProjectOrganization(model map[string]any) (map[string]any, error) {
 	out := map[string]any{}
 	if raw, exists := model["orgId"]; exists {
-		if !lookupStableIdentifier(raw) {
-			return nil, fmt.Errorf("组织 orgId 不是稳定标识")
+		// The upstream currently emits JSON null when the employee record has
+		// no organization identifier. The result contract makes organization.id
+		// optional, so preserve that distinction by omitting it; only a present,
+		// non-null identifier must satisfy the stable-ID boundary.
+		if raw != nil {
+			if !lookupStableIdentifier(raw) {
+				return nil, fmt.Errorf("组织 orgId 不是稳定标识")
+			}
+			out["id"] = raw
 		}
-		out["id"] = raw
 	}
 	for target, keys := range map[string][]string{
 		"name":         {"orgName", "corpName"},

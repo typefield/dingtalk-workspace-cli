@@ -28,7 +28,7 @@ import (
 //
 //	dws contact +lookup --name 张三
 var Lookup = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "contact",
 	Command:       "+lookup",
 	Product:       "contact",
