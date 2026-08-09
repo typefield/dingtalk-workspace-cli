@@ -109,16 +109,18 @@ scripts/_runtime.py
 出现遗留 `print()`、多行或非法 JSON 时，运行时拒绝原 stdout，向 stderr 写无敏感诊断，
 并改发单一 typed internal failure，而不是把污染后的“成功”交给 Agent。每个脚本仍负责业务参数校验、步骤编排、
 子 `dws` 调用和业务数据映射。`run_child_dws` 同时严格识别统一 `ok:false` 与旧信封的
-布尔 `success:false`；任何顶层非布尔 `ok`/`success` 都会作为 `untyped_status` 标为
-`unknown`，绝不按 Python truthiness 或 `rc=0` 猜测成功。它是写编排的保守运输边界：只有稳定的
+布尔 `success:false`；任何顶层非布尔、矛盾或非字符串的 `ok`/`success`/`outcome` 组合都会作为
+`untyped_status` 标为 `unknown`，绝不按 Python truthiness 或 `rc=0` 猜测成功。一个 coherent
+`ok:true, outcome:pending` 也不能被脚本扩大为终态成功：运行时保留原 payload 与子 `meta`，并以
+`operation_pending` 标为 `unknown`，由产品脚本决定是否能继续投影为顶层 `pending`。它是写编排的保守运输边界：只有稳定的
 前置失败会标记为 `failed`；超时、非零退出、不可解析输出和未分类上游错误都标为
 `unknown`，因为写入可能已经到达服务端。`batch_data` 固定保留
 `succeeded[]/failed[]/unknown[]` 并校验逐项 ID、typed error、未知原因和总数；
 `batch_outcome` 从三通道导出四态结果。当前 `todo_batch_create.py`、
 `oa_batch_approve.py`、`doc_create_and_write.py`、`import_records.py`、`bulk_add_fields.py` 和
 `aitable_import_via_task.py`、`upload_attachment.py` 已使用这条边界；其余脚本仍负责各自
-业务映射。它没有 `emit_result`、`emit_error` 或 `remote_reads` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
-直接写机器输出，统一调用 `emit`/`failure`；诊断日志使用 `log()` 写 stderr。
+业务映射。它没有 `emit_result`、`emit_error`、`remote_reads` 或 `log()` 参数；不得把这些未实现名称当成可依赖接口。脚本不得通过 `print()`
+直接写机器输出，统一调用 `emit`/`failure`；需要诊断时显式 `print(..., file=sys.stderr)`。
 
 ## 实施状态与后续验证
 
@@ -129,7 +131,7 @@ scripts/_runtime.py
 | 32 个 Agent 入口的 `--format` / `--dry-run` | 已实施 | 逐入口 `--help` 为 32/32、Help 非零为 0；这只证明能力可发现 |
 | `text/json/ndjson` 输出函数 | 已实施 | `_runtime.py` 的 `emit` 负责 stdout 形状与成功/失败退出码 |
 | 8 个高风险深层门控 dry-run fixture | 已受控探针验证 | `probe_mono_dry_run.py` 使用临时 HOME、工作区与**假的** `dws` 子进程；它证明脚本在该夹具下不发子进程写调用，不证明真实后端零写 |
-| 其余 25 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
+| 其余 24 个入口的 dry-run 副作用 | UNVERIFIED | 必须按真实参数、异常和账号路径另行 Agent 取证 |
 | 三条写编排的 mixed result 映射 | 已受控 child-runner 验证 | 待办保留成功与未知写入；审批任务解析失败不会发送占位写入；文档写入失败只调用一次并标 `unknown`。假子进程只验证编排和信封，不证明真实后端终态 |
 | 真实服务端零写与部分失败/不确定结果 | UNVERIFIED | 需要隔离账号或受控后端，不得由 Help、源码字符串或假子进程推断 |
 
@@ -147,7 +149,7 @@ scripts/_runtime.py
    零远端写请求；
 3. 对 `--format json` 检查 stdout 是单个可解析对象、stderr 无业务数据、退出码
    与 `ok/outcome` 一致；还要注入一个未捕获异常，确认仍输出
-   `failure + error.type=internal` 而非 traceback；
+   `failure + error.type=internal` 而非 traceback，并确认子 `pending` 结果保留任务 meta、不会被投影为终态成功；
 4. 注入一个成功、一个明确失败和一个结果不确定的步骤，确认
    `succeeded/failed/unknown` 不丢失；
 5. 对流式脚本检查每行独立可解析且有界/无限模式语义不同；
