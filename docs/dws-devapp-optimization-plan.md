@@ -20,7 +20,7 @@ devapp 已经具备三层对齐的一半基础：skill 生成链路（`gen_skill
 2. **错误层闭环**——devapp 的分页 subtype 未进 RFC-0003 稳定 registry，
    classifier 的 PARAM_ERROR 模式全是 IM 特征（`opencid`/`openconversationid`），
    devapp 高频参数误用（unifiedAppId/appKey/agentId 混用）没有分类；
-3. **真实性验证**——读取分页和成员列表已有 live evidence，核心写与删除已有零写/受控 caller 扫描；成员写已建立 requested/not_verified 契约，但 helper 真实成功响应、逐成员回读和版本发布终态仍未取证。
+3. **真实性验证**——读取分页和成员列表已有 live evidence，核心写与删除已有零写/受控 caller 扫描；成员写与版本生命周期已建立 requested/not_verified、pending/unknown 契约，但 helper 真实成功响应、逐成员回读和版本发布终态仍未取证。
 
 本方案不复制 chat 的实现，而是把同一套方法论落到 devapp 的现有机制上：
 subtype 走 [RFC-0003](rfcs/0003-error-contract-subtype-governance.md) 治理流程，
@@ -39,6 +39,7 @@ skill 段落走现有生成器，真实性验证走 chat audit 脚本同款骨�
 | Typed 分页错误 | `devAppPaginationMeta`/`devAppPaginationError` 输出 `pagination_conflict/incomplete/invalid` | `internal/helpers/devapp.go:1957-2023`；台账 `docs/agent-scans/error-contract-inventory-20260808.md:110-112` |
 | 分页证据测试 | `TestDevAppProjectedListsPreservePaginationEvidence` | `internal/shortcut/devapp/devapp_rollout_test.go:13` |
 | 高危写门控 | 3 个 high-risk-write shortcut 已在 skill 表中标注风险级 | `devapp.md` §Shortcuts |
+| 版本结果真实性 | create 要求稳定 versionId；publish 区分 pending、明确终态和 projection_unknown，且成功仍要求回读 | `helpers/devapp_version_result.go`；`agent-scans/devapp-version-lifecycle-contract-20260810.md` |
 
 devapp 当前可见 shortcut 共 20 个：12 read、5 write、3 high-risk-write。
 
@@ -49,7 +50,7 @@ devapp 当前可见 shortcut 共 20 个：12 read、5 write、3 high-risk-write�
 | G1 分页回归面薄 | chat 有硬页上限（flagListHardPageLimit=500）、去重、stop-reason、游标停滞保护和 ~2000 行分页回归；devapp 只有 2 个 rollout 测试 | 执行层 |
 | G2 分页 subtype 未稳定 | `pagination_conflict/incomplete/invalid` 是自由 `WithReason` 字符串，不在 RFC-0003 稳定 registry（当前仅 6 个审定 subtype），Agent 不能安全分支 | 错误层 |
 | G3 classifier 无 devapp 模式 | PARAM_ERROR 只识别 IM 会话 ID 缺失；unifiedAppId/appKey/agentId 误用、版本审批未过等 devapp 高频错误落到 unclassified | 错误层 |
-| G4 写终态 live audit 不完整 | DevApp 列表/成员读取已有真实只读证据；创建、启停、删除和成员写目前只有零写/受控 caller。成员写尤其缺 helper 脱敏成功响应与 member-list 逐项回读 | 真实性层 |
+| G4 写终态 live audit 不完整 | DevApp 列表/成员读取已有真实只读证据；创建、启停、删除、成员写和版本写目前只有零写/受控 caller。版本写已能 fail-closed 表达未知 ACK 与审批 pending，但仍缺真实发布/拒绝/撤回和 status/get 回读 | 真实性层 |
 | G5 Lark 面差 33 个 | devapp↔apps：DWS 30 vs Lark 63，同名仅 3 个，且均为妙搭 vs 开放平台的产品域错位（release-create/get/list） | 覆盖层（负面边界，见 §6） |
 | G6 黄金路线无文档 | chat 有三篇设计文档 + `chat.json` 路由目录；devapp 没有等价物，路由知识只散落在 devapp.md 概念地图 | 路由层 |
 

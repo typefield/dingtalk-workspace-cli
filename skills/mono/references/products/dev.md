@@ -42,6 +42,18 @@ dws dev connect --unified-app-id <unifiedAppId> --channel opencode
 dws dev connect --robot-client-id <clientId> --robot-client-secret <clientSecret-from-result>
 ```
 
+版本结果必须按外层 `outcome` 处理：
+
+- `create` 只有返回稳定 `versionId` 才成功；`data.requested` 是请求事实，
+  `verification.state=not_verified` 表示未回读，继续执行 `verification.next_command`。
+- `check-approval` 是已完成的只读预检，外层可为 `success`；若
+  `completionState=WAITING_FOR_APPROVER_SELECTION`，仍必须停下让用户选人。
+- `publish` 的 `pending` 必须按 `meta.operation.next_command` 续查，禁止重复提交；
+  `success` 也只代表上游声称进入 RELEASE/GRAY 或已发布，仍需 `version status/get`
+  回读确认。
+- 模糊 ACK、ID 冲突或 `published=false` 且没有可恢复 operation 会返回
+  `projection_unknown`；不要盲目重试写操作。
+
 `check-approval` 若返回 `approvalMode=SELECT_APPROVER`，让用户从候选里选择；不要默认取第一个审批人。用户选定后再给 `publish` 追加 `--approver-user-id <userId>`。
 
 选择题优先原样展示 `approvalPromptText`（带 `A.`/`B.` 序号 + `姓名（userId: xxx）` 的成品文案）；需结构化时用 `approvalOptions[].label`，不得退化成多个泛化的“候选审批人”。`completionState=WAITING_FOR_APPROVER_SELECTION` / `mustAskUser=true` 表示必须等待用户选择。

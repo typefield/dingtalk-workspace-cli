@@ -107,6 +107,11 @@ func devAppEnvelopeRegressionContent(path string) map[string]any {
 		return map[string]any{"items": []any{map[string]any{"eventCode": "chat_add_member", "eventName": "Member added"}}, "hasMore": false}
 	case "version list":
 		return map[string]any{"items": []any{map[string]any{"versionId": "v-1", "version": "1.0.0"}}, "hasMore": false}
+	case "version check-approval":
+		return map[string]any{
+			"unifiedAppId": "u-1", "versionId": "v-1",
+			"requiresApproval": false, "publishable": true, "approvalMode": "AUTOMATIC",
+		}
 	default:
 		return map[string]any{
 			"unifiedAppId": "u-1",

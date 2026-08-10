@@ -283,7 +283,7 @@ Documented Python-script flag mismatches: 0
 ```text
 # Shortcut surface alignment Agent scan
 
-- generated_at: `2026-08-10T06:02:02`
+- generated_at: `2026-08-10T11:28:24`
 - source: current `go run ./cmd shortcut list --all --mock --format json`
 - fixture policy: runtime JSON is held in memory and not saved; this file is Markdown evidence only
 - result: **PASS**
@@ -358,8 +358,8 @@ Documented Python-script flag mismatches: 0
 | `devapp` | `+robot-disable` | `high-risk-write` | `user_required` | yes | 保留隐藏：会使机器人下线；需确认门禁、恢复路径和 readiness 终态证据，当前不作为通用 Agent 入口。 |
 | `devapp` | `+robot-enable` | `write` | `user_required` | yes | 保留隐藏：会恢复机器人线上流量；需补启用后健康检查和失败/未知状态表达。 |
 | `devapp` | `+security-config` | `write` | `user_required` | yes | 保留隐藏：涉及应用安全策略与权限边界；字段级风险和回滚语义尚未完成审阅。 |
-| `devapp` | `+version-create` | `write` | `user_required` | yes | 保留隐藏：会创建应用版本并可能产生后续发布资源；当前 pending/清理和幂等证据不足。 |
-| `devapp` | `+version-publish` | `write` | `user_required` | yes | 保留隐藏：会触发线上版本发布及审批链路；需完整 pending/approval/回滚验证后再公开。 |
+| `devapp` | `+version-create` | `write` | `user_required` | yes | 保留隐藏：ResultSpec 已要求稳定 versionId 并标 not_verified，但尚无隔离应用的真实创建、重复请求、回读与清理证据。 |
+| `devapp` | `+version-publish` | `write` | `user_required` | yes | 保留隐藏：pending/unknown/终态投影已收口，但尚无真实直接发布、审批、拒绝/撤回、响应丢失与回读闭环证据。 |
 | `ding` | `+send-by-message` | `write` | `user_required` | yes | 保留隐藏：会向外部收件人发送消息，涉及收件人消歧、内容确认和不可逆副作用；当前结果回执与重复发送保护不足。 |
 | `doc` | `+comment-create-inline` | `write` | `user_required` | yes | 保留隐藏：文档内联评论写入需要文档位置和内容的额外语义审阅，暂不作为通用 Agent 入口。 |
 | `doc` | `+template-apply` | `write` | `user_required` | yes | 保留隐藏：模板套用会对目标文档产生写入，待 dry-run/回滚和真实投影证据齐全后再决定公开。 |
@@ -390,7 +390,7 @@ Documented Python-script flag mismatches: 0
 命令：`go run ./scripts/policy/skill-command-check`
 
 ```text
-skill command integrity check: ok (1141 executable command paths)
+skill command integrity check: ok (1144 executable command paths)
 ```
 
 ### Skill 隐藏兼容 flag Agent 审阅
@@ -399,7 +399,7 @@ skill command integrity check: ok (1141 executable command paths)
 
 ```text
 Agent semantic flag review: 0 hidden compatibility references
-skill command integrity check: ok (1141 executable command paths)
+skill command integrity check: ok (1144 executable command paths)
 ```
 
 ## 解释边界

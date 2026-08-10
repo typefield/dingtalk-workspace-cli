@@ -1158,6 +1158,36 @@ var VersionCreate = shortcut.Shortcut{
 	Description: "基于当前配置创建应用新版本",
 	Intent:      "当你改完应用配置、准备走发布流程前需要先打一个版本快照时使用；传入 unifiedAppId（可选显式版本号与描述，默认服务端自动递增），会实际创建一个新版本并返回 versionId 供后续预检和发布。",
 	Risk:        shortcut.RiskWrite,
+	Safety: contract.SafetySpec{
+		Effect: "write", Risk: "high",
+		Confirmation: "user_required", Idempotency: "unknown",
+	},
+	ConfirmFirst: true,
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "devapp",
+			Name:           "shortcut_version_create",
+			CanonicalPath:  "devapp.shortcut_version_create",
+			CLIPath:        "devapp +version-create",
+			PrimaryCLIPath: "devapp +version-create",
+		},
+		Description: "基于当前配置创建应用新版本",
+		DryRun: &contract.DryRunSpec{
+			PreviewKind: "invocation", RemoteReads: false,
+		},
+		Result: helpers.DevAppVersionCreateResultSpec(),
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "为应用当前配置创建待发布版本",
+			UseWhen:      []string{"沿用 devapp shortcut 工作流，且配置变更完成后需要生成版本进入发布流程时"},
+			AvoidWhen:    []string{"只是查看已有版本时使用 devapp +version-list"},
+			Examples:     []string{`dws devapp +version-create --unified-app-id <UNIFIED_APP_ID> --desc "新增机器人能力" --dry-run --format json`},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "unified-app-id", Type: shortcut.FlagString, Desc: "开放平台统一应用 ID", Required: true},
 		{Name: "version", Type: shortcut.FlagString, Desc: "高级可选：显式版本号，如 1.0.1；默认由服务端自动递增"},
@@ -1291,6 +1321,7 @@ var VersionCheckApproval = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +version-check-approval",
 		},
 		Description: "预检版本发布是否需要审批（不实际发布）",
+		Result:      helpers.DevAppVersionPrecheckResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -1326,6 +1357,36 @@ var VersionPublish = shortcut.Shortcut{
 	Description: "发布指定版本（含高敏权限需 --confirmed-sensitive）",
 	Intent:      "当你要把某个已创建的版本正式上线到线上环境时使用；传入 unifiedAppId 和 versionId，会实际触发发布（含高敏权限需加 --confirmed-sensitive 确认，灰度选人可指定审批人），可能进入审批流。",
 	Risk:        shortcut.RiskWrite,
+	Safety: contract.SafetySpec{
+		Effect: "write", Risk: "high",
+		Confirmation: "user_required", Idempotency: "unknown",
+	},
+	ConfirmFirst: true,
+	Contract: corecmd.ContractDecl{
+		Identity: contract.ToolIdentitySpec{
+			ProductID:      "devapp",
+			Name:           "shortcut_version_publish",
+			CanonicalPath:  "devapp.shortcut_version_publish",
+			CLIPath:        "devapp +version-publish",
+			PrimaryCLIPath: "devapp +version-publish",
+		},
+		Description: "发布指定版本（可能进入审批，需回读状态）",
+		DryRun: &contract.DryRunSpec{
+			PreviewKind: "invocation", RemoteReads: false,
+		},
+		Result: helpers.DevAppVersionPublishResultSpec(),
+		Interface: &contract.InterfaceSpec{
+			Mode:         "composite",
+			Availability: "available",
+			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, approval projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
+		},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "发布开放平台应用指定版本并处理审批状态",
+			UseWhen:      []string{"已创建明确 versionId，完成审批预检并得到用户发布确认时"},
+			AvoidWhen:    []string{"还没有 versionId 时先 version create/list/get", "尚未向用户展示发布影响或审批人选择时"},
+			Examples:     []string{"dws devapp +version-publish --unified-app-id <UNIFIED_APP_ID> --version-id <VERSION_ID> --dry-run --format json"},
+		},
+	},
 	Flags: []shortcut.Flag{
 		{Name: "unified-app-id", Type: shortcut.FlagString, Desc: "开放平台统一应用 ID", Required: true},
 		{Name: "version-id", Type: shortcut.FlagString, Desc: "版本 ID", Required: true},
@@ -1369,6 +1430,7 @@ var VersionStatus = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +version-status",
 		},
 		Description: "查询版本发布/审批状态",
+		Result:      helpers.DevAppVersionStatusResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",

@@ -153,7 +153,7 @@ func TestDevAppSharedResultMapperClassifiesServiceOutcomes(t *testing.T) {
 			"approvalCandidates": []any{
 				map[string]any{"userId": "user-1", "name": "Alice"},
 			},
-		}, false, map[string]any{"precheckOnly": true})
+		}, false, map[string]any{"precheckOnly": true, "unifiedAppId": "u1", "versionId": "v1"})
 		env, err := output.EnvelopeFromResult(result)
 		if err != nil {
 			t.Fatal(err)

@@ -18,8 +18,11 @@ import (
 const (
 	publicShortcutCount = 383
 	// schemaPublishedShortcutCount counts every delivered *.shortcut_* tool,
-	// including hidden leaves such as minutes.shortcut_minutes_search.
-	schemaPublishedShortcutCount = 384
+	// including reviewed hidden leaves such as minutes search and the two
+	// DevApp version lifecycle writes. The latter stay out of the public
+	// catalog until real create/publish/read-back evidence exists, but their
+	// complete contracts are delivered for deterministic direct resolution.
+	schemaPublishedShortcutCount = 386
 	// publiclyDeliveredShortcutCount is the public-catalog subset of that surface.
 	publiclyDeliveredShortcutCount = 383
 )

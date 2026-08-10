@@ -76,7 +76,7 @@ func TestDevAppFamilyReadLeavesDualFormat(t *testing.T) {
 		{name: "robot result", args: []string{"dev", "app", "robot", "result", "--task-id", "t-1"}},
 		{name: "version list", args: []string{"dev", "app", "version", "list", "--unified-app-id", "u-1"}, content: map[string]any{"items": []any{map[string]any{"versionId": "v-1", "version": "1.0.0"}}, "hasMore": false}, want: "1.0.0"},
 		{name: "version get", args: []string{"dev", "app", "version", "get", "--unified-app-id", "u-1", "--version-id", "v-1"}},
-		{name: "version check-approval", args: []string{"dev", "app", "version", "check-approval", "--unified-app-id", "u-1", "--version-id", "v-1"}},
+		{name: "version check-approval", args: []string{"dev", "app", "version", "check-approval", "--unified-app-id", "u-1", "--version-id", "v-1"}, content: map[string]any{"unifiedAppId": "u-1", "versionId": "v-1", "requiresApproval": false, "publishable": true, "approvalMode": "AUTOMATIC"}, want: "AUTOMATIC"},
 		{name: "version status", args: []string{"dev", "app", "version", "status", "--unified-app-id", "u-1", "--version-id", "v-1"}},
 	}
 

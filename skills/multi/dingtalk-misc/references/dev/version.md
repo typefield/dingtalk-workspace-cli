@@ -22,6 +22,11 @@ permission add（requiredApproval=true 写入版本变更）
 
 创建成功后，后续 `get`/`check-approval`/`publish` 必须用 `create` 返回的 `versionId`；不要通过 `list` 猜最新版本。如果创建没返回 `versionId`，停止并报错。
 
+统一结果边界：`create` 成功时 `data.requested` 只记录本次请求，
+`data.verification.state=not_verified` 表示尚未回读。必须执行
+`verification.next_command`（或等价的 `version status/get`）核对版本；无稳定
+`versionId` 的上游 ACK 会 fail-closed 为 `projection_unknown`，不得盲目重试创建。
+
 ## check-approval 与 publish
 
 `check-approval` 只查审批要求和候选审批人，不发布。`publish` 是真实发布；含高敏权限要加 `--confirmed-sensitive`，灰度选人模式用 `--approver-user-id` 指定审批人。
@@ -37,6 +42,17 @@ permission add（requiredApproval=true 写入版本变更）
 | `requiresApproval=true` + `approvalMode=ENTERPRISE_SELF_BUILT` | 企业自建审核 | 不传 `--approver-user-id`，直接 `publish` 提交审批 |
 | `published=true` | 本次 `publish` 已直接发布 | 回读 `version status/get` 验证 `versionStatus=RELEASE` |
 | `approvalSubmitted=true` | 本次 `publish` 已提交审批 | 保存 `processId`，轮询 `version status` |
+
+统一结果的 `outcome` 需先于业务字段判断：
+
+- `check-approval` 是已完成的只读预检，所以即使需要用户选择审批人，外层仍是
+  `success`；根据 `completionState/mustAskUser` 停下询问用户。
+- `publish` 返回 `pending` 时，从 `meta.operation.id/state/next_command` 续跑；
+  不得当成已发布，也不得再次提交同一版本。
+- `publish` 只有上游明确给出 `published=true`、`versionStatus=RELEASE` 或
+  `GRAY` 才可返回 `success`，且仍带 `verification.state=not_verified`，必须回读。
+- 模糊 ACK、`published=false` 且没有可恢复 operation、请求/响应版本 ID 冲突，
+  均为不可重试的 `projection_unknown`；先查 `version status/get`。
 
 `SELECT_APPROVER` 时 CLI 会把原始 `approvalCandidates` 增强为更容易展示的字段：
 
@@ -73,6 +89,10 @@ permission add（requiredApproval=true 写入版本变更）
 | `FAIL` | 审批拒绝 | 展示 `processComment`，改后重新建/发版本 |
 | `WITHDRAW` / `CANCEL` | 撤回或取消 | 回到发布前，重新 `check-approval`/`publish` |
 | `PUBLISH_FAILED` | 审批后发布失败 | 展示错误，重查版本状态和后端错误 |
+
+如果多个状态字段同时出现，失败状态（如 `processStatus=FAIL/PUBLISH_FAILED`）
+优先，不能被笼统的 `status=SUCCESS` 或 `versionStatus=AUDIT` 遮住；审核中状态则
+返回 `pending` 并附恢复命令。
 
 遇到未列出的状态值，不要猜语义；原样展示，回读 `version get/status` 或查文档/后台。
 

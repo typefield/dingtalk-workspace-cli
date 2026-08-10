@@ -1538,6 +1538,7 @@ func newDevAppVersionCreateCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "基于当前配置创建应用新版本",
 			DryRun:      devAppDryRun,
+			Result:      DevAppVersionCreateResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "为应用当前配置创建待发布版本",
@@ -1638,6 +1639,7 @@ func newDevAppVersionCheckApprovalCommand(runner executor.Runner) *cobra.Command
 			},
 			Description: "预检版本发布是否需要审批，不执行发布",
 			DryRun:      devAppDryRun,
+			Result:      DevAppVersionPrecheckResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "预检应用版本的审批要求和候选审批人",
@@ -1677,6 +1679,7 @@ func newDevAppVersionPublishCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "发布指定版本（含高敏权限需 --confirmed-sensitive）",
 			DryRun:      devAppDryRun,
+			Result:      DevAppVersionPublishResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "发布开放平台应用指定版本（可先预检）",
@@ -1711,11 +1714,8 @@ func newDevAppVersionStatusCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "查询版本发布/审批状态",
 			DryRun:      devAppDryRun,
-			Result: &contract.ResultSpec{
-				Outcomes:   []contract.ResultOutcome{contract.ResultOutcomePending, contract.ResultOutcomeFailure, contract.ResultOutcomeSuccess},
-				DataSchema: json.RawMessage(`{"type":"object","properties":{"unifiedAppId":{"type":"string"},"versionId":{"type":"string"},"status":{"type":"string"},"versionStatus":{"type":"string"},"approvalStatus":{"type":"string"},"nextCommand":{"type":"string"}},"required":["versionId"],"additionalProperties":true}`),
-			},
-			Interface: devAppCompositeInterface(),
+			Result:      DevAppVersionStatusResultSpec(),
+			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询指定应用版本的发布或审批状态",
 				UseWhen:      []string{"需要判断版本是否已发布、审核中或受阻时"},
@@ -1862,7 +1862,7 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 		// itself accept an asynchronous operation.
 		precheckOnly, _ := result.Invocation.Params["precheckOnly"].(bool)
 		if !precheckOnly {
-			if pending := devAppPendingResult(content); pending != nil {
+			if pending := devAppPendingResult(content, result.Invocation.Params); pending != nil {
 				return pending
 			}
 		}
@@ -1877,6 +1877,10 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 		return output.Success(data, output.WithMeta(meta))
 	}
 	projected, problem := devAppMutationSuccessData(result.Invocation.Tool, data, result.Invocation.Params)
+	if problem != nil {
+		return output.Failure(problem)
+	}
+	projected, problem = devAppVersionSuccessData(result.Invocation.Tool, projected, result.Invocation.Params)
 	if problem != nil {
 		return output.Failure(problem)
 	}
@@ -2142,12 +2146,14 @@ func devAppMultiProfileResult(content map[string]any) output.CommandResult {
 }
 
 func devAppFailureResult(content map[string]any) output.CommandResult {
-	status := strings.ToUpper(devAppFirstContentString(content, "status", "taskStatus", "versionStatus", "processStatus"))
 	if _, present := content["success"]; present && !devAppContentBool(content, "success") {
 		return output.Failure(devAppErrorInfo(content, "dev operation failed"))
 	}
-	if status == "FAIL" || status == "FAILED" || status == "EXPIRED" {
-		return output.Failure(devAppErrorInfo(content, "dev operation "+strings.ToLower(status)))
+	for _, status := range devAppStatusValues(content) {
+		switch status {
+		case "FAIL", "FAILED", "EXPIRED", "REJECTED", "WITHDRAW", "WITHDRAWN", "CANCEL", "CANCELED", "CANCELLED", "PUBLISH_FAILED":
+			return output.Failure(devAppErrorInfo(content, "dev operation "+strings.ToLower(status)))
+		}
 	}
 	return nil
 }
@@ -2166,26 +2172,38 @@ func devAppErrorInfo(content map[string]any, fallback string) *output.ErrorInfo 
 	return info
 }
 
-func devAppPendingResult(content map[string]any) output.CommandResult {
-	state := strings.ToUpper(devAppFirstContentString(content,
-		"completionState", "status", "taskStatus", "versionStatus", "processStatus", "approvalStatus"))
+func devAppPendingResult(content map[string]any, params ...map[string]any) output.CommandResult {
+	state := ""
+	for _, candidate := range devAppStatusValues(content) {
+		if candidate == "WAITING" || candidate == "PENDING" || candidate == "PROCESSING" || candidate == "AUDIT" ||
+			candidate == "UNDER_REVIEW" || strings.HasPrefix(candidate, "WAITING_") || strings.HasPrefix(candidate, "BLOCKED_BY_") {
+			state = candidate
+			break
+		}
+	}
 	nonTerminal := !devAppContentBool(content, "terminal") && (devAppContentBool(content, "mustContinue") || devAppContentBool(content, "mustAskUser"))
 	approvalPending := devAppContentBool(content, "approvalSubmitted") && !devAppContentBool(content, "published")
-	isPendingState := state == "WAITING" || state == "PENDING" || state == "PROCESSING" || state == "AUDIT" ||
-		state == "UNDER_REVIEW" || strings.HasPrefix(state, "WAITING_") || strings.HasPrefix(state, "BLOCKED_BY_")
-	if !isPendingState && !nonTerminal && !approvalPending {
+	if state == "" && !nonTerminal && !approvalPending {
 		return nil
 	}
 	if state == "" {
-		state = "WAITING_FOR_ACTION"
+		if approvalPending {
+			state = "APPROVAL_SUBMITTED"
+		} else {
+			state = "WAITING_FOR_ACTION"
+		}
 	}
+	request := firstDevAppParams(params)
 	id := devAppFirstContentString(content, "taskId", "versionId", "unifiedAppId", "requestId")
+	if id == "" {
+		id = devAppFirstContentString(request, "versionId", "unifiedAppId")
+	}
 	if id == "" {
 		return output.Failure(&output.ErrorInfo{Type: "internal", Message: "non-terminal dev response is missing an operation identifier"})
 	}
 	next := devAppFirstNextCommand(content)
 	if next == "" {
-		next = devAppRecoveryCommand(content)
+		next = devAppRecoveryCommand(content, request)
 	}
 	if next == "" {
 		return output.Failure(&output.ErrorInfo{Type: "internal", Message: "non-terminal dev response is missing a recovery command"})
@@ -2193,16 +2211,40 @@ func devAppPendingResult(content map[string]any) output.CommandResult {
 	return output.Pending(content, &output.OperationInfo{ID: id, State: strings.ToLower(state), NextCommand: next})
 }
 
-func devAppRecoveryCommand(content map[string]any) string {
+func devAppRecoveryCommand(content map[string]any, params ...map[string]any) string {
 	if taskID := devAppFirstContentString(content, "taskId"); taskID != "" {
 		return fmt.Sprintf("dws dev app robot result --task-id %s --format json", taskID)
 	}
 	appID := devAppFirstContentString(content, "unifiedAppId")
 	versionID := devAppFirstContentString(content, "versionId")
+	request := firstDevAppParams(params)
+	if appID == "" {
+		appID = devAppFirstContentString(request, "unifiedAppId")
+	}
+	if versionID == "" {
+		versionID = devAppFirstContentString(request, "versionId")
+	}
 	if appID != "" && versionID != "" {
-		return fmt.Sprintf("dws dev app version status --unified-app-id %s --version-id %s --format json", appID, versionID)
+		return devAppVersionStatusCommand(appID, versionID)
 	}
 	return ""
+}
+
+func devAppStatusValues(content map[string]any) []string {
+	values := make([]string, 0, 6)
+	for _, key := range []string{"completionState", "status", "taskStatus", "versionStatus", "processStatus", "approvalStatus"} {
+		if value := strings.ToUpper(strings.TrimSpace(devAppContentString(content, key))); value != "" {
+			values = append(values, value)
+		}
+	}
+	return values
+}
+
+func firstDevAppParams(values []map[string]any) map[string]any {
+	if len(values) > 0 && values[0] != nil {
+		return values[0]
+	}
+	return nil
 }
 
 func devAppFirstNextCommand(content map[string]any) string {
