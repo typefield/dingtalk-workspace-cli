@@ -492,6 +492,7 @@ func newDevAppCreateCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "创建开放平台企业内部应用",
 			DryRun:      devAppDryRun,
+			Result:      DevAppMutationResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "创建钉钉开放平台应用并返回 unifiedAppId/凭证信息",
@@ -539,6 +540,7 @@ func newDevAppUpdateCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "修改开放平台企业内部应用基础信息",
 			DryRun:      devAppDryRun,
+			Result:      DevAppMutationResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "更新开放平台应用名称/描述/图标等基础信息",
@@ -611,6 +613,7 @@ func newDevAppDisableCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "停用开放平台企业内部应用",
 			DryRun:      devAppDryRun,
+			Result:      DevAppMutationResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "停用指定开放平台应用",
@@ -645,6 +648,7 @@ func newDevAppEnableCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "启用开放平台企业内部应用",
 			DryRun:      devAppDryRun,
+			Result:      DevAppMutationResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "启用指定开放平台应用",
@@ -1856,7 +1860,11 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 	if meta := devAppPaginationMeta(data); meta != nil {
 		return output.Success(data, output.WithMeta(meta))
 	}
-	return output.Success(data)
+	projected, problem := devAppMutationSuccessData(result.Invocation.Tool, data)
+	if problem != nil {
+		return output.Failure(problem)
+	}
+	return output.Success(projected)
 }
 
 // DevAppCommandResultFromPayload is the shared dingtalk-dev outcome mapper for

@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-10T08:39:27+08:00
+扫描时间：2026-08-10T09:39:59+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -9,8 +9,8 @@
 | rollout state | runnable command nodes |
 |---|---:|
 | `legacy_only` | 1327 |
-| `dual_validate` | 18 |
-| `unified_active` | 138 |
+| `dual_validate` | 14 |
+| `unified_active` | 142 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
 
@@ -22,9 +22,10 @@
 
 ### 状态迁移
 
-- PASS: `dws doc +checkpoint-update`: `dual_validate` → `unified_active`
-- PASS: `dws doc +create`: `dual_validate` → `unified_active`
-- PASS: `dws doc +history-revert`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +create`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +disable`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +enable`: `dual_validate` → `unified_active`
+- PASS: `dws devapp +update`: `dual_validate` → `unified_active`
 
 ### 新增可执行命令节点
 
@@ -840,11 +841,11 @@
 | `dws dev connect stop` | `unified_active` | `unified` | no |
 | `dws dev doc` | `legacy_only` | `legacy` | no |
 | `dws dev doc search` | `unified_active` | `unified` | no |
-| `dws devapp +create` | `dual_validate` | `legacy` | no |
+| `dws devapp +create` | `unified_active` | `unified` | no |
 | `dws devapp +credentials-get` | `unified_active` | `unified` | no |
 | `dws devapp +delete` | `dual_validate` | `legacy` | no |
-| `dws devapp +disable` | `dual_validate` | `legacy` | no |
-| `dws devapp +enable` | `dual_validate` | `legacy` | no |
+| `dws devapp +disable` | `unified_active` | `unified` | no |
+| `dws devapp +enable` | `unified_active` | `unified` | no |
 | `dws devapp +event-list` | `unified_active` | `unified` | no |
 | `dws devapp +event-subscribe` | `dual_validate` | `legacy` | yes |
 | `dws devapp +event-unsubscribe` | `dual_validate` | `legacy` | yes |
@@ -861,7 +862,7 @@
 | `dws devapp +robot-enable` | `dual_validate` | `legacy` | yes |
 | `dws devapp +robot-get` | `unified_active` | `unified` | no |
 | `dws devapp +security-config` | `dual_validate` | `legacy` | yes |
-| `dws devapp +update` | `dual_validate` | `legacy` | no |
+| `dws devapp +update` | `unified_active` | `unified` | no |
 | `dws devapp +version-check-approval` | `unified_active` | `unified` | no |
 | `dws devapp +version-create` | `dual_validate` | `legacy` | yes |
 | `dws devapp +version-get` | `unified_active` | `unified` | no |

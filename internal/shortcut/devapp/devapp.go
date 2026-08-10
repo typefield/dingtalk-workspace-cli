@@ -211,7 +211,7 @@ var CreateApp = shortcut.Shortcut{
 	Intent:      "当你要在开放平台从零新建一个企业内部应用（H5/机器人等的载体）时使用；传入应用名称、可选描述与图标 mediaId，会实际创建出一个新应用并返回其 unifiedAppId 供后续配置。",
 	Risk:        shortcut.RiskWrite,
 	Safety: contract.SafetySpec{
-		Effect: "write", Risk: "medium",
+		Effect: "write", Risk: "high",
 		Confirmation: "user_required", Idempotency: "unknown",
 	},
 	Contract: corecmd.ContractDecl{
@@ -223,6 +223,7 @@ var CreateApp = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +create",
 		},
 		Description: "创建开放平台企业内部应用",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -261,7 +262,7 @@ var UpdateApp = shortcut.Shortcut{
 	Intent:      "当你要改动一个已存在应用的基础信息（更名、改描述或换图标）时使用；指定 unifiedAppId 及要更新的字段，会实际写回并覆盖对应的应用基础资料。",
 	Risk:        shortcut.RiskWrite,
 	Safety: contract.SafetySpec{
-		Effect: "write", Risk: "medium",
+		Effect: "write", Risk: "high",
 		Confirmation: "user_required", Idempotency: "unknown",
 	},
 	Contract: corecmd.ContractDecl{
@@ -273,6 +274,7 @@ var UpdateApp = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +update",
 		},
 		Description: "修改开放平台企业内部应用基础信息",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -287,9 +289,20 @@ var UpdateApp = shortcut.Shortcut{
 	},
 	Flags: []shortcut.Flag{
 		{Name: "unified-app-id", Type: shortcut.FlagString, Desc: "开放平台统一应用 ID", Required: true},
-		{Name: "name", Type: shortcut.FlagString, Desc: "新的应用名称"},
-		{Name: "desc", Type: shortcut.FlagString, Desc: "新的应用描述"},
-		{Name: "icon-media-id", Type: shortcut.FlagString, Desc: "新的应用图标 mediaId"},
+		{Name: "name", Type: shortcut.FlagString, Desc: "新的应用名称；--name、--desc、--icon-media-id 至少提供一项"},
+		{Name: "desc", Type: shortcut.FlagString, Desc: "新的应用描述；--name、--desc、--icon-media-id 至少提供一项"},
+		{Name: "icon-media-id", Type: shortcut.FlagString, Desc: "新的应用图标 mediaId；--name、--desc、--icon-media-id 至少提供一项"},
+	},
+	Constraints: []shortcut.Constraint{{
+		Kind:        shortcut.ConstraintCustom,
+		Flags:       []string{"name", "desc", "icon-media-id"},
+		Description: "--name、--desc、--icon-media-id 至少提供一项",
+	}},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		if !rt.Changed("name") && !rt.Changed("desc") && !rt.Changed("icon-media-id") {
+			return apperrors.NewValidation("至少提供一项待更新字段：--name、--desc 或 --icon-media-id")
+		}
+		return nil
 	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		params := map[string]any{"unifiedAppId": rt.Str("unified-app-id")}
@@ -356,7 +369,7 @@ var EnableApp = shortcut.Shortcut{
 	Intent:      "当某个应用处于停用状态、你要让它重新生效可用时使用；传入 unifiedAppId 会实际将应用状态切换为启用。",
 	Risk:        shortcut.RiskWrite,
 	Safety: contract.SafetySpec{
-		Effect: "write", Risk: "medium",
+		Effect: "write", Risk: "high",
 		Confirmation: "user_required", Idempotency: "unknown",
 	},
 	Contract: corecmd.ContractDecl{
@@ -368,6 +381,7 @@ var EnableApp = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +enable",
 		},
 		Description: "启用开放平台企业内部应用",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -409,6 +423,7 @@ var DisableApp = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +disable",
 		},
 		Description: "停用开放平台企业内部应用",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -1351,11 +1366,11 @@ func init() {
 	shortcut.Register(
 		frameworkUnified(ListApp),
 		frameworkUnified(GetApp),
-		frameworkDualValidate(CreateApp),
-		frameworkDualValidate(UpdateApp),
+		frameworkUnified(CreateApp),
+		frameworkUnified(UpdateApp),
 		frameworkDualValidate(DeleteApp),
-		frameworkDualValidate(EnableApp),
-		frameworkDualValidate(DisableApp),
+		frameworkUnified(EnableApp),
+		frameworkUnified(DisableApp),
 		frameworkUnified(GetCredentials),
 		frameworkUnified(WebappGet),
 		frameworkDualValidate(WebappConfig),

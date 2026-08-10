@@ -1,6 +1,6 @@
 # RFC-0001：DWS Unified Command Framework 2.0 与 dingtalk-dev 渐进迁移
 
-- 状态：Proposed
+- 状态：分阶段实施中（CLI adapter 已落地，逐命令 rollout 进行中）
 - 日期：2026-08-07
 - 适用仓库：`dingtalk-workspace-cli`
 - 首个迁移域：`dingtalk-dev`（`dws dev ...` 与 `dws devapp +...`）
@@ -458,7 +458,7 @@ dws devapp +list ...
 | `dev doc search` | unified | 单结果终态命令 |
 | `dev connect status/stop/restart/list` | unified | 本地终态、可表达为单结果 |
 | `dev connect` foreground stream | legacy | 长连接事件流，等待 stream contract |
-| `devapp +...` shortcuts | 逐命令原位迁入统一结果 | 需要 Shortcut adapter 支持 per-command rollout/result |
+| `devapp +...` shortcuts | 逐命令原位迁入统一结果 | Shortcut adapter 的 per-command rollout/result 已落地；列表/成员读取和首批核心写命令已 active，其余按语义取证推进 |
 
 安全裁决：`dev connect stop/restart` 都会终止本地守护进程，必须声明 `effect=destructive`、`risk=high`、`confirmation=user_required`。获得用户确认后调用方显式传 `--yes`；`--dry-run` 只返回计划，且必须在任何信号发送前短路。输出迁移与安全元数据必须从同一命令声明派生。
 
@@ -490,7 +490,7 @@ dws devapp +list ...
 1. **框架闭环**：root 单结果出口、严格校验、stdout/stderr、sink cleanup、panic/PAT/custom rc。
 2. **已有 dev 终态命令**：固定 `dev app`、`dev doc search`、connect 管理子命令的统一结果 golden。
 3. **Agent 已使用的 devapp read shortcuts**：`+list/+get/+event-list/+member-list/+permission-list/+version-*` 等原位迁移。
-4. **devapp write shortcuts**：`+create/+update/+enable/+disable/+delete/+member-*`，先锁定 confirmation/dry-run/idempotency。
+4. **devapp write shortcuts**：`+create/+update/+enable/+disable` 已按独立 terminal command 晋级，并以 `verification:not_verified` 保留未做写后回读的事实；`+delete` 在补齐 `--confirm-name` 二次防误删前保持 dual，`+member-*` 继续先锁定 confirmation/dry-run/idempotency。
 5. **复杂和异步命令**：引入 pending/partial/unknown，不把超时伪装成 failure 或 success。
 6. **stream 与 MCP**：分别立项，不阻塞单结果命令的渐进发布。
 
@@ -616,7 +616,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 
 ### P0
 
-- 完成 Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 接入；把 Agent 当前使用的 `devapp +...` 原位迁入统一结果。
+- Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 框架接入已完成；继续按 terminal command 迁移 Agent 当前使用的 `devapp +...`，禁止整域批量切换。下一写入批次先补齐 `+delete` 的 `--confirm-name` 防误删差距，并完成成员/版本写操作的 partial、pending、unknown 语义取证。
 - 收口 root 的 emit/cleanup/panic 顺序，保证 `--output` 下仍恰好一个结果且 rc 不反转。
 - 为统一结果 failure、partial、pending、PAT RawStderr、custom rc 增加真实 root E2E。
 - 修订 Schema exclusion：迁移一个 `devapp +...` 就精确移除一个，不做整组前缀隐藏。
