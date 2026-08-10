@@ -17,6 +17,9 @@
 package doc
 
 import (
+	"fmt"
+	"math"
+	"strconv"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -72,18 +75,32 @@ var Search = shortcut.Shortcut{
 	Flags: []shortcut.Flag{
 		{Name: "query", Type: shortcut.FlagString, Desc: "搜索关键词，不传返回最近访问的文档"},
 		{Name: "extensions", Type: shortcut.FlagStringSlice, Desc: "按文件扩展名过滤 (如 adoc,axls,pdf)"},
-		{Name: "created-from", Type: shortcut.FlagInt, Desc: "创建时间起始 (毫秒时间戳)"},
-		{Name: "created-to", Type: shortcut.FlagInt, Desc: "创建时间截止 (毫秒时间戳)"},
-		{Name: "visited-from", Type: shortcut.FlagInt, Desc: "访问时间起始 (毫秒时间戳)"},
-		{Name: "visited-to", Type: shortcut.FlagInt, Desc: "访问时间截止 (毫秒时间戳)"},
+		{Name: "created-from", Type: shortcut.FlagInt, Desc: "创建时间起始 (毫秒时间戳)；创建时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
+		{Name: "created-to", Type: shortcut.FlagInt, Desc: "创建时间截止 (毫秒时间戳)；创建时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
+		{Name: "visited-from", Type: shortcut.FlagInt, Desc: "访问时间起始 (毫秒时间戳)；访问时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
+		{Name: "visited-to", Type: shortcut.FlagInt, Desc: "访问时间截止 (毫秒时间戳)；访问时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
 		{Name: "creator-uids", Type: shortcut.FlagStringSlice, Desc: "按创建者用户 ID 过滤"},
 		{Name: "editor-uids", Type: shortcut.FlagStringSlice, Desc: "按编辑者用户 ID 过滤"},
 		{Name: "mentioned-uids", Type: shortcut.FlagStringSlice, Desc: "按 @提及的用户 ID 过滤"},
 		{Name: "workspace-ids", Type: shortcut.FlagStringSlice, Desc: "按知识库 ID 过滤"},
-		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 10，最大 30)"},
+		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 10)；显式 --limit 必须在 1-30 之间"},
 		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标 (上次结果的 nextPageToken)"},
 	},
+	Constraints: []shortcut.Constraint{
+		{Kind: shortcut.ConstraintCustom, Flags: []string{"limit"}, Description: "显式 --limit 必须在 1-30 之间"},
+		{Kind: shortcut.ConstraintCustom, Flags: []string{"created-from", "created-to"}, Description: "创建时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
+		{Kind: shortcut.ConstraintCustom, Flags: []string{"visited-from", "visited-to"}, Description: "访问时间必须为非负毫秒时间戳，且起始时间不得晚于截止时间"},
+	},
 	Tips: []string{`dws doc +search --query "会议纪要"`, `dws doc +search --extensions pdf,docx`},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		if err := docValidateLimit(rt, "limit", 30); err != nil {
+			return err
+		}
+		if err := docValidateTimeRange(rt, "created-from", "created-to"); err != nil {
+			return err
+		}
+		return docValidateTimeRange(rt, "visited-from", "visited-to")
+	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		params := map[string]any{}
 		if v := rt.Str("query"); v != "" {
@@ -131,11 +148,11 @@ var Search = shortcut.Shortcut{
 			return err
 		}
 		payload := map[string]any{
-			"count":            len(docs),
-			"documents":        docs,
-			"pagination_known": false,
+			"count":                len(docs),
+			"documents":            docs,
+			"index_coverage_known": false,
 		}
-		return docListOutput(rt, payload, len(docs))
+		return docListOutput(rt, data, payload, len(docs))
 	},
 }
 
@@ -154,30 +171,38 @@ func searchDocsProject(data map[string]any) ([]map[string]any, error) {
 		if !ok {
 			return nil, docProjectionUnknown("文档搜索结果包含无法识别的条目")
 		}
-		row := map[string]any{}
-		if v, ok := docStableNodeID(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
-			row["nodeId"] = v
+		nodeID, present, err := docStringField(m, "nodeId", "nodeId", "node_id", "id", "docId", "doc_id")
+		if err != nil {
+			return nil, err
 		}
-		if _, ok := row["nodeId"]; !ok {
+		if !present || strings.TrimSpace(nodeID) == "" {
 			return nil, docProjectionUnknown("文档搜索结果条目缺少可用于后续操作的稳定 nodeId")
 		}
-		if v, ok := docFirst(m, "name", "title", "docName", "fileName"); ok {
+		row := map[string]any{"nodeId": nodeID}
+		if v, ok, err := docStringField(m, "name", "name", "title", "docName", "fileName"); err != nil {
+			return nil, err
+		} else if ok {
 			row["name"] = v
 		}
-		if v, ok := docFirst(m, "docType", "doc_type", "type", "extension", "fileType"); ok {
+		if v, ok, err := docStringField(m, "docType", "docType", "doc_type", "type", "extension", "fileType", "nodeType", "contentType"); err != nil {
+			return nil, err
+		} else if ok {
 			row["docType"] = v
 		}
-		if v, ok := docFirst(m, "url", "docUrl", "nodeUrl", "webUrl"); ok {
+		if v, ok, err := docStringField(m, "url", "url", "docUrl", "nodeUrl", "webUrl"); err != nil {
+			return nil, err
+		} else if ok {
 			row["url"] = v
 		}
-		if v, ok := docFirst(m, "creatorId", "creatorUserId", "creator_user_id", "creator"); ok {
+		if v, ok, err := docStringField(m, "creatorId", "creatorId", "creatorUserId", "creator_user_id", "creatorUid", "creator"); err != nil {
+			return nil, err
+		} else if ok {
 			row["creatorId"] = v
 		}
-		if v, ok := docFirst(m, "modifiedTime", "gmtModified", "visitedTime", "updateTime", "modifyTime"); ok {
+		if v, ok, err := docTimestampField(m, "modifiedTime", "modifiedTime", "gmtModified", "visitedTime", "lastEditTime", "updateTime", "modifyTime"); err != nil {
+			return nil, err
+		} else if ok {
 			row["modifiedTime"] = v
-		}
-		if len(row) == 0 {
-			return nil, docProjectionUnknown("文档搜索结果条目缺少可识别字段")
 		}
 		out = append(out, row)
 	}
@@ -210,23 +235,13 @@ func docResolveList(data map[string]any) ([]any, bool) {
 	return nil, false
 }
 
-// docFirst returns the first present candidate key's value.
-func docFirst(m map[string]any, keys ...string) (any, bool) {
-	for _, k := range keys {
-		if v, ok := m[k]; ok {
-			return v, true
-		}
-	}
-	return nil, false
-}
-
 var List = shortcut.Shortcut{
 	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "doc",
 	Command:       "+list",
 	Product:       productDoc,
-	Description:   "列出文件夹或知识库下的直接子节点",
-	Intent:        "当你已知某个文档文件夹或知识库的 ID、想浏览它下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；输入 folder 或 workspace，返回该层级的子节点列表。",
+	Description:   "列出文件夹、知识库或默认文档根目录下的直接子节点",
+	Intent:        "当你想浏览某个文档文件夹、知识库或默认文档根目录下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；folder 优先于 workspace，二者都不传时浏览默认根目录。",
 	Risk:          shortcut.RiskRead,
 	Safety: contract.SafetySpec{
 		Effect: "read", Risk: "low",
@@ -240,29 +255,35 @@ var List = shortcut.Shortcut{
 			CLIPath:        "doc +list",
 			PrimaryCLIPath: "doc +list",
 		},
-		Description: "列出文件夹或知识库下的直接子节点",
+		Description: "列出文件夹、知识库或默认文档根目录下的直接子节点",
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
 			Reason:       "Reviewed built-in shortcut adapter: the executable CLI owns validation, optional multi-step orchestration, output projection, and confirmation; the complete command contract is not represented by one pinned MCP interface_ref.",
 		},
 		Selection: contract.SelectionSpec{
-			AgentSummary: "列出文件夹或知识库下的直接子节点",
-			UseWhen:      []string{"当你已知某个文档文件夹或知识库的 ID、想浏览它下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；输入 folder 或 workspace，返回该层级的子节点列表。"},
+			AgentSummary: "列出文件夹、知识库或默认文档根目录下的直接子节点",
+			UseWhen:      []string{"当你想浏览某个文档文件夹、知识库或默认文档根目录下面直接包含的文档与子文件夹（不递归深层）以便逐层导航时使用；folder 优先于 workspace，二者都不传时浏览默认根目录。"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
 			Examples: []string{
+				"dws doc +list",
 				"dws doc +list --folder DOC_FOLDER_NODE_ID",
-				"dws doc +list --workspace WS_ID --limit 20",
 			},
 		},
 	},
 	Flags: []shortcut.Flag{
 		{Name: "folder", Type: shortcut.FlagString, Desc: "文档文件夹 nodeId 或 alidocs 文件夹 URL"},
 		{Name: "workspace", Type: shortcut.FlagString, Desc: "知识库 ID"},
-		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 50，最大 50)"},
+		{Name: "limit", Type: shortcut.FlagInt, Desc: "每页数量 (默认 50)；显式 --limit 必须在 1-50 之间"},
 		{Name: "cursor", Type: shortcut.FlagString, Desc: "分页游标 (上次结果的 nextPageToken)"},
 	},
-	Tips: []string{`dws doc +list --folder DOC_FOLDER_NODE_ID`, `dws doc +list --workspace WS_ID --limit 20`},
+	Constraints: []shortcut.Constraint{
+		{Kind: shortcut.ConstraintCustom, Flags: []string{"limit"}, Description: "显式 --limit 必须在 1-50 之间"},
+	},
+	Tips: []string{`dws doc +list`, `dws doc +list --folder DOC_FOLDER_NODE_ID`, `dws doc +list --workspace WS_ID --limit 20`},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		return docValidateLimit(rt, "limit", 50)
+	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
 		params := map[string]any{}
 		if rt.Changed("folder") {
@@ -286,11 +307,11 @@ var List = shortcut.Shortcut{
 			return err
 		}
 		payload := map[string]any{
-			"count":            len(nodes),
-			"nodes":            nodes,
-			"pagination_known": false,
+			"count":           len(nodes),
+			"nodes":           nodes,
+			"inventory_scope": "requested_location",
 		}
-		return docListOutput(rt, payload, len(nodes))
+		return docListOutput(rt, data, payload, len(nodes))
 	},
 }
 
@@ -309,24 +330,38 @@ func listNodesProject(data map[string]any) ([]map[string]any, error) {
 		if !ok {
 			return nil, docProjectionUnknown("子节点列表包含无法识别的条目")
 		}
-		row := map[string]any{}
-		if v, ok := docStableNodeID(m, "nodeId", "node_id", "id", "docId", "doc_id"); ok {
-			row["nodeId"] = v
+		nodeID, present, err := docStringField(m, "nodeId", "nodeId", "node_id", "id", "docId", "doc_id")
+		if err != nil {
+			return nil, err
 		}
-		if _, ok := row["nodeId"]; !ok {
+		if !present || strings.TrimSpace(nodeID) == "" {
 			return nil, docProjectionUnknown("子节点条目缺少可用于后续操作的稳定 nodeId")
 		}
-		if v, ok := docFirst(m, "name", "title", "nodeName", "fileName"); ok {
+		row := map[string]any{"nodeId": nodeID}
+		if v, ok, err := docStringField(m, "name", "name", "title", "nodeName", "fileName"); err != nil {
+			return nil, err
+		} else if ok {
 			row["name"] = v
 		}
-		if v, ok := docFirst(m, "nodeType", "node_type", "docType", "type", "extension"); ok {
+		if v, ok, err := docStringField(m, "nodeType", "nodeType", "node_type", "docType", "type", "extension"); err != nil {
+			return nil, err
+		} else if ok {
 			row["nodeType"] = v
 		}
-		if v, ok := docFirst(m, "url", "nodeUrl", "docUrl", "webUrl"); ok {
+		if v, ok, err := docStringField(m, "url", "url", "nodeUrl", "docUrl", "webUrl"); err != nil {
+			return nil, err
+		} else if ok {
 			row["url"] = v
 		}
-		if len(row) == 0 {
-			return nil, docProjectionUnknown("子节点条目缺少可识别字段")
+		if v, ok, err := docBoolField(m, "hasChildren", "hasChildren", "has_children"); err != nil {
+			return nil, err
+		} else if ok {
+			row["hasChildren"] = v
+		}
+		if v, ok, err := docStringField(m, "workspaceId", "workspaceId", "workspace_id"); err != nil {
+			return nil, err
+		} else if ok {
+			row["workspaceId"] = v
 		}
 		out = append(out, row)
 	}
@@ -342,31 +377,252 @@ func docProjectionUnknown(message string) error {
 }
 
 // docListOutput emits the one active result contract for the two document
-// discovery commands. The service exposes a cursor input but this projection
-// has no verified continuation facts yet, so the payload says that fact is
-// unknown instead of fabricating endpoint exhaustion or a next token.
-func docListOutput(rt *shortcut.RuntimeContext, payload map[string]any, count int) error {
-	return rt.OutputResult(payload, output.Success(payload,
-		output.WithMeta(&output.Meta{Count: output.NewCount(count)}),
-	))
+// discovery commands. Pagination is published only when the service supplied
+// an authoritative, internally consistent hasMore/nextPageToken pair.
+func docListOutput(rt *shortcut.RuntimeContext, raw, payload map[string]any, count int) error {
+	page, known, err := docDiscoveryPagination(raw)
+	if err != nil {
+		return err
+	}
+	payload["pagination_known"] = known
+	meta := &output.Meta{Count: output.NewCount(count)}
+	if known {
+		meta.Pagination = page
+	}
+	return rt.OutputResult(payload, output.Success(payload, output.WithMeta(meta)))
 }
 
-// docStableNodeID accepts only a non-blank string node identifier. Search and
-// list are discovery commands whose primary value is handing their result to a
-// later document operation; a display-only row cannot safely be called a
-// usable discovery result.
-func docStableNodeID(m map[string]any, keys ...string) (string, bool) {
+func docDiscoveryPagination(data map[string]any) (*output.Pagination, bool, error) {
+	var selected *output.Pagination
+	for _, scope := range docPaginationScopes(data) {
+		page, present, err := docPaginationFromScope(scope)
+		if err != nil {
+			return nil, false, err
+		}
+		if !present {
+			continue
+		}
+		if selected != nil && (selected.EndpointExhausted != page.EndpointExhausted || selected.NextToken != page.NextToken) {
+			return nil, false, docPaginationError("文档发现响应的分页字段在嵌套容器间互相矛盾")
+		}
+		selected = page
+	}
+	if selected == nil {
+		return nil, false, nil
+	}
+	return selected, true, nil
+}
+
+func docPaginationScopes(data map[string]any) []map[string]any {
+	if data == nil {
+		return nil
+	}
+	scopes := []map[string]any{data}
+	for _, key := range []string{"result", "data"} {
+		if inner, ok := data[key].(map[string]any); ok {
+			scopes = append(scopes, inner)
+		}
+	}
+	return scopes
+}
+
+func docPaginationFromScope(scope map[string]any) (*output.Pagination, bool, error) {
+	if scope == nil {
+		return nil, false, nil
+	}
+	more, hasMore, err := docPaginationBoolAliases(scope, "hasMore", "has_more")
+	if err != nil {
+		return nil, false, err
+	}
+	cursor, hasCursor, err := docPaginationCursorAliases(scope,
+		"nextPageToken", "next_page_token", "nextCursor", "next_cursor",
+		"nextToken", "next_token", "pageToken", "page_token")
+	if err != nil {
+		return nil, false, err
+	}
+	if !hasMore && !hasCursor {
+		return nil, false, nil
+	}
+	if !hasMore {
+		return nil, false, docPaginationError("文档发现响应携带续页游标但缺少 hasMore")
+	}
+	page, err := output.NewPagination(!more, cursor)
+	if err != nil {
+		return nil, false, docPaginationError(err.Error())
+	}
+	return page, true, nil
+}
+
+func docPaginationBoolAliases(scope map[string]any, keys ...string) (bool, bool, error) {
+	var selected bool
+	present := false
 	for _, key := range keys {
-		value, ok := m[key]
+		value, ok := scope[key]
 		if !ok {
 			continue
 		}
-		id, ok := value.(string)
-		if ok && strings.TrimSpace(id) != "" {
-			return id, true
+		flag, ok := value.(bool)
+		if !ok {
+			return false, false, docPaginationError("文档发现响应的 hasMore 必须是布尔值")
+		}
+		if present && selected != flag {
+			return false, false, docPaginationError("文档发现响应的 hasMore 别名互相矛盾")
+		}
+		selected, present = flag, true
+	}
+	return selected, present, nil
+}
+
+func docPaginationCursorAliases(scope map[string]any, keys ...string) (string, bool, error) {
+	selected := ""
+	present := false
+	for _, key := range keys {
+		value, ok := scope[key]
+		if !ok {
+			continue
+		}
+		cursor, err := docPaginationToken(value, true)
+		if err != nil {
+			return "", false, err
+		}
+		if present && selected != cursor {
+			return "", false, docPaginationError("文档发现响应的续页游标别名互相矛盾")
+		}
+		selected, present = cursor, true
+	}
+	return selected, present, nil
+}
+
+func docPaginationToken(value any, present bool) (string, error) {
+	if !present || value == nil {
+		return "", nil
+	}
+	switch typed := value.(type) {
+	case string:
+		cursor := strings.TrimSpace(typed)
+		if cursor == "0" || cursor == "$" {
+			return "", nil
+		}
+		return cursor, nil
+	case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+		cursor := fmt.Sprint(typed)
+		if cursor == "0" {
+			return "", nil
+		}
+		return cursor, nil
+	case float32:
+		return docPaginationFloatToken(float64(typed))
+	case float64:
+		return docPaginationFloatToken(typed)
+	default:
+		return "", docPaginationError(fmt.Sprintf("文档发现响应的续页游标类型无效: %T", value))
+	}
+}
+
+func docPaginationFloatToken(value float64) (string, error) {
+	const maxExactJSONInteger = float64(1<<53 - 1)
+	if math.IsNaN(value) || math.IsInf(value, 0) || value != math.Trunc(value) || math.Abs(value) > maxExactJSONInteger {
+		return "", docPaginationError("文档发现响应的续页游标必须是字符串或整数")
+	}
+	if value == 0 {
+		return "", nil
+	}
+	return strconv.FormatInt(int64(value), 10), nil
+}
+
+func docPaginationError(message string) error {
+	return apperrors.NewAPI(message,
+		apperrors.WithSubtype(apperrors.SubtypePaginationInconsistent),
+		apperrors.WithFailureStage("response_projection"),
+		apperrors.WithRetryable(false),
+	)
+}
+
+func docStringField(m map[string]any, outputName string, keys ...string) (string, bool, error) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok || value == nil {
+			continue
+		}
+		text, ok := value.(string)
+		if !ok {
+			return "", false, docProjectionUnknown(fmt.Sprintf("文档发现结果字段 %s 必须是字符串", outputName))
+		}
+		return text, true, nil
+	}
+	return "", false, nil
+}
+
+func docBoolField(m map[string]any, outputName string, keys ...string) (bool, bool, error) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok || value == nil {
+			continue
+		}
+		flag, ok := value.(bool)
+		if !ok {
+			return false, false, docProjectionUnknown(fmt.Sprintf("文档发现结果字段 %s 必须是布尔值", outputName))
+		}
+		return flag, true, nil
+	}
+	return false, false, nil
+}
+
+func docTimestampField(m map[string]any, outputName string, keys ...string) (any, bool, error) {
+	for _, key := range keys {
+		value, ok := m[key]
+		if !ok || value == nil {
+			continue
+		}
+		switch typed := value.(type) {
+		case string:
+			return typed, true, nil
+		case int, int8, int16, int32, int64, uint, uint8, uint16, uint32, uint64:
+			return typed, true, nil
+		case float32:
+			if math.IsNaN(float64(typed)) || math.IsInf(float64(typed), 0) || typed != float32(math.Trunc(float64(typed))) {
+				return nil, false, docProjectionUnknown(fmt.Sprintf("文档发现结果字段 %s 必须是时间字符串或整数时间戳", outputName))
+			}
+			return typed, true, nil
+		case float64:
+			if math.IsNaN(typed) || math.IsInf(typed, 0) || typed != math.Trunc(typed) {
+				return nil, false, docProjectionUnknown(fmt.Sprintf("文档发现结果字段 %s 必须是时间字符串或整数时间戳", outputName))
+			}
+			return typed, true, nil
+		default:
+			return nil, false, docProjectionUnknown(fmt.Sprintf("文档发现结果字段 %s 必须是时间字符串或整数时间戳", outputName))
 		}
 	}
-	return "", false
+	return nil, false, nil
+}
+
+func docValidateLimit(rt *shortcut.RuntimeContext, flag string, maximum int) error {
+	if !rt.Changed(flag) {
+		return nil
+	}
+	value := rt.Int(flag)
+	if value >= 1 && value <= maximum {
+		return nil
+	}
+	return apperrors.NewValidation(fmt.Sprintf("--%s 必须在 1-%d 之间", flag, maximum),
+		apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue),
+		apperrors.WithHint(fmt.Sprintf("省略 --%s 使用服务端默认值，或传入 1-%d 之间的整数。", flag, maximum)))
+}
+
+func docValidateTimeRange(rt *shortcut.RuntimeContext, fromFlag, toFlag string) error {
+	if rt.Changed(fromFlag) && rt.Int(fromFlag) < 0 {
+		return apperrors.NewValidation("--"+fromFlag+" 必须是非负毫秒时间戳",
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue))
+	}
+	if rt.Changed(toFlag) && rt.Int(toFlag) < 0 {
+		return apperrors.NewValidation("--"+toFlag+" 必须是非负毫秒时间戳",
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue))
+	}
+	if rt.Changed(fromFlag) && rt.Changed(toFlag) && rt.Int(fromFlag) > rt.Int(toFlag) {
+		return apperrors.NewValidation("--"+fromFlag+" 不得晚于 --"+toFlag,
+			apperrors.WithSubtype(apperrors.SubtypeInvalidFlagValue))
+	}
+	return nil
 }
 
 // ── 文档创建 / 更新 ──────────────────────────────────────────
