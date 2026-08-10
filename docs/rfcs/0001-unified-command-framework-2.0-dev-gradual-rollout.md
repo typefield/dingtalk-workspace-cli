@@ -490,7 +490,7 @@ dws devapp +list ...
 1. **框架闭环**：root 单结果出口、严格校验、stdout/stderr、sink cleanup、panic/PAT/custom rc。
 2. **已有 dev 终态命令**：固定 `dev app`、`dev doc search`、connect 管理子命令的统一结果 golden。
 3. **Agent 已使用的 devapp read shortcuts**：`+list/+get/+event-list/+member-list/+permission-list/+version-*` 等原位迁移。
-4. **devapp write shortcuts**：`+create/+update/+enable/+disable` 已按独立 terminal command 晋级，并以 `verification:not_verified` 保留未做写后回读的事实；`+delete` 在补齐 `--confirm-name` 二次防误删前保持 dual，`+member-*` 继续先锁定 confirmation/dry-run/idempotency。
+4. **devapp write shortcuts**：`+create/+update/+enable/+disable/+delete` 已按独立 terminal command 晋级，并以 `verification:not_verified` 保留未做写后回读的事实；`+delete` 额外通过 guard-first、`--confirm-name` 和只读 get-then-compare 防误删，`+member-*` 继续先锁定 confirmation/dry-run/idempotency。
 5. **复杂和异步命令**：引入 pending/partial/unknown，不把超时伪装成 failure 或 success。
 6. **stream 与 MCP**：分别立项，不阻塞单结果命令的渐进发布。
 
@@ -616,7 +616,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 
 ### P0
 
-- Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 框架接入已完成；继续按 terminal command 迁移 Agent 当前使用的 `devapp +...`，禁止整域批量切换。下一写入批次先补齐 `+delete` 的 `--confirm-name` 防误删差距，并完成成员/版本写操作的 partial、pending、unknown 语义取证。
+- Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 框架接入已完成；继续按 terminal command 迁移 Agent 当前使用的 `devapp +...`，禁止整域批量切换。`+delete` 的 guard-first 与 `--confirm-name` 防误删差距已关闭；下一写入批次完成成员/版本写操作的 partial、pending、unknown 语义取证。
 - 收口 root 的 emit/cleanup/panic 顺序，保证 `--output` 下仍恰好一个结果且 rc 不反转。
 - 为统一结果 failure、partial、pending、PAT RawStderr、custom rc 增加真实 root E2E。
 - 修订 Schema exclusion：迁移一个 `devapp +...` 就精确移除一个，不做整组前缀隐藏。

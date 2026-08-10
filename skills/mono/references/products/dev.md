@@ -88,7 +88,9 @@ dws dev app update --unified-app-id <unifiedAppId> --name <新名称> --yes --fo
 dws dev app disable --unified-app-id <unifiedAppId> --yes --format json
 dws dev app enable  --unified-app-id <unifiedAppId> --yes --format json
 
-# 删除应用（不可逆，需 --confirm-name 二次确认）
+# 删除应用（不可逆）：先查询准确名称，再预览；用户确认后才执行
+dws dev app get --unified-app-id <unifiedAppId> --format json
+dws dev app delete --unified-app-id <unifiedAppId> --dry-run --format json
 dws dev app delete --unified-app-id <unifiedAppId> --confirm-name <应用名> --yes --format json
 ```
 

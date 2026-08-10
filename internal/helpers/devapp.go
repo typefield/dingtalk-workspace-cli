@@ -695,6 +695,7 @@ func newDevAppDeleteCommand(runner executor.Runner) *cobra.Command {
 			},
 			Description: "删除开放平台企业内部应用（不可逆，需 --confirm-name 二次确认）",
 			DryRun:      devAppDryRun,
+			Result:      DevAppMutationResultSpec(),
 			Interface:   devAppCompositeInterface(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "删除开放平台企业内部应用（不可恢复）",
@@ -709,8 +710,8 @@ func newDevAppDeleteCommand(runner executor.Runner) *cobra.Command {
 				return err
 			}
 			params := map[string]any{"unifiedAppId": appID}
-			// Dry-run previews the delete without requiring confirmation —
-			// the agent uses it (or `get`) to read the app name first.
+			// Dry-run previews the delete request without requiring confirmation.
+			// The agent uses `get` separately to obtain the exact application name.
 			if commandDryRun(cmd) {
 				return runDevAppTool(runner, cmd, devAppDeleteTool, params)
 			}
@@ -726,7 +727,7 @@ func newDevAppDeleteCommand(runner executor.Runner) *cobra.Command {
 			// 读不到应用名时 fail-closed：不可逆删除不能在无法校验 --confirm-name
 			// 的情况下放行，否则二次确认形同虚设。
 			if actualName == "" {
-				return apperrors.NewValidation("无法读取应用名以校验 --confirm-name，已中止删除；请确认 --unified-app-id 正确，或先用 --dry-run / `dev app get` 预览")
+				return apperrors.NewValidation("无法读取应用名以校验 --confirm-name，已中止删除；请确认 --unified-app-id 正确，并先用 `dev app get` 核对应用名")
 			}
 			if confirmName != actualName {
 				return apperrors.NewValidation(fmt.Sprintf("名称不匹配：--confirm-name=%q 但定位到的应用名是 %q，已中止删除", confirmName, actualName))
@@ -754,24 +755,37 @@ func devAppFetchAppName(runner executor.Runner, cmd *cobra.Command, locator map[
 	}
 	// get_dev_app 返回的应用名字段是 name（credentials 才用 appName）；
 	// 取 name、appName 兜底，否则 delete 永远读不到名、二次确认必然 fail-closed。
-	if name := devAppExtractString(result.Response, "name"); name != "" {
-		return name, nil
-	}
-	return devAppExtractString(result.Response, "appName"), nil
+	return DevAppApplicationName(result.Response), nil
 }
 
-// devAppExtractString descends the helper response (content → result) and reads
-// a string field. Returns "" if absent.
-func devAppExtractString(response map[string]any, key string) string {
-	node := response
-	if inner, ok := node["content"].(map[string]any); ok {
-		node = inner
-	}
-	if inner, ok := node["result"].(map[string]any); ok {
-		node = inner
-	}
-	if v, ok := node[key].(string); ok {
-		return v
+// DevAppApplicationName reads the application name from the response shapes
+// shared by the native helper and shortcut caller: response.content,
+// ServiceResult.result, or the already-unwrapped business object. The walk is
+// deliberately bounded and only follows reviewed envelope keys; an unknown
+// shape returns empty so destructive callers fail closed.
+func DevAppApplicationName(payload any) string {
+	node := payload
+	for depth := 0; depth < 6; depth++ {
+		object, ok := node.(map[string]any)
+		if !ok {
+			return ""
+		}
+		for _, key := range []string{"name", "appName"} {
+			if value, ok := object[key].(string); ok && strings.TrimSpace(value) != "" {
+				return strings.TrimSpace(value)
+			}
+		}
+		advanced := false
+		for _, key := range []string{"content", "result", "data"} {
+			if inner, ok := object[key].(map[string]any); ok {
+				node = inner
+				advanced = true
+				break
+			}
+		}
+		if !advanced {
+			return ""
+		}
 	}
 	return ""
 }

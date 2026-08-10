@@ -22,7 +22,7 @@
 - Agent 始终只使用既有的 `--format json`，不选择输出协议版本。
 - 已迁移的可终结 `dev` 命令直接返回统一的 `ok/outcome/data|error/meta` 信封；按 `ok/outcome` 解析，`partial_failure` 和 `pending` 不得当作完整终态成功。
 - `devapp +create/+update/+enable/+disable` 或对应 `dev app` 原子命令返回 success 时，若 `data.verification.state=not_verified`，只表示请求路径成功返回，不能宣称应用已经创建、生效、启用或停用；必须用 `devapp +get` / `dev app get` 回读目标状态。调用失败且提示执行可能已经开始时也先回读，禁止盲目重放写请求。
-- 永久删除优先使用带 `--confirm-name` 二次确认的 `dws dev app delete`；`devapp +delete` 在尚未具备同等防误删语义前不作为 Agent 的默认删除路线。
+- 永久删除必须先用 `devapp +get` / `dev app get` 取得并向用户展示准确应用名，再以相同 ID 执行 `--dry-run` 展示删除请求；用户明确确认后，`devapp +delete` 与 `dev app delete` 都必须携带完全一致的 `--confirm-name <应用名>` 和 `--yes`。名称读取失败或不匹配必须停止，禁止绕过二次确认。
 - `dev connect` 前台模式是长驻 Stream，继续按流式会话处理；status/stop/restart/list 等可终结子命令使用统一结果契约。
 - 命令迁移和回滚由 CLI 发布完成，不把兼容责任转交给 Skill 或 Agent。
 

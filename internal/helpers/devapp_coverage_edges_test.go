@@ -242,6 +242,6 @@ func TestCrossPlatformCoverageDevAppCommandUtilityEdges(t *testing.T) {
 		{"content": "invalid"},
 		{"content": map[string]any{"result": "invalid"}},
 	} {
-		_ = devAppExtractString(response, "name")
+		_ = DevAppApplicationName(response)
 	}
 }

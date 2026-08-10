@@ -176,6 +176,11 @@ type Shortcut struct {
 	// non-empty it overrides Risk expansion in FromShortcut; otherwise Risk
 	// still drives ConfirmSafety so existing Execute bodies stay unchanged.
 	Safety contract.SafetySpec
+	// ConfirmFirst preserves guard-first behavior for destructive shortcuts:
+	// confirmation runs before required/custom validation, while --dry-run still
+	// bypasses the confirmation and reaches the no-write preview. This is release
+	// behavior, not an Agent-selectable compatibility switch.
+	ConfirmFirst bool
 	// Contract is the final Agent Contract overlay (selection/interface/dry-run).
 	// Empty fails Catalog assembly; every Shortcut must declare Contract.
 	Contract corecmd.ContractDecl

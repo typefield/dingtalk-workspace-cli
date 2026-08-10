@@ -9,6 +9,7 @@ import (
 	"encoding/json"
 	stderrors "errors"
 	"reflect"
+	"strings"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -118,14 +119,14 @@ func TestDevAppCoreMutationShortcutsEmitOneHonestUnifiedResult(t *testing.T) {
 	}
 }
 
-func TestDevAppCoreMutationShortcutContractsAreActiveButDeleteStaysDual(t *testing.T) {
+func TestDevAppCoreMutationShortcutContractsAreActive(t *testing.T) {
 	registered := make(map[string]shortcut.Shortcut)
 	for _, item := range shortcut.All() {
 		if item.Service == "devapp" {
 			registered[item.Command] = item
 		}
 	}
-	for _, name := range []string{"+create", "+update", "+enable", "+disable"} {
+	for _, name := range []string{"+create", "+update", "+enable", "+disable", "+delete"} {
 		item := registered[name]
 		if item.OutputRollout != output.RolloutUnifiedActive || item.Contract.Result == nil {
 			t.Fatalf("%s rollout/result = %q/%#v", name, item.OutputRollout, item.Contract.Result)
@@ -143,8 +144,116 @@ func TestDevAppCoreMutationShortcutContractsAreActiveButDeleteStaysDual(t *testi
 			t.Fatalf("%s safety=%#v", name, item.Safety)
 		}
 	}
-	if item := registered["+delete"]; item.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("delete rollout=%q; must remain dual until confirm-name parity is implemented", item.OutputRollout)
+	if item := registered["+delete"]; !item.ConfirmFirst {
+		t.Fatal("delete must preserve guard-first confirmation ordering")
+	}
+}
+
+type devAppDeleteCaller struct {
+	actualName string
+	tools      []string
+}
+
+func (c *devAppDeleteCaller) CallTool(_ context.Context, _, tool string, _ map[string]any) (*edition.ToolResult, error) {
+	c.tools = append(c.tools, tool)
+	result := map[string]any{"unifiedAppId": "app-1", "deleted": true}
+	if tool == "get_dev_app" {
+		result = map[string]any{}
+		if c.actualName != "" {
+			result["name"] = c.actualName
+		}
+	}
+	encoded, err := json.Marshal(map[string]any{"success": true, "result": result})
+	if err != nil {
+		return nil, err
+	}
+	return &edition.ToolResult{Content: []edition.ContentBlock{{Type: "text", Text: string(encoded)}}}, nil
+}
+
+func (*devAppDeleteCaller) Format() string { return "json" }
+func (*devAppDeleteCaller) DryRun() bool   { return false }
+func (*devAppDeleteCaller) Fields() string { return "" }
+func (*devAppDeleteCaller) JQ() string     { return "" }
+
+func executeDevAppDelete(t *testing.T, caller *devAppDeleteCaller, args ...string) (map[string]any, error) {
+	t.Helper()
+	helpers.InitDepsForTest(t, caller)
+	cmd := corecmd.New(shortcut.FromShortcut(frameworkUnified(DeleteApp)))
+	cmd.PersistentFlags().String("format", "json", "")
+	cmd.PersistentFlags().Bool("yes", false, "")
+	cmd.PersistentFlags().Bool("dry-run", false, "")
+	ctx, _ := output.WithResultStore(context.Background())
+	cmd.SetContext(ctx)
+	var stdout bytes.Buffer
+	cmd.SetOut(&stdout)
+	cmd.SetErr(&bytes.Buffer{})
+	cmd.SetArgs(append([]string{"--format", "json"}, args...))
+	if err := cmd.Execute(); err != nil {
+		return nil, err
+	}
+	_, emitted, err := output.EmitStoredResult(cmd)
+	if err != nil || !emitted {
+		t.Fatalf("emit: emitted=%v err=%v", emitted, err)
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode output: %v\n%s", err, stdout.String())
+	}
+	return envelope, nil
+}
+
+func TestDevAppDeleteShortcutRequiresMatchingNameBeforeOneDelete(t *testing.T) {
+	caller := &devAppDeleteCaller{actualName: "DemoApp"}
+	envelope, err := executeDevAppDelete(t, caller,
+		"--unified-app-id", "app-1", "--confirm-name", "DemoApp", "--yes")
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if !reflect.DeepEqual(caller.tools, []string{"get_dev_app", "delete_dev_app"}) {
+		t.Fatalf("tools=%#v", caller.tools)
+	}
+	data, _ := envelope["data"].(map[string]any)
+	verification, _ := data["verification"].(map[string]any)
+	if envelope["ok"] != true || envelope["outcome"] != "success" || verification["state"] != "not_verified" {
+		t.Fatalf("envelope=%#v", envelope)
+	}
+}
+
+func TestDevAppDeleteShortcutFailsClosedBeforeDelete(t *testing.T) {
+	tests := []struct {
+		name       string
+		actualName string
+		args       []string
+		wantCalls  []string
+		wantText   string
+	}{
+		{name: "missing yes is guard first", args: []string{"--unified-app-id", "app-1"}, wantText: "确认"},
+		{name: "missing confirm name", args: []string{"--unified-app-id", "app-1", "--yes"}, wantText: "--confirm-name"},
+		{name: "name mismatch", actualName: "RealApp", args: []string{"--unified-app-id", "app-1", "--confirm-name", "Wrong", "--yes"}, wantCalls: []string{"get_dev_app"}, wantText: "名称不匹配"},
+		{name: "name unavailable", args: []string{"--unified-app-id", "app-1", "--confirm-name", "DemoApp", "--yes"}, wantCalls: []string{"get_dev_app"}, wantText: "无法读取应用名"},
+	}
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			caller := &devAppDeleteCaller{actualName: tt.actualName}
+			_, err := executeDevAppDelete(t, caller, tt.args...)
+			if err == nil || !strings.Contains(err.Error(), tt.wantText) {
+				t.Fatalf("error=%v, want %q", err, tt.wantText)
+			}
+			if !reflect.DeepEqual(caller.tools, tt.wantCalls) {
+				t.Fatalf("tools=%#v, want %#v", caller.tools, tt.wantCalls)
+			}
+		})
+	}
+}
+
+func TestDevAppDeleteShortcutDryRunNeedsNoNameAndMakesNoCall(t *testing.T) {
+	caller := &devAppDeleteCaller{}
+	envelope, err := executeDevAppDelete(t, caller, "--unified-app-id", "app-1", "--dry-run")
+	if err != nil {
+		t.Fatalf("execute: %v", err)
+	}
+	if len(caller.tools) != 0 || envelope["ok"] != true || envelope["dry_run"] != true {
+		t.Fatalf("tools=%#v envelope=%#v", caller.tools, envelope)
 	}
 }
 

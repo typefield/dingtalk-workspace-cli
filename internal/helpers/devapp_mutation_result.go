@@ -56,7 +56,7 @@ func DevAppMutationResultSpec() *contract.ResultSpec {
 
 func devAppMutationSuccessData(tool string, data any) (any, *output.ErrorInfo) {
 	switch strings.TrimSpace(tool) {
-	case devAppCreateTool, devAppUpdateTool, devAppEnableTool, devAppDisableTool:
+	case devAppCreateTool, devAppUpdateTool, devAppEnableTool, devAppDisableTool, devAppDeleteTool:
 	default:
 		return data, nil
 	}

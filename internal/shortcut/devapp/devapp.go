@@ -26,6 +26,7 @@ package devapp
 
 import (
 	"encoding/json"
+	"fmt"
 	"strings"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
@@ -325,12 +326,13 @@ var DeleteApp = shortcut.Shortcut{
 	Command:     "+delete",
 	Product:     productDevApp,
 	Description: "删除开放平台企业内部应用（不可逆）",
-	Intent:      "当你确认要彻底废弃某个企业内部应用时使用；传入 unifiedAppId 会真实且不可逆地删除该应用及其配置，执行前务必确认无误。",
+	Intent:      "用户明确要求永久删除应用，且已通过 get 核对应用名、通过 dry-run 核对删除请求与不可恢复影响时使用",
 	Risk:        shortcut.RiskHighWrite,
 	Safety: contract.SafetySpec{
 		Effect: "destructive", Risk: "high",
 		Confirmation: "user_required", Idempotency: "unknown",
 	},
+	ConfirmFirst: true,
 	Contract: corecmd.ContractDecl{
 		Identity: contract.ToolIdentitySpec{
 			ProductID:      "devapp",
@@ -339,7 +341,8 @@ var DeleteApp = shortcut.Shortcut{
 			CLIPath:        "devapp +delete",
 			PrimaryCLIPath: "devapp +delete",
 		},
-		Description: "删除开放平台企业内部应用（不可逆）",
+		Description: "删除开放平台企业内部应用（不可逆，需 --confirm-name 二次确认）",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -347,16 +350,43 @@ var DeleteApp = shortcut.Shortcut{
 		},
 		Selection: contract.SelectionSpec{
 			AgentSummary: "删除开放平台企业内部应用（不可逆）",
-			UseWhen:      []string{"当你确认要彻底废弃某个企业内部应用时使用；传入 unifiedAppId 会真实且不可逆地删除该应用及其配置，执行前务必确认无误。"},
+			UseWhen:      []string{"用户明确要求永久删除应用，且已通过 get 核对应用名、通过 dry-run 核对删除请求与不可恢复影响时使用"},
 			AvoidWhen:    []string{"需要该 Shortcut 未公开的底层参数、原始响应或不同执行语义时，改用对应原子命令"},
-			Examples:     []string{"dws devapp +delete --unified-app-id <UNIFIED_APP_ID>"},
+			Examples:     []string{"dws devapp +delete --unified-app-id <UNIFIED_APP_ID> --dry-run --format json"},
 		},
 	},
 	Flags: []shortcut.Flag{
 		{Name: "unified-app-id", Type: shortcut.FlagString, Desc: "开放平台统一应用 ID", Required: true},
+		{Name: "confirm-name", Type: shortcut.FlagString, Desc: "非 --dry-run 时 --confirm-name 必须与只读查询得到的应用名称完全一致"},
+	},
+	Constraints: []shortcut.Constraint{{
+		Kind:        shortcut.ConstraintCustom,
+		Flags:       []string{"confirm-name"},
+		Description: "非 --dry-run 时 --confirm-name 必须与只读查询得到的应用名称完全一致",
+	}},
+	Validate: func(rt *shortcut.RuntimeContext) error {
+		if !rt.DryRun() && rt.Str("confirm-name") == "" {
+			return apperrors.NewValidation("删除不可逆，需二次确认：先用 devapp +get 查看应用名，再加 --confirm-name=<应用名>")
+		}
+		return nil
 	},
 	Execute: func(rt *shortcut.RuntimeContext) error {
-		return rt.CallMCP("delete_dev_app", map[string]any{"unifiedAppId": rt.Str("unified-app-id")})
+		params := map[string]any{"unifiedAppId": rt.Str("unified-app-id")}
+		if rt.DryRun() {
+			return rt.CallMCP("delete_dev_app", params)
+		}
+		lookup, err := rt.CallMCPData(productDevApp, "get_dev_app", params)
+		if err != nil {
+			return err
+		}
+		actualName := helpers.DevAppApplicationName(lookup)
+		if actualName == "" {
+			return apperrors.NewValidation("无法读取应用名以校验 --confirm-name，已中止删除；请确认 --unified-app-id 正确，并先用 devapp +get 核对应用名")
+		}
+		if confirmName := rt.Str("confirm-name"); confirmName != actualName {
+			return apperrors.NewValidation(fmt.Sprintf("名称不匹配：--confirm-name=%q 但定位到的应用名是 %q，已中止删除", confirmName, actualName))
+		}
+		return rt.CallMCP("delete_dev_app", params)
 	},
 }
 
@@ -1368,7 +1398,7 @@ func init() {
 		frameworkUnified(GetApp),
 		frameworkUnified(CreateApp),
 		frameworkUnified(UpdateApp),
-		frameworkDualValidate(DeleteApp),
+		frameworkUnified(DeleteApp),
 		frameworkUnified(EnableApp),
 		frameworkUnified(DisableApp),
 		frameworkUnified(GetCredentials),

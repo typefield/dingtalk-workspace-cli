@@ -54,11 +54,12 @@ func FromShortcut(s Shortcut) corecmd.Spec {
 		OutputRollout: s.OutputRollout,
 		// Only the prose part: corecmd.New appends its own 参数约束
 		// section, so the adapter must not pre-render it.
-		Long:        shortcutIntentProse(s),
-		Flags:       fromShortcutFlags(s.Flags),
-		Constraints: fromShortcutConstraints(s.Constraints),
-		Safety:      safety,
-		Contract:    declaredContract,
+		Long:         shortcutIntentProse(s),
+		Flags:        fromShortcutFlags(s.Flags),
+		Constraints:  fromShortcutConstraints(s.Constraints),
+		Safety:       safety,
+		ConfirmFirst: s.ConfirmFirst,
+		Contract:     declaredContract,
 		// Preserve the shipped Shortcut Catalog provenance: Cobra remains the
 		// source for type/default/usage, while command adds Required/Enum/rules.
 		ParameterProjection: corecmd.ProjectCobraParameters,
