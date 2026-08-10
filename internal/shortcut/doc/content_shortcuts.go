@@ -31,7 +31,7 @@ var (
 )
 
 var Create = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "doc",
 	Command:       "+create",
 	Product:       productDoc,
@@ -288,7 +288,7 @@ var Update = shortcut.Shortcut{
 }
 
 var CheckpointUpdate = shortcut.Shortcut{
-	OutputRollout: output.RolloutDualValidate,
+	OutputRollout: output.RolloutUnifiedActive,
 	Service:       "doc",
 	Command:       "+checkpoint-update",
 	Product:       productDoc,

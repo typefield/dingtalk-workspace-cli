@@ -1318,7 +1318,7 @@ func init() {
 	// registration init so the registry never captures an earlier legacy copy.
 	VersionRevert.Contract.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: true}
 	VersionRevert.Contract.Result = docOperationResultSpec()
-	VersionRevert.OutputRollout = output.RolloutDualValidate
+	VersionRevert.OutputRollout = output.RolloutUnifiedActive
 	shortcut.Register(
 		Search,
 		List,

@@ -264,7 +264,7 @@ func TestDocPartialWriteResultMapsDeclaredStepsToThreeChannels(t *testing.T) {
 	}
 }
 
-func TestDocCompositeWritesPublishReviewedDualContracts(t *testing.T) {
+func TestDocCompositeWritesPublishReviewedActiveContracts(t *testing.T) {
 	registered := make(map[string]shortcut.Shortcut)
 	for _, item := range shortcut.All() {
 		if item.Service == "doc" {
@@ -282,8 +282,8 @@ func TestDocCompositeWritesPublishReviewedDualContracts(t *testing.T) {
 		if item.Command == "" {
 			t.Fatalf("%s is missing from the runtime registry", name)
 		}
-		if item.OutputRollout != output.RolloutDualValidate {
-			t.Fatalf("%s rollout = %q, want dual_validate", name, item.OutputRollout)
+		if item.OutputRollout != output.RolloutUnifiedActive {
+			t.Fatalf("%s rollout = %q, want unified_active", name, item.OutputRollout)
 		}
 		if item.Contract.Result == nil || item.Contract.DryRun == nil {
 			t.Fatalf("%s missing reviewed result/dry-run contract", name)
@@ -390,10 +390,9 @@ func TestDocCompositeWriteUnifiedPartialResultsPreserveAppliedSteps(t *testing.T
 
 func runDocUnifiedResult(t *testing.T, declaration shortcut.Shortcut, caller *docCoverageCaller, args ...string) (int, map[string]any) {
 	t.Helper()
-	if declaration.OutputRollout != output.RolloutDualValidate {
-		t.Fatalf("%s is not in reviewed dual validation", declaration.Command)
+	if declaration.OutputRollout != output.RolloutUnifiedActive {
+		t.Fatalf("%s is not unified active", declaration.Command)
 	}
-	declaration.OutputRollout = output.RolloutUnifiedActive
 	helpers.InitDeps(caller)
 	ctx, _ := output.WithResultStore(context.Background())
 	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}

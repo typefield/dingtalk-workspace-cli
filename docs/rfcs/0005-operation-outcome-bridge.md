@@ -1,6 +1,6 @@
 # RFC-0005：状态机阻断与复合写的 operation outcome 接入
 
-- 状态：实施中；doc 三条复合写与 `event stop` 已进入 dual validation，个人订阅仍待语义审阅
+- 状态：实施中；doc 三条复合写与 `event stop` 已逐命令进入 unified active，个人订阅仍待语义审阅
 - 日期：2026-08-09
 - 适用范围：个人订阅尝试状态机、`doc` 复合写 shortcut、`event stop` 复合停机
 - 依赖：RFC-0001（统一返回渐进 rollout）、RFC-0003（稳定错误 subtype）和
@@ -17,8 +17,9 @@
 | `doc create` / `doc checkpoint-update` / `doc history-revert` | 已完成步骤被塞进普通 API error 的 `details.status=partial_success` | “创建已成功、后续写失败”不是普通 failure；Agent 需要知道哪些步骤已生效、哪些失败、哪些还未知，避免重复创建或盲目回滚 |
 
 该 RFC 的目标不是让 CoreCmd 自动验证业务终态。目标是建立一个窄的桥接方式：业务命令识别
-到阻断、已应用、失败或未知时，框架能在**该命令已经进入统一输出**后如实表达；legacy 命令
-保持既有字节和退出码，dual validation 只构建/校验 shadow result。
+到阻断、已应用、失败或未知时，框架能在**该命令已经进入统一输出**后如实表达。迁移期间
+legacy 命令保持既有字节和退出码，dual validation 只构建/校验 shadow result；进入 active
+后每条 terminal command 只保留一个外部结果契约。
 
 ## 2. 三层事实模型
 
@@ -135,8 +136,10 @@ unified_active:
 ```
 
 桥接不能重新调用 MCP，不能把 `partial_failure` 包装为 `ok:true`，也不能在已经写入结果后再
-尝试第二个 error envelope。`doc` 每个 terminal leaf 独立 rollout：先是三个复合写命令
-的 dual validation，确认 legacy golden 不变后才逐条 active。
+尝试第二个 error envelope。`doc` 每个 terminal leaf 独立 rollout：三个复合写命令先在
+dual validation 确认 legacy 路径和一次执行不变量，再逐条切换 active。当前 create、
+checkpoint-update、history-revert 均已 active；成功/预览数据固定为
+`operation/result/steps`，不会把旧 `{ok,status,...}` 信封嵌套进新信封。
 
 #### 验收
 
@@ -166,9 +169,9 @@ state → 核查剩余状态 → 按需停止 personal bus。任一后续阶段�
 `event_stop_unverified` subtype。dual 阶段的 legacy error 仍保留
 `reason=partial_failure`，避免在尚未切 active 的命令上静默改变既有 wire。
 
-当前命令为 `dual_validate`：每次业务流程只执行一次，同时构建并 `ValidateResult`；既有
-legacy error、stdout 和退出码保持不变。它尚未进入 active，原因是成功路径仍使用 legacy
-renderer，不能只让错误路径单独切换协议。
+`event stop` 已完成 dual validation 后进入 `unified_active`：每次业务流程只执行一次，成功、
+preview、partial 和 failure 均由同一结果 lifecycle 输出。已确认取消的 subscription 仍保留
+在 `succeeded[]`，无法确认的后续阶段进入 `unknown[]`；真实控制面终态仍需隔离账号复验。
 
 #### 验收
 
@@ -186,7 +189,7 @@ renderer，不能只让错误路径单独切换协议。
 ```text
 P0  个人状态机的 Category/幂等性源码审阅；登记 doc 五个既有 reason descriptor（后者已完成）
 P1  在 doc create / checkpoint-update / history-revert 以及 event stop 建 shadow PartialData（已完成）；dual 下保留 legacy error 与 rc，并以单元测试锁定三通道与单次结果出口
-P2  按命令转 active；受控真实账号复验已应用/补偿事实
+P2  按命令转 active（四条均已完成）；继续用受控真实账号复验已应用/补偿事实
 P3  审阅个人订阅请求失败分类与 idempotency，再迁其余 failure family
 ```
 
