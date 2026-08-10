@@ -791,7 +791,7 @@ var MemberAdd = shortcut.Shortcut{
 	Intent:      "当你要给某应用增加协作人员（如把某人加为开发者）时使用；传入 unifiedAppId、userId 列表和成员类型（如 DEVELOPER），会实际把这些人加入应用成员并赋予对应角色。",
 	Risk:        shortcut.RiskWrite,
 	Safety: contract.SafetySpec{
-		Effect: "write", Risk: "medium",
+		Effect: "write", Risk: "high",
 		Confirmation: "user_required", Idempotency: "unknown",
 	},
 	Contract: corecmd.ContractDecl{
@@ -803,6 +803,7 @@ var MemberAdd = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +member-add",
 		},
 		Description: "添加开放平台应用成员",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",
@@ -851,6 +852,7 @@ var MemberRemove = shortcut.Shortcut{
 			PrimaryCLIPath: "devapp +member-remove",
 		},
 		Description: "移除开放平台应用成员",
+		Result:      helpers.DevAppMutationResultSpec(),
 		Interface: &contract.InterfaceSpec{
 			Mode:         "composite",
 			Availability: "available",

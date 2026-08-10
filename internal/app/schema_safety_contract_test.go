@@ -39,9 +39,9 @@ func TestReviewedMutationSafetyReachesFinalSchema(t *testing.T) {
 }
 
 func TestDevAppWriteGuardRequiresFinalSchemaConfirmation(t *testing.T) {
-	// devapp 全树已声明化：provenance 为 contract_final；effect/risk 逐字
-	// 保持 merge-base 评审值（写操作一律 high，publish 为 write/high），
-	// 重分级需要独立的契约变更 PR。
+	// devapp 全树已声明化：provenance 为 contract_final。成员移除与
+	// Shortcut 的既有高危语义对齐为 destructive/high；其余普通写仍为
+	// write/high，任何后续重分级都需要独立的契约变更与运行时门禁证据。
 	const declared = "contract_final"
 	wants := []finalSchemaSafetyWant{
 		{canonical: "dev.add_dev_app_members", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
@@ -54,7 +54,7 @@ func TestDevAppWriteGuardRequiresFinalSchemaConfirmation(t *testing.T) {
 		{canonical: "dev.enable_dev_app", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
 		{canonical: "dev.enable_dev_app_robot", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
 		{canonical: "dev.publish_dev_app_version", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
-		{canonical: "dev.remove_dev_app_members", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
+		{canonical: "dev.remove_dev_app_members", effect: "destructive", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
 		{canonical: "dev.remove_dev_app_permissions", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
 		{canonical: "dev.set_extension_robot_config", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},
 		{canonical: "dev.set_extension_webapp_config", effect: "write", risk: "high", confirmation: "user_required", idempotency: "unknown", provenance: declared},

@@ -87,6 +87,8 @@ func TestDevAppCoreMutationShortcutsEmitOneHonestUnifiedResult(t *testing.T) {
 		{name: "update", declaration: UpdateApp, tool: "update_dev_app", args: []string{"--unified-app-id", "app-1", "--name", "Renamed", "--yes"}, params: map[string]any{"unifiedAppId": "app-1", "name": "Renamed"}},
 		{name: "enable", declaration: EnableApp, tool: "enable_dev_app", args: []string{"--unified-app-id", "app-1", "--yes"}, params: map[string]any{"unifiedAppId": "app-1"}},
 		{name: "disable", declaration: DisableApp, tool: "disable_dev_app", args: []string{"--unified-app-id", "app-1", "--yes"}, params: map[string]any{"unifiedAppId": "app-1"}},
+		{name: "member add", declaration: MemberAdd, tool: "add_dev_app_members", args: []string{"--unified-app-id", "app-1", "--user-ids", "u1,u2", "--member-type", "DEVELOPER", "--yes"}, params: map[string]any{"unifiedAppId": "app-1", "userIds": []string{"u1", "u2"}, "memberType": "DEVELOPER"}},
+		{name: "member remove", declaration: MemberRemove, tool: "remove_dev_app_members", args: []string{"--unified-app-id", "app-1", "--user-ids", "u1,u2", "--member-type", "DEVELOPER", "--yes"}, params: map[string]any{"unifiedAppId": "app-1", "userIds": []string{"u1", "u2"}, "memberType": "DEVELOPER"}},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
@@ -114,6 +116,16 @@ func TestDevAppCoreMutationShortcutsEmitOneHonestUnifiedResult(t *testing.T) {
 			}
 			if tt.tool == "disable_dev_app" && data["disabled"] != true {
 				t.Fatalf("disable projection=%#v", data)
+			}
+			if strings.Contains(tt.tool, "_dev_app_members") {
+				requested, ok := data["requested"].(map[string]any)
+				if !ok || requested["unifiedAppId"] != "app-1" || requested["memberType"] != "DEVELOPER" || requested["count"] != float64(2) ||
+					!reflect.DeepEqual(requested["userIds"], []any{"u1", "u2"}) {
+					t.Fatalf("requested=%#v", data["requested"])
+				}
+				if reason, _ := verification["reason"].(string); !strings.Contains(reason, "not per-user success claims") {
+					t.Fatalf("verification=%#v", verification)
+				}
 			}
 		})
 	}
@@ -146,6 +158,27 @@ func TestDevAppCoreMutationShortcutContractsAreActive(t *testing.T) {
 	}
 	if item := registered["+delete"]; !item.ConfirmFirst {
 		t.Fatal("delete must preserve guard-first confirmation ordering")
+	}
+}
+
+func TestDevAppMemberMutationContractsRemainDualUntilLiveResponseEvidence(t *testing.T) {
+	registered := make(map[string]shortcut.Shortcut)
+	for _, item := range shortcut.All() {
+		if item.Service == "devapp" {
+			registered[item.Command] = item
+		}
+	}
+	for _, name := range []string{"+member-add", "+member-remove"} {
+		item := registered[name]
+		if item.OutputRollout != output.RolloutDualValidate || item.Contract.Result == nil {
+			t.Fatalf("%s rollout/result = %q/%#v", name, item.OutputRollout, item.Contract.Result)
+		}
+	}
+	if item := registered["+member-add"]; item.Safety.Effect != "write" || item.Safety.Risk != "high" {
+		t.Fatalf("member add safety=%#v", item.Safety)
+	}
+	if item := registered["+member-remove"]; item.Safety.Effect != "destructive" || item.Safety.Risk != "high" {
+		t.Fatalf("member remove safety=%#v", item.Safety)
 	}
 }
 
@@ -278,7 +311,28 @@ func TestDevAppUpdateRejectsEmptyMutationBeforeBusinessCall(t *testing.T) {
 }
 
 func TestDevAppMutationMapperRejectsNonObjectSuccessAsUnknownEffect(t *testing.T) {
-	result := helpers.DevAppCommandResultFromPayload("create_dev_app", "opaque-success", false)
+	for _, tool := range []string{"create_dev_app", "add_dev_app_members", "remove_dev_app_members"} {
+		t.Run(tool, func(t *testing.T) {
+			result := helpers.DevAppCommandResultFromPayload(tool, "opaque-success", false, map[string]any{
+				"unifiedAppId": "app-1", "memberType": "DEVELOPER", "userIds": []string{"u1"},
+			})
+			if result.Outcome() != output.OutcomeFailure {
+				t.Fatalf("outcome=%q", result.Outcome())
+			}
+			envelope, err := output.EnvelopeFromResult(result)
+			if err != nil {
+				t.Fatalf("EnvelopeFromResult: %v", err)
+			}
+			if envelope.Error == nil || envelope.Error.Subtype != string(apperrors.SubtypeProjectionUnknown) ||
+				envelope.Error.ExecutionStarted == nil || !*envelope.Error.ExecutionStarted || envelope.Error.Retryable {
+				t.Fatalf("error=%#v", envelope.Error)
+			}
+		})
+	}
+}
+
+func TestDevAppMemberMutationMapperFailsClosedWhenRequestIdentityIsLost(t *testing.T) {
+	result := helpers.DevAppCommandResultFromPayload("add_dev_app_members", map[string]any{"accepted": true}, false)
 	if result.Outcome() != output.OutcomeFailure {
 		t.Fatalf("outcome=%q", result.Outcome())
 	}
@@ -287,7 +341,7 @@ func TestDevAppMutationMapperRejectsNonObjectSuccessAsUnknownEffect(t *testing.T
 		t.Fatalf("EnvelopeFromResult: %v", err)
 	}
 	if envelope.Error == nil || envelope.Error.Subtype != string(apperrors.SubtypeProjectionUnknown) ||
-		envelope.Error.ExecutionStarted == nil || !*envelope.Error.ExecutionStarted || envelope.Error.Retryable {
+		!strings.Contains(envelope.Error.Message, "lost the requested member identifiers") {
 		t.Fatalf("error=%#v", envelope.Error)
 	}
 }

@@ -149,6 +149,48 @@ func TestDevAppMemberCommandsBuildToolParams(t *testing.T) {
 	}
 }
 
+func TestDevAppMemberMutationOutputSeparatesRequestFromVerification(t *testing.T) {
+	for _, command := range []string{"add", "remove"} {
+		t.Run(command, func(t *testing.T) {
+			runner := &devAppResponseRunner{response: map[string]any{
+				"content": map[string]any{
+					"success": true,
+					"result":  map[string]any{"status": "accepted"},
+				},
+			}}
+			root := newDevAppTestRoot(runner)
+			var out bytes.Buffer
+			root.SetOut(&out)
+			root.SetErr(&out)
+			root.SetArgs([]string{
+				"dev", "app", "member", command,
+				"--unified-app-id", "app-001",
+				"--user-ids", "userId1,userId2",
+				"--member-type", "DEVELOPER",
+				"--yes", "--format", "json",
+			})
+
+			if err := root.Execute(); err != nil {
+				t.Fatalf("Execute() error = %v\noutput:\n%s", err, out.String())
+			}
+			data := unwrapDevAppEnvelopeData(t, out.Bytes())
+			requested, ok := data["requested"].(map[string]any)
+			if !ok || requested["unifiedAppId"] != "app-001" || requested["memberType"] != "DEVELOPER" ||
+				requested["count"] != float64(2) || !reflect.DeepEqual(requested["userIds"], []any{"userId1", "userId2"}) {
+				t.Fatalf("requested=%#v", data["requested"])
+			}
+			verification, ok := data["verification"].(map[string]any)
+			if !ok || verification["state"] != "not_verified" ||
+				!strings.Contains(verification["reason"].(string), "not per-user success claims") {
+				t.Fatalf("verification=%#v", data["verification"])
+			}
+			if data["status"] != "accepted" {
+				t.Fatalf("upstream response was not preserved: %#v", data)
+			}
+		})
+	}
+}
+
 func TestDevCommandTree(t *testing.T) {
 	dev := devHandler{}.Command(&captureRunner{})
 	if dev.Name() != "dev" {

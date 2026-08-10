@@ -616,7 +616,7 @@ Framework 2.0 的 dingtalk-dev 阶段在以下条件同时满足后验收：
 
 ### P0
 
-- Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 框架接入已完成；继续按 terminal command 迁移 Agent 当前使用的 `devapp +...`，禁止整域批量切换。`+delete` 的 guard-first 与 `--confirm-name` 防误删差距已关闭；下一写入批次完成成员/版本写操作的 partial、pending、unknown 语义取证。
+- Shortcut 的 per-command `OutputRollout`、`OutputResult` 和 ResultStore 框架接入已完成；继续按 terminal command 迁移 Agent 当前使用的 `devapp +...`，禁止整域批量切换。`+delete` 的 guard-first 与 `--confirm-name` 防误删差距已关闭。成员 add/remove 已补同源 ResultSpec、Safety 和 requested/not_verified 投影，但由于缺少 helper 脱敏真实成功响应，两条旧 Shortcut 继续 dual_validate；取得真实对象响应和 member-list 回读证据后才允许单步 active。下一批继续版本写操作的 partial、pending、unknown 语义取证。
 - 收口 root 的 emit/cleanup/panic 顺序，保证 `--output` 下仍恰好一个结果且 rc 不反转。
 - 为统一结果 failure、partial、pending、PAT RawStderr、custom rc 增加真实 root E2E。
 - 修订 Schema exclusion：迁移一个 `devapp +...` 就精确移除一个，不做整组前缀隐藏。

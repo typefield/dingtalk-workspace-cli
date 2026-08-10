@@ -39,6 +39,17 @@ func DevAppMutationResultSpec() *contract.ResultSpec {
 				"disabled":{"type":"boolean"},
 				"status":{"type":"string"},
 				"versionStatus":{"type":"string"},
+				"requested":{
+					"type":"object",
+					"properties":{
+						"unifiedAppId":{"type":"string"},
+						"memberType":{"type":"string"},
+						"userIds":{"type":"array","items":{"type":"string"}},
+						"count":{"type":"integer","minimum":1}
+					},
+					"required":["unifiedAppId","memberType","userIds","count"],
+					"additionalProperties":false
+				},
 				"verification":{
 					"type":"object",
 					"properties":{
@@ -54,32 +65,81 @@ func DevAppMutationResultSpec() *contract.ResultSpec {
 	}
 }
 
-func devAppMutationSuccessData(tool string, data any) (any, *output.ErrorInfo) {
+func devAppMutationSuccessData(tool string, data any, params map[string]any) (any, *output.ErrorInfo) {
 	switch strings.TrimSpace(tool) {
-	case devAppCreateTool, devAppUpdateTool, devAppEnableTool, devAppDisableTool, devAppDeleteTool:
+	case devAppCreateTool, devAppUpdateTool, devAppEnableTool, devAppDisableTool, devAppDeleteTool,
+		devAppMemberAddTool, devAppMemberRemoveTool:
 	default:
 		return data, nil
 	}
 	object, ok := data.(map[string]any)
 	if !ok {
-		started := true
-		return nil, &output.ErrorInfo{
-			Type:             "api",
-			Subtype:          string(apperrors.SubtypeProjectionUnknown),
-			Message:          fmt.Sprintf("%s returned no object result; the requested application change cannot be verified", tool),
-			Hint:             "不要盲目重试写操作；先用 devapp +get 或对应 dev app get 查询目标应用状态。",
-			Operation:        "devapp.mutation_projection",
-			Stage:            "response_projection",
-			ExecutionStarted: &started,
-		}
+		return nil, devAppMutationProjectionUnknown(tool, "returned no object result")
 	}
 	projected := make(map[string]any, len(object)+1)
 	for key, value := range object {
 		projected[key] = value
 	}
+	reason := "the helper response was not followed by a read-after-write terminal-state check"
+	if tool == devAppMemberAddTool || tool == devAppMemberRemoveTool {
+		requested, ok := devAppMemberMutationRequest(params)
+		if !ok {
+			return nil, devAppMutationProjectionUnknown(tool, "lost the requested member identifiers")
+		}
+		projected["requested"] = requested
+		reason = "the aggregate helper acknowledgement was not followed by a member-list readback; requested userIds are not per-user success claims"
+	}
 	projected["verification"] = map[string]any{
 		"state":  "not_verified",
-		"reason": "the helper response was not followed by a read-after-write terminal-state check",
+		"reason": reason,
 	}
 	return projected, nil
+}
+
+func devAppMutationProjectionUnknown(tool, detail string) *output.ErrorInfo {
+	started := true
+	return &output.ErrorInfo{
+		Type:             "api",
+		Subtype:          string(apperrors.SubtypeProjectionUnknown),
+		Message:          fmt.Sprintf("%s %s; the requested application change cannot be verified", tool, detail),
+		Hint:             "不要盲目重试写操作；先用 devapp +get、devapp +member-list 或对应 dev app 查询命令核查目标状态。",
+		Operation:        "devapp.mutation_projection",
+		Stage:            "response_projection",
+		ExecutionStarted: &started,
+	}
+}
+
+func devAppMemberMutationRequest(params map[string]any) (map[string]any, bool) {
+	appID, _ := params["unifiedAppId"].(string)
+	memberType, _ := params["memberType"].(string)
+	appID = strings.TrimSpace(appID)
+	memberType = strings.TrimSpace(memberType)
+	userIDs := make([]string, 0)
+	switch values := params["userIds"].(type) {
+	case []string:
+		for _, value := range values {
+			if value = strings.TrimSpace(value); value != "" {
+				userIDs = append(userIDs, value)
+			}
+		}
+	case []any:
+		for _, raw := range values {
+			value, ok := raw.(string)
+			if !ok {
+				return nil, false
+			}
+			if value = strings.TrimSpace(value); value != "" {
+				userIDs = append(userIDs, value)
+			}
+		}
+	}
+	if appID == "" || memberType == "" || len(userIDs) == 0 {
+		return nil, false
+	}
+	return map[string]any{
+		"unifiedAppId": appID,
+		"memberType":   memberType,
+		"userIds":      userIDs,
+		"count":        len(userIDs),
+	}, true
 }

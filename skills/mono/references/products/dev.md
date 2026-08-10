@@ -94,6 +94,20 @@ dws dev app delete --unified-app-id <unifiedAppId> --dry-run --format json
 dws dev app delete --unified-app-id <unifiedAppId> --confirm-name <应用名> --yes --format json
 ```
 
+成员写入同样必须先预览、再确认，并在写后回读：
+
+```bash
+dws dev app member add --unified-app-id <unifiedAppId> --user-ids <userId1,userId2> --member-type DEVELOPER --dry-run --format json
+dws dev app member add --unified-app-id <unifiedAppId> --user-ids <userId1,userId2> --member-type DEVELOPER --yes --format json
+dws dev app member list --unified-app-id <unifiedAppId> --format json
+
+dws dev app member remove --unified-app-id <unifiedAppId> --user-ids <userId1,userId2> --member-type DEVELOPER --dry-run --format json
+dws dev app member remove --unified-app-id <unifiedAppId> --user-ids <userId1,userId2> --member-type DEVELOPER --yes --format json
+dws dev app member list --unified-app-id <unifiedAppId> --format json
+```
+
+`userIds` 只表示 requested 输入，不是逐成员成功回执。聚合 helper ACK 没有经过 member-list 回读时，结果只能视为 `verification:not_verified`；缺项、权限受限或分页/投影未知时先核查，禁止盲目重放。成员移除按 destructive/high-risk 处理。
+
 ---
 
 ## dev app robot — 机器人（建号与配置）

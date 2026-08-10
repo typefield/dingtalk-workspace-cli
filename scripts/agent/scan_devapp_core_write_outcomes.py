@@ -36,7 +36,7 @@ def source_checks() -> list[tuple[str, str, str]]:
         f"frameworkUnified({name})" in init_block
         for name in ("CreateApp", "UpdateApp", "EnableApp", "DisableApp")
     )
-    delete_dual = "frameworkDualValidate(DeleteApp)" in init_block
+    delete_active = "frameworkUnified(DeleteApp)" in init_block
     return [
         (
             "四条核心写 shortcut 独立 active",
@@ -44,9 +44,9 @@ def source_checks() -> list[tuple[str, str, str]]:
             "create/update/enable/disable 由发布声明选择统一结果；Agent 只传 --format json。",
         ),
         (
-            "delete 未越过二次确认差距",
-            "PASS" if delete_dual else "FAIL",
-            "delete 继续 dual_validate，待补齐原子入口已有的 confirm-name 防误删后再晋级。",
+            "delete 已在二次确认补齐后独立 active",
+            "PASS" if delete_active and 'Name: "confirm-name"' in declarations and "ConfirmFirst: true" in declarations else "FAIL",
+            "delete 具备 guard-first、confirm-name 精确匹配和 dry-run 零调用；迁移不依赖用户协议参数。",
         ),
         (
             "API success 不伪装写后终态",
@@ -193,9 +193,9 @@ def render() -> str:
         lines.append(f"| {name} | {status} | {detail} |")
     lines += [
         "",
-        f"结论：**{passed}/{len(checks)} PASS**。四条核心写 shortcut 现直接使用统一结果；请求成功只声明 `verification.state=not_verified`，不把 API success 扩大为应用状态已生效。",
+        f"结论：**{passed}/{len(checks)} PASS**。五条核心写 shortcut 现直接使用统一结果；请求成功只声明 `verification.state=not_verified`，不把 API success 扩大为应用状态已生效。",
         "",
-        "未验证：真实租户创建、更新、启停后的应用终态，以及响应丢失时服务端是否已经执行。`devapp +delete` 继续保持 dual，必须先补齐 `--confirm-name` 二次防误删语义。",
+        "未验证：真实租户创建、更新、启停、删除后的应用终态，以及响应丢失时服务端是否已经执行。删除虽已补二次确认，仍不能据此宣称服务端 exactly-once。",
     ]
     return "\n".join(lines) + "\n"
 

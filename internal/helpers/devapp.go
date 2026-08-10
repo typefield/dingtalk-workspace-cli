@@ -1052,6 +1052,7 @@ func newDevAppMemberAddCommand(runner executor.Runner) *cobra.Command {
 			Description: "添加开放平台应用成员",
 			DryRun:      devAppDryRun,
 			Interface:   devAppCompositeInterface(),
+			Result:      DevAppMutationResultSpec(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "向应用添加开发者或管理员成员",
 				UseWhen:      []string{"需要授予指定用户应用协作角色时"},
@@ -1070,7 +1071,7 @@ func newDevAppMemberRemoveCommand(runner executor.Runner) *cobra.Command {
 		Short:   "移除开放平台应用成员",
 		Example: "  dws dev app member remove --unified-app-id <unifiedAppId> --user-ids userId1,userId2 --member-type DEVELOPER --dry-run",
 		Tool:    devAppMemberRemoveTool,
-		Safety:  devAppSafetyWrite(),
+		Safety:  devAppSafetyDestructive(),
 		// devapp 旧版写守卫为 guard-first：确认门先于参数校验。
 		ConfirmFirst: true,
 		Flags: []LeafFlag{
@@ -1097,6 +1098,7 @@ func newDevAppMemberRemoveCommand(runner executor.Runner) *cobra.Command {
 			Description: "移除开放平台应用成员",
 			DryRun:      devAppDryRun,
 			Interface:   devAppCompositeInterface(),
+			Result:      DevAppMutationResultSpec(),
 			Selection: contract.SelectionSpec{
 				AgentSummary: "从应用移除开发者或管理员成员",
 				UseWhen:      []string{"需要撤销指定用户的应用协作角色时"},
@@ -1874,7 +1876,7 @@ func devAppCommandResult(result executor.Result) output.CommandResult {
 	if meta := devAppPaginationMeta(data); meta != nil {
 		return output.Success(data, output.WithMeta(meta))
 	}
-	projected, problem := devAppMutationSuccessData(result.Invocation.Tool, data)
+	projected, problem := devAppMutationSuccessData(result.Invocation.Tool, data, result.Invocation.Params)
 	if problem != nil {
 		return output.Failure(problem)
 	}

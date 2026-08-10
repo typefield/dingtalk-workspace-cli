@@ -55,6 +55,13 @@
 | `dws devapp +webapp-get` | read | 查询网页应用配置 |
 <!-- VISIBLE_SHORTCUTS_END -->
 
+### 成员写入的结果边界
+
+- 添加和移除成员都必须先用相同参数执行 `--dry-run --format json` 展示目标应用、成员类型和完整 userId 列表；取得用户明确确认后再追加 `--yes`。移除成员会撤销协作权限，按 destructive/high-risk 处理。
+- `userIds` 是请求事实，不是逐成员成功回执。写调用返回成功时只能说明 helper 接受了聚合请求；在没有逐成员结果和写后回读时，不得向用户宣称每个成员都已生效。
+- 写后必须用 `dws devapp +member-list --unified-app-id <ID> --format json` 回读，并按稳定成员 ID 与角色逐项核对。回读缺项、权限受限或分页/投影未知时，报告 `not_verified`，不要盲目重放 add/remove。
+- `devapp +member-add/+member-remove` 仍按 terminal command 处于内部渐进验证阶段；Agent 始终只使用 `--format json`，不选择协议版本，也不根据输出形状猜 rollout 状态。
+
 ## 概念地图
 先建立领域模型，再看命令——所有命令都是对这张图上某个节点的操作，用户的模糊意图先映射到节点再选命令。
 
