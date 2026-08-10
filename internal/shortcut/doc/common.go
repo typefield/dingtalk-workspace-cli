@@ -116,6 +116,48 @@ func docEnvelope(operation string, data any, steps ...map[string]any) map[string
 	}
 }
 
+func docOperationResultSpec() *contract.ResultSpec {
+	return &contract.ResultSpec{
+		Outcomes: []contract.ResultOutcome{
+			contract.ResultOutcomeSuccess,
+			contract.ResultOutcomePartialFailure,
+			contract.ResultOutcomeFailure,
+		},
+		DataSchema: json.RawMessage(`{
+  "type":"object",
+  "properties":{
+    "operation":{"type":"string","minLength":1},
+    "result":{},
+    "steps":{"type":"array","items":{"type":"object","properties":{"name":{"type":"string","minLength":1},"status":{"type":"string","enum":["success","failed","not_started"]}},"required":["name","status"],"additionalProperties":true}}
+  },
+  "required":["operation","result","steps"],
+  "additionalProperties":false
+}`),
+	}
+}
+
+// docOperationOutput keeps the historical payload for legacy/dual rendering,
+// while supplying one reviewed success result for unified-active commands.
+// In particular, the old payload's ok/status fields never become a nested
+// second envelope inside the framework-owned result.
+func docOperationOutput(rt *shortcut.RuntimeContext, operation string, data any, steps ...map[string]any) error {
+	legacy := docEnvelope(operation, data, steps...)
+	reviewedSteps := steps
+	if reviewedSteps == nil {
+		reviewedSteps = make([]map[string]any, 0)
+	}
+	resultData := map[string]any{
+		"operation": operation,
+		"result":    data,
+		"steps":     reviewedSteps,
+	}
+	options := []output.ResultOption{}
+	if rt.DryRun() {
+		options = append(options, output.WithDryRun())
+	}
+	return rt.OutputResult(legacy, output.Success(resultData, options...))
+}
+
 func docPartialWriteError(rt *shortcut.RuntimeContext, operation string, subtype apperrors.Subtype, stage, message string, cause error, data map[string]any, steps []map[string]any, compensation map[string]any) error {
 	legacy := apperrors.NewAPI(
 		message,

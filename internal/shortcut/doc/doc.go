@@ -1313,12 +1313,11 @@ func init() {
 	TemplateApply.Contract = corecmd.ContractDecl{}
 	canonicalizeHistoryShortcuts()
 	canonicalizeCommentShortcuts()
-	// These three composite writes now construct a typed partial result on the
-	// same execution path. Dual validation keeps their legacy renderer and
-	// exit code unchanged while the result invariant is proven before active
-	// rollout (RFC-0005).
-	Create.OutputRollout = output.RolloutDualValidate
-	CheckpointUpdate.OutputRollout = output.RolloutDualValidate
+	// The canonical history-revert declaration is assembled here before this
+	// init registers it. Create/checkpoint-update are configured in their own
+	// registration init so the registry never captures an earlier legacy copy.
+	VersionRevert.Contract.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: true}
+	VersionRevert.Contract.Result = docOperationResultSpec()
 	VersionRevert.OutputRollout = output.RolloutDualValidate
 	shortcut.Register(
 		Search,

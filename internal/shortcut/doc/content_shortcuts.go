@@ -16,6 +16,7 @@ import (
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/helpers"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/localio"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/output"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/shortcut"
 )
 
@@ -30,12 +31,13 @@ var (
 )
 
 var Create = shortcut.Shortcut{
-	Service:     "doc",
-	Command:     "+create",
-	Product:     productDoc,
-	Description: "从 Markdown 或 JSONML 创建在线文字文档",
-	Intent:      "当用户要新建钉钉在线文字文档，并可同时写入 Markdown/JSONML 初始内容、指定文件夹或知识库位置时使用；不会用于普通文件上传或其他在线对象类型。",
-	Risk:        shortcut.RiskWrite,
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "doc",
+	Command:       "+create",
+	Product:       productDoc,
+	Description:   "从 Markdown 或 JSONML 创建在线文字文档",
+	Intent:        "当用户要新建钉钉在线文字文档，并可同时写入 Markdown/JSONML 初始内容、指定文件夹或知识库位置时使用；不会用于普通文件上传或其他在线对象类型。",
+	Risk:          shortcut.RiskWrite,
 	Safety: contract.SafetySpec{
 		Effect: "write", Risk: "medium", Confirmation: "not_required", Idempotency: "unknown",
 	},
@@ -77,7 +79,7 @@ var Create = shortcut.Shortcut{
 			params["markdown"] = content
 		}
 		if rt.DryRun() {
-			return rt.Output(docEnvelope("doc.create", map[string]any{"executed": false, "previewKind": "plan", "create": params, "docFormat": format, "contentBytes": len(content)}))
+			return docOperationOutput(rt, "doc.create", map[string]any{"executed": false, "previewKind": "plan", "create": params, "docFormat": format, "contentBytes": len(content)})
 		}
 		created, err := rt.CallMCPWriteData(productDoc, "create_document", params)
 		if err != nil {
@@ -108,7 +110,7 @@ var Create = shortcut.Shortcut{
 			}
 			steps = append(steps, map[string]any{"name": "write_jsonml", "status": "success"})
 		}
-		return rt.Output(docEnvelope("doc.create", map[string]any{"nodeId": nodeID, "result": created}, steps...))
+		return docOperationOutput(rt, "doc.create", map[string]any{"nodeId": nodeID, "result": created}, steps...)
 	},
 }
 
@@ -286,13 +288,14 @@ var Update = shortcut.Shortcut{
 }
 
 var CheckpointUpdate = shortcut.Shortcut{
-	Service:     "doc",
-	Command:     "+checkpoint-update",
-	Product:     productDoc,
-	Description: "先保存可回滚版本，再更新并读回验证",
-	Intent:      "当用户要进行重要追加或整篇覆盖，并希望自动创建恢复点、执行更新、再读回确认时使用；任一步失败都会返回已经完成的步骤。",
-	Risk:        shortcut.RiskWrite,
-	Safety:      contract.SafetySpec{Effect: "write", Risk: "medium", Confirmation: "user_required", Idempotency: "unknown"},
+	OutputRollout: output.RolloutDualValidate,
+	Service:       "doc",
+	Command:       "+checkpoint-update",
+	Product:       productDoc,
+	Description:   "先保存可回滚版本，再更新并读回验证",
+	Intent:        "当用户要进行重要追加或整篇覆盖，并希望自动创建恢复点、执行更新、再读回确认时使用；任一步失败都会返回已经完成的步骤。",
+	Risk:          shortcut.RiskWrite,
+	Safety:        contract.SafetySpec{Effect: "write", Risk: "medium", Confirmation: "user_required", Idempotency: "unknown"},
 	Contract: docContract("+checkpoint-update", "先保存可回滚版本，再更新并读回验证",
 		"当用户要进行重要追加或整篇覆盖，并希望自动创建恢复点、执行更新、再读回确认时使用；任一步失败都会返回已经完成的步骤。",
 		[]string{`dws doc +checkpoint-update --node <DOC_ID> --mode append --content @section.md`, `dws doc +checkpoint-update --node <DOC_ID> --mode overwrite --content @document.md`}),
@@ -310,7 +313,7 @@ var CheckpointUpdate = shortcut.Shortcut{
 		plan := map[string]any{"nodeId": rt.Str("node"), "mode": rt.Str("mode"), "contentBytes": len(content), "steps": []string{"save_doc_version", "update_document", "get_document_content"}}
 		if rt.DryRun() {
 			plan["executed"] = false
-			return rt.Output(docEnvelope("doc.checkpoint_update", plan))
+			return docOperationOutput(rt, "doc.checkpoint_update", plan)
 		}
 		steps := []map[string]any{}
 		checkpoint, err := rt.CallMCPWriteData(productDoc, "save_doc_version", map[string]any{"nodeId": rt.Str("node")})
@@ -329,7 +332,7 @@ var CheckpointUpdate = shortcut.Shortcut{
 				append(steps, map[string]any{"name": "verify", "status": "failed"}))
 		}
 		steps = append(steps, map[string]any{"name": "verify", "status": "success"})
-		return rt.Output(docEnvelope("doc.checkpoint_update", map[string]any{"verified": verified}, steps...))
+		return docOperationOutput(rt, "doc.checkpoint_update", map[string]any{"verified": verified}, steps...)
 	},
 }
 
@@ -791,5 +794,12 @@ func stripBlockIDs(value any) {
 func init() {
 	_ = json.Valid
 	_ = filepath.Separator
+	// Configure result/dry-run contracts before Register copies the terminal
+	// declarations into the runtime registry. Mutating the package variables in
+	// a later init would not update that registered value.
+	Create.Contract.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: false}
+	Create.Contract.Result = docOperationResultSpec()
+	CheckpointUpdate.Contract.DryRun = &contract.DryRunSpec{PreviewKind: "plan", RemoteReads: false}
+	CheckpointUpdate.Contract.Result = docOperationResultSpec()
 	shortcut.Register(Create, Fetch, Inspect, Update, CheckpointUpdate, Export, Import)
 }

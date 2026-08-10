@@ -107,7 +107,7 @@ func executeHistoryRevert(rt *shortcut.RuntimeContext) error {
 		return apperrors.NewValidation(fmt.Sprintf("目标版本 %d 不存在，已停止回滚", target))
 	}
 	if rt.DryRun() {
-		return rt.Output(docEnvelope("doc.history_revert", map[string]any{"executed": false, "nodeId": nodeID, "version": target, "preflight": "version_exists"}))
+		return docOperationOutput(rt, "doc.history_revert", map[string]any{"executed": false, "nodeId": nodeID, "version": target, "preflight": "version_exists"})
 	}
 	if _, err := rt.CallMCPWriteData(productDoc, "revert_doc_version", map[string]any{"nodeId": nodeID, "version": target}); err != nil {
 		return err
@@ -125,10 +125,10 @@ func executeHistoryRevert(rt *shortcut.RuntimeContext) error {
 			map[string]any{"available": false, "reason": "the requested revert completed; verify the current document before any further write"},
 		)
 	}
-	return rt.Output(docEnvelope("doc.history_revert", map[string]any{"version": target, "current": current},
+	return docOperationOutput(rt, "doc.history_revert", map[string]any{"version": target, "current": current},
 		map[string]any{"name": "preflight", "status": "success"},
 		map[string]any{"name": "revert", "status": "success"},
-		map[string]any{"name": "verify", "status": "success"}))
+		map[string]any{"name": "verify", "status": "success"})
 }
 
 func containsVersion(value any, target int) bool {

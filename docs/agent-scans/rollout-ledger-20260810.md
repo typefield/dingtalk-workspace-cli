@@ -1,6 +1,6 @@
 # Unified output rollout Agent ledger
 
-扫描时间：2026-08-10T05:40:26+08:00
+扫描时间：2026-08-10T08:38:21+08:00
 
 > 本报告由 Agent 在隔离配置目录中装配真实 Cobra tree 后生成。它只记录 Markdown，不暴露内部 rollout 到 Help/Schema/CLI，不保存 JSON catalog，也不是 CI / policy gate。
 
@@ -8,8 +8,8 @@
 
 | rollout state | runnable command nodes |
 |---|---:|
-| `legacy_only` | 1329 |
-| `dual_validate` | 19 |
+| `legacy_only` | 1327 |
+| `dual_validate` | 21 |
 | `unified_active` | 135 |
 | `unified_stable` | 0 |
 | `unified_only` | 0 |
@@ -18,11 +18,12 @@
 
 ## Transition review
 
-基线：`agoal-contract-fields-dual-ledger.md`（1483 条 runnable command node）。
+基线：`rollout-ledger-20260810.md`（1483 条 runnable command node）。
 
 ### 状态迁移
 
-- PASS: `dws agoal contract fields`: `dual_validate` → `unified_active`
+- PASS: `dws doc +checkpoint-update`: `legacy_only` → `dual_validate`
+- PASS: `dws doc +create`: `legacy_only` → `dual_validate`
 
 ### 新增可执行命令节点
 
@@ -892,7 +893,7 @@
 | `dws doc +access-revoke` | `legacy_only` | `legacy` | no |
 | `dws doc +background-delete` | `legacy_only` | `legacy` | no |
 | `dws doc +background-update` | `legacy_only` | `legacy` | no |
-| `dws doc +checkpoint-update` | `legacy_only` | `legacy` | no |
+| `dws doc +checkpoint-update` | `dual_validate` | `legacy` | no |
 | `dws doc +comment-create` | `legacy_only` | `legacy` | no |
 | `dws doc +comment-create-inline` | `legacy_only` | `legacy` | yes |
 | `dws doc +comment-delete` | `legacy_only` | `legacy` | no |
@@ -900,7 +901,7 @@
 | `dws doc +comment-reply` | `legacy_only` | `legacy` | no |
 | `dws doc +comment-update` | `legacy_only` | `legacy` | no |
 | `dws doc +copy` | `legacy_only` | `legacy` | no |
-| `dws doc +create` | `legacy_only` | `legacy` | no |
+| `dws doc +create` | `dual_validate` | `legacy` | no |
 | `dws doc +create-from-template` | `legacy_only` | `legacy` | no |
 | `dws doc +doc-append` | `legacy_only` | `legacy` | no |
 | `dws doc +export` | `legacy_only` | `legacy` | no |

@@ -4,6 +4,7 @@
 package doc
 
 import (
+	"bytes"
 	"context"
 	"encoding/json"
 	"errors"
@@ -103,6 +104,13 @@ func runDocCoverageInput(t *testing.T, declaration shortcut.Shortcut, caller *do
 
 func runDocCoveragePath(t *testing.T, declaration shortcut.Shortcut, caller *docCoverageCaller, input io.Reader, commandPath string, args ...string) error {
 	t.Helper()
+	// Most coverage tests below assert the product workflow or the historical
+	// typed error itself. Exercise those paths through dual validation so the
+	// business operation runs once while the legacy observation remains
+	// available. Dedicated unified-result tests cover the active renderer.
+	if declaration.OutputRollout == output.RolloutUnifiedActive {
+		declaration.OutputRollout = output.RolloutDualValidate
+	}
 	helpers.InitDeps(caller)
 	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
 	root.PersistentFlags().Bool("yes", false, "")
@@ -256,16 +264,163 @@ func TestDocPartialWriteResultMapsDeclaredStepsToThreeChannels(t *testing.T) {
 	}
 }
 
-func TestDocCompositeWritesStartInDualValidation(t *testing.T) {
+func TestDocCompositeWritesPublishReviewedDualContracts(t *testing.T) {
+	registered := make(map[string]shortcut.Shortcut)
+	for _, item := range shortcut.All() {
+		if item.Service == "doc" {
+			registered[item.Command] = item
+		}
+	}
+	create := registered["+create"]
+	checkpoint := registered["+checkpoint-update"]
+	history := registered["+history-revert"]
 	for name, item := range map[string]shortcut.Shortcut{
-		"create":            Create,
-		"checkpoint update": CheckpointUpdate,
-		"history revert":    VersionRevert,
+		"create":            create,
+		"checkpoint update": checkpoint,
+		"history revert":    history,
 	} {
+		if item.Command == "" {
+			t.Fatalf("%s is missing from the runtime registry", name)
+		}
 		if item.OutputRollout != output.RolloutDualValidate {
 			t.Fatalf("%s rollout = %q, want dual_validate", name, item.OutputRollout)
 		}
+		if item.Contract.Result == nil || item.Contract.DryRun == nil {
+			t.Fatalf("%s missing reviewed result/dry-run contract", name)
+		}
 	}
+	if create.Contract.DryRun.RemoteReads || checkpoint.Contract.DryRun.RemoteReads {
+		t.Fatal("create/checkpoint dry-run must not perform remote reads")
+	}
+	if !history.Contract.DryRun.RemoteReads {
+		t.Fatal("history revert dry-run must publish its read-only version preflight")
+	}
+}
+
+func TestDocCompositeWriteUnifiedSuccessAndDryRunResults(t *testing.T) {
+	tests := []struct {
+		name        string
+		declaration shortcut.Shortcut
+		args        []string
+		operation   string
+		wantCalls   int
+		wantSteps   int
+		wantDryRun  bool
+	}{
+		{name: "create success", declaration: Create, args: []string{"--name", "n"}, operation: "doc.create", wantCalls: 1, wantSteps: 1},
+		{name: "checkpoint success", declaration: CheckpointUpdate, args: []string{"--node", "n", "--content", "body", "--yes"}, operation: "doc.checkpoint_update", wantCalls: 3, wantSteps: 3},
+		{name: "history revert success", declaration: VersionRevert, args: []string{"--node", "n", "--version", "3", "--yes"}, operation: "doc.history_revert", wantCalls: 3, wantSteps: 3},
+		{name: "create dry run", declaration: Create, args: []string{"--name", "n", "--dry-run"}, operation: "doc.create", wantCalls: 0, wantDryRun: true},
+		{name: "checkpoint dry run", declaration: CheckpointUpdate, args: []string{"--node", "n", "--content", "body", "--dry-run"}, operation: "doc.checkpoint_update", wantCalls: 0, wantDryRun: true},
+		{name: "history revert dry run", declaration: VersionRevert, args: []string{"--node", "n", "--version", "3", "--dry-run"}, operation: "doc.history_revert", wantCalls: 1, wantDryRun: true},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			caller := &docCoverageCaller{responses: map[string][]map[string]any{}}
+			code, envelope := runDocUnifiedResult(t, tc.declaration, caller, tc.args...)
+			if code != 0 || envelope["ok"] != true || envelope["outcome"] != "success" {
+				t.Fatalf("result code=%d envelope=%#v", code, envelope)
+			}
+			if _, leaked := envelope["contract_version"]; leaked {
+				t.Fatalf("result leaked removed version marker: %#v", envelope)
+			}
+			if tc.wantDryRun {
+				if envelope["dry_run"] != true {
+					t.Fatalf("dry-run result = %#v", envelope)
+				}
+			} else if _, present := envelope["dry_run"]; present {
+				t.Fatalf("ordinary success unexpectedly marked dry-run: %#v", envelope)
+			}
+			data, ok := envelope["data"].(map[string]any)
+			if !ok || data["operation"] != tc.operation {
+				t.Fatalf("data = %#v", envelope["data"])
+			}
+			if _, nestedEnvelope := data["ok"]; nestedEnvelope {
+				t.Fatalf("legacy envelope nested inside unified data: %#v", data)
+			}
+			steps, ok := data["steps"].([]any)
+			if !ok || len(steps) != tc.wantSteps {
+				t.Fatalf("steps = %#v, want %d", data["steps"], tc.wantSteps)
+			}
+			if caller.calls != tc.wantCalls {
+				t.Fatalf("remote calls = %d, want %d", caller.calls, tc.wantCalls)
+			}
+		})
+	}
+}
+
+func TestDocCompositeWriteUnifiedPartialResultsPreserveAppliedSteps(t *testing.T) {
+	tests := []struct {
+		name        string
+		declaration shortcut.Shortcut
+		args        []string
+		failAt      int
+		wantCalls   int
+	}{
+		{name: "create content failure", declaration: Create, args: []string{"--name", "n", "--content", `[]`, "--doc-format", "jsonml"}, failAt: 2, wantCalls: 2},
+		{name: "checkpoint update failure", declaration: CheckpointUpdate, args: []string{"--node", "n", "--content", "body", "--yes"}, failAt: 2, wantCalls: 2},
+		{name: "history verification failure", declaration: VersionRevert, args: []string{"--node", "n", "--version", "3", "--yes"}, failAt: 3, wantCalls: 3},
+	}
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			caller := &docCoverageCaller{failAt: tc.failAt, responses: map[string][]map[string]any{}}
+			code, envelope := runDocUnifiedResult(t, tc.declaration, caller, tc.args...)
+			if code != 7 || envelope["ok"] != false || envelope["outcome"] != "partial_failure" {
+				t.Fatalf("partial code=%d envelope=%#v", code, envelope)
+			}
+			if _, present := envelope["error"]; present {
+				t.Fatalf("partial result must keep per-step errors, got top-level error: %#v", envelope)
+			}
+			data, ok := envelope["data"].(map[string]any)
+			if !ok {
+				t.Fatalf("partial data = %#v", envelope["data"])
+			}
+			succeeded, succeededOK := data["succeeded"].([]any)
+			failed, failedOK := data["failed"].([]any)
+			_, unknownOK := data["unknown"].([]any)
+			if !succeededOK || !failedOK || !unknownOK || len(succeeded) == 0 || len(failed) == 0 {
+				t.Fatalf("partial channels = %#v", data)
+			}
+			if caller.calls != tc.wantCalls {
+				t.Fatalf("remote calls = %d, want %d", caller.calls, tc.wantCalls)
+			}
+		})
+	}
+}
+
+func runDocUnifiedResult(t *testing.T, declaration shortcut.Shortcut, caller *docCoverageCaller, args ...string) (int, map[string]any) {
+	t.Helper()
+	if declaration.OutputRollout != output.RolloutDualValidate {
+		t.Fatalf("%s is not in reviewed dual validation", declaration.Command)
+	}
+	declaration.OutputRollout = output.RolloutUnifiedActive
+	helpers.InitDeps(caller)
+	ctx, _ := output.WithResultStore(context.Background())
+	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
+	root.SetContext(ctx)
+	root.PersistentFlags().Bool("yes", false, "")
+	root.PersistentFlags().Bool("dry-run", false, "")
+	root.PersistentFlags().String("format", "json", "")
+	service := &cobra.Command{Use: "doc"}
+	leaf := corecmd.New(shortcut.FromShortcut(declaration))
+	service.AddCommand(leaf)
+	root.AddCommand(service)
+	stdout, stderr := new(bytes.Buffer), new(bytes.Buffer)
+	root.SetOut(stdout)
+	root.SetErr(stderr)
+	root.SetArgs(append([]string{"doc", declaration.Command}, args...))
+	if err := root.Execute(); err != nil {
+		t.Fatalf("execute %s: %v; stderr=%q", declaration.Command, err, stderr.String())
+	}
+	code, emitted, err := output.EmitStoredResult(leaf)
+	if err != nil || !emitted {
+		t.Fatalf("emit %s: code=%d emitted=%v err=%v stderr=%q", declaration.Command, code, emitted, err, stderr.String())
+	}
+	var envelope map[string]any
+	if err := json.Unmarshal(stdout.Bytes(), &envelope); err != nil {
+		t.Fatalf("decode %s stdout=%q: %v", declaration.Command, stdout.String(), err)
+	}
+	return code, envelope
 }
 
 func TestCrossPlatformCoverageDocUpdateAliasReachesNestedBranches(t *testing.T) {
