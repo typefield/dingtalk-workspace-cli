@@ -7,6 +7,7 @@
     python todo_daily_summary.py today        # 今天的待办
     python todo_daily_summary.py tomorrow     # 明天的待办
     python todo_daily_summary.py week         # 本周的待办
+    python todo_daily_summary.py all          # 当前所有未完成待办
     python todo_daily_summary.py --dry-run    # 仅显示将执行的命令
 """
 
@@ -53,6 +54,8 @@ def get_date_range(scope: str):
     elif scope == 'week':
         week_start = today_start - timedelta(days=today_start.weekday())
         return week_start, week_start + timedelta(days=7)
+    elif scope == 'all':
+        return None, None
     return today_start, today_start + timedelta(days=1)
 
 
@@ -135,9 +138,13 @@ def print_summary(
 ):
     scope_label = {
         'today': '今天', 'tomorrow': '明天', 'week': '本周',
+        'all': '当前全部',
     }.get(scope, scope)
-    print(f"\n📋 {scope_label}未完成待办 "
-          f"({start.strftime('%m-%d')} ~ {end.strftime('%m-%d')})")
+    if scope == 'all':
+        print(f"\n📋 {scope_label}未完成待办")
+    else:
+        print(f"\n📋 {scope_label}未完成待办 "
+              f"({start.strftime('%m-%d')} ~ {end.strftime('%m-%d')})")
     print('=' * 50)
     if not todos:
         print('  ✅ 暂无待办，轻松一下！')
@@ -163,14 +170,17 @@ def main():
     dry_run = '--dry-run' in sys.argv
     args = [a for a in sys.argv[1:] if a != '--dry-run']
     scope = args[0] if args else 'today'
-    if scope not in ('today', 'tomorrow', 'week'):
+    if scope not in ('today', 'tomorrow', 'week', 'all'):
         print(__doc__)
         sys.exit(1)
     start, end = get_date_range(scope)
     todos = fetch_all_todos(dry_run=dry_run)
     if dry_run:
         return
-    filtered = filter_by_due(todos, start, end)
+    if scope == 'all':
+        filtered = todos
+    else:
+        filtered = filter_by_due(todos, start, end)
     print_summary(filtered, scope, start, end)
 
 

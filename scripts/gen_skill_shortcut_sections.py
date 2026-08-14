@@ -203,9 +203,21 @@ def update_mono(items: list[dict[str, Any]], check: bool) -> list[Path]:
 def update_runtime_contract(check: bool) -> list[Path]:
     block = runtime_contract_block()
     changed = []
+    # Every skill that executes `dws` inlines the canonical contract so a
+    # basic product call is self-sufficient; dingtalk-shared stays the
+    # cross-product/auth escalation target, not a mandatory pre-read.
     targets = [
         ROOT / "skills" / "multi" / "dingtalk-chat" / "SKILL.md",
         ROOT / "skills" / "multi" / "dingtalk-doc" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-aisearch" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-aitable" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-calendar" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-contact" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-drive" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-mail" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-minutes" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-misc" / "SKILL.md",
+        ROOT / "skills" / "multi" / "dingtalk-todo" / "SKILL.md",
         SHARED_SKILL,
     ]
     for path in targets:

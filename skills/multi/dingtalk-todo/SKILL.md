@@ -11,9 +11,19 @@ metadata:
 
 # 钉钉待办 Skill
 
-## 前置条件 — 执行操作前必读
+<!-- DWS_RUNTIME_CONTRACT_START -->
+## 最小 DWS 执行契约
 
-> **CRITICAL — 执行任何 `dws` 操作前，MUST 先用 Read 工具完整读取 [`dingtalk-shared`](../dingtalk-shared/SKILL.md)。**该轻量文件包含全局执行契约、安全底线及 shared references 的按需加载导航；不要预加载其全部 references。
+- 只通过 `dws` CLI 操作钉钉；结构化读取使用 `--format json`，按真实返回判断结果。
+- 已知命令直接执行。Skill/reference 无法定位时才用 `dws schema search --query "<意图>" --limit 5`；选中后携带双 hash Inspect canonical，再按 `primary_cli_path` 执行。参数/安全语义或 Cobra flag 不确定时才补读精确 Schema/Help；不加载产品级 Catalog 代替选路。
+- 不猜命令、flag、字段、ID、账号或时间。后续 ID 必须来自真实返回；零命中、多候选或类型不明时停止并消歧。
+- 解析目标、读取上下文和最终执行必须使用同一 profile；不得跨组织复用 userId、openDingTalkId 或 openConversationId。多账号组织只使用明确的 `isOrgCurrent=true` 默认账号；没有默认账号时要求用户指定，禁止选择第一项、最近登录或最近使用账号。
+- 不输出或记录 token、refresh token、appSecret、webhook token 等凭据；宿主已注入认证时不要索要凭据。
+- 写操作必须符合用户明确意图。是否需要确认以最终 Runtime gate 和 Schema 为准；需要确认时先说明对象、动作与影响，再追加 `--yes`。
+- 写后按任务结果契约验证；不能仅凭退出码宣称成功。部分结果、未知投递状态和失败项必须如实保留。
+- 时间戳面向用户展示时转换为带时区的可读时间；默认使用当前会话时区，必要时同时保留原值。
+- 遇到认证、权限、profile、confirmation 或未知错误时，只加载 `dingtalk-shared` 中对应 reference；不要连续猜测替代命令。
+<!-- DWS_RUNTIME_CONTRACT_END -->
 
 > 命令参考：[todo.md](references/todo.md)；剧本：[02-task.md](references/02-task.md)。
 
@@ -47,6 +57,7 @@ metadata:
 | "循环待办（每天）" | `dws todo task create ... --due "<首次截止ISO>" --recurrence "DTSTART:<UTC>\nRRULE:FREQ=DAILY;INTERVAL=1"` |
 | "批量建待办" | 按 SOP-4 逐条创建、收集 `taskId` 并批量回读 |
 | "今天 / 本周未完成待办" | `python scripts/todo_daily_summary.py [today\|tomorrow\|week]` |
+| "我还有哪些没做完 / 当前所有未完成待办" | `python scripts/todo_daily_summary.py all` |
 | "逾期待办" | `python scripts/todo_overdue_check.py` |
 | "标记完成 / 重开" | `dws todo task done --task-id <taskId> --status true\|false` |
 | "修改标题/截止时间/优先级" | `dws todo task update --task-id <taskId> ...` |
@@ -71,7 +82,7 @@ metadata:
 **触发**：查待办/今天本周待办/未完成/已完成。
 
 1. **执行（必须）**：`dws todo task list --status false|true --format json`（`false`=未完成、`true`=已完成、不传=全部）；`hasMore=true` 必须翻页。
-2. **摘要脚本（必须）**：今天/本周未完成 → `python scripts/todo_daily_summary.py today|tomorrow|week`；逾期 → `python scripts/todo_overdue_check.py`。
+2. **摘要脚本（必须）**：当前所有未完成 → `python scripts/todo_daily_summary.py all`；今天/本周未完成 → `python scripts/todo_daily_summary.py today|tomorrow|week`；逾期 → `python scripts/todo_overdue_check.py`。命中即直接执行，不逐页手写 `todo task list`。
 3. **详情（必须）**：`dws todo task get --task-id <taskId> --format json`；按主题筛选先 `task list` 再按标题过滤，**禁止**编造主题查询 flag。
 
 **禁止**：写 `--done true`（用 `--status true`）、编造主题筛选参数。
