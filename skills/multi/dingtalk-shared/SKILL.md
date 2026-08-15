@@ -36,7 +36,7 @@ metadata:
 | 当前情况 | 必读内容 |
 |---|---|
 | 已明确单一产品 | 对应 `../dingtalk-*/SKILL.md`；不读路由 reference |
-| 泛称 DWS、需要选择产品 | [routing.md](references/routing.md) |
+| 泛称 DWS、需要选择产品 | [intent-guide.md](references/intent-guide.md) 快速对照表 |
 | 跨产品、多步骤、汇总或报告 | [workflow-routing.md](references/workflow-routing.md) |
 | 输入含 alidocs、shanji 等钉钉 URL 且类型不明 | [url-patterns.md](references/url-patterns.md) |
 | 产品边界仍然难以判断 | [intent-guide.md](references/intent-guide.md) 的相关章节 |
@@ -45,8 +45,7 @@ metadata:
 | `confirmation_required` / 写操作确认 | [confirmation.md](references/confirmation.md) |
 | 命令发现、Schema / `--compact` / `--all` | [schema-usage.md](references/schema-usage.md) |
 | 怀疑能力不支持 | [capability-limits.md](references/capability-limits.md) |
-| 批量/多源采集 | [conventions.md](references/recipes/conventions.md) |
-| 固定短流程 | [lite-catalog.md](references/recipes/lite-catalog.md) 对应章节 |
+| 批量/多源采集 | [conventions.md](references/conventions.md) |
 
 产品命令、脚本和字段细节位于对应产品 skill，不在 `dingtalk-shared` 重复维护。
 
@@ -57,8 +56,8 @@ metadata:
 2. 请求包含多个时序步骤、跨产品数据传递或汇总报告：即使 URL 已识别，也要读取
    `workflow-routing.md`，按行动指南组合需要的产品 skill；当前发布包不包含独立
    scenario skill。
-3. 请求是单产品操作但产品不明确：读取 `routing.md`，再显式读取目标产品
-   `SKILL.md`。
+3. 请求是单产品操作但产品不明确：读取 `intent-guide.md` 快速对照表，再显式读取
+   目标产品 `SKILL.md`。
 4. `doc/drive/wiki`、`aitable/sheet`、`calendar/minutes` 等边界仍不清楚：
    只读取 `intent-guide.md` 的对应章节。
 5. 仍无法判断时向用户追问，不要猜测产品或命令。
