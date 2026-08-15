@@ -145,6 +145,15 @@ type FlagSpec struct {
 	// alike) and makes a whitespace-only value count as empty in required checks.
 	Trim bool
 
+	// Input declares extra input sources for a KindString flag beyond the
+	// literal command-line value: InputFile enables @path (value replaced by
+	// the file content), InputStdin enables - (value replaced by stdin).
+	// "@@value" always escapes to the literal "@value". Only explicit CLI
+	// tokens are resolved; EnvVar fallback and registration defaults pass
+	// through unchanged. Resolution runs before required/enum/constraint/
+	// Validate checks, so they see the payload content. Empty = flag value only.
+	Input []string
+
 	// Schema parameter final facts (embedded to dws.schema.*; assembly pass-through).
 	Enum              []string // accepted values
 	Format            string   // machine-readable format (e.g. uri)
@@ -343,6 +352,13 @@ func (c *Ctx) StrSlice(name string) []string {
 // Changed reports whether the user explicitly passed the flag.
 func (c *Ctx) Changed(name string) bool { return c.cmd.Flags().Changed(name) }
 
+// InputResolvedFromSource reports whether the flag's value was loaded from
+// @file or stdin rather than typed inline. Guards applying shape heuristics to
+// inline values must skip resolved ones; see the package-level function.
+func (c *Ctx) InputResolvedFromSource(name string) bool {
+	return InputResolvedFromSource(c.cmd, name)
+}
+
 // DryRun reports the effective global --dry-run.
 func (c *Ctx) DryRun() bool { return BoolFlag(c.cmd, "dry-run") }
 
@@ -365,6 +381,7 @@ func New(spec Spec) *cobra.Command {
 	validateDispatchDecl(spec)
 	validateSafetySpec(spec)
 	validateContractDecl(spec)
+	validateInputSpecs(spec)
 	// Help prose inherits the declaration when not authored separately:
 	// Selection.Examples (already contract-validated against the real flags)
 	// double as the --help Example block, keeping one authored source.
@@ -475,6 +492,11 @@ func runDeclaredPreflight(cmd *cobra.Command, args []string, spec Spec) error {
 		if err := ConfirmSafety(cmd, spec.Safety); err != nil {
 			return err
 		}
+	}
+	// Input resolution rewrites explicit @file / stdin values in place so the
+	// required/enum/constraint/Validate stages below check the payload content.
+	if err := resolveInputFlags(cmd, spec.Flags); err != nil {
+		return err
 	}
 	if err := ValidateRequired(cmd, spec.Flags); err != nil {
 		return err
@@ -924,7 +946,9 @@ func BuildArgs(cmd *cobra.Command, flags []FlagSpec) (map[string]any, error) {
 			continue
 		}
 		effective := EffectiveValue(cmd, flag)
-		if effective == "" && flag.ArgDefault != "" {
+		// ArgDefault must not re-substitute an authoritative source-loaded
+		// payload; rawValue deliberately returned it verbatim, empty included.
+		if effective == "" && flag.ArgDefault != "" && !inputResolvedAny(cmd, flag) {
 			effective = flag.ArgDefault
 		}
 		if effective == "" && flag.OmitEmpty {
@@ -990,13 +1014,19 @@ func EffectiveValue(cmd *cobra.Command, flag FlagSpec) string {
 // explicitly provided (Changed) and non-empty; the registration default is
 // demoted to a chain tail and no longer shadows aliases/env. When Trim is set,
 // candidates are judged empty after trimming, so whitespace-only and empty fall
-// through to the next fallback level.
+// through to the next fallback level. Exception: a value loaded from @file /
+// stdin (FlagSpec.Input) is authoritative and returned verbatim even when
+// empty — the user pointed at that source explicitly, so substituting an
+// alias/env/Default value would ship something they did not ask for.
 func rawValue(cmd *cobra.Command, flag FlagSpec) string {
 	usable := func(v string) bool {
 		if flag.Trim {
 			v = strings.TrimSpace(v)
 		}
 		return v != ""
+	}
+	if cmd.Flags().Changed(flag.Name) && InputResolvedFromSource(cmd, flag.Name) {
+		return flagString(cmd, flag.Kind, flag.Name)
 	}
 	if cmd.Flags().Changed(flag.Name) {
 		if v := flagString(cmd, flag.Kind, flag.Name); usable(v) {
@@ -1006,6 +1036,9 @@ func rawValue(cmd *cobra.Command, flag FlagSpec) string {
 	for _, alias := range flag.Aliases {
 		if !cmd.Flags().Changed(alias) {
 			continue
+		}
+		if InputResolvedFromSource(cmd, alias) {
+			return flagString(cmd, flag.Kind, alias)
 		}
 		if v := flagString(cmd, flag.Kind, alias); usable(v) {
 			return v
@@ -1086,6 +1119,12 @@ func ValidateConstraintDecls(use string, flags []FlagSpec, constraints []Constra
 // counts Changed on any declared name (booleans have no env fallback
 // semantics).
 func constraintProvided(cmd *cobra.Command, flag FlagSpec) bool {
+	// An explicitly supplied source-loaded payload counts as provided even when
+	// empty: the user did point at a file/stdin, and rawValue already treats
+	// that value as authoritative.
+	if inputResolvedAny(cmd, flag) {
+		return true
+	}
 	switch flag.Kind {
 	case KindBool:
 		return flagNameProvided(cmd, flag)
