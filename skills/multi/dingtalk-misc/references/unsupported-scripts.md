@@ -37,7 +37,7 @@
 | `yida_report_update.py` | 报表 schema 更新编排 |
 | `yida_schema_common.py` | schema 公共工具 |
 
-`routing.md` 可将「宜搭」粗分到 `dingtalk-misc`，但**产品索引表无宜搭正式产品行**；在补齐正式 reference 前，宜搭请求应向用户说明「仅有未产品化脚本，无稳定命令面」。
+意图路由（`dingtalk-shared` 的 `intent-guide.md`）可将「宜搭」粗分到 `dingtalk-misc`，但**产品索引表无宜搭正式产品行**；在补齐正式 reference 前，宜搭请求应向用户说明「仅有未产品化脚本，无稳定命令面」。
 
 ## 财务辅助（finance）
 

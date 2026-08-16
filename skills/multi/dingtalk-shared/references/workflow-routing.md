@@ -24,22 +24,22 @@ skill 完成。
 | 听记与会后 | 摘要、转写、会后待办和通知 | [`07-minutes.md`](../../dingtalk-minutes/references/07-minutes.md) |
 | 通讯录 | 找人、部门、上下级、负责人和精确用户信息 | [`08-directory.md`](../../dingtalk-contact/references/08-directory.md) |
 
-## Lite 与 Full
+## 常用跨产品链路
 
-- 单一目标、短链路、无多源汇总：在
-  [lite-catalog.md](recipes/lite-catalog.md) 中只读取对应 recipe。
-- 涉及多源采集、批量处理、交叉分析、汇总/归纳或三个以上产品：使用上表的完整
-  行动指南，并按 [conventions.md](recipes/conventions.md) 执行批量和
-  ID 传递规则。
-- 产品 skill 已内联完整步骤时，直接执行其步骤，不再重复读取通用 recipe。
+共同规则：先解析人再执行写操作；同名多命中必须 `contact user get --ids` 消歧并由用户确认，禁止默认选第一个（详见 [`08-directory.md`](../../dingtalk-contact/references/08-directory.md)「多命中」）。
+
+- **发邮件给同事**（aisearch → contact → mail）：`aisearch person` 取 userId → `contact user get` 取 email → `mail mailbox list` 取发件邮箱 → `mail message send`。`dingtalk-mail` 包内有发送辅助脚本。
+- **创建日程并邀请同事**（aisearch → calendar）：`aisearch person` 取 userId → `calendar event create` → `calendar participant add --event <EVENT_ID> --users <USER_ID>`。`dingtalk-calendar` 包内有日程创建辅助脚本。
+- **创建待办并指派**（aisearch → todo）：`aisearch person` 取 userId → `todo task create --title "..." --executors <USER_ID>`。
 
 ## 多场景消歧
 
-- “催审批”是 OA 审批操作，走 `dingtalk-misc`，不是普通消息发送。
-- “会后/听记生成待办”优先听记场景，不是普通待办创建。
-- “安排日程/订会议室”走 calendar；“发起或预约视频会议”当前 CLI 不支持，请在钉钉客户端操作；“读取
-  会后内容”走 minutes。
-- “汇总多次会议/多个来源并生成报告”走工作汇报行动指南，不是单篇文档编辑。
-- “整理项目全部讨论”是跨源汇总；“编辑指定文档”才是单产品 doc 操作。
+- "催审批"是 OA 审批操作，走 `dingtalk-misc`，不是普通消息发送。
+- "会后/听记生成待办"优先听记场景，不是普通待办创建。
+- "安排日程/订会议室"走 calendar；"发起或预约视频会议"当前 CLI 不支持，请在钉钉客户端操作；"读取会后内容"走 minutes。
+- "汇总多次会议/多个来源并生成报告"走工作汇报行动指南，不是单篇文档编辑。
+- "整理项目全部讨论"是跨源汇总；"编辑指定文档"才是单产品 doc 操作。
+
+批量采集与 ID 传递规则见 [conventions.md](conventions.md)；产品 skill 已内联完整步骤时直接执行其步骤，不再读取通用 recipe。
 
 仍有歧义时，读取 [intent-guide.md](intent-guide.md) 的相关章节，不要全文加载。
