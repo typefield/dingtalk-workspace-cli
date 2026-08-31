@@ -1,6 +1,6 @@
 ---
 name: dingtalk-chat
-description: 钉钉群聊与消息。Use when 用户提到 发消息/编辑或撤回消息/单聊/群聊/建群/普通群升级外部群/群昵称/会话分组/群成员管理/@消息/搜索聊天记录/话题回复/收藏消息/机器人群发/Webhook通知/发送或下载消息图片与文件。不做紧急 DING/短信/电话（走 dingtalk-misc）、邮件（走 dingtalk-mail）、班级群（走 dingtalk-misc）。命令前缀：dws chat。
+description: 钉钉群聊与消息。Use when 发消息、单聊/群聊、建群、群设置/成员、搜索/回复、机器人/Webhook、消息文件。DING 和班级群走 dingtalk-misc；邮件走 dingtalk-mail。前缀 dws chat。
 metadata:
   cli_version: ">=0.2.14"
   category: product
@@ -47,6 +47,7 @@ metadata:
 | 查看指定群成员（用户/机器人） | `dws chat +chat-members-list --group <群名或ID>` | 唯一解析并全量读取 |
 | 获取群邀请链接 | `dws chat +chat-invite-url --group <群名或ID>` | 多候选时停止 |
 | 查看群机器人 | `dws chat +chat-bots --group <群名或ID>` | 返回稳定 `bots[]` |
+| 个人收藏表情列表/发送/收藏 | `dws chat emotion list/send/favorite` | 约束见 leaf Schema |
 | 修改群名称 | `dws chat group rename --id <openConversationId> --name <新名称>` | 只知群名时先用 `+chat-search --query <群名>` 唯一解析 ID；不猜 `+chat-rename` |
 | 查看指定群内 @我的消息 | `dws chat +at-me --group <群名> --page-all` | 检查 `complete`；空结果仍返回数组 |
 | 查看全部会话 | `dws chat +conversation-list --page-all` | 检查 `complete` / `failures` |
@@ -60,6 +61,7 @@ metadata:
 |---|---|
 | 已知消息 ID 批量读取详情 | `dws chat +messages-mget` |
 | 已知资源引用单独下载 | `dws chat +messages-resource-download` |
+| 只上传会话文件，不发消息 | `dws chat conversation-file upload --conversation-id <cid> --file <路径>`；返回文件 ID，仅本地路径 |
 | 按关键词搜索群 | `dws chat +chat-search` |
 | 查看消息收藏 | `dws chat +flag-list` |
 | <!-- dws-intent: chat.reply.quote -->引用回复 | 人：`dws chat +messages-reply`；成功结果保留新消息/会话/投递与原消息来源上下文。Bot 群：`dws chat message send-by-bot --conversation-id <cid> --reply <mid> --ref-sender <sid>` |
@@ -75,7 +77,7 @@ metadata:
 - Markdown 中的公网图片必须写成 `![图片标题](https://example.com/image.png)` 才会内联展示；
   省略开头的 `!` 时只会显示为链接。
 - `+messages-send`：文件、Bot、Webhook、复杂 @ 或幂等控制。user 已知 ID 可直接传，也可用 `--user-query` / `--chat-query` 运行同一只读解析链；Bot 多群使用 `--groups/--groups-file`，返回 `im.batch-write.v1`；bot/webhook 只使用下层真实支持的文本/Markdown 能力。
-- 文件直接传 `+messages-send --file <相对路径>`；不要先独立上传并提取 mediaId。
+- 发文件消息用 `+messages-send --file <路径>`；只存会话空间、不发消息才用 `chat conversation-file upload`，返回 `dentryId`/`spaceId`。
 - Webhook 使用 `+messages-send --as webhook --webhook-token <token>`；不要退回原子 Webhook 命令。
 - 流式卡片用 `+messages-send-card`；群聊@传 ID/`--at-all`，Runtime 把 create 返回前缀加到 `--content`；禁写占位符；仅 text。
 
@@ -91,6 +93,8 @@ metadata:
 ## 按需加载
 
 只在任务命中时读取一个精确 reference：
+
+[话题与话题圈](references/chat/thread.md)
 
 | 场景 | Reference |
 |---|---|
@@ -111,7 +115,7 @@ metadata:
 | 卡片公开 Schema 边界 | [card/schema.md](references/card/schema.md) |
 | 只有上述 reference 仍无法定位的原子能力 | [chat.md](references/chat.md) 的对应章节 |
 
-不要预加载这些 reference。完整 Shortcut Catalog 只在根路由和精确 reference 都无法定位低频能力时使用。
+不要预加载 reference。Shortcut Catalog 只在根路由和精确 reference 都无法定位低频能力时使用。
 
 ## 错误最短路径
 

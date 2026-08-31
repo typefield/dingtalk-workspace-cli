@@ -19,7 +19,7 @@
 </p>
 
 > [!IMPORTANT]
-> **共创阶段**：本项目涉及钉钉企业数据访问，需企业管理员授权后方可使用。欢迎加入钉钉 DWS 共创群获取支持与最新动态。详见下方 [开始使用](#开始使用)。
+> **钉钉 DWS CLI 已全面开放，欢迎使用**：本项目涉及钉钉企业数据访问，需企业管理员授权后方可使用。欢迎加入钉钉 DWS 共创群获取支持与最新动态。详见下方 [开始使用](#开始使用)。
 >
 > <img src="https://img.alicdn.com/imgextra/i1/O1CN01WJyAsJ1prD2ovQACM_!!6000000005413-2-tps-718-720.png" alt="dws 开源沟通群二维码" width="150">
 
@@ -345,7 +345,13 @@ dws todo task list --dry-run                       # 预览操作但不执行
 
 ## 在 Agent 中使用
 
-dws 是为 AI Agent 设计的 CLI 工具。请先完成[安装](#安装)和[开始使用](#开始使用)，然后配置 Agent 环境：
+dws 是为 AI Agent 设计的 CLI 工具。请先完成[安装](#安装)和[开始使用](#开始使用)，然后安装 Agent Skills：
+
+```bash
+npx skills add DingTalk-Real-AI/dingtalk-workspace-cli -g -y
+```
+
+`dws skill setup` 仍是进阶用户 / 国内 / 升级路径。详见 [Agent Skills](#agent-skills)。
 
 ### Agent 调用模式
 
@@ -385,25 +391,28 @@ dws aitable record query --base-id BASE_ID --table-id TABLE_ID --limit 10
 
 ### Agent Skills
 
-仓库内置完整的 Agent Skill 体系（`skills/` 目录），分为两套布局：
+```bash
+npx skills add DingTalk-Real-AI/dingtalk-workspace-cli -g -y
+```
 
-- `skills/mono/` — 单 skill 布局（一个 `SKILL.md` + `references/products/`），legacy。
-- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ...），每个 skill 自带 `SKILL.md`。默认布局。
+该命令发现 `skills/multi/dingtalk-*/SKILL.md`（`skills/` 下三层的目录布局，正是 `npx skills add` 已支持的扫描深度），并把 `dingtalk-calendar`、`dingtalk-chat` 等安装到 [vercel-labs/skills](https://github.com/vercel-labs/skills) 已识别的 Agent 目录：默认是项目 `.agents/skills/`，加 `-g` 则装到用户全局 `.agents/skills`，并链接到 `~/.cursor/skills`、`~/.claude/skills` 等已登记的 Agent home。
+
+一体式 mono skill（`skills/mono`，frontmatter 名为 `dws`）标了 `metadata.internal: true`，**不是**默认可安装 skill，因此 Agent 不会在 `dws` 与各产品 skill 之间双重路由。
+
+`dws skill setup` 仍是进阶用户 / 国内 / 升级路径：负责 Gitee 回退、升级时刷新 skill、`~/.dws/skills-state.json` 所有权，以及 mono↔multi 互斥清理。
+
+仓库仍保留两棵源树：
+
+- `skills/multi/` — 每个产品一个独立 skill（`dingtalk-aitable/` / `dingtalk-calendar/` / `dingtalk-chat/` ...），每个 skill 自带 `SKILL.md`。`npx skills add` 与 `dws skill setup` 的默认源。
+- `skills/mono/` — 单 skill 布局（一个 `SKILL.md` + `references/products/`），legacy。对 `npx skills add` 隐藏；`dws skill setup --mode mono` 以及 curl / zip 安装器仍会安装它。
 
 Schema 生成的叶子 safety/参数/选型文案由 Go 中的 ProductDecl / ContractFinal 声明驱动。原 `internal/cli/schema_hints/` HintFile 目录已完全退役，不得重新引入。
 
-安装之后，Claude Code / Cursor 等 AI 工具就能通过自然语言直接操作钉钉：
+安装之后，Claude Code / Cursor 等 AI 工具就能通过自然语言直接操作钉钉。
 
-```bash
-# 安装 skills 到当前项目（默认 multi；DWS_SKILL_MODE=mono 可切回）
-curl -fsSL https://raw.githubusercontent.com/DingTalk-Real-AI/dingtalk-workspace-cli/main/scripts/install-skills.sh | sh
-```
+> 国内用户：`npx skills add` 从 GitHub clone。请优先用 `dws skill setup`，或给 `install-skills.sh` 加上 `DWS_GITEE_REPO`，见 [国内加速安装](#国内加速安装)。
 
-> 安装器优先使用检测到的具体 Agent 根目录（如 `$HOME/.codex/skills/`）；仅在未检测到具体 Agent 时回退到 `.agents/skills/`。multi 为按产品平铺，mono 为 `dws/` 子目录。
->
-> 国内用户加 `DWS_GITEE_REPO` 走 Gitee 镜像，见 [国内加速安装](#国内加速安装)。
-
-**用 `dws skill setup` 切换或重装：**
+**进阶用户 / 国内 / 升级：`dws skill setup`**
 
 ```bash
 # 交互式：提示选模式 + 目标 Agent
@@ -476,7 +485,7 @@ multi setup 或 upgrade 后，DWS 会把官方 bundle 快照和统一所有权�
 <details>
 <summary><strong>个人事件订阅</strong> — 实时接收钉钉消息，驱动事件触发的 Agent</summary>
 
-`dws event consume` 使用当前 OAuth 登录用户建立托管的 Stream WebSocket 长连接，并把每条事件以 NDJSON 一行输出到 stdout。当前公开目录覆盖指定范围和全量单聊/群消息、指定发送人、已读/撤回/表情回应、群生命周期，以及六个 OA 审批任务/实例事件。
+`dws event consume` 使用当前 OAuth 登录用户建立托管的 Stream WebSocket 长连接，并把每条事件以 NDJSON 一行输出到 stdout。当前公开目录覆盖指定范围和全量单聊/群消息、指定发送人、已读/撤回/表情回应、群生命周期、七个 OA 审批任务/实例事件，以及三个待办生命周期事件。
 
 默认 `ndjson`、`json`、`pretty` 输出保留兼容 transport envelope（`type`、`event_type`、字符串 `data`、`headers`），`compact` 继续沿用原 processor。Agent 或新脚本显式加 `--flatten` 后，输出稳定的顶层业务字段。`--format` 控制 JSON 序列化，`--flatten` 控制数据结构，且不能与 `-f raw` 或 `--debug-raw-events` 同时使用。
 
@@ -497,6 +506,8 @@ dws event list
 dws event schema user_im_message_receive_o2o --flatten
 dws event list --category oa
 dws event schema user_oa_approval_task_created --flatten
+dws event list --category todo
+dws event schema user_todo_task_create --flatten
 
 # 监听当前用户被 @ 的消息
 dws event +listen-im --kind at-me -f ndjson
@@ -524,14 +535,23 @@ dws event consume user_im_group_disbanded --group <openConversationId> --flatten
 dws event +listen-im --kind sender --user <userId> \
   --events message,read,recall -f ndjson
 
-# 一个进程监听全部六个公开 OA 审批事件
+# 一个进程监听全部七个公开 OA 审批事件
 dws event consume \
   user_oa_approval_task_created \
   user_oa_approval_task_finished \
   user_oa_approval_task_redirected \
   user_oa_approval_instance_started \
+  user_oa_approval_instance_cc \
   user_oa_approval_instance_terminated \
   user_oa_approval_instance_finished \
+  --flatten -f ndjson
+
+# 监听当前用户作为执行者的待办创建、更新和删除事件
+dws event consume \
+  user_todo_task_create \
+  user_todo_task_update \
+  user_todo_task_delete \
+  --role-types executor \
   --flatten -f ndjson
 
 # 查看本地 consume，并取消指定订阅
@@ -556,15 +576,23 @@ Agent 工作流和事件参数详见 `skills/multi/dingtalk-event/SKILL.md`。
 </details>
 
 <details>
-<summary><strong>Raw API 调用</strong> — 直接调用钉钉 OpenAPI</summary>
+<summary><strong>Raw API 调用</strong> — 直接调用支持 App Token 的钉钉服务端 OpenAPI</summary>
 
-`dws api` 让你直接调用任意钉钉 OpenAPI，无需 SDK，Token 自动获取和刷新。
+`dws api` 让你直接调用支持企业内部应用 App Token 的钉钉服务端 OpenAPI，无需 SDK，Token 自动获取和刷新。
 
-> **前置条件**：必须使用自有应用凭证登录（见[自建应用模式](#开始使用)）。通过 MCP 默认凭证登录 不支持 raw API 调用。
+> **前置条件**：必须提供一对完整的自有应用 Client ID/Client Secret，可来自本次 flags、环境变量或成功登录后保存的 app config（见[自建应用模式](#开始使用)）。仅通过 MCP 默认凭证登录不支持 Raw API 调用。
+
+Client ID/Client Secret 必须来自同一完整凭证对，优先级为：完整 `--client-id/--client-secret` > 完整 `DWS_CLIENT_ID/DWS_CLIENT_SECRET` > 完整 app config。任一来源只提供一项都会明确失败，不会与其他来源拼接。直接用于 `dws api` 的 flags/env 仅对本次调用生效，不持久化 AppSecret；成功执行 `dws auth login` 时使用的 flags/env 则会按实际使用的完整 pair 持久化，供 OAuth 刷新和后续 Raw API 使用。获取到的 App Token 会按 `app-token:<clientID>` 缓存；隐藏 `--token` 仅临时使用调用方提供的 App Token，不持久化、不自动刷新。
+
+Client Secret 统一使用 Keychain 槽位 `appsecret:<clientID>`，与 OAuth User Token、App Token 完全隔离。历史明文 app config 和 `client-secret:<clientID>` 会自动迁移；新旧槽位值不一致时 fail closed，要求重新登录，不猜测正确值。
 
 ```bash
 # 登录（仅首次）
 dws auth login --client-id <APP_KEY> --client-secret <APP_SECRET>
+
+# 或使用一对环境变量，完整 env pair 会整体覆盖 app config
+export DWS_CLIENT_ID=<APP_KEY>
+export DWS_CLIENT_SECRET=<APP_SECRET>
 
 # === api.dingtalk.com ===
 
@@ -587,9 +615,16 @@ dws api POST https://oapi.dingtalk.com/topapi/v2/user/get \
   --data '{"userid":"<USER_ID>"}'
 
 # === 通用功能 ===
-dws api GET /v1.0/microApp/allApps --page-all   # 自动翻页
-dws api GET /v1.0/microApp/allApps --dry-run     # 预览请求
-dws api GET /v1.0/microApp/allApps --jq '.agentId'  # jq 过滤
+dws api GET /v1.0/microApp/allApps --dry-run             # 预览请求
+dws api GET /v1.0/microApp/allApps --jq '.appList | length'  # jq 过滤
+
+# 从文件读取 JSON body（--params 也支持 @file；也可用 - 从 stdin 读取）
+dws api POST https://oapi.dingtalk.com/topapi/v2/department/listsubid \
+  --data @department-request.json --dry-run
+
+# 单文件流式 multipart 上传；--data 顶层字段转为文本 form field；先 dry-run 核对
+dws api POST https://oapi.dingtalk.com/media/upload \
+  --data '{"type":"image"}' --file media=./demo.png --dry-run
 ```
 
 | 特性 | 说明 |
@@ -598,6 +633,10 @@ dws api GET /v1.0/microApp/allApps --jq '.agentId'  # jq 过滤
 | Token 自动管理 | 首次调用自动获取应用级 accessToken，有效期内缓存，过期自动刷新 |
 | 域名白名单 | 仅允许 `api.dingtalk.com` 和 `oapi.dingtalk.com`，防止 Token 泄露 |
 | 自动分页 | `--page-all` 自动遍历所有分页。`--page-limit` 控制翻页上限（默认 10，设为 0 不限制，硬上限 500 防止死循环） |
+| 安全传输 | 仅允许 HTTPS/443 和同源 HTTPS 重定向；JSON/错误响应有限读取，二进制流式原子下载 |
+| Agent 发现 | 现有产品命令未覆盖时，内置 misc/mono Skill 指导 Agent 从 `https://open.dingtalk.com/llms.txt` 分层定位官方接口；Raw `api` 本身不进入 Agent Schema |
+
+`dws api` 只自动使用企业内部应用的 App Token，不读取 OAuth User Token，也不提供 `--as user` / `--user`。优先使用已有 DWS 产品命令；只有未封装的企业内部应用服务端 OpenAPI 才使用 Raw 逃生舱。写、删、撤销等操作须在 dry-run 核对并确认后执行。
 
 </details>
 
@@ -716,7 +755,7 @@ dws dev connect --channel auto --robot-client-id <id> --robot-client-secret <sec
 | 开发者文档 | `devdoc` | 搜索开放平台文档并排查 API 错误 |
 | AI 搜问 | `aisearch` | 企业人员搜索：按姓名 / 部门 / 角色 / 职责 / 上下级 / 手机号 / 工号 |
 | 直播 | `live` | 查看我的直播列表 |
-| Raw API | `api` | 直接调用任意钉钉 OpenAPI，自动管理应用级 Token |
+| Raw API | `api` | 直接调用支持 App Token 的钉钉服务端 OpenAPI，自动管理应用级 Token |
 
 > 完整命令清单（带描述与使用场景）：[`docs/command-index.md`](./docs/command-index.md)。运行 `dws --help` 查看顶层命令树，或 `dws <service> --help` 查看任一服务的子命令。
 

@@ -437,23 +437,23 @@ Flags:
       --role-id string   群身份 openRoleId，由 group-role list 返回 (必填)
 ```
 
-#### 设置用户群身份 — 覆盖指定用户在群中的全部群身份（传空则清除所有身份）
+#### 设置用户群身份 — 覆盖指定用户在群中的全部群身份
 ```
 Usage:
   dws chat group-role set-user [flags]
 Example:
-  dws chat group-role set-user --group <openConversationId> --user <userId> --role-ids roleId1,roleId2
+  dws chat group-role set-user --group <openConversationId> --user <userId> --role-id <openRoleId>
   # 查询人员: dws aisearch person --query "姓名" --dimension name
   # 查询 role-id: dws chat group-role list --group <openConversationId>
 Flags:
-      --group string      群聊 openConversationId (必填)
-      --user string       用户 userId（必填）
-      --role-ids string   群身份 openRoleId 列表，逗号分隔 (必填)，传空字符串则清除该用户所有群身份
+      --group string     群聊 openConversationId (必填)
+      --user string      用户 userId（必填）
+      --role-id string   群身份 openRoleId，由 group-role list 返回
 ```
 
 #### 移除用户的指定群身份 — 从用户身上移除指定的群身份（不影响其他群身份）
 
-> ⚠️ 当前不可用：该命令当前调用常失败（服务端返回 1002 系统繁忙），多为服务端侧限制。需要清除某人身份时，用 `chat group-role set-user --role-ids ""`（传空 role-ids 覆盖为无身份）兜底；但 set-user 会清掉该用户的**全部**身份，无法只移除其中一个。
+> ⚠️ 当前不可用：该命令当前调用常失败（服务端返回 1002 系统繁忙），多为服务端侧限制。set-user 会清掉该用户的**全部**身份，无法只移除其中一个。
 ```
 Usage:
   dws chat group-role remove-user [flags]
@@ -556,8 +556,9 @@ Flags:
     - --open-dingtalk-id 传 openDingTalkId（三方应用或跨组织场景常用，无法获取 userId 时使用）
   - --group 的别名: --id, --chat, --conversation-id (均可替代 --group)
   - 翻页：hasMore=true 时，用结果中的边界 createTime 作为下次 --time
+  - 自动翻页：显式加 `--page-all` 后 CLI 按边界时间连续拉取全部页并按消息 ID 去重，`--page-limit` 控制最多请求页数（默认 50，范围 1-500），`--max-items` 控制最多输出条数（默认 0 不限制，精确截断并置 `truncatedByResultLimit=true`），`--page-delay` 控制页间等待毫秒数（默认 200，0 表示不等待）；只传这些分页控制参数但不传 `--page-all` 时仍保持原单页调用
   - 处理引用回复时读取 quotedMessage，不要只看回复正文；合并转发与图片引用的原消息内容也在该上下文中
-  - 话题圈消息拉取流程：如果返回的会话消息中包含 openConvThreadId 字段，说明是话题类消息。要获取完整的话题内容，需要两步操作：(1) 先通过 dws chat message list 拉取话题主消息（即话题帖子本身）；(2) 再调用 dws chat message list-topic-replies --group <openConversationId> --topic-id <openConvThreadId> 分页拉取该话题下的所有回复消息。只有话题主消息 + 回复列表合在一起，才是一条话题的完整内容。
+  - 话题圈是群会话容器，使用 `openConversationId`；群内一条 Thread 使用 `openConvThreadId`。把普通群已有消息升级为 Thread 使用 `dws chat thread promote --conversation-id <openConversationId> --message-id <openMessageId>`；浏览主话题使用 `dws chat thread list --conversation-id <openConversationId>`；需要逐条查看回复正文或核实具体回复是否仍存在时，使用 `dws chat thread list-replies --conversation-id <openConversationId> --topic-id <openConvThreadId>`。
 ```
 
 #### 以当前用户身份发送消息 — --group 群聊 / --user 或 --open-dingtalk-id 单聊
@@ -638,22 +639,23 @@ Flags:
   - 发送文字 + 文件时，先发送 `--msg-type file --file` 文件消息，再补一条文本或 Markdown 说明；这是两条独立消息
 ```
 
-### file (会话文件上传，已下线)
+### conversation-file（会话文件空间上传）
 
-#### chat file upload 已下线
+#### chat conversation-file upload
 
-`dws chat file upload` 已隐藏下线，不再调用 `chat/upload_conversation_file_by_url`，URL 文件服务端代传当前不可用。
-
-发送本地文件消息仍然支持，统一使用：
+把工作目录内的本地文件上传到指定群聊或单聊的会话文件空间，只返回文件标识，不发送聊天消息：
 ```
-dws chat message send --conversation-id <openConversationId> --msg-type file --file ./report.pdf --format json
-dws chat message send --open-dingtalk-id <openDingTalkId> --msg-type file --file ./report.pdf --format json
+dws chat conversation-file upload --conversation-id <openConversationId> --file ./report.pdf --format json
+dws chat conversation-file upload --open-dingtalk-id <openDingTalkId> --file ./report.pdf --format json
 ```
 
-注意:
-  - 不要再构造 `dws chat file upload --url ...`，该路径会直接返回下线提示
-  - 常规发图/发文件/发音视频都走 `chat message send --msg-type file --file <本地路径>`
-  - 若需要“文字 + 文件”双消息，先发送文件消息，再补一条文本或 Markdown 消息说明
+成功结果返回 `dentryId`、`spaceId`、`fileName`、`fileType` 和 `fileSize`，可供后续需要会话文件标识的操作使用。
+
+注意：
+  - URL 文件代传不受支持；先把文件下载到工作目录，再传相对路径
+  - 需要真正发送文件消息时，使用 `chat message send --msg-type file --file <本地路径>` 或 `chat +messages-send --file <本地路径>`
+  - `--conversation-id`、`--user`、`--open-dingtalk-id` 必须且只能指定一个
+  - 历史 `chat file upload` 仍保持隐藏下线，不要用于新调用
 
 #### 查询消息发送状态 — 查询以当前用户身份发送的消息的发送状态
 
@@ -825,21 +827,36 @@ Flags:
     2. 单个换行不产生换行效果，需用空行（`\n\n`）做段落分隔，或行尾两空格 + 换行/`<br>` 做硬换行
 ```
 
-#### 拉取群话题回复消息列表
+#### 将普通群已有消息升级为 Thread
 
-查询指定群聊中某条话题消息的全部回复。--group 指定群会话 ID，--topic-id 指定话题 ID（由 dws chat message list 返回）。
+将普通群中一条已经存在的消息升级为 Thread 根消息。会话和消息必须属于同一个普通群；单聊消息不支持。成功后返回新的 `openConvThreadId`。
 ```
 Usage:
-  dws chat message list-topic-replies [flags]
+  dws chat thread promote [flags]
 Example:
-  dws chat message list-topic-replies --group <openconversation_id> --topic-id <topicId>
-  dws chat message list-topic-replies --group <openconversation_id> --topic-id <topicId> --time "2025-03-01 00:00:00" --limit 20
+  dws chat thread promote --conversation-id <openConversationId> --message-id <openMessageId>
 Flags:
-      --group string      群会话 openconversationId (必填)
-      --topic-id string   话题 ID，由 dws chat message list 返回 (必填)
-      --time string       开始时间，格式: yyyy-MM-dd HH:mm:ss（可选）
-      --limit int         返回数量（默认 50）
-      --direction string  时间方向: newer=从给定时间往现在拉，older=从给定时间往以前拉（推荐，默认 older）
+      --conversation-id string  消息所属普通群的 openConversationId (必填)
+      --message-id string       待升级消息的 openMessageId (必填)
+```
+
+#### 拉取话题回复消息列表
+
+分页查询指定话题的回复，每次返回一页。`conversation-id` 指定父会话，`topic-id` 指定 `openConvThreadId`；需要自动读取全部页面时使用现有的 `dws chat +thread-replies --page-all`。
+
+用户需要逐条查看、列出或概括具体回复内容时，使用本命令；只浏览话题主消息时使用 `thread list`。需要自动读取全部页面、排序或下载资源时，使用 `chat +thread-replies --page-all`。
+```
+Usage:
+  dws chat thread list-replies [flags]
+Example:
+  dws chat thread list-replies --conversation-id <openConversationId> --topic-id <openConvThreadId>
+  dws chat thread list-replies --conversation-id <openConversationId> --topic-id <openConvThreadId> --time "2025-03-01 00:00:00" --limit 20
+Flags:
+      --conversation-id string  父会话 openConversationId (必填)
+      --topic-id string         Thread openConvThreadId (必填)
+      --time string             开始时间，格式: yyyy-MM-dd HH:mm:ss（可选）
+      --limit int               返回数量（默认 50）
+      --direction string        时间方向: newer/older
 ```
 
 #### 拉取指定时间范围内当前用户的所有会话消息 — 分页拉取当前登录用户在指定时间范围内的所有会话消息
@@ -1212,6 +1229,54 @@ Flags:
       --msg-ids string   消息 ID 列表，逗号分隔 (必填)
 ```
 
+### emotion (个人收藏表情)
+
+#### 列出个人收藏表情
+```
+Usage:
+  dws chat emotion list [flags]
+Example:
+  dws chat emotion list --format json
+```
+当前用户身份由 MCP server 注入，无业务参数。
+
+#### 发送个人收藏表情
+```
+Usage:
+  dws chat emotion send [flags]
+Example:
+  dws chat emotion send --media-id <mediaId> --group <openConversationId>
+  dws chat emotion send --media-id <mediaId> --emotion-id <emotionId> --user <userId>
+  dws chat emotion send --media-id <mediaId> --open-dingtalk-id <openDingTalkId> --uuid <idempotencyKey>
+Flags:
+      --media-id string            表情媒体 ID (必填)
+      --emotion-id string          表情 ID (可选)
+      --conversation-id string     群聊 openConversationId（与 --group 等价）
+      --group string               群聊 openConversationId
+      --user string                单聊接收人 userId，CLI 会解析为 openDingTalkId
+      --open-dingtalk-id string    单聊接收人 openDingTalkId
+      --uuid string                幂等键
+      --idempotency-key string     幂等键（--uuid 等价）
+```
+目标参数 `--conversation-id/--group`、`--user`、`--open-dingtalk-id` 三选一。该命令会真实发送表情，执行前必须确认目标和 mediaId。
+
+#### 新增个人收藏表情
+```
+Usage:
+  dws chat emotion favorite [flags]
+Example:
+  dws chat emotion favorite --media-id <mediaId> --name "赞"
+  dws chat emotion favorite --media-id <mediaId> --source-conversation-id <cid> --source-message-id <mid>
+  dws chat emotion favorite --file-path ./sticker.png --name "本地表情"
+Flags:
+      --file-path string                 本地图片路径 (jpg/jpeg/png/gif/webp/bmp，≤10MB)；与 --media-id 二选一必填
+      --media-id string                  待收藏 mediaId；与 --file-path 二选一必填
+      --name string                      表情名称
+      --source-conversation-id string    来源会话 ID，需与 --source-message-id 成对指定
+      --source-message-id string         来源消息 ID，需与 --source-conversation-id 成对指定
+```
+`--media-id` 与 `--file-path` 二选一必填，同时传会被互斥拦截。传 `--file-path` 时 CLI 先做本地校验（文件存在、非目录、大小 ≤10MB、扩展名为 jpg/jpeg/png/gif/webp/bmp，大小写不敏感），再经 `dingtalk-file/upload_media`（bizType=chat_emoticon）上传取得 mediaId（优先 mediaIdV1，缺失时用 mediaIdV2）后走与 `--media-id` 完全相同的收藏链路；上传成功但收藏失败时会提示已上传的 mediaId，可用 `--media-id` 重试而无需重新上传。大图（接近 10MB）上传耗时较长，建议追加 `--timeout 120` 以上。
+
 ### list-top-conversations (置顶会话)
 
 #### 拉取置顶会话列表
@@ -1350,14 +1415,14 @@ Flags:
 #### 转发话题消息 — 将一条话题消息转发到目标会话
 ```
 Usage:
-  dws chat message forward-topic [flags]
+  dws chat thread forward [flags]
 Example:
-  dws chat message forward-topic --src-conversation-id <srcOpenCid> --src-msg-id <openMessageId> --src-thread-id <convThreadId> --dest-conversation-id <destOpenCid>
+  dws chat thread forward --src-msg-id <openMessageId> --src-conversation-id <openConversationId> --src-thread-id <openConvThreadId> --dest-conversation-id <openConversationId>
 Flags:
-      --src-conversation-id string    源会话 openConversationId (必填，消息所在的会话)
-      --src-msg-id string             源消息 openMessageId (必填，要转发的消息)
-      --src-thread-id string          话题 ID (必填，格式: convThread + 加密后的 convThreadId，即 message list 返回的 openConvThreadId)
-      --dest-conversation-id string   目标会话 openConversationId (必填，转发到的会话)
+      --src-msg-id string             源 Thread 主消息 messageId (必填)
+      --src-conversation-id string    源父会话 openConversationId (必填)
+      --src-thread-id string          源 Thread openConvThreadId (必填)
+      --dest-conversation-id string   目标会话 openConversationId (必填)
 ```
 
 #### 置顶消息 — 将指定消息置顶到会话顶部
@@ -2067,7 +2132,7 @@ Flags:
 用户说"搜索消息里的关键词/包含XX的消息" → `chat message search-advanced --query "<关键词>"`（首选，严格超集）
 用户说"我和某人的共同群" → `chat search-common --nicks "<昵称1>,<昵称2>"`
 用户说"未读会话列表" → `chat message list-unread-conversations`
-用户说"群里某条话题的回复" → `chat message list-topic-replies --group <id> --topic-id <id>`
+用户说"群里某条话题的回复/逐条列出当前回复/撤回后看看具体还剩哪些回复" → `chat thread list-replies --conversation-id <openConversationId> --topic-id <openConvThreadId>`
 用户说"置顶会话/置顶消息" → `chat list-top-conversations` 列会话 → 再 `chat message list --group <id>` 拉消息（两步）
 
 用户说"建群/创建群聊" → `chat group create`
@@ -2095,7 +2160,9 @@ Flags:
 用户说"编辑/修改已发送消息" → `chat message edit`（`--text` / `--content` 二选一）
 用户说"撤回机器人发的消息/机器人撤回消息" → `chat message recall-by-bot`（通过机器人接口撤回机器人发出的消息，需要 robot-code + processQueryKey）
 用户说"Webhook 发消息/告警消息" → `chat message send-by-webhook`
-用户说"话题回复/群话题消息回复/拉取话题回复" → `chat message list-topic-replies`
+用户说"回复话题" → `chat thread reply --conversation-id <openConvThreadId>`
+用户说"把普通群已有消息转成Thread/升级成群内话题" → `chat thread promote --conversation-id <openConversationId> --message-id <openMessageId>`
+用户说"查看话题回复/拉取话题回复/列出每条回复内容/核实某条回复是否还在" → `chat thread list-replies`
 用户说"所有消息/全部会话消息/拉取全部消息/时间范围内消息/我的消息/我今天的消息/查我的钉钉消息/最近的消息" → `chat message list-all`
 用户说"特别关注人的消息/关注的人的消息/星标联系人的消息" → `chat message list-focused`
 用户说"消息已读未读/谁看了消息/查读状态/消息读取状态" → `chat message read-status`
@@ -2129,6 +2196,9 @@ Flags:
 用户说"群公告/发布公告/修改公告/查看公告/定时公告" → `chat group notice create/edit/get/list`
 用户说"批量查消息/按ID查消息/根据消息ID查" → `chat message list-by-ids`
 用户说"批量查消息回复/表情回复/文字回复/消息回应列表" → `chat message list-emotion-replies`
+用户说"查看个人收藏表情/列出我的收藏表情" → `chat emotion list`
+用户说"发送个人收藏表情/发表情包" → `chat emotion send`
+用户说"收藏表情/新增个人收藏表情/把本地图片收藏为表情/上传图片做表情" → `chat emotion favorite`
 用户说"emoji回应/表情回应/给消息加表情" → `chat message add-emoji`
 用户说"取消emoji回应/移除表情回应" → `chat message remove-emoji`
 用户说"文字表情回应/添加文字表情" → `chat message add-text-emotion`
@@ -2154,7 +2224,7 @@ Flags:
 用户说"机器人引用回复/让机器人回复这条群消息" → `chat message send-by-bot --conversation-id <openConversationId> --reply <openMessageId> --ref-sender <senderOpenDingTalkId> --text <内容>`
 用户说"转发消息/转发一条消息/把消息转发到另一个群" → `chat message forward`
 用户说"合并转发/批量转发/合并转发多条消息" → `chat message combine-forward`
-用户说"转发话题/转发话题消息" → `chat message forward-topic`
+用户说"转发话题/转发话题消息" → `chat thread forward`
 用户说"置顶消息/把消息置顶" → `chat message set-top-msg`
 用户说"取消置顶消息/撤销消息置顶" → `chat message unset-top-msg`
 用户说"发送/上传本地图片或媒体到聊天" → `chat message send --msg-type file --file <本地路径>`
@@ -2183,9 +2253,10 @@ Flags:
 - `chat message list-unread-conversations` — 拉取当前用户存在未读消息的会话列表（可选 `--count`）
 - `chat message read-status` — 查询指定消息的已读/未读状态（仅消息发送者可查询自己发的消息，需指定 --group 和 --message-id，可选 --target-open-dingtalk-ids 查特定人）
 - `chat message list-all` — 拉取当前用户所有会话的消息，按时间范围 + cursor 分页。只要用户没有指定某个具体的会话（如某个群名、某个人名），即使提到"单聊消息""群聊消息"等笼统范围，也应路由到此命令
-- `chat message list-topic-replies` — 拉取群话题的回复消息列表
+- `chat thread list-replies` — 使用父会话 `openConversationId` 与 Thread `openConvThreadId` 拉取回复；只有需要按主消息自动解析、全量翻页、排序或下载资源时才使用现有的 `chat +thread-replies`
 - `chat message list-focused` — 拉取特别关注人的消息，cursor 分页
 - `chat list-top-conversations` — 拉取置顶会话列表（用户询问"置顶会话"或"置顶消息"时路由到此），cursor 分页
+- `chat conversation-file upload` — 只把工作目录内的本地文件上传到指定会话文件空间，返回 `dentryId`/`spaceId`，不发送消息；URL 代传不受支持
 - `chat message send` — 以当前用户身份发消息（群聊或单聊），正文可用 `--content` 或位置参数；本地图片/文件/音视频统一用 `--msg-type file --file`，其中图片显示为可下载附件而非内联图片；`--msg-type image --media-id` 只用于上游已经提供有效 mediaId 的场景，DWS CLI 不能从本地文件生成 mediaId
 - `chat message search` — 按关键词搜索消息内容（跨所有会话，可选指定群）
 - `chat search-common` — 搜索共同群，查询指定人共同所在的群聊（AND=所有人都在，OR=任一人在）
@@ -2200,6 +2271,7 @@ Flags:
 - `chat message list-emotion-replies` — 批量拉取消息的表情回复和文字回复
 - `chat message add-text-emotion` / `update-text-emotion` / `remove-text-emotion` — 对消息添加、原地更新或移除文字表情回应
 - `chat message create-text-emotion` — 创建文字表情模板，返回 emotionId 供 add-text-emotion 使用
+- `chat emotion list` / `send` / `favorite` — 当前用户个人收藏表情列表、发送和新增；不同于消息 reaction/文字回应
 - `chat category list` — 获取用户自定义会话分组列表
 - `chat category list-conversations` — 拉取指定分组下的会话列表
 - `chat category create-smart` — 创建智能会话分组（可指定群名称关键词和成员作为匹配规则）
@@ -2214,7 +2286,7 @@ Flags:
 - `chat clear-messages` — 清空当前用户视角下指定会话的聊天记录（不影响其他成员）
 - `chat group list-all` — 分页拉取当前用户加入的所有群（list-my-groups 仅返回群主/管理员的群）
 - `chat group list-join-validations` / `chat group audit-join-validation` — 拉取入群验证记录 / 审批入群验证（通过/拒绝/删除/忽略/拉黑）
-- `chat file upload` — 已下线；不要调用 `chat/upload_conversation_file_by_url`，本地文件发送改用 `chat message send --msg-type file --file`
+- `chat file upload` — 已下线；不要调用 `chat/upload_conversation_file_by_url`，只上传本地文件改用 `chat conversation-file upload`
 - `chat group transfer-owner` — 转让群主
 - `chat group upgrade-to-external` — 将普通群不可逆升级为外部群（仅群主，需确认）
 - `chat group update-nick` — 设置群昵称；省略 `--nick` 时清除
@@ -2455,9 +2527,10 @@ Flags:
 | `chat message search-advanced` | `nextCursor` | 下次 message search-advanced 的 --cursor |
 | `chat search-common` | `openConversationId` | message send/list 等的 --group |
 | `chat conversation-info` | `newCSpaceIdIM` | 独立钉盘存储流程的共享空间 ID；不是发送本地聊天附件的前置条件 |
-| `chat file upload` | 无（已下线） | 不要调用；常规发图/发文件用 `chat message send --msg-type file --file` |
+| `chat conversation-file upload` | `dentryId` + `spaceId` | 后续需要引用已上传的会话文件标识；该命令本身不发送消息 |
+| `chat file upload` | 无（已下线） | 不要调用；只上传本地文件改用 `chat conversation-file upload`，发文件消息用 `chat message send --msg-type file --file` |
 | `chat message list` | `openMsgId` | message read-status 的 --message-id |
-| `chat group-role list` | `openRoleId` | group-role update/remove/set-user/remove-user 的 --role-id |
+| `chat group-role list` | `openRoleId` | group-role update/remove/set-user 的 --role-id；remove-user 的 --role-ids |
 | `chat message create-text-emotion` | `emotionId` | add-text-emotion 的 --emotion-id |
 | `chat category list` | `categoryId` | category list-conversations 的 --category-id |
 | `chat group get-by-group-id` | `openConversationId` | 同 chat search，将群号转为 openConversationId |
@@ -2494,7 +2567,7 @@ Flags:
 - `send-by-bot` 群聊传 `--conversation-id`，单聊传 `--users` 或 `--open-dingtalk-ids`，与群目标互斥且必选其一；机器人群聊 Markdown 引用回复必须同时传 `--reply <openMessageId>` 与 `--ref-sender <senderOpenDingTalkId>`，单聊、图片和文件不支持引用回复；群聊时可选 `--at-user-ids` @指定成员（传 userId 列表）或 `--at-open-dingtalk-ids` @指定成员（传 openDingTalkId 列表），content 中需包含对应 @标识；`--at-all` @所有人；群聊场景如果返回"机器人不存在"错误，需先通过 `chat group members add-bot --conversation-id <openConversationId> --robot-code <robot-code>` 将机器人邀请进群后再发送
 - `recall-by-bot` 群聊传 `--group` + `--keys`，单聊仅传 `--keys`（不传 `--group` 即为单聊撤回）
 - `send-by-webhook` 支持 `--at-all`、`--at-mobiles`、`--at-users` 进行 @ 操作，但需在 `--content` 中包含 `@userId` 或 `@手机号` 才能生效；`--at-all` @所有人时需在 `--content` 中包含 `@10`
-- `chat group-role` 系列命令用于管理群的自定义身份标签：`list` 查列表，`add` 创建，`update` 改名，`remove` 删除；`set-user` 覆盖某人全部身份（传空 --role-ids 则清除），`remove-user` 仅移除指定身份，`query-user` 查询某人当前身份；用户用 `--user <userId>`
+- `chat group-role` 系列命令用于管理群的自定义身份标签：`list` 查列表，`add` 创建，`update` 改名，`remove` 删除；`set-user` 用单个 `--role-id` 覆盖某人全部身份（不支持传空值清除），`remove-user` 仅移除指定身份，`query-user` 查询某人当前身份；用户用 `--user <userId>`
 - 消息**换行符**（`send` / `send-by-webhook` 使用 `--content`，`send-by-bot` 使用 `--text`）有两层要求：(1) 必须是**真实换行符** `U+000A`，不是字面量 `\n`；(2) Markdown 规范下单换行不生效，需用空行 `\n\n`（段落分隔）或行尾两空格 + 换行 / `<br>`（硬换行）
 - `chat group transfer-owner` 转让群主，需传 --group（openConversationId）；新群主 userId 用 `--user`，openDingTalkId 用 `--new-owner`
 - `chat group invite-url` 获取群邀请链接，需传 --group（openConversationId），可选 --expires-seconds 指定有效期（秒，0=永久）
