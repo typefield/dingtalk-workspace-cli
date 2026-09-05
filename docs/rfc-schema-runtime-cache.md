@@ -18,7 +18,7 @@
 |---|---|---|
 | typed model / raw protobuf / product shards | 同步 upstream 后真实 1,370 tools 的 round trip（3.541 s）与完整 delivery parity（42.511 s）通过；历史性能样本对应 1,357 tools | 新声明集合的性能、完整政策门禁与 race 检查 |
 | 初始化/repair 并发 | 已修复 live pointer 提前发布、读取分片消耗 Once、失败状态不能替换；定向回归及 Meta/overview/leaf/全量 Registry 混合损坏修复 race 通过（379 s、单次装配） | 新 head 两平台并发验收与错误共享矩阵；旧候选已通过四进程冷启动/Meta 与 Registry 修复；审计状态 race、完整入口单测及真实声明 delivery 在新工作树本机均通过（CLI 定向 62.978 s） |
-| authority/edition 隔离 | source registration 清空旧 identity；generator 拒绝 edition mismatch/overlay | final binary 的 hostile environment/native proof |
+| authority/edition 隔离 | source registration 清空旧 identity；generator 拒绝 edition mismatch/overlay；声明树跳过 argv profile 初始化，避免覆盖活动调用的 profile | final binary 的 hostile environment/native proof |
 | identity generator | 输出前检查 typed round trip、Meta/locator/各查询投影和重复编码确定性；shell 固定 Go 1.25.9；proto drift 检查通过；新增两平台 native candidate feedback；独立 generator 的 delivery 访问审计已通过真实声明，identity 与审计前 byte-equal | b62b2c0d 两平台原生 identity/完整 build metadata 一致，real candidate/parity/并发与 CPU/RSS 门槛通过；Meta file-hit 两平台超限，已继续优化，待新 head 复核；hermetic final proof 与 release 注入仍未完成 |
 | 构建/安装/升级 | canonical launcher/core 与 manifest 已实现；npm 29 个场景通过；真实归档发现并修复 BSD/GNU tar 大小列误读与原测试假通过，定向回归通过 | 真实包已通过 checksum/layout/manifest，安装后的 ad-hoc launcher 被 macOS 终止，激活正确回滚；仍需最终签名包运行/升级/回滚与平台 matrix |
 | launcher | exact version 与严格 argv 的 JSON overview/product/group/leaf 已接通；共用 reader/typed renderer；仅显式 DO_NOT_TRACK 且确认无扩展/兼容警告时命中 | 新 head 原生 core-free 精确输出证明、默认上报优化、竞争性进程指标和逐次 core hashing 成本 |
@@ -1192,6 +1192,13 @@ credential、clock、user file 或未进入 identity 的 environment，也禁止
 五个 delivery 入口在进入任何 loader Once 或命中已有内存状态之前检查审计状态；访问立即
 终止该次 proof，回调自行 recover 也不能清除已记录的 violation。审计本身的测试还须证明
 错误/无关 panic 后状态恢复以及正常消费可继续。
+
+声明树构造也不得修改活动调用的 runtime profile、ToolCaller 或 plugin endpoints。冷缓存
+首次 `ResolveMeta` 会同步进入该工厂；若构造时重新从 `os.Args` 选择 profile，就会清空或覆盖
+调用方在 argv 解析后选择的 profile，造成冷、热缓存行为不同。实现仅让普通 runtime root
+执行 profile 初始化，声明树保留当前选择。回归覆盖无 profile 参数、分离参数和 `=` 参数，
+并在独立进程中检查首次装配及随后复用 metadata 的 profile 不变；普通 root 仍按 argv 初始化。
+该状态隔离验证不能替代上面的 network、clock、credential 和 environment 原生证明。
 
 审计只在独立构建进程安装，禁止把全局“正在装配”标志用于正常 runtime：那会把另一 goroutine
 的合法读取误判为重入。正常 runtime factory 仍须遵守同一不消费 delivery 的构造合同，由

@@ -779,8 +779,9 @@ func NewRootCommand(ctx ...context.Context) *cobra.Command {
 // used as the Schema assembly source root (RegisterSchemaSourceRoot →
 // ResolveSchemaBuild) and by command-surface policy. Installed plugins and
 // user-defined shortcuts must not change the reviewed Schema surface.
-// declarationOnly skips injectStaticServers / helpers.InitDeps so Schema
-// assembly cannot clobber a live process's ToolCaller or plugin endpoints.
+// declarationOnly skips runtime profile selection, injectStaticServers and
+// helpers.InitDeps so Schema assembly cannot clobber a live process's profile,
+// ToolCaller or plugin endpoints.
 func NewSchemaSourceRootCommand(ctx ...context.Context) *cobra.Command {
 	var rootCtx context.Context
 	if len(ctx) > 0 && ctx[0] != nil {
@@ -938,7 +939,9 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 		rootCtx = context.Background()
 	}
 	flags := &GlobalFlags{}
-	authpkg.SetRuntimeProfile(preparseProfileFlag(os.Args[1:]))
+	if !declarationOnly {
+		authpkg.SetRuntimeProfile(preparseProfileFlag(os.Args[1:]))
+	}
 	runner := rootNewCommandRunnerWithFlags(flags)
 	if snapshot, ok := agentMetadataSnapshotFromContext(rootCtx); ok {
 		if runtime, ok := runner.(*runtimeRunner); ok {
