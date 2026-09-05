@@ -11,6 +11,7 @@ on:
       - 'go.sum'
       - 'scripts/build/**'
       - 'scripts/dev/**'
+      - 'scripts/policy/**'
       - '.github/workflows/schema-cache-native.yml'
 
 permissions:
@@ -179,7 +180,9 @@ jobs:
           private_tmp="$HOME/.dws-suite-${GITHUB_RUN_ID}-${GITHUB_RUN_ATTEMPT}"
           mkdir -m 0700 "$private_tmp"
           export TMPDIR="$private_tmp"
-          go test -p 2 -parallel 2 -timeout 30m ./... \
+          # Preserve the last active test in the job log even if the hosted
+          # runner shuts down before the always-upload step can execute.
+          go test -v -p 2 -parallel 2 -timeout 30m ./... \
             2>&1 | tee "$RUNNER_TEMP/schema-full-suite.txt"
       - name: Upload complete-suite development log
         if: ${{ always() }}
@@ -187,6 +190,47 @@ jobs:
         with:
           name: schema-suite-${{ matrix.target }}-${{ github.event.pull_request.head.sha }}
           path: ${{ runner.temp }}/schema-full-suite.txt
+          if-no-files-found: warn
+          retention-days: 14
+
+  schema-policy:
+    name: Schema declaration policy
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    env:
+      GOTOOLCHAIN: go1.25.9
+      GOWORK: 'off'
+      DO_NOT_TRACK: '1'
+      DWS_PACKAGE_VERSION: 0.0.0-test
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.head.sha }}
+          persist-credentials: false
+      - uses: actions/setup-go@v5
+        with:
+          go-version: 1.25.9
+          cache: false
+      - name: Check generated drift and assembly determinism
+        shell: bash
+        run: |
+          set -euo pipefail
+          test "$(go env GOVERSION)" = go1.25.9
+          ./scripts/policy/check-generated-drift.sh 2>&1 | tee "$RUNNER_TEMP/schema-generated-drift.txt"
+      - name: Check authoritative Schema catalog contract
+        if: ${{ !cancelled() }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          ./scripts/policy/check-schema-catalog.sh 2>&1 | tee "$RUNNER_TEMP/schema-catalog-policy.txt"
+      - name: Upload declaration policy evidence
+        if: ${{ always() }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: schema-policy-${{ github.event.pull_request.head.sha }}
+          path: |
+            ${{ runner.temp }}/schema-generated-drift.txt
+            ${{ runner.temp }}/schema-catalog-policy.txt
           if-no-files-found: warn
           retention-days: 14
 
