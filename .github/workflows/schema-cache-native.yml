@@ -89,8 +89,11 @@ jobs:
         shell: bash
         run: |
           set -euo pipefail
-          go test -race -count=1 ./internal/schemacache ./internal/schemareader ./internal/launcher ./internal/packagemanifest ./internal/cli/schemaruntime \
+          go test -race -count=1 ./internal/schemacache ./internal/schemareader ./internal/schemafastpath ./internal/launcher ./internal/packagemanifest ./internal/cli/schemaruntime \
             2>&1 | tee "$RUNNER_TEMP/schema-evidence/component-race.txt"
+          go test -race -count=1 -timeout=15m ./internal/app ./cmd \
+            -run 'TestCrossPlatformCoverage(CoreSchemaFastPath|Main|CLITracker)' \
+            2>&1 | tee "$RUNNER_TEMP/schema-evidence/core-fast-path-race.txt"
           go test -race -count=1 -timeout=15m ./internal/cli \
             -run '^(TestCrossPlatformCoverageSchema(MetaPublication|ProductMemoizationRepair|SourceRegistrationClearsCache|AssemblyAudit|AssemblyAuditFailureIsolation)|TestPersistentSchemaCacheRealConcurrentRepair)$' \
             2>&1 | tee "$RUNNER_TEMP/schema-evidence/delivery-race.txt"

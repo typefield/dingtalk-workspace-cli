@@ -192,7 +192,12 @@ def main():
                 expected, _ = invoke(core, route, disabled, home)
                 if actual != expected:
                     raise RuntimeError(f"core-free launcher bytes differ from authoritative core output: {route}")
+                core_cached, _ = invoke(core, route, environment, home)
+                if core_cached != expected:
+                    raise RuntimeError(f"core cache-hit bytes differ from authoritative core output: {route}")
             report["schema_fast_path"] = {"core_free_copy_sha256": binary_sha, "exact_wire_parity": True}
+            report["core_schema_fast_path"] = {"exact_wire_parity": True,
+                "scope": "direct core with DO_NOT_TRACK=1; excludes tracker identity/flush latency"}
             # User shortcut loading owns startup diagnostics even though those
             # shortcuts are not part of the declaration-only Schema surface.
             shortcut_directory = Path(environment["DWS_CONFIG_DIR"]) / "shortcuts"
@@ -264,6 +269,17 @@ def main():
             "leaf_user_cpu_reduction_at_least_80_percent": cache_summary["user_ms"]["p50"] <= .2 * live_summary["user_ms"]["p50"],
             "leaf_peak_rss_at_most_100_mib": max(s["max_rss_bytes"] for s in samples["cache"]) <= 100 * 1024 * 1024,
         }
+        if args.require_schema_fast_path:
+            core_samples = []
+            for _ in range(7):
+                output, measurement = invoke(core, leaf, environment, home)
+                if json.loads(output) != canonical_leaf:
+                    raise RuntimeError("direct core cache hit changed leaf output")
+                core_samples.append(measurement)
+            core_summary = summarize(core_samples)
+            report["core_schema_fast_path"].update(raw_samples=core_samples, summary=core_summary)
+            report["gates"]["core_hit_user_cpu_reduction_at_least_80_percent"] = core_summary["user_ms"]["p50"] <= .2 * live_summary["user_ms"]["p50"]
+            report["gates"]["core_hit_peak_rss_at_most_100_mib"] = max(s["max_rss_bytes"] for s in core_samples) <= 100 * 1024 * 1024
         verify_artifacts()
     if digest(binary) != binary_sha or (core and digest(core) != core_sha):
         raise RuntimeError("candidate bytes changed during verification")

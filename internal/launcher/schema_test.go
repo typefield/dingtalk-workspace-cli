@@ -23,30 +23,6 @@ import (
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/schemareader"
 )
 
-func TestCrossPlatformCoverageLauncherSchemaRequestRouting(t *testing.T) {
-	for _, args := range [][]string{
-		{"dws", "schema"}, {"dws", "schema", "list"}, {"dws", "schema", "calendar", "--compact"},
-		{"dws", "schema", "--cli-path=calendar event create", "--compact=false", "--format=json"},
-		{"dws", "schema", "-f", "json", "calendar/create_calendar_event"},
-	} {
-		if _, ok := parseSchemaRequest(args); !ok {
-			t.Errorf("supported args declined: %q", args)
-		}
-	}
-	for _, args := range [][]string{
-		{"dws", "--format=json", "schema"}, {"dws", "schem", "calendar"}, {"dws", "schema", "--all"},
-		{"dws", "schema", "--fields", "title"}, {"dws", "schema", "--jq", "."}, {"dws", "schema", "--output", "file"},
-		{"dws", "schema", "--help"}, {"dws", "schema", "--compact", "false"}, {"dws", "schema", "--compact=1"},
-		{"dws", "schema", "--compact", "--compact=false"}, {"dws", "schema", "--format", "table"},
-		{"dws", "schema", "--format"}, {"dws", "schema", "--cli-path="}, {"dws", "schema", "--cli-path", "list", "list"},
-		{"dws", "schema", "calendar", "event"}, {"dws", "schema", "--", "calendar"},
-	} {
-		if _, ok := parseSchemaRequest(args); ok {
-			t.Errorf("ambiguous args handled: %q", args)
-		}
-	}
-}
-
 func TestCrossPlatformCoverageLauncherSchemaHitMatchesWireAndReadsOnlySelectedRange(t *testing.T) {
 	deps, options, registry, built, _, counters := schemaFixture(t)
 	index, err := registry.Index()
@@ -328,4 +304,14 @@ func schemaFixture(t *testing.T) (dependencies, Options, schemaruntime.SchemaReg
 		return schemacache.Open(edition, schemacache.WithCounters(counters))
 	}
 	return deps, options, registry, built, directory, counters
+}
+
+func environmentValue(environment []string, key string) string {
+	for _, entry := range environment {
+		name, value, _ := strings.Cut(entry, "=")
+		if name == key {
+			return value
+		}
+	}
+	return ""
 }

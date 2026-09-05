@@ -15,6 +15,7 @@ func TestCrossPlatformCoverageSchemaAssemblyAudit(t *testing.T) {
 		read func()
 	}{
 		{"ResolveMeta", func() { _, _ = ResolveMeta("calendar event create") }},
+		{"fast path identity", func() { _, _ = SchemaCacheFastPathIdentity() }},
 		{"Catalog loader", func() { _ = deliverySchemaCatalog() }},
 		{"complete Registry loader", func() { _, _ = deliverySchemaAllPayload() }},
 		{"overview loader", func() { _, _ = deliverySchemaOverviewPayload() }},

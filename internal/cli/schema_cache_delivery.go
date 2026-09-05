@@ -84,6 +84,19 @@ func RegisterSchemaCacheOptions(options SchemaCacheOptions) error {
 // runtime surface was changed after registration (for example by a plugin).
 func MarkSchemaCacheRuntimeUncertain() { schemaCacheRuntimeUncertain.Store(true) }
 
+// SchemaCacheFastPathIdentity returns only the currently registered, eligible
+// authority. Replacing the source factory or marking runtime uncertainty must
+// disable early process delivery just as it disables ordinary cache loaders.
+// This accessor never opens the cache or assembles declarations.
+func SchemaCacheFastPathIdentity() (SchemaCacheIdentity, bool) {
+	auditSchemaDeliveryAccess("fast path identity")
+	runtime := activeSchemaCacheRuntime()
+	if runtime == nil {
+		return SchemaCacheIdentity{}, false
+	}
+	return runtime.options.Identity, true
+}
+
 func validateSchemaCacheOptions(options SchemaCacheOptions) error {
 	if !((options.GOOS == "darwin" && options.GOARCH == "arm64") || (options.GOOS == "linux" && options.GOARCH == "amd64")) {
 		return fmt.Errorf("Schema cache v1 is disabled for %s/%s", options.GOOS, options.GOARCH)

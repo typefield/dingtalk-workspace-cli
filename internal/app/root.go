@@ -182,6 +182,24 @@ func ExecuteWithTelemetry() (exitCode int, commandPath string, errorMessage stri
 	ctx, signalState, stopSignals = rootInstallProcessSignalContext(ctx, resultStore)
 	defer stopSignals()
 
+	if prepared, ok := prepareSchemaFastPath(os.Args, nil); ok {
+		commandPath = "schema"
+		err := prepared.Write(os.Stdout)
+		if interrupted, _ := signalState.outcome(); interrupted != nil {
+			err = interrupted.withCancellationDetail(err)
+		}
+		if err != nil {
+			errorMessage = telemetryErrorSummary(err)
+			exitCode = apperrors.ExitCode(err)
+			if prepared.JSONErrors {
+				_ = apperrors.PrintJSON(os.Stderr, err)
+			} else {
+				_ = apperrors.PrintHumanAt(os.Stderr, err, apperrors.VerbosityNormal)
+			}
+		}
+		return
+	}
+
 	initStart := time.Now()
 	engine := newPipelineEngine()
 	root = rootNewRootCommandWithEngine(ctx, engine)

@@ -54,8 +54,9 @@ JSON 两平台 byte-equal；后续 a08fe756 的 profile 隔离修复生成相同
 显式 `DO_NOT_TRACK=1` 的真实 launcher leaf wall p50/p95：Linux **21.862/22.929 ms**，
 macOS **21.488/53.488 ms**。两平台 user CPU 降低至少 80%、RSS 不超过 100 MiB 的门槛
 通过，macOS 尾延迟仍有明显波动；这些数据不证明默认 telemetry 或竞争性延迟目标达标。
-Linux full-suite 再次收到 runner shutdown（exit 143），无完整结果。macOS 全量 suite 在
-记录这些 candidate 结果时仍运行；后续结果须按具体 head 补齐。独立 identity 比较 job 因
+Linux full-suite 再次收到 runner shutdown（exit 143），无完整结果。bf30c3ec 的
+[macOS 全量 suite](benchmarks/schema-cache/native-bf30c3ec/darwin/full-suite.txt) 已通过：
+app 835.638 s、cli 590.765 s、test/scripts 385.315 s。该结果不覆盖后续提交。独立 identity 比较 job 因
 macOS file-hit 失败被跳过，手动 byte-equal 校验不是该 workflow 通过或生产 release proof。
 
 本机 a08fe756 的 profile/声明树相关 race 通过（34.281 s），独立进程冷/热 metadata 与
@@ -1223,7 +1224,7 @@ target。proof runner 必须使用 isolated empty HOME/config/credential stores�
 credential、clock、user file 或未进入 identity 的 environment，也禁止调用 `ResolveMeta`、
 `deliverySchemaCatalog`、Meta/Registry loader 或任何间接 Schema delivery consumer。独立 identity generator 必须用
 `AuditSchemaAssembly` 包住 factory、`ResolveSchemaBuild` 和 projection/round-trip 全调用链。
-五个 delivery 入口在进入任何 loader Once 或命中已有内存状态之前检查审计状态；访问立即
+六个 delivery 入口（包括 core 快速路径的注册身份读取）在进入任何 loader Once 或命中已有内存状态之前检查审计状态；访问立即
 终止该次 proof，回调自行 recover 也不能清除已记录的 violation。审计本身的测试还须证明
 错误/无关 panic 后状态恢复以及正常消费可继续。
 
@@ -1263,9 +1264,11 @@ internal/app → internal/cli（Cobra 绑定、声明装配、delivery/repair）
 
 internal/generator/cmd_schema_cache_identity → internal/app + internal/cli
 cmd/dws-launcher → internal/launcher（argv 路由、同版本 core delegation）
-                           ├─ internal/schemareader → schemacache + schemaruntime
-                           ├─ internal/jsonutil（同一 JSON byte contract）
-                           └─ internal/skillpaths（共享兼容检查路径，无 I/O）
+                           └─ internal/schemafastpath（严格 argv/环境边界，准备完整输出）
+internal/app ────────────────────────┘
+                                    ├─ internal/schemareader → schemacache + schemaruntime
+                                    ├─ internal/jsonutil（同一 JSON byte contract）
+                                    └─ internal/skillpaths（共享兼容检查路径，无 I/O）
 internal/upgrade → internal/packagemanifest（canonical package 校验）
 ```
 
@@ -1275,12 +1278,32 @@ code。`corecmd/contract` 仍不 import 任何 `internal/cli` 包；约束 DTO �
 `corecmd/contract` 拥有，Cobra annotation writer 委托该函数。上述边界必须由 dependency tests
 验证，不能只检查直接 import 而遗漏转递依赖。
 
+进程入口的两种消费方式共用 `schemafastpath.Prepare`：launcher 仍只在显式 telemetry opt-out
+时直接输出；默认请求委托 core，由原 `cmd/main` 先取得只读身份快照并进入原 clitrack
+生命周期。core 完成 metadata 验证、信号上下文及退出清理注册后，可在命中时跳过 Cobra
+树构造，返回相同的 `schema` telemetry path、退出码和脱敏错误摘要。它不改变 tracker
+字段、身份读取、flush timeout 或投递方式，也不另起上报进程。
+
+core 必须先确认 `SchemaCacheFastPathIdentity()` 的当前注册身份等于 binary identity；
+源码工厂替换或 runtime uncertain 会使快速路径失效。该身份读取在 generator 审计范围内。
+宿主嵌入模式、配置目录 hook 或执行 hook 存在时也须回退，不能凭相同 Schema identity
+推断这些 hook 没有行为。普通 Schema consumer 仍由 cli 负责。core 仅在准备阶段忽略三个已知 launcher 传输标记
+（launcher path、core digest、core version），不修改实际环境；其余 DWS 选项、扩展路径、
+用户 shortcut 和兼容 warning 条件继续按共享规则回退。全部认证和渲染成功前不输出；
+输出一旦开始，即使短写或失败也不得再回退，错误按原 human/JSON 选择报告给 tracker。
+
+此改动仍需当前 head 的两平台最终 candidate 验证。native verifier 增加 direct-core 精确
+wire 对照及 CPU/RSS 检查；其中测量显式关闭 telemetry，因此不能把这些数字写成默认
+tracker identity/flush 的进程延迟。默认 telemetry 性能和竞争性端到端目标仍须另证。
+
 `internal/schemacache` 只依赖标准库和 `golang.org/x/sys`，不调用 payload parser；它校验
 binary-pinned expectation、使用 bounded fd reads、认证 exact range、发布 Registry/Meta，
 并提供 bounded Unix lock。未启用平台为零 I/O stub。Schema-specific loader/repair 留在 cli；
 launcher 的 Schema reader 必须复用相同的认证与纯消费代码，禁止为绕开 cli import 重写语义。
 
-App 只注入 build vars、判断 edition/overlay/platform eligibility 和注册 options，不读写缓存。
+App 注入 build vars、判断 edition/overlay/platform eligibility 和注册 options；对于符合严格
+子集的进程级 Schema 查询，通过共享 `schemafastpath` 准备认证后的完整输出，不实现第二套
+文件认证、语义解析或缓存写入。miss、损坏或不确定环境仍交给普通 cli delivery/repair。
 注册顺序为 `RegisterSchemaSourceRoot(factory)` → `RegisterSchemaCacheOptions(options)`：
 
 - 旧 `RegisterSchemaSourceRoot` 先清除缓存身份与 lazy delivery 状态，确保新 factory 不继承旧信任锚；
