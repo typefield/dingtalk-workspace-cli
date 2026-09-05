@@ -22,12 +22,46 @@
 | identity generator | 输出前检查 typed round trip、Meta/locator/各查询投影和重复编码确定性；shell 固定 Go 1.25.9；proto drift 检查通过；新增两平台 native candidate feedback；独立 generator 的 delivery 访问审计已通过真实声明，identity 与审计前 byte-equal | b62b2c0d 两平台原生 identity/完整 build metadata 一致，real candidate/parity/并发与 CPU/RSS 门槛通过；Meta file-hit 两平台超限，已继续优化，待新 head 复核；hermetic final proof 与 release 注入仍未完成 |
 | 构建/安装/升级 | canonical launcher/core 与 manifest 已实现；npm 29 个场景通过；真实归档发现并修复 BSD/GNU tar 大小列误读与原测试假通过，定向回归通过 | 真实包已通过 checksum/layout/manifest，安装后的 ad-hoc launcher 被 macOS 终止，激活正确回滚；仍需最终签名包运行/升级/回滚与平台 matrix |
 | launcher | exact version 与严格 argv 的 JSON overview/product/group/leaf 已接通；共用 reader/typed renderer；仅显式 DO_NOT_TRACK 且确认无扩展/兼容警告时命中 | 新 head 原生 core-free 精确输出证明、默认上报优化、竞争性进程指标和逐次 core hashing 成本 |
-| 性能 | Go 1.25.9 注入 runtime payload、ad-hoc 签名候选包的 60 次交错进程测量：leaf CPU 减少 95.6%，RSS p50 55.4 MiB；raw 样本见下 | upstream 合并后本机完整 file-hit Meta 3.739 ms / 3.90 MB，selected 5.203 ms / 4.32 MB；仍需默认上报、public/native 竞争对照和 Linux native 验证 |
+| 性能 | DTO v2 的 bf30c3ec 原生候选两平台进程 CPU/RSS 门槛通过；Linux 完整 Meta file-hit 4.748 ms / 3.48 MB，通过 5 ms 门槛 | macOS 同轮 Meta 5.663 ms 未达标；仍需两平台稳定裕量、默认上报和 public/native 竞争对照 |
 | 全量验证 | 89c38222 的 macOS 完整 Go suite 通过（app 1672.640 s、cli 1149.930 s、scripts 552.594 s）；v2 组件 race 与完整 delivery parity 已本机通过 | Linux full-suite 被 runner shutdown 终止；当前 v2 head 的两平台全量测试与独立 policy/release proof 仍待完成 |
 | PR | [#1296](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pull/1296) 已创建，GitHub 已验证 `isDraft=true` | 保持 Draft；补齐本节未完成项和 CI，验收未完成不得改为 ready 或合并 |
 
 生产启用条件继续以 §6.6、§8 和 canonical-package 验证为准。任何未验证平台、签名步骤、
 Schema fast path 或 telemetry 合同都必须明确保留为未完成，不能用收窄 RFC 范围宣称生产可用。
+
+### DTO v2 原生候选结果（bf30c3ec）
+
+[原生 run 33991840334](https://github.com/DingTalk-Real-AI/dingtalk-workspace-cli/actions/runs/33991840334)
+的两个 candidate job 对同一 clean tree、Go 1.25.9 完成 protobuf drift、组件/交付 race、
+完整 delivery parity、真实候选构建、无 sibling core 的 launcher 精确 wire 对照，以及
+shortcut 警告保留和多进程冷启动/修复验证。原始证据分别保存在
+[Linux](benchmarks/schema-cache/native-bf30c3ec/linux/candidate-build.json) 和
+[macOS](benchmarks/schema-cache/native-bf30c3ec/darwin/candidate-build.json)。完整 identity
+JSON 两平台 byte-equal；后续 a08fe756 的 profile 隔离修复生成相同 identity。
+
+| 完整 file-hit（7 次 benchmark 平均值的中位数） | Linux amd64 | macOS arm64 |
+|---|---:|---:|
+| Meta，预算 5 ms | **4.748 ms，通过** | **5.663 ms，未通过** |
+| selected product，预算 15 ms | 9.069 ms，通过 | 10.432 ms，通过 |
+| Meta allocation | 3,477,820 B/op | 3,478,038 B/op |
+
+数据来自 [Linux 报告](benchmarks/schema-cache/native-bf30c3ec/linux/file-hit-report.json) 与
+[macOS 报告](benchmarks/schema-cache/native-bf30c3ec/darwin/file-hit-report.json)。macOS 随后的
+[单次 profile 测量](benchmarks/schema-cache/native-bf30c3ec/darwin/meta-profile.txt) 为 4.080 ms，
+不能替换上述 7 次门槛结果。该 CPU profile 中目录打开占较大比例，下一步须区分安全遍历、
+文件系统开销与 DTO/GC 成本；不能因单次较快或 Linux 通过就宣称两平台达标。
+
+显式 `DO_NOT_TRACK=1` 的真实 launcher leaf wall p50/p95：Linux **21.862/22.929 ms**，
+macOS **21.488/53.488 ms**。两平台 user CPU 降低至少 80%、RSS 不超过 100 MiB 的门槛
+通过，macOS 尾延迟仍有明显波动；这些数据不证明默认 telemetry 或竞争性延迟目标达标。
+Linux full-suite 再次收到 runner shutdown（exit 143），无完整结果。macOS 全量 suite 在
+记录这些 candidate 结果时仍运行；后续结果须按具体 head 补齐。独立 identity 比较 job 因
+macOS file-hit 失败被跳过，手动 byte-equal 校验不是该 workflow 通过或生产 release proof。
+
+本机 a08fe756 的 profile/声明树相关 race 通过（34.281 s），独立进程冷/热 metadata 与
+普通 root profile 初始化回归通过（20.994 s），identity generator 单测及真实生成通过。
+完整 generated-drift 脚本在执行 param-aliases generator 时收到 SIGKILL，未获通过证据；
+后续 Draft feedback 增加独立 Linux 声明 policy job 执行原有 drift/assembly/catalog 门禁。
 
 ### upstream 同步与本轮验证
 
