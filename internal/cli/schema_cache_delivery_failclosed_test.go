@@ -295,4 +295,8 @@ func TestCrossPlatformCoverageSchemaCacheDeliveryFailClosedHelpers(t *testing.T)
 	if SchemaCachePrewarmPayloadsHandleForTest() != handle {
 		t.Fatal("prewarm payloads handle")
 	}
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{runtime: &schemaCacheRuntime{}})
+	if SchemaCachePrewarmPayloadsHandleForTest() != nil {
+		t.Fatal("runtime without prewarm")
+	}
 }

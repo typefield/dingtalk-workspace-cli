@@ -738,4 +738,21 @@ func TestCrossPlatformCoverageSchemaCacheShardAccessAndModelValidate(t *testing.
 	if err := rejectUnknownFieldsAndEnumsReflect((&schemacachepb.BytesValue{}).ProtoReflect()); err != nil {
 		t.Fatal(err)
 	}
+	if _, err := BuildSchemaCache(SchemaRegistry{Products: []ProductSpec{{}}}, nil, SchemaOverview{}, nil, CacheHashes{}, nil); err == nil {
+		t.Fatal("invalid registry build")
+	}
+	empty := SchemaRegistry{Kind: "schema"}
+	if _, err := empty.Index(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := BuildSchemaCache(empty, map[string]CommandMeta{}, SchemaOverview{}, map[string]string{}, CacheHashes{}, map[string][]byte{}); err == nil {
+		t.Fatal("empty product build")
+	}
+	notSelected := false
+	if err := validateFinalFieldProvenance("tool sample.run", "title", contract.FieldProvenance{
+		Value: json.RawMessage(`"Run sample"`), Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{{Value: json.RawMessage(`"Run sample"`), Source: "other", Precedence: "1", Selected: &notSelected}},
+	}, "Run sample"); err == nil {
+		t.Fatal("zero selected provenance candidates")
+	}
 }

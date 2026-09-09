@@ -243,4 +243,13 @@ func TestCrossPlatformCoverageSchemaCacheDeliveryHitRepairAndPlatformFill(t *tes
 	if _, err := deliverySchemaOverviewPayload(); err != nil {
 		t.Fatalf("overview repair recheck: %v", err)
 	}
+
+	broken := artifacts
+	broken.Meta = []byte("not-meta")
+	if err := broken.ValidateRoundTrip(); err == nil {
+		t.Fatal("invalid meta round trip")
+	}
+	if _, err := BuildSchemaCacheArtifacts(ResolvedSchemaBuild{}); err == nil {
+		t.Fatal("empty resolved build")
+	}
 }
