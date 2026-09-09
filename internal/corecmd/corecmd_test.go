@@ -127,6 +127,9 @@ func TestCrossPlatformCoverageStringSliceMatchesPflagSemantics(t *testing.T) {
 	if err := cmd.Flags().Parse([]string{`--items=a,"b,c"`, "-i", "d"}); err != nil {
 		t.Fatalf("Parse string-slice: %v", err)
 	}
+	if err := cmd.Flags().Set("items", `"`); err == nil {
+		t.Fatal("unterminated CSV must fail")
+	}
 	got, err := cmd.Flags().GetStringSlice("items")
 	if err != nil || !reflect.DeepEqual(got, []string{"a", "b,c", "d"}) {
 		t.Fatalf("GetStringSlice = %#v, %v", got, err)

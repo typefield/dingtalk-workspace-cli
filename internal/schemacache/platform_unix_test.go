@@ -15,6 +15,7 @@ import (
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"golang.org/x/sys/unix"
 )
 
@@ -773,5 +774,135 @@ func TestValidateCacheFileSharedOwnership(t *testing.T) {
 		if (err == nil) != tc.wantOK {
 			t.Errorf("%s: validateCacheFile err=%v, wantOK=%v", tc.name, err, tc.wantOK)
 		}
+	}
+}
+
+func TestCrossPlatformCoveragePlatformGOOSAndOverrideAndInvalidIdentity(t *testing.T) {
+	if systemSchemaCacheBase() == "" {
+		t.Fatal("linux shared cache base")
+	}
+	testseam.Swap(t, &platformGOOS, "darwin")
+	if systemSchemaCacheBase() != "/Library/Caches/dws" {
+		t.Fatalf("darwin base = %q", systemSchemaCacheBase())
+	}
+	testseam.Swap(t, &platformGOOS, "windows")
+	if systemSchemaCacheBase() != "" {
+		t.Fatal("unknown GOOS must not invent a shared cache")
+	}
+
+	t.Run("relativeOverride", func(t *testing.T) {
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", "relative")
+		if _, err := Open("official"); err == nil {
+			t.Fatal("relative override must fail")
+		}
+	})
+	t.Run("uncleanOverride", func(t *testing.T) {
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", "/tmp/foo/../bar")
+		if _, err := Open("official"); err == nil {
+			t.Fatal("unclean override must fail")
+		}
+	})
+
+	cache, _, identity := openTestCache(t, nil)
+	lock, err := cache.AcquireLock(nil, 50*time.Millisecond)
+	if err != nil {
+		t.Fatalf("nil ctx AcquireLock: %v", err)
+	}
+	if err := lock.Release(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(ExpectedIdentity{}, ArtifactExpectation{}); err == nil {
+		t.Fatal("zero identity ReadMeta")
+	}
+	if _, err := cache.OpenRegistry(identity, ArtifactExpectation{Kind: KindMeta}); err == nil {
+		t.Fatal("kind mismatch OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(identity, ArtifactExpectation{Kind: KindMeta}); err == nil {
+		t.Fatal("kind mismatch OpenPayloads")
+	}
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	payloads := testArtifact(KindPayloads, []byte("payloads"))
+	wrong := identity
+	wrong.EditionSHA256 = sha256.Sum256([]byte("other-edition"))
+	if _, err := cache.ReadMeta(wrong, meta.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch ReadMeta = %v", err)
+	}
+	if _, err := cache.OpenRegistry(wrong, registry.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch OpenRegistry = %v", err)
+	}
+	if _, err := cache.OpenPayloads(wrong, payloads.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch OpenPayloads = %v", err)
+	}
+	if err := cache.Publish(identity, meta, meta); err == nil {
+		t.Fatal("publish requires registry then meta")
+	}
+	if err := cache.Publish(identity, registry, meta, testArtifact(KindMeta, []byte("extra"))); err == nil {
+		t.Fatal("publish extras must be payloads")
+	}
+	if err := cache.Publish(identity, registry, meta, Artifact{Expectation: ArtifactExpectation{Kind: KindPayloads}}); err == nil {
+		t.Fatal("publish extras must validate")
+	}
+	if err := cache.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed ReadMeta = %v", err)
+	}
+	if _, err := cache.OpenRegistry(identity, registry.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed OpenRegistry = %v", err)
+	}
+	if _, err := cache.OpenPayloads(identity, payloads.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed OpenPayloads = %v", err)
+	}
+	if err := cache.WriteArtifact(identity, meta); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed WriteArtifact = %v", err)
+	}
+	if _, err := cache.AcquireLock(context.Background(), time.Millisecond); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed AcquireLock = %v", err)
+	}
+}
+
+type eintrOnceIO struct {
+	unixIO
+	preadOnce sync.Once
+	writeOnce sync.Once
+}
+
+func (e *eintrOnceIO) pread(fd int, p []byte, offset int64) (int, error) {
+	interrupted := false
+	e.preadOnce.Do(func() { interrupted = true })
+	if interrupted {
+		return 0, unix.EINTR
+	}
+	return e.unixIO.pread(fd, p, offset)
+}
+
+func (e *eintrOnceIO) write(fd int, p []byte) (int, error) {
+	interrupted := false
+	e.writeOnce.Do(func() { interrupted = true })
+	if interrupted {
+		return 0, unix.EINTR
+	}
+	return e.unixIO.write(fd, p)
+}
+
+func TestCrossPlatformCoverageEINTRRetriesOnPreadAndWrite(t *testing.T) {
+	ops := &eintrOnceIO{unixIO: realUnixIO{}}
+	cache, _, identity := openTestCache(t, ops)
+	meta := testArtifact(KindMeta, []byte("authenticated meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	got, err := cache.ReadMeta(identity, meta.Expectation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(meta.Payload) {
+		t.Fatalf("Meta after EINTR = %q", got)
 	}
 }

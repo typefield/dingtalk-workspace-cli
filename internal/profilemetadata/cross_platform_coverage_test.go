@@ -17,7 +17,7 @@ func TestCrossPlatformCoverageProfileSelectorGrammarAndNormalize(t *testing.T) {
 	if !ok || corp != "corp-a" || user != "user-a" {
 		t.Fatalf("ParseIdentitySelector = %q %q %v", corp, user, ok)
 	}
-	for _, selector := range []string{"", "nocolon", ":user", "corp:", " : "} {
+	for _, selector := range []string{"", "nocolon", ":user", "corp:", " : ", " :user", "corp: "} {
 		if _, _, parsed := ParseIdentitySelector(selector); parsed {
 			t.Fatalf("ParseIdentitySelector(%q) succeeded", selector)
 		}
@@ -107,6 +107,12 @@ func TestCrossPlatformCoverageProfileSelectionAndUnresolvedSlots(t *testing.T) {
 	if ExactProfileSelectorForCorp(cfg, "corp-a", "corp-b:user-a") != "" || FindExactProfile(cfg, "missing", "user") != nil {
 		t.Fatal("mismatched exact selector")
 	}
+	if ExactProfileSelectorForCorp(cfg, "corp-a", "corp-a:missing") != "" {
+		t.Fatal("missing exact account")
+	}
+	if ProfilesForCorpID(nil, "corp-a") != nil {
+		t.Fatal("nil cfg corp list")
+	}
 	if ProfileIndexByIdentity(nil, "corp-a", "user-a") != -1 {
 		t.Fatal("nil cfg index")
 	}
@@ -152,6 +158,9 @@ func TestCrossPlatformCoverageProfileSelectionAndUnresolvedSlots(t *testing.T) {
 	}
 	if ProfileSelectorReferenceExists(nil, "alpha") || ProfileSelectorReferenceExists(cfg, "") {
 		t.Fatal("empty reference")
+	}
+	if ProfileSelectorReferenceExists(cfg, "corp-a:missing") {
+		t.Fatal("missing exact reference")
 	}
 	if !ProfileSelectorReferenceExists(cfg, unresolved) {
 		t.Fatal("unresolved reference")

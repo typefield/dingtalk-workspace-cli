@@ -67,3 +67,15 @@ func TestCrossPlatformCoverageAttachToURL(t *testing.T) {
 		}
 	}
 }
+
+func TestCrossPlatformCoverageHostAndRedirectAllowlistEdges(t *testing.T) {
+	if hostAllowed("", []string{"login.dingtalk.com"}) {
+		t.Fatal("empty host")
+	}
+	if loginRedirectAllowed("https://user:pass@login.dingtalk.com/x", []string{"login.dingtalk.com"}) {
+		t.Fatal("userinfo must be rejected")
+	}
+	if loginRedirectAllowed(":", []string{"login.dingtalk.com"}) {
+		t.Fatal("invalid URL")
+	}
+}

@@ -14,6 +14,7 @@ import (
 	"time"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/i18n"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/profilemetadata"
 )
 
 // ─── endpoints.go ──────────────────────────────────────────────────────
@@ -550,6 +551,22 @@ func TestCrossPlatformCoverageLoginRegionEndpointDefaults(t *testing.T) {
 	}
 	if hosts := TrustedLoginHostsForRegion(LoginRegionInternational); len(hosts) != 1 || hosts[0] != "login.dingtalk.io" {
 		t.Fatalf("international trusted login hosts = %v", hosts)
+	}
+	restore := PushLoginBaseURLOverride("http://example.test")
+	t.Cleanup(restore)
+	if hosts := TrustedLoginHostsForRegion(LoginRegionDefault); len(hosts) != 0 {
+		t.Fatalf("http override hosts = %v", hosts)
+	}
+	restoreHTTPS := PushLoginBaseURLOverride("https://")
+	t.Cleanup(restoreHTTPS)
+	if hosts := TrustedLoginHostsForRegion(LoginRegionDefault); len(hosts) != 0 {
+		t.Fatalf("empty https host = %v", hosts)
+	}
+}
+
+func TestCrossPlatformCoverageProfileIdentityKeyDelegates(t *testing.T) {
+	if profileIdentityKey(" corp ", " user ") != profilemetadata.ProfileIdentityKey(" corp ", " user ") {
+		t.Fatal("profileIdentityKey")
 	}
 }
 

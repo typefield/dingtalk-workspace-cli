@@ -5,6 +5,7 @@ package schemareader
 
 import (
 	"errors"
+	"strings"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli/schemaruntime"
@@ -78,6 +79,9 @@ func TestCrossPlatformCoverageExpectedIdentityAndMalformedOptional(t *testing.T)
 	}
 	if _, ok := parseSchemaCacheLowerHex("aa"); ok {
 		t.Fatal("short hex")
+	}
+	if _, ok := parseSchemaCacheLowerHex(strings.Repeat("g", 64)); ok {
+		t.Fatal("non-hex alphabet")
 	}
 	if _, ok := parseSchemaCachePositiveDecimal("0"); ok {
 		t.Fatal("zero decimal")

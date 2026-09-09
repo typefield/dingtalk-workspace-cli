@@ -117,6 +117,16 @@ func TestCrossPlatformCoverageFrameworkManageProcessSignalsNilAndEscalation(t *t
 	}
 }
 
+func TestCrossPlatformCoverageInterruptionExitCodeAndNilContentScanner(t *testing.T) {
+	if interruptionExitCode(syscall.SIGINT) != 130 || interruptionExitCode(syscall.SIGTERM) != 143 {
+		t.Fatal("interruptionExitCode")
+	}
+	var scanner *lazyRuntimeContentScanner
+	if report := scanner.ScanPayload(map[string]any{"ok": true}); report.Scanned {
+		t.Fatal("nil scanner must not scan")
+	}
+}
+
 func installSignalExecuteSeams(t *testing.T, unified bool, stdout, stderr io.Writer) {
 	t.Helper()
 	testseam.Protect(t, &os.Args)
