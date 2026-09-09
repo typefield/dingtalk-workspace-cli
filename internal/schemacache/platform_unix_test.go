@@ -11,6 +11,7 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
@@ -750,7 +751,7 @@ func TestCrossPlatformCoverageCrossProcessFlockTimeout(t *testing.T) {
 	}
 }
 
-func TestValidateCacheFileSharedOwnership(t *testing.T) {
+func TestCrossPlatformCoverageValidateCacheFileSharedOwnership(t *testing.T) {
 	uid := uint32(unix.Geteuid())
 	reg := uint32(unix.S_IFREG)
 	cases := []struct {
@@ -939,5 +940,97 @@ func TestCrossPlatformCoverageReadMetaRejectsPreadError(t *testing.T) {
 	}
 	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrInvalidArtifact) {
 		t.Fatalf("ReadMeta pread error = %v", err)
+	}
+}
+
+type failRootOpenIO struct{ unixIO }
+
+func (failRootOpenIO) open(string, int, uint32) (int, error) { return -1, errors.New("root open") }
+
+type failMkdirIO struct{ unixIO }
+
+func (failMkdirIO) mkdirat(int, string, uint32) error { return errors.New("mkdir") }
+
+type existThenMissingIO struct{ unixIO }
+
+func (existThenMissingIO) mkdirat(int, string, uint32) error { return unix.EEXIST }
+
+type exhaustStagingIO struct{ unixIO }
+
+func (e exhaustStagingIO) openat(dirfd int, path string, flags int, mode uint32) (int, error) {
+	if strings.Contains(path, ".tmp") {
+		return -1, unix.EEXIST
+	}
+	return e.unixIO.openat(dirfd, path, flags, mode)
+}
+
+type failFlockIO struct{ unixIO }
+
+func (failFlockIO) flock(int, int) error { return errors.New("flock") }
+
+type zeroWriteIO struct{ unixIO }
+
+func (zeroWriteIO) write(int, []byte) (int, error) { return 0, nil }
+
+func TestCrossPlatformCoverageOpenDirectoryLockAndWriteErrorBranches(t *testing.T) {
+	t.Run("rootOpen", func(t *testing.T) {
+		old := platformIO
+		platformIO = failRootOpenIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("root open")
+		}
+	})
+	t.Run("mkdir", func(t *testing.T) {
+		old := platformIO
+		platformIO = failMkdirIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("mkdir")
+		}
+	})
+	t.Run("mkdirExistThenMissing", func(t *testing.T) {
+		old := platformIO
+		platformIO = existThenMissingIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("mkdir EEXIST then missing")
+		}
+	})
+
+	cache, _, identity := openTestCache(t, nil)
+	meta := testArtifact(KindMeta, []byte("trusted"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cache.Directory(), metaFileName)
+	original, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	forged := append([]byte(nil), original...)
+	copy(forged[len(forged)-7:], []byte("forged!"))
+	if err := os.WriteFile(path, forged, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("payload digest mismatch = %v", err)
+	}
+
+	cache.backend.(*unixCache).ops = exhaustStagingIO{unixIO: realUnixIO{}}
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("newer!"))); err == nil {
+		t.Fatal("staging exhausted")
+	}
+	cache.backend.(*unixCache).ops = zeroWriteIO{unixIO: realUnixIO{}}
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("zero wr"))); err == nil {
+		t.Fatal("zero write")
+	}
+	cache.backend.(*unixCache).ops = failFlockIO{unixIO: realUnixIO{}}
+	if _, err := cache.AcquireLock(context.Background(), time.Second); err == nil {
+		t.Fatal("flock")
 	}
 }

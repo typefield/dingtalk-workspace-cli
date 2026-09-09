@@ -5,6 +5,7 @@ package schemaruntime
 
 import (
 	"crypto/sha256"
+	"encoding/json"
 	"testing"
 
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli/schemacachepb"
@@ -89,6 +90,13 @@ func TestCrossPlatformCoverageSchemaCacheAccessAndDecodeErrorBranches(t *testing
 	}
 	if locatorSubsetEqual(map[string]string{"a": "p"}, map[string]string{"a": "q"}) {
 		t.Fatal("locator mismatch")
+	}
+
+	if _, err := SchemaRegistryFromRuntime("src", []ProductSpec{{}}); err == nil {
+		t.Fatal("empty product id")
+	}
+	if _, err := ToolSpecFromRuntime(RuntimeToolSpecInput{}); err == nil {
+		t.Fatal("empty tool spec")
 	}
 
 	if _, err := DecodeSchemaProductFromShards(nil, meta, "sample"); err == nil {
@@ -248,5 +256,314 @@ func TestCrossPlatformCoverageSchemaCacheAccessAndDecodeErrorBranches(t *testing
 	updatedMeta.ProductDescriptors[0] = updated
 	if _, err := DecodeSchemaProductCache(badProduct, updated, updatedMeta); err == nil {
 		t.Fatal("wrong product dto version")
+	}
+}
+
+func TestCrossPlatformCoverageSchemaCacheShardAccessAndModelValidate(t *testing.T) {
+	spec := ToolSpec{
+		Identity:       contract.ToolIdentitySpec{CanonicalPath: "sample.run"},
+		Title:          "t",
+		Description:    "d",
+		MetadataSource: "m",
+		DryRun:         &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewRequest},
+		Safety:         contract.SafetySpec{Effect: "write", EffectSource: "declared", Risk: "high", Confirmation: "user_required", Idempotency: "idempotent"},
+		Interface:      contract.InterfaceSpec{Ref: &contract.InterfaceRefSpec{ProductID: "p", RPCName: "n"}, Mode: contract.InterfaceModeMCP, Availability: contract.InterfaceAvailable, Reason: "why"},
+		Selection: contract.SelectionSpec{
+			AgentSummary: "sum", UseWhen: []string{"u"}, AvoidWhen: []string{"a"},
+			Prerequisites: []string{"p"}, Tips: []string{"t"}, WorkflowRefs: []string{"w"}, Examples: []string{"e"},
+		},
+	}
+	for _, field := range []string{
+		"canonical_path", "title", "description", "metadata_source", "dry_run",
+		"effect", "effect_source", "risk", "confirmation", "idempotency",
+		"interface_ref", "interface_mode", "availability", "interface_reason",
+		"agent_summary", "use_when", "avoid_when", "prerequisites", "tips",
+		"workflow_refs", "examples", "reviewed",
+	} {
+		if _, ok := spec.provenanceValue(field); !ok {
+			t.Fatalf("tool provenance %s", field)
+		}
+	}
+	if _, ok := spec.provenanceValue("unknown"); ok {
+		t.Fatal("unknown tool provenance")
+	}
+	param := ParameterSpec{
+		Name: "id", Type: "string", Description: "d", Property: "p", Required: true,
+		CLIRequired: true, RequiredWhen: "always", Default: json.RawMessage(`"x"`),
+		InterfaceDefault: json.RawMessage(`"y"`), Example: json.RawMessage(`"z"`),
+		AnyOf: []contract.FormatAlternative{{Format: "email"}}, Format: "token", Enum: []string{"a"},
+		InterfaceDescription: "id", InterfaceType: "string",
+	}
+	for _, field := range []string{
+		"name", "type", "description", "property", "required", "cli_required",
+		"required_when", "default", "interface_default", "example", "anyOf",
+		"format", "enum", "interface_description", "interface_type",
+	} {
+		if _, ok := param.provenanceValue(field); !ok {
+			t.Fatalf("parameter provenance %s", field)
+		}
+	}
+	product := ProductSpec{Selection: contract.SelectionSpec{AgentSummary: "a", UseWhen: []string{"u"}, AvoidWhen: []string{"v"}}}
+	for _, field := range []string{"agent_summary", "use_when", "avoid_when"} {
+		if _, ok := product.provenanceValue(field); !ok {
+			t.Fatalf("product provenance %s", field)
+		}
+	}
+
+	base := ToolSpec{Identity: contract.ToolIdentitySpec{ProductID: "sample", Name: "run", CanonicalPath: "sample.run", CLIPath: "sample run"}}
+	if err := (ToolSpec{}).Validate(); err == nil {
+		t.Fatal("empty product id")
+	}
+	if err := (ToolSpec{Identity: contract.ToolIdentitySpec{ProductID: "sample"}}).Validate(); err == nil {
+		t.Fatal("empty name")
+	}
+	mismatch := base
+	mismatch.Identity.CanonicalPath = "other.run"
+	if err := mismatch.Validate(); err == nil {
+		t.Fatal("canonical mismatch")
+	}
+	emptyCLI := base
+	emptyCLI.Identity.CLIPath = ""
+	if err := emptyCLI.Validate(); err == nil {
+		t.Fatal("empty cli path")
+	}
+	emptyParam := base
+	emptyParam.Parameters = []ParameterSpec{{}}
+	if err := emptyParam.Validate(); err == nil {
+		t.Fatal("empty parameter name")
+	}
+	dupParam := base
+	dupParam.Parameters = []ParameterSpec{{Name: "id"}, {Name: "id"}}
+	if err := dupParam.Validate(); err == nil {
+		t.Fatal("duplicate parameter")
+	}
+	badDefault := base
+	badDefault.Parameters = []ParameterSpec{{Name: "id", Default: json.RawMessage(`{`)}}
+	if err := badDefault.Validate(); err == nil {
+		t.Fatal("invalid default json")
+	}
+	badRef := base
+	badRef.Interface.Ref = &contract.InterfaceRefSpec{ProductID: " "}
+	if err := badRef.Validate(); err == nil {
+		t.Fatal("incomplete interface_ref")
+	}
+	badDryRun := base
+	badDryRun.DryRun = &contract.DryRunSpec{PreviewKind: "nope"}
+	if err := badDryRun.Validate(); err == nil {
+		t.Fatal("invalid dry-run")
+	}
+	badResult := base
+	badResult.Result = &contract.ResultSpec{Outcomes: []contract.ResultOutcome{"nope"}}
+	if err := badResult.Validate(); err == nil {
+		t.Fatal("invalid result")
+	}
+	badPage := base
+	badPage.Parameters = []ParameterSpec{{Name: "cursor"}}
+	badPage.Pagination = &contract.PaginationSpec{Kind: contract.PaginationKindCursor, CursorParameter: "missing"}
+	if err := badPage.Validate(); err == nil {
+		t.Fatal("missing pagination cursor")
+	}
+	badIface := base
+	badIface.Interface.Mode = "nope"
+	if err := badIface.Validate(); err == nil {
+		t.Fatal("invalid interface")
+	}
+	if _, err := (SchemaRegistry{Products: []ProductSpec{{ID: "sample", Tools: []ToolSpec{base}}}}).ToPayload(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := (SchemaRegistry{Products: []ProductSpec{{}}}).ToPayload(); err == nil {
+		t.Fatal("invalid product payload")
+	}
+
+	built, meta := buildFixtureCache(t, allFieldsRegistry())
+	productID := meta.ProductDescriptors[0].ProductID
+	var samplePath string
+	for path, id := range meta.LocatorProductByPath {
+		if id == productID {
+			samplePath = path
+			break
+		}
+	}
+	if samplePath == "" {
+		t.Fatal("missing locator path")
+	}
+	miss := meta
+	miss.LocatorProductByPath = map[string]string{"ghost": productID}
+	if _, ok := miss.CommandMeta("ghost"); ok {
+		t.Fatal("path missing from shard")
+	}
+	corrupt := meta
+	corruptShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
+	corruptShard.Entries = []byte("not-proto")
+	corrupt.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{corruptShard}
+	if _, ok := corrupt.CommandMeta(samplePath); ok {
+		t.Fatal("corrupt shard entries")
+	}
+	count := meta
+	countShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
+	countShard.EntryCount++
+	count.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{countShard}
+	if _, ok := count.CommandMeta(samplePath); ok {
+		t.Fatal("entry count mismatch")
+	}
+
+	var message schemacachepb.SchemaMetaCache
+	if err := proto.Unmarshal(built.Meta, &message); err != nil {
+		t.Fatal(err)
+	}
+	message.Overview.Registry = nil
+	payload, err := MarshalSchemaCacheDeterministic(&message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeSchemaMetaCache(payload); err == nil {
+		t.Fatal("overview missing registry")
+	}
+	if err := proto.Unmarshal(built.Meta, &message); err != nil {
+		t.Fatal(err)
+	}
+	message.Overview.Products = nil
+	payload, err = MarshalSchemaCacheDeterministic(&message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeSchemaMetaCache(payload); err == nil {
+		t.Fatal("overview missing products")
+	}
+	if err := proto.Unmarshal(built.Meta, &message); err != nil {
+		t.Fatal(err)
+	}
+	message.Locators.Items[0].ProductId = "missing-product"
+	payload, err = MarshalSchemaCacheDeterministic(&message)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeSchemaMetaCache(payload); err == nil {
+		t.Fatal("locator unknown product")
+	}
+
+	desc := meta.PayloadDescriptors[0]
+	start := int(built.PayloadIndexLength + desc.Offset)
+	shard := built.PayloadShards[start : start+int(desc.Length)]
+	header, blobs, err := splitCommandPayloadShard(shard)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var payloadRoot schemacachepb.SchemaCommandPayloadCache
+	if err := proto.Unmarshal(header, &payloadRoot); err != nil {
+		t.Fatal(err)
+	}
+	payloadRoot.Entries.Items[0].Identity = nil
+	badHeader, err := MarshalSchemaCacheDeterministic(&payloadRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := decodeCommandPayloadHeader(badHeader, desc); err == nil {
+		t.Fatal("missing payload identity")
+	}
+	if err := proto.Unmarshal(header, &payloadRoot); err != nil {
+		t.Fatal(err)
+	}
+	payloadRoot.Entries.Items[0].Identity.CliPath = ""
+	badHeader, err = MarshalSchemaCacheDeterministic(&payloadRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := decodeCommandPayloadHeader(badHeader, desc); err == nil {
+		t.Fatal("incomplete payload identity")
+	}
+	if err := proto.Unmarshal(header, &payloadRoot); err != nil {
+		t.Fatal(err)
+	}
+	payloadRoot.RenderedLeafIndex.Items[0].Sha256 = []byte{1}
+	badHeader, err = MarshalSchemaCacheDeterministic(&payloadRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := decodeCommandPayloadHeader(badHeader, desc); err == nil {
+		t.Fatal("short rendered leaf digest")
+	}
+	if err := proto.Unmarshal(header, &payloadRoot); err != nil {
+		t.Fatal(err)
+	}
+	payloadRoot.RenderedLeafIndex.Items[0].CanonicalPath = ""
+	badHeader, err = MarshalSchemaCacheDeterministic(&payloadRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := decodeCommandPayloadHeader(badHeader, desc); err == nil {
+		t.Fatal("empty rendered leaf path")
+	}
+
+	invalidBlob := []byte("x\n")
+	if err := proto.Unmarshal(header, &payloadRoot); err != nil {
+		t.Fatal(err)
+	}
+	digest := sha256.Sum256(invalidBlob)
+	payloadRoot.RenderedLeafIndex.Items[0].Sha256 = digest[:]
+	payloadRoot.RenderedLeafIndex.Items[0].Offset = 0
+	payloadRoot.RenderedLeafIndex.Items[0].Length = uint64(len(invalidBlob))
+	badHeader, err = MarshalSchemaCacheDeterministic(&payloadRoot)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assembled, err := assembleCommandPayloadShard(badHeader, invalidBlob)
+	if err != nil {
+		t.Fatal(err)
+	}
+	updated := desc
+	updated.Length = uint64(len(assembled))
+	updated.SHA256 = sha256.Sum256(assembled)
+	updated.HeaderLength = uint64(4 + len(badHeader))
+	updated.HeaderSHA256 = sha256.Sum256(assembled[:updated.HeaderLength])
+	updatedMeta := meta
+	updatedMeta.PayloadDescriptors = []CommandPayloadDescriptor{updated}
+	if _, err := DecodeSchemaCommandPayloadCache(assembled, updated, updatedMeta); err == nil {
+		t.Fatal("invalid rendered json")
+	}
+
+	indexRegion := built.PayloadShards[:built.PayloadIndexLength]
+	indexHeader, _, err := splitCommandPayloadShard(indexRegion)
+	if err != nil {
+		t.Fatal(err)
+	}
+	var index schemacachepb.SchemaPayloadIndex
+	if err := proto.Unmarshal(indexHeader, &index); err != nil {
+		t.Fatal(err)
+	}
+	index.Locators.Items[0].ProductId = ""
+	badIndex, err := MarshalSchemaCacheDeterministic(&index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assembled, err = assembleCommandPayloadShard(badIndex, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeSchemaPayloadIndex(assembled); err == nil {
+		t.Fatal("incomplete payload index locator")
+	}
+	if err := proto.Unmarshal(indexHeader, &index); err != nil {
+		t.Fatal(err)
+	}
+	index.Products.Items[0].HeaderLength = 0
+	badIndex, err = MarshalSchemaCacheDeterministic(&index)
+	if err != nil {
+		t.Fatal(err)
+	}
+	assembled, err = assembleCommandPayloadShard(badIndex, nil)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := DecodeSchemaPayloadIndex(assembled); err == nil {
+		t.Fatal("incomplete payload index descriptor")
+	}
+
+	_ = blobs
+	if err := rejectUnknownFieldsAndEnums(&schemacachepb.SchemaCommandPayloadCache{}); err != nil {
+		t.Fatal(err)
+	}
+	if err := rejectUnknownFieldsAndEnumsReflect((&schemacachepb.BytesValue{}).ProtoReflect()); err != nil {
+		t.Fatal(err)
 	}
 }
