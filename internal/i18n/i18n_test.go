@@ -76,7 +76,7 @@ func TestCrossPlatformCoverageLoadCatalogHandlesValidAndInvalidResources(t *test
 	}
 }
 
-func TestAuthLoginSummaryTranslations(t *testing.T) {
+func TestCrossPlatformCoverageAuthLoginSummaryTranslations(t *testing.T) {
 	previous := Lang()
 	t.Cleanup(func() { SetLang(previous) })
 

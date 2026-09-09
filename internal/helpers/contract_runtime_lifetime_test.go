@@ -64,3 +64,12 @@ func discardedContractRuntimeTree() weak.Pointer[cobra.Command] {
 	installContractRunEPipeline(leaf, rt)
 	return weak.Make(root)
 }
+
+func TestCrossPlatformCoverageLoadContractRuntimeRejectsForeignStoreValue(t *testing.T) {
+	cmd := &cobra.Command{Use: "leaf"}
+	contractRuntimeByCmd.Store(cmd, "foreign")
+	t.Cleanup(func() { contractRuntimeByCmd.Delete(cmd) })
+	if rt, ok := loadContractRuntime(cmd); ok || rt != nil {
+		t.Fatalf("foreign store value = %#v %v", rt, ok)
+	}
+}

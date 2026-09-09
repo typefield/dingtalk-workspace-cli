@@ -8,7 +8,7 @@ import (
 	"testing"
 )
 
-func TestRuntimeSchemaConstraintsNormalization(t *testing.T) {
+func TestCrossPlatformCoverageRuntimeSchemaConstraintsNormalization(t *testing.T) {
 	in := RuntimeSchemaConstraints{
 		MutuallyExclusive: [][]string{{" a ", "b", "a"}, {"only"}},
 		RequireOneOf:      [][]string{{" id "}, {"id"}},

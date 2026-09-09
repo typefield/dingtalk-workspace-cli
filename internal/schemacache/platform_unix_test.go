@@ -11,10 +11,12 @@ import (
 	"os"
 	"path/filepath"
 	"slices"
+	"strings"
 	"sync"
 	"testing"
 	"time"
 
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
 	"golang.org/x/sys/unix"
 )
 
@@ -749,7 +751,7 @@ func TestCrossPlatformCoverageCrossProcessFlockTimeout(t *testing.T) {
 	}
 }
 
-func TestValidateCacheFileSharedOwnership(t *testing.T) {
+func TestCrossPlatformCoverageValidateCacheFileSharedOwnership(t *testing.T) {
 	uid := uint32(unix.Geteuid())
 	reg := uint32(unix.S_IFREG)
 	cases := []struct {
@@ -773,5 +775,346 @@ func TestValidateCacheFileSharedOwnership(t *testing.T) {
 		if (err == nil) != tc.wantOK {
 			t.Errorf("%s: validateCacheFile err=%v, wantOK=%v", tc.name, err, tc.wantOK)
 		}
+	}
+}
+
+func TestCrossPlatformCoveragePlatformGOOSAndOverrideAndInvalidIdentity(t *testing.T) {
+	if systemSchemaCacheBase() == "" {
+		t.Fatal("linux shared cache base")
+	}
+	testseam.Swap(t, &platformGOOS, "darwin")
+	if systemSchemaCacheBase() != "/Library/Caches/dws" {
+		t.Fatalf("darwin base = %q", systemSchemaCacheBase())
+	}
+	testseam.Swap(t, &platformGOOS, "windows")
+	if systemSchemaCacheBase() != "" {
+		t.Fatal("unknown GOOS must not invent a shared cache")
+	}
+
+	t.Run("relativeOverride", func(t *testing.T) {
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", "relative")
+		if _, err := Open("official"); err == nil {
+			t.Fatal("relative override must fail")
+		}
+	})
+	t.Run("absoluteOverride", func(t *testing.T) {
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		cache, err := Open("official")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = cache.Close() })
+	})
+	t.Run("userCacheDirError", func(t *testing.T) {
+		old := userCacheDir
+		userCacheDir = func() (string, error) { return "", errors.New("missing user cache") }
+		t.Cleanup(func() { userCacheDir = old })
+		if _, err := Open("official"); err == nil {
+			t.Fatal("user cache directory error")
+		}
+	})
+
+	cache, _, identity := openTestCache(t, nil)
+	lock, err := cache.AcquireLock(nil, 50*time.Millisecond)
+	if err != nil {
+		t.Fatalf("nil ctx AcquireLock: %v", err)
+	}
+	if err := lock.Release(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation ReadMeta")
+	}
+	if _, err := cache.OpenRegistry(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation OpenPayloads")
+	}
+	if err := cache.WriteArtifact(identity, Artifact{}); err == nil {
+		t.Fatal("invalid WriteArtifact")
+	}
+	if _, err := cache.OpenRegistry(identity, ArtifactExpectation{Kind: KindMeta}); err == nil {
+		t.Fatal("kind mismatch OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(identity, ArtifactExpectation{Kind: KindMeta}); err == nil {
+		t.Fatal("kind mismatch OpenPayloads")
+	}
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	payloads := testArtifact(KindPayloads, []byte("payloads"))
+	wrong := identity
+	wrong.EditionSHA256 = sha256.Sum256([]byte("other-edition"))
+	if _, err := cache.ReadMeta(wrong, meta.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch ReadMeta = %v", err)
+	}
+	if _, err := cache.OpenRegistry(wrong, registry.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch OpenRegistry = %v", err)
+	}
+	if _, err := cache.OpenPayloads(wrong, payloads.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch OpenPayloads = %v", err)
+	}
+	if err := cache.Publish(identity, meta, meta); err == nil {
+		t.Fatal("publish requires registry then meta")
+	}
+	if err := cache.Publish(identity, registry, meta, testArtifact(KindMeta, []byte("extra"))); err == nil {
+		t.Fatal("publish extras must be payloads")
+	}
+	if err := cache.Publish(identity, registry, meta, Artifact{Expectation: ArtifactExpectation{Kind: KindPayloads}}); err == nil {
+		t.Fatal("publish extras must validate")
+	}
+	if err := cache.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if err := cache.Close(); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed ReadMeta = %v", err)
+	}
+	if _, err := cache.OpenRegistry(identity, registry.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed OpenRegistry = %v", err)
+	}
+	if _, err := cache.OpenPayloads(identity, payloads.Expectation); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed OpenPayloads = %v", err)
+	}
+	if err := cache.WriteArtifact(identity, meta); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed WriteArtifact = %v", err)
+	}
+	if _, err := cache.AcquireLock(context.Background(), time.Millisecond); !errors.Is(err, ErrClosed) {
+		t.Fatalf("closed AcquireLock = %v", err)
+	}
+}
+
+func TestCrossPlatformCoverageValidCacheRejectsZeroIdentity(t *testing.T) {
+	cache, _, identity := openTestCache(t, nil)
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	payloads := testArtifact(KindPayloads, []byte("payloads"))
+	if err := cache.Publish(identity, registry, meta, payloads); err != nil {
+		t.Fatal(err)
+	}
+	zero := ExpectedIdentity{}
+	if _, err := cache.ReadMeta(zero, meta.Expectation); err == nil {
+		t.Fatal("zero identity ReadMeta")
+	}
+	if _, err := cache.OpenRegistry(zero, registry.Expectation); err == nil {
+		t.Fatal("zero identity OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(zero, payloads.Expectation); err == nil {
+		t.Fatal("zero identity OpenPayloads")
+	}
+	wrong := identity
+	wrong.EditionSHA256 = sha256.Sum256([]byte("other-edition"))
+	if err := cache.WriteArtifact(wrong, meta); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch WriteArtifact = %v", err)
+	}
+}
+
+type eintrOnceIO struct {
+	unixIO
+	preadOnce sync.Once
+	writeOnce sync.Once
+}
+
+func (e *eintrOnceIO) pread(fd int, p []byte, offset int64) (int, error) {
+	interrupted := false
+	e.preadOnce.Do(func() { interrupted = true })
+	if interrupted {
+		return 0, unix.EINTR
+	}
+	return e.unixIO.pread(fd, p, offset)
+}
+
+func (e *eintrOnceIO) write(fd int, p []byte) (int, error) {
+	interrupted := false
+	e.writeOnce.Do(func() { interrupted = true })
+	if interrupted {
+		return 0, unix.EINTR
+	}
+	return e.unixIO.write(fd, p)
+}
+
+func TestCrossPlatformCoverageEINTRRetriesOnPreadAndWrite(t *testing.T) {
+	ops := &eintrOnceIO{unixIO: realUnixIO{}}
+	cache, _, identity := openTestCache(t, ops)
+	meta := testArtifact(KindMeta, []byte("authenticated meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	got, err := cache.ReadMeta(identity, meta.Expectation)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if string(got) != string(meta.Payload) {
+		t.Fatalf("Meta after EINTR = %q", got)
+	}
+}
+
+type failPreadIO struct{ unixIO }
+
+func (f failPreadIO) pread(int, []byte, int64) (int, error) { return 0, errors.New("pread failed") }
+
+func TestCrossPlatformCoverageReadMetaRejectsPreadError(t *testing.T) {
+	cache, _, identity := openTestCache(t, failPreadIO{unixIO: realUnixIO{}})
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrInvalidArtifact) {
+		t.Fatalf("ReadMeta pread error = %v", err)
+	}
+}
+
+type failRootOpenIO struct{ unixIO }
+
+func (failRootOpenIO) open(string, int, uint32) (int, error) { return -1, errors.New("root open") }
+
+type failMkdirIO struct{ unixIO }
+
+func (failMkdirIO) mkdirat(int, string, uint32) error { return errors.New("mkdir") }
+
+type existThenMissingIO struct{ unixIO }
+
+func (existThenMissingIO) mkdirat(int, string, uint32) error { return unix.EEXIST }
+
+type exhaustStagingIO struct{ unixIO }
+
+func (e exhaustStagingIO) openat(dirfd int, path string, flags int, mode uint32) (int, error) {
+	if strings.Contains(path, ".tmp") {
+		return -1, unix.EEXIST
+	}
+	return e.unixIO.openat(dirfd, path, flags, mode)
+}
+
+type failFlockIO struct{ unixIO }
+
+func (failFlockIO) flock(int, int) error { return errors.New("flock") }
+
+type unlockFailIO struct{ unixIO }
+
+func (u unlockFailIO) flock(fd int, how int) error {
+	if how == unix.LOCK_UN {
+		return errors.New("unlock")
+	}
+	return u.unixIO.flock(fd, how)
+}
+
+type zeroWriteIO struct{ unixIO }
+
+func (zeroWriteIO) write(int, []byte) (int, error) { return 0, nil }
+
+func TestCrossPlatformCoverageOpenDirectoryLockAndWriteErrorBranches(t *testing.T) {
+	t.Run("rootOpen", func(t *testing.T) {
+		old := platformIO
+		platformIO = failRootOpenIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("root open")
+		}
+	})
+	t.Run("mkdir", func(t *testing.T) {
+		old := platformIO
+		platformIO = failMkdirIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("mkdir")
+		}
+	})
+	t.Run("mkdirExistThenMissing", func(t *testing.T) {
+		old := platformIO
+		platformIO = existThenMissingIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("mkdir EEXIST then missing")
+		}
+	})
+
+	cache, _, identity := openTestCache(t, nil)
+	meta := testArtifact(KindMeta, []byte("trusted"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	path := filepath.Join(cache.Directory(), metaFileName)
+	original, err := os.ReadFile(path)
+	if err != nil {
+		t.Fatal(err)
+	}
+	forged := append([]byte(nil), original...)
+	copy(forged[len(forged)-7:], []byte("forged!"))
+	if err := os.WriteFile(path, forged, 0o600); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("payload digest mismatch = %v", err)
+	}
+
+	cache.backend.(*unixCache).ops = exhaustStagingIO{unixIO: realUnixIO{}}
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("newer!"))); err == nil {
+		t.Fatal("staging exhausted")
+	}
+	cache.backend.(*unixCache).ops = zeroWriteIO{unixIO: realUnixIO{}}
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("zero wr"))); err == nil {
+		t.Fatal("zero write")
+	}
+	cache.backend.(*unixCache).ops = failFlockIO{unixIO: realUnixIO{}}
+	if _, err := cache.AcquireLock(context.Background(), time.Second); err == nil {
+		t.Fatal("flock")
+	}
+
+	t.Run("missingAncestryMkdir", func(t *testing.T) {
+		old := platformIO
+		platformIO = failMkdirIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", filepath.Join(privateTestBase(t), "missing-child"))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("missing ancestry mkdir")
+		}
+	})
+	t.Run("missingAncestryExist", func(t *testing.T) {
+		old := platformIO
+		platformIO = existThenMissingIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", filepath.Join(privateTestBase(t), "missing-child"))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("missing ancestry EEXIST")
+		}
+	})
+
+	lockCache, _, _ := openTestCache(t, nil)
+	held, err := lockCache.AcquireLock(context.Background(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := lockCache.AcquireLock(context.Background(), 0); !errors.Is(err, ErrLockTimeout) {
+		t.Fatalf("zero timeout lock = %v", err)
+	}
+	if err := held.Release(); err != nil {
+		t.Fatal(err)
+	}
+	unlockCache, _, _ := openTestCache(t, unlockFailIO{unixIO: realUnixIO{}})
+	held, err = unlockCache.AcquireLock(context.Background(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := held.Release(); err == nil {
+		t.Fatal("unlock flock")
+	}
+}
+
+type failRandomIO struct{ unixIO }
+
+func (failRandomIO) random([]byte) (int, error) { return 0, errors.New("rand") }
+
+func TestCrossPlatformCoverageWriteArtifactRandomFailure(t *testing.T) {
+	cache, _, identity := openTestCache(t, failRandomIO{unixIO: realUnixIO{}})
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("meta"))); err == nil {
+		t.Fatal("random failure")
 	}
 }

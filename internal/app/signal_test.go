@@ -87,6 +87,18 @@ func TestCrossPlatformCoverageProcessInterruptionRejectsNestedDetail(t *testing.
 	}
 }
 
+func TestCrossPlatformCoverageInstallProcessSignalContextAndCompletedProbe(t *testing.T) {
+	ctx, state, stop := installProcessSignalContext(context.Background(), nil)
+	t.Cleanup(stop)
+	if ctx == nil || state == nil {
+		t.Fatal("installProcessSignalContext returned nil")
+	}
+	if processResultCompleted(nil)() {
+		t.Fatal("nil store must not report a completed emission")
+	}
+	stop()
+}
+
 func TestCrossPlatformCoverageFrameworkManageProcessSignalsNilAndEscalation(t *testing.T) {
 	signals := make(chan os.Signal, 3)
 	stopped, escalated := false, make(chan os.Signal, 1)
@@ -102,6 +114,16 @@ func TestCrossPlatformCoverageFrameworkManageProcessSignalsNilAndEscalation(t *t
 	stop()
 	if !stopped {
 		t.Fatal("signal notification was not stopped")
+	}
+}
+
+func TestCrossPlatformCoverageInterruptionExitCodeAndNilContentScanner(t *testing.T) {
+	if interruptionExitCode(syscall.SIGINT) != 130 || interruptionExitCode(syscall.SIGTERM) != 143 {
+		t.Fatal("interruptionExitCode")
+	}
+	var scanner *lazyRuntimeContentScanner
+	if report := scanner.ScanPayload(map[string]any{"ok": true}); report.Scanned {
+		t.Fatal("nil scanner must not scan")
 	}
 }
 

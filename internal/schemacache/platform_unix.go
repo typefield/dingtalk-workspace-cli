@@ -29,8 +29,10 @@ const (
 )
 
 var (
-	userCacheDir        = os.UserCacheDir
-	platformIO   unixIO = realUnixIO{}
+	userCacheDir           = os.UserCacheDir
+	platformIO      unixIO = realUnixIO{}
+	platformGOOS           = runtime.GOOS
+	systemCacheBase        = systemSchemaCacheBase
 )
 
 type unixIO interface {
@@ -104,7 +106,7 @@ type fileState struct {
 // The runtime never creates it; only the installer does. When present, every
 // user reuses the same cache so switching users never re-pays assembly.
 func systemSchemaCacheBase() string {
-	switch runtime.GOOS {
+	switch platformGOOS {
 	case "linux":
 		return "/var/cache/dws"
 	case "darwin":
@@ -129,7 +131,7 @@ func openPlatform(edition string, counters *Counters, noCreate bool) (backend, e
 	// Prefer the system-level shared cache (read-only). The runtime never
 	// creates it (noCreate semantics), so a missing shared cache falls back to
 	// the per-user cache without side effects.
-	if systemBase := systemSchemaCacheBase(); systemBase != "" {
+	if systemBase := systemCacheBase(); systemBase != "" {
 		if dirfd, path, err := openCacheDirectory(systemBase, editionHex, counters, platformIO, true, true); err == nil {
 			return &unixCache{dirfd: dirfd, path: path, edition: digest, counters: counters, ops: platformIO, shared: true}, nil
 		}

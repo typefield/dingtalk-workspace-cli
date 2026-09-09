@@ -95,3 +95,23 @@ func TestCrossPlatformCoverageCommandMetadataConcurrentGC(t *testing.T) {
 	}
 	wg.Wait()
 }
+
+func TestCrossPlatformCoverageCommandMetadataRangeDropsExpiredKeys(t *testing.T) {
+	var store Map
+	discarded := storeDiscardedTree(&store)
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		runtime.GC()
+		if discarded.Value() != nil {
+			time.Sleep(10 * time.Millisecond)
+			continue
+		}
+		seen := 0
+		store.Range(func(_, _ any) bool { seen++; return true })
+		if seen == 0 {
+			return
+		}
+		time.Sleep(10 * time.Millisecond)
+	}
+	t.Fatal("Range did not drop expired command keys")
+}

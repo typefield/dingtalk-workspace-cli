@@ -155,7 +155,7 @@ func TestCrossPlatformCoverageRuntimeContractFinalRejectsForeignStoredValue(t *t
 	}
 }
 
-func TestResolveRuntimeSafetyUsesCanonicalOrCLIIdentityAndRejectsUnavailable(t *testing.T) {
+func TestCrossPlatformCoverageResolveRuntimeSafetyUsesCanonicalOrCLIIdentityAndRejectsUnavailable(t *testing.T) {
 	read := &cobra.Command{Use: "read"}
 	t.Cleanup(func() { ClearRuntimeContractFinalForTest(read) })
 	RegisterRuntimeContractFinal(read, contract.ContractFinalPayload{
@@ -192,7 +192,7 @@ func TestResolveRuntimeSafetyUsesCanonicalOrCLIIdentityAndRejectsUnavailable(t *
 func boolPointer(value bool) *bool { return &value }
 func intPointer(value int) *int    { return &value }
 
-func TestFrameworkContractFinalDeepCopyAndSafetyConflicts(t *testing.T) {
+func TestCrossPlatformCoverageFrameworkContractFinalDeepCopyAndSafetyConflicts(t *testing.T) {
 	cmd := &cobra.Command{Use: "all"}
 	t.Cleanup(func() { ClearRuntimeContractFinalForTest(cmd) })
 	payload := contract.ContractFinalPayload{
@@ -264,4 +264,8 @@ func TestCrossPlatformCoverageOwnedRuntimeContractFinalKeepsReadIsolation(t *tes
 	if second.Parameters[0].Enum[0] != "safe" {
 		t.Fatalf("owned payload read aliased store: %#v", second)
 	}
+}
+
+func TestCrossPlatformCoverageRegisterOwnedRuntimeContractFinalNilCommand(t *testing.T) {
+	RegisterOwnedRuntimeContractFinal(nil, contract.ContractFinalPayload{Title: "ignored"})
 }

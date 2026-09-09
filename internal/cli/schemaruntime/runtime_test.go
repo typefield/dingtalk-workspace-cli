@@ -104,7 +104,7 @@ func TestCrossPlatformCoverageRuntimeRenderingBoundary(t *testing.T) {
 	}
 }
 
-func TestSchemaIndexResolveQueryLocatorParity(t *testing.T) {
+func TestCrossPlatformCoverageSchemaIndexResolveQueryLocatorParity(t *testing.T) {
 	tool := ToolSpec{Identity: contract.ToolIdentitySpec{
 		ProductID:       "public",
 		SourceProductID: "source",

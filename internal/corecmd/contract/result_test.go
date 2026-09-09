@@ -10,7 +10,7 @@ import (
 	"testing"
 )
 
-func TestNormalizeResultSpecCanonicalizesAndCopies(t *testing.T) {
+func TestCrossPlatformCoverageNormalizeResultSpecCanonicalizesAndCopies(t *testing.T) {
 	in := &ResultSpec{
 		Outcomes:       []ResultOutcome{ResultOutcomeFailure, ResultOutcomeSuccess},
 		DataSchema:     json.RawMessage(`{ "properties": {"items":{"type":"array","description":"Result records","items":{"type":"object"}}}, "type":"object" }`),
@@ -39,7 +39,7 @@ func TestNormalizeResultSpecCanonicalizesAndCopies(t *testing.T) {
 	}
 }
 
-func TestNormalizeResultSpecRejectsInvalidContractsDeterministically(t *testing.T) {
+func TestCrossPlatformCoverageNormalizeResultSpecRejectsInvalidContractsDeterministically(t *testing.T) {
 	valid := func() *ResultSpec {
 		return &ResultSpec{Outcomes: []ResultOutcome{ResultOutcomeSuccess}, DataSchema: json.RawMessage(`{"type":"object"}`)}
 	}
@@ -73,7 +73,7 @@ func TestNormalizeResultSpecRejectsInvalidContractsDeterministically(t *testing.
 	}
 }
 
-func TestNormalizePaginationSpecUsesFrameworkMetaPaths(t *testing.T) {
+func TestCrossPlatformCoverageNormalizePaginationSpecUsesFrameworkMetaPaths(t *testing.T) {
 	got, err := NormalizePaginationSpec(&PaginationSpec{Kind: PaginationKindCursor, CursorParameter: "--cursor"}, "dev.list")
 	if err != nil {
 		t.Fatal(err)

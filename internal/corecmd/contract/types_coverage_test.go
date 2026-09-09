@@ -9,7 +9,7 @@ import (
 	"testing"
 )
 
-func TestFrameworkResultSpecValidationEdges(t *testing.T) {
+func TestCrossPlatformCoverageFrameworkResultSpecValidationEdges(t *testing.T) {
 	if got, err := NormalizeResultSpec(nil, ""); err != nil || got != nil {
 		t.Fatalf("NormalizeResultSpec(nil)=(%v,%v)", got, err)
 	}
@@ -41,7 +41,7 @@ func TestFrameworkResultSpecValidationEdges(t *testing.T) {
 	}
 }
 
-func TestFrameworkResultSchemaDescriptionValidationEdges(t *testing.T) {
+func TestCrossPlatformCoverageFrameworkResultSchemaDescriptionValidationEdges(t *testing.T) {
 	base := func(raw string) *ResultSpec {
 		return &ResultSpec{Outcomes: []ResultOutcome{ResultOutcomeSuccess}, DataSchema: json.RawMessage(raw)}
 	}
@@ -95,7 +95,7 @@ func TestFrameworkResultSchemaDescriptionValidationEdges(t *testing.T) {
 	}
 }
 
-func TestNormalizePaginationSpecNilIsAbsent(t *testing.T) {
+func TestCrossPlatformCoverageNormalizePaginationSpecNilIsAbsent(t *testing.T) {
 	if got, err := NormalizePaginationSpec(nil, ""); err != nil || got != nil {
 		t.Fatalf("NormalizePaginationSpec(nil) = (%#v, %v)", got, err)
 	}

@@ -15,7 +15,7 @@ package helpers
 
 import "testing"
 
-func TestValidateNaming(t *testing.T) {
+func TestCrossPlatformCoverageValidateNaming(t *testing.T) {
 	t.Parallel()
 
 	cases := []struct {
