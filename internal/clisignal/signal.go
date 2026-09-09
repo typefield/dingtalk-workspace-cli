@@ -11,9 +11,14 @@ import (
 	"syscall"
 )
 
+var (
+	escalateFindProcess = os.FindProcess
+	escalateExitProcess = os.Exit
+)
+
 func Escalate(sig os.Signal) {
 	signal.Reset(sig)
-	Redeliver(sig, os.FindProcess, os.Exit)
+	Redeliver(sig, escalateFindProcess, escalateExitProcess)
 }
 
 // Redeliver asks the current process to handle the second signal

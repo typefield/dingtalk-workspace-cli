@@ -127,13 +127,18 @@ func TestCrossPlatformCoverageTimingCollectorContextIntegration(t *testing.T) {
 
 	// Use convenience functions
 	RecordTiming(ctx, "ctx_op", 30*time.Millisecond)
+	RecordNestedTiming(ctx, "ctx_nested", 5*time.Millisecond)
+	RecordNestedTiming(context.Background(), "no_collector", time.Millisecond)
 	stop := StartTiming(ctx, "ctx_timed")
 	time.Sleep(2 * time.Millisecond)
 	stop()
 
 	entries := tc.Entries()
-	if len(entries) != 2 {
-		t.Errorf("expected 2 entries, got %d", len(entries))
+	if len(entries) != 3 {
+		t.Errorf("expected 3 entries, got %d", len(entries))
+	}
+	if !entries[1].Nested {
+		t.Fatalf("nested timing was not recorded: %+v", entries[1])
 	}
 }
 

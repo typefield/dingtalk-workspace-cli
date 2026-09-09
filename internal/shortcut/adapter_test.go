@@ -247,6 +247,12 @@ func TestCrossPlatformCoverageFromShortcutMatchesMountSurface(t *testing.T) {
 
 // TestCrossPlatformCoverageFromShortcutEmpty covers the empty flag/constraint
 // short-circuits and the read-risk default.
+func TestCrossPlatformCoverageFromShortcutNilPointerReturnsEmptySpec(t *testing.T) {
+	if spec := fromShortcut(nil); spec.Use != "" || spec.RunE != nil || spec.Flags != nil {
+		t.Fatalf("nil shortcut spec = %#v", spec)
+	}
+}
+
 func TestCrossPlatformCoverageFromShortcutEmpty(t *testing.T) {
 	cs := FromShortcut(Shortcut{Service: "x", Command: "+bare", Description: "bare"})
 	if cs.Flags != nil {
