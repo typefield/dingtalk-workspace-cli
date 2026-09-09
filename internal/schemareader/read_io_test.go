@@ -96,4 +96,26 @@ func TestCrossPlatformCoverageExpectedIdentityAndMalformedOptional(t *testing.T)
 	}); !errors.Is(err, ErrInvalidIdentity) {
 		t.Fatalf("malformed optional identity = %v", err)
 	}
+
+	if _, err := ReadProduct(nil, Identity{}, schemaruntime.DecodedSchemaMeta{}, "drive"); err == nil {
+		t.Fatal("unknown product")
+	}
+	if _, ok := Descriptor(schemaruntime.DecodedSchemaMeta{}, "drive"); ok {
+		t.Fatal("missing descriptor")
+	}
+	if _, err := ReadCommandPayloadRange(nil, Identity{}, schemaruntime.DecodedSchemaPayloadIndex{}, "drive"); err == nil {
+		t.Fatal("unknown payload product")
+	}
+	if _, err := ReadRenderedLeafRange(nil, Identity{}, schemaruntime.DecodedSchemaPayloadIndex{}, "drive", schemaruntime.RenderedLeafRef{}); err == nil {
+		t.Fatal("unknown rendered product")
+	}
+	if _, err := ReadCommandPayload(nil, Identity{}, schemaruntime.DecodedSchemaPayloadIndex{}, "drive"); err == nil {
+		t.Fatal("nil cache command payload")
+	}
+	if _, err := ReadRenderedLeaf(nil, Identity{}, schemaruntime.DecodedSchemaPayloadIndex{}, "drive", schemaruntime.RenderedLeafRef{}); err == nil {
+		t.Fatal("nil cache rendered leaf")
+	}
+	if _, err := ReadPayloadIndex(nil, Identity{}); err == nil {
+		t.Fatal("nil cache payload index")
+	}
 }

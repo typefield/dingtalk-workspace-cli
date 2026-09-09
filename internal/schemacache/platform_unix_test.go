@@ -796,10 +796,20 @@ func TestCrossPlatformCoveragePlatformGOOSAndOverrideAndInvalidIdentity(t *testi
 			t.Fatal("relative override must fail")
 		}
 	})
-	t.Run("uncleanOverride", func(t *testing.T) {
-		t.Setenv("DWS_SCHEMA_CACHE_DIR", "/tmp/foo/../bar")
+	t.Run("absoluteOverride", func(t *testing.T) {
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", privateTestBase(t))
+		cache, err := Open("official")
+		if err != nil {
+			t.Fatal(err)
+		}
+		t.Cleanup(func() { _ = cache.Close() })
+	})
+	t.Run("userCacheDirError", func(t *testing.T) {
+		old := userCacheDir
+		userCacheDir = func() (string, error) { return "", errors.New("missing user cache") }
+		t.Cleanup(func() { userCacheDir = old })
 		if _, err := Open("official"); err == nil {
-			t.Fatal("unclean override must fail")
+			t.Fatal("user cache directory error")
 		}
 	})
 
@@ -811,8 +821,17 @@ func TestCrossPlatformCoveragePlatformGOOSAndOverrideAndInvalidIdentity(t *testi
 	if err := lock.Release(); err != nil {
 		t.Fatal(err)
 	}
-	if _, err := cache.ReadMeta(ExpectedIdentity{}, ArtifactExpectation{}); err == nil {
-		t.Fatal("zero identity ReadMeta")
+	if _, err := cache.ReadMeta(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation ReadMeta")
+	}
+	if _, err := cache.OpenRegistry(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(identity, ArtifactExpectation{}); err == nil {
+		t.Fatal("invalid expectation OpenPayloads")
+	}
+	if err := cache.WriteArtifact(identity, Artifact{}); err == nil {
+		t.Fatal("invalid WriteArtifact")
 	}
 	if _, err := cache.OpenRegistry(identity, ArtifactExpectation{Kind: KindMeta}); err == nil {
 		t.Fatal("kind mismatch OpenRegistry")
@@ -904,5 +923,21 @@ func TestCrossPlatformCoverageEINTRRetriesOnPreadAndWrite(t *testing.T) {
 	}
 	if string(got) != string(meta.Payload) {
 		t.Fatalf("Meta after EINTR = %q", got)
+	}
+}
+
+type failPreadIO struct{ unixIO }
+
+func (f failPreadIO) pread(int, []byte, int64) (int, error) { return 0, errors.New("pread failed") }
+
+func TestCrossPlatformCoverageReadMetaRejectsPreadError(t *testing.T) {
+	cache, _, identity := openTestCache(t, failPreadIO{unixIO: realUnixIO{}})
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	if err := cache.Publish(identity, registry, meta); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := cache.ReadMeta(identity, meta.Expectation); !errors.Is(err, ErrInvalidArtifact) {
+		t.Fatalf("ReadMeta pread error = %v", err)
 	}
 }

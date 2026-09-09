@@ -261,4 +261,38 @@ func TestCrossPlatformCoverageSchemaCacheDeliveryFailClosedHelpers(t *testing.T)
 			t.Fatalf("repair with live catalog = %v %v", value, err)
 		}
 	}
+
+	previousLive := runtimeDeliveryLiveCatalog.Swap(nil)
+	t.Cleanup(func() { runtimeDeliveryLiveCatalog.Store(previousLive) })
+	openFailedRuntime := &schemaCacheRuntime{
+		options:  SchemaCacheOptions{Enabled: true},
+		products: make(map[string]*schemaCacheProductLoad),
+		payloads: make(map[string]*schemaCachePayloadLoad),
+	}
+	openFailedRuntime.openOnce.Do(func() { openFailedRuntime.openErr = errors.New("open failed") })
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{
+		options: SchemaCacheOptions{Enabled: true},
+		runtime: openFailedRuntime,
+	})
+	if _, err := deliverySchemaAllPayload(); err != nil {
+		t.Fatalf("all repair without live catalog: %v", err)
+	}
+	runtimeDeliveryLiveCatalog.Store(nil)
+	if _, err := deliverySchemaOverviewPayload(); err != nil {
+		t.Fatalf("overview repair without live catalog: %v", err)
+	}
+	runtimeDeliveryLiveCatalog.Store(nil)
+	runtimeDeliveryLiveCatalog.Store(nil)
+	_, _ = queryDeliverySchemaPayload([]string{"sample group run"})
+	runtimeDeliveryLiveCatalog.Store(nil)
+	_, _ = queryDeliverySchemaPayload(nil)
+	runtimeDeliveryLiveCatalog.Store(nil)
+	ResolveMeta("sample group run")
+
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{
+		runtime: &schemaCacheRuntime{prewarm: &schemaCachePrewarm{done: done, payloads: handle}},
+	})
+	if SchemaCachePrewarmPayloadsHandleForTest() != handle {
+		t.Fatal("prewarm payloads handle")
+	}
 }
