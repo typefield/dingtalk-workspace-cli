@@ -178,4 +178,69 @@ func TestCrossPlatformCoverageSchemaCacheDeliveryHitRepairAndPlatformFill(t *tes
 	if !ok || resolvedMeta.Identity.Canonical != "sample.run" {
 		t.Fatalf("ResolveMeta repair recheck = %#v %v", resolvedMeta, ok)
 	}
+
+	if _, err := r.queryPayload(meta, "sample run", false); err != nil {
+		t.Fatalf("uncached queryPayload: %v", err)
+	}
+	if _, err := r.payloadsHandle(); err != nil {
+		t.Fatalf("payloads handle: %v", err)
+	}
+
+	emptyIdentity := identity
+	emptyIdentity.Edition = "emptyed"
+	if err := emptyIdentity.Validate(); err != nil {
+		t.Fatal(err)
+	}
+	emptyCache, err := schemacache.Open(emptyIdentity.Edition)
+	if err != nil {
+		t.Fatal(err)
+	}
+	t.Cleanup(func() { _ = emptyCache.Close() })
+	emptyRuntime := &schemaCacheRuntime{
+		options:  SchemaCacheOptions{Enabled: true, Identity: emptyIdentity, LockTimeout: time.Second},
+		products: make(map[string]*schemaCacheProductLoad),
+		payloads: make(map[string]*schemaCachePayloadLoad),
+	}
+	emptyRuntime.openOnce.Do(func() { emptyRuntime.cache = emptyCache })
+	if _, err := emptyRuntime.payloadsHandle(); err == nil {
+		t.Fatal("empty payloads handle")
+	}
+
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{
+		options: SchemaCacheOptions{Enabled: true, Identity: emptyIdentity, GOOS: runtime.GOOS, GOARCH: runtime.GOARCH},
+		runtime: &schemaCacheRuntime{options: SchemaCacheOptions{Enabled: true, Identity: emptyIdentity}},
+	})
+	PrewarmSchemaCache()
+	AwaitSchemaCachePrewarmForTest()
+
+	allOnce := &schemaCacheRuntime{
+		options:  SchemaCacheOptions{Enabled: true, Identity: identity, LockTimeout: time.Second},
+		products: make(map[string]*schemaCacheProductLoad),
+		payloads: make(map[string]*schemaCachePayloadLoad),
+	}
+	allOnce.openOnce.Do(func() { allOnce.cache = cache })
+	allOnce.allOnce.Do(func() { allOnce.allErr = errors.New("stale all") })
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{
+		options: SchemaCacheOptions{Enabled: true, Identity: identity},
+		runtime: allOnce,
+	})
+	runtimeDeliveryLiveCatalog.Store(nil)
+	if _, err := deliverySchemaAllPayload(); err != nil {
+		t.Fatalf("all repair recheck: %v", err)
+	}
+	runtimeDeliveryLiveCatalog.Store(nil)
+	overviewOnce := &schemaCacheRuntime{
+		options:  SchemaCacheOptions{Enabled: true, Identity: identity, LockTimeout: time.Second},
+		products: make(map[string]*schemaCacheProductLoad),
+		payloads: make(map[string]*schemaCachePayloadLoad),
+	}
+	overviewOnce.openOnce.Do(func() { overviewOnce.cache = cache })
+	overviewOnce.metaOnce.Do(func() { overviewOnce.metaErr = errors.New("stale meta") })
+	schemaCacheRegistrationValue.Store(&schemaCacheRegistration{
+		options: SchemaCacheOptions{Enabled: true, Identity: identity},
+		runtime: overviewOnce,
+	})
+	if _, err := deliverySchemaOverviewPayload(); err != nil {
+		t.Fatalf("overview repair recheck: %v", err)
+	}
 }

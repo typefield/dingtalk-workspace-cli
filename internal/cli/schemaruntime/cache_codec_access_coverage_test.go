@@ -374,6 +374,121 @@ func TestCrossPlatformCoverageSchemaCacheShardAccessAndModelValidate(t *testing.
 	if _, err := (SchemaRegistry{Products: []ProductSpec{{}}}).ToPayload(); err == nil {
 		t.Fatal("invalid product payload")
 	}
+	aliasTool := base
+	aliasTool.Identity.IsAlias = true
+	if _, err := (SchemaRegistry{Products: []ProductSpec{{ID: "sample", Tools: []ToolSpec{aliasTool}}}}).Index(); err == nil {
+		t.Fatal("alias canonical tool")
+	}
+	splitPath := base
+	splitPath.Identity.PrimaryCLIPath = "sample other"
+	if _, err := (SchemaRegistry{Products: []ProductSpec{{ID: "sample", Tools: []ToolSpec{splitPath}}}}).Index(); err == nil {
+		t.Fatal("cli/primary mismatch")
+	}
+	badPageKind := base
+	badPageKind.Pagination = &contract.PaginationSpec{Kind: "nope", CursorParameter: "cursor"}
+	badPageKind.Parameters = []ParameterSpec{{Name: "cursor"}}
+	if err := badPageKind.Validate(); err == nil {
+		t.Fatal("invalid pagination kind")
+	}
+	selected := true
+	winner := json.RawMessage(`"Run sample"`)
+	badProv := base
+	badProv.Title = "Run sample"
+	badProv.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: json.RawMessage(`"other"`), Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected}},
+	}}
+	if err := badProv.Validate(); err == nil {
+		t.Fatal("provenance winner mismatch")
+	}
+	incompleteProv := base
+	incompleteProv.Title = "Run sample"
+	incompleteProv.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected}},
+	}}
+	if err := incompleteProv.Validate(); err == nil {
+		t.Fatal("incomplete provenance")
+	}
+	noCand := base
+	noCand.Title = "Run sample"
+	noCand.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+	}}
+	if err := noCand.Validate(); err == nil {
+		t.Fatal("no provenance candidates")
+	}
+	badCand := base
+	badCand.Title = "Run sample"
+	notSel := false
+	badCand.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{
+			{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected},
+			{Value: json.RawMessage(`{`), Source: "other", Precedence: "1", Selected: &notSel},
+		},
+	}}
+	if err := badCand.Validate(); err == nil {
+		t.Fatal("invalid candidate json")
+	}
+	selMismatch := base
+	selMismatch.Title = "Run sample"
+	selMismatch.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{{Value: json.RawMessage(`"nope"`), Source: "contract_final", Precedence: "100", Selected: &selected}},
+	}}
+	if err := selMismatch.Validate(); err == nil {
+		t.Fatal("selected candidate mismatch")
+	}
+	badOver := base
+	badOver.Title = "Run sample"
+	badOver.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates:           []contract.FieldCandidateProvenance{{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected}},
+		OverriddenCandidates: []contract.FieldCandidateProvenance{{Value: json.RawMessage(`{`)}},
+	}}
+	if err := badOver.Validate(); err == nil {
+		t.Fatal("invalid overridden candidate")
+	}
+	selOver := base
+	selOver.Title = "Run sample"
+	selOver.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates:           []contract.FieldCandidateProvenance{{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected}},
+		OverriddenCandidates: []contract.FieldCandidateProvenance{{Value: json.RawMessage(`"old"`), Selected: &selected}},
+	}}
+	if err := selOver.Validate(); err == nil {
+		t.Fatal("selected overridden candidate")
+	}
+	twoSel := base
+	twoSel.Title = "Run sample"
+	twoSel.FieldProvenance = map[string]contract.FieldProvenance{"title": {
+		Value: winner, Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{
+			{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected},
+			{Value: winner, Source: "contract_final", Precedence: "100", Selected: &selected},
+		},
+	}}
+	if err := twoSel.Validate(); err == nil {
+		t.Fatal("two selected candidates")
+	}
+	productProv := ProductSpec{ID: "sample", Selection: contract.SelectionSpec{UseWhen: []string{"u"}}, FieldProvenance: map[string]contract.FieldProvenance{"use_when": {
+		Value: json.RawMessage(`["nope"]`), Source: "contract_final", Precedence: "100", Resolution: "selected",
+		Candidates: []contract.FieldCandidateProvenance{{Value: json.RawMessage(`["u"]`), Source: "contract_final", Precedence: "100", Selected: &selected}},
+	}}}
+	if _, err := (SchemaRegistry{Products: []ProductSpec{productProv}}).Index(); err == nil {
+		t.Fatal("product provenance mismatch")
+	}
+	if _, err := (SchemaRegistry{Kind: "schema", Products: []ProductSpec{{ID: "mail", Description: "mail product"}}}).ToOverviewPayload(); err != nil {
+		t.Fatal(err)
+	}
+	weirdJSON := base
+	if _, err := (SchemaRegistry{Products: []ProductSpec{{
+		ID: "sample", Tools: []ToolSpec{weirdJSON},
+		FieldProvenance: map[string]contract.FieldProvenance{"custom": {Value: json.RawMessage(`{`)}},
+	}}}).ToPayload(); err == nil {
+		t.Fatal("invalid product provenance json")
+	}
 
 	built, meta := buildFixtureCache(t, allFieldsRegistry())
 	productID := meta.ProductDescriptors[0].ProductID
@@ -388,9 +503,62 @@ func TestCrossPlatformCoverageSchemaCacheShardAccessAndModelValidate(t *testing.
 		t.Fatal("missing locator path")
 	}
 	miss := meta
-	miss.LocatorProductByPath = map[string]string{"ghost": productID}
+	miss.LocatorProductByPath = map[string]string{}
+	for path, id := range meta.LocatorProductByPath {
+		miss.LocatorProductByPath[path] = id
+	}
+	miss.LocatorProductByPath["ghost"] = productID
 	if _, ok := miss.CommandMeta("ghost"); ok {
 		t.Fatal("path missing from shard")
+	}
+	emptyKey := meta
+	emptyShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
+	var emptyList schemacachepb.CommandMetaEntryList
+	if err := proto.Unmarshal(emptyShard.Entries, &emptyList); err != nil {
+		t.Fatal(err)
+	}
+	emptyList.Items[0].LookupPath = ""
+	emptyBlob, err := MarshalSchemaCacheDeterministic(&emptyList)
+	if err != nil {
+		t.Fatal(err)
+	}
+	emptyShard.Entries = emptyBlob
+	emptyKey.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{emptyShard}
+	if _, ok := emptyKey.CommandMeta(samplePath); ok {
+		t.Fatal("empty lookup path")
+	}
+	wrongProduct := meta
+	wrongShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
+	var wrongList schemacachepb.CommandMetaEntryList
+	if err := proto.Unmarshal(wrongShard.Entries, &wrongList); err != nil {
+		t.Fatal(err)
+	}
+	wrongList.Items[0].ProductId = "other"
+	wrongBlob, err := MarshalSchemaCacheDeterministic(&wrongList)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrongShard.Entries = wrongBlob
+	wrongProduct.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{wrongShard}
+	if _, ok := wrongProduct.CommandMeta(samplePath); ok {
+		t.Fatal("identity product mismatch")
+	}
+	aliasMiss := meta
+	aliasShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
+	var aliasList schemacachepb.CommandMetaEntryList
+	if err := proto.Unmarshal(aliasShard.Entries, &aliasList); err != nil {
+		t.Fatal(err)
+	}
+	if len(aliasList.Items[0].Aliases) > 0 {
+		aliasMiss.LocatorProductByPath = map[string]string{}
+		for path, id := range meta.LocatorProductByPath {
+			aliasMiss.LocatorProductByPath[path] = id
+		}
+		aliasMiss.LocatorProductByPath[aliasList.Items[0].Aliases[0]] = "other"
+		aliasMiss.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{aliasShard}
+		if _, ok := aliasMiss.CommandMeta(samplePath); ok {
+			t.Fatal("alias locator mismatch")
+		}
 	}
 	corrupt := meta
 	corruptShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
@@ -399,6 +567,10 @@ func TestCrossPlatformCoverageSchemaCacheShardAccessAndModelValidate(t *testing.
 	if _, ok := corrupt.CommandMeta(samplePath); ok {
 		t.Fatal("corrupt shard entries")
 	}
+	badMaterialize := meta
+	badMaterialize.CommandMetaByPath = map[string]CommandMeta{}
+	badMaterialize.commandEntryShards = []*schemacachepb.CommandMetaEntryShard{corruptShard}
+	badMaterialize.MaterializeCommandMeta()
 	count := meta
 	countShard := proto.Clone(meta.commandEntryShards[0]).(*schemacachepb.CommandMetaEntryShard)
 	countShard.EntryCount++

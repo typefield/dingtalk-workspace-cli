@@ -886,6 +886,31 @@ func TestCrossPlatformCoveragePlatformGOOSAndOverrideAndInvalidIdentity(t *testi
 	}
 }
 
+func TestCrossPlatformCoverageValidCacheRejectsZeroIdentity(t *testing.T) {
+	cache, _, identity := openTestCache(t, nil)
+	meta := testArtifact(KindMeta, []byte("meta"))
+	registry := testArtifact(KindRegistry, []byte("registry"))
+	payloads := testArtifact(KindPayloads, []byte("payloads"))
+	if err := cache.Publish(identity, registry, meta, payloads); err != nil {
+		t.Fatal(err)
+	}
+	zero := ExpectedIdentity{}
+	if _, err := cache.ReadMeta(zero, meta.Expectation); err == nil {
+		t.Fatal("zero identity ReadMeta")
+	}
+	if _, err := cache.OpenRegistry(zero, registry.Expectation); err == nil {
+		t.Fatal("zero identity OpenRegistry")
+	}
+	if _, err := cache.OpenPayloads(zero, payloads.Expectation); err == nil {
+		t.Fatal("zero identity OpenPayloads")
+	}
+	wrong := identity
+	wrong.EditionSHA256 = sha256.Sum256([]byte("other-edition"))
+	if err := cache.WriteArtifact(wrong, meta); !errors.Is(err, ErrIdentityMismatch) {
+		t.Fatalf("edition mismatch WriteArtifact = %v", err)
+	}
+}
+
 type eintrOnceIO struct {
 	unixIO
 	preadOnce sync.Once
@@ -968,6 +993,15 @@ type failFlockIO struct{ unixIO }
 
 func (failFlockIO) flock(int, int) error { return errors.New("flock") }
 
+type unlockFailIO struct{ unixIO }
+
+func (u unlockFailIO) flock(fd int, how int) error {
+	if how == unix.LOCK_UN {
+		return errors.New("unlock")
+	}
+	return u.unixIO.flock(fd, how)
+}
+
 type zeroWriteIO struct{ unixIO }
 
 func (zeroWriteIO) write(int, []byte) (int, error) { return 0, nil }
@@ -1032,5 +1066,55 @@ func TestCrossPlatformCoverageOpenDirectoryLockAndWriteErrorBranches(t *testing.
 	cache.backend.(*unixCache).ops = failFlockIO{unixIO: realUnixIO{}}
 	if _, err := cache.AcquireLock(context.Background(), time.Second); err == nil {
 		t.Fatal("flock")
+	}
+
+	t.Run("missingAncestryMkdir", func(t *testing.T) {
+		old := platformIO
+		platformIO = failMkdirIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", filepath.Join(privateTestBase(t), "missing-child"))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("missing ancestry mkdir")
+		}
+	})
+	t.Run("missingAncestryExist", func(t *testing.T) {
+		old := platformIO
+		platformIO = existThenMissingIO{unixIO: realUnixIO{}}
+		t.Cleanup(func() { platformIO = old })
+		t.Setenv("DWS_SCHEMA_CACHE_DIR", filepath.Join(privateTestBase(t), "missing-child"))
+		if _, err := Open("official"); err == nil {
+			t.Fatal("missing ancestry EEXIST")
+		}
+	})
+
+	lockCache, _, _ := openTestCache(t, nil)
+	held, err := lockCache.AcquireLock(context.Background(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if _, err := lockCache.AcquireLock(context.Background(), 0); !errors.Is(err, ErrLockTimeout) {
+		t.Fatalf("zero timeout lock = %v", err)
+	}
+	if err := held.Release(); err != nil {
+		t.Fatal(err)
+	}
+	unlockCache, _, _ := openTestCache(t, unlockFailIO{unixIO: realUnixIO{}})
+	held, err = unlockCache.AcquireLock(context.Background(), time.Second)
+	if err != nil {
+		t.Fatal(err)
+	}
+	if err := held.Release(); err == nil {
+		t.Fatal("unlock flock")
+	}
+}
+
+type failRandomIO struct{ unixIO }
+
+func (failRandomIO) random([]byte) (int, error) { return 0, errors.New("rand") }
+
+func TestCrossPlatformCoverageWriteArtifactRandomFailure(t *testing.T) {
+	cache, _, identity := openTestCache(t, failRandomIO{unixIO: realUnixIO{}})
+	if err := cache.WriteArtifact(identity, testArtifact(KindMeta, []byte("meta"))); err == nil {
+		t.Fatal("random failure")
 	}
 }
