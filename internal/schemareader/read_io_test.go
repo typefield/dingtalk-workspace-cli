@@ -219,4 +219,29 @@ func TestCrossPlatformCoverageReadMetaHashMismatchAndProductRangeFailure(t *test
 	if _, err := ReadProduct(cache, matching, meta, "sample"); err == nil {
 		t.Fatal("product range digest mismatch")
 	}
+
+	garbage := []byte("not-a-valid-schema-meta-protobuf!!")
+	garbageIdentity := matching
+	garbageIdentity.Meta = schemaCacheArtifactExpectation(schemacache.KindMeta, uint64(len(garbage)), sha256.Sum256(garbage))
+	if err := cache.Publish(garbageIdentity.ExpectedIdentity(), schemacache.Artifact{Expectation: garbageIdentity.Registry, Payload: built.ProductShards}, schemacache.Artifact{Expectation: garbageIdentity.Meta, Payload: garbage}, schemacache.Artifact{Expectation: garbageIdentity.Payload, Payload: built.PayloadShards}); err != nil {
+		t.Fatal(err)
+	}
+	if _, err := ReadMeta(cache, garbageIdentity); err == nil {
+		t.Fatal("decode meta")
+	}
+
+	if err := cache.Publish(matching.ExpectedIdentity(), schemacache.Artifact{Expectation: matching.Registry, Payload: built.ProductShards}, schemacache.Artifact{Expectation: matching.Meta, Payload: built.Meta}, schemacache.Artifact{Expectation: matching.Payload, Payload: built.PayloadShards}); err != nil {
+		t.Fatal(err)
+	}
+	index, err := ReadPayloadIndex(cache, matching)
+	if err != nil {
+		t.Fatal(err)
+	}
+	index.PayloadDescriptors[0].HeaderSHA256[0] ^= 1
+	if _, err := ReadCommandPayload(cache, matching, index, "sample"); err == nil {
+		t.Fatal("payload range digest")
+	}
+	if _, err := ReadRenderedLeaf(cache, matching, index, "sample", schemaruntime.RenderedLeafRef{Length: 4, SHA256: sha256.Sum256([]byte("nope"))}); err == nil {
+		t.Fatal("rendered leaf range")
+	}
 }

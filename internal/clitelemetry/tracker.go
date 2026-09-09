@@ -12,6 +12,8 @@ import (
 	"gitlab.alibaba-inc.com/aes/aem-go-sdk/clitrack"
 )
 
+var resolveReadOnly = profilemetadata.ResolveReadOnly
+
 type Config = clitrack.Config
 
 type Identity struct {
@@ -36,7 +38,7 @@ func DefaultIdentity(configDir string) (identity Identity) {
 			identity = Identity{}
 		}
 	}()
-	profile, err := profilemetadata.ResolveReadOnly(configDir, "")
+	profile, err := resolveReadOnly(configDir, "")
 	if err != nil {
 		return Identity{}
 	}
