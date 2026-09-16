@@ -1,0 +1,1310 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"context"
+	"crypto/rand"
+	"encoding/hex"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"log/slog"
+	"net/http"
+	"os"
+	"strings"
+	"sync"
+	"time"
+
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/audit"
+	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/logging"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/publishedmcp"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/safety"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/transport"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/agentproduct"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/configmeta"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
+)
+
+func init() {
+	runnerHandlePatAuthCheck = handlePatAuthCheck
+	runnerRetryWithPatAuthRetry = retryWithPatAuthRetry
+
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DWS_RUNTIME_CONTENT_SCAN",
+		Category:    configmeta.CategoryRuntime,
+		Description: "启用 MCP 响应内容安全扫描",
+		Example:     "true",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DWS_RUNTIME_CONTENT_SCAN_ENFORCE",
+		Category:    configmeta.CategoryRuntime,
+		Description: "内容安全扫描发现问题时阻断响应",
+		Example:     "true",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DWS_RUNTIME_CONTENT_SCAN_REPORT",
+		Category:    configmeta.CategoryRuntime,
+		Description: "在 JSON 输出中包含安全扫描报告",
+		Example:     "true",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DINGTALK_AGENT",
+		Category:    configmeta.CategoryExternal,
+		Description: "业务 Agent 名称；仅用于 x-dingtalk-agent 请求头，与 claw-type/host-owned PAT 判定无关",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DINGTALK_TRACE_ID",
+		Category:    configmeta.CategoryExternal,
+		Description: "MCP 请求 x-dingtalk-trace-id 头",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DINGTALK_SESSION_ID",
+		Category:    configmeta.CategoryExternal,
+		Description: "MCP 请求 x-dingtalk-session-id 头",
+	})
+	configmeta.Register(configmeta.ConfigItem{
+		Name:        "DINGTALK_MESSAGE_ID",
+		Category:    configmeta.CategoryExternal,
+		Description: "MCP 请求 x-dingtalk-message-id 头",
+	})
+}
+
+const (
+	runtimeContentScanEnv             = "DWS_RUNTIME_CONTENT_SCAN"
+	runtimeContentScanEnforceEnv      = "DWS_RUNTIME_CONTENT_SCAN_ENFORCE"
+	runtimeContentScanReportOutputEnv = "DWS_RUNTIME_CONTENT_SCAN_REPORT"
+
+	// Environment variables for MCP request headers (passed from caller)
+	envDingtalkAgent     = "DINGTALK_AGENT"
+	envDingtalkTraceID   = "DINGTALK_TRACE_ID"
+	envDingtalkSessionID = "DINGTALK_SESSION_ID"
+	envDingtalkMessageID = "DINGTALK_MESSAGE_ID"
+	envDWSSessionID      = "DWS_SESSION_ID"
+	envRewindSessionID   = "REWIND_SESSION_ID"
+
+	// Environment variables for third-party channel integration
+	envDWSChannel = "DWS_CHANNEL"
+)
+
+// hostOwnedPATDecisionOnce ensures the host-owned PAT decision is logged at
+// most once per CLI process. The log line is emitted at Debug level so
+// `--debug` (or `--verbose`) surfaces it on stderr; the file logger at
+// ~/.dws/logs/dws.log captures it unconditionally at DEBUG. It records
+// ONLY the derived booleans — never the env value, token, client-id or
+// flow-id — so logs remain safe to attach to issues.
+var hostOwnedPATDecisionOnce sync.Once
+
+// logHostOwnedPATDecisionOnce emits the single-shot debug trace. It is
+// called lazily from the runtime Run path (which executes AFTER
+// PersistentPreRunE has applied --debug / --verbose via configureLogLevel)
+// so the line actually surfaces when the user asks for it.
+func logHostOwnedPATDecisionOnce() {
+	hostOwnedPATDecisionOnce.Do(func() {
+		slog.Debug("runtime.host_owned_pat",
+			"hostOwned", authpkg.HostOwnsPATFlow(),
+			"agentCodeEnvPresent", authpkg.AgentCodeEnvPresent(),
+		)
+	})
+}
+
+func newCommandRunnerWithFlags(flags *GlobalFlags) executor.Runner {
+	var httpClient *http.Client
+	if flags != nil && flags.Timeout > 0 {
+		httpClient = &http.Client{Timeout: time.Duration(flags.Timeout) * time.Second}
+	}
+	transportClient := transport.NewClient(httpClient)
+	transportClient.FileLogger = FileLoggerInstance()
+	return &runtimeRunner{
+		transport:          transportClient,
+		globalFlags:        flags,
+		scanner:            newRuntimeContentScanner(),
+		enforceContentScan: runtimeFlagEnabled(os.Getenv(runtimeContentScanEnforceEnv), false),
+		includeScanReport:  runtimeFlagEnabled(os.Getenv(runtimeContentScanReportOutputEnv), false),
+	}
+}
+
+type runtimeRunner struct {
+	transport          *transport.Client
+	globalFlags        *GlobalFlags
+	fallback           executor.Runner
+	scanner            safety.Scanner
+	enforceContentScan bool
+	includeScanReport  bool
+	auditSink          audit.Sink
+	agentMetadata      *agentMetadataSnapshot
+}
+
+var runnerListProductTools = (*runtimeRunner).listProductTools
+
+// ResolveToolProduct discovers the exact tool before dispatch and returns the
+// first compatible product in caller-supplied preference order. Discovery is
+// read-only; callers must execute the subsequent tools/call only once.
+func (r *runtimeRunner) ResolveToolProduct(ctx context.Context, productIDs []string, toolName string) (string, error) {
+	if ctx == nil {
+		ctx = context.Background()
+	}
+	toolName = strings.TrimSpace(toolName)
+	if toolName == "" {
+		return "", apperrors.NewValidation("MCP tool name is required for capability routing")
+	}
+	if r != nil && r.globalFlags != nil && r.globalFlags.Mock {
+		if len(productIDs) == 0 {
+			return "", apperrors.NewDiscovery(fmt.Sprintf("no MCP product candidates for tool %q", toolName))
+		}
+		return productIDs[0], nil
+	}
+	// Tool capabilities are server-scoped, not account-scoped. For a
+	// multi-profile invocation, discover once with the first resolved profile;
+	// the subsequent runner still executes exactly once per selected profile.
+	rawProfile := authpkg.RuntimeProfile()
+	selections, multi, err := runnerResolveMultiProfileSelections(defaultConfigDir(), rawProfile)
+	if err != nil {
+		return "", apperrors.NewValidation(err.Error())
+	}
+	discoveryProfile := rawProfile
+	if multi {
+		if len(selections) == 0 {
+			return "", apperrors.NewValidation("multi-profile capability routing has no resolved profile")
+		}
+		discoveryProfile = profileRuntimeSelector(selections[0].Profile, selections[0].Selector)
+	}
+	checked := make([]string, 0, len(productIDs))
+	discoveryFailures := make([]string, 0, len(productIDs))
+	for _, productID := range productIDs {
+		productID = strings.TrimSpace(productID)
+		if productID == "" {
+			continue
+		}
+		checked = append(checked, productID)
+		tools, err := runnerListProductTools(r, ctx, productID, toolName, discoveryProfile)
+		if err != nil {
+			var typed *apperrors.Error
+			if errors.As(err, &typed) && typed.Reason == "endpoint_not_resolved" {
+				continue
+			}
+			discoveryFailures = append(discoveryFailures, fmt.Sprintf("%s: %v", productID, err))
+			continue
+		}
+		for _, tool := range tools {
+			if tool.Name == toolName {
+				return productID, nil
+			}
+		}
+	}
+	if len(discoveryFailures) > 0 {
+		return "", apperrors.NewDiscovery(
+			fmt.Sprintf("cannot establish a compatible route for tool %q after tools/list failures: %s", toolName, strings.Join(discoveryFailures, "; ")),
+			apperrors.WithOperation("tools/list"),
+			apperrors.WithReason("mcp_tool_discovery_failed"),
+		)
+	}
+	return "", apperrors.NewDiscovery(
+		fmt.Sprintf("tool %q is not exposed by compatible MCP products %v", toolName, checked),
+		apperrors.WithOperation("tools/list"),
+		apperrors.WithReason("mcp_tool_not_found"),
+	)
+}
+
+func (r *runtimeRunner) listProductTools(ctx context.Context, productID, toolName, profile string) ([]transport.ToolDescriptor, error) {
+	if r == nil || r.transport == nil {
+		return nil, fmt.Errorf("runtime transport is not configured")
+	}
+	// Resolve by product only. Tool-level fallback would make a missing helper
+	// product appear to own a tool merely because another product registered it.
+	endpoint, ok := directRuntimeEndpoint(productID, "")
+	if !ok {
+		return nil, endpointNotResolvedError(productID, toolName, "capability discovery endpoint is unavailable")
+	}
+	snapshot, err := runnerResolveAuthSnapshotForProfile(r, ctx, profile)
+	if err != nil {
+		return nil, tokenResolutionError(err)
+	}
+	if !hasDirectRuntimeEndpointOverride(productID) && isDingTalkMCPGatewayEndpoint(endpoint) &&
+		(snapshot.LoginRegionKnown || authpkg.MCPBaseURLOverride() != "") {
+		endpoint = activeDingTalkGatewayEndpointForLoginRegion(endpoint, snapshot.LoginRegion)
+	}
+	invocation := executor.NewHelperInvocation("overlay."+productID+".tools-list", productID, toolName, nil)
+	headers := resolveMCPRequestHeadersForInvocation(invocation)
+	client := publishedmcp.New(r.transport, snapshot.AccessToken, headers)
+	tools, err := client.Tools(ctx, endpoint)
+	if err != nil {
+		return nil, err
+	}
+	return tools.Tools, nil
+}
+
+var (
+	runnerResolveMultiProfileSelections = resolveMultiProfileSelections
+	runnerResolveProfile                = authpkg.ResolveProfile
+	runnerGetCachedRuntimeToken         = getCachedRuntimeToken
+	runnerResolveAuthSnapshot           = (*runtimeRunner).resolveAuthSnapshot
+	runnerResolveAuthSnapshotForProfile = (*runtimeRunner).resolveAuthSnapshotForProfile
+	runnerPreflightDocDownload          = (*runtimeRunner).preflightDocDownload
+	runnerCallTool                      = (*transport.Client).CallTool
+	runnerStdioEnsureInitialized        = (*transport.StdioClient).EnsureInitialized
+	runnerStdioListTools                = (*transport.StdioClient).ListTools
+	runnerStdioCallTool                 = (*transport.StdioClient).CallTool
+	runnerHandlePatAuthCheck            func(context.Context, *runtimeRunner, executor.Invocation, *apperrors.PATError, string, io.Writer) (executor.Result, error)
+	runnerRetryWithPatAuthRetry         func(context.Context, executor.Runner, executor.Invocation, *PatScopeError, string, io.Writer) (executor.Result, error)
+	runnerCaptureRuntimeFailure         = captureRuntimeFailure
+)
+
+func (r *runtimeRunner) Run(ctx context.Context, invocation executor.Invocation) (executor.Result, error) {
+	// Global dry-run is an execution barrier, not merely a transport option.
+	// Return a deterministic local preview before profile resolution, catalog
+	// discovery, Keychain/token prefetch, auth, stateful preflight or transport.
+	// Use the non-injectable EchoRunner rather than r.fallback so tests and
+	// edition overlays cannot accidentally turn this path into real execution.
+	if invocation.DryRun || (r != nil && r.globalFlags != nil && r.globalFlags.DryRun) {
+		invocation.DryRun = true
+		return (executor.EchoRunner{}).Run(ctx, invocation)
+	}
+	if r == nil {
+		return executor.Result{}, fmt.Errorf("runtime runner is not configured")
+	}
+	// Emit the one-shot host-owned PAT decision log. Placed here (not in
+	// the constructor) so it fires AFTER PersistentPreRunE has configured
+	// slog level per --debug / --verbose. The Once guard makes repeat
+	// invocations within the same process free.
+	logHostOwnedPATDecisionOnce()
+
+	rawProfile := authpkg.RuntimeProfile()
+	selections, multi, err := runnerResolveMultiProfileSelections(defaultConfigDir(), rawProfile)
+	if err != nil {
+		return executor.Result{}, apperrors.NewValidation(err.Error())
+	}
+	if multi {
+		return r.runMultiProfile(ctx, invocation, selections)
+	}
+	if strings.TrimSpace(rawProfile) != "" {
+		profile, err := runnerResolveProfile(defaultConfigDir(), rawProfile)
+		if err != nil {
+			return executor.Result{}, apperrors.NewValidation(err.Error())
+		}
+		if profile == nil {
+			return executor.Result{}, apperrors.NewValidation(fmt.Sprintf("profile %q not found", rawProfile))
+		}
+		resolvedSelector := profileRuntimeSelector(*profile, rawProfile)
+		authpkg.SetRuntimeProfile(resolvedSelector)
+		defer authpkg.SetRuntimeProfile(rawProfile)
+	}
+
+	return r.runSingle(ctx, invocation, true)
+}
+
+// RunReadOnly executes one already-classified read lookup for a semantic
+// Shortcut that is building a dry-run plan. It clones the runtime flags and
+// clears DryRun only on that clone: the process-wide caller and every ordinary
+// ToolCaller invocation retain the global execution barrier.
+func (r *runtimeRunner) RunReadOnly(ctx context.Context, invocation executor.Invocation) (executor.Result, error) {
+	if r == nil {
+		return executor.Result{}, fmt.Errorf("runtime runner is not configured")
+	}
+	clone := *r
+	if r.globalFlags != nil {
+		flags := *r.globalFlags
+		flags.DryRun = false
+		clone.globalFlags = &flags
+	}
+	invocation.DryRun = false
+	return clone.Run(ctx, invocation)
+}
+
+func (r *runtimeRunner) runSingle(ctx context.Context, invocation executor.Invocation, prefetchToken bool) (executor.Result, error) {
+	if r.transport == nil {
+		return r.fallback.Run(ctx, invocation)
+	}
+
+	// Mock mode: skip endpoint resolution, use a placeholder endpoint.
+	if r.globalFlags != nil && r.globalFlags.Mock {
+		endpoint := fmt.Sprintf("https://mock-mcp-%s.dingtalk.com", invocation.CanonicalProduct)
+		if override, ok := productEndpointOverride(invocation.CanonicalProduct); ok {
+			endpoint = override
+		}
+		return r.executeInvocation(ctx, endpoint, invocation)
+	}
+
+	// Prefetch the Keychain token in the background. Keychain access costs
+	// ~70ms on macOS; starting it here lets the load overlap with endpoint
+	// resolution below.
+	if prefetchToken {
+		go func() {
+			_, _ = runnerGetCachedRuntimeToken(ctx)
+		}()
+	}
+
+	if shouldUseDirectRuntime(invocation) {
+		if endpoint, ok := directRuntimeEndpoint(invocation.CanonicalProduct, invocation.Tool); ok {
+			return r.executeInvocation(ctx, endpoint, invocation)
+		}
+	}
+
+	// Discovery is retired: endpoint resolution is the dynamic server
+	// registry only, so a direct-runtime miss is terminal.
+	return r.handleCatalogMiss(ctx, invocation, "no dynamic endpoint registered for product or tool")
+}
+
+// profileRuntimeSelector resolves the runtime profile selector for an
+// invocation. It preserves a unique local-name selector for an unresolved
+// account (empty UserID): reducing it to corpId can select a different exact
+// account through the organization's current-account pointer. Shared by the
+// single-profile path in Run and the multi-profile path in runMultiProfile.
+func profileRuntimeSelector(profile authpkg.Profile, rawSelector string) string {
+	if strings.TrimSpace(profile.UserID) == "" {
+		return rawSelector
+	}
+	return authpkg.ProfileSelector(profile)
+}
+
+type multiProfileSelection struct {
+	Selector string
+	Profile  authpkg.Profile
+}
+
+func resolveMultiProfileSelections(configDir, rawSelector string) ([]multiProfileSelection, bool, error) {
+	rawSelector = strings.TrimSpace(rawSelector)
+	if rawSelector == "" || !strings.Contains(rawSelector, ",") {
+		return nil, false, nil
+	}
+	if p, err := runnerResolveProfile(configDir, rawSelector); err == nil && p != nil {
+		return nil, false, nil
+	}
+
+	parts := strings.Split(rawSelector, ",")
+	selections := make([]multiProfileSelection, 0, len(parts))
+	seen := make(map[string]bool, len(parts))
+	for _, part := range parts {
+		selector := strings.TrimSpace(part)
+		if selector == "" {
+			return nil, false, fmt.Errorf("--profile contains an empty profile selector: %q", rawSelector)
+		}
+		profile, err := runnerResolveProfile(configDir, selector)
+		if err != nil {
+			return nil, false, err
+		}
+		if profile == nil {
+			return nil, false, fmt.Errorf("profile %q not found", selector)
+		}
+		identitySelector := authpkg.ProfileSelector(*profile)
+		if seen[identitySelector] {
+			continue
+		}
+		seen[identitySelector] = true
+		selections = append(selections, multiProfileSelection{
+			Selector: selector,
+			Profile:  *profile,
+		})
+	}
+	return selections, true, nil
+}
+
+func (r *runtimeRunner) runMultiProfile(ctx context.Context, invocation executor.Invocation, selections []multiProfileSelection) (executor.Result, error) {
+	previousProfile := authpkg.RuntimeProfile()
+	defer authpkg.SetRuntimeProfile(previousProfile)
+
+	entries := make([]any, 0, len(selections))
+	succeeded := 0
+	failed := 0
+
+	for _, selection := range selections {
+		resolvedSelector := profileRuntimeSelector(selection.Profile, selection.Selector)
+		authpkg.SetRuntimeProfile(resolvedSelector)
+		result, err := r.runSingle(ctx, cloneInvocation(invocation), false)
+
+		entry := map[string]any{
+			"selector": selection.Selector,
+			"profile":  resolvedSelector,
+			"corpId":   selection.Profile.CorpID,
+			"corpName": selection.Profile.CorpName,
+			"userId":   selection.Profile.UserID,
+			"userName": selection.Profile.UserName,
+			"ok":       err == nil,
+		}
+		if err != nil {
+			failed++
+			entry["error"] = multiProfileErrorPayload(err)
+		} else {
+			succeeded++
+			if payload := multiProfileResultPayload(result); payload != nil {
+				entry["result"] = payload
+			}
+			if result.Response != nil {
+				if endpoint, ok := result.Response["endpoint"]; ok {
+					entry["endpoint"] = endpoint
+				}
+			}
+		}
+		entries = append(entries, entry)
+	}
+
+	invocation.Implemented = true
+	return executor.Result{
+		Invocation: invocation,
+		Response: map[string]any{
+			"content": map[string]any{
+				"success":      failed == 0,
+				"multiProfile": true,
+				"summary": map[string]any{
+					"total":     len(selections),
+					"succeeded": succeeded,
+					"failed":    failed,
+				},
+				"profiles": entries,
+			},
+		},
+	}, nil
+}
+
+func cloneInvocation(invocation executor.Invocation) executor.Invocation {
+	cloned := invocation
+	if invocation.Params != nil {
+		cloned.Params = make(map[string]any, len(invocation.Params))
+		for key, value := range invocation.Params {
+			cloned.Params[key] = value
+		}
+	}
+	return cloned
+}
+
+func multiProfileResultPayload(result executor.Result) any {
+	if result.Response == nil {
+		return nil
+	}
+	if content, ok := result.Response["content"]; ok {
+		return content
+	}
+	return result.Response
+}
+
+func multiProfileErrorPayload(err error) map[string]any {
+	payload := map[string]any{
+		"message": err.Error(),
+	}
+	var typed *apperrors.Error
+	if errors.As(err, &typed) {
+		payload["category"] = string(typed.Category)
+		if typed.Reason != "" {
+			payload["reason"] = typed.Reason
+		}
+		if typed.Operation != "" {
+			payload["operation"] = typed.Operation
+		}
+		if typed.Origin != "" {
+			payload["origin"] = typed.Origin
+		}
+		if typed.FailureStage != "" {
+			payload["stage"] = typed.FailureStage
+		}
+		if typed.ExecutionStarted != nil {
+			payload["execution_started"] = *typed.ExecutionStarted
+		}
+		if typed.RetryableSet {
+			payload["retryable"] = typed.Retryable
+		}
+		if typed.Hint != "" {
+			payload["hint"] = typed.Hint
+		}
+		if actions := apperrors.RecoveryActions(err); len(actions) > 0 {
+			payload["actions"] = actions
+		}
+		if len(typed.Details) > 0 {
+			payload["details"] = typed.Details
+		}
+		if typed.ServerDiag.TraceID != "" {
+			payload["trace_id"] = typed.ServerDiag.TraceID
+		}
+		if typed.ServerDiag.ServerErrorCode != "" {
+			payload["server_error_code"] = typed.ServerDiag.ServerErrorCode
+		}
+		if code := typed.ExitCode(); code != 0 {
+			payload["exitCode"] = code
+		}
+	}
+	return payload
+}
+
+// handleCatalogMiss decides what to do when the dynamic server registry has
+// no endpoint for the requested product / tool and no `directRuntimeEndpoint`
+// match fired earlier. The discovery catalog is retired; endpoint resolution
+// is the dynamic server registry only, so a registry miss here is terminal.
+//
+// Previously every miss silently fell through to EchoRunner, which
+// returns an empty `executor.Result{Response: nil}`. The helper-invocation
+// adapter then converted that into `&edition.ToolResult{}`, whose `Content`
+// marshals to `null`, surfacing as `{"Content": null}` at the CLI. Users had no
+// signal that endpoint resolution failed — see the fix-wukong-discovery-missing-servers plan (Phase 3) for the full trace.
+//
+// Contract: return an explicit apperrors.NewAPI("endpoint_not_resolved")
+// with the offending product/tool attached. This fails fast to stderr and
+// makes missing envelopes / supplement gaps immediately visible. Dry-run
+// invocations never reach this path in production: Run enforces the dry-run
+// barrier before endpoint resolution, and runSingle is only re-entered via
+// Run (multi-profile and PAT retry both route back through it).
+func (r *runtimeRunner) handleCatalogMiss(_ context.Context, invocation executor.Invocation, detail string) (executor.Result, error) {
+	return executor.Result{}, endpointNotResolvedError(invocation.CanonicalProduct, invocation.Tool, detail)
+}
+
+// endpointNotResolvedError builds the shared terminal error for a dynamic
+// server registry miss. Both the runtime runner (handleCatalogMiss) and the
+// recovery runtime (resolveEndpoint) use it so endpoint misses classify
+// identically: CategoryAPI, operation "discovery.resolve", reason
+// "endpoint_not_resolved", with the product ID as the server key.
+func endpointNotResolvedError(productID, toolName, detail string) error {
+	hint := "当前命令已注册，但静态端点目录中缺少对应 product/server endpoint。这通常是服务发现下线后的同步产物缺口，不是参数错误；请不要通过反复调整 flag 重试。"
+	actions := []string{
+		"确认 internal/syncdata.StaticServers() 是否包含该 product/server",
+		"运行 sync-oss 重新生成静态端点与路由",
+		"若该能力已下线，请在 skill 与 --help 中标记 unavailable 并提供替代命令",
+	}
+	if strings.TrimSpace(productID) == devappProductID {
+		hint = "dev app（product id: devapp）是 helper-only 产品，命令树不依赖服务发现；真实调用需要通过 StaticServers/SupplementServers 注入 MCP endpoint，或本地调试临时设置 DINGTALK_DEVAPP_MCP_URL。"
+		actions = []string{
+			"检查 StaticServers/SupplementServers 是否包含 devapp endpoint",
+			"本地调试可临时设置 DINGTALK_DEVAPP_MCP_URL 后重试",
+		}
+	}
+	return apperrors.NewAPI(
+		fmt.Sprintf("endpoint not resolved for product %q (tool %q): %s", productID, toolName, detail),
+		apperrors.WithOperation("discovery.resolve"),
+		apperrors.WithReason("endpoint_not_resolved"),
+		apperrors.WithServerKey(productID),
+		apperrors.WithHint(hint),
+		apperrors.WithActions(actions...),
+	)
+}
+
+func (r *runtimeRunner) executeInvocation(ctx context.Context, endpoint string, invocation executor.Invocation) (result executor.Result, retErr error) {
+	// Route stdio:// endpoints to the local StdioClient — no HTTP, no auth.
+	if IsStdioEndpoint(endpoint) {
+		return r.executeStdioInvocationAtEndpoint(ctx, endpoint, invocation)
+	}
+
+	// Constructing the Cobra tree is also used for help, schema, and command
+	// discovery. Open the process-wide audit writer only when a real invocation
+	// reaches the execution boundary so read-only command inspection does not
+	// leave an audit lock handle behind (which prevents TempDir cleanup on
+	// Windows). Keep an injected sink when tests or editions provide one.
+	auditSink := r.auditSink
+	if auditSink == nil {
+		auditSink = setupAuditSink()
+	}
+
+	invokeStart := time.Now()
+	execID := generateExecutionID()
+	r.transport.ExecutionId = execID
+
+	// Lazy bind FileLogger: it may be nil at construction time because
+	// configureLogLevel runs later in PersistentPreRunE.
+	if r.transport.FileLogger == nil {
+		r.transport.FileLogger = FileLoggerInstance()
+	}
+
+	fl := r.transport.FileLogger
+
+	defer func() {
+		var errCat, errReason string
+		if retErr != nil {
+			var typed *apperrors.Error
+			if errors.As(retErr, &typed) {
+				errCat = string(typed.Category)
+				errReason = typed.Reason
+			} else {
+				errCat = "unknown"
+				errReason = retErr.Error()
+			}
+		}
+		logging.LogCommandEnd(fl, execID,
+			invocation.CanonicalProduct, invocation.Tool,
+			retErr == nil, time.Since(invokeStart), errCat, errReason)
+		emitAudit(ctx, auditSink, execID, invokeStart, invocation, endpoint, retErr, version)
+	}()
+
+	// Check whether this product belongs to an HTTP plugin. Every accepted
+	// plugin has an ownership record; credentials within that record are
+	// optional. Plugin requests never fall back to the default DingTalk OAuth.
+	pluginAuth, hasPluginAuth := LookupPluginAuth(invocation.CanonicalProduct)
+
+	authToken := ""
+	if hasPluginAuth {
+		authToken = pluginAuth.Token
+	} else if !invocation.DryRun && (r.globalFlags == nil || !r.globalFlags.Mock) {
+		snapshot, tokenErr := runnerResolveAuthSnapshot(r, ctx)
+		if tokenErr != nil {
+			return executor.Result{}, tokenResolutionError(tokenErr)
+		}
+		authToken = snapshot.AccessToken
+		if !hasDirectRuntimeEndpointOverride(invocation.CanonicalProduct) &&
+			isDingTalkMCPGatewayEndpoint(endpoint) &&
+			(snapshot.LoginRegionKnown || authpkg.MCPBaseURLOverride() != "") {
+			endpoint = activeDingTalkGatewayEndpointForLoginRegion(endpoint, snapshot.LoginRegion)
+		}
+	}
+
+	var timeoutSec int
+	if r.globalFlags != nil {
+		timeoutSec = r.globalFlags.Timeout
+	}
+	logging.LogCommandStart(fl, execID,
+		invocation.CanonicalProduct, invocation.Tool, endpoint, version, authToken != "", timeoutSec)
+
+	if invocation.DryRun {
+		// Emit a wukong-aligned human-readable preview on stderr so the dry-run
+		// surface advertises the resolved MCP arguments without polluting the
+		// stdout payload (which stays valid JSON in --format json mode). Mirrors
+		// wukong's "Arguments: {...}" dry-run line; stderr keeps it out of the
+		// machine-readable channel.
+		if argsJSON, err := json.Marshal(invocation.Params); err == nil {
+			fmt.Fprintf(os.Stderr, "DRY-RUN Arguments: %s\n", argsJSON)
+		}
+		return executor.Result{
+			Invocation: invocation,
+			Response: map[string]any{
+				"dry_run":  true,
+				"endpoint": transport.RedactURL(endpoint),
+				"request":  executor.ToolCallRequest(invocation.Tool, invocation.Params),
+				"note":     "execution skipped by --dry-run",
+			},
+		}, nil
+	}
+
+	// Mock mode: return predefined mock response without network call.
+	if r.globalFlags != nil && r.globalFlags.Mock {
+		invocation.Implemented = true
+		return executor.Result{
+			Invocation: invocation,
+			Response: map[string]any{
+				"endpoint": transport.RedactURL(endpoint),
+				"content": map[string]any{
+					"success": true,
+					"result":  []any{},
+					"_mock":   true,
+					"_tool":   invocation.Tool,
+				},
+			},
+		}, nil
+	}
+
+	// Preserve a final execution-boundary guard even though the built-in token
+	// resolver normally returns either a non-empty token or an error. HTTP
+	// plugins are ownership-scoped separately and may intentionally be anonymous.
+	if !hasPluginAuth && strings.TrimSpace(authToken) == "" {
+		return executor.Result{}, apperrors.NewAuth(
+			"未登录，请先执行 dws auth login",
+			apperrors.WithReason("not_authenticated"),
+			apperrors.WithHint("运行 'dws auth login' 完成登录后重试"),
+			apperrors.WithActions("dws auth login"),
+		)
+	}
+
+	var tc *transport.Client
+	if hasPluginAuth {
+		// Plugin ownership is authoritative even when the plugin is anonymous.
+		// Copy and sanitize manifest headers so plugins cannot opt themselves into
+		// DWS-owned Agent metadata by declaring the reserved names directly.
+		tc = r.transport.WithAuth(authToken, pluginRequestHeaders(pluginAuth))
+		tc.TrustedDomains = pluginAuth.TrustedDomains
+	} else {
+		// Default path: use DingTalk OAuth token with identity headers. Agent
+		// metadata is resolved exactly once per invocation and is excluded from
+		// helper-only service-discovery requests.
+		if r.agentMetadata != nil {
+			tc = r.transport.WithAuth(authToken, resolveMCPRequestHeadersForInvocation(invocation, *r.agentMetadata))
+		} else {
+			tc = r.transport.WithAuth(authToken, resolveMCPRequestHeadersForInvocation(invocation))
+		}
+	}
+
+	callCtx := ctx
+	if r.globalFlags != nil && r.globalFlags.Timeout > 0 {
+		var cancel context.CancelFunc
+		callCtx, cancel = context.WithTimeout(ctx, time.Duration(r.globalFlags.Timeout)*time.Second)
+		defer cancel()
+	}
+
+	if err := runnerPreflightDocDownload(r, callCtx, tc, endpoint, invocation); err != nil {
+		if patCheck := apperrors.AsPatAuthCheckError(err); patCheck != nil {
+			if IsPatRetrying(ctx) {
+				return executor.Result{}, patCheck
+			}
+			return runnerHandlePatAuthCheck(ctx, r, invocation, patCheck, defaultConfigDir(), os.Stderr)
+		}
+		if result, retryErr, handled := r.retryAuthRefreshRequired(ctx, endpoint, invocation, authToken, err, hasPluginAuth); handled {
+			if retryErr != nil {
+				runnerCaptureRuntimeFailure(invocation, err, retryErr)
+			}
+			return result, retryErr
+		}
+		runnerCaptureRuntimeFailure(invocation, err, err)
+		return executor.Result{}, err
+	}
+
+	callStart := time.Now()
+	// tools/call can mutate remote state even when the gateway returns an error.
+	// Only callers with a reviewed read/reconciliation policy may replay it;
+	// keep discovery and the shared transport's retry budget unchanged.
+	callResult, err := runnerCallTool(tc.WithMaxRetries(0), callCtx, endpoint, invocation.Tool, invocation.Params)
+	RecordTiming(ctx, "mcp_call", time.Since(callStart))
+	if err != nil {
+		if isRefreshableTransportAuthError(err) {
+			if fn := edition.Get().OnAuthError; fn != nil {
+				if overrideErr := fn(defaultConfigDir(), err); overrideErr != nil {
+					if result, retryErr, handled := r.retryAuthRefreshRequired(ctx, endpoint, invocation, authToken, overrideErr, hasPluginAuth); handled {
+						if retryErr != nil {
+							runnerCaptureRuntimeFailure(invocation, err, retryErr)
+						}
+						return result, retryErr
+					}
+					runnerCaptureRuntimeFailure(invocation, err, overrideErr)
+					return executor.Result{}, overrideErr
+				}
+			}
+		}
+		// PAT scope error: offer human-readable output and retry after authorization
+		if isPatScopeError(err) {
+			scopeErr := extractPatScopeError(err)
+			runnerCaptureRuntimeFailure(invocation, err, err)
+			return runnerRetryWithPatAuthRetry(ctx, r, invocation, scopeErr, defaultConfigDir(), os.Stderr)
+		}
+		runnerCaptureRuntimeFailure(invocation, err, err)
+		return executor.Result{}, err
+	}
+
+	// ---- Edition hook gets first dibs (preserves overlay PATError passthrough) ----
+	if fn := edition.Get().ClassifyToolResult; fn != nil {
+		if editionErr := fn(callResult.Content); editionErr != nil {
+			if patCheck := apperrors.AsPatAuthCheckError(editionErr); patCheck != nil {
+				if IsPatRetrying(ctx) {
+					return executor.Result{}, patCheck // already retried once, don't loop
+				}
+				return runnerHandlePatAuthCheck(ctx, r, invocation, patCheck, defaultConfigDir(), os.Stderr)
+			}
+			if result, retryErr, handled := r.retryAuthRefreshRequired(ctx, endpoint, invocation, authToken, editionErr, hasPluginAuth); handled {
+				if retryErr != nil {
+					runnerCaptureRuntimeFailure(invocation, editionErr, retryErr)
+				}
+				return result, retryErr
+			}
+			return executor.Result{}, editionErr
+		}
+	}
+
+	// ---- Structured PAT auth check (open-source fallback) ----
+	if patCheck := apperrors.ClassifyPatAuthCheck(callResult.Content); patCheck != nil {
+		if IsPatRetrying(ctx) {
+			return executor.Result{}, patCheck // already retried once, don't loop
+		}
+		return runnerHandlePatAuthCheck(ctx, r, invocation, patCheck, defaultConfigDir(), os.Stderr)
+	}
+
+	if callResult.IsError {
+		diag := transport.ExtractServerDiagnosticsFromMap(callResult.Content)
+
+		// ClassifyToolResult hook: let the overlay intercept known error
+		// patterns (PAT permission, gateway-auth) before generic handling.
+		if classify := edition.Get().ClassifyToolResult; classify != nil {
+			if hookErr := classify(callResult.Content); hookErr != nil {
+				if result, retryErr, handled := r.retryAuthRefreshRequired(ctx, endpoint, invocation, authToken, hookErr, hasPluginAuth); handled {
+					if retryErr != nil {
+						runnerCaptureRuntimeFailure(invocation, hookErr, retryErr)
+					}
+					return result, retryErr
+				}
+				runnerCaptureRuntimeFailure(invocation, hookErr, hookErr)
+				return executor.Result{}, hookErr
+			}
+		}
+
+		mcpErr := newServerFailureAPIError(
+			extractMCPErrorMessage(callResult),
+			"mcp_tool_error",
+			"MCP tool returned a business error; check tool parameters and refer to skill documentation.",
+			invocation.CanonicalProduct,
+			invocation.Tool,
+			diag,
+		)
+		logBusinessError(r.transport.FileLogger, serverFailureReason(mcpErr, "mcp_tool_error"), invocation, callResult.Content, diag)
+		// PAT scope error in business response: offer human-readable output and retry
+		if isPatScopeError(mcpErr) {
+			scopeErr := extractPatScopeError(mcpErr)
+			runnerCaptureRuntimeFailure(invocation, mcpErr, mcpErr)
+			return runnerRetryWithPatAuthRetry(ctx, r, invocation, scopeErr, defaultConfigDir(), os.Stderr)
+		}
+		runnerCaptureRuntimeFailure(invocation, mcpErr, mcpErr)
+		return executor.Result{}, mcpErr
+	}
+
+	scanReport, err := r.scanContent(callResult.Content)
+	if err != nil {
+		return executor.Result{}, err
+	}
+
+	if bizErr := detectBusinessError(callResult.Content); bizErr != "" {
+		diag := transport.ExtractServerDiagnosticsFromMap(callResult.Content)
+		classifiedErr := newServerFailureAPIError(
+			bizErr,
+			"business_error",
+			"The API returned a business-level error. Check required parameters and values.",
+			invocation.CanonicalProduct,
+			invocation.Tool,
+			diag,
+		)
+		logBusinessError(r.transport.FileLogger, serverFailureReason(classifiedErr, "business_error"), invocation, callResult.Content, diag)
+		return executor.Result{}, classifiedErr
+	}
+
+	invocation.Implemented = true
+	// Align with wukong's response envelope: stamp a top-level success=true on
+	// map payloads that don't already carry a success flag. Business errors
+	// (success=false) are intercepted above, so reaching here means the call
+	// succeeded. Additive only — existing keys are never overwritten.
+	if callResult.Content != nil {
+		if _, has := callResult.Content["success"]; !has {
+			callResult.Content["success"] = true
+		}
+	}
+	response := map[string]any{
+		"endpoint": transport.RedactURL(endpoint),
+		"content":  callResult.Content,
+	}
+	if r.includeScanReport && scanReport.Scanned {
+		response["safety"] = scanReport
+	}
+	return executor.Result{Invocation: invocation, Response: response}, nil
+}
+
+func (r *runtimeRunner) executeStdioInvocationAtEndpoint(
+	ctx context.Context,
+	endpoint string,
+	invocation executor.Invocation,
+) (executor.Result, error) {
+	if invocation.DryRun {
+		return executor.Result{
+			Invocation: invocation,
+			Response: map[string]any{
+				"dry_run":   true,
+				"transport": "stdio",
+				"request":   executor.ToolCallRequest(invocation.Tool, invocation.Params),
+				"note":      "execution skipped by --dry-run",
+			},
+		}, nil
+	}
+
+	lookupKey := strings.Trim(strings.TrimPrefix(strings.TrimSpace(endpoint), stdioEndpointScheme), "/")
+	if lookupKey == "" {
+		lookupKey = invocation.CanonicalProduct
+	}
+	client, ok := LookupStdioClient(lookupKey)
+	if !ok {
+		return executor.Result{}, apperrors.NewInternal(
+			fmt.Sprintf("stdio client not found for %q", lookupKey))
+	}
+
+	callCtx := ctx
+	if r.globalFlags != nil && r.globalFlags.Timeout > 0 {
+		var cancel context.CancelFunc
+		callCtx, cancel = context.WithTimeout(ctx, time.Duration(r.globalFlags.Timeout)*time.Second)
+		defer cancel()
+	}
+	if err := runnerStdioEnsureInitialized(client, callCtx); err != nil {
+		return executor.Result{}, apperrors.NewAPI(
+			fmt.Sprintf("stdio initialize failed: %v", err),
+			apperrors.WithOperation("initialize"),
+			apperrors.WithReason("stdio_initialize_error"),
+		)
+	}
+
+	tools, err := runnerStdioListTools(client, callCtx)
+	if err != nil {
+		return executor.Result{}, apperrors.NewAPI(
+			fmt.Sprintf("stdio tools/list failed: %v", err),
+			apperrors.WithOperation("tools/list"),
+			apperrors.WithReason("stdio_tools_list_error"),
+		)
+	}
+	schema, ok := pluginToolInputSchema(tools, invocation.Tool)
+	if !ok {
+		return executor.Result{}, apperrors.NewValidation(
+			fmt.Sprintf("plugin tool %q is not declared by tools/list", invocation.Tool),
+			apperrors.WithReason("plugin_tool_not_found"),
+		)
+	}
+	normalizedParams, err := normalizePluginInputParams(invocation.Params, schema)
+	if err != nil {
+		return executor.Result{}, err
+	}
+	invocation.Params = normalizedParams
+
+	callResult, err := runnerStdioCallTool(client, callCtx, invocation.Tool, invocation.Params)
+	if err != nil {
+		return executor.Result{}, apperrors.NewAPI(
+			fmt.Sprintf("stdio call failed: %v", err),
+			apperrors.WithOperation("tools/call"),
+			apperrors.WithReason("stdio_error"),
+		)
+	}
+
+	if callResult.IsError {
+		return executor.Result{}, apperrors.NewAPI(
+			extractMCPErrorMessage(callResult),
+			apperrors.WithOperation("tools/call"),
+			apperrors.WithReason("mcp_tool_error"),
+			apperrors.WithServerKey(invocation.CanonicalProduct),
+		)
+	}
+
+	invocation.Implemented = true
+	return executor.Result{
+		Invocation: invocation,
+		Response: map[string]any{
+			"transport": "stdio",
+			"content":   callResult.Content,
+		},
+	}, nil
+}
+
+func (r *runtimeRunner) resolveAuthToken(ctx context.Context) (string, error) {
+	snapshot, err := r.resolveAuthSnapshot(ctx)
+	if err != nil {
+		return "", err
+	}
+	return snapshot.AccessToken, nil
+}
+
+func (r *runtimeRunner) resolveAuthSnapshot(ctx context.Context) (AccessTokenSnapshot, error) {
+	return r.resolveAuthSnapshotForProfile(ctx, authpkg.RuntimeProfile())
+}
+
+func (r *runtimeRunner) resolveAuthSnapshotForProfile(ctx context.Context, profile string) (AccessTokenSnapshot, error) {
+	explicitToken := ""
+	if r != nil && r.globalFlags != nil {
+		explicitToken = r.globalFlags.Token
+	}
+	return runtimeTokenManager.GetForProfile(ctx, defaultConfigDir(), explicitToken, profile)
+}
+
+func resolveRuntimeAuthToken(ctx context.Context, explicitToken string) (string, error) {
+	snapshot, err := resolveRuntimeAuthSnapshot(ctx, explicitToken)
+	if err != nil {
+		return "", err
+	}
+	return snapshot.AccessToken, nil
+}
+
+func resolveRuntimeAuthSnapshot(ctx context.Context, explicitToken string) (AccessTokenSnapshot, error) {
+	return runtimeTokenManager.Get(ctx, defaultConfigDir(), explicitToken)
+}
+
+// getCachedRuntimeToken is kept as the prefetch seam used by runner tests. The
+// cache itself lives exclusively in TokenManager.
+func getCachedRuntimeToken(ctx context.Context) (string, error) {
+	loadStart := time.Now()
+	defer func() { RecordTiming(ctx, "auth_keychain", time.Since(loadStart)) }()
+	return resolveRuntimeAuthToken(ctx, "")
+}
+
+func tokenResolutionError(err error) error {
+	if err == nil {
+		return nil
+	}
+	if errors.Is(err, context.Canceled) || errors.Is(err, context.DeadlineExceeded) {
+		return err
+	}
+	if errors.Is(err, authpkg.ErrTokenDataNotFound) {
+		return apperrors.NewAuth(
+			"未登录，请先执行 dws auth login",
+			apperrors.WithReason("not_authenticated"),
+			apperrors.WithHint("运行 'dws auth login' 完成登录后重试"),
+			apperrors.WithActions("dws auth login"),
+			apperrors.WithCause(err),
+		)
+	}
+	// Keychain, parse, permission, lock, and refresh failures are real local or
+	// network errors. Preserve their cause instead of disguising them as logout.
+	return fmt.Errorf("resolve access token: %w", err)
+}
+
+// generateExecutionID returns a random 16-char hex string used to correlate
+// all log entries (command_start, jsonrpc_request, command_end, etc.) belonging
+// to a single command invocation.
+func generateExecutionID() string {
+	b := make([]byte, 8)
+	_, _ = rand.Read(b)
+	return hex.EncodeToString(b)
+}
+
+// ResetRuntimeTokenCache clears the cached token, forcing a reload on next access.
+// This should be called after login/logout operations.
+func ResetRuntimeTokenCache() {
+	runtimeTokenManager.Invalidate()
+}
+
+func newRuntimeContentScanner() safety.Scanner {
+	if !runtimeFlagEnabled(os.Getenv(runtimeContentScanEnv), true) {
+		return nil
+	}
+	return safety.NewContentScanner()
+}
+
+func (r *runtimeRunner) scanContent(content map[string]any) (safety.Report, error) {
+	if r == nil || r.scanner == nil {
+		return safety.Report{Scanned: false}, nil
+	}
+	report := r.scanner.ScanPayload(content)
+	if r.enforceContentScan && len(report.Findings) > 0 {
+		return report, apperrors.NewValidation("runtime response blocked by content safety scan")
+	}
+	return report, nil
+}
+
+func runtimeFlagEnabled(raw string, defaultValue bool) bool {
+	trimmed := strings.ToLower(strings.TrimSpace(raw))
+	if trimmed == "" {
+		return defaultValue
+	}
+	switch trimmed {
+	case "0", "false", "no", "n", "off":
+		return false
+	default:
+		return true
+	}
+}
+
+func isAuthError(err error) bool {
+	var appErr *apperrors.Error
+	if errors.As(err, &appErr) {
+		return appErr.Category == apperrors.CategoryAuth
+	}
+	return false
+}
+
+func productEndpointOverride(productID string) (string, bool) {
+	key := "DINGTALK_" + strings.ToUpper(strings.ReplaceAll(strings.TrimSpace(productID), "-", "_")) + "_MCP_URL"
+	value := strings.TrimSpace(os.Getenv(key))
+	if value == "" {
+		return "", false
+	}
+	return value, true
+}
+
+// resolveIdentityHeaders loads or creates agent identity and returns HTTP
+// headers to inject into MCP requests. Best-effort: returns nil on failure.
+func resolveIdentityHeaders() map[string]string {
+	id := authpkg.EnsureExists(defaultConfigDir())
+	headers := id.Headers()
+
+	// Inject environment variable based headers for MCP gateway tracking.
+	// DINGTALK_AGENT, if set by the caller, is forwarded verbatim as the
+	// x-dingtalk-agent header. It does NOT influence the edition-fixed
+	// claw-type or the host-owned PAT decision (driven solely by
+	// DINGTALK_DWS_AGENTCODE).
+	sessionID := os.Getenv(envDingtalkSessionID)
+	if sessionID == "" {
+		sessionID = os.Getenv(envDWSSessionID)
+	}
+	if sessionID == "" {
+		sessionID = os.Getenv(envRewindSessionID)
+	}
+	// Resolve the agent_code (accuracy-first; unknown hosts stay empty) and the
+	// per-(machine × agent_code) instance id when a code is known. Synthetic
+	// fallbacks must not be sent because PAT authorization checks use the same
+	// header as their grant key.
+	//
+	// Backward-compat by design (additive, not breaking):
+	//   - x-dws-agent-id keeps its v1 meaning = machine-level install UUID
+	//     (set by id.Headers() above), so old/new clients stay comparable.
+	//   - x-dws-agent-instance-id is NEW: the per-(machine × agent_code) id,
+	//     sent only when x-dingtalk-dws-agent-code is non-empty.
+	// Note: x-dws-channel (DWS_CHANNEL) is a separate axis, untouched.
+	agentCode, agentCodeSig := authpkg.DetectAgentCode()
+	if agentInstanceID := id.ResolveAgentID(defaultConfigDir(), agentCode, agentCodeSig); agentInstanceID != "" {
+		headers["x-dws-agent-instance-id"] = agentInstanceID
+	}
+
+	// Emit the CLI version on the wire so the gateway can segment old vs new
+	// clients (and scope agent_code coverage / adoption). The header constant
+	// existed but was never set; wire it here.
+	if version != "" {
+		headers[transport.HeaderVersion] = version
+	}
+	envHeaders := map[string]string{
+		"x-dingtalk-agent":          os.Getenv(envDingtalkAgent),
+		"x-dingtalk-dws-agent-code": agentCode,
+		"x-dingtalk-trace-id":       os.Getenv(envDingtalkTraceID),
+		"x-dingtalk-session-id":     sessionID,
+		"x-dingtalk-message-id":     os.Getenv(envDingtalkMessageID),
+	}
+	for k, v := range envHeaders {
+		if v != "" {
+			headers[k] = v
+		}
+	}
+
+	// Inject third-party channel headers. DWS_CHANNEL is forwarded as the
+	// upstream channelCode.
+	if v := os.Getenv(envDWSChannel); v != "" {
+		headers["x-dws-channel"] = v
+	}
+
+	// DWS_AGENT_HOST is a caller-declared runtime-form signal. Root command
+	// execution validates it strictly in PersistentPreRunE. Library callers
+	// that bypass the root command keep this best-effort API contract: invalid
+	// values are omitted rather than changing the public function signature.
+	if agentHost, err := parseAgentHost(os.Getenv(envDWSAgentHost)); err == nil && agentHost != "" {
+		headers[headerDWSAgentHost] = agentHost
+	}
+
+	if fn := edition.Get().MergeHeaders; fn != nil {
+		headers = fn(headers)
+	}
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+
+	// claw-type is the edition-fixed routing/PAT identity. Agent Product is a
+	// separate caller-declared observability and IM-display dimension.
+	clawType := resolveEditionClawType(headers)
+	headers["claw-type"] = clawType
+	headers = applyAgentProductHeader(headers)
+	agentProduct, hasAgentProduct := headers[agentproduct.HeaderName]
+	if fn := edition.Get().EnterpriseCredentialHeaders; fn != nil {
+		headers = fn(headers)
+	}
+	if headers == nil {
+		headers = make(map[string]string)
+	}
+	// Credential hooks cannot alter either identity dimension. Restore the
+	// fixed claw-type and the validated Product Header (or its absence).
+	headers["claw-type"] = clawType
+	if hasAgentProduct {
+		headers[agentproduct.HeaderName] = agentProduct
+	} else {
+		delete(headers, agentproduct.HeaderName)
+	}
+	// Agent version and extension are intentionally MCP-request-only. Remove
+	// every case variant potentially supplied by an edition or credential hook
+	// so shared consumers such as A2A cannot inherit them.
+	removeAgentMetadataHeaders(headers)
+	return headers
+}
+
+// detectBusinessError checks the MCP response content for DingTalk business
+// errors (success=false + errorCode/errorMsg) that are not flagged at the MCP
+// protocol level. Returns the error message, or "" if the response is OK.
+func detectBusinessError(content map[string]any) string {
+	return detectBusinessErrorAtDepth(content, 0)
+}
+
+func detectBusinessErrorAtDepth(content map[string]any, depth int) string {
+	if content == nil || depth > 8 {
+		return ""
+	}
+	success, ok := content["success"]
+	if !ok {
+		return detectNestedBusinessError(content, depth)
+	}
+	b, ok := success.(bool)
+	if !ok || b {
+		return detectNestedBusinessError(content, depth)
+	}
+	if nested := detectNestedBusinessError(content, depth); nested != "" {
+		return nested
+	}
+	if msg, ok := content["errorMsg"].(string); ok && strings.TrimSpace(msg) != "" {
+		return strings.TrimSpace(msg)
+	}
+	if code, ok := content["errorCode"].(string); ok && strings.TrimSpace(code) != "" {
+		return "business error: code " + strings.TrimSpace(code)
+	}
+	return "business error: success=false"
+}
+
+func detectNestedBusinessError(content map[string]any, depth int) string {
+	for _, key := range []string{"content", "result", "data"} {
+		switch child := content[key].(type) {
+		case map[string]any:
+			if msg := detectBusinessErrorAtDepth(child, depth+1); msg != "" {
+				return msg
+			}
+		case []any:
+			for _, item := range child {
+				childMap, ok := item.(map[string]any)
+				if !ok {
+					continue
+				}
+				if msg := detectBusinessErrorAtDepth(childMap, depth+1); msg != "" {
+					return msg
+				}
+			}
+		}
+	}
+	return ""
+}
+
+// extractMCPErrorMessage builds an error message from a ToolCallResult with
+// isError=true. It extracts text from content blocks when available.
+func extractMCPErrorMessage(result transport.ToolCallResult) string {
+	// Try text from content blocks first.
+	for _, block := range result.Blocks {
+		text := strings.TrimSpace(block.Text)
+		if text != "" {
+			return text
+		}
+	}
+	// Try stringified content map.
+	if msg, ok := result.Content["message"].(string); ok && strings.TrimSpace(msg) != "" {
+		return strings.TrimSpace(msg)
+	}
+	if msg, ok := result.Content["error"].(string); ok && strings.TrimSpace(msg) != "" {
+		return strings.TrimSpace(msg)
+	}
+	return "MCP tool returned an error response"
+}
+
+// logBusinessError logs MCP tool errors and business errors to the file logger
+// so they can be diagnosed offline. These errors arrive as HTTP 200 responses
+// and would otherwise not be captured by transport-level logging.
+func logBusinessError(logger *slog.Logger, reason string, inv executor.Invocation, content map[string]any, diag apperrors.ServerDiagnostics) {
+	if logger == nil {
+		return
+	}
+	attrs := []any{
+		"product", inv.CanonicalProduct,
+		"tool", inv.Tool,
+		"reason", reason,
+	}
+	if diag.TraceID != "" {
+		attrs = append(attrs, "trace_id", diag.TraceID)
+	}
+	if diag.ServerErrorCode != "" {
+		attrs = append(attrs, "server_error_code", diag.ServerErrorCode)
+	}
+	if diag.TechnicalDetail != "" {
+		attrs = append(attrs, "technical_detail", diag.TechnicalDetail)
+	}
+	if msg, ok := content["error"].(string); ok {
+		attrs = append(attrs, "error", msg)
+	}
+	if msg, ok := content["errorMsg"].(string); ok {
+		attrs = append(attrs, "errorMsg", msg)
+	}
+	if msg, ok := content["message"].(string); ok {
+		attrs = append(attrs, "message", msg)
+	}
+	logger.Warn("business_error", attrs...)
+}

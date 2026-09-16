@@ -1,0 +1,220 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"context"
+	"fmt"
+	"log/slog"
+	"sync"
+
+	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/jsonutil"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/edition"
+)
+
+// toolCallerAdapter bridges executor.Runner to the public edition.ToolCaller
+// interface so that private overlays can invoke MCP tools without importing
+// internal packages.
+type toolCallerAdapter struct {
+	runner  executor.Runner
+	flags   *GlobalFlags
+	tokenMu sync.Mutex
+}
+
+var toolCallerDryRun = func(ctx context.Context, invocation executor.Invocation) (executor.Result, error) {
+	return (executor.EchoRunner{}).Run(ctx, invocation)
+}
+
+func newToolCallerAdapter(runner executor.Runner, flags *GlobalFlags) edition.ToolCaller {
+	return &toolCallerAdapter{runner: runner, flags: flags}
+}
+
+func (a *toolCallerAdapter) CallTool(ctx context.Context, productID, toolName string, args map[string]any) (*edition.ToolResult, error) {
+	inv := executor.NewHelperInvocation("overlay."+productID+"."+toolName, productID, toolName, args)
+	// Defense in depth for direct helper callers: global dry-run must never
+	// reach an injected/real Runner, even if a command bypasses the normal
+	// Schema leaf wrapper. EchoRunner produces the same stable dry_run envelope
+	// without catalog, auth, Keychain, endpoint or transport access.
+	if a != nil && a.DryRun() {
+		inv.DryRun = true
+		result, err := toolCallerDryRun(ctx, inv)
+		if err != nil {
+			return nil, err
+		}
+		return convertResult(result), nil
+	}
+	if a == nil || a.runner == nil {
+		return nil, fmt.Errorf("ToolCaller runner is not configured")
+	}
+	result, err := a.runner.Run(ctx, inv)
+	if err != nil {
+		return nil, err
+	}
+	return convertResult(result), nil
+}
+
+type toolProductResolver interface {
+	ResolveToolProduct(context.Context, []string, string) (string, error)
+}
+
+// ResolveToolProduct performs read-only capability discovery before dispatch.
+// It never probes availability by issuing tools/call, so a write is sent to at
+// most one selected service.
+func (a *toolCallerAdapter) ResolveToolProduct(ctx context.Context, productIDs []string, toolName string) (string, error) {
+	resolver, ok := a.runner.(toolProductResolver)
+	if !ok {
+		if len(productIDs) == 0 {
+			return "", fmt.Errorf("no MCP product candidates for tool %q", toolName)
+		}
+		return productIDs[0], nil
+	}
+	return resolver.ResolveToolProduct(ctx, productIDs, toolName)
+}
+
+type dryRunReadRunner interface {
+	RunReadOnly(context.Context, executor.Invocation) (executor.Result, error)
+}
+
+// CallReadTool executes a Shortcut's explicitly classified read lookup while
+// the outer command is in dry-run mode. Ordinary CallTool remains protected by
+// the global execution barrier. The runner capability is optional and fails
+// closed so an injected runner cannot accidentally receive a real call.
+func (a *toolCallerAdapter) CallReadTool(ctx context.Context, productID, toolName string, args map[string]any) (*edition.ToolResult, error) {
+	if a == nil || a.runner == nil {
+		return nil, fmt.Errorf("ToolCaller runner is not configured")
+	}
+	if !a.DryRun() {
+		return a.CallTool(ctx, productID, toolName, args)
+	}
+	readRunner, ok := a.runner.(dryRunReadRunner)
+	if !ok {
+		return nil, fmt.Errorf("ToolCaller runner does not support read-only dry-run lookups")
+	}
+	inv := executor.NewHelperInvocation("overlay."+productID+"."+toolName, productID, toolName, args)
+	result, err := readRunner.RunReadOnly(ctx, inv)
+	if err != nil {
+		return nil, err
+	}
+	return convertResult(result), nil
+}
+
+// CallToolWithToken invokes a helper with an in-memory token override. It is
+// used during login before the new token has been persisted to any profile
+// slot.
+func (a *toolCallerAdapter) CallToolWithToken(ctx context.Context, token, productID, toolName string, args map[string]any) (*edition.ToolResult, error) {
+	if a == nil || a.flags == nil {
+		return nil, fmt.Errorf("ToolCaller token override is not configured")
+	}
+	a.tokenMu.Lock()
+	defer a.tokenMu.Unlock()
+	previousToken := a.flags.Token
+	previousProfile := authpkg.RuntimeProfile()
+	a.flags.Token = token
+	authpkg.SetRuntimeProfile("")
+	defer func() {
+		a.flags.Token = previousToken
+		authpkg.SetRuntimeProfile(previousProfile)
+	}()
+	return a.CallTool(ctx, productID, toolName, args)
+}
+
+func (a *toolCallerAdapter) Format() string {
+	if a != nil && a.flags != nil {
+		return a.flags.Format
+	}
+	return "json"
+}
+
+func (a *toolCallerAdapter) DryRun() bool {
+	return a != nil && a.flags != nil && a.flags.DryRun
+}
+
+func (a *toolCallerAdapter) Fields() string {
+	if a != nil && a.flags != nil {
+		return a.flags.Fields
+	}
+	return ""
+}
+
+func (a *toolCallerAdapter) JQ() string {
+	if a != nil && a.flags != nil {
+		return a.flags.JQ
+	}
+	return ""
+}
+
+func convertResult(r executor.Result) *edition.ToolResult {
+	resp := r.Response
+	if resp == nil {
+		// After the fix-wukong-discovery-missing-servers Phase 3 change,
+		// runtimeRunner.Run returns an explicit error for catalog misses
+		// instead of an empty Response, so this branch should only be
+		// reachable for unit tests / unexpected runners. Log a warning so
+		// any future regression (silent `{"Content": null}` on the CLI)
+		// leaves a trace in the file logger / stderr.
+		slog.Warn(
+			"tool_caller_adapter: empty runner response — upstream should surface an error instead",
+			"product", r.Invocation.CanonicalProduct,
+			"tool", r.Invocation.Tool,
+			"kind", r.Invocation.Kind,
+			"dry_run", r.Invocation.DryRun,
+		)
+		return &edition.ToolResult{}
+	}
+
+	// The runtime runner stores MCP response content under "content".
+	contentRaw, ok := resp["content"]
+	if !ok {
+		// Dry-run or echo mode: serialize the whole response as text.
+		data, _ := jsonutil.Marshal(resp)
+		return &edition.ToolResult{
+			Content: []edition.ContentBlock{{Type: "text", Text: string(data)}},
+		}
+	}
+
+	// Content may be a []any of {type, text} blocks from the MCP response,
+	// or a single map for mock mode.
+	switch v := contentRaw.(type) {
+	case []any:
+		blocks := make([]edition.ContentBlock, 0, len(v))
+		for _, item := range v {
+			if m, ok := item.(map[string]any); ok {
+				blocks = append(blocks, edition.ContentBlock{
+					Type: strVal(m, "type"),
+					Text: strVal(m, "text"),
+				})
+			}
+		}
+		return &edition.ToolResult{Content: blocks}
+	case map[string]any:
+		data, _ := jsonutil.Marshal(v)
+		return &edition.ToolResult{
+			Content: []edition.ContentBlock{{Type: "text", Text: string(data)}},
+		}
+	default:
+		data, _ := jsonutil.Marshal(contentRaw)
+		return &edition.ToolResult{
+			Content: []edition.ContentBlock{{Type: "text", Text: string(data)}},
+		}
+	}
+}
+
+func strVal(m map[string]any, key string) string {
+	if v, ok := m[key].(string); ok {
+		return v
+	}
+	return ""
+}

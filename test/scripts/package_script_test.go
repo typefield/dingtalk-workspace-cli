@@ -1,0 +1,3783 @@
+package scripts_test
+
+import (
+	"archive/tar"
+	"archive/zip"
+	"bytes"
+	"compress/gzip"
+	"crypto/sha256"
+	"fmt"
+	"io"
+	"os"
+	"os/exec"
+	"path/filepath"
+	"regexp"
+	"runtime"
+	"slices"
+	"sort"
+	"strconv"
+	"strings"
+	"syscall"
+	"testing"
+	"time"
+
+	"gopkg.in/yaml.v3"
+)
+
+var expectedPackagedSkillTargets = []string{
+	".agents/skills/dingtalk-shared",
+	".claude/skills/dingtalk-shared",
+	".cursor/skills/dingtalk-shared",
+	".qoder/skills/dingtalk-shared",
+	".qoderwork/skills/dingtalk-shared",
+	".gemini/skills/dingtalk-shared",
+	".codex/skills/dingtalk-shared",
+	".zcode/skills/dingtalk-shared",
+	".github/skills/dingtalk-shared",
+	".windsurf/skills/dingtalk-shared",
+	".augment/skills/dingtalk-shared",
+	".cline/skills/dingtalk-shared",
+	".amp/skills/dingtalk-shared",
+	".copilot/skills/dingtalk-shared",
+	".config/opencode/skills/dingtalk-shared",
+	".config/agents/skills/dingtalk-shared",
+	".codeium/windsurf/skills/dingtalk-shared",
+	".kiro/skills/dingtalk-shared",
+	".trae/skills/dingtalk-shared",
+	".openclaw/skills/dingtalk-shared",
+	".hermes/skills/dingtalk-shared",
+}
+
+var expectedReleaseAdmissionContexts = []string{
+	"Lint",
+	"Test",
+	"Coverage",
+	"Policy",
+	"Edition",
+	"Interface Integrity",
+	"AI Behavior",
+	"CLI Smoke",
+	"Mock MCP",
+}
+
+func TestPackageManagerVersionVerificationReadsRawBinary(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "verify-package-managers.sh"))
+	if err != nil {
+		t.Fatalf("Abs(verify-package-managers.sh) error = %v", err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	script := string(data)
+	for _, binary := range []string{`"$vendor_bin"`, `"$prefix/bin/dws"`} {
+		want := `LC_ALL=C grep -aFq "v$EXPECTED_VERSION" ` + binary
+		if !strings.Contains(script, want) {
+			t.Errorf("package-manager verifier is missing raw binary marker check %q", want)
+		}
+	}
+	if strings.Contains(script, `strings "$vendor_bin"`) || strings.Contains(script, `strings "$prefix/bin/dws"`) {
+		t.Fatal("package-manager verifier still requires the version marker to occupy a strings(1) line")
+	}
+	for _, want := range []string{
+		"UPSTREAM_AGENT_REGISTRY=",
+		"verify_compatible_skill_base",
+		`diff -qr "$canonical/$name" "$target"`,
+		"broken canonical Skill link",
+		"Skill link does not resolve to canonical source",
+		"Skill copy fallback differs from canonical source",
+		"unexpected mono Skill layout",
+		`verify_npm_install "$tarball_path" "specific-agent-roots"`,
+		`verify_npm_install "$tarball_path" "generic-fallback"`,
+	} {
+		if !strings.Contains(script, want) {
+			t.Errorf("package-manager verifier is missing multi-layout contract %q", want)
+		}
+	}
+	if strings.Contains(script, "HOME_SKILL_TARGETS=") {
+		t.Fatal("package-manager verifier still declares the legacy mono target contract")
+	}
+}
+
+func TestNPMWrapperForwardsSIGTERMToVendor(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX signal forwarding contract")
+	}
+	nodePath, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node is required to exercise the npm wrapper")
+	}
+
+	root := t.TempDir()
+	binDir := filepath.Join(root, "bin")
+	vendorDir := filepath.Join(root, "vendor")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(vendorDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wrapperSource := filepath.Join("..", "..", "build", "npm", "bin", "dws.js")
+	wrapperData, err := os.ReadFile(wrapperSource)
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrapperPath := filepath.Join(binDir, "dws.js")
+	if err := os.WriteFile(wrapperPath, wrapperData, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	pidPath := filepath.Join(root, "child.pid")
+	signalPath := filepath.Join(root, "child.signal")
+	vendorPath := filepath.Join(vendorDir, "dws")
+	vendorScript := "#!/bin/sh\n" +
+		"printf '%s' \"$$\" > \"$DWS_TEST_CHILD_PID_FILE\"\n" +
+		"trap 'printf TERM > \"$DWS_TEST_SIGNAL_FILE\"; exit 0' TERM\n" +
+		"while :; do sleep 0.1; done\n"
+	if err := os.WriteFile(vendorPath, []byte(vendorScript), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(nodePath, wrapperPath)
+	cmd.Env = append(os.Environ(),
+		"DWS_TEST_CHILD_PID_FILE="+pidPath,
+		"DWS_TEST_SIGNAL_FILE="+signalPath,
+	)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	childPID := waitForPIDFile(t, pidPath)
+	t.Cleanup(func() {
+		_ = exec.Command("kill", "-TERM", strconv.Itoa(childPID)).Run()
+	})
+	if err := cmd.Process.Signal(syscall.SIGTERM); err != nil {
+		t.Fatalf("signal npm wrapper: %v", err)
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("signal-terminated npm wrapper returned success")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("npm wrapper did not exit after SIGTERM")
+	}
+
+	signalData, err := os.ReadFile(signalPath)
+	if err != nil {
+		t.Fatalf("vendor did not record SIGTERM: %v", err)
+	}
+	if got := strings.TrimSpace(string(signalData)); got != "TERM" {
+		t.Fatalf("vendor signal = %q, want TERM", got)
+	}
+	if err := exec.Command("kill", "-0", strconv.Itoa(childPID)).Run(); err == nil {
+		t.Fatalf("vendor process %d is still running after npm wrapper exited", childPID)
+	}
+}
+
+func TestNPMWrapperForwardsForegroundGroupSIGINTToVendorGroupOnce(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX foreground process-group signal contract")
+	}
+	nodePath, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node is required to exercise the npm wrapper")
+	}
+
+	root := t.TempDir()
+	binDir := filepath.Join(root, "bin")
+	vendorDir := filepath.Join(root, "vendor")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(vendorDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wrapperData, err := os.ReadFile(filepath.Join("..", "..", "build", "npm", "bin", "dws.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrapperPath := filepath.Join(binDir, "dws.js")
+	if err := os.WriteFile(wrapperPath, wrapperData, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	pidPath := filepath.Join(root, "child.pid")
+	signalPath := filepath.Join(root, "child.signal")
+	descendantPIDPath := filepath.Join(root, "descendant.pid")
+	descendantSignalPath := filepath.Join(root, "descendant.signal")
+	vendorPath := filepath.Join(vendorDir, "dws")
+	vendorScript := `#!/usr/bin/env node
+"use strict";
+const fs = require("fs");
+const childProcess = require("child_process");
+const descendantSource = String.raw` + "`" + `
+"use strict";
+const fs = require("fs");
+let exiting = false;
+process.on("SIGINT", () => {
+  fs.appendFileSync(process.env.DWS_TEST_DESCENDANT_SIGNAL_FILE, "INT\n");
+  if (!exiting) {
+    exiting = true;
+    setTimeout(() => process.exit(0), 250);
+  }
+});
+fs.writeFileSync(process.env.DWS_TEST_DESCENDANT_PID_FILE, String(process.pid));
+setInterval(() => {}, 1000);
+` + "`" + `;
+childProcess.spawn(process.execPath, ["-e", descendantSource], {
+  stdio: "inherit",
+  env: process.env,
+});
+let exiting = false;
+process.on("SIGINT", () => {
+  fs.appendFileSync(process.env.DWS_TEST_SIGNAL_FILE, "INT\n");
+  if (!exiting) {
+    exiting = true;
+    setTimeout(() => process.exit(0), 250);
+  }
+});
+fs.writeFileSync(process.env.DWS_TEST_CHILD_PID_FILE, String(process.pid));
+setInterval(() => {}, 1000);
+`
+	if err := os.WriteFile(vendorPath, []byte(vendorScript), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(nodePath, wrapperPath)
+	cmd.Env = append(os.Environ(),
+		"DWS_TEST_CHILD_PID_FILE="+pidPath,
+		"DWS_TEST_SIGNAL_FILE="+signalPath,
+		"DWS_TEST_DESCENDANT_PID_FILE="+descendantPIDPath,
+		"DWS_TEST_DESCENDANT_SIGNAL_FILE="+descendantSignalPath,
+	)
+	configureIsolatedProcessGroup(cmd)
+	if err := cmd.Start(); err != nil {
+		t.Fatal(err)
+	}
+
+	childPID := waitForPIDFile(t, pidPath)
+	descendantPID := waitForPIDFile(t, descendantPIDPath)
+	t.Cleanup(func() {
+		_ = exec.Command("kill", "-TERM", strconv.Itoa(childPID)).Run()
+		_ = exec.Command("kill", "-TERM", strconv.Itoa(descendantPID)).Run()
+	})
+	wrapperGroup, err := processGroupID(cmd.Process.Pid)
+	if err != nil {
+		t.Fatalf("wrapper process group: %v", err)
+	}
+	childGroup, err := processGroupID(childPID)
+	if err != nil {
+		t.Fatalf("vendor process group: %v", err)
+	}
+	if childGroup == wrapperGroup {
+		t.Fatalf("vendor process group = wrapper process group %d; foreground signal would be duplicated", childGroup)
+	}
+	descendantGroup, err := processGroupID(descendantPID)
+	if err != nil {
+		t.Fatalf("descendant process group: %v", err)
+	}
+	if descendantGroup != childGroup {
+		t.Fatalf("descendant process group = %d, want vendor process group %d", descendantGroup, childGroup)
+	}
+
+	if err := signalProcessGroup(wrapperGroup, syscall.SIGINT); err != nil {
+		t.Fatalf("signal foreground process group: %v", err)
+	}
+
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	select {
+	case err := <-done:
+		if err == nil {
+			t.Fatal("signal-terminated npm wrapper returned success")
+		}
+	case <-time.After(5 * time.Second):
+		t.Fatal("npm wrapper did not exit after foreground SIGINT")
+	}
+
+	signalData, err := os.ReadFile(signalPath)
+	if err != nil {
+		t.Fatalf("vendor did not record SIGINT: %v", err)
+	}
+	if got := strings.Fields(string(signalData)); len(got) != 1 || got[0] != "INT" {
+		t.Fatalf("vendor signals = %q, want exactly one INT", got)
+	}
+	descendantSignalData, err := os.ReadFile(descendantSignalPath)
+	if err != nil {
+		t.Fatalf("vendor descendant did not record SIGINT: %v", err)
+	}
+	if got := strings.Fields(string(descendantSignalData)); len(got) != 1 || got[0] != "INT" {
+		t.Fatalf("vendor descendant signals = %q, want exactly one INT", got)
+	}
+	waitForProcessExit(t, childPID, "vendor")
+	waitForProcessExit(t, descendantPID, "vendor descendant")
+}
+
+func TestNPMWrapperPreservesInteractiveTTY(t *testing.T) {
+	if runtime.GOOS == "windows" {
+		t.Skip("POSIX controlling-terminal contract")
+	}
+	nodePath, err := exec.LookPath("node")
+	if err != nil {
+		t.Skip("node is required to exercise the npm wrapper")
+	}
+
+	root := t.TempDir()
+	binDir := filepath.Join(root, "bin")
+	vendorDir := filepath.Join(root, "vendor")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+	if err := os.MkdirAll(vendorDir, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	wrapperData, err := os.ReadFile(filepath.Join("..", "..", "build", "npm", "bin", "dws.js"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	wrapperPath := filepath.Join(binDir, "dws.js")
+	if err := os.WriteFile(wrapperPath, wrapperData, 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	resultPath := filepath.Join(root, "interactive.result")
+	readyPath := filepath.Join(root, "interactive.ready")
+	vendorPath := filepath.Join(vendorDir, "dws")
+	vendorScript := "#!/bin/sh\n" +
+		"printf 'DWS prompt: ' > /dev/tty\n" +
+		"printf ready > \"$DWS_TEST_INTERACTIVE_READY\"\n" +
+		"IFS= read -r answer < /dev/tty\n" +
+		"printf '%s' \"$answer\" > \"$DWS_TEST_INTERACTIVE_RESULT\"\n"
+	if err := os.WriteFile(vendorPath, []byte(vendorScript), 0o755); err != nil {
+		t.Fatal(err)
+	}
+
+	cmd := exec.Command(nodePath, wrapperPath)
+	cmd.Env = append(os.Environ(),
+		"DWS_TEST_INTERACTIVE_RESULT="+resultPath,
+		"DWS_TEST_INTERACTIVE_READY="+readyPath,
+	)
+	terminal, err := startWithPTY(cmd)
+	if err != nil {
+		t.Fatalf("start npm wrapper with PTY: %v", err)
+	}
+	defer terminal.Close()
+	t.Cleanup(func() { _ = cmd.Process.Kill() })
+	var output bytes.Buffer
+	outputDone := make(chan struct{})
+	go func() {
+		_, _ = io.Copy(&output, terminal)
+		close(outputDone)
+	}()
+	waitForFile(t, readyPath)
+	if _, err := fmt.Fprintln(terminal, "confirmed"); err != nil {
+		t.Fatalf("write interactive input: %v", err)
+	}
+	done := make(chan error, 1)
+	go func() { done <- cmd.Wait() }()
+	var waitErr error
+	select {
+	case waitErr = <-done:
+	case <-time.After(5 * time.Second):
+		t.Fatal("interactive npm wrapper did not exit after terminal input")
+	}
+	_ = terminal.Close()
+	<-outputDone
+	if waitErr != nil {
+		t.Fatalf("interactive npm wrapper: %v\noutput:\n%s", waitErr, output.String())
+	}
+	result, err := os.ReadFile(resultPath)
+	if err != nil {
+		t.Fatalf("interactive vendor did not record terminal input: %v\noutput:\n%s", err, output.String())
+	}
+	if got := strings.TrimSpace(string(result)); got != "confirmed" {
+		t.Fatalf("interactive input = %q, want confirmed\noutput:\n%s", got, output.String())
+	}
+}
+
+func waitForPIDFile(t *testing.T, path string) int {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		data, err := os.ReadFile(path)
+		if err == nil {
+			pid, parseErr := strconv.Atoi(strings.TrimSpace(string(data)))
+			if parseErr == nil && pid > 0 {
+				return pid
+			}
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for vendor pid file %s", path)
+	return 0
+}
+
+func waitForFile(t *testing.T, path string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if _, err := os.Stat(path); err == nil {
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("timed out waiting for file %s", path)
+}
+
+func waitForProcessExit(t *testing.T, pid int, label string) {
+	t.Helper()
+	deadline := time.Now().Add(5 * time.Second)
+	for time.Now().Before(deadline) {
+		if err := exec.Command("kill", "-0", strconv.Itoa(pid)).Run(); err != nil {
+			return
+		}
+		time.Sleep(25 * time.Millisecond)
+	}
+	t.Fatalf("%s process %d is still running after npm wrapper exited", label, pid)
+}
+
+func TestPackageManagerVerifierCoversSpecificAndFallbackSkillRoots(t *testing.T) {
+	t.Parallel()
+
+	postGoreleaserPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+	verifierPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "verify-package-managers.sh"))
+	if err != nil {
+		t.Fatalf("Abs(verify-package-managers.sh) error = %v", err)
+	}
+
+	distDir := filepath.Join(t.TempDir(), "dist")
+	targets := []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+	}
+	hostArchive := "dws-" + runtime.GOOS + "-" + runtime.GOARCH + ".tar.gz"
+	if runtime.GOOS == "windows" {
+		hostArchive = "dws-" + runtime.GOOS + "-" + runtime.GOARCH + ".zip"
+	}
+	foundHost := false
+	for _, target := range targets {
+		if target == hostArchive {
+			foundHost = true
+			break
+		}
+	}
+	if !foundHost {
+		targets = append(targets, hostArchive)
+	}
+	seedDistArtifacts(t, distDir, targets)
+
+	packageCmd := exec.Command("sh", postGoreleaserPath)
+	packageCmd.Env = postGoreleaserEnv(t, distDir, "v0.0.0-test", "https://downloads.example.com/dws/releases/v0.0.0-test")
+	if output, err := packageCmd.CombinedOutput(); err != nil {
+		t.Fatalf("post-goreleaser.sh error = %v\noutput:\n%s", err, output)
+	}
+
+	verifyCmd := exec.Command("sh", verifierPath, "--npm-only")
+	hostXDG := filepath.Join(t.TempDir(), "host-xdg")
+	verifyCmd.Env = replaceTestEnv(os.Environ(),
+		"DWS_PACKAGE_DIST_DIR", distDir,
+		"XDG_CONFIG_HOME", hostXDG,
+	)
+	output, err := verifyCmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("verify-package-managers.sh error = %v\noutput:\n%s", err, output)
+	}
+	if _, err := os.Stat(hostXDG); !os.IsNotExist(err) {
+		t.Fatalf("package verifier touched inherited XDG_CONFIG_HOME %s: %v", hostXDG, err)
+	}
+	for _, scenario := range []string{"specific-agent-roots", "generic-fallback"} {
+		if !strings.Contains(string(output), "verifying npm package install ("+scenario+")") {
+			t.Errorf("verifier output is missing %s scenario:\n%s", scenario, output)
+		}
+	}
+}
+
+func TestPackageManagerVerifierAcceptsOnlyCorrectLinksOrCopies(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "verify-package-managers.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	text := string(data)
+	cut := strings.Index(text, "\nverify_npm_install()")
+	if cut < 0 {
+		t.Fatal("verify-package-managers.sh helper boundary missing")
+	}
+	library := filepath.Join(t.TempDir(), "verifier-lib.sh")
+	mustWriteFile(t, library, data[:cut], 0o755)
+
+	for _, tc := range []struct {
+		name    string
+		prepare func(t *testing.T, home, base string)
+		wantOK  bool
+	}{
+		{
+			name: "correct-link",
+			prepare: func(t *testing.T, _, base string) {
+				t.Helper()
+				// The canonical layout publishes RELATIVE links; the verifier now
+				// rejects absolute targets, so the fixture must match production.
+				if err := os.Symlink(filepath.Join("..", "..", ".agents", "skills", "dingtalk-shared"), filepath.Join(base, "dingtalk-shared")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantOK: true,
+		},
+		{
+			name: "complete-copy",
+			prepare: func(t *testing.T, _, base string) {
+				t.Helper()
+				mustWriteFile(t, filepath.Join(base, "dingtalk-shared", "SKILL.md"), []byte("canonical\n"), 0o644)
+			},
+			wantOK: true,
+		},
+		{
+			name: "wrong-link",
+			prepare: func(t *testing.T, home, base string) {
+				t.Helper()
+				wrong := filepath.Join(home, "wrong", "dingtalk-shared")
+				mustWriteFile(t, filepath.Join(wrong, "SKILL.md"), []byte("canonical\n"), 0o644)
+				if err := os.Symlink(wrong, filepath.Join(base, "dingtalk-shared")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantOK: false,
+		},
+		{
+			name: "broken-link",
+			prepare: func(t *testing.T, home, base string) {
+				t.Helper()
+				if err := os.Symlink(filepath.Join(home, "missing"), filepath.Join(base, "dingtalk-shared")); err != nil {
+					t.Fatal(err)
+				}
+			},
+			wantOK: false,
+		},
+		{
+			name: "different-copy",
+			prepare: func(t *testing.T, _, base string) {
+				t.Helper()
+				mustWriteFile(t, filepath.Join(base, "dingtalk-shared", "SKILL.md"), []byte("different\n"), 0o644)
+			},
+			wantOK: false,
+		},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			home := t.TempDir()
+			base := filepath.Join(home, ".claude", "skills")
+			mustWriteFile(t, filepath.Join(home, ".agents", "skills", "dingtalk-shared", "SKILL.md"), []byte("canonical\n"), 0o644)
+			if err := os.MkdirAll(base, 0o755); err != nil {
+				t.Fatal(err)
+			}
+			tc.prepare(t, home, base)
+			cmd := exec.Command("sh", "-c", `. "$DWS_TEST_LIBRARY"; verify_compatible_skill_base "$DWS_TEST_HOME" "$DWS_TEST_BASE"`)
+			cmd.Env = append(os.Environ(), "DWS_TEST_LIBRARY="+library, "DWS_TEST_HOME="+home, "DWS_TEST_BASE="+base)
+			output, err := cmd.CombinedOutput()
+			if tc.wantOK && err != nil {
+				t.Fatalf("verifier rejected valid target: %v\n%s", err, output)
+			}
+			if !tc.wantOK && err == nil {
+				t.Fatalf("verifier accepted invalid target\n%s", output)
+			}
+		})
+	}
+}
+
+func seedDistArchive(t *testing.T, path string) {
+	t.Helper()
+	file, err := os.Create(path)
+	if err != nil {
+		t.Fatalf("Create(%s) error = %v", path, err)
+	}
+	defer file.Close()
+
+	slot, err := os.ReadFile(filepath.Join("..", "..", "internal", "runtimepayload", "assets", "windows-amd64.payload"))
+	if err != nil {
+		t.Fatalf("read runtime payload slot: %v", err)
+	}
+	content := append([]byte("#!/bin/sh\nexit 0\n"), slot...)
+	switch {
+	case strings.HasSuffix(path, ".tar.gz"):
+		gzipWriter := gzip.NewWriter(file)
+		tarWriter := tar.NewWriter(gzipWriter)
+		if err := tarWriter.WriteHeader(&tar.Header{Name: "dws", Mode: 0o755, Size: int64(len(content))}); err != nil {
+			t.Fatalf("WriteHeader(%s) error = %v", path, err)
+		}
+		if _, err := tarWriter.Write(content); err != nil {
+			t.Fatalf("Write(%s) error = %v", path, err)
+		}
+		if err := tarWriter.Close(); err != nil {
+			t.Fatalf("Close tar(%s) error = %v", path, err)
+		}
+		if err := gzipWriter.Close(); err != nil {
+			t.Fatalf("Close gzip(%s) error = %v", path, err)
+		}
+	case strings.HasSuffix(path, ".zip"):
+		zipWriter := zip.NewWriter(file)
+		header := &zip.FileHeader{Name: "dws.exe", Method: zip.Store}
+		header.SetMode(0o755)
+		entry, err := zipWriter.CreateHeader(header)
+		if err != nil {
+			t.Fatalf("CreateHeader(%s) error = %v", path, err)
+		}
+		if _, err := entry.Write(content); err != nil {
+			t.Fatalf("Write(%s) error = %v", path, err)
+		}
+		if err := zipWriter.Close(); err != nil {
+			t.Fatalf("Close zip(%s) error = %v", path, err)
+		}
+	default:
+		t.Fatalf("unsupported archive path %s", path)
+	}
+}
+
+// seedDistArtifacts creates minimal goreleaser output archives and a
+// checksums.txt stub so post-goreleaser.sh can run without a real build.
+// Every archive is valid so the packaging tests exercise extraction for all
+// platforms; Darwin archives are additionally processed by the signing path.
+func seedDistArtifacts(t *testing.T, distDir string, targets []string) {
+	t.Helper()
+	if err := os.MkdirAll(distDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", distDir, err)
+	}
+
+	for _, target := range targets {
+		p := filepath.Join(distDir, target)
+		seedDistArchive(t, p)
+	}
+
+	// Create empty checksums.txt (goreleaser creates this)
+	checksums := filepath.Join(distDir, "checksums.txt")
+	var lines []string
+	for _, target := range targets {
+		lines = append(lines, "deadbeef00000000000000000000000000000000000000000000000000000000  "+target)
+	}
+	if err := os.WriteFile(checksums, []byte(strings.Join(lines, "\n")+"\n"), 0o644); err != nil {
+		t.Fatalf("WriteFile(%s) error = %v", checksums, err)
+	}
+}
+
+func postGoreleaserEnv(t *testing.T, distDir, version, releaseBaseURL string) []string {
+	t.Helper()
+
+	binDir := t.TempDir()
+	fakeCodesign := filepath.Join(binDir, "codesign")
+	if err := os.WriteFile(fakeCodesign, []byte("#!/bin/sh\nexit 0\n"), 0o755); err != nil {
+		t.Fatalf("WriteFile(fake codesign) error = %v", err)
+	}
+
+	return append(os.Environ(),
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"DWS_PACKAGE_VERSION="+version,
+		"DWS_PACKAGE_DIST_DIR="+distDir,
+		"DWS_RELEASE_BASE_URL="+releaseBaseURL,
+	)
+}
+
+func TestPostGoreleaserBuildsExpectedArtifacts(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+
+	root := t.TempDir()
+	distDir := filepath.Join(root, "dist")
+
+	hostOS := runtime.GOOS
+	hostArch := runtime.GOARCH
+	archiveName := "dws-" + hostOS + "-" + hostArch + ".tar.gz"
+	if hostOS == "windows" {
+		archiveName = "dws-" + hostOS + "-" + hostArch + ".zip"
+	}
+
+	// Seed every archive referenced by the public multi-platform Homebrew formula.
+	// The local verification formula still selects the current host archive.
+	targets := []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+	}
+	foundHost := false
+	for _, target := range targets {
+		if target == archiveName {
+			foundHost = true
+			break
+		}
+	}
+	if !foundHost {
+		targets = append(targets, archiveName)
+	}
+	seedDistArtifacts(t, distDir, targets)
+
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = postGoreleaserEnv(t, distDir, "v1.2.3", "https://downloads.example.com/dws/releases/v1.2.3")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("post-goreleaser.sh error = %v\noutput:\n%s", err, string(output))
+	}
+
+	for _, rel := range []string{
+		"dws-skills.zip",
+		"checksums.txt",
+		filepath.Join("npm", "dingtalk-workspace-cli", "package.json"),
+		filepath.Join("homebrew", "dingtalk-workspace-cli.rb"),
+		filepath.Join("homebrew", "dingtalk-workspace-cli-local.rb"),
+	} {
+		full := filepath.Join(distDir, rel)
+		if _, err := os.Stat(full); err != nil {
+			t.Fatalf("Stat(%s) error = %v\noutput:\n%s", full, err, string(output))
+		}
+	}
+
+	formulaPath := filepath.Join(distDir, "homebrew", "dingtalk-workspace-cli-local.rb")
+	formulaData, err := os.ReadFile(formulaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", formulaPath, err)
+	}
+	formulaText := string(formulaData)
+	for _, want := range []string{
+		"class DingtalkWorkspaceCliLocal < Formula",
+		"resource \"skills\" do",
+		"Install locally built DingTalk workspace CLI artifacts for verification",
+		"Agent Skills are bundled in #{pkgshare}/skills/dws",
+	} {
+		if !strings.Contains(formulaText, want) {
+			t.Fatalf("formula missing %q:\n%s", want, formulaText)
+		}
+	}
+
+	releaseFormulaPath := filepath.Join(distDir, "homebrew", "dingtalk-workspace-cli.rb")
+	releaseFormulaData, err := os.ReadFile(releaseFormulaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", releaseFormulaPath, err)
+	}
+	releaseFormulaText := string(releaseFormulaData)
+	for _, want := range []string{
+		"class DingtalkWorkspaceCli < Formula",
+		`desc "Automate DingTalk workspace tasks from the terminal"`,
+		`version "1.2.3"`,
+		"on_macos do",
+		"on_linux do",
+		"https://downloads.example.com/dws/releases/v1.2.3/dws-darwin-amd64.tar.gz",
+		"https://downloads.example.com/dws/releases/v1.2.3/dws-darwin-arm64.tar.gz",
+		"https://downloads.example.com/dws/releases/v1.2.3/dws-linux-amd64.tar.gz",
+		"https://downloads.example.com/dws/releases/v1.2.3/dws-linux-arm64.tar.gz",
+		"https://downloads.example.com/dws/releases/v1.2.3/dws-skills.zip",
+	} {
+		if !strings.Contains(releaseFormulaText, want) {
+			t.Fatalf("release formula missing %q:\n%s", want, releaseFormulaText)
+		}
+	}
+
+	packageJSONPath := filepath.Join(distDir, "npm", "dingtalk-workspace-cli", "package.json")
+	packageJSON, err := os.ReadFile(packageJSONPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", packageJSONPath, err)
+	}
+	for _, want := range []string{
+		"\"name\": \"dingtalk-workspace-cli\"",
+		"DingTalk Workspace CLI",
+		"\"postinstall\": \"node install.js\"",
+	} {
+		if !strings.Contains(string(packageJSON), want) {
+			t.Fatalf("package.json missing %q:\n%s", want, string(packageJSON))
+		}
+	}
+
+	npmInstallPath := filepath.Join(distDir, "npm", "dingtalk-workspace-cli", "install.js")
+	npmInstallData, err := os.ReadFile(npmInstallPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", npmInstallPath, err)
+	}
+	npmInstallText := string(npmInstallData)
+	for _, target := range expectedPackagedSkillTargets {
+		agentDir := strings.TrimSuffix(target, "/dingtalk-shared")
+		if !strings.Contains(npmInstallText, agentDir) {
+			t.Fatalf("npm install.js missing %q:\n%s", agentDir, npmInstallText)
+		}
+	}
+
+	for _, want := range []string{"Agent Skills are bundled", "dws skill setup"} {
+		if !strings.Contains(releaseFormulaText, want) {
+			t.Fatalf("release formula missing caveat %q:\n%s", want, releaseFormulaText)
+		}
+	}
+	if strings.Contains(releaseFormulaText, "Dir.home") {
+		t.Fatalf("release formula must not mutate the user's home directory:\n%s", releaseFormulaText)
+	}
+	for _, forbidden := range []string{`require "fileutils"`, "FileUtils.", "__DESCRIPTION__"} {
+		if strings.Contains(releaseFormulaText, forbidden) {
+			t.Fatalf("release formula contains forbidden text %q:\n%s", forbidden, releaseFormulaText)
+		}
+	}
+
+	// Re-running post packaging must replace, not duplicate, the skills checksum.
+	cmd = exec.Command("sh", scriptPath)
+	cmd.Env = postGoreleaserEnv(t, distDir, "v1.2.3", "https://downloads.example.com/dws/releases/v1.2.3")
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("second post-goreleaser.sh error = %v\noutput:\n%s", err, output)
+	}
+
+	// Verify checksums.txt includes exactly one skills zip entry.
+	checksumsData, err := os.ReadFile(filepath.Join(distDir, "checksums.txt"))
+	if err != nil {
+		t.Fatalf("ReadFile(checksums.txt) error = %v", err)
+	}
+	if count := strings.Count(string(checksumsData), "dws-skills.zip"); count != 1 {
+		t.Fatalf("checksums.txt dws-skills.zip count = %d, want 1:\n%s", count, checksumsData)
+	}
+}
+
+func TestCheckedInHomebrewFormulaIsStableAndSideEffectFree(t *testing.T) {
+	t.Parallel()
+
+	formulaPath := filepath.Join("..", "..", "Formula", "dingtalk-workspace-cli.rb")
+	data, err := os.ReadFile(formulaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", formulaPath, err)
+	}
+	formula := string(data)
+	versionPrefix := `version "`
+	versionStart := strings.Index(formula, versionPrefix)
+	if versionStart == -1 {
+		t.Fatal("checked-in Homebrew formula has no explicit version")
+	}
+	versionStart += len(versionPrefix)
+	versionEnd := strings.Index(formula[versionStart:], `"`)
+	if versionEnd == -1 {
+		t.Fatal("checked-in Homebrew formula has an invalid version declaration")
+	}
+	version := formula[versionStart : versionStart+versionEnd]
+	if strings.Contains(version, "-") {
+		t.Fatalf("checked-in Homebrew formula must be stable, got version %q", version)
+	}
+	releaseBase := "releases/download/v" + version + "/"
+	for _, required := range []string{
+		releaseBase + "dws-darwin-amd64.tar.gz",
+		releaseBase + "dws-darwin-arm64.tar.gz",
+		releaseBase + "dws-linux-amd64.tar.gz",
+		releaseBase + "dws-linux-arm64.tar.gz",
+		releaseBase + "dws-skills.zip",
+		"dws skill setup",
+	} {
+		if !strings.Contains(formula, required) {
+			t.Errorf("checked-in Homebrew formula is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{"-beta.", "Dir.home", "def post_install", `require "fileutils"`, "FileUtils."} {
+		if strings.Contains(formula, forbidden) {
+			t.Errorf("checked-in Homebrew formula contains forbidden text %q", forbidden)
+		}
+	}
+}
+
+func TestCheckedInHomebrewBetaFormulaIsSeparateAndKegOnly(t *testing.T) {
+	t.Parallel()
+
+	formulaPath := filepath.Join("..", "..", "Formula", "dingtalk-workspace-cli-beta.rb")
+	data, err := os.ReadFile(formulaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", formulaPath, err)
+	}
+	formula := string(data)
+	versionPrefix := `version "`
+	versionStart := strings.Index(formula, versionPrefix)
+	if versionStart == -1 {
+		t.Fatal("checked-in Homebrew beta formula is missing a version declaration")
+	}
+	versionStart += len(versionPrefix)
+	versionEnd := strings.Index(formula[versionStart:], `"`)
+	if versionEnd == -1 {
+		t.Fatal("checked-in Homebrew beta formula has an invalid version declaration")
+	}
+	version := formula[versionStart : versionStart+versionEnd]
+	if !strings.Contains(version, "-") {
+		t.Fatalf("checked-in Homebrew beta formula must be a prerelease, got version %q", version)
+	}
+	releaseBase := "releases/download/v" + version + "/"
+	for _, required := range []string{
+		"class DingtalkWorkspaceCliBeta < Formula",
+		`desc "Automate DingTalk workspace tasks from the terminal (beta channel)"`,
+		`keg_only "it is the beta channel and conflicts with dingtalk-workspace-cli"`,
+		releaseBase + "dws-darwin-amd64.tar.gz",
+		releaseBase + "dws-darwin-arm64.tar.gz",
+		releaseBase + "dws-linux-amd64.tar.gz",
+		releaseBase + "dws-linux-arm64.tar.gz",
+		releaseBase + "dws-skills.zip",
+		"This beta is keg-only",
+	} {
+		if !strings.Contains(formula, required) {
+			t.Errorf("checked-in Homebrew beta formula is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{"Dir.home", "def post_install", `require "fileutils"`, "FileUtils."} {
+		if strings.Contains(formula, forbidden) {
+			t.Errorf("checked-in Homebrew beta formula contains forbidden text %q", forbidden)
+		}
+	}
+}
+
+func TestPostGoreleaserBuildsVersionedBetaFormula(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+	distDir := filepath.Join(t.TempDir(), "dist")
+	seedDistArtifacts(t, distDir, []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+	})
+	env := postGoreleaserEnv(t, distDir, "v1.2.3-beta.4", "https://downloads.example.com/dws/releases/v1.2.3-beta.4")
+	for i, value := range env {
+		if strings.HasPrefix(value, "DWS_PACKAGE_VERSION=") {
+			env[i] = "DWS_PACKAGE_VERSION=v1.2.3-beta.4"
+		}
+	}
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = env
+	if output, err := cmd.CombinedOutput(); err != nil {
+		t.Fatalf("post-goreleaser.sh error = %v\noutput:\n%s", err, output)
+	}
+
+	formulaPath := filepath.Join(distDir, "homebrew", "dingtalk-workspace-cli-beta.rb")
+	data, err := os.ReadFile(formulaPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", formulaPath, err)
+	}
+	formula := string(data)
+	for _, required := range []string{
+		"class DingtalkWorkspaceCliBeta < Formula",
+		`desc "Automate DingTalk workspace tasks from the terminal (beta channel)"`,
+		`version "1.2.3-beta.4"`,
+		`keg_only "it is the beta channel and conflicts with dingtalk-workspace-cli"`,
+		"This beta is keg-only",
+	} {
+		if !strings.Contains(formula, required) {
+			t.Errorf("generated beta formula is missing %q", required)
+		}
+	}
+	if strings.Contains(formula, "__") {
+		t.Fatalf("generated beta formula contains an unresolved placeholder:\n%s", formula)
+	}
+	for _, forbidden := range []string{`require "fileutils"`, "FileUtils."} {
+		if strings.Contains(formula, forbidden) {
+			t.Fatalf("generated beta formula contains forbidden text %q:\n%s", forbidden, formula)
+		}
+	}
+}
+
+func TestPostGoreleaserAllPlatformNpmAssets(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+
+	root := t.TempDir()
+	distDir := filepath.Join(root, "dist")
+
+	allArchives := []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+		"dws-windows-amd64.zip",
+		"dws-windows-arm64.zip",
+	}
+
+	// Seed dist/ with all platform archives (simulate goreleaser --target all)
+	seedDistArtifacts(t, distDir, allArchives)
+
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = postGoreleaserEnv(t, distDir, "v9.9.9", "https://downloads.example.com/dws/releases/v9.9.9")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("post-goreleaser.sh error = %v\noutput:\n%s", err, string(output))
+	}
+
+	for _, rel := range append(allArchives, "dws-skills.zip", "checksums.txt") {
+		full := filepath.Join(distDir, rel)
+		if _, err := os.Stat(full); err != nil {
+			t.Fatalf("Stat(%s) error = %v\noutput:\n%s", full, err, string(output))
+		}
+	}
+
+	packageAssetsDir := filepath.Join(distDir, "npm", "dingtalk-workspace-cli", "assets")
+	for _, rel := range append(allArchives, "dws-skills.zip", "checksums.txt") {
+		if _, err := os.Stat(filepath.Join(packageAssetsDir, rel)); err != nil {
+			t.Fatalf("npm asset missing %q: %v", rel, err)
+		}
+	}
+}
+
+func TestPostGoreleaserUsesFlattenedSkillsSourceRoot(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+
+	text := string(data)
+	// The new layout copies skills/mono/ to staging root + staging/mono/, so we
+	// no longer have a single `cd "$ROOT/skills/mono"`. Instead verify the
+	// staging-based create_skills_zip references both source trees explicitly.
+	for _, want := range []string{
+		`cp -R "$ROOT/skills/mono/." "$staging/"`,
+		`cp -R "$ROOT/skills/mono/." "$staging/mono/"`,
+		`cp -R "$ROOT/skills/multi/." "$staging/multi/"`,
+	} {
+		if !strings.Contains(text, want) {
+			t.Fatalf("post-goreleaser.sh missing skills layout line %q:\n%s", want, text)
+		}
+	}
+	if strings.Contains(text, `cd "$ROOT/skills/dws"`) {
+		t.Fatalf("post-goreleaser.sh still references legacy nested skills root:\n%s", text)
+	}
+}
+
+// TestPostGoreleaserSkillsZipLayout exercises create_skills_zip end-to-end:
+// runs post-goreleaser.sh against a tempdir, unzips dws-skills.zip, and
+// verifies that the new zip layout contains (a) mono content at the root for
+// backward compatibility, (b) an explicit mono/ subtree, and (c) a multi/
+// subtree carrying per-product skills.
+func TestPostGoreleaserSkillsZipLayout(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+
+	root := t.TempDir()
+	distDir := filepath.Join(root, "dist")
+
+	hostOS := runtime.GOOS
+	hostArch := runtime.GOARCH
+	archiveName := "dws-" + hostOS + "-" + hostArch + ".tar.gz"
+	if hostOS == "windows" {
+		archiveName = "dws-" + hostOS + "-" + hostArch + ".zip"
+	}
+	targets := []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+	}
+	foundHost := false
+	for _, target := range targets {
+		if target == archiveName {
+			foundHost = true
+			break
+		}
+	}
+	if !foundHost {
+		targets = append(targets, archiveName)
+	}
+	seedDistArtifacts(t, distDir, targets)
+
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = postGoreleaserEnv(t, distDir, "v0.0.0-test", "https://downloads.example.com/dws/releases/v0.0.0")
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("post-goreleaser.sh error = %v\noutput:\n%s", err, string(output))
+	}
+
+	skillsZip := filepath.Join(distDir, "dws-skills.zip")
+	extractDir := filepath.Join(root, "skills-extract")
+	if err := os.MkdirAll(extractDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) = %v", extractDir, err)
+	}
+	if out, err := exec.Command("unzip", "-q", skillsZip, "-d", extractDir).CombinedOutput(); err != nil {
+		t.Fatalf("unzip dws-skills.zip error = %v: %s", err, string(out))
+	}
+
+	// Backward compat: zip root must carry mono content.
+	for _, rel := range []string{"SKILL.md", "references", "scripts"} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err != nil {
+			t.Fatalf("zip root missing %s (backward compat broken): %v", rel, err)
+		}
+	}
+	// Explicit mono/ subdir.
+	if _, err := os.Stat(filepath.Join(extractDir, "mono", "SKILL.md")); err != nil {
+		t.Fatalf("zip missing mono/SKILL.md: %v", err)
+	}
+	// Schema hints are shared build-only inputs, not mono Skill content. They
+	// must not leak into either backward-compatible copy of the mono bundle.
+	for _, rel := range []string{
+		"schema-hints",
+		filepath.Join("mono", "schema-hints"),
+		filepath.Join("multi", "schema-hints"),
+	} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err == nil {
+			t.Fatalf("zip unexpectedly contains build-only %s", rel)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("Stat(%s) error = %v", rel, err)
+		}
+	}
+	// multi/ subtree with at least one per-product skill.
+	multiEntries, err := os.ReadDir(filepath.Join(extractDir, "multi"))
+	if err != nil {
+		t.Fatalf("ReadDir multi/ error = %v", err)
+	}
+	if len(multiEntries) == 0 {
+		t.Fatalf("multi/ is empty; expected per-product skills")
+	}
+	foundDingtalk := false
+	for _, e := range multiEntries {
+		if e.IsDir() && strings.HasPrefix(e.Name(), "dingtalk-") {
+			foundDingtalk = true
+			skillFile := filepath.Join(extractDir, "multi", e.Name(), "SKILL.md")
+			if _, err := os.Stat(skillFile); err != nil {
+				t.Fatalf("missing %s: %v", skillFile, err)
+			}
+			break
+		}
+	}
+	if !foundDingtalk {
+		t.Fatalf("multi/ does not contain any dingtalk-* skill: %v", multiEntries)
+	}
+
+	// Personal IM/OA events are owned by the standalone dingtalk-event Skill.
+	// Keep the release archive layout explicit so a future refactor cannot
+	// silently fold the Event entry point back into dingtalk-misc.
+	for _, rel := range []string{
+		filepath.Join("multi", "dingtalk-event", "SKILL.md"),
+		filepath.Join("multi", "dingtalk-event", "references", "event-oa.md"),
+		filepath.Join("mono", "references", "products", "contract.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "contract.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err != nil {
+			t.Fatalf("zip missing %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(extractDir, "multi", "dingtalk-contract")); err == nil {
+		t.Fatal("zip unexpectedly ships smart contract as a standalone multi skill")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("Stat(multi/dingtalk-contract) error = %v", err)
+	}
+	for _, rel := range []string{
+		filepath.Join("multi", "dingtalk-misc", "references", "event.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-im.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-im-keys.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-im-lifecycle.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-im-operations.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-im-output.md"),
+		filepath.Join("multi", "dingtalk-misc", "references", "event-oa.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(extractDir, rel)); err == nil {
+			t.Fatalf("zip unexpectedly contains retired misc Event reference %s", rel)
+		} else if !os.IsNotExist(err) {
+			t.Fatalf("Stat(%s) error = %v", rel, err)
+		}
+	}
+}
+
+func readReleaseWorkflow(t *testing.T) string {
+	t.Helper()
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	return string(data)
+}
+
+func releaseWorkflowSection(t *testing.T, workflow, startMarker, endMarker string) string {
+	t.Helper()
+	start := strings.Index(workflow, startMarker)
+	if start == -1 {
+		t.Fatalf("release workflow is missing section marker %q", startMarker)
+	}
+	end := strings.Index(workflow[start+len(startMarker):], endMarker)
+	if end == -1 {
+		t.Fatalf("release workflow section %q is missing end marker %q", startMarker, endMarker)
+	}
+	return workflow[start : start+len(startMarker)+end]
+}
+
+func releaseWorkflowRunScript(t *testing.T, workflow, stepName, nextStepName string) string {
+	t.Helper()
+	section := releaseWorkflowSection(
+		t,
+		workflow,
+		"      - name: "+stepName+"\n",
+		"\n      - name: "+nextStepName+"\n",
+	)
+	const runMarker = "        run: |\n"
+	start := strings.Index(section, runMarker)
+	if start == -1 {
+		t.Fatalf("release workflow step %q is missing a run block", stepName)
+	}
+
+	lines := strings.Split(section[start+len(runMarker):], "\n")
+	for i, line := range lines {
+		if line == "" {
+			continue
+		}
+		if !strings.HasPrefix(line, "          ") {
+			t.Fatalf("release workflow step %q has an unexpected run indentation: %q", stepName, line)
+		}
+		lines[i] = strings.TrimPrefix(line, "          ")
+	}
+	return strings.Join(lines, "\n")
+}
+
+func TestReleaseWorkflowUsesDedicatedGovernanceIdentity(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+
+	const (
+		checksCall    = "github.rest.checks.listForRef"
+		paginatedCall = "github.paginate(github.rest.checks.listForRef"
+		immutableCall = `"GET /repos/{owner}/{repo}/immutable-releases"`
+		governanceID  = `github-token: ${{ secrets.RELEASE_GOVERNANCE_TOKEN }}`
+	)
+	if got := strings.Count(workflow, checksCall); got != 3 {
+		t.Fatalf("release workflow Checks API call count = %d, want one tag check, one preflight check, and one Formula-parent check", got)
+	}
+	if got := strings.Count(workflow, paginatedCall); got != 3 {
+		t.Fatalf("release workflow paginated Checks API call count = %d, want one tag check, one preflight check, and one Formula-parent check", got)
+	}
+	if got := strings.Count(workflow, immutableCall); got != 2 {
+		t.Fatalf("release workflow immutable governance call count = %d, want one tag check and one preflight check", got)
+	}
+	if got := strings.Count(workflow, governanceID); got != 2 {
+		t.Fatalf("release workflow dedicated governance identity count = %d, want one per immutable check", got)
+	}
+
+	sections := map[string]string{
+		"preflight": releaseWorkflowSection(t, workflow, "  governance-preflight:\n", "\n  release-contract:\n"),
+		"tag":       releaseWorkflowSection(t, workflow, "  release-contract:\n", "\n  release:\n"),
+	}
+	for name, section := range sections {
+		for _, required := range []string{
+			"checks: read",
+			checksCall,
+			paginatedCall,
+			"run.head_sha !== sha",
+			"const missing = requiredContexts.filter",
+			"const nonSuccess = requiredContexts.flatMap",
+			"missing:",
+			"non-success:",
+			immutableCall,
+			governanceID,
+			"RELEASE_GOVERNANCE_TOKEN with repository Administration read permission is required",
+		} {
+			if !strings.Contains(section, required) {
+				t.Errorf("%s governance path is missing %q", name, required)
+			}
+		}
+		for _, context := range expectedReleaseAdmissionContexts {
+			if !strings.Contains(section, fmt.Sprintf("%q", context)) {
+				t.Errorf("%s governance path is missing exact Code Admission context %q", name, context)
+			}
+		}
+		if strings.Contains(section, "check_name:") {
+			t.Errorf("%s governance path must fetch all check runs in one exact-SHA query", name)
+		}
+		if strings.Contains(section, "contents: write") {
+			t.Errorf("%s governance path must not grant contents write permission", name)
+		}
+		if strings.Contains(section, `github-token: ${{ secrets.GITHUB_TOKEN }}`) {
+			t.Errorf("%s immutable governance path must not fall back to GITHUB_TOKEN", name)
+		}
+	}
+
+	tagChecks := releaseWorkflowSection(
+		t,
+		sections["tag"],
+		"      - name: Require successful Code Admission contexts on the sealed commit\n",
+		"\n      - name: Require delivered previous stable baseline\n",
+	)
+	tagGovernanceToken := releaseWorkflowSection(
+		t,
+		sections["tag"],
+		"      - name: Require release governance token\n",
+		"\n      - name: Require immutable releases governance\n",
+	)
+	tagImmutableGovernance := releaseWorkflowSection(
+		t,
+		sections["tag"],
+		"      - name: Require immutable releases governance\n",
+		"\n      - name: Require successful beta delivery before stable promotion\n",
+	)
+	for name, section := range map[string]string{
+		"sealed Code Admission recheck":       tagChecks,
+		"sealed governance token check":       tagGovernanceToken,
+		"sealed immutable governance recheck": tagImmutableGovernance,
+	} {
+		if strings.Contains(section, "\n        if:") {
+			t.Errorf("%s must run for push, recovery, and cloud create modes", name)
+		}
+	}
+	if strings.Contains(workflow, "CI"+" Gate") {
+		t.Error("release workflow must not retain the retired aggregate gate name")
+	}
+}
+
+func TestReleaseScriptRequiresExactCodeAdmissionContexts(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "release.sh"))
+	if err != nil {
+		t.Fatalf("Abs(release.sh) error = %v", err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	script := string(data)
+
+	const checksQuery = `commits/$sealed_commit/check-runs?filter=latest&per_page=100`
+	if got := strings.Count(script, checksQuery); got != 1 {
+		t.Fatalf("release script exact-SHA Checks API query count = %d, want 1", got)
+	}
+	for _, required := range []string{
+		`group_by(.name) | map(max_by(.id))`,
+		`missing_contexts=""`,
+		`non_success_contexts=""`,
+		`"$context_state" != "success"`,
+		"Code Admission contexts are not all successful for sealed commit",
+		"missing: %s; non-success: %s",
+	} {
+		if !strings.Contains(script, required) {
+			t.Errorf("release script Code Admission gate is missing %q", required)
+		}
+	}
+	for _, context := range expectedReleaseAdmissionContexts {
+		if !strings.Contains(script, "\n"+context+"\n") {
+			t.Errorf("release script is missing exact Code Admission context %q", context)
+		}
+	}
+	if strings.Contains(script, "check_name=") {
+		t.Error("release script must fetch all check runs in one exact-SHA query")
+	}
+	if strings.Contains(script, "CI"+" Gate") {
+		t.Error("release script must not retain the retired aggregate gate name")
+	}
+}
+
+func TestReleaseWorkflowGovernancePreflightCannotPublish(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	preflight := releaseWorkflowSection(t, workflow, "  governance-preflight:\n", "\n  release-contract:\n")
+
+	for _, required := range []string{
+		"governance_preflight_commit:",
+		"governance_preflight_nonce:",
+		`format('Release governance preflight {0}', inputs.governance_preflight_nonce)`,
+		"name: Release governance preflight",
+		"name: Check out trusted preflight tooling",
+		"github.event_name == 'workflow_dispatch'",
+		"EXPECTED_REPOSITORY: DingTalk-Real-AI/dingtalk-workspace-cli",
+		`DEFAULT_BRANCH: ${{ github.event.repository.default_branch }}`,
+		`test "$PREFLIGHT_COMMIT" = "$GITHUB_SHA"`,
+		`ref: ${{ needs.dispatch-contract.outputs.mode == 'create_release' && github.sha || inputs.governance_preflight_commit }}`,
+		"persist-credentials: false",
+		"governance preflight cannot be combined with npm repair",
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("governance preflight contract is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"contents: write",
+		"goreleaser",
+		"gh release",
+		"npm publish",
+		"sync-to-oss",
+		"sync-to-gitee",
+	} {
+		if strings.Contains(preflight, forbidden) {
+			t.Errorf("governance preflight must not contain publishing behavior %q", forbidden)
+		}
+	}
+	admission := strings.Index(preflight, "Require successful Code Admission contexts on the preflight commit")
+	immutableGovernance := strings.Index(preflight, "Require immutable releases governance")
+	if admission == -1 || immutableGovernance == -1 || admission > immutableGovernance {
+		t.Error("governance preflight must validate all exact Code Admission contexts before immutable-release governance")
+	}
+	for _, forbidden := range []string{
+		"HOMEBREW_PR_TOKEN",
+		"verify-homebrew-pr-token.sh",
+		"DWS_TAP_PR_",
+	} {
+		if strings.Contains(preflight, forbidden) {
+			t.Errorf("governance preflight must not retain obsolete Homebrew PR machinery %q", forbidden)
+		}
+	}
+
+	mirror := releaseWorkflowSection(t, workflow, "  mirror-gitee-release:\n", "\n  repair-npm:\n")
+	if !strings.Contains(mirror, "needs: [release-contract, release, publish-channels]") {
+		t.Error("Gitee publication must remain downstream of the verified release target and channel jobs")
+	}
+	repair := workflow[strings.Index(workflow, "  repair-npm:\n"):]
+	for _, required := range []string{
+		"needs: dispatch-contract",
+		"needs.dispatch-contract.outputs.mode == 'repair_npm'",
+		`ref: ` + "`tags/withdrawn/${version}`",
+		"was withdrawn and cannot be repaired",
+		"verify-release-workflow-delivery.sh --npm-repair",
+	} {
+		if !strings.Contains(repair, required) {
+			t.Errorf("npm repair dispatch contract is missing %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowPlansAndSealsCurrentMainInTheCloud(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	planStart := strings.Index(workflow, "  release-plan:\n")
+	sealStart := strings.Index(workflow, "  seal-release:\n")
+	if planStart == -1 || sealStart == -1 || planStart >= sealStart {
+		t.Fatal("cloud release plan and seal jobs are missing or out of order")
+	}
+	plan := workflow[planStart:sealStart]
+	seal := workflow[sealStart:]
+
+	for _, required := range []string{
+		"release_operation:",
+		"- none",
+		"- plan",
+		"- publish",
+		"release_channel:",
+		"release_bump:",
+		`release_flow + npm_repair + gitee_repair + oss_repair + governance + recovery`,
+		`echo "mode=plan_release"`,
+		`echo "mode=create_release"`,
+		"name: Authorize repository release requester",
+		`if: ${{ steps.mode.outputs.mode == 'plan_release' || steps.mode.outputs.mode == 'create_release' }}`,
+		`REQUESTED_BY: ${{ github.actor }}`,
+		`TRIGGERED_BY: ${{ github.triggering_actor }}`,
+		"github.rest.repos.getCollaboratorPermissionLevel",
+		`!["write", "admin"].includes(permission)`,
+		`needs.dispatch-contract.outputs.mode == 'plan_release'`,
+		`needs.governance-preflight.result == 'success'`,
+		"actions: read",
+		"contents: read",
+		`github.event.repository.default_branch`,
+		`GITHUB_REPOSITORY" = "$EXPECTED_REPOSITORY`,
+		`GITHUB_REF" = "refs/heads/$DEFAULT_BRANCH`,
+		`ref: ${{ github.sha }}`,
+		"persist-credentials: false",
+		`refs/remotes/origin/main)" = "$GITHUB_SHA`,
+		"next-release-version.sh",
+		`'refs/tags/v*' 'refs/tags/withdrawn/v*'`,
+		"release ref manifest is empty after fetching allocated tags",
+		"refs_fingerprint",
+		"Validate the candidate release contract before sealing",
+		"release-contract.sh",
+		"Require delivered previous stable baseline before sealing",
+		"Require delivered beta before sealing stable",
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("cloud release contract is missing %q", required)
+		}
+	}
+	if strings.Contains(plan, "contents: write") {
+		t.Error("cloud release planning must remain read-only")
+	}
+	if !strings.Contains(plan, "needs: [dispatch-contract]") {
+		t.Error("cloud release planning must start after dispatch validation without serializing behind governance")
+	}
+	if strings.Contains(plan, "needs: [dispatch-contract, governance-preflight]") ||
+		strings.Contains(plan, "needs.governance-preflight.result") {
+		t.Error("read-only cloud planning must run in parallel with governance preflight")
+	}
+	if strings.Contains(plan, "refs/tags/v refs/tags/withdrawn/v") {
+		t.Error("cloud release planning must use wildcard ref patterns that match the seal API prefixes")
+	}
+	workflowHeader := workflow[:strings.Index(workflow, "\njobs:\n")]
+	if strings.Contains(workflowHeader, "\n  push:\n") {
+		t.Error("new releases must not bypass cloud authorization through a tag-push trigger")
+	}
+	if regexp.MustCompile(`(?m)^      release_confirmation:$`).MatchString(workflowHeader) ||
+		strings.Contains(workflow, "release_confirmation must be exactly: PUBLISH") {
+		t.Error("cloud publication must not retain the redundant typed confirmation gate")
+	}
+
+	for _, required := range []string{
+		"name: Seal cloud release tag",
+		`name: ${{ inputs.release_channel == 'stable' && 'release-stable' || 'release-beta' }}`,
+		"actions: read",
+		"contents: write",
+		"name: Verify release environment governance before sealing",
+		`"GET /repos/{owner}/{repo}/environments/{environment_name}"`,
+		`environment.can_admins_bypass !== false`,
+		`branchPolicy?.protected_branches !== true`,
+		`branchPolicy?.custom_branch_policies !== false`,
+		`reviewerRules.length !== 0`,
+		`reviewerRules[0].prevent_self_review !== true`,
+		`permission.data.permission !== "admin"`,
+		"name: Create one immutable annotated release tag",
+		`branch.data.commit.sha !== commit`,
+		`actualFingerprint !== expectedFingerprint`,
+		`github.rest.git.createTag`,
+		`github.rest.git.createRef`,
+		`ref: ` + "`refs/tags/${version}`",
+		"`Release-Run: ${context.runId}`",
+		"`Requested-By: ${context.actor}`",
+		"`Requested-By-ID: ${context.payload.sender?.id || \"\"}`",
+		"`Sealed-Commit: ${commit}`",
+		"`Workflow-Commit: ${context.sha}`",
+		"`Allocation-Fingerprint: ${expectedFingerprint}`",
+	} {
+		if !strings.Contains(seal, required) {
+			t.Errorf("cloud release seal is missing %q", required)
+		}
+	}
+	createRef := strings.Index(seal, "github.rest.git.createRef")
+	environmentPolicy := strings.Index(seal, "Verify release environment governance before sealing")
+	createTagStep := strings.Index(seal, "Create one immutable annotated release tag")
+	if environmentPolicy == -1 || createTagStep == -1 || environmentPolicy > createTagStep {
+		t.Fatal("release Environment policy must be verified before the first tag write")
+	}
+	visibilityRead := strings.LastIndex(seal, "github.rest.git.getRef")
+	if createRef == -1 || visibilityRead == -1 || visibilityRead < createRef {
+		t.Fatal("cloud release seal must confirm tag-ref visibility after creating the ref")
+	}
+	postCreate := seal[createRef:]
+	for _, required := range []string{
+		"error.status === 404",
+		"error.status === 429",
+		"error.status >= 500",
+		"setTimeout",
+		`.data.object.type !== "tag"`,
+		"!== expectedTagObject",
+		".data.tag !== version",
+		".data.object.sha !== commit",
+		".data.message !==",
+	} {
+		if !strings.Contains(seal, required) {
+			t.Errorf("post-create tag verification is missing %q", required)
+		}
+	}
+	if strings.Count(postCreate, "github.rest.git.getRef") < 2 {
+		t.Error("post-create tag handling must both adopt an exact uncertain write and confirm final ref visibility")
+	}
+	if !regexp.MustCompile(`(?m)const \w*[Rr]etry\w*[Dd]elays\w* = \[(?:0,?\s*){1}[\d,\s]+\];`).MatchString(seal) {
+		t.Error("post-create tag verification must use a bounded retry policy")
+	}
+	for _, required := range []string{
+		"`${version} tag ref`",
+		"() => github.rest.git.getRef",
+	} {
+		if !strings.Contains(postCreate, required) {
+			t.Errorf("the bounded visibility retry must be used after createRef: missing %q", required)
+		}
+	}
+	retryLoop := strings.LastIndex(seal[:createRef], "for (const delayMs of")
+	retrySleep := strings.LastIndex(seal[:createRef], "await sleep(delayMs)")
+	if retryLoop == -1 || retrySleep == -1 || retryLoop > retrySleep {
+		t.Error("the bounded visibility retry must be used after createRef, not only declared")
+	}
+	for _, forbidden := range []string{
+		"actions/checkout",
+		"github.rest.git.updateRef",
+		"github.rest.git.deleteRef",
+		"git push",
+		"--force",
+	} {
+		if strings.Contains(seal, forbidden) {
+			t.Errorf("write-capable cloud seal must not contain %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseWorkflowParallelizesSealedValidationWithoutWeakeningPublication(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	releaseContract := releaseWorkflowSection(t, workflow, "  release-contract:\n", "\n  release:\n")
+	build := releaseWorkflowSection(t, workflow, "  release:\n", "\n  verify-darwin-signatures:\n")
+	validation := releaseWorkflowSection(t, workflow, "  release-validation:\n", "\n  release-plan:\n")
+	publish := releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n")
+	plan := releaseWorkflowSection(t, workflow, "  release-plan:\n", "\n  seal-release:\n")
+
+	for _, required := range []string{
+		"id: candidate",
+		"previous_stable: ${{ steps.candidate.outputs.previous_stable }}",
+		"previous_stable_commit: ${{ steps.candidate.outputs.previous_stable_commit }}",
+		"from_beta_commit: ${{ steps.candidate.outputs.from_beta_commit }}",
+		`printf '%s=%s\n' "$key" "$value" >> "$GITHUB_OUTPUT"`,
+	} {
+		if !strings.Contains(plan, required) {
+			t.Errorf("cloud release plan does not export sealed contract evidence %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"channel: ${{ steps.metadata.outputs.channel }}",
+		"previous_stable: ${{ steps.metadata.outputs.previous_stable }}",
+		"name: Resolve validated release metadata",
+		`if test "$DISPATCH_MODE" = create_release`,
+		`test -n "$previous_stable_commit"`,
+		`test -n "$from_beta_commit"`,
+		`unsupported validated release channel`,
+		`if: ${{ needs.dispatch-contract.outputs.mode != 'create_release' }}`,
+	} {
+		if !strings.Contains(releaseContract, required) {
+			t.Errorf("release contract cloud fast path is missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"name: Validate sealed release (${{ matrix.check }})",
+		"needs: [release-contract]",
+		"fail-fast: false",
+		"- automation",
+		"- compatibility",
+		"- e2e",
+		"verify-github-tag-authority.sh",
+		"go test -v -count=1 -timeout=5m ./test/scripts/... -run '^TestRelease'",
+		`tmp/trusted-release-tooling/scripts/release/check-release-compatibility.sh`,
+		`--repo-root "$GITHUB_WORKSPACE"`,
+		`--base-ref HEAD`,
+		`--stable-ref "$PREVIOUS_STABLE"`,
+		`--candidate-ref HEAD`,
+		"bash scripts/dev/test-multi-profile-e2e.sh --skip-go-tests",
+	} {
+		if !strings.Contains(validation, required) {
+			t.Errorf("parallel release validation is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"./scripts/policy/check-command-compatibility.sh",
+		"./scripts/policy/check-authoritative-schema-compatibility.sh",
+	} {
+		if strings.Contains(validation, forbidden) {
+			t.Errorf("parallel release validation bypasses the shared compatibility runner with %q", forbidden)
+		}
+	}
+
+	if strings.Contains(build, "test-multi-profile-e2e.sh") {
+		t.Error("multi-profile E2E must not serialize GoReleaser")
+	}
+	goreleaser := strings.Index(build, "name: Build release artifacts without publishing")
+	setupNode := strings.Index(build, "name: Setup Node.js")
+	archiveTools := strings.Index(build, "name: Install archive tooling")
+	if goreleaser == -1 || setupNode == -1 || archiveTools == -1 ||
+		goreleaser > setupNode || goreleaser > archiveTools {
+		t.Error("post-processing-only Node and archive tooling must be installed after GoReleaser")
+	}
+
+	for _, required := range []string{
+		"needs: [release-contract, release-validation, release, verify-darwin-signatures]",
+		"needs.release-validation.result == 'success'",
+	} {
+		if !strings.Contains(publish, required) {
+			t.Errorf("immutable publication is not blocked by parallel validation %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowHidesOnlyVerifiedSealedTagFromCompatibilityBaseline(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	validation := releaseWorkflowSection(t, workflow, "  release-validation:\n", "\n  release-plan:\n")
+	preparedView := releaseWorkflowSection(
+		t,
+		validation,
+		"      - name: Prepare delivered-stable compatibility ref view\n",
+		"\n      - name: Set up Go\n",
+	)
+	script := releaseWorkflowRunScript(
+		t,
+		validation,
+		"Prepare delivered-stable compatibility ref view",
+		"Set up Go",
+	)
+
+	if !strings.Contains(preparedView, "if: ${{ matrix.check == 'compatibility' }}") {
+		t.Fatal("delivered-stable ref view must run only for the compatibility matrix leg")
+	}
+	for _, required := range []string{
+		"RELEASE_VERSION: ${{ needs.release-contract.outputs.release_version }}",
+		"RELEASE_COMMIT: ${{ needs.release-contract.outputs.release_commit }}",
+		"RELEASE_TAG_OBJECT: ${{ needs.release-contract.outputs.release_tag_object }}",
+		"PREVIOUS_STABLE: ${{ needs.release-contract.outputs.previous_stable }}",
+		"PREVIOUS_STABLE_COMMIT: ${{ needs.release-contract.outputs.previous_stable_commit }}",
+	} {
+		if !strings.Contains(preparedView, required) {
+			t.Errorf("delivered-stable compatibility view is missing %q", required)
+		}
+	}
+	for _, required := range []string{
+		`test "$RELEASE_VERSION" != "$PREVIOUS_STABLE"`,
+		`test "$(git rev-parse HEAD)" = "$RELEASE_COMMIT"`,
+		`test "$(git rev-parse --verify "refs/tags/${RELEASE_VERSION}")" = "$RELEASE_TAG_OBJECT"`,
+		`test "$(git rev-parse --verify "refs/tags/${RELEASE_VERSION}^{commit}")" = "$RELEASE_COMMIT"`,
+		`test "$(git rev-parse --verify "${PREVIOUS_STABLE}^{commit}")" = "$PREVIOUS_STABLE_COMMIT"`,
+		`git update-ref -d "refs/tags/${RELEASE_VERSION}" "$RELEASE_TAG_OBJECT"`,
+		`git show-ref --verify --quiet "refs/tags/${RELEASE_VERSION}"`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Errorf("delivered-stable compatibility view is missing %q", required)
+		}
+	}
+
+	verifiedTag := strings.Index(validation, "verify-github-tag-authority.sh")
+	deleteLocalTag := strings.Index(validation, "git update-ref -d")
+	compatibility := strings.Index(validation, "tmp/trusted-release-tooling/scripts/release/check-release-compatibility.sh")
+	if verifiedTag == -1 || deleteLocalTag == -1 || compatibility == -1 ||
+		verifiedTag > deleteLocalTag || deleteLocalTag > compatibility {
+		t.Fatal("release tag authority verification, local candidate removal, and compatibility checking must stay ordered")
+	}
+	for _, forbidden := range []string{"git push --delete", "github.rest.git.deleteRef"} {
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("release workflow must not delete a remote ref: found %q", forbidden)
+		}
+	}
+
+	repo, err := os.MkdirTemp(".", ".release-compatibility-test-")
+	if err != nil {
+		t.Fatalf("MkdirTemp(release compatibility test repository) error = %v", err)
+	}
+	t.Cleanup(func() {
+		if err := os.RemoveAll(repo); err != nil {
+			t.Errorf("RemoveAll(%s) error = %v", repo, err)
+		}
+	})
+	mustRun(t, repo, "git", "init", "-b", "main")
+	mustRun(t, repo, "git", "config", "user.name", "Release Compatibility Test")
+	mustRun(t, repo, "git", "config", "user.email", "release-compatibility@example.com")
+	mustWriteFile(t, filepath.Join(repo, "tracked"), []byte("stable\n"), 0o644)
+	mustRun(t, repo, "git", "add", "tracked")
+	mustRun(t, repo, "git", "commit", "-m", "stable release")
+	previousStableCommit := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "HEAD"))
+	mustRun(t, repo, "git", "tag", "-a", "v1.0.57", "-m", "v1.0.57")
+	mustWriteFile(t, filepath.Join(repo, "tracked"), []byte("sealed\n"), 0o644)
+	mustRun(t, repo, "git", "commit", "-am", "sealed release")
+	releaseCommit := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "HEAD"))
+	mustRun(t, repo, "git", "tag", "-a", "v1.0.58", "-m", "v1.0.58")
+	releaseTagObject := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "refs/tags/v1.0.58"))
+
+	run := func(tagObject string) ([]byte, error) {
+		cmd := exec.Command("sh", "-c", script)
+		cmd.Dir = repo
+		cmd.Env = make([]string, 0, len(os.Environ())+5)
+		for _, entry := range os.Environ() {
+			if strings.HasPrefix(entry, "RELEASE_VERSION=") ||
+				strings.HasPrefix(entry, "RELEASE_COMMIT=") ||
+				strings.HasPrefix(entry, "RELEASE_TAG_OBJECT=") ||
+				strings.HasPrefix(entry, "PREVIOUS_STABLE=") ||
+				strings.HasPrefix(entry, "PREVIOUS_STABLE_COMMIT=") {
+				continue
+			}
+			cmd.Env = append(cmd.Env, entry)
+		}
+		cmd.Env = append(cmd.Env,
+			"RELEASE_VERSION=v1.0.58",
+			"RELEASE_COMMIT="+releaseCommit,
+			"RELEASE_TAG_OBJECT="+tagObject,
+			"PREVIOUS_STABLE=v1.0.57",
+			"PREVIOUS_STABLE_COMMIT="+previousStableCommit,
+		)
+		return cmd.CombinedOutput()
+	}
+
+	if output, err := run(releaseTagObject); err != nil {
+		t.Fatalf("prepared compatibility ref view failed: %v\noutput:\n%s", err, output)
+	}
+	candidateTag := exec.Command("git", "rev-parse", "--verify", "refs/tags/v1.0.58")
+	candidateTag.Dir = repo
+	if _, err := candidateTag.CombinedOutput(); err == nil {
+		t.Fatal("prepared compatibility ref view left the sealed candidate tag visible")
+	}
+	mustRun(t, repo, "git", "cat-file", "-e", releaseTagObject+"^{tag}")
+	if got := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "refs/tags/v1.0.57^{commit}")); got != previousStableCommit {
+		t.Fatalf("previous stable tag commit = %s, want %s", got, previousStableCommit)
+	}
+	if got := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "HEAD")); got != releaseCommit {
+		t.Fatalf("HEAD after prepared compatibility ref view = %s, want %s", got, releaseCommit)
+	}
+
+	mustRun(t, repo, "git", "update-ref", "refs/tags/v1.0.58", releaseTagObject)
+	if output, err := run(strings.Repeat("0", 40)); err == nil {
+		t.Fatalf("prepared compatibility ref view unexpectedly accepted a mismatched tag object\noutput:\n%s", output)
+	}
+	if got := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "refs/tags/v1.0.58")); got != releaseTagObject {
+		t.Fatalf("mismatched tag object removed or changed the local sealed tag: got %s, want %s", got, releaseTagObject)
+	}
+}
+
+func TestReleaseFingerprintRefPatternsMatchAllAllocatedTags(t *testing.T) {
+	t.Parallel()
+	repo := t.TempDir()
+	mustRun(t, repo, "git", "init", "-b", "main")
+	mustRun(t, repo, "git", "config", "user.name", "Release Fingerprint Test")
+	mustRun(t, repo, "git", "config", "user.email", "release-fingerprint@example.com")
+	mustWriteFile(t, filepath.Join(repo, "tracked"), []byte("fixture\n"), 0o644)
+	mustRun(t, repo, "git", "add", "tracked")
+	mustRun(t, repo, "git", "commit", "-m", "fixture")
+
+	allocatedTags := []string{
+		"v1.0.52",
+		"v1.0.53-beta.5",
+		"withdrawn/v1.0.51",
+	}
+	for _, tag := range allocatedTags {
+		mustRun(t, repo, "git", "tag", "-a", tag, "-m", "Release "+tag)
+	}
+	mustRun(t, repo, "git", "tag", "-a", "release/v1.0.52", "-m", "unrelated namespace")
+	legacy := exec.Command(
+		"git", "for-each-ref", "--format=%(refname)=%(objectname)",
+		"refs/tags/v", "refs/tags/withdrawn/v",
+	)
+	legacy.Dir = repo
+	legacyOutput, err := legacy.CombinedOutput()
+	if err != nil {
+		t.Fatalf("legacy git for-each-ref error = %v\noutput:\n%s", err, legacyOutput)
+	}
+	if strings.TrimSpace(string(legacyOutput)) != "" {
+		t.Fatalf("legacy component patterns unexpectedly matched flat release refs:\n%s", legacyOutput)
+	}
+
+	cmd := exec.Command(
+		"git", "for-each-ref", "--format=%(refname)=%(objectname)",
+		"refs/tags/v*", "refs/tags/withdrawn/v*",
+	)
+	cmd.Dir = repo
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("git for-each-ref error = %v\noutput:\n%s", err, output)
+	}
+	got := strings.Split(strings.TrimSpace(string(output)), "\n")
+	sort.Strings(got)
+
+	want := make([]string, 0, len(allocatedTags))
+	for _, tag := range allocatedTags {
+		object := strings.TrimSpace(mustOutput(t, repo, "git", "rev-parse", "refs/tags/"+tag))
+		want = append(want, "refs/tags/"+tag+"="+object)
+	}
+	sort.Strings(want)
+	if strings.Join(got, "\n") != strings.Join(want, "\n") {
+		t.Fatalf("release ref set differs from the seal API set\ngot:\n%s\nwant:\n%s", strings.Join(got, "\n"), strings.Join(want, "\n"))
+	}
+	workflowDigest := sha256.Sum256([]byte(strings.Join(got, "\n") + "\n"))
+	sealDigest := sha256.Sum256([]byte(strings.Join(want, "\n") + "\n"))
+	if workflowDigest != sealDigest {
+		t.Fatalf("release ref fingerprint differs from seal fingerprint: workflow=%x seal=%x", workflowDigest, sealDigest)
+	}
+}
+
+func TestReleaseWorkflowAcceptsGuardedLocalTagMetadata(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+
+	for _, required := range []string{
+		`const cloudOnlyKeys = [`,
+		`const cloudKeys = ["Channel", ...cloudOnlyKeys];`,
+		`const hasAnyCloudMetadata = cloudOnlyKeys.some((key) => tagFields.has(key));`,
+		`const isCloudSeal = cloudKeys.every((key) => tagFields.has(key));`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("local tag metadata compatibility is missing %q", required)
+		}
+	}
+	if strings.Contains(workflow, `const hasAnyCloudMetadata = cloudKeys.some((key) => tagFields.has(key));`) {
+		t.Error("Channel-only guarded local tags must not be classified as partial cloud seals")
+	}
+}
+
+func TestReleaseWorkflowRequiresOSSOnlyWhenMirrorIsEnabled(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	releaseContract := releaseWorkflowSection(t, workflow, "  release-contract:\n", "\n  release:\n")
+	targetAuthority := releaseWorkflowSection(
+		t,
+		releaseContract,
+		"      - name: Resolve and verify exact release target\n",
+		"\n      - name: Check out repository\n",
+	)
+	ossStep := releaseWorkflowSection(
+		t,
+		workflow,
+		"      - name: Sync release artifacts to China OSS mirror\n",
+		"\n  mirror-gitee-release:\n",
+	)
+
+	for _, required := range []string{
+		`if: ${{ needs.release-contract.outputs.oss_mirror == 'enabled' }}`,
+		`run: ./scripts/release/sync-to-oss.sh`,
+		`DWS_REQUIRE_OSS: "1"`,
+	} {
+		if !strings.Contains(ossStep, required) {
+			t.Errorf("opt-in OSS publication is missing %q", required)
+		}
+	}
+	for _, required := range []string{
+		`OSS_MIRROR: ${{ vars.ENABLE_OSS_MIRROR == 'true' && 'enabled' || 'deferred' }}`,
+		`OSS-Mirror: ${ossMirror}`,
+		`core.setOutput("oss_mirror", ossMirror);`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("immutable OSS release policy is missing %q", required)
+		}
+	}
+	if strings.Contains(ossStep, "vars.ENABLE_OSS_MIRROR") {
+		t.Error("channel publication must use the immutable tag policy, not the current repository variable")
+	}
+	for _, required := range []string{
+		`const ossMirror = tagFields.has("OSS-Mirror")`,
+		`? tagFields.get("OSS-Mirror")`,
+		`: "enabled";`,
+		`!["enabled", "deferred"].includes(ossMirror)`,
+		`core.setOutput("oss_mirror", ossMirror);`,
+	} {
+		if !strings.Contains(targetAuthority, required) {
+			t.Errorf("release target OSS policy authority is missing %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowChannelRepairUsesSealedReleaseAuthority(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	dispatch := releaseWorkflowSection(t, workflow, "  dispatch-contract:\n", "\n  governance-preflight:\n")
+	start := strings.Index(workflow, "  repair-channel:\n")
+	if start == -1 {
+		t.Fatal("release workflow is missing the channel repair job")
+	}
+	end := strings.Index(workflow[start:], "\n  release-plan:\n")
+	if end == -1 {
+		t.Fatal("release workflow channel repair job is missing its end marker")
+	}
+	repair := workflow[start : start+end]
+	authority := releaseWorkflowSection(
+		t,
+		repair,
+		"      - name: Verify immutable release authority\n",
+		"\n      - name: Require sealed OSS policy for repair\n",
+	)
+	tagAuthority := releaseWorkflowSection(
+		t,
+		repair,
+		"      - name: Fetch and verify sealed release tag\n",
+		"\n      - name: Require successful Release workflow delivery\n",
+	)
+
+	for _, required := range []string{
+		"repair_gitee_version:",
+		`format('Release Gitee repair {0}', inputs.repair_gitee_version)`,
+		`REPAIR_GITEE_VERSION: ${{ inputs.repair_gitee_version }}`,
+		"repair_oss_version:",
+		`format('Release OSS repair {0}', inputs.repair_oss_version)`,
+		`REPAIR_OSS_VERSION: ${{ inputs.repair_oss_version }}`,
+		"gitee_repair=0",
+		"oss_repair=0",
+		`test -z "$REPAIR_GITEE_VERSION" || gitee_repair=1`,
+		`test -z "$REPAIR_OSS_VERSION" || oss_repair=1`,
+		"release_flow + npm_repair + gitee_repair + oss_repair + governance + recovery",
+		`echo "mode=repair_gitee" >> "$GITHUB_OUTPUT"`,
+		`echo "mode=repair_oss" >> "$GITHUB_OUTPUT"`,
+	} {
+		if !strings.Contains(dispatch, required) && !strings.Contains(workflow, required) {
+			t.Errorf("channel repair dispatch contract is missing %q", required)
+		}
+	}
+
+	for _, required := range []string{
+		"needs: dispatch-contract",
+		`if: ${{ !cancelled() && needs.dispatch-contract.result == 'success' && (needs.dispatch-contract.outputs.mode == 'repair_gitee' || needs.dispatch-contract.outputs.mode == 'repair_oss') && github.ref == format('refs/heads/{0}', github.event.repository.default_branch) && github.repository == 'DingTalk-Real-AI/dingtalk-workspace-cli' }}`,
+		`github.ref == format('refs/heads/{0}', github.event.repository.default_branch)`,
+		`github.repository == 'DingTalk-Real-AI/dingtalk-workspace-cli'`,
+		"actions: read",
+		"contents: read",
+		`ref: ${{ github.sha }}`,
+		"path: tooling",
+		"persist-credentials: false",
+		"release_is_stable_version",
+		"release_is_prerelease_version",
+		`ref: ` + "`tags/withdrawn/${version}`",
+		"was withdrawn and cannot be repaired",
+		`ref: ` + "`tags/${version}`",
+		`["ahead", "identical"].includes(comparison.data.status)`,
+		"!release.data.immutable",
+		`release.data.prerelease !== expectedPrerelease`,
+		"assetNames.length !== expectedAssets.size",
+		"new Set(assetNames).size !== expectedAssets.size",
+		`core.setOutput("tag_object", ref.data.object.sha)`,
+		"Require sealed OSS policy for repair",
+		"OSS repair is unavailable because this immutable release deferred the OSS channel.",
+		`ref: ${{ steps.authority.outputs.commit_sha }}`,
+		"path: release-source",
+		"verify-github-tag-authority.sh",
+		`GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`,
+		"verify-release-workflow-delivery.sh",
+		`REPAIR_MODE: ${{ needs.dispatch-contract.outputs.mode }}`,
+		"repair_gitee) target=gitee",
+		"repair_oss) target=oss",
+		`--channel-repair "$target"`,
+		`DWS_RELEASE_GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`,
+		"verify-release-artifacts.sh",
+		`--repo "$GITHUB_REPOSITORY"`,
+		`if: ${{ needs.dispatch-contract.outputs.mode == 'repair_gitee' }}`,
+		`DWS_REQUIRE_GITEE: "1"`,
+		`if: ${{ needs.dispatch-contract.outputs.mode == 'repair_oss' }}`,
+		`DWS_REQUIRE_OSS: "1"`,
+		`OSS_ACCESS_KEY_ID: ${{ secrets.OSS_ACCESS_KEY_ID }}`,
+		`OSS_ACCESS_KEY_SECRET: ${{ secrets.OSS_ACCESS_KEY_SECRET }}`,
+		`OSS_ENDPOINT: ${{ secrets.OSS_ENDPOINT }}`,
+		`OSS_BUCKET: ${{ secrets.OSS_BUCKET }}`,
+		`OSS_PREFIX: ${{ secrets.OSS_PREFIX }}`,
+		"working-directory: release-source",
+		"working-directory: tooling\n        run: |\n          " +
+			`"$GITHUB_WORKSPACE/tooling/scripts/release/sync-to-gitee.sh"`,
+		`"$GITHUB_WORKSPACE/tooling/scripts/release/sync-to-oss.sh"`,
+	} {
+		if !strings.Contains(repair, required) {
+			t.Errorf("channel repair authority is missing %q", required)
+		}
+	}
+	for _, required := range []string{
+		`const tagFields = new Map();`,
+		`const ossMirror = tagFields.has("OSS-Mirror")`,
+		`? tagFields.get("OSS-Mirror")`,
+		`: "enabled";`,
+		`!["enabled", "deferred"].includes(ossMirror)`,
+		`core.setOutput("oss_mirror", ossMirror);`,
+	} {
+		if !strings.Contains(authority, required) {
+			t.Errorf("channel repair tag policy authority is missing %q", required)
+		}
+	}
+	npmRepair := releaseWorkflowSection(t, workflow, "  repair-npm:\n", "\n  release-delivery-gate:\n")
+	if strings.Contains(npmRepair, `const ossMirror`) || strings.Contains(npmRepair, `core.setOutput("oss_mirror"`) {
+		t.Error("npm repair must not parse or export the channel-only OSS policy")
+	}
+	if strings.Contains(repair, "ENABLE_OSS_MIRROR") {
+		t.Error("OSS repair must use the immutable tag policy, not the current repository variable")
+	}
+	for _, asset := range []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"dws-linux-amd64.tar.gz",
+		"dws-linux-arm64.tar.gz",
+		"dws-windows-amd64.zip",
+		"dws-windows-arm64.zip",
+		"dws-skills.zip",
+		"checksums.txt",
+	} {
+		if strings.Count(repair, `"`+asset+`"`) != 1 {
+			t.Errorf("channel repair must require exactly one %s asset declaration", asset)
+		}
+	}
+	if strings.Contains(repair, "contents: write") {
+		t.Error("channel repair must not grant contents write permission")
+	}
+	for _, forbidden := range []string{
+		"RELEASE_GOVERNANCE_TOKEN",
+		"HOMEBREW_PR_TOKEN",
+		"NPM_TOKEN",
+	} {
+		if strings.Contains(repair, forbidden) {
+			t.Errorf("channel repair must not expose unrelated credential %s", forbidden)
+		}
+	}
+	if strings.Contains(repair, "ref: ${{ github.event.repository.default_branch }}") {
+		t.Error("channel repair must not check out a floating default branch")
+	}
+	if !strings.Contains(tagAuthority, `GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}`) {
+		t.Error("remote annotated-tag authority step must receive the read-only GitHub token")
+	}
+	if got := strings.Count(repair, "working-directory: tooling"); got < 4 {
+		t.Errorf("channel repair trusted tooling working-directory count = %d, want at least 4", got)
+	}
+}
+
+func TestReleaseWorkflowRecoveryReusesGuardedJobs(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+
+	for _, required := range []string{
+		"recover_release_version:",
+		"recover_release_tag_object:",
+		"recover_release_commit:",
+		"recover_failed_run_id:",
+		"recover_failed_run_attempt:",
+		"recover_draft_release_id:",
+		"recover_release_nonce:",
+		"recover_release_confirmation:",
+		`format('Release recovery {0} at {1} {2}', inputs.recover_release_version, inputs.recover_release_commit, inputs.recover_release_nonce)`,
+		"workflow_dispatch must select exactly one release mode",
+		"release recovery confirmation must equal the exact version",
+		"recover_release_nonce must be bound to the release commit",
+		"recover_draft_release_id must be a positive release database ID",
+		`run.path !== ".github/workflows/release.yml"`,
+		`const expectedEvent = failedByCloud ? "workflow_dispatch" : "push"`,
+		`run.event !== expectedEvent`,
+		`tagFields.get("Release-Run") !== failedRunId`,
+		`"GET /repos/{owner}/{repo}/actions/runs/{run_id}/attempts/{attempt_number}"`,
+		"attempt_number: Number(failedRunAttempt)",
+		"run.run_attempt !== Number(failedRunAttempt)",
+		`["failure", "cancelled", "timed_out", "startup_failure", "stale"].includes(run.conclusion)`,
+		`run.head_branch !== expectedBranch`,
+		`run.head_sha !== commit`,
+		`tagObject !== expectedTagObject`,
+		`["ahead", "identical"].includes(comparison.data.status)`,
+		"already has a public release; use a channel repair instead",
+		"Bind recovery publication to this workflow run",
+		"dws-release-recovery run=%s tag-object=%s commit=%s",
+		"Public release is not bound to this exact recovery run.",
+		"Public recovery asset differs from this run's sealed artifact",
+		`const sha = process.env.RELEASE_COMMIT`,
+		`ref: sha`,
+		`path: tmp/trusted-release-tooling`,
+		`ref: ${{ github.sha }}`,
+		"verify-release-workflow-delivery.sh",
+		"Require a clean sealed source before GoReleaser",
+		`git status --porcelain --untracked-files=all`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("release recovery contract is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"authorize-recovery:",
+		"environment: release-recovery",
+		"needs.authorize-recovery",
+		"AUTHORIZE_RECOVERY_RESULT",
+	} {
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("machine-verified release recovery must not wait on manual approval %q", forbidden)
+		}
+	}
+
+	sections := map[string]string{
+		"release":          releaseWorkflowSection(t, workflow, "  release:\n", "\n  verify-darwin-signatures:\n"),
+		"publish-release":  releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n"),
+		"publish-channels": releaseWorkflowSection(t, workflow, "  publish-channels:\n", "\n  mirror-gitee-release:\n"),
+	}
+	for name, section := range sections {
+		for _, required := range []string{
+			"needs.release-contract.outputs.release_version",
+			"ref: ${{ needs.release-contract.outputs.release_commit }}",
+			"persist-credentials: false",
+			`tmp/trusted-release-tooling/scripts/release/verify-github-tag-authority.sh`,
+		} {
+			if !strings.Contains(section, required) {
+				t.Errorf("%s does not consume the verified recovery target %q", name, required)
+			}
+		}
+		if strings.Contains(section, "github.event_name == 'workflow_dispatch'") {
+			t.Errorf("%s must not fork into a recovery-specific publisher", name)
+		}
+	}
+	if strings.Count(workflow, "name: Build signed release artifacts") != 1 ||
+		strings.Count(workflow, "name: Verify Apple Developer ID signatures") != 1 ||
+		strings.Count(workflow, "name: Publish immutable GitHub Release") != 1 ||
+		strings.Count(workflow, "name: Publish npm and mirrors") != 1 {
+		t.Fatal("normal and recovery publication must share one build/sign/publish job graph")
+	}
+}
+
+func TestReleaseWorkflowRerunAdoptsOnlyItsExactSeal(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	sealStart := strings.Index(workflow, "  seal-release:\n")
+	if sealStart == -1 {
+		t.Fatal("release workflow is missing the cloud seal job")
+	}
+	seal := workflow[sealStart:]
+
+	for _, required := range []string{
+		`const currentAttempt = Number(process.env.GITHUB_RUN_ATTEMPT)`,
+		`Release-Run: ${context.runId}`,
+		`Release-Run-Attempt: ${attempt}`,
+		`Requested-By-ID: ${context.payload.sender?.id || ""}`,
+		`Workflow-Commit: ${context.sha}`,
+		`Allocation-Fingerprint: ${expectedFingerprint}`,
+		`ref.ref === ` + "`refs/tags/${version}`",
+		`existingRef = await github.rest.git.getRef`,
+		`sealedAttempt > currentAttempt`,
+		`.data.message !== messageForAttempt(sealedAttempt)`,
+		`if (branchMoved)`,
+		`if (!existingRef)`,
+		`basehead: ` + "`${commit}...${currentBranchCommit}`",
+		`["ahead", "identical"].includes(comparison.data.status)`,
+		`if (existingRef)`,
+		`continuing failed jobs without recovery approval`,
+	} {
+		if !strings.Contains(seal, required) {
+			t.Errorf("same-run release rerun exact-seal contract is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"github.rest.git.updateRef",
+		"github.rest.git.deleteRef",
+		"environment: release-recovery",
+		"needs.authorize-recovery",
+	} {
+		if strings.Contains(seal, forbidden) {
+			t.Errorf("same-run exact seal reuse must not mutate the tag or require approval: found %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseWorkflowDraftLifecycleUsesOneReleaseID(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	publishJob := releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n")
+	tokenStep := releaseWorkflowSection(
+		t,
+		publishJob,
+		"      - name: Mint repository-scoped Release publisher token\n",
+		"\n      - name: Publish or reuse immutable GitHub Release\n",
+	)
+	for _, required := range []string{
+		"id: release-publisher-token",
+		"actions/create-github-app-token@bcd2ba49218906704ab6c1aa796996da409d3eb1",
+		`client-id: ${{ vars.REVIEWER_ROUTER_APP_CLIENT_ID }}`,
+		`private-key: ${{ secrets.REVIEWER_ROUTER_APP_PRIVATE_KEY }}`,
+		`owner: ${{ github.repository_owner }}`,
+		`repositories: ${{ github.event.repository.name }}`,
+		"permission-contents: write",
+	} {
+		if !strings.Contains(tokenStep, required) {
+			t.Errorf("Release publisher token step is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"permission-actions:",
+		"permission-administration:",
+		"permission-checks:",
+		"permission-pull-requests:",
+		"skip-token-revoke:",
+	} {
+		if strings.Contains(tokenStep, forbidden) {
+			t.Errorf("Release publisher token must stay repository-scoped and contents-only: found %q", forbidden)
+		}
+	}
+	publishStep := releaseWorkflowSection(
+		t,
+		publishJob,
+		"      - name: Publish or reuse immutable GitHub Release\n",
+		"\n      - name: Require immutable published GitHub Release\n",
+	)
+
+	for _, required := range []string{
+		"id: publish",
+		`GITHUB_TOKEN: ${{ steps.release-publisher-token.outputs.token }}`,
+		`"repos/$GITHUB_REPOSITORY/releases/tags/$RELEASE_VERSION"`,
+		`"repos/$GITHUB_REPOSITORY/releases"`,
+		"find_recovery_draft_release_id()",
+		`select(.draft == true and .tag_name == \"$RELEASE_VERSION\"`,
+		`release_id="$(find_recovery_draft_release_id)"`,
+		`RECOVER_DRAFT_RELEASE_ID: ${{ inputs.recover_draft_release_id }}`,
+		`release_id="$RECOVER_DRAFT_RELEASE_ID"`,
+		`if [ "$find_status" -ne 2 ]; then`,
+		"Expected at most one draft GitHub Release for this recovery run",
+		"gh api --method POST",
+		`"repos/$GITHUB_REPOSITORY/releases/$release_id"`,
+		`uploaded_release_state="$(`,
+		`test "$uploaded_release_state" = "$(printf '%s\t%s' "$release_id" "$RELEASE_VERSION")"`,
+		"Draft GitHub Release ID $release_id targets",
+		"Draft GitHub Release notes differ from the sealed CHANGELOG.",
+		"Draft GitHub Release is not bound to this exact recovery run.",
+		`DWS_GITHUB_RELEASE_ID="$release_id"`,
+		`tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh`,
+		`tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh`,
+		`cmp -s "$local_asset" "$remote_asset"`,
+		"-F draft=false",
+		`echo "release_id=$release_id" >> "$GITHUB_OUTPUT"`,
+	} {
+		if !strings.Contains(publishStep, required) {
+			t.Errorf("Draft release lifecycle is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		`gh release download "$RELEASE_VERSION"`,
+		`gh release edit "$RELEASE_VERSION" --draft=false`,
+		`gh release view "$RELEASE_VERSION"`,
+	} {
+		if strings.Contains(publishStep, forbidden) {
+			t.Errorf("Draft release lifecycle must not switch back from the locked release ID via %q", forbidden)
+		}
+	}
+
+	tagGuard := strings.Index(publishStep, "Draft GitHub Release ID $release_id targets")
+	recoveryLookup := strings.Index(publishStep, "find_recovery_draft_release_id()")
+	recoveryReuse := strings.Index(publishStep, `release_id="$(find_recovery_draft_release_id)"`)
+	recoveryNotFound := strings.Index(publishStep, `if [ "$find_status" -ne 2 ]; then`)
+	recoveryCreate := -1
+	if recoveryNotFound != -1 {
+		recoveryCreate = strings.Index(publishStep[recoveryNotFound:], "gh api --method POST")
+	}
+	draftPatch := strings.LastIndex(publishStep, "-F draft=true")
+	bodyVerify := strings.Index(publishStep, "Draft GitHub Release notes differ from the sealed CHANGELOG.")
+	markerVerify := strings.Index(publishStep, "Draft GitHub Release is not bound to this exact recovery run.")
+	upload := strings.Index(publishStep, `gh release upload "$RELEASE_VERSION"`)
+	idRecheck := strings.Index(publishStep, `test "$uploaded_release_state" = "$(printf '%s\t%s' "$release_id" "$RELEASE_VERSION")"`)
+	verify := strings.Index(publishStep, "tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh")
+	download := strings.LastIndex(publishStep, "tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh")
+	byteCompare := strings.Index(publishStep, `cmp -s "$local_asset" "$remote_asset"`)
+	publish := strings.Index(publishStep, "-F draft=false")
+	if recoveryLookup == -1 || recoveryReuse == -1 || recoveryNotFound == -1 || recoveryCreate == -1 ||
+		!(recoveryLookup < recoveryReuse && recoveryReuse < recoveryNotFound) {
+		t.Fatal("recovery must reuse its uniquely marker-bound draft before creating a replacement")
+	}
+	if tagGuard == -1 || draftPatch == -1 || bodyVerify == -1 || markerVerify == -1 ||
+		upload == -1 || idRecheck == -1 || verify == -1 || download == -1 || byteCompare == -1 || publish == -1 ||
+		!(tagGuard < draftPatch && draftPatch < bodyVerify && bodyVerify < markerVerify && markerVerify < upload &&
+			upload < idRecheck && idRecheck < verify && verify < download && download < byteCompare && byteCompare < publish) {
+		t.Fatal("Draft must retain one release ID through upload, exact verification, download, byte comparison, and publication")
+	}
+
+	terminalStep := publishJob[strings.Index(publishJob, "      - name: Require immutable published GitHub Release\n"):]
+	for _, required := range []string{
+		`GITHUB_TOKEN: ${{ steps.release-publisher-token.outputs.token }}`,
+		`RELEASE_ID: ${{ steps.publish.outputs.release_id }}`,
+		`RELEASE_CHANNEL: ${{ needs.release-contract.outputs.channel }}`,
+		`"repos/$GITHUB_REPOSITORY/releases/$RELEASE_ID"`,
+		`DWS_GITHUB_RELEASE_ID="$RELEASE_ID"`,
+		`tmp/trusted-release-tooling/scripts/release/verify-github-release-assets.sh`,
+		`tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh`,
+		`[.tag_name, .draft, .prerelease, .immutable] | @tsv`,
+		`printf '%s\tfalse\t%s\ttrue' "$RELEASE_VERSION" "$expected_prerelease"`,
+		"Immutable GitHub Release notes differ from the sealed CHANGELOG.",
+		"Immutable GitHub Release is not bound to this exact recovery run.",
+		`DWS_PACKAGE_DIST_DIR="$immutable_dir"`,
+		`cmp -s "$sealed_asset" "$immutable_asset"`,
+	} {
+		if !strings.Contains(terminalStep, required) {
+			t.Errorf("terminal immutable release gate is missing %q", required)
+		}
+	}
+	immutableState := strings.Index(terminalStep, `[.tag_name, .draft, .prerelease, .immutable] | @tsv`)
+	immutableBody := strings.Index(terminalStep, "Immutable GitHub Release notes differ from the sealed CHANGELOG.")
+	immutableDownload := strings.Index(terminalStep, "tmp/trusted-release-tooling/scripts/release/download-github-release-assets.sh")
+	immutableVerify := strings.Index(terminalStep, `DWS_PACKAGE_DIST_DIR="$immutable_dir"`)
+	immutableCompare := strings.Index(terminalStep, `cmp -s "$sealed_asset" "$immutable_asset"`)
+	if immutableState == -1 || immutableBody == -1 || immutableDownload == -1 || immutableVerify == -1 || immutableCompare == -1 ||
+		!(immutableState < immutableBody && immutableBody < immutableDownload && immutableDownload < immutableVerify && immutableVerify < immutableCompare) {
+		t.Fatal("terminal gate must reverify immutable notes and exact sealed bytes on the locked release ID")
+	}
+}
+
+func TestRecoverReleaseBindsOneFailedRunAttempt(t *testing.T) {
+	t.Parallel()
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "recover-release.sh"))
+	if err != nil {
+		t.Fatalf("Abs(recover-release.sh) error = %v", err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	script := string(data)
+
+	for _, required := range []string{
+		"--failed-attempt <attempt>",
+		"--draft-release-id <release-id>",
+		"--failed-attempt requires --failed-run",
+		"find_latest_failed_attempt",
+		`while [ "$find_attempt" -ge 1 ]`,
+		"actions/runs/$find_run_id/attempts/$find_attempt",
+		`select(.head_sha == \"$commit\" and .head_branch == \"$VERSION\")`,
+		"Release run %s has no failed attempt",
+		`[.id, .run_attempt, .repository.full_name, .path, .event, .status, .conclusion, .head_branch, .head_sha, .actor.login, .actor.id] | @tsv`,
+		`Release-Run`,
+		`Release-Run-Attempt`,
+		`expected_attempt_event="workflow_dispatch"`,
+		`is not bound by the cloud seal`,
+		"actions/runs/%s/attempts/%s",
+		`-f "recover_failed_run_attempt=$FAILED_RUN_ATTEMPT"`,
+		`-f "recover_draft_release_id=$DRAFT_RELEASE_ID"`,
+	} {
+		if !strings.Contains(script, required) {
+			t.Errorf("release recovery script is missing attempt binding %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowPublicationBypassesSkippedDispatchButStopsOnCancellation(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+
+	tests := []struct {
+		name      string
+		start     string
+		end       string
+		condition string
+	}{
+		{
+			name:      "release contract",
+			start:     "  release-contract:\n",
+			end:       "\n  release:\n",
+			condition: `if: ${{ !cancelled() && (github.event_name == 'push' || (needs.dispatch-contract.result == 'success' && needs.dispatch-contract.outputs.mode == 'recover_release') || (needs.dispatch-contract.result == 'success' && needs.dispatch-contract.outputs.mode == 'create_release' && needs.governance-preflight.result == 'success' && needs.release-plan.result == 'success' && needs.seal-release.result == 'success')) }}`,
+		},
+		{
+			name:      "build",
+			start:     "  release:\n",
+			end:       "\n  verify-darwin-signatures:\n",
+			condition: `if: ${{ !cancelled() && needs.release-contract.result == 'success' }}`,
+		},
+		{
+			name:      "Darwin verification",
+			start:     "  verify-darwin-signatures:\n",
+			end:       "\n  publish-release:\n",
+			condition: `if: ${{ !cancelled() && needs.release-contract.result == 'success' && needs.release.result == 'success' }}`,
+		},
+		{
+			name:      "GitHub publication",
+			start:     "  publish-release:\n",
+			end:       "\n  publish-channels:\n",
+			condition: `if: ${{ !cancelled() && needs.release-contract.result == 'success' && needs.release-validation.result == 'success' && needs.release.result == 'success' && needs.verify-darwin-signatures.result == 'success' }}`,
+		},
+		{
+			name:      "channel publication",
+			start:     "  publish-channels:\n",
+			end:       "\n  mirror-gitee-release:\n",
+			condition: `if: ${{ !cancelled() && needs.release-contract.result == 'success' && needs.publish-release.result == 'success' }}`,
+		},
+		{
+			name:      "Gitee mirror",
+			start:     "  mirror-gitee-release:\n",
+			end:       "\n  repair-npm:\n",
+			condition: `if: ${{ !cancelled() && vars.ENABLE_GITEE_UPLOAD_FALLBACK == 'true' && needs.release-contract.result == 'success' && needs.release.result == 'success' && needs.publish-channels.result == 'success' }}`,
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			section := releaseWorkflowSection(t, workflow, test.start, test.end)
+			if !strings.Contains(section, test.condition) {
+				t.Errorf("%s must override skipped dispatch ancestors while preserving cancellation and dependency gates", test.name)
+			}
+		})
+	}
+}
+
+func TestReleaseWorkflowDeliveryGateFailsClosed(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	gate := releaseWorkflowSection(t, workflow, "  release-delivery-gate:\n", "\n  repair-channel:\n")
+
+	for _, required := range []string{
+		"name: Release delivery gate",
+		`if: ${{ !cancelled() }}`,
+		"- dispatch-contract",
+		"- governance-preflight",
+		"- release-contract",
+		"- release-validation",
+		"- release",
+		"- verify-darwin-signatures",
+		"- publish-release",
+		"- publish-channels",
+		"- coverage-baseline-confirmation",
+		"- mirror-gitee-release",
+		"- repair-npm",
+		"- repair-channel",
+		"- release-plan",
+		"- seal-release",
+		`REPAIR_CHANNEL_RESULT: ${{ needs.repair-channel.result }}`,
+		`RELEASE_VALIDATION_RESULT: ${{ needs.release-validation.result }}`,
+		`RELEASE_PLAN_RESULT: ${{ needs.release-plan.result }}`,
+		`SEAL_RELEASE_RESULT: ${{ needs.seal-release.result }}`,
+		`COVERAGE_BASELINE_CONFIRMATION_RESULT: ${{ needs.coverage-baseline-confirmation.result }}`,
+		"require_publication",
+		`require_result release-contract "$RELEASE_CONTRACT_RESULT" success`,
+		`require_result release-validation "$RELEASE_VALIDATION_RESULT" success`,
+		`require_result release "$RELEASE_RESULT" success`,
+		`require_result verify-darwin-signatures "$DARWIN_SIGNATURE_RESULT" success`,
+		`require_result publish-release "$PUBLISH_RELEASE_RESULT" success`,
+		`require_result publish-channels "$PUBLISH_CHANNELS_RESULT" success`,
+		`require_result coverage-baseline-confirmation "$COVERAGE_BASELINE_CONFIRMATION_RESULT" success`,
+		`require_result coverage-baseline-confirmation "$COVERAGE_BASELINE_CONFIRMATION_RESULT" skipped`,
+		"workflow_dispatch:recover_release",
+		"workflow_dispatch:create_release",
+		"workflow_dispatch:plan_release",
+		"workflow_dispatch:governance_preflight",
+		"workflow_dispatch:repair_npm",
+		"workflow_dispatch:repair_gitee",
+		"workflow_dispatch:repair_oss",
+		`require_result repair-channel "$REPAIR_CHANNEL_RESULT" success`,
+		`require_result repair-channel "$REPAIR_CHANNEL_RESULT" skipped`,
+		"unsupported release mode",
+	} {
+		if !strings.Contains(gate, required) {
+			t.Errorf("release delivery gate is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"- authorize-recovery",
+		"AUTHORIZE_RECOVERY_RESULT",
+		"needs.authorize-recovery",
+		"require_result authorize-recovery",
+	} {
+		if strings.Contains(gate, forbidden) {
+			t.Errorf("release delivery gate must not retain recovery approval dependency %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseWorkflowUploadsPostProcessedDarwinAssets(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	build := strings.Index(workflow, "Build release artifacts without publishing")
+	postProcess := strings.Index(workflow, "./scripts/release/post-goreleaser.sh")
+	preserve := strings.Index(workflow, "Preserve finalized distribution files")
+	verifyJob := strings.Index(workflow, "verify-darwin-signatures:")
+	publishJob := strings.Index(workflow, "publish-release:")
+	if build == -1 || postProcess == -1 || preserve == -1 || verifyJob == -1 || publishJob == -1 ||
+		!(build < postProcess && postProcess < preserve && preserve < verifyJob && verifyJob < publishJob) {
+		t.Fatalf("post-processed assets must be preserved, Apple-verified, and only then published")
+	}
+
+	buildSection := workflow[build:verifyJob]
+	for _, required := range []string{
+		"--skip=publish",
+		"actions/upload-artifact@v4",
+		"finalized-release-dist",
+	} {
+		if !strings.Contains(buildSection, required) {
+			t.Errorf("signed build stage is missing %q", required)
+		}
+	}
+
+	publishSection := workflow[publishJob:]
+	for _, required := range []string{
+		"actions/download-artifact@v4",
+		"dist/dws-*.tar.gz",
+		"dist/dws-windows-*.zip",
+		"checksums.txt",
+		"dws-skills.zip",
+		"gh release upload",
+		"--clobber",
+		"verify-release-artifacts.sh",
+	} {
+		if !strings.Contains(publishSection, required) {
+			t.Errorf("immutable publication stage is missing %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowConfiguresDeveloperIDSigning(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	prepare := strings.Index(workflow, "Prepare Apple Developer ID certificate")
+	goReleaser := strings.Index(workflow, "Build release artifacts without publishing")
+	postProcess := strings.Index(workflow, "./scripts/release/post-goreleaser.sh")
+	cleanup := strings.Index(workflow, "Remove Apple Developer ID certificate")
+	if prepare == -1 || goReleaser == -1 || postProcess == -1 || cleanup == -1 ||
+		prepare > goReleaser || goReleaser > postProcess || cleanup < postProcess {
+		t.Fatalf("Developer ID material must be validated before GoReleaser and removed after post-processing")
+	}
+
+	for _, required := range []string{
+		`RCS_VERSION="0.29.0"`,
+		"secrets.APPLE_CERTIFICATE_P12_BASE64",
+		"secrets.APPLE_CERTIFICATE_PASSWORD",
+		"base64 --decode",
+		"openssl pkcs12 -legacy",
+		"DWS_APPLE_CERTIFICATE_P12",
+		"DWS_APPLE_CERTIFICATE_PASSWORD_FILE",
+		"DWS_REQUIRE_DEVELOPER_ID_SIGNING",
+		`GITHUB_REPOSITORY_OWNER" = "DingTalk-Real-AI`,
+	} {
+		if !strings.Contains(workflow, required) {
+			t.Errorf("release workflow is missing Developer ID configuration %q", required)
+		}
+	}
+}
+
+func TestPostGoreleaserSupportsDeveloperIDSigning(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "post-goreleaser.sh"))
+	if err != nil {
+		t.Fatalf("Abs(post-goreleaser.sh) error = %v", err)
+	}
+	data, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	script := string(data)
+
+	for _, required := range []string{
+		`APPLE_CERTIFICATE_P12="${DWS_APPLE_CERTIFICATE_P12:-}"`,
+		`APPLE_CERTIFICATE_PASSWORD_FILE="${DWS_APPLE_CERTIFICATE_PASSWORD_FILE:-}"`,
+		`REQUIRE_DEVELOPER_ID_SIGNING="${DWS_REQUIRE_DEVELOPER_ID_SIGNING:-false}"`,
+		`--p12-file "$APPLE_CERTIFICATE_P12"`,
+		`--p12-password-file "$APPLE_CERTIFICATE_PASSWORD_FILE"`,
+		"--for-notarization",
+	} {
+		if !strings.Contains(script, required) {
+			t.Errorf("post-goreleaser.sh is missing Developer ID signing behavior %q", required)
+		}
+	}
+	if strings.Contains(script, `rcodesign verify "$bin"`) {
+		t.Fatal("rcodesign verify must not be treated as authoritative Apple signature validation")
+	}
+}
+
+func TestReleaseWorkflowVerifiesRcodesignArchiveChecksum(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	hash := strings.Index(workflow, `RCS_ARCHIVE_SHA256="dbe85cedd8ee4217b64e9a0e4c2aef92ab8bcaaa41f20bde99781ff02e600002"`)
+	checksum := strings.Index(workflow, "sha256sum --check --strict")
+	extract := strings.Index(workflow, "tar -xzf /tmp/rcodesign.tar.gz")
+	execute := strings.Index(workflow, "rcodesign --version")
+	if hash == -1 || checksum == -1 || extract == -1 || execute == -1 ||
+		!(hash < checksum && checksum < extract && extract < execute) {
+		t.Fatal("rcodesign archive must match the pinned SHA-256 before extraction or execution")
+	}
+}
+
+func TestReleaseWorkflowUsesAppleCodesignBeforePublication(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	preserve := strings.Index(workflow, "Preserve finalized distribution files")
+	verifyJob := strings.Index(workflow, "verify-darwin-signatures:")
+	publishJob := strings.Index(workflow, "publish-release:")
+	if preserve == -1 || verifyJob == -1 || publishJob == -1 || !(preserve < verifyJob && verifyJob < publishJob) {
+		t.Fatal("finalized artifacts must be preserved, Apple-verified, and only then published")
+	}
+
+	codesign := strings.Index(workflow[verifyJob:publishJob], "codesign --verify --strict --verbose=4")
+	publish := strings.Index(workflow[publishJob:], "-F draft=false")
+	if codesign == -1 || publish == -1 {
+		t.Fatal("macOS codesign verification and explicit Draft publication are required")
+	}
+
+	buildSection := workflow[preserve:verifyJob]
+	for _, required := range []string{
+		"actions/upload-artifact@v4",
+		"finalized-release-dist",
+	} {
+		if !strings.Contains(buildSection, required) {
+			t.Errorf("signed build stage is missing %q", required)
+		}
+	}
+
+	verifySection := workflow[verifyJob:publishJob]
+	for _, required := range []string{
+		"runs-on: macos-latest",
+		"actions/download-artifact@v4",
+		"finalized-release-dist",
+		`dws-darwin-${arch}.tar.gz`,
+		"codesign --verify --strict --verbose=4",
+		"runtime-payload materialize",
+		`test "$binary_team" = "$library_team"`,
+		`doctor --json --timeout 2`,
+		`doctor-home`,
+		`doctor.json`,
+		"runtime_context diagnostic command failed",
+	} {
+		if !strings.Contains(verifySection, required) {
+			t.Errorf("Apple verification stage is missing %q", required)
+		}
+	}
+
+	publishSection := workflow[publishJob:]
+	for _, required := range []string{
+		"verify-darwin-signatures",
+		"actions/download-artifact@v4",
+		"Publish or reuse immutable GitHub Release",
+		"gh release upload",
+		"Publish missing version to npm channel",
+		"Publish stable Homebrew formula",
+		"Publish beta Homebrew formula",
+		"DingTalk-Real-AI/dingtalk-workspace-cli.git",
+		"secrets.GITHUB_TOKEN",
+	} {
+		if !strings.Contains(publishSection, required) {
+			t.Errorf("post-verification publication stage is missing %q", required)
+		}
+	}
+}
+
+func TestReleaseWorkflowPublishesStableHomebrewFormulaDirectly(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+	for _, forbidden := range []string{
+		"Verify Homebrew PR automation permission",
+		"verify-homebrew-pr-token.sh",
+		"DWS_TAP_PR_REPOSITORY",
+		"DWS_TAP_PR_BRANCH",
+		"Open stable Homebrew formula PR",
+		"Open beta Homebrew formula PR",
+	} {
+		if strings.Contains(workflow, forbidden) {
+			t.Errorf("release workflow must not retain Homebrew PR machinery %q", forbidden)
+		}
+	}
+
+	start := strings.Index(workflow, "- name: Publish stable Homebrew formula")
+	if start == -1 {
+		t.Fatal("release workflow is missing direct stable Homebrew publication")
+	}
+	end := strings.Index(workflow[start:], "- name: Publish beta Homebrew formula")
+	if end == -1 {
+		t.Fatal("release workflow is missing direct beta Homebrew publication after the stable step")
+	}
+	section := workflow[start : start+end]
+	for _, required := range []string{
+		"github.repository_owner == 'DingTalk-Real-AI'",
+		"needs.release-contract.outputs.channel == 'stable'",
+		"scripts/release/publish-homebrew-formula.sh",
+		"secrets.HOMEBREW_PR_TOKEN",
+	} {
+		if !strings.Contains(section, required) {
+			t.Errorf("direct stable Homebrew publication is missing %q", required)
+		}
+	}
+	stableNPM := strings.Index(workflow, "- name: Publish missing version to npm channel")
+	if stableNPM == -1 || start > stableNPM {
+		t.Fatal("Homebrew publication must run before npm so a failure is safely rerunnable")
+	}
+}
+
+func TestReleaseWorkflowPublishesBetaHomebrewFormulaDirectly(t *testing.T) {
+	t.Parallel()
+
+	workflowPath, err := filepath.Abs(filepath.Join("..", "..", ".github", "workflows", "release.yml"))
+	if err != nil {
+		t.Fatalf("Abs(release.yml) error = %v", err)
+	}
+	data, err := os.ReadFile(workflowPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", workflowPath, err)
+	}
+	workflow := string(data)
+
+	start := strings.Index(workflow, "- name: Publish beta Homebrew formula")
+	if start == -1 {
+		t.Fatal("release workflow is missing direct beta Homebrew publication")
+	}
+	end := strings.Index(workflow[start:], "- name: Reverify exact immutable npm package")
+	if end == -1 {
+		t.Fatal("release workflow is missing the post-Homebrew npm verification step")
+	}
+	section := workflow[start : start+end]
+	for _, required := range []string{
+		"github.repository_owner == 'DingTalk-Real-AI'",
+		"needs.release-contract.outputs.channel == 'prerelease'",
+		"dist/homebrew/dingtalk-workspace-cli-beta.rb",
+		"Formula/dingtalk-workspace-cli-beta.rb",
+		"secrets.HOMEBREW_PR_TOKEN",
+	} {
+		if !strings.Contains(section, required) {
+			t.Errorf("direct beta Homebrew publication is missing %q", required)
+		}
+	}
+	for _, forbidden := range []string{
+		"DWS_TAP_PR_REPOSITORY",
+		"DWS_TAP_PR_BRANCH",
+		"automation/homebrew-beta-",
+	} {
+		if strings.Contains(section, forbidden) {
+			t.Errorf("direct beta Homebrew publication must not open a PR: found %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseWorkflowSealsOnlyVerifiedFormulaCommitContexts(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	publishJob := releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n")
+	if !strings.Contains(publishJob, "checks: write") {
+		t.Fatal("Formula-only delivery must receive checks: write in the already write-capable publication job")
+	}
+
+	for _, required := range []string{
+		"timeout-minutes: 30",
+		`coverage_baseline_required: ${{ steps.seal-formula.outputs.coverage_baseline_required }}`,
+		`coverage_baseline_commit: ${{ steps.seal-formula.outputs.coverage_baseline_commit }}`,
+		"id: homebrew-stable",
+		"id: homebrew-beta",
+		"id: seal-formula",
+		`FORMULA_CHANGED: ${{ steps.homebrew-stable.outputs.formula_changed || steps.homebrew-beta.outputs.formula_changed }}`,
+		`FORMULA_COMMIT: ${{ steps.homebrew-stable.outputs.published_commit || steps.homebrew-beta.outputs.published_commit }}`,
+	} {
+		if !strings.Contains(publishJob, required) {
+			t.Errorf("Homebrew publisher output wiring is missing %q", required)
+		}
+	}
+
+	seal := releaseWorkflowSection(
+		t,
+		publishJob,
+		"      - name: Seal Formula-only Code Admission contexts\n",
+		"\n      - name: Reverify exact immutable npm package\n",
+	)
+	for _, required := range []string{
+		`const commit = process.env.FORMULA_COMMIT`,
+		`commitResponse.data.sha === commit`,
+		`commitResponse.data.parents.length === 1`,
+		`commitResponse.data.commit.message === expectedMessage`,
+		`commitResponse.data.author?.login === "github-actions[bot]"`,
+		`commitResponse.data.committer?.login === "github-actions[bot]"`,
+		`files.length === 1`,
+		`files[0].filename === formulaPath`,
+		`["added", "modified"].includes(files[0].status)`,
+		`const parent = commitResponse.data.parents[0].sha`,
+		`github.rest.checks.listForRef`,
+		`ref: parent`,
+		`run.head_sha !== parent`,
+		`run.app?.slug !== "github-actions"`,
+		`run.conclusion !== "success"`,
+		`github.rest.repos.getContent`,
+		`path: formulaPath`,
+		`ref: commit`,
+		`actualFormula.equals(expectedFormula)`,
+		`github.rest.repos.compareCommitsWithBasehead`,
+		`basehead: ` + "`${commit}...${branch.data.commit.sha}`",
+		`["ahead", "identical"].includes(comparison.data.status)`,
+		`github.rest.checks.create`,
+		`head_sha: commit`,
+		`status: "completed"`,
+		`conclusion: "success"`,
+		`core.setOutput("coverage_baseline_required", "true")`,
+		`core.setOutput("coverage_baseline_commit", commit)`,
+	} {
+		if !strings.Contains(seal, required) {
+			t.Errorf("Formula-only Code Admission sealing is missing %q", required)
+		}
+	}
+	for _, context := range expectedReleaseAdmissionContexts {
+		if strings.Count(seal, fmt.Sprintf("%q", context)) != 1 {
+			t.Errorf("Formula-only Code Admission must derive exactly one %q context from the reviewed list", context)
+		}
+	}
+	if strings.Count(seal, "github.rest.checks.create") != 1 {
+		t.Error("Formula sealing must write only the reviewed Code Admission contexts")
+	}
+	for _, forbidden := range []string{
+		"head_sha: context.sha",
+		"head_sha: parent",
+		"head_sha: branch.data.commit.sha",
+		"github.rest.checks.get",
+		"promotionComplete",
+		"setTimeout(resolve, 10000)",
+		"Coverage Baseline Cache",
+		"github.rest.repos.createDispatchEvent",
+	} {
+		if strings.Contains(seal, forbidden) {
+			t.Errorf("Formula-only Code Admission must not mark an unverified head green: found %q", forbidden)
+		}
+	}
+
+	createCheck := strings.Index(seal, "github.rest.checks.create")
+	if createCheck == -1 {
+		t.Error("Formula sealing must create the verified Code Admission contexts")
+	}
+	for name, marker := range map[string]string{
+		"single-parent Formula-only identity": "const exactFormulaCommit",
+		"successful parent contexts":          "invalidParentContexts.length > 0",
+		"byte-for-byte Formula content":       "actualFormula.equals(expectedFormula)",
+		"default-branch containment":          `["ahead", "identical"].includes(comparison.data.status)`,
+	} {
+		index := strings.Index(seal, marker)
+		if index == -1 || createCheck == -1 || index > createCheck {
+			t.Errorf("%s must be verified before any success check is created", name)
+		}
+	}
+}
+
+func TestReleaseWorkflowConfirmsFormulaCacheWithoutBlockingChannels(t *testing.T) {
+	t.Parallel()
+	workflow := readReleaseWorkflow(t)
+	publishJob := releaseWorkflowSection(t, workflow, "  publish-release:\n", "\n  publish-channels:\n")
+	channelsJob := releaseWorkflowSection(t, workflow, "  publish-channels:\n", "\n  mirror-gitee-release:\n")
+	confirmation := releaseWorkflowSection(
+		t,
+		workflow,
+		"  coverage-baseline-confirmation:\n",
+		"\n  release-delivery-gate:\n",
+	)
+
+	for _, required := range []string{
+		`if: ${{ !cancelled() && (needs.publish-release.result == 'success' || needs.publish-release.outputs.coverage_baseline_required == 'true') }}`,
+		"needs: publish-release",
+		"timeout-minutes: 35",
+		"checks: write",
+		"contents: write",
+		`BASELINE_REQUIRED: ${{ needs.publish-release.outputs.coverage_baseline_required }}`,
+		`FORMULA_COMMIT: ${{ needs.publish-release.outputs.coverage_baseline_commit }}`,
+		"if (!['true', 'false'].includes(rawRequired))",
+		"Formula baseline requirement is invalid",
+		"github.rest.checks.create",
+		"name: 'Coverage Baseline Cache'",
+		"status: 'queued'",
+		"external_id: expectedExternalId",
+		"github.rest.repos.createDispatchEvent",
+		"event_type: 'coverage-baseline-promote'",
+		"source_run_id: String(context.runId)",
+		"check_run_id: String(promotionCheck.id)",
+		"github.rest.checks.update",
+		"conclusion: 'failure'",
+		"github.rest.checks.get",
+		"currentCheck.head_sha !== targetSha",
+		"currentCheck.external_id !== expectedExternalId",
+		"currentCheck.app?.slug !== 'github-actions'",
+		"for (let attempt = 1; attempt <= 180; attempt += 1)",
+		"currentCheck.conclusion !== 'success'",
+		"await new Promise(resolve => setTimeout(resolve, 10000))",
+		"Formula baseline promotion timed out",
+	} {
+		if !strings.Contains(confirmation, required) {
+			t.Errorf("Formula baseline confirmation missing %q", required)
+		}
+	}
+	if strings.Contains(channelsJob, "coverage-baseline-confirmation") ||
+		strings.Contains(channelsJob, "needs.coverage-baseline-confirmation") {
+		t.Error("cache acknowledgement must not block npm or mirror publication")
+	}
+	for _, forbidden := range []string{
+		"Coverage Baseline Cache",
+		"github.rest.repos.createDispatchEvent",
+		"github.rest.checks.get",
+		"promotionComplete",
+	} {
+		if strings.Contains(publishJob, forbidden) {
+			t.Errorf("irreversible publication job must not own cache lifecycle marker %q", forbidden)
+		}
+	}
+}
+
+func TestReleaseWorkflowWaitsForNPMDistTagPropagation(t *testing.T) {
+	workflow := readReleaseWorkflow(t)
+	script := releaseWorkflowRunScript(
+		t,
+		workflow,
+		"Verify npm channel delivery",
+		"Sync release artifacts to China OSS mirror",
+	)
+
+	tests := []struct {
+		name        string
+		sequence    string
+		wantSuccess bool
+		wantCalls   int
+		wantSleeps  int
+		wantOutput  string
+	}{
+		{
+			name:        "stale beta converges to target",
+			sequence:    "1.0.53-beta.6\n1.0.53-beta.6\n1.0.53-beta.7\n",
+			wantSuccess: true,
+			wantCalls:   3,
+			wantSleeps:  2,
+		},
+		{
+			name:       "stale beta never converges",
+			sequence:   "1.0.53-beta.6\n",
+			wantCalls:  60,
+			wantSleeps: 59,
+			wantOutput: "still reports older v1.0.53-beta.6 after 60 attempts",
+		},
+		{
+			name:       "permanent registry error fails immediately",
+			sequence:   "__NPM_ERROR__\n",
+			wantCalls:  1,
+			wantSleeps: 0,
+			wantOutput: "permanent npm registry error",
+		},
+	}
+
+	for _, test := range tests {
+		t.Run(test.name, func(t *testing.T) {
+			root := t.TempDir()
+			fakeBin := filepath.Join(root, "bin")
+			if err := os.MkdirAll(fakeBin, 0o755); err != nil {
+				t.Fatalf("MkdirAll(%s) error = %v", fakeBin, err)
+			}
+			sequencePath := filepath.Join(root, "sequence")
+			statePath := filepath.Join(root, "state")
+			npmLogPath := filepath.Join(root, "npm.log")
+			sleepLogPath := filepath.Join(root, "sleep.log")
+			mustWriteFile(t, sequencePath, []byte(test.sequence), 0o644)
+			mustWriteFile(t, filepath.Join(fakeBin, "npm"), []byte(`#!/bin/sh
+set -eu
+printf '%s\n' "$*" >> "$NPM_CALL_LOG"
+test "$*" = "view dingtalk-workspace-cli dist-tags.beta --registry=https://registry.npmjs.org --prefer-online" || {
+  echo "unexpected npm mutation: $*" >&2
+  exit 97
+}
+call=0
+if test -f "$NPM_STATE"; then call="$(cat "$NPM_STATE")"; fi
+call=$((call + 1))
+printf '%s\n' "$call" > "$NPM_STATE"
+value="$(sed -n "${call}p" "$NPM_SEQUENCE")"
+if test -z "$value"; then value="$(tail -n 1 "$NPM_SEQUENCE")"; fi
+if test "$value" = "__NPM_ERROR__"; then
+  echo "permanent npm registry error" >&2
+  exit 42
+fi
+printf '%s\n' "$value"
+`), 0o755)
+			mustWriteFile(t, filepath.Join(fakeBin, "sleep"), []byte(`#!/bin/sh
+set -eu
+printf '%s\n' "$*" >> "$SLEEP_CALL_LOG"
+`), 0o755)
+
+			repoRoot, err := filepath.Abs(filepath.Join("..", ".."))
+			if err != nil {
+				t.Fatalf("Abs(repository root) error = %v", err)
+			}
+			cmd := exec.Command("sh", "-c", script)
+			cmd.Dir = repoRoot
+			cmd.Env = append(os.Environ(),
+				"PATH="+fakeBin+string(os.PathListSeparator)+os.Getenv("PATH"),
+				"NPM_TAG=beta",
+				"SEMVER=1.0.53-beta.7",
+				"NPM_SEQUENCE="+sequencePath,
+				"NPM_STATE="+statePath,
+				"NPM_CALL_LOG="+npmLogPath,
+				"SLEEP_CALL_LOG="+sleepLogPath,
+			)
+			output, runErr := cmd.CombinedOutput()
+			if test.wantSuccess && runErr != nil {
+				t.Fatalf("npm delivery verification error = %v\noutput:\n%s", runErr, output)
+			}
+			if !test.wantSuccess && runErr == nil {
+				t.Fatalf("npm delivery verification unexpectedly succeeded\noutput:\n%s", output)
+			}
+			if test.wantOutput != "" && !strings.Contains(string(output), test.wantOutput) {
+				t.Errorf("npm delivery verification output is missing %q:\n%s", test.wantOutput, output)
+			}
+
+			npmLog, err := os.ReadFile(npmLogPath)
+			if err != nil {
+				t.Fatalf("ReadFile(%s) error = %v", npmLogPath, err)
+			}
+			npmCalls := strings.Split(strings.TrimSpace(string(npmLog)), "\n")
+			if got := len(npmCalls); got != test.wantCalls {
+				t.Errorf("npm view call count = %d, want %d; log:\n%s", got, test.wantCalls, npmLog)
+			}
+			if strings.Contains(string(npmLog), "dist-tag add") || strings.Contains(string(npmLog), "publish") {
+				t.Errorf("delivery verification must remain read-only; log:\n%s", npmLog)
+			}
+
+			sleepCalls := 0
+			if sleepLog, err := os.ReadFile(sleepLogPath); err == nil {
+				sleepCalls = len(strings.Fields(string(sleepLog)))
+			} else if !os.IsNotExist(err) {
+				t.Fatalf("ReadFile(%s) error = %v", sleepLogPath, err)
+			}
+			if sleepCalls != test.wantSleeps {
+				t.Errorf("sleep call count = %d, want %d", sleepCalls, test.wantSleeps)
+			}
+		})
+	}
+}
+
+func TestReleaseStaysDraftUntilFinalizedAssetDigestsMatch(t *testing.T) {
+	t.Parallel()
+
+	goreleaserPath, err := filepath.Abs(filepath.Join("..", "..", ".goreleaser.yaml"))
+	if err != nil {
+		t.Fatalf("Abs(.goreleaser.yaml) error = %v", err)
+	}
+	goreleaserData, err := os.ReadFile(goreleaserPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", goreleaserPath, err)
+	}
+	if !strings.Contains(string(goreleaserData), "draft: true") {
+		t.Fatal("GoReleaser must keep the release as Draft during post-processing")
+	}
+
+	finalizePath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "finalize-github-release.sh"))
+	if err != nil {
+		t.Fatalf("Abs(finalize-github-release.sh) error = %v", err)
+	}
+	finalizeData, err := os.ReadFile(finalizePath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", finalizePath, err)
+	}
+	finalize := string(finalizeData)
+
+	upload := strings.Index(finalize, "gh release upload")
+	digestFailure := strings.Index(finalize, "release asset digest mismatch")
+	publish := strings.Index(finalize, "gh release edit")
+	if upload == -1 || digestFailure == -1 || publish == -1 || !(upload < digestFailure && digestFailure < publish) {
+		t.Fatal("Draft publication must happen after finalized asset upload and digest verification")
+	}
+}
+
+func TestLocalBuildHonorsCGOEnabled(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" {
+		t.Skip("shell executable shims require a Unix host")
+	}
+
+	source, err := os.ReadFile(filepath.Join("..", "..", "scripts", "dev", "build.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, tc := range []struct {
+		name string
+		env  []string
+		want string
+	}{
+		{name: "default", want: "1"},
+		{name: "empty", env: []string{"CGO_ENABLED="}, want: "1"},
+		{name: "stub", env: []string{"CGO_ENABLED=0"}, want: "0"},
+		{name: "native", env: []string{"CGO_ENABLED=1"}, want: "1"},
+	} {
+		t.Run(tc.name, func(t *testing.T) {
+			root := t.TempDir()
+			mustWriteFile(t, filepath.Join(root, "scripts", "dev", "build.sh"), source, 0o755)
+			for _, helper := range []string{"policy/check-runtime-payload.sh", "build/attach-runtime-payload.sh"} {
+				mustWriteFile(t, filepath.Join(root, "scripts", filepath.FromSlash(helper)), []byte("#!/bin/sh\nexit 0\n"), 0o755)
+			}
+			binDir := filepath.Join(root, "bin")
+			mustWriteFile(t, filepath.Join(binDir, "go"), []byte("#!/bin/sh\nprintf '%s\\n' \"$CGO_ENABLED\"\n"), 0o755)
+			cmd := exec.Command("sh", filepath.Join(root, "scripts", "dev", "build.sh"))
+			cmd.Dir = root
+			for _, value := range os.Environ() {
+				if !strings.HasPrefix(value, "CGO_ENABLED=") && !strings.HasPrefix(value, "PATH=") {
+					cmd.Env = append(cmd.Env, value)
+				}
+			}
+			cmd.Env = append(cmd.Env, "PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"))
+			cmd.Env = append(cmd.Env, tc.env...)
+			output, err := cmd.CombinedOutput()
+			if err != nil || strings.TrimSpace(string(output)) != tc.want {
+				t.Fatalf("build CGO_ENABLED = %q, err = %v; want %s", output, err, tc.want)
+			}
+		})
+	}
+}
+
+// pinnedArchiveDigests reads the archive checksums the wrapper pins for the
+// host architecture. The arch case lists amd64 first, then arm64.
+func pinnedArchiveDigests(t *testing.T, script string) (goreleaser, zig string) {
+	t.Helper()
+	digest := regexp.MustCompile(`^[0-9a-f]{64}$`)
+	collect := func(prefix string) []string {
+		var values []string
+		for _, line := range strings.Split(script, "\n") {
+			value, ok := strings.CutPrefix(strings.TrimSpace(line), prefix)
+			if !ok {
+				continue
+			}
+			value = strings.TrimSuffix(value, "\"")
+			if !digest.MatchString(value) {
+				t.Fatalf("pinned digest %q for %s is not a sha256 hex value", value, prefix)
+			}
+			values = append(values, value)
+		}
+		return values
+	}
+	archiveShas := collect("archive_sha=\"")
+	zigShas := collect("zig_sha=\"")
+	if len(archiveShas) < 2 || len(zigShas) < 2 {
+		t.Fatalf("wrapper does not pin both architectures: %v %v", archiveShas, zigShas)
+	}
+	index := 0
+	if runtime.GOARCH == "arm64" {
+		index = 1
+	}
+	return archiveShas[index], zigShas[index]
+}
+
+// seedVerifiedTool writes an executable plus the marker the wrapper records
+// after a successful pinned install, reproducing a legitimately cached tool.
+func seedVerifiedTool(t *testing.T, dir, exe, archiveSha string) {
+	t.Helper()
+	body := []byte("#!/bin/sh\nexit 0\n")
+	mustWriteFile(t, filepath.Join(dir, exe), body, 0o755)
+	sum := sha256.Sum256(body)
+	marker := fmt.Sprintf("archive_sha256=%s\nexe_sha256=%x\n", archiveSha, sum)
+	mustWriteFile(t, filepath.Join(dir, ".dws-verified"), []byte(marker), 0o644)
+}
+
+func TestCrossReleaseWrapperVerifiesZigBeforeStartingDocker(t *testing.T) {
+	t.Parallel()
+	if runtime.GOOS == "windows" || (runtime.GOARCH != "amd64" && runtime.GOARCH != "arm64") {
+		t.Skip("requires a supported Unix release host")
+	}
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "run-goreleaser-cross.sh"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	scriptData, err := os.ReadFile(scriptPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", scriptPath, err)
+	}
+	goreleaserSha, zigSha := pinnedArchiveDigests(t, string(scriptData))
+
+	root := t.TempDir()
+	cache := filepath.Join(root, "tools")
+	archiveArch := runtime.GOARCH
+	if archiveArch == "amd64" {
+		archiveArch = "x86_64"
+	}
+	goreleaserDir := filepath.Join(cache, "goreleaser-2.16.0-linux-"+archiveArch)
+	zigDir := filepath.Join(cache, "zig-0.15.2-linux-"+runtime.GOARCH)
+
+	binDir := filepath.Join(root, "bin")
+	curlLog := filepath.Join(root, "curl.log")
+	mustWriteFile(t, filepath.Join(binDir, "curl"), []byte(
+		"#!/bin/sh\nfor arg do target=\"$arg\"; done\nprintf 'call\\n' >> \"$DWS_TEST_CURL_LOG\"\nprintf invalid-archive > \"$target\"\n"), 0o755)
+	mustWriteFile(t, filepath.Join(binDir, "docker"), []byte("#!/bin/sh\nprintf '%s\\n' \"$@\" > \"$DWS_TEST_DOCKER_LOG\"\n"), 0o755)
+	logPath := filepath.Join(root, "docker.log")
+	run := func() ([]byte, error) {
+		cmd := exec.Command("bash", scriptPath, "build", "--snapshot")
+		cmd.Env = append(os.Environ(),
+			"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+			"DWS_RELEASE_TOOL_CACHE="+cache,
+			"DWS_TEST_CURL_LOG="+curlLog,
+			"DWS_TEST_DOCKER_LOG="+logPath,
+			"DWS_PACKAGE_VERSION=0.0.0-test",
+		)
+		return cmd.CombinedOutput()
+	}
+	downloads := func() int {
+		data, readErr := os.ReadFile(curlLog)
+		if readErr != nil {
+			return 0
+		}
+		return strings.Count(string(data), "call")
+	}
+	assertBlocked := func(output []byte, runErr error, want string) {
+		t.Helper()
+		if runErr == nil || !strings.Contains(string(output), want) {
+			t.Fatalf("wrapper did not fail with %q: %v, %s", want, runErr, output)
+		}
+		if _, statErr := os.Stat(logPath); !os.IsNotExist(statErr) {
+			t.Fatalf("Docker must not start after a checksum failure: %v", statErr)
+		}
+	}
+
+	// A bare executable proves nothing: without the marker the wrapper must
+	// download and verify again instead of reusing whatever is on disk.
+	mustWriteFile(t, filepath.Join(goreleaserDir, "goreleaser"), []byte("#!/bin/sh\nexit 0\n"), 0o755)
+	output, err := run()
+	assertBlocked(output, err, "GoReleaser archive checksum mismatch")
+
+	seedVerifiedTool(t, goreleaserDir, "goreleaser", goreleaserSha)
+	output, err = run()
+	assertBlocked(output, err, "Zig archive checksum mismatch")
+
+	// A present marker is not enough either: the executable digest must still
+	// match, so a replaced or truncated tool is rejected on a cache hit.
+	seedVerifiedTool(t, zigDir, "zig", zigSha)
+	mustWriteFile(t, filepath.Join(zigDir, "zig"), []byte("#!/bin/sh\necho tampered\n"), 0o755)
+	output, err = run()
+	assertBlocked(output, err, "Zig archive checksum mismatch")
+
+	seedVerifiedTool(t, zigDir, "zig", zigSha)
+	before := downloads()
+	output, err = run()
+	if err != nil {
+		t.Fatalf("cached compiler invocation failed: %v, %s", err, output)
+	}
+	if after := downloads(); after != before {
+		t.Fatalf("verified cache downloaded %d more archives, want a pure cache hit", after-before)
+	}
+	args, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatal(err)
+	}
+	for _, want := range []string{zigDir + ":/opt/dws-zig:ro", "linux/" + runtime.GOARCH, "build\n--snapshot\n"} {
+		if !strings.Contains(string(args), want) {
+			t.Fatalf("Docker arguments missing %q: %s", want, args)
+		}
+	}
+}
+
+func TestReleaseBuildsSafeChatBackendByDefaultForEveryPlatform(t *testing.T) {
+	t.Parallel()
+
+	root, err := filepath.Abs(filepath.Join("..", ".."))
+	if err != nil {
+		t.Fatalf("Abs(repository root) error = %v", err)
+	}
+	read := func(relative string) string {
+		t.Helper()
+		data, readErr := os.ReadFile(filepath.Join(root, filepath.FromSlash(relative)))
+		if readErr != nil {
+			t.Fatalf("ReadFile(%s) error = %v", relative, readErr)
+		}
+		return string(data)
+	}
+
+	goreleaser := read(".goreleaser.yaml")
+	for _, required := range []string{
+		"CGO_ENABLED=1",
+		"GOTOOLCHAIN=go1.25.9",
+		"CC_darwin_amd64=o64-clang",
+		"CC_darwin_arm64=oa64-clang",
+		"CC_linux_amd64=/opt/dws-zig/zig cc -target x86_64-linux-gnu.2.17",
+		"CC_linux_arm64=/opt/dws-zig/zig cc -target aarch64-linux-gnu.2.17",
+		"CC_windows_amd64=x86_64-w64-mingw32-gcc",
+		"CC_windows_arm64=/llvm-mingw/bin/aarch64-w64-mingw32-gcc",
+	} {
+		if !strings.Contains(goreleaser, required) {
+			t.Errorf("SafeChat release build is missing %q", required)
+		}
+	}
+	if strings.Contains(goreleaser, "CGO_ENABLED=0") {
+		t.Fatal("release configuration must not produce CGO-disabled stub binaries")
+	}
+
+	windowsCompat := read("third_party/safechat-go-sdk/msvcrt_compat_windows.c")
+	for _, required := range []string{
+		`__asm__("_snprintf")`,
+		`__asm__("_vsnprintf")`,
+		`__asm__("__imp__snprintf")`,
+		`__asm__("__imp__vsnprintf")`,
+	} {
+		if !strings.Contains(windowsCompat, required) {
+			t.Errorf("Windows SafeChat CRT compatibility layer is missing %q", required)
+		}
+	}
+
+	defaultBuild := read("scripts/dev/build.sh")
+	if strings.Contains(defaultBuild, "-tags safechat") {
+		t.Fatal("default build must not require a SafeChat build tag")
+	}
+
+	wrapper := read("scripts/release/run-goreleaser-cross.sh")
+	for _, required := range []string{
+		"ghcr.io/goreleaser/goreleaser-cross:v1.26.2@sha256:fadba0d4577866eb2588d46ea6b604c73ef45ee55f044acbc17cc49aa435fd04",
+		`GORELEASER_VERSION="2.16.0"`,
+		`ZIG_VERSION="0.15.2"`,
+		`zig_sha="02aa270f183da276e5b5920b1dac44a63f1a49e55050ebde3aecc9eb82f93239"`,
+		`zig_sha="958ed7d1e00d0ea76590d27666efbf7a932281b3d7ba0c6b01b0ff26498f667f"`,
+		`--volume "$zig_dir:/opt/dws-zig:ro"`,
+		`archive_sha="eaae05b5eba07533bd0f06846b68c808399504784df00c62eb219541fc04e5e2"`,
+		`archive_sha="0102d974373fcdeb77042d1f5897caffa193be36620fdc6c1da43a01ef8e10d3"`,
+		"goreleaser_Linux_${archive_arch}.tar.gz",
+		"archive checksum mismatch",
+		`--platform "linux/$docker_arch"`,
+		"--entrypoint /usr/local/bin/goreleaser",
+	} {
+		if !strings.Contains(wrapper, required) {
+			t.Errorf("pinned cross-release wrapper is missing %q", required)
+		}
+	}
+
+	buildAll := read("scripts/dev/build-all.sh")
+	if !strings.Contains(buildAll, "./scripts/release/run-goreleaser-cross.sh") ||
+		strings.Contains(buildAll, "CGO_ENABLED=0") {
+		t.Fatal("local release packaging must use the pinned CGO cross-release wrapper")
+	}
+	testRelease := read("scripts/dev/test-release.sh")
+	if !strings.Contains(testRelease, `make package VERSION="$VERSION"`) ||
+		strings.Contains(testRelease, "\ngoreleaser release") {
+		t.Fatal("release smoke helper must reuse the pinned package entrypoint")
+	}
+
+	workflow := read(".github/workflows/release.yml")
+	buildSection := releaseWorkflowSection(
+		t,
+		workflow,
+		"      - name: Build release artifacts without publishing\n",
+		"\n      - name: Setup Node.js\n",
+	)
+	if !strings.Contains(buildSection, "./scripts/release/run-goreleaser-cross.sh") {
+		t.Fatal("official release workflow must use the pinned CGO cross-release wrapper")
+	}
+	if strings.Contains(buildSection, "goreleaser/goreleaser-action") {
+		t.Fatal("official release workflow must not bypass the pinned cross toolchain")
+	}
+
+	ciWorkflow := read(".github/workflows/ci.yml")
+	for _, required := range []string{
+		"filename.startsWith('internal/msgcrypto/')",
+		"filename.startsWith('third_party/safechat-go-sdk/')",
+		"- name: Compile SafeChat release matrix",
+		"./scripts/release/run-goreleaser-cross.sh build --snapshot --clean --parallelism=2",
+		"go run ./scripts/build/linux-abi dist/*_linux_*/dws",
+		"ubuntu:20.04@sha256:8feb4d8ca5354def3d8fce243717141ce31e2c428701f6682bd2fafe15388214",
+		`"C:\mingw64\bin\gcc.exe" --version`,
+	} {
+		if !strings.Contains(ciWorkflow, required) {
+			t.Errorf("CI SafeChat release coverage is missing %q", required)
+		}
+	}
+
+	verifier := read("scripts/release/verify-release-artifacts.sh")
+	for _, required := range []string{
+		`go version -m "$binary"`,
+		"CGO_ENABLED=1",
+		"safechat-go-sdk",
+		`go run ./scripts/build/linux-abi "$binary" "$library"`,
+	} {
+		if !strings.Contains(verifier, required) {
+			t.Errorf("release artifact verifier is missing SafeChat assertion %q", required)
+		}
+	}
+}
+
+// TestReleaseCrossCompilerEnvCoversEveryTarget pins that the CC/CXX templates
+// resolve to a real compiler for every target in the release matrix. They read
+// CC_<os>_<arch> out of the same env list, so a target added without its
+// compiler entries would resolve to an empty CC and silently fall back to the
+// host toolchain under CGO.
+func TestReleaseCrossCompilerEnvCoversEveryTarget(t *testing.T) {
+	t.Parallel()
+
+	configPath, err := filepath.Abs(filepath.Join("..", "..", ".goreleaser.yaml"))
+	if err != nil {
+		t.Fatal(err)
+	}
+	data, err := os.ReadFile(configPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", configPath, err)
+	}
+	var config struct {
+		Builds []struct {
+			Env    []string `yaml:"env"`
+			Goos   []string `yaml:"goos"`
+			Goarch []string `yaml:"goarch"`
+		} `yaml:"builds"`
+	}
+	if err := yaml.Unmarshal(data, &config); err != nil {
+		t.Fatalf("parse .goreleaser.yaml: %v", err)
+	}
+	if len(config.Builds) != 1 {
+		t.Fatalf("expected exactly one build, got %d", len(config.Builds))
+	}
+	build := config.Builds[0]
+
+	for _, want := range []string{
+		`CC={{ index .Env (print "CC_" .Os "_" .Arch) }}`,
+		`CXX={{ index .Env (print "CXX_" .Os "_" .Arch) }}`,
+	} {
+		if !slices.Contains(build.Env, want) {
+			t.Errorf("build env is missing the per-target compiler template %q", want)
+		}
+	}
+
+	declared := make(map[string]bool, len(build.Env))
+	for _, entry := range build.Env {
+		name, _, _ := strings.Cut(entry, "=")
+		declared[name] = true
+	}
+	for _, goos := range build.Goos {
+		for _, goarch := range build.Goarch {
+			for _, prefix := range []string{"CC_", "CXX_"} {
+				if name := prefix + goos + "_" + goarch; !declared[name] {
+					t.Errorf("build env does not declare %s, so %s/%s resolves to an empty compiler", name, goos, goarch)
+				}
+			}
+		}
+	}
+}
+
+// TestReleaseCrossCompilerEnvMatchesWrapper pins that the cross-toolchain wrapper
+// hands the container the same CC_/CXX_ values .goreleaser.yaml declares, for
+// every target in the release matrix. The templates resolve through .Env, so the
+// container process environment is what actually supplies them; comparing the two
+// sources per target means neither can drift into an empty compiler, and a target
+// added to the matrix without a matching wrapper export fails here.
+func TestReleaseCrossCompilerEnvMatchesWrapper(t *testing.T) {
+	t.Parallel()
+
+	read := func(rel string) string {
+		t.Helper()
+		path, err := filepath.Abs(filepath.Join("..", "..", rel))
+		if err != nil {
+			t.Fatal(err)
+		}
+		data, err := os.ReadFile(path)
+		if err != nil {
+			t.Fatalf("ReadFile(%s) error = %v", rel, err)
+		}
+		return string(data)
+	}
+
+	var config struct {
+		Builds []struct {
+			Env    []string `yaml:"env"`
+			Goos   []string `yaml:"goos"`
+			Goarch []string `yaml:"goarch"`
+		} `yaml:"builds"`
+	}
+	if err := yaml.Unmarshal([]byte(read(".goreleaser.yaml")), &config); err != nil {
+		t.Fatalf("parse .goreleaser.yaml: %v", err)
+	}
+	if len(config.Builds) != 1 {
+		t.Fatalf("expected exactly one build, got %d", len(config.Builds))
+	}
+	build := config.Builds[0]
+
+	declared := make(map[string]string, len(build.Env))
+	for _, entry := range build.Env {
+		if name, value, found := strings.Cut(entry, "="); found {
+			declared[name] = value
+		}
+	}
+
+	wrapper := read(filepath.Join("scripts", "release", "run-goreleaser-cross.sh"))
+	if !strings.Contains(wrapper, `env_args+=(--env "$entry")`) {
+		t.Error("wrapper does not forward its compiler_env entries to docker run")
+	}
+	exported := make(map[string]string)
+	for _, line := range strings.Split(wrapper, "\n") {
+		line = strings.TrimSpace(line)
+		if !strings.HasPrefix(line, `"CC_`) && !strings.HasPrefix(line, `"CXX_`) {
+			continue
+		}
+		entry := strings.Trim(line, `"`)
+		name, value, found := strings.Cut(entry, "=")
+		if !found {
+			t.Errorf("wrapper compiler entry %q carries no value", entry)
+			continue
+		}
+		exported[name] = value
+	}
+
+	for _, goos := range build.Goos {
+		for _, goarch := range build.Goarch {
+			for _, prefix := range []string{"CC_", "CXX_"} {
+				name := prefix + goos + "_" + goarch
+				want, ok := declared[name]
+				if !ok || want == "" {
+					t.Errorf(".goreleaser.yaml declares no %s value for %s/%s", name, goos, goarch)
+					continue
+				}
+				got, ok := exported[name]
+				if !ok {
+					t.Errorf("wrapper does not export %s, so the container environment cannot resolve %s/%s", name, goos, goarch)
+					continue
+				}
+				if got != want {
+					t.Errorf("%s differs between wrapper and config: wrapper=%q config=%q", name, got, want)
+				}
+			}
+		}
+	}
+}
+
+func TestFinalizeGitHubReleaseDoesNotPublishAfterUploadFailure(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "finalize-github-release.sh"))
+	if err != nil {
+		t.Fatalf("Abs(finalize-github-release.sh) error = %v", err)
+	}
+
+	root := t.TempDir()
+	distDir := filepath.Join(root, "dist")
+	if err := os.MkdirAll(distDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", distDir, err)
+	}
+	for _, name := range []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"checksums.txt",
+		"dws-skills.zip",
+	} {
+		if err := os.WriteFile(filepath.Join(distDir, name), []byte("finalized"), 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", name, err)
+		}
+	}
+
+	binDir := filepath.Join(root, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", binDir, err)
+	}
+	logPath := filepath.Join(root, "gh.log")
+	fakeGH := `#!/bin/sh
+printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+if [ "$1" = "release" ] && [ "$2" = "upload" ]; then
+  exit 42
+fi
+if [ "$1" = "release" ] && [ "$2" = "edit" ]; then
+  exit 0
+fi
+exit 1
+`
+	if err := os.WriteFile(filepath.Join(binDir, "gh"), []byte(fakeGH), 0o755); err != nil {
+		t.Fatalf("WriteFile(fake gh) error = %v", err)
+	}
+
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = append(os.Environ(),
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"FAKE_GH_LOG="+logPath,
+		"GITHUB_REF_NAME=v-test",
+		"GITHUB_REPOSITORY=example/dws",
+		"DWS_PACKAGE_DIST_DIR="+distDir,
+	)
+	output, err := cmd.CombinedOutput()
+	if err == nil {
+		t.Fatalf("finalize-github-release.sh unexpectedly succeeded after upload failure:\n%s", output)
+	}
+
+	logData, readErr := os.ReadFile(logPath)
+	if readErr != nil {
+		t.Fatalf("ReadFile(%s) error = %v", logPath, readErr)
+	}
+	logText := string(logData)
+	if !strings.Contains(logText, "release upload") {
+		t.Fatalf("fake gh did not observe release upload:\n%s", logText)
+	}
+	if strings.Contains(logText, "release edit") {
+		t.Fatalf("Draft release was published after upload failure:\n%s", logText)
+	}
+}
+
+func TestFinalizeGitHubReleaseCanVerifyWithoutPublishing(t *testing.T) {
+	t.Parallel()
+
+	scriptPath, err := filepath.Abs(filepath.Join("..", "..", "scripts", "release", "finalize-github-release.sh"))
+	if err != nil {
+		t.Fatalf("Abs(finalize-github-release.sh) error = %v", err)
+	}
+
+	root := t.TempDir()
+	distDir := filepath.Join(root, "dist")
+	if err := os.MkdirAll(distDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", distDir, err)
+	}
+	assetContent := []byte("finalized")
+	for _, name := range []string{
+		"dws-darwin-amd64.tar.gz",
+		"dws-darwin-arm64.tar.gz",
+		"checksums.txt",
+		"dws-skills.zip",
+	} {
+		if err := os.WriteFile(filepath.Join(distDir, name), assetContent, 0o644); err != nil {
+			t.Fatalf("WriteFile(%s) error = %v", name, err)
+		}
+	}
+
+	binDir := filepath.Join(root, "bin")
+	if err := os.MkdirAll(binDir, 0o755); err != nil {
+		t.Fatalf("MkdirAll(%s) error = %v", binDir, err)
+	}
+	logPath := filepath.Join(root, "gh.log")
+	fakeGH := `#!/bin/sh
+printf '%s\n' "$*" >> "$FAKE_GH_LOG"
+if [ "$1" = "release" ] && [ "$2" = "upload" ]; then
+  exit 0
+fi
+if [ "$1" = "release" ] && [ "$2" = "view" ]; then
+  printf '%s\n' "$FAKE_REMOTE_DIGEST"
+  exit 0
+fi
+if [ "$1" = "release" ] && [ "$2" = "edit" ]; then
+  exit 0
+fi
+exit 1
+`
+	if err := os.WriteFile(filepath.Join(binDir, "gh"), []byte(fakeGH), 0o755); err != nil {
+		t.Fatalf("WriteFile(fake gh) error = %v", err)
+	}
+
+	digest := sha256.Sum256(assetContent)
+	cmd := exec.Command("sh", scriptPath)
+	cmd.Env = append(os.Environ(),
+		"PATH="+binDir+string(os.PathListSeparator)+os.Getenv("PATH"),
+		"FAKE_GH_LOG="+logPath,
+		"FAKE_REMOTE_DIGEST="+fmt.Sprintf("sha256:%x", digest),
+		"GITHUB_REF_NAME=v-test",
+		"GITHUB_REPOSITORY=example/dws",
+		"DWS_PACKAGE_DIST_DIR="+distDir,
+		"DWS_PUBLISH_RELEASE=false",
+		"DWS_RELEASE_DIGEST_ATTEMPTS=1",
+		"DWS_RELEASE_DIGEST_RETRY_DELAY=0",
+	)
+	output, err := cmd.CombinedOutput()
+	if err != nil {
+		t.Fatalf("finalize-github-release.sh error = %v\noutput:\n%s", err, output)
+	}
+	if !strings.Contains(string(output), "keeping release v-test as Draft") {
+		t.Fatalf("finalizer did not report preserved Draft:\n%s", output)
+	}
+
+	logData, err := os.ReadFile(logPath)
+	if err != nil {
+		t.Fatalf("ReadFile(%s) error = %v", logPath, err)
+	}
+	logText := string(logData)
+	if !strings.Contains(logText, "release upload") || !strings.Contains(logText, "release view") {
+		t.Fatalf("finalizer did not upload and verify assets:\n%s", logText)
+	}
+	if strings.Contains(logText, "release edit") {
+		t.Fatalf("finalizer published a release configured to remain Draft:\n%s", logText)
+	}
+}

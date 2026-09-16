@@ -1,0 +1,131 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"os"
+	"path/filepath"
+	"testing"
+)
+
+// TestMaterializeEmbeddedSkillSourceMono verifies that the mono skill bundle
+// baked into the binary can be extracted to a temp dir and is a valid skill
+// source root (so `dws skill setup` works with zero local checkout). The
+// nested-reference and _common checks guard against the embed dropping nested
+// docs or the `all:` prefix being lost (which would silently skip
+// dot/underscore dirs).
+func TestMaterializeEmbeddedSkillSourceMono(t *testing.T) {
+	dir, cleanup, err := materializeEmbeddedSkillSource(skillSetupModeMono)
+	if err != nil {
+		t.Fatalf("materializeEmbeddedSkillSource: %v", err)
+	}
+	defer cleanup()
+
+	if !isSkillSourceRoot(dir, skillSetupModeMono) {
+		t.Fatalf("extracted dir %s is not a valid mono skill source root", dir)
+	}
+	for _, rel := range []string{
+		"SKILL.md",
+		filepath.Join("references", "global-reference.md"),
+		filepath.Join("references", "products", "contract.md"),
+		filepath.Join("references", "best_practices", "_common"),
+	} {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err != nil {
+			t.Errorf("expected embedded skill to contain %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "schema-hints")); err == nil {
+		t.Fatal("embedded mono skill must not contain build-only schema-hints")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat embedded mono schema-hints: %v", err)
+	}
+
+	// cleanup must actually remove the temp dir.
+	cleanup()
+	if _, err := os.Stat(dir); !os.IsNotExist(err) {
+		t.Errorf("cleanup did not remove temp dir %s (err=%v)", dir, err)
+	}
+}
+
+// TestMaterializeEmbeddedSkillSourceMulti verifies that the peer multi bundle
+// contains the standalone Event skill, shared routing skill, and clean misc
+// (including PAT docs and the Contract product reference, which is a misc
+// product rather than a first-level Skill). Structured Schema hints are build
+// inputs and must not become a third installable mode.
+func TestMaterializeEmbeddedSkillSourceMulti(t *testing.T) {
+	dir, cleanup, err := materializeEmbeddedSkillSource(skillSetupModeMulti)
+	if err != nil {
+		t.Fatalf("materializeEmbeddedSkillSource: %v", err)
+	}
+	defer cleanup()
+
+	if !isSkillSourceRoot(dir, skillSetupModeMulti) {
+		t.Fatalf("extracted dir %s is not a valid multi skill source root", dir)
+	}
+	for _, rel := range []string{
+		filepath.Join("dingtalk-event", "SKILL.md"),
+		filepath.Join("dingtalk-event", "references", "event-oa.md"),
+		filepath.Join("dingtalk-shared", "SKILL.md"),
+		filepath.Join("dingtalk-misc", "SKILL.md"),
+		filepath.Join("dingtalk-misc", "references", "pat.md"),
+		filepath.Join("dingtalk-misc", "references", "contract.md"),
+	} {
+		if _, err := os.Stat(filepath.Join(dir, rel)); err != nil {
+			t.Errorf("expected embedded multi skill to contain %s: %v", rel, err)
+		}
+	}
+	if _, err := os.Stat(filepath.Join(dir, "dingtalk-contract")); err == nil {
+		t.Fatal("smart contract is a misc product; it must not ship as a standalone multi skill")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat embedded standalone contract skill: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "dingtalk-misc", "references", "event.md")); err == nil {
+		t.Fatal("embedded misc must not retain the folded personal Event reference")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat embedded misc event reference: %v", err)
+	}
+	if _, err := os.Stat(filepath.Join(dir, "schema-hints")); err == nil {
+		t.Fatal("embedded multi skill must not contain build-only schema-hints")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat embedded multi schema-hints: %v", err)
+	}
+}
+
+// TestResolveSkillSetupSourceOrEmbeddedFallsBackToEmbedded verifies that with
+// no --source and no DWS_SKILL_SOURCE, resolution uses the embedded bundle
+// rather than probing the current working directory (the stale-skill footgun).
+func TestResolveSkillSetupSourceOrEmbeddedFallsBackToEmbedded(t *testing.T) {
+	t.Setenv("DWS_SKILL_SOURCE", "")
+	dir, cleanup, err := resolveSkillSetupSourceOrEmbedded("", skillSetupModeMono)
+	if err != nil {
+		t.Fatalf("resolveSkillSetupSourceOrEmbedded: %v", err)
+	}
+	defer cleanup()
+	if !isSkillSourceRoot(dir, skillSetupModeMono) {
+		t.Fatalf("embedded fallback returned non-source-root dir %s", dir)
+	}
+}
+
+func TestRepositoryDoesNotTrackInstalledQoderSkills(t *testing.T) {
+	wd, err := os.Getwd()
+	if err != nil {
+		t.Fatalf("getwd: %v", err)
+	}
+	repoRoot := filepath.Clean(filepath.Join(wd, "..", ".."))
+	if _, err := os.Stat(filepath.Join(repoRoot, ".qoder", "skills")); err == nil {
+		t.Fatal(".qoder/skills is an Agent install target, not a repository skill source; keep source skills under skills/")
+	} else if !os.IsNotExist(err) {
+		t.Fatalf("stat .qoder/skills: %v", err)
+	}
+}

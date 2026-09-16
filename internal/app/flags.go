@@ -1,0 +1,56 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/i18n"
+	"github.com/spf13/cobra"
+)
+
+// GlobalFlags contains the root-level persistent flags shared across the CLI.
+type GlobalFlags struct {
+	ClientID     string
+	ClientSecret string
+	Debug        bool
+	DryRun       bool
+	Fields       string
+	Format       string
+	JQ           string
+	Mock         bool
+	Output       string
+	Profile      string
+	Timeout      int
+	Token        string
+	Verbose      bool
+	Yes          bool
+}
+
+func bindPersistentFlags(cmd *cobra.Command, flags *GlobalFlags) {
+	cmd.PersistentFlags().StringVar(&flags.ClientID, "client-id", "", i18n.T("覆盖 OAuth 客户端 ID (钉钉 AppKey)"))
+	cmd.PersistentFlags().StringVar(&flags.ClientSecret, "client-secret", "", i18n.T("覆盖 OAuth 客户端密钥 (钉钉 AppSecret)"))
+	cmd.PersistentFlags().BoolVar(&flags.Debug, "debug", false, "显示调试日志")
+	cmd.PersistentFlags().BoolVar(&flags.DryRun, "dry-run", false, "预览操作内容，不实际执行")
+	cmd.PersistentFlags().StringVar(&flags.Fields, "fields", "", "筛选输出字段 (逗号分隔, 如: name,id,status)")
+	cmd.PersistentFlags().StringVarP(&flags.Format, "format", "f", "json", "输出格式: json|table|raw|pretty|ndjson|csv")
+	cmd.PersistentFlags().StringVar(&flags.JQ, "jq", "", "jq 表达式过滤输出 (如: '.items[] | .name')")
+	cmd.PersistentFlags().BoolVar(&flags.Mock, "mock", false, "使用 Mock 数据 (开发调试用)")
+	cmd.PersistentFlags().StringVarP(&flags.Output, "output", "o", "", "Write command output to a file")
+	_ = cmd.PersistentFlags().MarkHidden("output")
+	cmd.PersistentFlags().StringVar(&flags.Profile, "profile", "", "一次性指定组织或账号；支持 corpId/corpName 与 userId/userName 组合，推荐使用 profile list 返回的 corpId:userId；多个按 CSV 逗号分隔")
+	cmd.PersistentFlags().IntVar(&flags.Timeout, "timeout", 30, "HTTP 请求超时时间 (秒)")
+	cmd.PersistentFlags().StringVar(&flags.Token, "token", "", "Override the configured API token")
+	_ = cmd.PersistentFlags().MarkHidden("token")
+	cmd.PersistentFlags().BoolVarP(&flags.Verbose, "verbose", "v", false, "显示详细日志")
+	cmd.PersistentFlags().BoolVarP(&flags.Yes, "yes", "y", false, "跳过确认提示 (AI Agent 模式)")
+}

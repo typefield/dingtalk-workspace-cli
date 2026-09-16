@@ -1,0 +1,88 @@
+__pycache__/
+dist/
+.dws-runtime/
+# Resources materialized beside the development binary.
+/.dws-runtime-manifest.json
+/.dws-runtime.lock
+/.dws-runtime-stage-*/
+/x7k2m9p4q1w8.dylib
+/libx7k2m9p4q1w8.so
+/x7k2m9p4q1w864.dll
+/ps/
+.tmp-bin/
+.worktrees/
+.pytest_cache/
+.venv*/
+var/
+.DS_Store
+.agents/
+.app_assistant/
+/.idea/
+/CLAUDE.md
+/.claude/
+/.idea/vcs.xml
+/.idea/.gitignore
+dws
+artifacts/screenshots/
+test/cli/testdata/
+tmp/
+test/cli_compat/testdata/
+/internal/compat/testdata/*
+.gitignore
+.worktrees/
+.qoder/
+_logs/
+_docs/
+_output/
+vendor/
+# Local DWS runtime state may contain MCP overrides and authentication data.
+/.dws/
+
+# Secrets & credentials
+.env
+.env.*
+*.pem
+*.key
+credentials*
+!skills/**/credentials.md
+plans
+_docs
+dws.zip
+*.code-workspace
+/dingtalk-workspace.zip
+
+# envelope/discovery.pre.json synced via Portal, not git-tracked
+/envelope/discovery.pre.json
+
+# local/pre-release MCP service configs may contain personal gateway keys
+/docs/mcp/serviceconfig-pre*
+
+# 功能测试运行产物
+results.jsonl
+test/dev_functional/results.jsonl
+/auto-test/
+/eval-runs/
+/.qoder/
+.vercel
+.env*
+# Local Go coverage output
+/coverage.txt
+/coverage-base.txt
+/coverage-policy.txt
+/coverage.html
+dwsbin
+
+# Local shortcut eval / real-backend capture artifacts — may contain real PII
+# (employee names/emails, userIds, conversation & message IDs). Never commit.
+/docs/shortcut-real-read-results.json
+/docs/shortcut-real-write-results.json
+/docs/shortcut-comparison.html
+/docs/shortcut-gsb-eval.*
+/scripts/run_shortcut_real_read_matrix.py
+
+# Local coverage artifacts
+coverage-shortcut.txt
+coverage-*.txt
+
+# stray compiled generator binary (source lives in internal/generator/cmd_param_aliases/)
+/cmd_param_aliases

@@ -1,0 +1,5 @@
+#!/bin/sh
+# Pre-commit hook: run make to ensure lint + tests pass before committing.
+
+echo "Running pre-commit checks (make)..."
+make

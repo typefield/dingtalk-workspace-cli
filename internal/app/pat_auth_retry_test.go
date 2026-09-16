@@ -1,0 +1,1667 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package app
+
+import (
+	"bytes"
+	"context"
+	"encoding/json"
+	"net/http"
+	"net/http/httptest"
+	"os"
+	"path/filepath"
+	"strings"
+	"sync/atomic"
+	"testing"
+	"time"
+
+	authpkg "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/auth"
+	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/executor"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pat"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/testseam"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/agentproduct"
+)
+
+func TestIsPatScopeError_MissingScope(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewAuth("missing required scope(s): mail:user_mailbox.message:send")
+	if !isPatScopeError(err) {
+		t.Fatal("expected missing_scope error to be detected")
+	}
+}
+
+func TestIsPatScopeError_PlainString(t *testing.T) {
+	t.Parallel()
+	err := &PatScopeError{
+		OriginalError: "missing_scope: user lacks required scope",
+		ErrorType:     "missing_scope",
+		Message:       "user lacks required scope",
+	}
+	if !isPatScopeError(err) {
+		t.Fatal("expected plain string with missing_scope to be detected")
+	}
+}
+
+func TestIsPatScopeError_NotScopeError(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewValidation("invalid parameter")
+	if isPatScopeError(err) {
+		t.Fatal("expected validation error NOT to be detected as scope error")
+	}
+}
+
+func TestIsPatScopeError_Nil(t *testing.T) {
+	t.Parallel()
+	if isPatScopeError(nil) {
+		t.Fatal("nil error should not be detected as scope error")
+	}
+}
+
+func TestIsPatScopeError_WithReason(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewAuth("API error",
+		apperrors.WithReason("missing_scope"),
+	)
+	if !isPatScopeError(err) {
+		t.Fatal("expected error with missing_scope reason to be detected")
+	}
+}
+
+func TestIsPatScopeError_InsufficientScope(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewAuth("insufficient_scope for resource",
+		apperrors.WithReason("insufficient_scope"),
+	)
+	if !isPatScopeError(err) {
+		t.Fatal("expected insufficient_scope error to be detected")
+	}
+}
+
+func TestExtractPatScopeError_ExtractsScope(t *testing.T) {
+	t.Parallel()
+	err := &PatScopeError{
+		OriginalError: "missing_scope: user needs calendar:read",
+		ErrorType:     "missing_scope",
+		Message:       "user needs calendar:read",
+	}
+	scopeErr := extractPatScopeError(err)
+	if scopeErr == nil {
+		t.Fatal("expected non-nil PatScopeError")
+	}
+	if scopeErr.MissingScope != "calendar:read" {
+		t.Errorf("expected MissingScope 'calendar:read', got %q", scopeErr.MissingScope)
+	}
+}
+
+func TestPrintPatAuthError_HumanReadable(t *testing.T) {
+	t.Parallel()
+	var buf strings.Builder
+	scopeErr := &PatScopeError{
+		Identity:     "user",
+		ErrorType:    "missing_scope",
+		Message:      "missing required scope(s): mail:user_mailbox.message:send",
+		Hint:         "run `dws auth login --scope \"mail:user_mailbox.message:send\"` to authorize",
+		MissingScope: "mail:user_mailbox.message:send",
+	}
+	PrintPatAuthError(&buf, scopeErr)
+
+	output := buf.String()
+	if !strings.Contains(output, "missing_scope") {
+		t.Errorf("expected output to contain 'missing_scope', got: %s", output)
+	}
+	if !strings.Contains(output, "dws auth login") {
+		t.Errorf("expected output to contain 'dws auth login', got: %s", output)
+	}
+	if !strings.Contains(output, "需要额外授权") {
+		t.Errorf("expected output to contain Chinese auth prompt, got: %s", output)
+	}
+}
+
+func TestPrintPatAuthJSON_MachineReadable(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	// PAT browser policy is user-configurable. Isolate the config directory so
+	// this serializer test exercises the built-in CLI-owned default instead of
+	// inheriting the developer's ~/.dws/pat_policy.json.
+	t.Setenv("DWS_CONFIG_DIR", t.TempDir())
+	var buf strings.Builder
+	scopeErr := &PatScopeError{
+		Identity:     "user",
+		ErrorType:    "missing_scope",
+		Message:      "missing required scope(s): mail:send",
+		Hint:         "run dws auth login --scope mail:send",
+		MissingScope: "mail:send",
+	}
+	PrintPatAuthJSON(&buf, scopeErr)
+
+	// The payload is required to be single-line; assert by parsing the JSON
+	// rather than by matching pretty-printed substrings.
+	output := buf.String()
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(output), &parsed); err != nil {
+		t.Fatalf("PrintPatAuthJSON must emit directly-parsable JSON: %v\nraw=%s", err, output)
+	}
+	if code, _ := parsed["code"].(string); code != "PAT_SCOPE_AUTH_REQUIRED" {
+		t.Errorf("code = %q, want PAT_SCOPE_AUTH_REQUIRED", code)
+	}
+	data, _ := parsed["data"].(map[string]any)
+	if data == nil {
+		t.Fatalf("expected data object, got: %s", output)
+	}
+	if got, _ := data["missingScope"].(string); got != "mail:send" {
+		t.Errorf("missingScope = %q, want mail:send", got)
+	}
+	if got, ok := data["openBrowser"].(bool); !ok || !got {
+		t.Errorf("openBrowser = %#v, want true", data["openBrowser"])
+	}
+	if _, ok := data["hostControl"]; ok {
+		t.Errorf("unexpected data.hostControl in CLI-owned JSON output: %s", output)
+	}
+}
+
+func TestIsPatScopeError_BusinessPermissionDenied(t *testing.T) {
+	t.Parallel()
+	// Generic business "permission denied" should NOT trigger PAT re-auth.
+	err := apperrors.NewAuth("User has no permission to access this mailbox, permission denied")
+	if isPatScopeError(err) {
+		t.Fatal("generic 'permission denied' should not be detected as PAT scope error")
+	}
+}
+
+func TestIsPatScopeError_GenericForbidden(t *testing.T) {
+	t.Parallel()
+	// HTTP 403 Forbidden should NOT trigger PAT re-auth.
+	err := apperrors.NewAuth("403 Forbidden")
+	if isPatScopeError(err) {
+		t.Fatal("'403 Forbidden' should not be detected as PAT scope error")
+	}
+}
+
+func TestExtractPatScopeError_ComplexScope(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewAuth("missing required scope(s): mail:user_mailbox.message:send")
+	scopeErr := extractPatScopeError(err)
+	if scopeErr == nil {
+		t.Fatal("expected non-nil PatScopeError")
+	}
+	if scopeErr.MissingScope != "mail:user_mailbox.message:send" {
+		t.Errorf("expected MissingScope 'mail:user_mailbox.message:send', got %q", scopeErr.MissingScope)
+	}
+}
+
+func TestPatScopeError_Error(t *testing.T) {
+	t.Parallel()
+	err := &PatScopeError{
+		OriginalError: "test error message",
+	}
+	if err.Error() != "test error message" {
+		t.Errorf("expected Error() to return OriginalError, got %q", err.Error())
+	}
+}
+
+// ---------------------------------------------------------------------------
+// pollPatDeviceFlow integration tests — httptest mock covering four terminal
+// states: APPROVED, REJECTED, EXPIRED, CANCELLED (ctx cancel).
+// ---------------------------------------------------------------------------
+
+// setupPollServer creates an httptest server that responds to
+// /cli/oauth/device/poll?flowId=<fid> with the given status sequence.
+// It also writes the server URL into a temp DWS_CONFIG_DIR/mcp_url so that
+// GetMCPBaseURL() returns the test server address.
+func stubPATPollAccessToken(t *testing.T) {
+	t.Helper()
+	testseam.Swap(t, &patResolveAccessToken, func(context.Context, string, string) (string, error) {
+		return "", authpkg.ErrTokenDataNotFound
+	})
+}
+
+func setupPollServer(t *testing.T, statuses []authpkg.DevicePollResponse) (*httptest.Server, string) {
+	t.Helper()
+	stubPATPollAccessToken(t)
+	var callCount atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		idx := int(callCount.Add(1)) - 1
+		if idx >= len(statuses) {
+			idx = len(statuses) - 1
+		}
+		w.Header().Set("Content-Type", "application/json")
+		_ = json.NewEncoder(w).Encode(statuses[idx])
+	}))
+
+	// Write mcp_url so GetMCPBaseURL picks up the test server.
+	tmpDir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(tmpDir, "mcp_url"), []byte(server.URL), 0644)
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+
+	return server, tmpDir
+}
+
+func TestPollPatDeviceFlow_Approved(t *testing.T) {
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: true, Data: authpkg.DevicePollData{Status: "PENDING"}},
+		{Success: true, Data: authpkg.DevicePollData{Status: "APPROVED", AuthCode: "code123"}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-1", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "APPROVED" {
+		t.Errorf("expected APPROVED, got %q", status)
+	}
+	if authCode != "code123" {
+		t.Errorf("expected authCode 'code123', got %q", authCode)
+	}
+}
+
+func TestPollPatDeviceFlow_Rejected(t *testing.T) {
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: false, Data: authpkg.DevicePollData{Status: "REJECTED"}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-2", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "REJECTED" {
+		t.Errorf("expected REJECTED, got %q", status)
+	}
+	if authCode != "" {
+		t.Errorf("expected empty authCode for REJECTED, got %q", authCode)
+	}
+}
+
+func TestPollPatDeviceFlow_Expired(t *testing.T) {
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: false, Data: authpkg.DevicePollData{Status: "EXPIRED"}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-3", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "EXPIRED" {
+		t.Errorf("expected EXPIRED, got %q", status)
+	}
+	if authCode != "" {
+		t.Errorf("expected empty authCode for EXPIRED, got %q", authCode)
+	}
+}
+
+func TestPollPatDeviceFlow_Cancelled(t *testing.T) {
+	// Server always returns PENDING so context cancellation is the only exit.
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: true, Data: authpkg.DevicePollData{Status: "PENDING"}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithCancel(context.Background())
+	// Cancel immediately after first poll tick.
+	go func() {
+		time.Sleep(500 * time.Millisecond)
+		cancel()
+	}()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-4", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "CANCELLED" {
+		t.Errorf("expected CANCELLED, got %q", status)
+	}
+	if authCode != "" {
+		t.Errorf("expected empty authCode for CANCELLED, got %q", authCode)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// IsPatRetrying tests
+// ---------------------------------------------------------------------------
+
+func TestIsPatRetrying_Default(t *testing.T) {
+	t.Parallel()
+	ctx := context.Background()
+	if IsPatRetrying(ctx) {
+		t.Fatal("expected false for plain context")
+	}
+}
+
+func TestIsPatRetrying_WithValue(t *testing.T) {
+	t.Parallel()
+	ctx := context.WithValue(context.Background(), patRetryingKey, true)
+	if !IsPatRetrying(ctx) {
+		t.Fatal("expected true when pat retry key is set")
+	}
+}
+
+// ---------------------------------------------------------------------------
+// pollPatDeviceFlow edge cases
+// ---------------------------------------------------------------------------
+
+func TestPollPatDeviceFlow_ServerErrorFallback(t *testing.T) {
+	// When server returns success=false with empty status, should treat as EXPIRED.
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: false, Data: authpkg.DevicePollData{Status: ""}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-err", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "EXPIRED" {
+		t.Errorf("expected EXPIRED for server error fallback, got %q", status)
+	}
+	if authCode != "" {
+		t.Errorf("expected empty authCode for server error, got %q", authCode)
+	}
+}
+
+func TestPollPatDeviceFlow_RedirectSkipped(t *testing.T) {
+	stubPATPollAccessToken(t)
+	// When server returns 302 (SSO redirect), poll should continue until real response.
+	var callCount int32
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		callCount++
+		if callCount <= 1 {
+			// First call: simulate SSO redirect
+			w.Header().Set("Location", "https://sso.example.com")
+			w.WriteHeader(http.StatusFound)
+			return
+		}
+		// Second call: return APPROVED
+		w.Header().Set("Content-Type", "application/json")
+		resp := authpkg.DevicePollResponse{
+			Success: true,
+			Data:    authpkg.DevicePollData{Status: "APPROVED"},
+		}
+		_ = json.NewEncoder(w).Encode(resp)
+	}))
+	defer server.Close()
+
+	tmpDir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(tmpDir, "mcp_url"), []byte(server.URL), 0644)
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, _, err := pollPatDeviceFlow(ctx, "flow-redirect", tmpDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "APPROVED" {
+		t.Errorf("expected APPROVED after redirect, got %q", status)
+	}
+}
+
+func TestPollPatDeviceFlow_UnknownStatusPrintsRawResponse(t *testing.T) {
+	t.Setenv("DWS_DEBUG_PAT_POLL", "1")
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: true, Data: authpkg.DevicePollData{Status: ""}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-unknown", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "" {
+		t.Fatalf("expected empty unknown status, got %q", status)
+	}
+	if authCode != "" {
+		t.Fatalf("expected empty authCode for unknown status, got %q", authCode)
+	}
+	output := buf.String()
+	if !strings.Contains(output, "PAT 轮询接口返回原文") {
+		t.Fatalf("expected raw poll response to be printed, got %q", output)
+	}
+	if !strings.Contains(output, `"status":""`) {
+		t.Fatalf("expected raw poll body in output, got %q", output)
+	}
+}
+
+func TestPollPatDeviceFlow_UnknownStatusHidesRawResponseByDefault(t *testing.T) {
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: true, Data: authpkg.DevicePollData{Status: ""}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-unknown-default", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "" {
+		t.Fatalf("expected empty unknown status, got %q", status)
+	}
+	if authCode != "" {
+		t.Fatalf("expected empty authCode for unknown status, got %q", authCode)
+	}
+	output := buf.String()
+	if strings.Contains(output, "PAT 轮询接口返回原文") {
+		t.Fatalf("expected raw poll response to stay hidden by default, got %q", output)
+	}
+}
+func TestPollPatDeviceFlow_ResultEnvelopeCompatibility(t *testing.T) {
+	server, configDir := setupPollServer(t, []authpkg.DevicePollResponse{
+		{Success: true, Result: authpkg.DevicePollData{Status: "PENDING"}},
+		{Success: true, Result: authpkg.DevicePollData{Status: "APPROVED", AuthCode: "code-from-result"}},
+	})
+	defer server.Close()
+
+	ctx, cancel := context.WithTimeout(context.Background(), 30*time.Second)
+	defer cancel()
+
+	var buf bytes.Buffer
+	status, authCode, err := pollPatDeviceFlow(ctx, "flow-result", configDir, &buf)
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if status != "APPROVED" {
+		t.Fatalf("expected APPROVED, got %q", status)
+	}
+	if authCode != "code-from-result" {
+		t.Fatalf("expected authCode from result envelope, got %q", authCode)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// extractPatScopeError edge cases
+// ---------------------------------------------------------------------------
+
+func TestExtractPatScopeError_Nil(t *testing.T) {
+	t.Parallel()
+	if got := extractPatScopeError(nil); got != nil {
+		t.Fatalf("expected nil for nil error, got %+v", got)
+	}
+}
+
+func TestExtractPatScopeError_WithIdentity(t *testing.T) {
+	t.Parallel()
+	err := apperrors.NewAuth(`insufficient_scope: identity "app_user" needs calendar:write`)
+	scopeErr := extractPatScopeError(err)
+	if scopeErr == nil {
+		t.Fatal("expected non-nil PatScopeError")
+	}
+	if scopeErr.Identity != "app_user" {
+		t.Errorf("expected Identity 'app_user', got %q", scopeErr.Identity)
+	}
+	if scopeErr.MissingScope != "calendar:write" {
+		t.Errorf("expected MissingScope 'calendar:write', got %q", scopeErr.MissingScope)
+	}
+}
+
+// ---------------------------------------------------------------------------
+// handlePatAuthCheck integration tests — cover the main orchestrator with
+// mock runner + httptest poll server for APPROVED, REJECTED, EmptyFlowID.
+// ---------------------------------------------------------------------------
+
+// mockRunner is a simple executor.Runner for testing handlePatAuthCheck.
+type mockRunner struct {
+	runFunc func(ctx context.Context, inv executor.Invocation) (executor.Result, error)
+}
+
+func (m *mockRunner) Run(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+	return m.runFunc(ctx, inv)
+}
+
+// setupHandlePATServer creates an httptest server for handlePatAuthCheck tests.
+// It responds to device poll requests with the given status after the first poll.
+func setupHandlePATServer(t *testing.T, terminalStatus string, authCode string) (*httptest.Server, string) {
+	t.Helper()
+	stubPATPollAccessToken(t)
+	var pollCount atomic.Int32
+
+	server := httptest.NewServer(http.HandlerFunc(func(w http.ResponseWriter, r *http.Request) {
+		if strings.Contains(r.URL.Path, "/cli/oauth/device/poll") {
+			idx := int(pollCount.Add(1)) - 1
+			var resp authpkg.DevicePollResponse
+			if idx == 0 {
+				resp = authpkg.DevicePollResponse{Success: true, Data: authpkg.DevicePollData{Status: "PENDING"}}
+			} else {
+				resp = authpkg.DevicePollResponse{
+					Success: terminalStatus == "APPROVED",
+					Data:    authpkg.DevicePollData{Status: terminalStatus, AuthCode: authCode},
+				}
+			}
+			w.Header().Set("Content-Type", "application/json")
+			_ = json.NewEncoder(w).Encode(resp)
+			return
+		}
+		http.NotFound(w, r)
+	}))
+
+	tmpDir := t.TempDir()
+	_ = os.WriteFile(filepath.Join(tmpDir, "mcp_url"), []byte(server.URL), 0644)
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+
+	return server, tmpDir
+}
+
+func makePATErrorJSON(flowID, clientID string) string {
+	return makePATErrorJSONWithURI(flowID, clientID, "")
+}
+
+func makePATErrorJSONWithURI(flowID, clientID, uri string) string {
+	type patData struct {
+		Desc     string `json:"desc"`
+		FlowID   string `json:"flowId"`
+		URI      string `json:"uri"`
+		ClientID string `json:"clientId"`
+	}
+	payload := struct {
+		Code string  `json:"code"`
+		Data patData `json:"data"`
+	}{
+		Code: "AGENT_CODE_NOT_EXISTS",
+		Data: patData{
+			Desc:     "test auth",
+			FlowID:   flowID,
+			URI:      uri,
+			ClientID: clientID,
+		},
+	}
+	data, _ := json.Marshal(payload)
+	return string(data)
+}
+
+func makePATErrorJSONWithAuthorizationURL(flowID, clientID, authURL string) string {
+	type patData struct {
+		Desc             string `json:"desc"`
+		FlowID           string `json:"flowId"`
+		AuthorizationURL string `json:"authorizationUrl"`
+		ClientID         string `json:"clientId"`
+	}
+	payload := struct {
+		Code string  `json:"code"`
+		Data patData `json:"data"`
+	}{
+		Code: "AGENT_CODE_NOT_EXISTS",
+		Data: patData{
+			Desc:             "test auth",
+			FlowID:           flowID,
+			AuthorizationURL: authURL,
+			ClientID:         clientID,
+		},
+	}
+	data, _ := json.Marshal(payload)
+	return string(data)
+}
+
+func patTestAuthorizationURL(server *httptest.Server) string {
+	return server.URL + "/pat"
+}
+
+func TestEnrichPATErrorWithOpenBrowserKeepsAuthorizationURLAmpersandReadable(t *testing.T) {
+	rawURI := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3Dflow-copy%26userCode%3DQZYH-D64W#/personalAuthorization?flowId=flow-copy&userCode=QZYH-D64W"
+	raw := makePATErrorJSONWithURI("flow-copy", "test-client-id", rawURI)
+
+	out := enrichPATErrorWithOpenBrowser(raw, true)
+
+	if strings.Contains(out, `\u0026`) {
+		t.Fatalf("enriched PAT JSON should keep URL ampersands readable for mobile copy/linkify, got: %s", out)
+	}
+	if !strings.Contains(out, "&userCode=QZYH-D64W") {
+		t.Fatalf("enriched PAT JSON missing readable authorization URL separator, got: %s", out)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(enriched PAT payload) error = %v\nraw=%s", err, out)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["uri"].(string); got != rawURI {
+		t.Fatalf("data.uri = %q, want %q", got, rawURI)
+	}
+	if _, ok := data["authUrl"]; ok {
+		t.Fatalf("data.authUrl should be omitted from enriched PAT payload")
+	}
+	if _, ok := data["authorizationUrl"]; ok {
+		t.Fatalf("data.authorizationUrl should be omitted from enriched PAT payload")
+	}
+}
+
+func TestCrossPlatformCoverageHandlePatAuthCheckOrgPolicyDenied(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	originalClientID := authpkg.ClientID()
+	originalClientSecret := authpkg.ClientSecret()
+	t.Cleanup(func() {
+		authpkg.SetClientID(originalClientID)
+		authpkg.SetClientSecret(originalClientSecret)
+	})
+
+	originalOpenBrowser := openBrowserFunc
+	t.Cleanup(func() { openBrowserFunc = originalOpenBrowser })
+
+	for _, test := range []struct {
+		name   string
+		format string
+	}{
+		{name: "structured", format: "json"},
+		{name: "human"},
+	} {
+		t.Run(test.name, func(t *testing.T) {
+			configDir := t.TempDir()
+			t.Setenv("DWS_CONFIG_DIR", configDir)
+			if _, err := pat.SetBrowserPolicy(configDir, "", true); err != nil {
+				t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+			}
+
+			authpkg.SetClientID("existing-client-id")
+			authpkg.SetClientSecret("existing-client-secret")
+			opened := false
+			openBrowserFunc = func(string) error {
+				opened = true
+				return nil
+			}
+			retried := false
+			runner := &runtimeRunner{
+				globalFlags: &GlobalFlags{Format: test.format},
+				fallback: &mockRunner{runFunc: func(context.Context, executor.Invocation) (executor.Result, error) {
+					retried = true
+					return executor.Result{}, nil
+				}},
+			}
+			raw := `{"success":false,"code":"PAT_ORG_POLICY_DENIED","data":{"hint":"组织策略已禁止当前工具所需的开源数据权限","scope":"contact.user.read","flowId":"terminal-flow","uri":"https://example.com/pat","clientId":"denied-client-id","clientSecret":"denied-client-secret","openBrowser":true}}`
+
+			ctx, cancel := context.WithTimeout(context.Background(), 100*time.Millisecond)
+			defer cancel()
+			var out bytes.Buffer
+			_, err := handlePatAuthCheck(ctx, runner, executor.Invocation{
+				CanonicalProduct: "contact",
+				Tool:             "get_current_user_profile",
+				CanonicalPath:    "contact.get_current_user_profile",
+			}, &apperrors.PATError{RawJSON: raw}, configDir, &out)
+			if err == nil {
+				t.Fatal("expected PATError")
+			}
+			if got := strings.TrimSpace(out.String()); got != "" {
+				t.Fatalf("terminal denial produced human authorization or polling output %q", got)
+			}
+			if opened {
+				t.Fatal("terminal denial opened a browser")
+			}
+			if retried {
+				t.Fatal("terminal denial retried the invocation")
+			}
+			if got := authpkg.ClientID(); got != "existing-client-id" {
+				t.Fatalf("client ID = %q, want existing process credential preserved", got)
+			}
+			if got := authpkg.ClientSecret(); got != "existing-client-secret" {
+				t.Fatalf("client secret = %q, want existing process credential preserved", got)
+			}
+
+			patOut, ok := err.(*apperrors.PATError)
+			if !ok {
+				t.Fatalf("expected *PATError, got %T: %v", err, err)
+			}
+			var payload map[string]any
+			if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+				t.Fatalf("json.Unmarshal(PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+			}
+			data, _ := payload["data"].(map[string]any)
+			if got, ok := data["openBrowser"].(bool); !ok || got {
+				t.Fatalf("data.openBrowser = %#v, want false", data["openBrowser"])
+			}
+			if got, _ := data["hint"].(string); !strings.Contains(got, "组织策略") {
+				t.Fatalf("data.hint = %q, want org policy guidance", got)
+			}
+		})
+	}
+}
+
+func TestHandlePatAuthCheck_Approved(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "test-auth-code")
+	defer server.Close()
+
+	var retryCalled bool
+	var retryHasKey bool
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			retryCalled = true
+			retryHasKey = IsPatRetrying(ctx)
+			return executor.Result{Response: map[string]any{"ok": true}}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-approved", "test-client-id")}
+
+	ctx := context.Background()
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(ctx, runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, configDir, &buf)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !retryCalled {
+		t.Fatal("expected mock runner to be called for retry")
+	}
+	if !retryHasKey {
+		t.Fatal("expected retry context to have patRetryingKey")
+	}
+	if _, err := os.Stat(authpkg.GetAppConfigPath(configDir)); err != nil {
+		t.Fatalf("expected approved PAT flow to persist app.json, stat error = %v", err)
+	}
+	// Verify SetClientIDFromMCP was called with the PAT response clientId.
+	if cid := authpkg.ClientID(); cid != "test-client-id" {
+		t.Errorf("expected ClientID 'test-client-id', got %q", cid)
+	}
+}
+
+func TestRunDirectPATAuthCheck_ApprovedRetriesCallback(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "")
+	defer server.Close()
+	if _, err := pat.SetBrowserPolicy(configDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", patTestAuthorizationURL(server))}
+	var retried atomic.Bool
+	var retryHadKey atomic.Bool
+	err := runDirectPATAuthCheck(context.Background(), &GlobalFlags{}, patErr, func(ctx context.Context) error {
+		retried.Store(true)
+		retryHadKey.Store(IsPatRetrying(ctx))
+		return nil
+	}, &bytes.Buffer{})
+	if err != nil {
+		t.Fatalf("runDirectPATAuthCheck error = %v", err)
+	}
+	if !retried.Load() {
+		t.Fatal("expected direct PAT auth retry callback to run")
+	}
+	if !retryHadKey.Load() {
+		t.Fatal("expected direct PAT auth retry context to be marked as PAT retrying")
+	}
+}
+
+func TestRunDirectPATAuthCheckWaitOnly_ApprovedDoesNotRetry(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, _ := setupHandlePATServer(t, "APPROVED", "")
+	defer server.Close()
+
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", patTestAuthorizationURL(server))}
+	var out bytes.Buffer
+	err := runDirectPATAuthCheckWaitOnly(context.Background(), &GlobalFlags{}, patErr, &out)
+	if err != nil {
+		t.Fatalf("runDirectPATAuthCheckWaitOnly error = %v", err)
+	}
+	if strings.Contains(out.String(), "授权完成，正在重试") {
+		t.Fatalf("wait-only auth must not print retry prompt, output:\n%s", out.String())
+	}
+	if !strings.Contains(out.String(), "授权成功") {
+		t.Fatalf("wait-only auth should still report success, output:\n%s", out.String())
+	}
+}
+
+func TestRunDirectPATAuthCheckWaitOnly_SuppressesBrowserOpen(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "")
+	defer server.Close()
+	if _, err := pat.SetBrowserPolicy(configDir, "", true); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	var opened bool
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = true
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-direct", "test-client-id", patTestAuthorizationURL(server))}
+	var out bytes.Buffer
+	err := runDirectPATAuthCheckWaitOnly(context.Background(), &GlobalFlags{}, patErr, &out)
+	if err != nil {
+		t.Fatalf("runDirectPATAuthCheckWaitOnly error = %v", err)
+	}
+	if opened {
+		t.Fatal("wait-only auth must not open a second browser tab")
+	}
+	if !strings.Contains(out.String(), "授权链接:") {
+		t.Fatalf("wait-only auth should still print the authorization URL, output:\n%s", out.String())
+	}
+}
+
+func TestResolvePATPollInterval(t *testing.T) {
+	tests := []struct {
+		name    string
+		seconds int
+		want    time.Duration
+	}{
+		{name: "default", seconds: 0, want: patPollInterval},
+		{name: "server value", seconds: 3, want: 3 * time.Second},
+		{name: "cap excessive value", seconds: 90, want: patMaxPollInterval},
+	}
+
+	for _, tt := range tests {
+		t.Run(tt.name, func(t *testing.T) {
+			if got := resolvePATPollInterval(tt.seconds); got != tt.want {
+				t.Fatalf("resolvePATPollInterval(%d) = %s, want %s", tt.seconds, got, tt.want)
+			}
+		})
+	}
+}
+
+func TestRunDirectPATAuthCheck_JSONModeReturnsStructuredPending(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+	if _, err := pat.SetBrowserPolicy(configDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	rawURI := "https://example.com/personalAuthorization?flowId=flow-json&userCode=ABCD-EFGH"
+	raw := `{"success":false,"code":"PAT_BATCH_AUTH_PENDING","data":{"flowId":"flow-json","uri":"` + rawURI + `","authUrl":"` + rawURI + `","clientId":"test-client-id"}}`
+	err := runDirectPATAuthCheck(context.Background(), &GlobalFlags{Format: "json"},
+		&apperrors.PATError{RawJSON: raw},
+		func(ctx context.Context) error {
+			t.Fatal("retry callback should not run in structured PAT output mode")
+			return nil
+		},
+		&bytes.Buffer{},
+	)
+	if err == nil {
+		t.Fatal("expected structured PATError")
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	if got, _ := payload["code"].(string); got != "PAT_BATCH_AUTH_PENDING" {
+		t.Fatalf("code = %q, want PAT_BATCH_AUTH_PENDING", got)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["uri"].(string); got != rawURI {
+		t.Fatalf("data.uri = %q, want %q", got, rawURI)
+	}
+	if _, ok := data["authUrl"]; ok {
+		t.Fatalf("data.authUrl should be omitted from structured PAT output")
+	}
+	if _, ok := data["authorizationUrl"]; ok {
+		t.Fatalf("data.authorizationUrl should be omitted from structured PAT output")
+	}
+	if got, ok := data["openBrowser"].(bool); !ok || got {
+		t.Fatalf("data.openBrowser = %#v, want false", data["openBrowser"])
+	}
+}
+
+func TestRunDirectPATAuthCheck_JSONModeBackfillsSingleURIFromAuthURL(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+	if _, err := pat.SetBrowserPolicy(configDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	rawURL := "https://open-dev.dingtalk.com/fe/old#%2FpersonalAuthorization%3FflowId%3Dflow-json%26userCode%3DABCD-EFGH"
+	wantURL := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3Dflow-json%26userCode%3DABCD-EFGH#/personalAuthorization?flowId=flow-json&userCode=ABCD-EFGH"
+	raw := `{"success":false,"code":"PAT_BATCH_AUTH_PENDING","data":{"flowId":"flow-json","authUrl":"` + rawURL + `","clientId":"test-client-id"}}`
+	err := runDirectPATAuthCheck(context.Background(), &GlobalFlags{Format: "json"},
+		&apperrors.PATError{RawJSON: raw},
+		func(ctx context.Context) error {
+			t.Fatal("retry callback should not run in structured PAT output mode")
+			return nil
+		},
+		&bytes.Buffer{},
+	)
+	if err == nil {
+		t.Fatal("expected structured PATError")
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	if strings.Contains(patOut.RawJSON, `\u0026`) {
+		t.Fatalf("PAT output escaped URL separators: %s", patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["uri"].(string); got != wantURL {
+		t.Fatalf("data.uri = %q, want %q", got, wantURL)
+	}
+	if _, ok := data["authUrl"]; ok {
+		t.Fatalf("data.authUrl should be omitted after backfilling data.uri")
+	}
+	if _, ok := data["authorizationUrl"]; ok {
+		t.Fatalf("data.authorizationUrl should be omitted after backfilling data.uri")
+	}
+}
+
+func TestHandlePatAuthCheck_Rejected(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "REJECTED", "")
+	defer server.Close()
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called on REJECTED")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-rejected", "test-client-id")}
+
+	ctx := context.Background()
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(ctx, runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, configDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected error for REJECTED")
+	}
+	if !strings.Contains(err.Error(), "用户已拒绝授权") {
+		t.Errorf("expected rejection error, got: %v", err)
+	}
+}
+
+func TestHandlePatAuthCheck_HostControlledFlowIDPassthrough(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+	// Host-owned decision: driven ONLY by DINGTALK_DWS_AGENTCODE.
+	// DINGTALK_AGENT is set to demonstrate it does NOT leak into
+	// hostControl.clawType. DWS_AGENT_PRODUCT is also set to demonstrate
+	// that Product does not change the open-source fixed "openClaw" value.
+	t.Setenv(authpkg.AgentCodeEnv, "agt-sales")
+	t.Setenv("DINGTALK_AGENT", "sales-copilot")
+	t.Setenv(agentproduct.EnvName, "qwenwork")
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in host-controlled PAT mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-host", "test-client-id")}
+
+	ctx := context.Background()
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(ctx, runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, tmpDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected PATError in host-controlled mode")
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output in host mode, got %q", got)
+	}
+	if _, err := os.Stat(authpkg.GetAppConfigPath(tmpDir)); !os.IsNotExist(err) {
+		t.Fatalf("host-owned PAT must not persist shared app.json, stat error = %v", err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(host PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["flowId"].(string); got != "flow-host" {
+		t.Fatalf("data.flowId = %q, want flow-host", got)
+	}
+	hostControl, _ := data["hostControl"].(map[string]any)
+	if got, _ := hostControl["clawType"].(string); got != "openClaw" {
+		t.Fatalf("hostControl.clawType = %q, want openClaw (open-source edition default)", got)
+	}
+	if got, _ := hostControl["callbackOwner"].(string); got != "host" {
+		t.Fatalf("hostControl.callbackOwner = %q, want host", got)
+	}
+	if _, ok := data["callbacks"]; ok {
+		t.Fatalf("unexpected callbacks contract in host-controlled PAT payload: %#v", data["callbacks"])
+	}
+	if _, ok := payload["_meta"]; ok {
+		t.Fatalf("unexpected _meta contract in host-controlled PAT payload: %#v", payload["_meta"])
+	}
+	if strings.Contains(patOut.RawJSON, `"pat","callback"`) {
+		t.Fatalf("host PAT payload should not advertise dws pat callback argv: %s", patOut.RawJSON)
+	}
+}
+
+func TestHandlePatAuthCheck_HostControlledEmptyFlowID_StillReturnsContract(t *testing.T) {
+	tmpDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+	t.Setenv(authpkg.AgentCodeEnv, "agt-support")
+	t.Setenv("DINGTALK_AGENT", "customer-support")
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in host-controlled PAT mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("", "test-client-id")}
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, tmpDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected PATError in host-controlled mode")
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output in host mode, got %q", got)
+	}
+	if _, err := os.Stat(authpkg.GetAppConfigPath(tmpDir)); !os.IsNotExist(err) {
+		t.Fatalf("host-owned PAT must not persist shared app.json, stat error = %v", err)
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(host PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	hostControl, _ := data["hostControl"].(map[string]any)
+	if got, _ := hostControl["callbackOwner"].(string); got != "host" {
+		t.Fatalf("hostControl.callbackOwner = %q, want host", got)
+	}
+	if _, ok := data["callbacks"]; ok {
+		t.Fatalf("unexpected callbacks contract when flowId is absent: %#v", data["callbacks"])
+	}
+	if _, ok := payload["_meta"]; ok {
+		t.Fatalf("unexpected _meta contract when flowId is absent: %#v", payload["_meta"])
+	}
+	if strings.Contains(patOut.RawJSON, `"pat","callback"`) {
+		t.Fatalf("host PAT payload should not advertise dws pat callback argv: %s", patOut.RawJSON)
+	}
+}
+
+func TestHandlePatAuthCheck_EmptyFlowID_FallsBackToPATError(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	// No poll server needed — empty flowId means no polling, return PATError directly.
+	tmpDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called when flowId is empty")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("", "test-client-id")}
+
+	ctx := context.Background()
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(ctx, runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, tmpDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected PATError when flowId is empty")
+	}
+	// Should return the original PATError.
+	if _, ok := err.(*apperrors.PATError); !ok {
+		t.Errorf("expected *PATError, got %T: %v", err, err)
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output for raw PAT passthrough, got %q", got)
+	}
+}
+
+func TestHandlePatAuthCheck_JSONModeReturnsStructuredPATErrorWithoutRetry(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	tmpDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+	if _, err := pat.SetBrowserPolicy(tmpDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in json PAT mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{
+		fallback:    mock,
+		globalFlags: &GlobalFlags{Format: "json"},
+	}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSON("flow-json", "test-client-id")}
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, tmpDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected PATError in json PAT mode")
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output in json PAT mode, got %q", got)
+	}
+	if _, err := os.Stat(authpkg.GetAppConfigPath(tmpDir)); !os.IsNotExist(err) {
+		t.Fatalf("json PAT mode must not persist shared app.json, stat error = %v", err)
+	}
+
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(json PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, ok := data["openBrowser"].(bool); !ok || got {
+		t.Fatalf("data.openBrowser = %#v, want false", data["openBrowser"])
+	}
+	if _, ok := data["hostControl"]; ok {
+		t.Fatalf("unexpected data.hostControl in CLI-owned json PAT mode: %s", patOut.RawJSON)
+	}
+}
+
+func TestHandlePatAuthCheck_JSONModeCanOpenBrowserWithoutTextOutput(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	tmpDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", tmpDir)
+	if _, err := pat.SetBrowserPolicy(tmpDir, "", true); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	var opened string
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = rawURL
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in json PAT mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{
+		fallback:    mock,
+		globalFlags: &GlobalFlags{Format: "json"},
+	}
+	rawURI := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3Df72437f040f04a8295988ff71e690b35%26userCode%3D98JV-JSBL#/personalAuthorization?flowId=f72437f040f04a8295988ff71e690b35&userCode=98JV-JSBL"
+	raw := `{"code":"AGENT_CODE_NOT_EXISTS","data":{"desc":"test auth","flowId":"flow-json","uri":"` + rawURI + `","clientId":"test-client-id"}}`
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, &apperrors.PATError{RawJSON: raw}, tmpDir, &buf)
+
+	if err == nil {
+		t.Fatal("expected PATError in json PAT mode")
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output in json PAT mode, got %q", got)
+	}
+	if _, err := os.Stat(authpkg.GetAppConfigPath(tmpDir)); !os.IsNotExist(err) {
+		t.Fatalf("json PAT mode must not persist shared app.json, stat error = %v", err)
+	}
+	if opened != rawURI {
+		t.Fatalf("opened url = %q, want verbatim %q", opened, rawURI)
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	if strings.Contains(patOut.RawJSON, `\u0026`) {
+		t.Fatalf("PATError RawJSON escaped ampersands in authorization URL: %s", patOut.RawJSON)
+	}
+	if !strings.Contains(patOut.RawJSON, "&userCode=98JV-JSBL") {
+		t.Fatalf("PATError RawJSON missing literal ampersand route separator: %s", patOut.RawJSON)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(json PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["uri"].(string); got != rawURI {
+		t.Fatalf("data.uri = %q, want verbatim %q", got, rawURI)
+	}
+	if _, ok := data["authUrl"]; ok {
+		t.Fatalf("data.authUrl should be omitted from json PAT output")
+	}
+	if _, ok := data["authorizationUrl"]; ok {
+		t.Fatalf("data.authorizationUrl should be omitted from json PAT output")
+	}
+	if got, ok := data["openBrowser"].(bool); !ok || !got {
+		t.Fatalf("data.openBrowser = %#v, want true", data["openBrowser"])
+	}
+}
+
+func TestHandlePatAuthCheck_NonJSONModeRespectsBrowserPolicy(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "test-auth-code")
+	defer server.Close()
+	if _, err := pat.SetBrowserPolicy(configDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	var opened bool
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = true
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	var retryCalled bool
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			retryCalled = true
+			return executor.Result{Response: map[string]any{"ok": true}}, nil
+		},
+	}
+
+	runner := &runtimeRunner{
+		fallback:    mock,
+		globalFlags: &GlobalFlags{Format: "table"},
+	}
+	authURL := patTestAuthorizationURL(server)
+	raw := makePATErrorJSONWithAuthorizationURL("flow-approved", "test-client-id", authURL)
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, &apperrors.PATError{RawJSON: raw}, configDir, &buf)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !retryCalled {
+		t.Fatal("expected retry to still happen in non-json mode")
+	}
+	if opened {
+		t.Fatal("browser should not open when policy disables it")
+	}
+	if !strings.Contains(buf.String(), "需要 PAT 授权") {
+		t.Fatalf("expected human-readable PAT output, got %q", buf.String())
+	}
+	if !strings.Contains(buf.String(), "授权链接: "+authURL) {
+		t.Fatalf("expected authorization URL in human-readable PAT output, got %q", buf.String())
+	}
+	if strings.Contains(buf.String(), "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit a second machine-readable URL line, got %q", buf.String())
+	}
+}
+
+func TestRetryWithPatAuthRetry_JSONModeReturnsStructuredPATError(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	configDir := t.TempDir()
+	t.Setenv("DWS_CONFIG_DIR", configDir)
+	if _, err := pat.SetBrowserPolicy(configDir, "", false); err != nil {
+		t.Fatalf("SetBrowserPolicy(default) error = %v", err)
+	}
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in scope json mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	runner := &runtimeRunner{
+		fallback:    mock,
+		globalFlags: &GlobalFlags{Format: "json"},
+	}
+	scopeErr := &PatScopeError{
+		OriginalError: "missing required scope(s): mail:send",
+		Identity:      "user",
+		ErrorType:     "missing_scope",
+		Message:       "missing required scope(s): mail:send",
+		Hint:          "run `dws auth login --scope \"mail:send\"` to authorize the missing scope",
+		MissingScope:  "mail:send",
+	}
+
+	var buf bytes.Buffer
+	_, err := retryWithPatAuthRetry(context.Background(), runner, executor.Invocation{}, scopeErr, configDir, &buf)
+	if err == nil {
+		t.Fatal("expected PATError")
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output in json scope mode, got %q", got)
+	}
+	patOut, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patOut.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(scope PAT payload) error = %v\nraw=%s", err, patOut.RawJSON)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, ok := data["openBrowser"].(bool); !ok || got {
+		t.Fatalf("data.openBrowser = %#v, want false", data["openBrowser"])
+	}
+	if _, ok := data["hostControl"]; ok {
+		t.Fatalf("unexpected data.hostControl in CLI-owned json scope mode: %s", patOut.RawJSON)
+	}
+}
+
+// TestEnrichPATErrorForHostControl_SingleLineOutput locks in the wire
+// invariant: the enriched host-controlled PAT payload must be single-line
+// (no embedded newlines, no indentation), so stderr-line-scanning hosts
+// stay correct. Regression guard against accidental reintroduction of
+// json.MarshalIndent.
+func TestEnrichPATErrorForHostControl_SingleLineOutput(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "agt-sales")
+	t.Setenv("DINGTALK_AGENT", "sales-copilot")
+
+	raw := `{"success":false,"code":"PAT_LOW_RISK_NO_PERMISSION","data":{"flowId":"flow-1","desc":"授权","callbacks":["cb1","cb2"]}}`
+	out := enrichPATErrorForHostControl(raw)
+
+	if strings.Contains(out, "\n") {
+		t.Fatalf("enrichPATErrorForHostControl output must be single-line, got embedded newline:\n%s", out)
+	}
+	if strings.HasPrefix(out, " ") || strings.HasPrefix(out, "\t") {
+		t.Fatalf("enrichPATErrorForHostControl output must not be indented, got leading whitespace: %q", out)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(out), &parsed); err != nil {
+		t.Fatalf("single-line output must round-trip via json.Unmarshal: %v\nraw=%s", err, out)
+	}
+	data, _ := parsed["data"].(map[string]any)
+	hostControl, _ := data["hostControl"].(map[string]any)
+	if hostControl == nil {
+		t.Fatalf("expected data.hostControl injection, got: %s", out)
+	}
+	if got, _ := hostControl["callbackOwner"].(string); got != "host" {
+		t.Fatalf("hostControl.callbackOwner = %q, want host", got)
+	}
+	if _, ok := data["callbacks"]; ok {
+		t.Fatalf("expected callbacks to be stripped in host-owned contract, got: %v", data["callbacks"])
+	}
+}
+
+func TestEnrichPATErrorForHostControlKeepsAuthorizationURLAmpersandReadable(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "agt-sales")
+	t.Setenv("DINGTALK_AGENT", "sales-copilot")
+
+	raw := `{"success":false,"code":"PAT_HIGH_RISK_NO_PERMISSION","data":{"flowId":"flow-host","desc":"授权","uri":"https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3Dflow-host%26userCode%3DQZYH-D64W#/personalAuthorization?flowId=flow-host&userCode=QZYH-D64W"}}`
+	out := enrichPATErrorForHostControl(raw)
+
+	if strings.Contains(out, `\u0026`) {
+		t.Fatalf("host PAT JSON should keep URL ampersands readable for mobile copy/linkify, got: %s", out)
+	}
+	if !strings.Contains(out, "&userCode=QZYH-D64W") {
+		t.Fatalf("host PAT JSON missing readable authorization URL separator, got: %s", out)
+	}
+}
+
+// TestBuildPATScopeHostJSON_SingleLineOutput mirrors the above regression
+// for the scope-error branch (PAT_SCOPE_AUTH_REQUIRED emission).
+func TestBuildPATScopeHostJSON_SingleLineOutput(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "agt-support")
+	t.Setenv("DINGTALK_AGENT", "customer-support")
+
+	scopeErr := &PatScopeError{
+		OriginalError: "missing required scope(s): mail:send",
+		Identity:      "user",
+		ErrorType:     "missing_scope",
+		Message:       "missing required scope(s): mail:send",
+		Hint:          "run `dws auth login --scope \"mail:send\"` to authorize",
+		MissingScope:  "mail:send",
+	}
+	out := buildPATScopeJSON(scopeErr, true)
+
+	if strings.Contains(out, "\n") {
+		t.Fatalf("buildPATScopeJSON(host) output must be single-line, got embedded newline:\n%s", out)
+	}
+	if strings.HasPrefix(out, " ") || strings.HasPrefix(out, "\t") {
+		t.Fatalf("buildPATScopeJSON(host) output must not be indented, got leading whitespace: %q", out)
+	}
+	var parsed map[string]any
+	if err := json.Unmarshal([]byte(out), &parsed); err != nil {
+		t.Fatalf("single-line output must round-trip via json.Unmarshal: %v\nraw=%s", err, out)
+	}
+	if code, _ := parsed["code"].(string); code != "PAT_SCOPE_AUTH_REQUIRED" {
+		t.Errorf("code = %q, want PAT_SCOPE_AUTH_REQUIRED", code)
+	}
+}
+
+func TestRetryWithPatAuthRetry_HostControlledReturnsJSON(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "agt-support")
+	t.Setenv("DINGTALK_AGENT", "customer-support")
+
+	scopeErr := &PatScopeError{
+		OriginalError: "missing required scope(s): mail:send",
+		Identity:      "user",
+		ErrorType:     "missing_scope",
+		Message:       "missing required scope(s): mail:send",
+		Hint:          "run `dws auth login --scope \"mail:send\"` to authorize the missing scope",
+		MissingScope:  "mail:send",
+	}
+
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			t.Fatal("runner should not be called in host-controlled scope mode")
+			return executor.Result{}, nil
+		},
+	}
+
+	var buf bytes.Buffer
+	_, err := retryWithPatAuthRetry(context.Background(), mock, executor.Invocation{}, scopeErr, t.TempDir(), &buf)
+	if err == nil {
+		t.Fatal("expected PATError")
+	}
+	if got := strings.TrimSpace(buf.String()); got != "" {
+		t.Fatalf("expected no human-readable output, got %q", got)
+	}
+	patErr, ok := err.(*apperrors.PATError)
+	if !ok {
+		t.Fatalf("expected *PATError, got %T: %v", err, err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(patErr.RawJSON), &payload); err != nil {
+		t.Fatalf("json.Unmarshal(scope host payload) error = %v\nraw=%s", err, patErr.RawJSON)
+	}
+	if got, _ := payload["code"].(string); got != "PAT_SCOPE_AUTH_REQUIRED" {
+		t.Fatalf("code = %q, want PAT_SCOPE_AUTH_REQUIRED", got)
+	}
+	data, _ := payload["data"].(map[string]any)
+	if got, _ := data["missingScope"].(string); got != "mail:send" {
+		t.Fatalf("missingScope = %q, want mail:send", got)
+	}
+	hostControl, _ := data["hostControl"].(map[string]any)
+	if got, _ := hostControl["callbackOwner"].(string); got != "host" {
+		t.Fatalf("hostControl.callbackOwner = %q, want host", got)
+	}
+	if _, ok := data["callbacks"]; ok {
+		t.Fatalf("unexpected callbacks contract in PAT scope host payload: %#v", data["callbacks"])
+	}
+	if strings.Contains(patErr.RawJSON, `"pat","callback"`) {
+		t.Fatalf("scope host payload should not advertise dws pat callback argv: %s", patErr.RawJSON)
+	}
+}
+
+func TestHandlePatAuthCheck_OpensOpaqueURIWithoutRebuild(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "test-auth-code")
+	defer server.Close()
+
+	rawURI := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3D50dff7654b7444e88ced7489b07cce8d%26userCode%3DQ8RY-X6E9#/personalAuthorization?flowId=50dff7654b7444e88ced7489b07cce8d&userCode=Q8RY-X6E9"
+	var opened string
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = rawURL
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	var retryCalled bool
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			retryCalled = true
+			return executor.Result{Response: map[string]any{"ok": true}}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-opaque", "test-client-id", rawURI)}
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, configDir, &buf)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !retryCalled {
+		t.Fatal("expected retry to run after approved PAT flow")
+	}
+	if opened != rawURI {
+		t.Fatalf("opened url = %q, want verbatim %q", opened, rawURI)
+	}
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
+	}
+}
+
+func TestHandlePatAuthCheck_NormalizesLegacyHashRouteForBrowserAndOutput(t *testing.T) {
+	t.Setenv(authpkg.AgentCodeEnv, "")
+	server, configDir := setupHandlePATServer(t, "APPROVED", "test-auth-code")
+	defer server.Close()
+
+	rawURI := "https://open-dev.dingtalk.com/fe/old#%2FpersonalAuthorization%3FflowId%3D56b12fd3201d4efab9a9138672cf4deb%26userCode%3DCFTC-27ZN"
+	wantURL := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3D56b12fd3201d4efab9a9138672cf4deb%26userCode%3DCFTC-27ZN#/personalAuthorization?flowId=56b12fd3201d4efab9a9138672cf4deb&userCode=CFTC-27ZN"
+	var opened string
+	origOpenBrowser := openBrowserFunc
+	openBrowserFunc = func(rawURL string) error {
+		opened = rawURL
+		return nil
+	}
+	t.Cleanup(func() { openBrowserFunc = origOpenBrowser })
+
+	var retryCalled bool
+	mock := &mockRunner{
+		runFunc: func(ctx context.Context, inv executor.Invocation) (executor.Result, error) {
+			retryCalled = true
+			return executor.Result{Response: map[string]any{"ok": true}}, nil
+		},
+	}
+
+	runner := &runtimeRunner{fallback: mock}
+	patErr := &apperrors.PATError{RawJSON: makePATErrorJSONWithURI("flow-legacy-hash", "test-client-id", rawURI)}
+
+	var buf bytes.Buffer
+	_, err := handlePatAuthCheck(context.Background(), runner, executor.Invocation{
+		CanonicalProduct: "test",
+		Tool:             "test_tool",
+	}, patErr, configDir, &buf)
+
+	if err != nil {
+		t.Fatalf("unexpected error: %v", err)
+	}
+	if !retryCalled {
+		t.Fatal("expected retry to run after approved PAT flow")
+	}
+	if opened != wantURL {
+		t.Fatalf("opened url = %q, want normalized %q", opened, wantURL)
+	}
+	if got := buf.String(); strings.Contains(got, "PAT_AUTHORIZATION_URL=") {
+		t.Fatalf("human-readable PAT output should not emit PAT_AUTHORIZATION_URL line:\n%s", got)
+	}
+}
+
+func TestBrowserOpenCommand_WindowsPreservesOpaquePATURI(t *testing.T) {
+	t.Parallel()
+
+	rawURI := "https://open-dev.dingtalk.com/fe/old?hash=%23%2FpersonalAuthorization%3FflowId%3Df72437f040f04a8295988ff71e690b35%26userCode%3D98JV-JSBL#/personalAuthorization?flowId=f72437f040f04a8295988ff71e690b35&userCode=98JV-JSBL"
+	cmd := browserOpenCommand("windows", rawURI)
+	if cmd == nil {
+		t.Fatal("browserOpenCommand(windows) returned nil")
+	}
+	if got := cmd.Args[0]; got == "cmd" {
+		t.Fatalf("windows browser opener must not route PAT URLs through cmd.exe: args=%v", cmd.Args)
+	}
+	if got := len(cmd.Args); got != 3 {
+		t.Fatalf("windows browser opener args length = %d, want 3: %v", got, cmd.Args)
+	}
+	if got := cmd.Args[0]; got != "rundll32" {
+		t.Fatalf("windows browser opener command = %q, want rundll32", got)
+	}
+	if got := cmd.Args[1]; got != "url.dll,FileProtocolHandler" {
+		t.Fatalf("windows browser opener handler = %q, want url.dll,FileProtocolHandler", got)
+	}
+	if got := cmd.Args[2]; got != rawURI {
+		t.Fatalf("windows browser opener URL arg = %q, want verbatim %q", got, rawURI)
+	}
+}

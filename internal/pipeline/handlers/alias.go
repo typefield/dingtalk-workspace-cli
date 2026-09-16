@@ -1,0 +1,84 @@
+// Copyright 2026 Alibaba Group
+// Licensed under the Apache License, Version 2.0 (the "License");
+// you may not use this file except in compliance with the License.
+// You may obtain a copy of the License at
+//
+//     http://www.apache.org/licenses/LICENSE-2.0
+//
+// Unless required by applicable law or agreed to in writing, software
+// distributed under the License is distributed on an "AS IS" BASIS,
+// WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+// See the License for the specific language governing permissions and
+// limitations under the License.
+
+package handlers
+
+import (
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/pipeline"
+	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/pkg/cmdutil"
+)
+
+// AliasHandler normalises flag names in raw argv so that common
+// model-generated variants resolve to the canonical kebab-case name.
+//
+// Supported normalisations:
+//   - camelCase  → kebab-case  (--userId     → --user-id)
+//   - snake_case → kebab-case  (--user_name  → --user-name)
+//   - UPPER-CASE → lower-case  (--USER-ID    → --user-id)
+//   - PascalCase → kebab-case  (--UserName   → --user-name)
+//
+// The handler only rewrites tokens that start with "--" and whose
+// normalised form matches a known flag name. Unknown flags are left
+// untouched so that Cobra can report them as errors.
+type AliasHandler struct{}
+
+func (AliasHandler) Name() string          { return "alias" }
+func (AliasHandler) Phase() pipeline.Phase { return pipeline.PreParse }
+
+func (AliasHandler) Handle(ctx *pipeline.Context) error {
+	if len(ctx.Args) == 0 || len(ctx.FlagSpecs) == 0 {
+		return nil
+	}
+
+	known := buildFlagSet(ctx.FlagSpecs)
+	result := make([]string, 0, len(ctx.Args))
+
+	for i, arg := range ctx.Args {
+		if arg == "--" {
+			result = append(result, ctx.Args[i:]...)
+			break
+		}
+		rewritten, ok := tryNormaliseFlag(arg, known)
+		if ok {
+			ctx.AddCorrection("alias", pipeline.PreParse, rewritten, arg, rewritten, "alias")
+			result = append(result, rewritten)
+		} else {
+			result = append(result, ctx.Args[i])
+		}
+	}
+
+	ctx.Args = result
+	return nil
+}
+
+// tryNormaliseFlag checks whether arg is a "--flag" token that can be
+// normalised to a known flag name. It handles both bare flags and
+// "--flag=value" syntax.
+func tryNormaliseFlag(arg string, known map[string]bool) (string, bool) {
+	return pipeline.NormalizeFlagToken(arg, known)
+}
+
+// toKebabCase converts a string from camelCase, PascalCase, or snake_case to
+// kebab-case. It is a thin compatibility shim over the single shared
+// normaliser cmdutil.Morph so the pipeline handlers and the build-time
+// parameter-alias generator can never diverge on how a flag spelling is
+// folded. Examples:
+//
+//	"userId"    → "user-id"
+//	"UserName"  → "user-name"
+//	"user_name" → "user-name"
+//	"USER_ID"   → "user-id"
+//	"pageSize"  → "page-size"
+func toKebabCase(s string) string {
+	return cmdutil.Morph(s)
+}
