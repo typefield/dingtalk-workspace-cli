@@ -1302,6 +1302,16 @@ jobs:
           GORELEASER_CURRENT_TAG: v0.0.0-test
         run: ./scripts/release/run-goreleaser-cross.sh build --snapshot --clean --parallelism=2
 
+      - name: Upload Windows test packages
+        if: ${{ needs.lint.outputs.release_sensitive == 'true' }}
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-packages
+          path: |
+            dist/*windows*
+          retention-days: 7
+          if-no-files-found: warn
+
       - name: Verify Linux release ABI and startup
         if: ${{ needs.lint.outputs.release_sensitive == 'true' }}
         shell: bash
