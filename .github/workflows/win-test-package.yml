@@ -1,7 +1,9 @@
 name: Windows Test Package
 
 on:
-  workflow_dispatch:
+  push:
+    branches:
+      - test/win-amd64-safechat-ucrt-lib
 
 permissions:
   contents: read
