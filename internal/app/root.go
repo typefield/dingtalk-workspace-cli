@@ -1147,6 +1147,7 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 		navigationGroup(usage.NewShortcutCommand()),
 		schemaCmd,
 		navigationGroup(mcpCmd),
+		navigationGroup(newLiteappGroup(patCaller, newAuthenticatedMCPPublishedTransportFactory(runner, flags))),
 	}
 	root.AddCommand(utilityCommands...)
 
@@ -1409,7 +1410,7 @@ var builtinCommandNames = map[string]bool{
 	"auth": true, "api": true, "audit": true, "cache": true, "config": true,
 	"doctor": true, "event": true, "completion": true, "skill": true,
 	"plugin": true, "profile": true, "recovery": true, "version": true, "help": true,
-	"schema": true, "mcp": true, "upgrade": true,
+	"schema": true, "mcp": true, "upgrade": true, "liteapp": true,
 }
 
 // commandNameSet returns a new set containing every name in base plus extras.
