@@ -6,6 +6,17 @@ The format is inspired by [Keep a Changelog](https://keepachangelog.com/) and th
 
 ## [Unreleased]
 
+## [1.0.63-beta.1] - 2026-09-17
+
+### Changes since `v1.0.62`
+
+### Added
+- Shared schema cache hardening: parent-ancestry locking before mutation (symlink/TOCTOU rejection), edition-bound identity sidecars, and root-bound invalidation traversal (`os.OpenRoot`).
+- Windows installer trust adjudication for every Allow ACE (inherit-only, callback/object, specific-SID write rejection) with fused validation-mutation walks.
+
+### Changed
+- Release pipeline governance: protoc digest gate enforced in required CI; go.sum tidy gate; race cli/smoke budget experiments moved out of business PRs.
+
 ## [1.0.62] - 2026-09-16
 
 This stable release promotes the sealed `v1.0.62-beta.8` baseline and adds verified AI Table, document, event, calendar, chat, AISearch, and language-default improvements merged afterwards.
