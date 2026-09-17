@@ -47,6 +47,9 @@ func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFac
 		ID: "liteapp",
 		HelpReferences: contract.HelpReferences{
 			RelatedSkills: []string{"dingtalk-liteapp"},
+			Documentation: []contract.HelpDocumentation{
+				contract.SkillDocumentation("轻应用命令参考", "dingtalk-liteapp", "references/commands.md"),
+			},
 		},
 		Selection: contract.ProductSelectionDecl{
 			AgentSummary: "钉钉轻应用（快捷应用）：创建、更新、删除、列表、详情、凭证查询，创建即发布挂工作台",
@@ -156,14 +159,8 @@ func runLiteappTool(
 	params map[string]any,
 	mutating bool,
 ) error {
+	// 写操作的 --yes 门禁由 DeclareLeafMetadata 的 ConfirmSafety 统一执行（见各叶 Validate）
 	dryRun := corecmd.BoolFlag(cmd, "dry-run")
-	if mutating && !dryRun && !corecmd.BoolFlag(cmd, "yes") {
-		return apperrors.NewValidation(
-			"写操作真实执行需要 --yes 确认；可先加 --dry-run 预览将发送的参数",
-			apperrors.WithReason("confirmation_required"),
-			apperrors.WithHint("以相同参数追加 --yes 执行，或先 --dry-run 预览"),
-		)
-	}
 	if dryRun {
 		payload := map[string]any{
 			"kind":      "helper_invocation",
@@ -231,8 +228,7 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			"并生成 OAuth 凭证。AppSecret 明文随创建响应与 credential 子命令返回，注意防泄露。\n\n" +
 			"传 --request-id（幂等键）时，同键同参数重试返回首次结果，参数变化将被拒绝。" +
 			"调用身份由系统上下文注入，无需传 corpId/userId。",
-		Example: "  dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id $(uuidgen) --yes\n" +
-			"  dws liteapp create --name 周报助手 --homepage-url https://example.com --dry-run",
+		Example:           "  dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -273,10 +269,20 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 	cmd.Flags().String("request-id", "", "幂等键，建议传 UUID；同键同参数重试返回首次结果，参数变化拒绝")
 	liteappMCPIDFlag(cmd)
 	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
-		OutputRollout: output.RolloutDualValidate,
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
 			Confirmation: "user_required", Idempotency: "idempotent",
+		},
+		Validate: func(cmd *cobra.Command, args []string) error {
+			name, _ := cmd.Flags().GetString("name")
+			homepageURL, _ := cmd.Flags().GetString("homepage-url")
+			if strings.TrimSpace(name) == "" {
+				return apperrors.NewValidation("--name 不能为空")
+			}
+			if strings.TrimSpace(homepageURL) == "" {
+				return apperrors.NewValidation("--homepage-url 不能为空")
+			}
+			return nil
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -296,7 +302,7 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 					"需要管理已有应用时使用 liteapp update/delete 等子命令",
 					"用户未确认创建目标名称与首页地址时不要真实执行",
 				},
-				Examples: []string{"dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id $(uuidgen) --yes"},
+				Examples: []string{"dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json"},
 			},
 		},
 	})
@@ -309,7 +315,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "更新轻应用（仅创建者本人；不传=不修改，空串拒绝）",
 		Long: "更新指定轻应用的基础信息与 OAuth 回调地址。字段语义：不传=null=不修改；" +
 			"传空串会被拒绝（防误清空）。redirectUris 传入即整体覆盖登记。仅创建者本人可更新。",
-		Example: "  dws liteapp update 5005426001 --desc 新描述 --yes\n" +
+		Example: "  dws liteapp update 5005426001 --desc 新描述\n" +
 			"  dws liteapp update 5005426001 --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
@@ -360,6 +366,22 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Effect: "write", Risk: "medium",
 			Confirmation: "user_required", Idempotency: "idempotent",
 		},
+		Validate: func(cmd *cobra.Command, args []string) error {
+			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
+			if err != nil || appID <= 0 {
+				return apperrors.NewValidation("appId 必须是正整数")
+			}
+			fields := 0
+			for _, flag := range []string{"app-name", "homepage-url", "pc-url", "desc", "icon-media-id", "redirect-uris"} {
+				if v, _ := cmd.Flags().GetString(flag); strings.TrimSpace(v) != "" {
+					fields++
+				}
+			}
+			if fields == 0 {
+				return apperrors.NewValidation("至少提供一个要修改的字段；不修改请勿调用")
+			}
+			return nil
+		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
 				ProductID: "liteapp", Name: "update", CanonicalPath: "liteapp.update",
@@ -374,7 +396,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				AgentSummary: "经用户确认后更新创建者本人的轻应用",
 				UseWhen:      []string{"需要修改创建者本人的轻应用名称、首页、描述、回调地址等"},
 				AvoidWhen:    []string{"目标应用不是当前用户创建时不要调用（服务端仅创建者可更新）"},
-				Examples:     []string{"dws liteapp update 5005426001 --desc 新描述 --yes"},
+				Examples:     []string{"dws liteapp update 5005426001 --desc 新描述"},
 			},
 		},
 	})
@@ -387,7 +409,7 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "删除轻应用（24 小时软删，仅创建者或组织管理员）",
 		Long: "删除指定轻应用。24 小时软删，软删期内仍占用配额、不可恢复，返回软删截止时间 timeToDel。" +
 			"仅创建者或组织管理员可删除。",
-		Example:           "  dws liteapp delete 5005426001 --yes",
+		Example:           "  dws liteapp delete 5005426001",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -409,6 +431,13 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Effect: "write", Risk: "high",
 			Confirmation: "user_required", Idempotency: "idempotent",
 		},
+		Validate: func(cmd *cobra.Command, args []string) error {
+			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
+			if err != nil || appID <= 0 {
+				return apperrors.NewValidation("appId 必须是正整数")
+			}
+			return nil
+		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
 				ProductID: "liteapp", Name: "delete", CanonicalPath: "liteapp.delete",
@@ -423,7 +452,7 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				AgentSummary: "经用户确认后软删轻应用（24 小时后物理删除）",
 				UseWhen:      []string{"需要删除不再使用的轻应用以释放配额"},
 				AvoidWhen:    []string{"应用正在被其他系统使用时不要删除；软删期内不可恢复"},
-				Examples:     []string{"dws liteapp delete 5005426001 --yes"},
+				Examples:     []string{"dws liteapp delete 5005426001"},
 			},
 		},
 	})
