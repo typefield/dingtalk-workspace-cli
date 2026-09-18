@@ -238,8 +238,8 @@ func TestLiteappCreateRejectsBlankRequiredFlags(t *testing.T) {
 func TestLiteappUpdateRequiresAtLeastOneField(t *testing.T) {
 	_, err := executeLiteappCommand(t, &liteappTestCaller{}, nil,
 		"liteapp", "update", "5005426001", "--yes")
-	if err == nil || !strings.Contains(err.Error(), "至少提供一个要修改的字段") {
-		t.Fatalf("error = %v, want at-least-one-field error", err)
+	if err == nil || !strings.Contains(err.Error(), "请至少指定") {
+		t.Fatalf("error = %v, want at-least-one-field constraint error", err)
 	}
 }
 

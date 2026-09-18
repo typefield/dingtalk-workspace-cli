@@ -193,6 +193,97 @@ type Constraint struct {
 	Description string
 }
 
+// PositionalSpec declares one positional argument (declaration surface). The
+// framework validates arity and value, binds the parsed value into toolArgs,
+// and annotates the Runtime Schema positional (name/type/description/required).
+type PositionalSpec struct {
+	// Name is the Runtime Schema positional name (e.g. "app_id").
+	Name string
+	// Usage is the --help / Runtime Schema description.
+	Usage string
+	// Kind restricts the value type: empty/KindString keeps the raw string,
+	// KindInt requires a positive integer and binds int64.
+	Kind FlagKind
+	// Required rejects an empty effective value (after Trim).
+	Required bool
+	// Trim Space-trims the raw token before checks and binding.
+	Trim bool
+	// Bind is the toolArgs key; empty falls back to Name.
+	Bind string
+}
+
+// positionalBindKey is the toolArgs key for a positional.
+func positionalBindKey(p PositionalSpec) string {
+	if p.Bind != "" {
+		return p.Bind
+	}
+	return p.Name
+}
+
+// validatePositionalDecls rejects malformed positional declarations at build
+// time: unknown kinds, empty names, and bind-key collisions with flags or
+// ConstParams are programming errors.
+func validatePositionalDecls(spec Spec) {
+	if len(spec.Positionals) == 0 {
+		return
+	}
+	taken := map[string]bool{}
+	for _, flag := range spec.Flags {
+		taken[bindKey(flag)] = true
+	}
+	for key := range spec.ConstParams {
+		taken[key] = true
+	}
+	for _, p := range spec.Positionals {
+		if strings.TrimSpace(p.Name) == "" {
+			panic(fmt.Sprintf("command %q declares a positional with an empty Name", spec.Use))
+		}
+		switch p.Kind {
+		case KindString, KindInt:
+		default:
+			panic(fmt.Sprintf("command %q positional %q: only KindString/KindInt are supported", spec.Use, p.Name))
+		}
+		key := positionalBindKey(p)
+		if taken[key] {
+			panic(fmt.Sprintf("command %q positional %q bind key %q conflicts with a flag/ConstParams key", spec.Use, p.Name, key))
+		}
+		taken[key] = true
+	}
+}
+
+// buildPositionalArgs validates and binds positional tokens into toolArgs.
+// KindInt requires a positive integer (>= 1) and binds int64 so large IDs keep
+// their JSON representation; Required string positionals reject empty values.
+func buildPositionalArgs(args []string, positionals []PositionalSpec) (map[string]any, error) {
+	if len(positionals) == 0 {
+		return nil, nil
+	}
+	out := make(map[string]any, len(positionals))
+	for i, p := range positionals {
+		raw := args[i]
+		if p.Trim {
+			raw = strings.TrimSpace(raw)
+		}
+		switch p.Kind {
+		case KindInt:
+			v, err := strconv.ParseInt(raw, 10, 64)
+			if err != nil || v < 1 {
+				return nil, apperrors.NewValidation(fmt.Sprintf("参数 %s 必须是正整数", p.Name))
+			}
+			out[positionalBindKey(p)] = v
+		default:
+			if p.Required && raw == "" {
+				return nil, apperrors.NewValidation(fmt.Sprintf("缺少必填参数 %s", p.Name))
+			}
+			if raw == "" {
+				continue
+			}
+			out[positionalBindKey(p)] = raw
+		}
+	}
+	return out, nil
+}
+
 // ParameterProjectionMode selects how declared flags are embedded into Runtime
 // Schema annotations. The zero value makes the declaration the final parameter
 // authority (the LeafSpec/command default).
@@ -246,6 +337,12 @@ type Spec struct {
 
 	Flags       []FlagSpec
 	Constraints []Constraint
+	// Positionals declares positional arguments. When non-empty the command's
+	// Args validator becomes cobra.ExactArgs(len(Positionals)), values are
+	// validated in the declared preflight and bound into toolArgs before the
+	// Safety confirmation gate. The Runtime Schema positional is annotated
+	// from the declaration.
+	Positionals []PositionalSpec
 	// ParameterProjection controls whether parameter facts are final
 	// declaration annotations or Cobra-backed compatibility facts.
 	ParameterProjection ParameterProjectionMode
@@ -380,6 +477,7 @@ func New(spec Spec) *cobra.Command {
 	validateConstParamsDecl(spec)
 	validateSafetySpec(spec)
 	validateContractDecl(spec)
+	validatePositionalDecls(spec)
 	validateInputSpecs(spec.Use, spec.Flags)
 	// Help prose inherits the declaration when not authored separately:
 	// Selection.Examples (already contract-validated against the real flags)
@@ -397,6 +495,21 @@ func New(spec Spec) *cobra.Command {
 	}
 	RegisterFlags(cmd, spec.Flags)
 	ValidateConstraintDecls(spec.Use, spec.Flags, spec.Constraints)
+	if len(spec.Positionals) > 0 {
+		cmd.Args = cobra.ExactArgs(len(spec.Positionals))
+		annos := make([]contract.RuntimeSchemaPositional, 0, len(spec.Positionals))
+		for i, p := range spec.Positionals {
+			positionalType := "string"
+			if p.Kind == KindInt {
+				positionalType = "integer"
+			}
+			annos = append(annos, contract.RuntimeSchemaPositional{
+				Name: p.Name, Type: positionalType, Description: p.Usage,
+				Required: p.Required, Index: i,
+			})
+		}
+		runtimeannotate.AnnotateRuntimePositionals(cmd, annos...)
+	}
 	embedContractIntoSchema(cmd, spec)
 	AnnotateConstraints(cmd, spec.Constraints)
 	if help := ConstraintHelp(spec.Constraints); help != "" {
@@ -445,6 +558,13 @@ func New(spec Spec) *cobra.Command {
 		toolArgs, err := BuildArgs(cmd, spec.Flags)
 		if err != nil {
 			return err
+		}
+		positionalArgs, err := buildPositionalArgs(args, spec.Positionals)
+		if err != nil {
+			return err
+		}
+		for key, value := range positionalArgs {
+			toolArgs[key] = value
 		}
 		for key, value := range spec.ConstParams {
 			toolArgs[key] = value
@@ -516,6 +636,9 @@ func runDeclaredPreflight(cmd *cobra.Command, args []string, spec Spec) error {
 		return err
 	}
 	if err := ValidateConstraints(cmd, spec.Flags, spec.Constraints); err != nil {
+		return err
+	}
+	if _, err := buildPositionalArgs(args, spec.Positionals); err != nil {
 		return err
 	}
 	if spec.Validate != nil {

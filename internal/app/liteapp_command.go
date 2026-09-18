@@ -14,10 +14,8 @@
 package app
 
 import (
-	"strconv"
 	"strings"
 
-	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/cli"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd"
 	"github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/corecmd/contract"
 	apperrors "github.com/DingTalk-Real-AI/dingtalk-workspace-cli/internal/errors"
@@ -30,8 +28,8 @@ import (
 const (
 	// liteappDefaultMCPID 是轻应用六个工具所在的市场服务「钉钉开放平台应用管理」。
 	// 解析规则：显式 --mcp-id 最高优先级；未指定时固定回落到该服务。
-	liteappDefaultMCPID = "10357"
-	liteappCreateTool   = "create_lite_app"
+	liteappDefaultMCPID   = "10357"
+	liteappCreateTool     = "create_lite_app"
 	liteappUpdateTool     = "update_lite_app"
 	liteappDeleteTool     = "delete_lite_app"
 	liteappListTool       = "list_lite_apps"
@@ -40,6 +38,9 @@ const (
 )
 
 func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
+	// dev 子树叶子身份约定：ProductID 固定 "dev"，Name 用远端工具名，
+	// CanonicalPath 为 "dev." + 工具名，CLIPath 为完整命令路径（与 dev app/dev mcp 一致）。
+
 	group := &cobra.Command{
 		Use:   "liteapp",
 		Short: "轻应用开发（快捷应用全生命周期）",
@@ -57,9 +58,6 @@ func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFac
 	if factory == nil {
 		factory = newAuthenticatedMCPPublishedTransportFactory(nil, nil)
 	}
-	// dev 子树叶子身份约定：ProductID 固定 "dev"，Name 用远端工具名，
-	// CanonicalPath 为 "dev." + 工具名，CLIPath 为完整命令路径（与 dev app/dev mcp 一致）。
-
 	group.AddCommand(
 		newLiteappCreateCommand(caller, factory),
 		newLiteappUpdateCommand(caller, factory),
@@ -79,7 +77,8 @@ func effectiveLiteappMCPID(explicit string) string {
 	return liteappDefaultMCPID
 }
 
-// runLiteappTool 是六个子命令共享的执行路径：dry-run 预演 / 确认门禁 / endpoint 解析 / 已发布工具调用。
+// runLiteappTool 是六个子命令共享的执行路径：dry-run 预演 / endpoint 解析 / 已发布工具调用。
+// --yes 确认门禁由 corecmd 编排管线在 Invoke 之前统一执行。
 func runLiteappTool(
 	cmd *cobra.Command,
 	caller edition.ToolCaller,
@@ -87,9 +86,7 @@ func runLiteappTool(
 	mcpID string,
 	tool string,
 	params map[string]any,
-	mutating bool,
 ) error {
-	// 写操作的 --yes 门禁由 DeclareLeafMetadata 的 ConfirmSafety 统一执行（见各叶 Validate）
 	resolved := effectiveLiteappMCPID(mcpID)
 	dryRun := corecmd.BoolFlag(cmd, "dry-run")
 	if dryRun {
@@ -143,73 +140,67 @@ func runLiteappTool(
 	return output.WriteCommandPayload(cmd, payload, output.FormatJSON)
 }
 
-func liteappMCPIDFlag(cmd *cobra.Command) {
-	cmd.Flags().String("mcp-id", "", "轻应用 MCP 市场服务 ID；默认 10357（钉钉开放平台应用管理），一般无需指定")
+// splitRedirectURIs 把逗号分隔的回调地址声明式装配为 []string：元素 trim、
+// 丢弃空串；全空结果由框架按空 Transform 结果跳过该键（不传=不修改）。
+func splitRedirectURIs(raw string) (any, error) {
+	uris := []string{}
+	for _, part := range strings.Split(raw, ",") {
+		if trimmed := strings.TrimSpace(part); trimmed != "" {
+			uris = append(uris, trimmed)
+		}
+	}
+	return uris, nil
+}
+
+// liteappCall 是六个叶子共用的派发闭包：业务参数由框架按 Flags/Positionals
+// 声明装配完成；--mcp-id 是路由参数，从 toolArgs 取出后不再下发到工具。
+func liteappCall(caller edition.ToolCaller, factory mcpPublishedTransportFactory) func(*cobra.Command, string, map[string]any) error {
+	return func(cmd *cobra.Command, tool string, args map[string]any) error {
+		mcpID, _ := args["mcpId"].(string)
+		delete(args, "mcpId")
+		return runLiteappTool(cmd, caller, factory, mcpID, tool, args)
+	}
+}
+
+// liteappAppIDPositional 是 update/delete/detail/credential 共用的位置参数声明。
+func liteappAppIDPositional() helpers.LeafPositional {
+	return helpers.LeafPositional{
+		Name: "app_id", Usage: "轻应用 ID（microAppId）",
+		Kind: helpers.LeafInt, Required: true, Trim: true, Bind: "appId",
+	}
+}
+
+// liteappMCPIDFlag 是 --mcp-id 的统一声明。
+func liteappMCPIDFlag() helpers.LeafFlag {
+	return helpers.LeafFlag{
+		Name:  "mcp-id",
+		Usage: "轻应用 MCP 市场服务 ID；默认 10357（钉钉开放平台应用管理），一般无需指定",
+		Trim:  true, OmitEmpty: true, Bind: "mcpId",
+	}
 }
 
 func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "create",
 		Short: "创建轻应用（创建即发布挂工作台，并注册统一应用与 OAuth 凭证）",
 		Long: "创建钉钉企业内部轻应用：创建即发布并挂载工作台\"我的\"分组，同步注册统一应用（企业内部应用），" +
 			"并生成 OAuth 凭证。AppSecret 明文随创建响应与 credential 子命令返回，注意防泄露。\n\n" +
 			"传 --request-id（幂等键）时，同键同参数重试返回首次结果，参数变化将被拒绝。" +
 			"调用身份由系统上下文注入，无需传 corpId/userId。",
-		Example:           "  dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
-		Args:              cobra.NoArgs,
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			name, _ := cmd.Flags().GetString("name")
-			homepageURL, _ := cmd.Flags().GetString("homepage-url")
-			pcURL, _ := cmd.Flags().GetString("pc-url")
-			desc, _ := cmd.Flags().GetString("desc")
-			iconMediaID, _ := cmd.Flags().GetString("icon-media-id")
-			requestID, _ := cmd.Flags().GetString("request-id")
-			if strings.TrimSpace(name) == "" {
-				return apperrors.NewValidation("--name 不能为空")
-			}
-			if strings.TrimSpace(homepageURL) == "" {
-				return apperrors.NewValidation("--homepage-url 不能为空")
-			}
-			params := map[string]any{"appName": name, "homepageUrl": homepageURL}
-			if strings.TrimSpace(pcURL) != "" {
-				params["pcUrl"] = pcURL
-			}
-			if strings.TrimSpace(desc) != "" {
-				params["desc"] = desc
-			}
-			if strings.TrimSpace(iconMediaID) != "" {
-				params["iconUrl"] = iconMediaID
-			}
-			if strings.TrimSpace(requestID) != "" {
-				params["requestId"] = requestID
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappCreateTool, params, true)
-		},
-	}
-	cmd.Flags().String("name", "", "应用名称，必填，trim 后非空")
-	cmd.Flags().String("homepage-url", "", "移动端首页地址，必填，http(s) URL")
-	cmd.Flags().String("pc-url", "", "PC 端首页地址，可选，缺省取移动端首页地址")
-	cmd.Flags().String("desc", "", "应用描述，可选")
-	cmd.Flags().String("icon-media-id", "", "图标文件 media_id（logoImg 格式）；不接受 http 地址；不传自动生成默认图标")
-	cmd.Flags().String("request-id", "", "幂等键，建议传 UUID；同键同参数重试返回首次结果，参数变化拒绝")
-	liteappMCPIDFlag(cmd)
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Example: "  dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
 			Confirmation: "user_required", Idempotency: "idempotent",
 		},
-		Validate: func(cmd *cobra.Command, args []string) error {
-			name, _ := cmd.Flags().GetString("name")
-			homepageURL, _ := cmd.Flags().GetString("homepage-url")
-			if strings.TrimSpace(name) == "" {
-				return apperrors.NewValidation("--name 不能为空")
-			}
-			if strings.TrimSpace(homepageURL) == "" {
-				return apperrors.NewValidation("--homepage-url 不能为空")
-			}
-			return nil
+		Tool: liteappCreateTool,
+		Flags: []helpers.LeafFlag{
+			{Name: "name", Usage: "应用名称，必填，trim 后非空", Required: true, ValidationMode: corecmd.ValidationShortcut, RequiredError: "--name 不能为空", Trim: true, Bind: "appName"},
+			{Name: "homepage-url", Usage: "移动端首页地址，必填，http(s) URL", Required: true, ValidationMode: corecmd.ValidationShortcut, RequiredError: "--homepage-url 不能为空", Trim: true, Bind: "homepageUrl"},
+			{Name: "pc-url", Usage: "PC 端首页地址，可选，缺省取移动端首页地址", Trim: true, OmitEmpty: true, Bind: "pcUrl"},
+			{Name: "desc", Usage: "应用描述，可选", Trim: true, OmitEmpty: true, Bind: "desc"},
+			{Name: "icon-media-id", Usage: "图标文件 media_id（logoImg 格式）；不接受 http 地址；不传自动生成默认图标", Trim: true, OmitEmpty: true, Bind: "iconUrl"},
+			{Name: "request-id", Usage: "幂等键，建议传 UUID；同键同参数重试返回首次结果，参数变化拒绝", Trim: true, OmitEmpty: true, Bind: "requestId"},
+			liteappMCPIDFlag(),
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -232,83 +223,41 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				Examples: []string{"dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
 
 func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "update <appId>",
 		Short: "更新轻应用（仅创建者本人；不传=不修改，空串拒绝）",
 		Long: "更新指定轻应用的基础信息与 OAuth 回调地址。字段语义：不传=null=不修改；" +
 			"传空串会被拒绝（防误清空）。redirectUris 传入即整体覆盖登记。仅创建者本人可更新。",
 		Example: "  dws dev liteapp update 5005426001 --desc 新描述\n" +
 			"  dws dev liteapp update 5005426001 --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes",
-		Args:              cobra.ExactArgs(1),
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			params := map[string]any{"appId": appID}
-			for _, pair := range []struct {
-				flag, key string
-			}{{"app-name", "appName"}, {"homepage-url", "homepageUrl"}, {"pc-url", "pcUrl"}, {"desc", "desc"}, {"icon-media-id", "iconUrl"}} {
-				value, _ := cmd.Flags().GetString(pair.flag)
-				if strings.TrimSpace(value) != "" {
-					params[pair.key] = value
-				}
-			}
-			if redirectURIs, _ := cmd.Flags().GetString("redirect-uris"); strings.TrimSpace(redirectURIs) != "" {
-				uris := []string{}
-				for _, uri := range strings.Split(redirectURIs, ",") {
-					if trimmed := strings.TrimSpace(uri); trimmed != "" {
-						uris = append(uris, trimmed)
-					}
-				}
-				if len(uris) > 0 {
-					params["redirectUris"] = uris
-				}
-			}
-			if len(params) == 1 {
-				return apperrors.NewValidation("至少提供一个要修改的字段；不修改请勿调用")
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappUpdateTool, params, true)
-		},
-	}
-	cmd.Flags().String("app-name", "", "应用名称；不传=不修改，空串拒绝")
-	cmd.Flags().String("homepage-url", "", "移动端首页地址；不传=不修改，空串拒绝")
-	cmd.Flags().String("pc-url", "", "PC 端首页地址；不传=不修改，空串拒绝")
-	cmd.Flags().String("desc", "", "应用描述；不传=不修改，空串拒绝")
-	cmd.Flags().String("icon-media-id", "", "图标文件 media_id；不接受 http 地址；不传=不修改")
-	cmd.Flags().String("redirect-uris", "", "OAuth 回调地址列表，逗号分隔；不传=不修改，传入=整体覆盖")
-	liteappMCPIDFlag(cmd)
-	cli.AnnotateRuntimePositionals(cmd, contract.RuntimeSchemaPositional{
-		Name: "app_id", Type: "integer", Description: "轻应用 ID（microAppId）", Required: true, Index: 0,
-	})
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "medium",
 			Confirmation: "user_required", Idempotency: "idempotent",
 		},
-		Validate: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			fields := 0
-			for _, flag := range []string{"app-name", "homepage-url", "pc-url", "desc", "icon-media-id", "redirect-uris"} {
-				if v, _ := cmd.Flags().GetString(flag); strings.TrimSpace(v) != "" {
-					fields++
-				}
-			}
-			if fields == 0 {
-				return apperrors.NewValidation("至少提供一个要修改的字段；不修改请勿调用")
-			}
-			return nil
+		Tool: liteappUpdateTool,
+		Positionals: []helpers.LeafPositional{
+			liteappAppIDPositional(),
 		},
+		Flags: []helpers.LeafFlag{
+			{Name: "app-name", Usage: "应用名称；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "appName"},
+			{Name: "homepage-url", Usage: "移动端首页地址；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "homepageUrl"},
+			{Name: "pc-url", Usage: "PC 端首页地址；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "pcUrl"},
+			{Name: "desc", Usage: "应用描述；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "desc"},
+			{Name: "icon-media-id", Usage: "图标文件 media_id；不接受 http 地址；不传=不修改", Trim: true, OmitEmpty: true, Bind: "iconUrl"},
+			{Name: "redirect-uris", Usage: "OAuth 回调地址列表，逗号分隔；不传=不修改，传入=整体覆盖", Trim: true, OmitEmpty: true, Bind: "redirectUris",
+				Transform: splitRedirectURIs},
+			liteappMCPIDFlag(),
+		},
+		Constraints: []helpers.LeafConstraint{{
+			Kind:        helpers.LeafAtLeastOne,
+			Flags:       []string{"app-name", "homepage-url", "pc-url", "desc", "icon-media-id", "redirect-uris"},
+			Description: "至少提供一个要修改的字段；不修改请勿调用",
+		}},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
 				ProductID: "dev", Name: "update_lite_app", CanonicalPath: "dev.update_lite_app",
@@ -326,44 +275,27 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				Examples:     []string{"dws dev liteapp update 5005426001 --desc 新描述"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
 
 func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "delete <appId>",
 		Short: "删除轻应用（24 小时软删，仅创建者或组织管理员）",
 		Long: "删除指定轻应用。24 小时软删，软删期内仍占用配额、不可恢复，返回软删截止时间 timeToDel。" +
 			"仅创建者或组织管理员可删除。",
-		Example:           "  dws dev liteapp delete 5005426001",
-		Args:              cobra.ExactArgs(1),
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappDeleteTool,
-				map[string]any{"appId": appID}, true)
-		},
-	}
-	liteappMCPIDFlag(cmd)
-	cli.AnnotateRuntimePositionals(cmd, contract.RuntimeSchemaPositional{
-		Name: "app_id", Type: "integer", Description: "轻应用 ID（microAppId）", Required: true, Index: 0,
-	})
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Example: "  dws dev liteapp delete 5005426001",
 		Safety: contract.SafetySpec{
 			Effect: "write", Risk: "high",
 			Confirmation: "user_required", Idempotency: "idempotent",
 		},
-		Validate: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			return nil
+		Tool: liteappDeleteTool,
+		Positionals: []helpers.LeafPositional{
+			liteappAppIDPositional(),
+		},
+		Flags: []helpers.LeafFlag{
+			liteappMCPIDFlag(),
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -382,38 +314,26 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				Examples:     []string{"dws dev liteapp delete 5005426001"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
 
 func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "list",
 		Short: "查询当前用户在本组织创建的轻应用列表",
 		Long: "查询当前用户在本组织创建的轻应用列表，按创建时间倒序，不含任何 secret 字段。" +
 			"软删期应用仍计入列表与配额，条目带 timeToDel。",
-		Example:           "  dws dev liteapp list --size 20 --format json",
-		Args:              cobra.NoArgs,
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, _ []string) error {
-			params := map[string]any{}
-			if size, _ := cmd.Flags().GetInt("size"); size > 0 {
-				params["size"] = size
-			}
-			if offset, _ := cmd.Flags().GetInt("offset"); offset > 0 {
-				params["offset"] = offset
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappListTool, params, false)
-		},
-	}
-	cmd.Flags().Int("size", 0, "每页数量，默认 20，上限 50")
-	cmd.Flags().Int("offset", 0, "偏移量，从 0 开始")
-	liteappMCPIDFlag(cmd)
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Example: "  dws dev liteapp list --size 20 --format json",
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Tool: liteappListTool,
+		Flags: []helpers.LeafFlag{
+			{Name: "size", Kind: helpers.LeafInt, Usage: "每页数量，默认 20，上限 50", Bind: "size"},
+			{Name: "offset", Kind: helpers.LeafInt, Usage: "偏移量，从 0 开始", Bind: "offset"},
+			liteappMCPIDFlag(),
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -432,37 +352,27 @@ func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransp
 				Examples:     []string{"dws dev liteapp list --size 20 --format json"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
 
 func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "detail <appId>",
 		Short: "查询轻应用详情（无 secret 明文）",
 		Long: "按 appId 查询轻应用详情。逐项鉴权，无权限或不存在统一返回 E_NOT_FOUND（防探测）。" +
 			"返回基础信息、appKey、secret 掩码、redirectUris、unifiedAppId 等；无 secret 明文。",
-		Example:           "  dws dev liteapp detail 5005426001 --format json",
-		Args:              cobra.ExactArgs(1),
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappDetailTool,
-				map[string]any{"appId": appID}, false)
-		},
-	}
-	liteappMCPIDFlag(cmd)
-	cli.AnnotateRuntimePositionals(cmd, contract.RuntimeSchemaPositional{
-		Name: "app_id", Type: "integer", Description: "轻应用 ID（microAppId）", Required: true, Index: 0,
-	})
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Example: "  dws dev liteapp detail 5005426001 --format json",
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "low",
 			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Tool: liteappDetailTool,
+		Positionals: []helpers.LeafPositional{
+			liteappAppIDPositional(),
+		},
+		Flags: []helpers.LeafFlag{
+			liteappMCPIDFlag(),
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -481,38 +391,28 @@ func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				Examples:     []string{"dws dev liteapp detail 5005426001 --format json"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
 
 func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	cmd := &cobra.Command{
+	return helpers.NewLeafCommand(helpers.LeafSpec{
 		Use:   "credential <appId>",
 		Short: "查询轻应用凭证（appKey + secret 明文，注意防泄露）",
 		Long: "查询轻应用 OAuth 凭证：appKey 明文 + secret 明文与掩码，可持续获取。" +
 			"secret 明文注意防泄露，不得写入日志、文档、邮件或代码仓库；" +
 			"重置能力不在本命令范围（需在开发者后台人工完成）。",
-		Example:           "  dws dev liteapp credential 5005426001 --format json",
-		Args:              cobra.ExactArgs(1),
-		DisableAutoGenTag: true,
-		RunE: func(cmd *cobra.Command, args []string) error {
-			appID, err := strconv.ParseInt(strings.TrimSpace(args[0]), 10, 64)
-			if err != nil || appID <= 0 {
-				return apperrors.NewValidation("appId 必须是正整数")
-			}
-			mcpID, _ := cmd.Flags().GetString("mcp-id")
-			return runLiteappTool(cmd, caller, factory, mcpID, liteappCredentialTool,
-				map[string]any{"appId": appID}, false)
-		},
-	}
-	liteappMCPIDFlag(cmd)
-	cli.AnnotateRuntimePositionals(cmd, contract.RuntimeSchemaPositional{
-		Name: "app_id", Type: "integer", Description: "轻应用 ID（microAppId）", Required: true, Index: 0,
-	})
-	helpers.DeclareLeafMetadata(cmd, helpers.LeafSpec{
+		Example: "  dws dev liteapp credential 5005426001 --format json",
 		Safety: contract.SafetySpec{
 			Effect: "read", Risk: "high",
 			Confirmation: "not_required", Idempotency: "idempotent",
+		},
+		Tool: liteappCredentialTool,
+		Positionals: []helpers.LeafPositional{
+			liteappAppIDPositional(),
+		},
+		Flags: []helpers.LeafFlag{
+			liteappMCPIDFlag(),
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
@@ -534,6 +434,6 @@ func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublished
 				Examples: []string{"dws dev liteapp credential 5005426001 --format json"},
 			},
 		},
+		Call: liteappCall(caller, factory),
 	})
-	return cmd
 }
