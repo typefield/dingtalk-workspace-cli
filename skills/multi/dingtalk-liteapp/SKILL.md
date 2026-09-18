@@ -13,8 +13,8 @@ metadata:
 
 轻应用 = 创建即发布挂工作台"我的"分组的快捷入口，附带 OAuth 凭证（appKey/secret）
 并同步注册统一应用（企业内部应用，返回 `unifiedAppId`）。底层调用已发布的
-`dingtalk-lite-app` MCP 服务，调用身份由系统上下文注入（corpId/userId），
-只能操作当前调用人创建的轻应用。
+「钉钉开放平台应用管理」MCP 服务（预发 mcpId=10357）下的六个轻应用 HSF 工具，
+调用身份由系统上下文注入（corpId/userId），只能操作当前调用人创建的轻应用。
 
 ## MUST DO
 
