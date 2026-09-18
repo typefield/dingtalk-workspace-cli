@@ -1,0 +1,36 @@
+name: Windows Test Package
+
+on:
+  push:
+    branches:
+      - test/win-amd64-safechat-ucrt-lib
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+      - name: Compile Windows test package
+        shell: bash
+        env:
+          DWS_PACKAGE_VERSION: 0.0.0-test
+          GITHUB_REPOSITORY_OWNER: ${{ github.repository_owner }}
+          GORELEASER_CURRENT_TAG: v0.0.0-test
+        run: ./scripts/release/run-goreleaser-cross.sh build --snapshot --clean --parallelism=2
+      - name: Upload Windows test packages
+        uses: actions/upload-artifact@v4
+        with:
+          name: windows-test-packages
+          path: |
+            dist/*windows*
+          retention-days: 7
+          if-no-files-found: error
