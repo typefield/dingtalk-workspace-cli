@@ -17,8 +17,10 @@
 package publishedmcp
 
 import (
+	"bytes"
 	"context"
 	"crypto/sha256"
+	"encoding/json"
 	"errors"
 	"fmt"
 
@@ -164,14 +166,18 @@ func (c *Client) InvokeValidated(ctx context.Context, endpoint, tool string, arg
 			apperrors.WithHint("先执行 dws mcp published tools <mcpId> --format json 核对服务返回的工具 Schema"),
 		)
 	}
-	if err := mcpschema.ValidateInputSchema(arguments, inputSchema); err != nil {
+	normalized, err := normalizeJSONArguments(arguments)
+	if err != nil {
+		return ValidatedInvocationResult{}, err
+	}
+	if err := mcpschema.ValidateInputSchema(normalized, inputSchema); err != nil {
 		return ValidatedInvocationResult{}, err
 	}
 	digest, err := digestInputSchema(inputSchema)
 	if err != nil {
 		return ValidatedInvocationResult{}, err
 	}
-	result, err := c.invokeTransport.CallTool(ctx, endpoint, tool, arguments)
+	result, err := c.invokeTransport.CallTool(ctx, endpoint, tool, normalized)
 	if err != nil {
 		return ValidatedInvocationResult{}, publishedMCPInvocationError(err)
 	}
@@ -180,6 +186,34 @@ func (c *Client) InvokeValidated(ctx context.Context, endpoint, tool string, arg
 		InputSchemaDigest:     digest,
 		Result:                result,
 	}, nil
+}
+
+// normalizeJSONArguments converts framework-assembled Go-native toolArgs
+// (e.g. []string from a Transform, int64 IDs) into their JSON-decoded wire
+// representation, so schema validation and the tools/call payload operate on
+// exactly the values that go on the wire. Numbers decode with UseNumber to
+// preserve integer precision (no float64 rounding of large IDs).
+func normalizeJSONArguments(arguments map[string]any) (map[string]any, error) {
+	if arguments == nil {
+		return nil, nil
+	}
+	raw, err := json.Marshal(arguments)
+	if err != nil {
+		return nil, apperrors.NewValidation(
+			fmt.Sprintf("toolArgs 序列化为 JSON 失败: %v", err),
+			apperrors.WithReason("published_mcp_tool_args_unserializable"),
+		)
+	}
+	decoder := json.NewDecoder(bytes.NewReader(raw))
+	decoder.UseNumber()
+	var normalized map[string]any
+	if err := decoder.Decode(&normalized); err != nil {
+		return nil, apperrors.NewValidation(
+			fmt.Sprintf("toolArgs JSON 解码失败: %v", err),
+			apperrors.WithReason("published_mcp_tool_args_unserializable"),
+		)
+	}
+	return normalized, nil
 }
 
 func publishedMCPInvocationError(err error) error {
