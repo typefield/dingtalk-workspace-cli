@@ -23,9 +23,8 @@ metadata:
 2. secret 明文会随 create 响应与 `credential` 子命令返回：注意防泄露，
    不得写入日志、文档、邮件、群聊或代码仓库。应用详情与列表永远只有掩码。
 3. 删除是 24 小时软删：软删期内仍占用配额、列表可见（条目带 `timeToDel`）、不可恢复。
-4. MCP 服务按 `serverName=dingtalk-lite-app` 自动解析；若报
-   `liteapp_service_not_resolved` / `endpoint_not_resolved`，用 `--mcp-id <市场 mcpId>`
-   显式指定（mcpId 可通过 `dws dev mcp service list --keyword dingtalk-lite-app` 查询）。
+4. 底层 MCP 服务默认固定为「钉钉开放平台应用管理」（预发 mcpId=10357），
+   一般无需指定；如需覆盖用 `--mcp-id <市场 mcpId>` 显式指定。
 
 ## 命令
 
@@ -64,8 +63,9 @@ dws liteapp delete <appId> --yes --format json
 
 ## 错误与边界
 
-- `liteapp_service_not_resolved` / `endpoint_not_resolved`：MCP 服务或端点未就绪，
-  用 `--mcp-id` 显式指定，不要反复重试。
+- `endpoint_not_resolved` / `published_mcp_tool_error`：网关端点或工具暂不可用，
+  先用 `dws mcp url get 10357` 验证端点，必要时用 `--mcp-id` 显式指定服务，
+  不要反复重试。
 - 权限点申请、版本发布、事件订阅不在本 Skill 范围；统一应用域工具见
   dingtalk-misc 的 `mcp published`（按 `unifiedAppId` 定位）。
 - 默认权限点（qyapi_base 等）创建时自动开通；更多权限点的申请能力待后续版本。

@@ -14,9 +14,6 @@
 package app
 
 import (
-	"context"
-	"encoding/json"
-	"fmt"
 	"strconv"
 	"strings"
 
@@ -31,10 +28,10 @@ import (
 )
 
 const (
-	liteappServerName     = "dingtalk-lite-app"
-	liteappMCPDevServerID = "mcpdev"
-	liteappMCPDevListTool = "mcp_service_list"
-	liteappCreateTool     = "create_lite_app"
+	// liteappDefaultMCPID 是轻应用六个工具所在的市场服务「钉钉开放平台应用管理」。
+	// 解析规则：显式 --mcp-id 最高优先级；未指定时固定回落到该服务。
+	liteappDefaultMCPID = "10357"
+	liteappCreateTool   = "create_lite_app"
 	liteappUpdateTool     = "update_lite_app"
 	liteappDeleteTool     = "delete_lite_app"
 	liteappListTool       = "list_lite_apps"
@@ -58,8 +55,8 @@ func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFac
 				"用户要更新/删除自己创建的轻应用，或查看轻应用列表、详情、凭证",
 			},
 			AvoidWhen: []string{
-				"统一应用域的权限点申请、版本发布、事件订阅走 mcp published（市场 mcpId 10718）的对应工具",
-				"企业内部应用的非轻应用管理走 mcp published 的开放平台应用管理工具",
+				"权限点申请、版本发布、事件订阅等统一应用域能力走 dingtalk-misc 的 mcp published 工具（按 unifiedAppId 定位）",
+				"非轻应用的企业内部应用管理走 dingtalk-misc 的开放平台应用管理工具；liteapp 工具只能操作轻应用",
 			},
 		},
 	})
@@ -91,62 +88,12 @@ func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFac
 	return group
 }
 
-// resolveLiteappMCPID 返回显式指定的 mcpId；未指定时按 serverName 在 mcpdev 服务列表中匹配。
-func resolveLiteappMCPID(ctx context.Context, caller edition.ToolCaller, explicit string) (string, error) {
+// effectiveLiteappMCPID：显式 --mcp-id 最高优先级；未指定时默认使用开放平台应用管理（10357）。
+func effectiveLiteappMCPID(explicit string) string {
 	if trimmed := strings.TrimSpace(explicit); trimmed != "" {
-		return trimmed, nil
+		return trimmed
 	}
-	if caller == nil {
-		return "", fmt.Errorf("MCP tool caller is not configured")
-	}
-	result, err := caller.CallTool(ctx, liteappMCPDevServerID, liteappMCPDevListTool, map[string]any{
-		"keyword": liteappServerName,
-	})
-	if err != nil {
-		return "", fmt.Errorf("按 serverName=%s 解析轻应用 MCP 服务: %w", liteappServerName, err)
-	}
-	if result == nil {
-		return "", fmt.Errorf("轻应用 MCP 服务解析返回空结果")
-	}
-	matched := ""
-	for _, block := range result.Content {
-		if block.Type != "text" || strings.TrimSpace(block.Text) == "" {
-			continue
-		}
-		var payload struct {
-			Data struct {
-				Services []struct {
-					MCPID      any     `json:"mcpId"`
-					ServerName *string `json:"serverName"`
-				} `json:"services"`
-			} `json:"data"`
-		}
-		if err := json.Unmarshal([]byte(block.Text), &payload); err != nil {
-			continue
-		}
-		for _, service := range payload.Data.Services {
-			if service.ServerName == nil || *service.ServerName != liteappServerName {
-				continue
-			}
-			switch value := service.MCPID.(type) {
-			case string:
-				matched = value
-			case float64:
-				matched = strconv.FormatFloat(value, 'f', -1, 64)
-			}
-			if matched != "" {
-				return matched, nil
-			}
-		}
-	}
-	if matched == "" {
-		return "", apperrors.NewValidation(
-			fmt.Sprintf("未找到 serverName=%s 的轻应用 MCP 服务，可用 --mcp-id 显式指定", liteappServerName),
-			apperrors.WithReason("liteapp_service_not_resolved"),
-			apperrors.WithHint("先执行 dws dev mcp service list 确认服务存在，或用 --mcp-id 指定市场 mcpId"),
-		)
-	}
-	return matched, nil
+	return liteappDefaultMCPID
 }
 
 // runLiteappTool 是六个子命令共享的执行路径：dry-run 预演 / 确认门禁 / endpoint 解析 / 已发布工具调用。
@@ -160,6 +107,7 @@ func runLiteappTool(
 	mutating bool,
 ) error {
 	// 写操作的 --yes 门禁由 DeclareLeafMetadata 的 ConfirmSafety 统一执行（见各叶 Validate）
+	resolved := effectiveLiteappMCPID(mcpID)
 	dryRun := corecmd.BoolFlag(cmd, "dry-run")
 	if dryRun {
 		payload := map[string]any{
@@ -167,7 +115,7 @@ func runLiteappTool(
 			"dry_run":   true,
 			"executed":  false,
 			"product":   "liteapp",
-			"mcpId":     mcpID,
+			"mcpId":     resolved,
 			"tool":      tool,
 			"arguments": params,
 		}
@@ -181,10 +129,6 @@ func runLiteappTool(
 		return err
 	}
 	defer cancel()
-	resolved, err := resolveLiteappMCPID(ctx, mcpPublishedCallerWithDeadline(caller, ctx), mcpID)
-	if err != nil {
-		return err
-	}
 	endpoint, err := resolvePublishedMCPEndpoint(ctx, mcpPublishedCallerWithDeadline(caller, ctx), resolved)
 	if err != nil {
 		return err
@@ -217,7 +161,7 @@ func runLiteappTool(
 }
 
 func liteappMCPIDFlag(cmd *cobra.Command) {
-	cmd.Flags().String("mcp-id", "", "轻应用 MCP 市场服务 ID；不传时按 serverName=dingtalk-lite-app 自动解析")
+	cmd.Flags().String("mcp-id", "", "轻应用 MCP 市场服务 ID；默认 10357（钉钉开放平台应用管理），一般无需指定")
 }
 
 func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
@@ -293,7 +237,7 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			DryRun:      &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewInvocation, RemoteReads: false},
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName; the remote tool's effect cannot be statically bound.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357); the remote tool's effect cannot be statically bound.",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "经用户确认后创建轻应用，返回 appId/appKey/secret/unifiedAppId",
@@ -390,7 +334,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Description: "经确认后更新创建者本人的轻应用基础信息与 OAuth 回调地址",
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName; the remote tool's effect cannot be statically bound.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357); the remote tool's effect cannot be statically bound.",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "经用户确认后更新创建者本人的轻应用",
@@ -446,7 +390,7 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Description: "经确认后软删创建者本人或组织管理员的轻应用，返回软删截止时间",
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName; the remote tool's effect cannot be statically bound.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357); the remote tool's effect cannot be statically bound.",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "经用户确认后软删轻应用（24 小时后物理删除）",
@@ -496,7 +440,7 @@ func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransp
 			Description: "查询当前用户在本组织创建的轻应用列表（不含 secret 字段）",
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357).",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询当前用户在本组织创建的轻应用列表",
@@ -545,7 +489,7 @@ func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Description: "按 appId 查询轻应用详情（无 secret 明文）",
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357).",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询单个轻应用的详情与凭证掩码",
@@ -595,7 +539,7 @@ func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublished
 			Description: "查询轻应用 OAuth 凭证（appKey 明文 + secret 明文与掩码，可持续获取）",
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
-				Reason: "Delegates to the published lite-app MCP service resolved by serverName.",
+				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357).",
 			},
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询轻应用的 OAuth 凭证（含 secret 明文，注意防泄露）",

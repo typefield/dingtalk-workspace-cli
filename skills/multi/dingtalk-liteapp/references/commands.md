@@ -80,5 +80,5 @@ dws liteapp delete <appId> --yes
 底层调用市场服务「钉钉开放平台应用管理」（预发 mcpId=10357）下的
 `create_lite_app / update_lite_app / delete_lite_app / list_lite_apps /
 get_lite_app_detail / get_lite_app_credentials` 六个 HSF 工具。
-mcpId 可用 `dws dev mcp service list --keyword 开放平台应用管理` 查询，
-或对 `dws liteapp` 系列命令传 `--mcp-id` 显式指定。
+mcpId 默认 10357（钉钉开放平台应用管理），一般无需指定；
+如需覆盖可对 `dws liteapp` 系列命令传 `--mcp-id` 显式指定。

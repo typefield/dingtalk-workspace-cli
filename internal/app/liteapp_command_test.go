@@ -26,27 +26,25 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// liteappTestCaller 记录 mcpdev 侧调用，并按 toolName 返回预置结果。
+// liteappTestCaller 记录 mcp-meta 端点解析调用，并返回预置接入地址。
 type liteappTestCaller struct {
-	mu        sync.Mutex
-	listCalls int
-	result    *edition.ToolResult
-	err       error
+	mu       sync.Mutex
+	metaArgs map[string]any
+	result   *edition.ToolResult
+	err      error
 }
 
-func (c *liteappTestCaller) CallTool(_ context.Context, productID, toolName string, _ map[string]any) (*edition.ToolResult, error) {
+func (c *liteappTestCaller) CallTool(_ context.Context, productID, toolName string, args map[string]any) (*edition.ToolResult, error) {
 	c.mu.Lock()
 	defer c.mu.Unlock()
-	if productID == liteappMCPDevServerID && toolName == liteappMCPDevListTool {
-		c.listCalls++
+	if productID == mcpMetaServerID && toolName == mcpMetaURLTool {
+		c.metaArgs = args
+		return &edition.ToolResult{Content: []edition.ContentBlock{
+			{Type: "text", Text: `{"mcpURL":"https://pre-mcp-gw.example.com/mcp/10357"}`},
+		}}, nil
 	}
 	if c.err != nil {
 		return nil, c.err
-	}
-	if productID == mcpMetaServerID {
-		return &edition.ToolResult{Content: []edition.ContentBlock{
-			{Type: "text", Text: `{"mcpURL":"https://pre-mcp-gw.example.com/mcp/10718"}`},
-		}}, nil
 	}
 	return c.result, nil
 }
@@ -81,19 +79,6 @@ func (t *liteappTestTransport) InvokeValidated(_ context.Context, endpoint, tool
 	}, nil
 }
 
-const liteappTestServiceListResponse = `{"ok":true,"data":{"services":[
-	{"mcpId":9999,"serverName":null},
-	{"mcpId":10718,"serverName":"dingtalk-lite-app"}
-]}}`
-
-func liteappTestCallerWithServiceList() *liteappTestCaller {
-	return &liteappTestCaller{
-		result: &edition.ToolResult{Content: []edition.ContentBlock{
-			{Type: "text", Text: liteappTestServiceListResponse},
-		}},
-	}
-}
-
 func executeLiteappCommand(t *testing.T, caller edition.ToolCaller, factory mcpPublishedTransportFactory, args ...string) (string, error) {
 	t.Helper()
 	root := &cobra.Command{Use: "dws", SilenceErrors: true, SilenceUsage: true}
@@ -107,8 +92,8 @@ func executeLiteappCommand(t *testing.T, caller edition.ToolCaller, factory mcpP
 	return out.String(), err
 }
 
-func TestLiteappCreateDryRunDoesNotResolveOrCall(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
+func TestLiteappCreateDryRunDoesNotTouchNetwork(t *testing.T) {
+	caller := &liteappTestCaller{}
 	factory := func(context.Context) (mcpPublishedTransport, error) {
 		t.Fatal("factory must not be called during dry-run")
 		return nil, nil
@@ -117,8 +102,8 @@ func TestLiteappCreateDryRunDoesNotResolveOrCall(t *testing.T) {
 	if err != nil {
 		t.Fatalf("execute create dry-run: %v", err)
 	}
-	if caller.listCalls != 0 {
-		t.Fatalf("mcpdev service list must not be called during dry-run, got %d calls", caller.listCalls)
+	if caller.metaArgs != nil {
+		t.Fatalf("mcp-meta must not be called during dry-run, got %#v", caller.metaArgs)
 	}
 	var payload map[string]any
 	if err := json.Unmarshal([]byte(out), &payload); err != nil {
@@ -127,6 +112,9 @@ func TestLiteappCreateDryRunDoesNotResolveOrCall(t *testing.T) {
 	if payload["dry_run"] != true || payload["executed"] != false {
 		t.Fatalf("payload = %#v, want dry-run invocation preview", payload)
 	}
+	if payload["mcpId"] != liteappDefaultMCPID {
+		t.Fatalf("mcpId = %#v, want default %s", payload["mcpId"], liteappDefaultMCPID)
+	}
 	arguments, _ := payload["arguments"].(map[string]any)
 	if arguments["appName"] != "周报助手" || arguments["homepageUrl"] != "https://example.com" || arguments["requestId"] != "req-1" {
 		t.Fatalf("arguments = %#v", arguments)
@@ -134,16 +122,15 @@ func TestLiteappCreateDryRunDoesNotResolveOrCall(t *testing.T) {
 }
 
 func TestLiteappCreateRequiresYesForRealRun(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
-	_, err := executeLiteappCommand(t, caller, nil, "liteapp", "create",
+	_, err := executeLiteappCommand(t, &liteappTestCaller{}, nil, "liteapp", "create",
 		"--name", "周报助手", "--homepage-url", "https://example.com", "--format", "json")
 	if err == nil || !strings.Contains(err.Error(), "--yes") {
 		t.Fatalf("error = %v, want confirmation_required for mutating run", err)
 	}
 }
 
-func TestLiteappCreateResolvesServerNameAndInvokes(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
+func TestLiteappCreateDefaultsToAppManagementMCP(t *testing.T) {
+	caller := &liteappTestCaller{}
 	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
 	out, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
@@ -153,8 +140,8 @@ func TestLiteappCreateResolvesServerNameAndInvokes(t *testing.T) {
 	if err != nil {
 		t.Fatalf("execute create: %v", err)
 	}
-	if caller.listCalls != 1 {
-		t.Fatalf("mcpdev service list calls = %d, want 1", caller.listCalls)
+	if caller.metaArgs["mcpId"] != liteappDefaultMCPID {
+		t.Fatalf("mcp-meta mcpId = %#v, want default %s", caller.metaArgs["mcpId"], liteappDefaultMCPID)
 	}
 	if transport.tool != liteappCreateTool {
 		t.Fatalf("tool = %q, want %q", transport.tool, liteappCreateTool)
@@ -166,8 +153,8 @@ func TestLiteappCreateResolvesServerNameAndInvokes(t *testing.T) {
 	if err := json.Unmarshal([]byte(out), &payload); err != nil {
 		t.Fatalf("output is not JSON: %v\n%s", err, out)
 	}
-	if payload["mcpId"] != "10718" {
-		t.Fatalf("mcpId = %#v, want resolved 10718", payload["mcpId"])
+	if payload["mcpId"] != liteappDefaultMCPID {
+		t.Fatalf("mcpId = %#v, want default %s", payload["mcpId"], liteappDefaultMCPID)
 	}
 	if payload["inputSchemaValidation"] != "fresh_core_subset_snapshot" {
 		t.Fatalf("inputSchemaValidation = %#v", payload["inputSchemaValidation"])
@@ -177,8 +164,50 @@ func TestLiteappCreateResolvesServerNameAndInvokes(t *testing.T) {
 	}
 }
 
+func TestLiteappExplicitMCPIDOverridesDefault(t *testing.T) {
+	caller := &liteappTestCaller{}
+	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
+	out, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
+		return transport, nil
+	}, "liteapp", "list", "--mcp-id", "9999", "--format", "json")
+	if err != nil {
+		t.Fatalf("execute list: %v", err)
+	}
+	if caller.metaArgs["mcpId"] != "9999" {
+		t.Fatalf("mcp-meta mcpId = %#v, want explicit 9999", caller.metaArgs["mcpId"])
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("output is not JSON: %v\n%s", err, out)
+	}
+	if payload["mcpId"] != "9999" {
+		t.Fatalf("mcpId = %#v, want explicit 9999", payload["mcpId"])
+	}
+	if transport.tool != liteappListTool {
+		t.Fatalf("tool = %q, want %q", transport.tool, liteappListTool)
+	}
+}
+
+func TestLiteappBlankMCPIDFallsBackToDefault(t *testing.T) {
+	caller := &liteappTestCaller{}
+	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
+	out, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
+		return transport, nil
+	}, "liteapp", "list", "--mcp-id", "  ", "--format", "json")
+	if err != nil {
+		t.Fatalf("execute list: %v", err)
+	}
+	var payload map[string]any
+	if err := json.Unmarshal([]byte(out), &payload); err != nil {
+		t.Fatalf("output is not JSON: %v\n%s", err, out)
+	}
+	if payload["mcpId"] != liteappDefaultMCPID {
+		t.Fatalf("mcpId = %#v, want default %s for blank flag", payload["mcpId"], liteappDefaultMCPID)
+	}
+}
+
 func TestLiteappCreateRejectsBlankRequiredFlags(t *testing.T) {
-	_, err := executeLiteappCommand(t, liteappTestCallerWithServiceList(), nil,
+	_, err := executeLiteappCommand(t, &liteappTestCaller{}, nil,
 		"liteapp", "create", "--name", "周报助手", "--yes")
 	if err == nil || !strings.Contains(err.Error(), "--homepage-url 不能为空") {
 		t.Fatalf("error = %v, want blank homepage-url error", err)
@@ -186,7 +215,7 @@ func TestLiteappCreateRejectsBlankRequiredFlags(t *testing.T) {
 }
 
 func TestLiteappUpdateRequiresAtLeastOneField(t *testing.T) {
-	_, err := executeLiteappCommand(t, liteappTestCallerWithServiceList(), nil,
+	_, err := executeLiteappCommand(t, &liteappTestCaller{}, nil,
 		"liteapp", "update", "5005426001", "--yes")
 	if err == nil || !strings.Contains(err.Error(), "至少提供一个要修改的字段") {
 		t.Fatalf("error = %v, want at-least-one-field error", err)
@@ -194,7 +223,7 @@ func TestLiteappUpdateRequiresAtLeastOneField(t *testing.T) {
 }
 
 func TestLiteappUpdateParsesRedirectUrisAndInvokes(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
+	caller := &liteappTestCaller{}
 	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
 	_, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
@@ -216,7 +245,7 @@ func TestLiteappUpdateParsesRedirectUrisAndInvokes(t *testing.T) {
 }
 
 func TestLiteappDeleteInvokesWithParsedAppID(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
+	caller := &liteappTestCaller{}
 	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
 	if _, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
@@ -232,7 +261,7 @@ func TestLiteappDeleteInvokesWithParsedAppID(t *testing.T) {
 }
 
 func TestLiteappListAndDetailAreReadOpsWithoutYes(t *testing.T) {
-	caller := liteappTestCallerWithServiceList()
+	caller := &liteappTestCaller{}
 	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
 	if _, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
@@ -249,17 +278,5 @@ func TestLiteappListAndDetailAreReadOpsWithoutYes(t *testing.T) {
 	}
 	if transport.tool != liteappDetailTool {
 		t.Fatalf("tool = %q, want %q", transport.tool, liteappDetailTool)
-	}
-}
-
-func TestLiteappUnresolvableServerNameHintsExplicitMcpID(t *testing.T) {
-	empty := &liteappTestCaller{
-		result: &edition.ToolResult{Content: []edition.ContentBlock{
-			{Type: "text", Text: `{"ok":true,"data":{"services":[]}}`},
-		}},
-	}
-	_, err := executeLiteappCommand(t, empty, nil, "liteapp", "list", "--format", "json")
-	if err == nil || !strings.Contains(err.Error(), "--mcp-id") {
-		t.Fatalf("error = %v, want unresolved serverName hint", err)
 	}
 }
