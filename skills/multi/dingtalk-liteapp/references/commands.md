@@ -12,9 +12,12 @@ dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
 
 - `--name` / `--homepage-url` 必填；`--pc-url` 缺省取移动端首页。
 - `--icon-media-id` 收 media_id（logoImg 格式），不接受 http 地址；不传自动生成默认图标。
-- `--request-id` 幂等键：同键同参数重试返回首次结果（含原 appId），参数变化拒绝。
+- `--request-id` 幂等键：同键同参数重试返回首次结果（含原 appId、appKey、sdkSnippet，
+  不重复下发 secret 明文），参数变化拒绝；首次请求仍在处理中返回 `E_IDEMPOTENT_PROCESSING`，
+  应持同一 requestId 稍后重试而非换键。
 - `result`：appId、appKey、secret（明文）、secretMask、unifiedAppId、sdkSnippet、
-  status=PUBLISHED、requestId、warning。
+  status=PUBLISHED、requestId、warning。凭证生成降级时 appKey/secret/secretMask/sdkSnippet
+  为 null，warning 给出提示。
 
 ## list
 
@@ -73,6 +76,7 @@ dws dev liteapp delete <appId> --yes
 | E_CONTENT_REJECTED | 内容安全拒绝 | 修改名称/描述 |
 | E_USER_QUOTA_EXCEEDED | 配额满（50/组织/用户） | 删除不再使用的轻应用 |
 | E_IDEMPOTENT_CONFLICT | 同 requestId 参数变化 | 更换 requestId |
+| E_IDEMPOTENT_PROCESSING | 同 requestId 首次请求仍在处理中 | 用同一 requestId 稍后重试，不要换键 |
 | E_DEPENDENCY_FAILED | 下游依赖失败 | 稍后重试 |
 
 ## MCP 服务
