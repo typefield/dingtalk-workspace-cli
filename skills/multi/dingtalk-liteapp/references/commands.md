@@ -1,4 +1,4 @@
-# 轻应用命令参考（dws liteapp）
+# 轻应用命令参考（dws dev liteapp）
 
 六个子命令对应轻应用全生命周期。调用身份由系统上下文注入（corpId/userId），
 仅能操作当前调用人创建的轻应用。写操作需要 `--yes` 确认，首次请求先 `--dry-run` 预览。
@@ -6,7 +6,7 @@
 ## create
 
 ```bash
-dws liteapp create --name 周报助手 --homepage-url https://example.com \
+dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   --pc-url https://example.com/pc --desc 描述 --request-id 6f1c2b3a-uuid --yes
 ```
 
@@ -19,7 +19,7 @@ dws liteapp create --name 周报助手 --homepage-url https://example.com \
 ## list
 
 ```bash
-dws liteapp list --size 20 --offset 0 --format json
+dws dev liteapp list --size 20 --offset 0 --format json
 ```
 
 - `total` 与配额口径一致（软删期仍计入）；`apps[]` 按 createdAt 倒序，软删期条目带 `timeToDel`。
@@ -28,7 +28,7 @@ dws liteapp list --size 20 --offset 0 --format json
 ## detail
 
 ```bash
-dws liteapp detail <appId> --format json
+dws dev liteapp detail <appId> --format json
 ```
 
 返回基础信息、appKey、secretMask、redirectUris、unifiedAppId、状态；无 secret 明文。
@@ -37,8 +37,8 @@ dws liteapp detail <appId> --format json
 ## update
 
 ```bash
-dws liteapp update <appId> --desc 新描述 --yes
-dws liteapp update <appId> --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes
+dws dev liteapp update <appId> --desc 新描述 --yes
+dws dev liteapp update <appId> --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes
 ```
 
 - 仅创建者本人；字段不传=不修改，传空串拒绝（防误清空）。
@@ -47,7 +47,7 @@ dws liteapp update <appId> --redirect-uris https://a.example.com/cb,https://b.ex
 ## credential
 
 ```bash
-dws liteapp credential <appId> --format json
+dws dev liteapp credential <appId> --format json
 ```
 
 - 返回 appKey 明文 + secret 明文与掩码，可持续获取。
@@ -57,7 +57,7 @@ dws liteapp credential <appId> --format json
 ## delete
 
 ```bash
-dws liteapp delete <appId> --yes
+dws dev liteapp delete <appId> --yes
 ```
 
 - 仅创建者或组织管理员；24 小时软删，期内仍占配额、不可恢复。
@@ -81,4 +81,4 @@ dws liteapp delete <appId> --yes
 `create_lite_app / update_lite_app / delete_lite_app / list_lite_apps /
 get_lite_app_detail / get_lite_app_credentials` 六个 HSF 工具。
 mcpId 默认 10357（钉钉开放平台应用管理），一般无需指定；
-如需覆盖可对 `dws liteapp` 系列命令传 `--mcp-id` 显式指定。
+如需覆盖可对 `dws dev liteapp` 系列命令传 `--mcp-id` 显式指定。

@@ -1147,7 +1147,6 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 		navigationGroup(usage.NewShortcutCommand()),
 		schemaCmd,
 		navigationGroup(mcpCmd),
-		navigationGroup(newLiteappGroup(patCaller, newAuthenticatedMCPPublishedTransportFactory(runner, flags))),
 	}
 	root.AddCommand(utilityCommands...)
 
@@ -1158,6 +1157,16 @@ func newRootCommandWithMode(rootCtx context.Context, engine *pipeline.Engine, lo
 		root.AddCommand(mountLegacyPublicCommands(runner, loadRuntimeExtensions)...)
 	} else {
 		root.AddCommand(newLegacyPublicCommands(runner, patCaller, loadRuntimeExtensions)...)
+	}
+
+	// liteapp 组挂在 dev（应用开发）之下，与 app 同级。legacy 树由 helpers 的
+	// handlers 构建，感知不到 caller/transport factory，所以统一在挂载后注入；
+	// 声明态（schema 汇编）与运行态共用这一入口。
+	for _, cmd := range root.Commands() {
+		if cmd.Name() == "dev" {
+			cmd.AddCommand(newLiteappGroup(patCaller, newAuthenticatedMCPPublishedTransportFactory(runner, flags)))
+			break
+		}
 	}
 
 	// PAT authorization commands (open-source core)
@@ -1410,7 +1419,7 @@ var builtinCommandNames = map[string]bool{
 	"auth": true, "api": true, "audit": true, "cache": true, "config": true,
 	"doctor": true, "event": true, "completion": true, "skill": true,
 	"plugin": true, "profile": true, "recovery": true, "version": true, "help": true,
-	"schema": true, "mcp": true, "upgrade": true, "liteapp": true,
+	"schema": true, "mcp": true, "upgrade": true,
 }
 
 // commandNameSet returns a new set containing every name in base plus extras.

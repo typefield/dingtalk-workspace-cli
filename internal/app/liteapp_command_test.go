@@ -92,6 +92,27 @@ func executeLiteappCommand(t *testing.T, caller edition.ToolCaller, factory mcpP
 	return out.String(), err
 }
 
+func TestRootRegistersLiteappUnderDev(t *testing.T) {
+	root := NewRootCommand(t.Context())
+	dev, _, err := root.Find([]string{"dev"})
+	if err != nil || dev == nil || dev.Name() != "dev" {
+		t.Fatalf("find dev: %v", err)
+	}
+	cmd, _, err := root.Find([]string{"dev", "liteapp", "create"})
+	if err != nil {
+		t.Fatalf("find dev liteapp create: %v", err)
+	}
+	if got := cmd.CommandPath(); got != "dws dev liteapp create" {
+		t.Fatalf("command path = %q, want %q", got, "dws dev liteapp create")
+	}
+	if _, _, err := root.Find([]string{"liteapp"}); err == nil {
+		top, _, _ := root.Find([]string{"liteapp"})
+		if top != nil && top.Parent() == root {
+			t.Fatal("liteapp must not be a top-level command")
+		}
+	}
+}
+
 func TestLiteappCreateDryRunDoesNotTouchNetwork(t *testing.T) {
 	caller := &liteappTestCaller{}
 	factory := func(context.Context) (mcpPublishedTransport, error) {

@@ -1,6 +1,6 @@
 ---
 name: dingtalk-liteapp
-description: 钉钉轻应用（快捷应用）：创建、更新、删除、列表、详情、凭证查询，创建即发布挂工作台"我的"分组并注册统一应用。Use when 用户要创建一个能直接上工作台的轻应用/快捷入口、给应用配 OAuth 回调地址、查 appKey/secret 凭证、管理自己创建的轻应用配额。涉及开放平台权限点申请、版本发布、事件订阅等统一应用能力时走 dingtalk-misc 的 mcp published 工具；普通企业内部应用管理走 dingtalk-misc。命令前缀：dws liteapp。
+description: 钉钉轻应用（快捷应用）：创建、更新、删除、列表、详情、凭证查询，创建即发布挂工作台"我的"分组并注册统一应用。Use when 用户要创建一个能直接上工作台的轻应用/快捷入口、给应用配 OAuth 回调地址、查 appKey/secret 凭证、管理自己创建的轻应用配额。涉及开放平台权限点申请、版本发布、事件订阅等统一应用能力时走 dingtalk-misc 的 mcp published 工具；普通企业内部应用管理走 dingtalk-misc。命令前缀：dws dev liteapp（应用开发组，与 dev app 同级）。
 metadata:
   cli_version: ">=1.0.62"
   category: product
@@ -12,7 +12,8 @@ metadata:
 # 钉钉轻应用 Skill
 
 轻应用 = 创建即发布挂工作台"我的"分组的快捷入口，附带 OAuth 凭证（appKey/secret）
-并同步注册统一应用（企业内部应用，返回 `unifiedAppId`）。底层调用已发布的
+并同步注册统一应用（企业内部应用，返回 `unifiedAppId`）。命令挂在「应用开发」
+`dws dev` 之下（`dws dev liteapp`，与 `dev app` 同级）。底层调用已发布的
 「钉钉开放平台应用管理」MCP 服务（预发 mcpId=10357）下的六个轻应用 HSF 工具，
 调用身份由系统上下文注入（corpId/userId），只能操作当前调用人创建的轻应用。
 
@@ -30,25 +31,25 @@ metadata:
 
 ```bash
 # 创建（appName/homepageUrl 必填；requestId 幂等键建议传 UUID）
-dws liteapp create --name 周报助手 --homepage-url https://example.com \
+dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   --desc 可选描述 --request-id $(uuidgen) --dry-run --format json
-dws liteapp create --name 周报助手 --homepage-url https://example.com \
+dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   --request-id $(uuidgen) --yes --format json
 
 # 列表 / 详情（无 secret 明文）
-dws liteapp list --size 20 --format json
-dws liteapp detail <appId> --format json
+dws dev liteapp list --size 20 --format json
+dws dev liteapp detail <appId> --format json
 
 # 更新（不传=不修改；传空串会被拒绝；redirectUris 传入即整体覆盖）
-dws liteapp update <appId> --desc 新描述 --yes --format json
-dws liteapp update <appId> \
+dws dev liteapp update <appId> --desc 新描述 --yes --format json
+dws dev liteapp update <appId> \
   --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes --format json
 
 # 凭证（appKey 明文 + secret 明文与掩码；重置需在开发者后台人工完成）
-dws liteapp credential <appId> --format json
+dws dev liteapp credential <appId> --format json
 
 # 删除（24 小时软删，返回 timeToDel；仅创建者或组织管理员）
-dws liteapp delete <appId> --yes --format json
+dws dev liteapp delete <appId> --yes --format json
 ```
 
 ## 返回契约

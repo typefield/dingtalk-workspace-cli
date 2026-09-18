@@ -40,30 +40,10 @@ const (
 )
 
 func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFactory) *cobra.Command {
-	contract.RegisterProductDecl(contract.ProductDecl{
-		ID: "liteapp",
-		HelpReferences: contract.HelpReferences{
-			RelatedSkills: []string{"dingtalk-liteapp"},
-			Documentation: []contract.HelpDocumentation{
-				contract.SkillDocumentation("轻应用命令参考", "dingtalk-liteapp", "references/commands.md"),
-			},
-		},
-		Selection: contract.ProductSelectionDecl{
-			AgentSummary: "钉钉轻应用（快捷应用）：创建、更新、删除、列表、详情、凭证查询，创建即发布挂工作台",
-			UseWhen: []string{
-				"用户要在当前组织创建一个创建即发布的轻应用（快捷入口 + OAuth）",
-				"用户要更新/删除自己创建的轻应用，或查看轻应用列表、详情、凭证",
-			},
-			AvoidWhen: []string{
-				"权限点申请、版本发布、事件订阅等统一应用域能力走 dingtalk-misc 的 mcp published 工具（按 unifiedAppId 定位）",
-				"非轻应用的企业内部应用管理走 dingtalk-misc 的开放平台应用管理工具；liteapp 工具只能操作轻应用",
-			},
-		},
-	})
 	group := &cobra.Command{
 		Use:   "liteapp",
-		Short: "钉钉轻应用（快捷应用）全生命周期管理",
-		Long: "面向 Agent 与 CLI 的轻应用全生命周期指令：创建、更新、删除、列表、详情、凭证查询。\n\n" +
+		Short: "轻应用开发（快捷应用全生命周期）",
+		Long: "轻应用全生命周期指令：创建、更新、删除、列表、详情、凭证查询。\n\n" +
 			"调用身份由系统上下文注入（corpId/userId），仅能操作当前调用人创建的轻应用；" +
 			"AppSecret 明文随创建响应与凭证查询返回，注意防泄露，不得写入日志或仓库。",
 		Args:              cobra.NoArgs,
@@ -77,6 +57,9 @@ func newLiteappGroup(caller edition.ToolCaller, factory mcpPublishedTransportFac
 	if factory == nil {
 		factory = newAuthenticatedMCPPublishedTransportFactory(nil, nil)
 	}
+	// dev 子树叶子身份约定：ProductID 固定 "dev"，Name 用远端工具名，
+	// CanonicalPath 为 "dev." + 工具名，CLIPath 为完整命令路径（与 dev app/dev mcp 一致）。
+
 	group.AddCommand(
 		newLiteappCreateCommand(caller, factory),
 		newLiteappUpdateCommand(caller, factory),
@@ -172,7 +155,7 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			"并生成 OAuth 凭证。AppSecret 明文随创建响应与 credential 子命令返回，注意防泄露。\n\n" +
 			"传 --request-id（幂等键）时，同键同参数重试返回首次结果，参数变化将被拒绝。" +
 			"调用身份由系统上下文注入，无需传 corpId/userId。",
-		Example:           "  dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
+		Example:           "  dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -230,8 +213,8 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "create", CanonicalPath: "liteapp.create",
-				CLIPath: "liteapp create", PrimaryCLIPath: "liteapp create",
+				ProductID: "dev", Name: "create_lite_app", CanonicalPath: "dev.create_lite_app",
+				CLIPath: "dev liteapp create", PrimaryCLIPath: "dev liteapp create",
 			},
 			Description: "经确认后创建钉钉企业内部轻应用，创建即发布挂工作台并注册统一应用与 OAuth 凭证",
 			DryRun:      &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewInvocation, RemoteReads: false},
@@ -243,10 +226,10 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				AgentSummary: "经用户确认后创建轻应用，返回 appId/appKey/secret/unifiedAppId",
 				UseWhen:      []string{"需要在当前组织创建一个新的钉钉轻应用并直接发布到工作台"},
 				AvoidWhen: []string{
-					"需要管理已有应用时使用 liteapp update/delete 等子命令",
+					"需要管理已有应用时使用 dev liteapp update/delete 等子命令",
 					"用户未确认创建目标名称与首页地址时不要真实执行",
 				},
-				Examples: []string{"dws liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json"},
+				Examples: []string{"dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json"},
 			},
 		},
 	})
@@ -259,8 +242,8 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "更新轻应用（仅创建者本人；不传=不修改，空串拒绝）",
 		Long: "更新指定轻应用的基础信息与 OAuth 回调地址。字段语义：不传=null=不修改；" +
 			"传空串会被拒绝（防误清空）。redirectUris 传入即整体覆盖登记。仅创建者本人可更新。",
-		Example: "  dws liteapp update 5005426001 --desc 新描述\n" +
-			"  dws liteapp update 5005426001 --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes",
+		Example: "  dws dev liteapp update 5005426001 --desc 新描述\n" +
+			"  dws dev liteapp update 5005426001 --redirect-uris https://a.example.com/cb,https://b.example.com/cb --yes",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -328,8 +311,8 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "update", CanonicalPath: "liteapp.update",
-				CLIPath: "liteapp update", PrimaryCLIPath: "liteapp update",
+				ProductID: "dev", Name: "update_lite_app", CanonicalPath: "dev.update_lite_app",
+				CLIPath: "dev liteapp update", PrimaryCLIPath: "dev liteapp update",
 			},
 			Description: "经确认后更新创建者本人的轻应用基础信息与 OAuth 回调地址",
 			Interface: &contract.InterfaceSpec{
@@ -340,7 +323,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				AgentSummary: "经用户确认后更新创建者本人的轻应用",
 				UseWhen:      []string{"需要修改创建者本人的轻应用名称、首页、描述、回调地址等"},
 				AvoidWhen:    []string{"目标应用不是当前用户创建时不要调用（服务端仅创建者可更新）"},
-				Examples:     []string{"dws liteapp update 5005426001 --desc 新描述"},
+				Examples:     []string{"dws dev liteapp update 5005426001 --desc 新描述"},
 			},
 		},
 	})
@@ -353,7 +336,7 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "删除轻应用（24 小时软删，仅创建者或组织管理员）",
 		Long: "删除指定轻应用。24 小时软删，软删期内仍占用配额、不可恢复，返回软删截止时间 timeToDel。" +
 			"仅创建者或组织管理员可删除。",
-		Example:           "  dws liteapp delete 5005426001",
+		Example:           "  dws dev liteapp delete 5005426001",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -384,8 +367,8 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "delete", CanonicalPath: "liteapp.delete",
-				CLIPath: "liteapp delete", PrimaryCLIPath: "liteapp delete",
+				ProductID: "dev", Name: "delete_lite_app", CanonicalPath: "dev.delete_lite_app",
+				CLIPath: "dev liteapp delete", PrimaryCLIPath: "dev liteapp delete",
 			},
 			Description: "经确认后软删创建者本人或组织管理员的轻应用，返回软删截止时间",
 			Interface: &contract.InterfaceSpec{
@@ -396,7 +379,7 @@ func newLiteappDeleteCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				AgentSummary: "经用户确认后软删轻应用（24 小时后物理删除）",
 				UseWhen:      []string{"需要删除不再使用的轻应用以释放配额"},
 				AvoidWhen:    []string{"应用正在被其他系统使用时不要删除；软删期内不可恢复"},
-				Examples:     []string{"dws liteapp delete 5005426001"},
+				Examples:     []string{"dws dev liteapp delete 5005426001"},
 			},
 		},
 	})
@@ -409,7 +392,7 @@ func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransp
 		Short: "查询当前用户在本组织创建的轻应用列表",
 		Long: "查询当前用户在本组织创建的轻应用列表，按创建时间倒序，不含任何 secret 字段。" +
 			"软删期应用仍计入列表与配额，条目带 timeToDel。",
-		Example:           "  dws liteapp list --size 20 --format json",
+		Example:           "  dws dev liteapp list --size 20 --format json",
 		Args:              cobra.NoArgs,
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, _ []string) error {
@@ -434,8 +417,8 @@ func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransp
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "list", CanonicalPath: "liteapp.list",
-				CLIPath: "liteapp list", PrimaryCLIPath: "liteapp list",
+				ProductID: "dev", Name: "list_lite_apps", CanonicalPath: "dev.list_lite_apps",
+				CLIPath: "dev liteapp list", PrimaryCLIPath: "dev liteapp list",
 			},
 			Description: "查询当前用户在本组织创建的轻应用列表（不含 secret 字段）",
 			Interface: &contract.InterfaceSpec{
@@ -445,8 +428,8 @@ func newLiteappListCommand(caller edition.ToolCaller, factory mcpPublishedTransp
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询当前用户在本组织创建的轻应用列表",
 				UseWhen:      []string{"需要查看当前用户创建了哪些轻应用、占用多少配额"},
-				AvoidWhen:    []string{"查询单个应用详情时用 liteapp detail"},
-				Examples:     []string{"dws liteapp list --size 20 --format json"},
+				AvoidWhen:    []string{"查询单个应用详情时用 dev liteapp detail"},
+				Examples:     []string{"dws dev liteapp list --size 20 --format json"},
 			},
 		},
 	})
@@ -459,7 +442,7 @@ func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "查询轻应用详情（无 secret 明文）",
 		Long: "按 appId 查询轻应用详情。逐项鉴权，无权限或不存在统一返回 E_NOT_FOUND（防探测）。" +
 			"返回基础信息、appKey、secret 掩码、redirectUris、unifiedAppId 等；无 secret 明文。",
-		Example:           "  dws liteapp detail 5005426001 --format json",
+		Example:           "  dws dev liteapp detail 5005426001 --format json",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -483,8 +466,8 @@ func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "detail", CanonicalPath: "liteapp.detail",
-				CLIPath: "liteapp detail", PrimaryCLIPath: "liteapp detail",
+				ProductID: "dev", Name: "get_lite_app_detail", CanonicalPath: "dev.get_lite_app_detail",
+				CLIPath: "dev liteapp detail", PrimaryCLIPath: "dev liteapp detail",
 			},
 			Description: "按 appId 查询轻应用详情（无 secret 明文）",
 			Interface: &contract.InterfaceSpec{
@@ -494,8 +477,8 @@ func newLiteappDetailCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			Selection: contract.SelectionSpec{
 				AgentSummary: "查询单个轻应用的详情与凭证掩码",
 				UseWhen:      []string{"需要查看某个轻应用的基础信息、回调地址与凭证掩码"},
-				AvoidWhen:    []string{"需要 secret 明文时用 liteapp credential"},
-				Examples:     []string{"dws liteapp detail 5005426001 --format json"},
+				AvoidWhen:    []string{"需要 secret 明文时用 dev liteapp credential"},
+				Examples:     []string{"dws dev liteapp detail 5005426001 --format json"},
 			},
 		},
 	})
@@ -509,7 +492,7 @@ func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublished
 		Long: "查询轻应用 OAuth 凭证：appKey 明文 + secret 明文与掩码，可持续获取。" +
 			"secret 明文注意防泄露，不得写入日志、文档、邮件或代码仓库；" +
 			"重置能力不在本命令范围（需在开发者后台人工完成）。",
-		Example:           "  dws liteapp credential 5005426001 --format json",
+		Example:           "  dws dev liteapp credential 5005426001 --format json",
 		Args:              cobra.ExactArgs(1),
 		DisableAutoGenTag: true,
 		RunE: func(cmd *cobra.Command, args []string) error {
@@ -533,8 +516,8 @@ func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublished
 		},
 		Contract: helpers.LeafContract{
 			Identity: contract.ToolIdentitySpec{
-				ProductID: "liteapp", Name: "credential", CanonicalPath: "liteapp.credential",
-				CLIPath: "liteapp credential", PrimaryCLIPath: "liteapp credential",
+				ProductID: "dev", Name: "get_lite_app_credentials", CanonicalPath: "dev.get_lite_app_credentials",
+				CLIPath: "dev liteapp credential", PrimaryCLIPath: "dev liteapp credential",
 			},
 			Description: "查询轻应用 OAuth 凭证（appKey 明文 + secret 明文与掩码，可持续获取）",
 			Interface: &contract.InterfaceSpec{
@@ -546,9 +529,9 @@ func newLiteappCredentialCommand(caller edition.ToolCaller, factory mcpPublished
 				UseWhen:      []string{"服务端接入需要 appKey/secret 换取 accessToken 时"},
 				AvoidWhen: []string{
 					"不要把返回的 secret 写入日志、文档、邮件、群聊或代码仓库",
-					"仅需要应用基础信息时用 liteapp detail",
+					"仅需要应用基础信息时用 dev liteapp detail",
 				},
-				Examples: []string{"dws liteapp credential 5005426001 --format json"},
+				Examples: []string{"dws dev liteapp credential 5005426001 --format json"},
 			},
 		},
 	})
