@@ -96,12 +96,11 @@ dws dev liteapp delete <appId> --yes
 
 ## 网页地址与安全回调（市场工具，上架生效后可用）
 
-除 update 的 URL/回调字段外，市场侧另有两个专用工具（`dws mcp published invoke 10357` 调用）：
+除 update 的 URL/回调字段外，市场侧另有专用工具（`dws mcp published invoke 10357` 调用）：
 
-- `set_lite_app_webapp`：设置网页应用地址（appId + homepageUrl 必填，pcUrl 可选缺省取移动端）。
-- `set_lite_app_callback`：设置 OAuth 安全回调地址（appId + redirectUris 数组全量覆盖，≤10 条 https）。
-
-查询一律用 `detail`（含 homepageUrl/pcUrl/redirectUris）；写入请先取得用户明确确认。
+- `set_lite_app_webapp_config`：一次设置网页应用地址与 OAuth 安全回调地址
+  （appId 必填；homepageUrl/pcUrl/redirectUris 至少一项，redirectUris 数组全量覆盖 ≤10 条 https）。
+  查询当前配置用 `get_lite_app_detail`（含 homepageUrl/pcUrl/redirectUris）。
 
 ## MCP 服务
 
