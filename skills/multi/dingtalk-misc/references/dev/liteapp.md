@@ -94,14 +94,6 @@ dws dev liteapp delete <appId> --yes
 | E_IDEMPOTENT_PROCESSING | 首次请求仍在处理中 | 同 requestId 稍后重试 |
 | E_DEPENDENCY_FAILED | 下游依赖失败 | 稍后重试 |
 
-## 网页地址与安全回调（市场工具，上架生效后可用）
-
-除 update 的 URL/回调字段外，市场侧另有专用工具（`dws mcp published invoke 10357` 调用）：
-
-- `set_lite_app_webapp_config`：一次设置网页应用地址与 OAuth 安全回调地址
-  （appId 必填；homepageUrl/pcUrl/redirectUris 至少一项，redirectUris 数组全量覆盖 ≤10 条 https）。
-  查询当前配置用 `get_lite_app_detail`（含 homepageUrl/pcUrl/redirectUris）。
-
 ## MCP 服务
 
 市场服务「钉钉开放平台应用管理」（预发 mcpId=10357）下的六个 HSF 工具
