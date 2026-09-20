@@ -30,7 +30,7 @@ metadata:
 ## 命令
 
 ```bash
-# 创建（appName/homepageUrl 必填；requestId 幂等键建议传 UUID）
+# 创建（name/homepageUrl 必填；requestId 幂等键建议传 UUID）
 dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   --desc 可选描述 --request-id $(uuidgen) --dry-run --format json
 dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
@@ -61,6 +61,11 @@ dws dev liteapp delete <appId> --yes --format json
   需原样转述给用户。
 - 业务失败不抛传输错误：检查 `success=false` 时的 `errorCode/errorMsg`
   （如 `E_USER_QUOTA_EXCEEDED` 配额满、`E_IDEMPOTENT_CONFLICT` 幂同键参数变化）。
+
+## 详细参考
+
+命令级细节（全量 flag、错误码表、timeToDel 语义、调用时机）：
+dingtalk-misc skill 的 `references/dev/liteapp.md`。
 
 ## 错误与边界
 

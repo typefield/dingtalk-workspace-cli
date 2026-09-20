@@ -52,10 +52,10 @@ func (devHandler) Command(runner executor.Runner) *cobra.Command {
 		contract.RegisterProductDecl(contract.ProductDecl{
 			ID: "dev",
 			HelpReferences: contract.HelpReferences{
-				RelatedSkills: []string{"dingtalk-misc", "dingtalk-liteapp"},
+				RelatedSkills: []string{"dingtalk-misc"},
 				Documentation: []contract.HelpDocumentation{
 					contract.SkillDocumentation("开放平台应用深度指南", "dingtalk-misc", "references/devapp.md"),
-					contract.SkillDocumentation("轻应用命令参考", "dingtalk-liteapp", "references/commands.md"),
+					contract.SkillDocumentation("轻应用命令参考", "dingtalk-misc", "references/dev/liteapp.md"),
 				},
 			},
 			Selection: contract.ProductSelectionDecl{

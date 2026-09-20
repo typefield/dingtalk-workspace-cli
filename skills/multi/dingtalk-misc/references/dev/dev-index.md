@@ -15,6 +15,7 @@
 | 应用事件订阅 | `dws dev app event ...` | [`event.md`](./event.md) |
 | 本机机器人连接器、Stream/长连接实例与健康状态 | `dws dev connect ...` | [`connect.md`](./connect.md) |
 | MCP 服务、工具、鉴权、凭证与协作者 | `dws dev mcp ...` | [`mcp.md`](./mcp.md) |
+| 轻应用（快捷应用）创建、更新、删除、列表、详情、appKey/secret 凭证、配额与软删 | `dws dev liteapp ...` | [`liteapp.md`](./liteapp.md) |
 | 同一任务明确跨两个以上 Dev 域 | 按依赖顺序组合原子命令；先不预读专题 | [`recipes.md`](./recipes.md) |
 
 ## 共同执行约束

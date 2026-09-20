@@ -137,7 +137,7 @@ func TestLiteappCreateDryRunDoesNotTouchNetwork(t *testing.T) {
 		t.Fatalf("mcpId = %#v, want default %s", payload["mcpId"], liteappDefaultMCPID)
 	}
 	arguments, _ := payload["arguments"].(map[string]any)
-	if arguments["appName"] != "周报助手" || arguments["homepageUrl"] != "https://example.com" || arguments["requestId"] != "req-1" {
+	if arguments["name"] != "周报助手" || arguments["homepageUrl"] != "https://example.com" || arguments["requestId"] != "req-1" {
 		t.Fatalf("arguments = %#v", arguments)
 	}
 }
@@ -289,8 +289,8 @@ func TestLiteappListAndDetailAreReadOpsWithoutYes(t *testing.T) {
 	}, "liteapp", "list", "--size", "5"); err != nil {
 		t.Fatalf("execute list: %v", err)
 	}
-	if transport.args["size"] != 5 {
-		t.Fatalf("size = %#v, want 5", transport.args["size"])
+	if transport.args["pageSize"] != 5 {
+		t.Fatalf("pageSize = %#v, want 5", transport.args["pageSize"])
 	}
 	if _, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
