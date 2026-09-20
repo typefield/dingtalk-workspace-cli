@@ -99,3 +99,9 @@ dws dev liteapp delete <appId> --yes
 市场服务「钉钉开放平台应用管理」（预发 mcpId=10357）下的六个 HSF 工具
 （create/update/delete/list/get_lite_app_detail/get_lite_app_credentials）。
 mcpId 默认 10357；覆盖可传 `--mcp-id`。
+
+- 排障：`endpoint_not_resolved` / `published_mcp_tool_error` 时用
+  `dws mcp url get 10357` 验证端点，必要时 `--mcp-id` 显式指定，不要反复重试。
+- 边界：权限点申请、版本发布、事件订阅等统一应用能力不在本命令组范围，
+  走 `dws mcp published` 工具（按 `unifiedAppId` 定位，见 mcp.md）；
+  普通企业内部应用管理走 `dws dev app`。
