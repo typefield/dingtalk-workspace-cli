@@ -17,7 +17,8 @@ dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   应持同一 requestId 稍后重试而非换键。
 - `result`：appId、appKey、secret（明文）、secretMask、unifiedAppId、sdkSnippet、
   status=PUBLISHED、requestId、warning。凭证生成降级时 appKey/secret/secretMask/sdkSnippet
-  为 null，warning 给出提示。
+  为 null，warning 给出提示；处置：告知用户稍后在开发者后台重试，
+  然后用 `dws dev liteapp credential <appId>` 补查。
 
 ## list
 
@@ -75,6 +76,7 @@ dws dev liteapp delete <appId> --yes
 | E_ORG_INVALID / E_ORG_BLACKLISTED | 组织无效/黑名单 | 核对 corpId 或联系管理员 |
 | E_CONTENT_REJECTED | 内容安全拒绝 | 修改名称/描述 |
 | E_USER_QUOTA_EXCEEDED | 配额满（50/组织/用户） | 删除不再使用的轻应用 |
+| E_NOT_FOUND | 应用不存在或无权限（防探测统一返回） | 核对 appId 与当前登录账号 |
 | E_IDEMPOTENT_CONFLICT | 同 requestId 参数变化 | 更换 requestId |
 | E_IDEMPOTENT_PROCESSING | 同 requestId 首次请求仍在处理中 | 用同一 requestId 稍后重试，不要换键 |
 | E_DEPENDENCY_FAILED | 下游依赖失败 | 稍后重试 |
