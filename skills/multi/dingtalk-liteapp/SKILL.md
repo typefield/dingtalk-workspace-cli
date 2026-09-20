@@ -30,7 +30,7 @@ metadata:
 ## 命令
 
 ```bash
-# 创建（name/homepageUrl 必填；requestId 幂等键建议传 UUID）
+# 创建（appName/homepageUrl 必填；requestId 幂等键建议传 UUID）
 dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
   --desc 可选描述 --request-id $(uuidgen) --dry-run --format json
 dws dev liteapp create --name 周报助手 --homepage-url https://example.com \
