@@ -185,6 +185,8 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		Short: "创建轻应用（创建即发布挂工作台，并注册统一应用与 OAuth 凭证）",
 		Long: "创建钉钉企业内部轻应用：创建即发布并挂载工作台\"我的\"分组，同步注册统一应用（企业内部应用），" +
 			"并生成 OAuth 凭证。AppSecret 明文随创建响应与 credential 子命令返回，注意防泄露。\n\n" +
+			"凭证生成失败时应用仍创建成功（降级）：appKey/secret 为 null 且带 warning，" +
+			"稍后在开发者后台重试后用 dev liteapp credential 补查。\n\n" +
 			"传 --request-id（幂等键）时，同键同参数重试返回首次结果，参数变化将被拒绝。" +
 			"调用身份由系统上下文注入，无需传 corpId/userId。",
 		Example: "  dws dev liteapp create --name 周报助手 --homepage-url https://example.com --request-id 6f1c2b3a-uuid --dry-run --format json",
@@ -207,14 +209,14 @@ func newLiteappCreateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 				ProductID: "dev", Name: "create_lite_app", CanonicalPath: "dev.create_lite_app",
 				CLIPath: "dev liteapp create", PrimaryCLIPath: "dev liteapp create",
 			},
-			Description: "经确认后创建钉钉企业内部轻应用，创建即发布挂工作台并注册统一应用与 OAuth 凭证",
+			Description: "经确认后创建钉钉企业内部轻应用，创建即发布挂工作台并注册统一应用与 OAuth 凭证。凭证生成失败时降级成功：appKey/secret/secretMask/sdkSnippet 为 null 且带 warning，处置：告知用户稍后在开发者后台重试，并用 dev liteapp credential 补查",
 			DryRun:      &contract.DryRunSpec{PreviewKind: contract.DryRunPreviewInvocation, RemoteReads: false},
 			Interface: &contract.InterfaceSpec{
 				Mode: contract.InterfaceModeComposite, Availability: contract.InterfaceAvailable,
 				Reason: "Delegates to the published lite-app tools on the OpenPlatform app-management MCP service (default mcpId 10357); the remote tool's effect cannot be statically bound.",
 			},
 			Selection: contract.SelectionSpec{
-				AgentSummary: "经用户确认后创建轻应用，返回 appId/appKey/secret/unifiedAppId",
+				AgentSummary: "经用户确认后创建轻应用，返回 appId/appKey/secret/unifiedAppId；凭证生成降级时 appKey/secret 为 null 且带 warning",
 				UseWhen:      []string{"需要在当前组织创建一个新的钉钉轻应用并直接发布到工作台"},
 				AvoidWhen: []string{
 					"需要管理已有应用时使用 dev liteapp update/delete 等子命令",
