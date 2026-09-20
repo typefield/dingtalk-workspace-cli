@@ -3,46 +3,35 @@
 六个子命令对应轻应用全生命周期。调用身份由系统上下文注入，仅能操作当前调用人创建的
 轻应用。写操作需 `--yes` 确认，首次先 `--dry-run` 预览。
 
-## 核心概念
+## 操作语义
 
-轻应用 = "创建即发布"的组织内部 H5 微应用。一次创建自动完成四件事：微应用落库
-（status 直接 PUBLISHED，无草稿/审核）、挂载到工作台"我的"分组、注册统一应用域
-（企业内部应用，响应回填 `unifiedAppId`）、签发 OAuth 凭证（appKey/secret，可登记
-https 回调地址）。
+- 创建即发布：`create` 返回 `status=PUBLISHED` 就是已上线终态，没有草稿/审核/版本
+  流；要版本与发布能力的是 `dws dev app`（[version.md](version.md)），不要混用。
+- `warning` 非空 = 成功但有降级（工作台挂载失败、统一应用注册失败等）：按成功
+  继续后续步骤，但必须把 warning 原样转述给用户，不要自行判断"没影响"而省略。
+- `success=false` 原样报告 `errorCode/errorMsg`（错误码表见下方）；不要按传输层
+  "调用没报错"就当成功。
+- 幂等重试只认 requestId：同键同参重试返回首次结果（secret 不回显，用
+  `credential` 补查）；同键不同参拒绝（E_IDEMPOTENT_CONFLICT）；处理中
+  （E_IDEMPOTENT_PROCESSING）用同一 requestId 稍后重试，不换键、不重建。
+- 删除是 24 小时软删：期内仍占配额、list 可见且条目带 `timeToDel`；软删不可恢复，
+  删除放在全部依赖步骤的最后。list 条目的 timeToDel（软删状态属性）与 delete
+  返回的 timeToDel（本次删除截止时间戳）同名不同义，不要混用。
+- 明文 secret 只出现在 `create` 响应和 `credential`；detail/list 永远只有掩码；
+  不回显给用户以外的目的地，不落日志、文档、仓库。
+- 无权限与不存在统一返回 E_NOT_FOUND，不据此推断应用是否存在，也不要反复换
+  参数重试探权限。
+- 配额 50 /（组织, 用户），软删期仍计入；E_USER_QUOTA_EXCEEDED 时引导用户删除
+  不再使用的轻应用，不要自动批量删。
 
-- **无版本**：没有 `dws dev app` 的 INIT→AUDIT→RELEASE 版本机制，创建即终态，
-  更新直接生效。
-- **数据本质**：底层就是 OrgMicroApp + extension JSON 标记 `lite-app=1`——服务端
-  识别轻应用的唯一权威依据。权限：除 delete 放宽到"创建者或组织管理员"外，
-  update/detail/credential 仅创建者本人；无权限与不存在统一返回 E_NOT_FOUND
-  （防探测）。
-- **身份模型**：corpId/userId 由系统上下文注入，只能操作当前调用人自己创建的
-  轻应用。
+## 边界
 
-### 与相邻品类的边界
-
-- **快捷应用**（工作台快捷入口，`quick-link-app=1` 标记）：个人向、每人上限 5 个、
-  无 OAuth 凭证、走另一条链路；轻应用是组织级正式应用。
-- **普通企业内部应用**（`dws dev app`）：完整应用生命周期（版本、审核、发布）；
-  轻应用砍掉版本流换秒建秒用。
-- 统一应用的权限点申请、版本发布、事件订阅**不属于**本命令组，走
-  `dws mcp published`（按 unifiedAppId）。
-
-### 生命周期与可靠性
-
-- **生命周期**：创建 → 更新 → 删除。删除为 24 小时软删：期内仍占配额、列表可见
-  （条目带 timeToDel）、不可恢复，到期物理删除。注意 timeToDel 在 list 条目里
-  （软删状态属性）与 delete 响应里（本次删除截止时间戳）同名不同义。
-- **幂等**：`requestId` 为幂等键。同键同参重试返回首次结果（不回显 secret）；同键
-  不同参拒绝（E_IDEMPOTENT_CONFLICT）；首次仍在处理返回 E_IDEMPOTENT_PROCESSING
-  （同键稍后重试，不要换键）。
-- **降级**：创建是多步编排，单步失败不阻塞整体；响应 `warning` 非空即"成功但有
-  降级"（如工作台挂载失败、统一应用注册失败），必须原样转述给用户，不能当纯
-  成功处理。
-- **配额**：50 个 /（组织, 用户），软删期仍计入；配额校验 fail-closed（查询失败
-  拒绝创建，不会放行）。
-- **凭证安全**：明文 secret 只出现在 create 响应和 credential 命令；detail/list
-  永远只有掩码。防泄露：不落日志、文档、仓库。
+- 工作台个人快捷入口（快捷应用，每人 5 个、无 OAuth 凭证）不是本命令组，没有
+  对应命令；用户描述"快捷方式/书签式入口"时先确认是不是轻应用。
+- 统一应用的权限点申请、版本发布、事件订阅不属于本命令组，走
+  `dws mcp published`（按 `unifiedAppId`，见 [mcp.md](mcp.md)）。
+- 完整生命周期的企业内部应用（版本、审核、发布）走 `dws dev app`
+  （[app.md](app.md)）；只有"创建即发布挂工作台 + 凭证"诉求才用 liteapp。
 
 ## 何时用哪个
 
