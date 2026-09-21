@@ -1,6 +1,6 @@
 # 开放平台应用管理（dev / devapp）
 
-> **渐进式文档**：本文件为路由层（MUST DO / 概念地图 / 产品索引）；各命令组的详细参数与流程在 [dev/](./dev/) 目录下按需加载。命令前缀：`dws dev`（原子）与 `dws devapp +create` 等 `+` shortcut。
+> **渐进式文档**：本文件为路由层（MUST DO / 概念地图 / 产品索引）；各命令组的详细参数与流程在 [dev/](./dev/) 目录下按需加载。标准命令前缀：`dws dev`；`dws devapp` 的 `+<shortcut>` 仅作为兼容或用户明确指定的入口。
 
 ## MUST DO
 
@@ -20,7 +20,7 @@
 <!-- VISIBLE_SHORTCUTS_START -->
 ## Shortcuts（无专用脚本/recipe 时优先）
 
-以下 shortcut 同时进入公开 catalog 与 Runtime Schema。先按本 skill 的意图表、脚本和 recipe 路由：存在精确覆盖该场景的专用脚本/recipe 时按其执行；否则用户意图命中时，shortcut 优先于手写原子命令。命令已选中时直接执行；只在参数或安全语义不确定时读取 Agent leaf Schema（例如 `dws schema --cli-path "devapp +<shortcut>" --compact --format json`），在当前 Cobra flags 不确定时读取 `dws devapp <shortcut> --help`。只有参数映射、接口绑定或 provenance 审计才省略 `--compact`。仅当现有路由和 reference 都无法定位低频能力时，才用 `dws shortcut list --service devapp --format json` 批量发现。
+以下 shortcut 同时进入公开 catalog 与 Runtime Schema。标准入口优先使用对应的 `dws dev app ...` 原子命令；仅当用户明确指定 shortcut、需要兼容旧入口，或标准入口无法覆盖时，才使用 `dws devapp` 的 `+<shortcut>` 入口。命令已选中时直接执行；只在参数或安全语义不确定时读取 Agent leaf Schema（例如 `dws schema --cli-path "dev app <command>" --compact --format json`，兼容入口则查询 `devapp +<shortcut>`），在当前 Cobra flags 不确定时读取精确 leaf `--help`。只有参数映射、接口绑定或 provenance 审计才省略 `--compact`。仅当现有路由和 reference 都无法定位低频能力时，才用 `dws shortcut list --service devapp --format json` 批量发现。
 
 | Shortcut | 风险 | 适用场景 |
 |---|---|---|
@@ -101,6 +101,8 @@
 - 角色：开发者（member DEVELOPER）改配置；管理员管启停；审批人批版本发布。
 
 ## 核心规则
+标准路径是 `dws dev app ...`；`dws devapp` 的 `+<shortcut>` 只作为兼容或用户明确指定的入口。执行前遵循上方 MUST DO，并以当前 Cobra help/Contract 为命令与 flag 权威。
+
 1. `应用`、`机器人` 是泛词：用户只说这两个词、无开放平台上下文时，先追问确认是不是开发者后台的企业内部应用，不要猜——很可能是工作台应用或群消息机器人（转出口见上方「边界与角色」）。
 2. 应用名只可用于只读列表过滤或人工排查；`app get --app-key` 可只读查详情并拿回 `unifiedAppId`。任何写操作必须由用户或上游结果提供明确 `unifiedAppId`，不能把单条列表命中当自动确认。
 3. 权限申请/取消只接受 `scopeValue`，不传 API 名或分组名——权限点才是授权单元，API 名与权限点是多对一。
@@ -109,7 +111,7 @@
 6. 选审批人时优先原样展示 `approvalPromptText`（成品文案）；需结构化时读 `approvalOptions[].label`；只有都缺时才用原始 `approvalCandidates` 的 `name（userId: xxx）` 自己拼标签。
 
 ### 通用出参约定（跨所有命令）
-- 游标分页（list / permission list / version list / event list / `devdoc article search`）：首次不传 `--cursor`，出参带 `nextCursor`（空=到底）原样回传续翻；`hasMore == nextCursor 非空`。cursor 是上游不透明令牌，不要自己解析或构造，也不要跨命令复用。
+- 游标分页（list / permission list / version list / event list / `devdoc article search`）：首次不传 `--cursor`；读取 `meta.pagination.endpoint_exhausted` 与 `meta.pagination.next_token`，当 `endpoint_exhausted=false` 时把原样 `next_token` 传给下一次 `--cursor`，直到 `endpoint_exhausted=true`。旧版 `hasMore/nextCursor` 仅作为内部兼容映射，不是面向用户的分页字段。cursor 是上游不透明令牌，不要自己解析或构造，也不要跨命令复用。
 - 批量聚合：`permission remove` 出参是 `{removed, removedScopeValues, rejectedScopeValues, success, message}`，逐条看 `removedScopeValues`/`rejectedScopeValues` 判断每个权限点成败。
 - pretty：`--format pretty` 会在应用/版本状态字段旁附 `*Text` 可读标签（如 `appStatusText`）；JSON 格式不附，以原始字段为准。
 - 失败：`ServiceResult.success=false` 原样透传 `errorCode/errorMsg`，不编造解释，解读走下方文档 RAG。

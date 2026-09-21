@@ -243,13 +243,35 @@ func TestLiteappUpdateRequiresAtLeastOneField(t *testing.T) {
 	}
 }
 
+func TestLiteappUpdateUsesNameFlag(t *testing.T) {
+	caller := &liteappTestCaller{}
+	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
+	_, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
+		return transport, nil
+	}, "liteapp", "update", "5005426001", "--name", "周报助手", "--yes", "--format", "json")
+	if err != nil {
+		t.Fatalf("execute update with name: %v", err)
+	}
+	if transport.args["name"] != "周报助手" {
+		t.Fatalf("name = %#v, want updated name", transport.args["name"])
+	}
+}
+
+func TestLiteappUpdateRejectsAppNameFlag(t *testing.T) {
+	_, err := executeLiteappCommand(t, &liteappTestCaller{}, nil,
+		"liteapp", "update", "5005426001", "--app-name", "周报助手", "--yes")
+	if err == nil || !strings.Contains(err.Error(), "unknown flag") {
+		t.Fatalf("error = %v, want unknown app-name flag", err)
+	}
+}
+
 func TestLiteappUpdateParsesRedirectUrisAndInvokes(t *testing.T) {
 	caller := &liteappTestCaller{}
 	transport := &liteappTestTransport{result: transport.ToolCallResult{}}
 	_, err := executeLiteappCommand(t, caller, func(context.Context) (mcpPublishedTransport, error) {
 		return transport, nil
 	}, "liteapp", "update", "5005426001",
-		"--redirect-uris", "https://a.example.com/cb, https://b.example.com/cb", "--yes", "--format", "json")
+		"--name", "周报助手", "--redirect-uris", "https://a.example.com/cb, https://b.example.com/cb", "--yes", "--format", "json")
 	if err != nil {
 		t.Fatalf("execute update: %v", err)
 	}
@@ -262,6 +284,9 @@ func TestLiteappUpdateParsesRedirectUrisAndInvokes(t *testing.T) {
 	}
 	if uris[0] != "https://a.example.com/cb" || uris[1] != "https://b.example.com/cb" {
 		t.Fatalf("redirectUris = %#v, want trimmed entries", transport.args["redirectUris"])
+	}
+	if transport.args["name"] != "周报助手" {
+		t.Fatalf("name = %#v, want updated name", transport.args["name"])
 	}
 }
 

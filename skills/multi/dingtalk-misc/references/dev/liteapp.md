@@ -14,11 +14,14 @@
 - 幂等只在传了 requestId 时生效（schema 里它是可选）：不传 requestId 的重试会
   创建出重复应用，网络重试/用户重发场景务必带键。同键同参重试返回首次结果
   （secret 不回显，用 `credential` 补查）；同键不同参拒绝（E_IDEMPOTENT_CONFLICT）；
-  首次在途（E_IDEMPOTENT_PROCESSING）用同一 requestId 稍后重试，不换键。三个
+  首次在途（E_IDEMPOTENT_PROCESSING）用同一 requestId 稍后重试，不换键。四个
   易误判点：参数/内容校验先于幂等判重——新参数不过校验时报校验错误码（如
   E_CONTENT_REJECTED）且不消耗幂等键，修正后同键可直接重试，CONFLICT 只在新
   参数通过校验后才会出现；首次创建落库失败会释放幂等键，同键重试是一次全新
-  创建，不返回 DUPLICATE/CONFLICT；幂等记录 TTL 24h，过期后同 requestId 视为
+  创建，不返回 DUPLICATE/CONFLICT；幂等服务自身读写失败返回 E_DEPENDENCY_FAILED
+  （不是幂等冲突，同键稍后重试即可）；重放会自动补齐首次中断的创建者登记、
+  找回已注册的统一应用，但凭证无法靠重试补发——重放 warning 提示凭证失败时
+  引导用户走开发者后台或删除重建；幂等记录 TTL 24h，过期后同 requestId 视为
   新请求。
 - 删除是 24 小时软删：期内仍占配额、list 可见且条目带 `timeToDel`；软删不可恢复，
   删除放在全部依赖步骤的最后。list 条目的 timeToDel（软删状态属性）与 delete
@@ -134,7 +137,7 @@ dws dev liteapp delete <appId> --yes
 | E_NOT_FOUND | 应用不存在或无权限（防探测） | 核对 appId 与当前账号 |
 | E_IDEMPOTENT_CONFLICT | 同 requestId 参数变化 | 更换 requestId |
 | E_IDEMPOTENT_PROCESSING | 首次请求仍在处理中 | 同 requestId 稍后重试 |
-| E_DEPENDENCY_FAILED | 下游依赖失败 | 稍后重试 |
+| E_DEPENDENCY_FAILED | 下游依赖失败（含幂等服务暂不可用） | 稍后重试；带 requestId 时保持同键 |
 
 ## MCP 服务
 

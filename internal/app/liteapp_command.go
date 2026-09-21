@@ -246,7 +246,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 			liteappAppIDPositional(),
 		},
 		Flags: []helpers.LeafFlag{
-			{Name: "app-name", Usage: "应用名称；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "name"},
+			{Name: "name", Usage: "应用名称；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "name"},
 			{Name: "homepage-url", Usage: "移动端首页地址；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "homepageUrl"},
 			{Name: "pc-url", Usage: "PC 端首页地址；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "pcUrl"},
 			{Name: "desc", Usage: "应用描述；不传=不修改，空串拒绝", Trim: true, OmitEmpty: true, Bind: "desc"},
@@ -257,7 +257,7 @@ func newLiteappUpdateCommand(caller edition.ToolCaller, factory mcpPublishedTran
 		},
 		Constraints: []helpers.LeafConstraint{{
 			Kind:        helpers.LeafAtLeastOne,
-			Flags:       []string{"app-name", "homepage-url", "pc-url", "desc", "icon-media-id", "redirect-uris"},
+			Flags:       []string{"name", "homepage-url", "pc-url", "desc", "icon-media-id", "redirect-uris"},
 			Description: "至少提供一个要修改的字段；不修改请勿调用",
 		}},
 		Contract: helpers.LeafContract{
