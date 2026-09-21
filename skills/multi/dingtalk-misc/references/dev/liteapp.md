@@ -11,9 +11,15 @@
   继续后续步骤，但必须把 warning 原样转述给用户，不要自行判断"没影响"而省略。
 - `success=false` 原样报告 `errorCode/errorMsg`（错误码表见下方）；不要按传输层
   "调用没报错"就当成功。
-- 幂等重试只认 requestId：同键同参重试返回首次结果（secret 不回显，用
-  `credential` 补查）；同键不同参拒绝（E_IDEMPOTENT_CONFLICT）；处理中
-  （E_IDEMPOTENT_PROCESSING）用同一 requestId 稍后重试，不换键、不重建。
+- 幂等只在传了 requestId 时生效（schema 里它是可选）：不传 requestId 的重试会
+  创建出重复应用，网络重试/用户重发场景务必带键。同键同参重试返回首次结果
+  （secret 不回显，用 `credential` 补查）；同键不同参拒绝（E_IDEMPOTENT_CONFLICT）；
+  首次在途（E_IDEMPOTENT_PROCESSING）用同一 requestId 稍后重试，不换键。三个
+  易误判点：参数/内容校验先于幂等判重——新参数不过校验时报校验错误码（如
+  E_CONTENT_REJECTED）且不消耗幂等键，修正后同键可直接重试，CONFLICT 只在新
+  参数通过校验后才会出现；首次创建落库失败会释放幂等键，同键重试是一次全新
+  创建，不返回 DUPLICATE/CONFLICT；幂等记录 TTL 24h，过期后同 requestId 视为
+  新请求。
 - 删除是 24 小时软删：期内仍占配额、list 可见且条目带 `timeToDel`；软删不可恢复，
   删除放在全部依赖步骤的最后。list 条目的 timeToDel（软删状态属性）与 delete
   返回的 timeToDel（本次删除截止时间戳）同名不同义，不要混用。
@@ -26,12 +32,18 @@
 
 ## 边界
 
-- 工作台个人快捷入口（快捷应用，每人 5 个、无 OAuth 凭证）不是本命令组，没有
-  对应命令；用户描述"快捷方式/书签式入口"时先确认是不是轻应用。
-- 统一应用的权限点申请、版本发布、事件订阅不属于本命令组，走
-  `dws mcp published`（按 `unifiedAppId`，见 [mcp.md](mcp.md)）。
-- 完整生命周期的企业内部应用（版本、审核、发布）走 `dws dev app`
-  （[app.md](app.md)）；只有"创建即发布挂工作台 + 凭证"诉求才用 liteapp。
+liteapp 只管"创建即发布的轻应用本体 + 凭证"；轻应用创建时同步注册的统一应用
+（`unifiedAppId`）此后就是普通统一应用——轻应用和统一应用是分离的两个面。后续
+高级能力拿 `unifiedAppId` 走 `dws dev` 对应能力组，文档与 `dws dev app` 完全一致：
+
+- 版本历史 / 待发布版本 / 发布 → `dws dev app version`（[version.md](version.md)）
+- 权限点申请 → [permission.md](permission.md)
+- 事件订阅 → [event.md](event.md)
+- 机器人线上配置 → [robot.md](robot.md)；管理成员 → [member.md](member.md)
+
+要"完整生命周期的企业内部应用"（草稿、审核、版本发布流程）时，直接用
+`dws dev app`（[app.md](app.md)）创建，不要先建 liteapp 再补版本；只有
+"秒建秒用、挂工作台、拿凭证"诉求才用 liteapp。
 
 ## 何时用哪个
 
@@ -133,5 +145,5 @@ mcpId 默认 10357；覆盖可传 `--mcp-id`。
 - 排障：`endpoint_not_resolved` / `published_mcp_tool_error` 时用
   `dws mcp url get 10357` 验证端点，必要时 `--mcp-id` 显式指定，不要反复重试。
 - 边界：权限点申请、版本发布、事件订阅等统一应用能力不在本命令组范围，
-  走 `dws mcp published` 工具（按 `unifiedAppId` 定位，见 mcp.md）；
-  普通企业内部应用管理走 `dws dev app`。
+  拿 `unifiedAppId` 走 `dws dev` 对应能力组（version/permission/event，见上方
+  「边界」一节）；普通企业内部应用管理走 `dws dev app`。
